@@ -1,0 +1,16 @@
+FROM alpine:3.3
+MAINTAINER help@dcos.io
+
+RUN apk add --update curl ca-certificates git openssh tar xz zlib && rm -rf /var/cache/apk/*
+RUN wget https://github.com/andyshinn/alpine-pkg-glibc/releases/download/2.22-r5/glibc-2.22-r5.apk && apk --allow-untrusted add glibc-2.22-r5.apk && rm glibc-2.22-r5.apk && rm -rf /var/cache/apk/*
+VOLUME ["/genconf"]
+
+EXPOSE 9000
+ENTRYPOINT ["/installer_internal_wrapper"]
+
+# Add the mutable artifacts last to increase caching, starting with the common
+# one
+ADD {installer_bootstrap_filename} /opt/mesosphere/
+COPY installer_internal_wrapper /installer_internal_wrapper
+COPY {bootstrap_filename} /artifacts/{bootstrap_filename}
+COPY {bootstrap_active_filename} /artifacts/{bootstrap_active_filename}

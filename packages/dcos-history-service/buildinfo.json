@@ -1,0 +1,3 @@
+{
+  "requires": ["flask", "python", "python-requests"]
+}

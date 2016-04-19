@@ -1,0 +1,92 @@
+{
+  "requires": [
+    "boto",
+    "python",
+    "python-docopt",
+    "python-jinja2",
+    "python-markupsafe",
+    "python-passlib",
+    "python-pyyaml",
+    "python-requests",
+    "python-retrying",
+    "six"
+    ],
+  "sources": {
+    "aiohttp": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/a/aiohttp/aiohttp-0.20.0.tar.gz",
+      "sha1": "4ab710f2e03a2d8414382d98b9832a6f0022a780"
+    },
+    "aiohttp_jinja2": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py3/a/aiohttp_jinja2/aiohttp_jinja2-0.7.0-py3-none-any.whl",
+      "sha1": "e5710a2a89210b3b0a804a18f00aa4023498dc38"
+    },
+    "azure-common": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/sdk/a/azure-common/azure_common-1.0.0-py2.py3-none-any.whl",
+      "sha1": "fecf9143eba99f957141a8d519cc50d994191626"
+    },
+    "azure-nspkg": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/sdk/a/azure-nspkg/azure_nspkg-1.0.0-py2.py3-none-any.whl",
+      "sha1": "388d8454c7c487c1f810378579df1028e7847ee1"
+
+    },
+    "azure-storage": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/a/azure-storage/azure-storage-0.30.0.zip",
+      "sha1": "62de894f490869a364910c3c3dfa93930e5814ba"
+    },
+    "beautifulsoup4": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/3.4/b/beautifulsoup4/beautifulsoup4-4.4.1-py3-none-any.whl",
+      "sha1": "774554b2c16c334f2220800950026384cae713ac"
+    },
+    "chardet": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/c/chardet/chardet-2.3.0.tar.gz",
+      "sha1": "50af8f8771ecbeb7a22567129c6c281b8bec3b1c"
+    },
+    "coloredlogs": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/c/coloredlogs/coloredlogs-3.5.tar.gz",
+      "sha1": "251c88bd48ee3e23a12b416f7297202e544d0cd2"
+    },
+    "docker-py": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/d/docker-py/docker-py-1.7.2.tar.gz",
+      "sha1": "bc4f33cac9d6ad13c41ac7ff3e76de30fef8c4cf"
+    },
+    "docutils": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",
+      "sha1": "88749802f8d61883da36a5abfca171a4ae60cc71"
+    },
+    "humanfriendly": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/h/humanfriendly/humanfriendly-1.44.3.tar.gz",
+      "sha1": "89c166308420a56cd5d8ee9d7858dd8085078e00"
+    },
+    "py": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/2.7/p/py/py-1.4.31-py2.py3-none-any.whl",
+      "sha1": "ffcba27ff8391f46904c2762135a383d29a4bf1b"
+    },
+    "waitress": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/w/waitress/waitress-0.8.10.tar.gz",
+      "sha1": "ed41791a3c7dcc8e8416d37bda87983c8402db87"
+    },
+    "webob": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/3.4/W/WebOb/WebOb-1.5.1-py2.py3-none-any.whl",
+      "sha1": "36e038d2158248d27ec109ff7d23f5fa4e112483"
+    },
+    "websocket-client": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/w/websocket-client/websocket_client-0.35.0.tar.gz",
+      "sha1": "ecb09f5e740ca4f8bc8291de312718bb1cf2d452"
+    }
+  }
+}

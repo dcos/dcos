@@ -1,0 +1,251 @@
+{
+  "Resources": {
+    "PrivateAgentLaunchConfig" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "KeyName" : { "Ref" : "KeyName" },
+        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "SecurityGroups" : [ { "Ref" : "PrivateAgentSecurityGroup" } ],
+        "IamInstanceProfile" : { "Ref" : "PrivateAgentInstanceProfile" },
+        "AssociatePublicIpAddress" : "false",
+        {{ aws_private_agent_spot_price }}
+        "InstanceType" : { "Ref" : "PrivateAgentInstanceType" },
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+          {{ cloud_config }}
+        ]]}}
+      }
+    },
+    "PrivateAgentInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "PrivateAgentRole"
+          }
+        ]
+      }
+    },
+    "PrivateAgentServerGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Count": {
+            "Ref": "PrivateAgentInstanceCount"
+          },
+          "Timeout": {
+            "Fn::FindInMap": [
+              "Parameters",
+              "StackCreationTimeout",
+              "default"
+            ]
+          }
+        }
+      },
+      "Properties": {
+        "MinSize": {
+          "Ref": "PrivateAgentInstanceCount"
+        },
+        "DesiredCapacity": {
+          "Ref": "PrivateAgentInstanceCount"
+        },
+        "MaxSize": {
+          "Ref": "PrivateAgentInstanceCount"
+        },
+        "LaunchConfigurationName": {
+          "Ref": "PrivateAgentLaunchConfig"
+        },
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "PrivateSubnet"
+          }
+        ],
+        "Tags": [
+          {
+            "Value": "mesos-private-agent",
+            "Key": "role",
+            "PropagateAtLaunch": "true"
+          }
+        ]
+      }
+    },
+    "PrivateAgentRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PrivateAgents",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:*"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "AWS::StackId"
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Ref": "AWS::StackId"
+                          },
+                          "/*"
+                        ]
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Resource": "*",
+                  "Action": [
+                    "ec2:CreateTags",
+                    "ec2:DescribeInstances",
+                    "ec2:CreateVolume",
+                    "ec2:DeleteVolume",
+                    "ec2:AttachVolume",
+                    "ec2:DetachVolume",
+                    "ec2:DescribeVolumes",
+                    "ec2:DescribeVolumeStatus",
+                    "ec2:DescribeVolumeAttribute",
+                    "ec2:CreateSnapshot",
+                    "ec2:CopySnapshot",
+                    "ec2:DeleteSnapshot",
+                    "ec2:DescribeSnapshots",
+                    "ec2:DescribeSnapshotAttribute"
+                  ],
+                  "Effect": "Allow"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+  },
+  "Parameters": {
+    "PrivateAgentInstanceCount": {
+      "Type": "Number",
+      "Default": "5",
+      "Description": "\nSpecify the number of private agent nodes or accept the default."
+    },
+    "KeyName": {
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "Description": "\nSpecify your AWS EC2 Key Pair."
+    },
+    "InternalMasterLoadBalancerDnsName": {
+      "Description" : "\nDNS Name of Internal Load Balancer. Has to be valid for agents to join a running cluster",
+      "Type": "String"
+    },
+    "PrivateAgentSecurityGroup": {
+      "Description" : "\nSecurity group used by Private Agents, typically with limited access to the outside",
+      "Type": "String"
+    },
+    "PrivateSubnet": {
+      "Description" : "\nSubnet ID for use by all private agent nodes",
+      "Type": "String"
+    },
+    "PrivateAgentInstanceType": {
+      "Type": "String",
+      "Default": "m3.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    }
+  },
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Metadata": {
+    "DcosImageCommit": "unset",
+    "TemplateGenerationDate": "unset"
+  },
+  "Mappings": {
+    "Parameters": {
+      "StackCreationTimeout": {
+        "default": "PT60M"
+      }
+    },
+    "NATAmi": {
+      "us-west-2": {
+        "default": "ami-bb69128b"
+      },
+      "sa-east-1": {
+        "default": "ami-b972dba4"
+      },
+      "ap-northeast-1": {
+        "default": "ami-55c29e54"
+      },
+      "us-east-1": {
+        "default": "ami-4c9e4b24"
+      },
+      "ap-southeast-1": {
+        "default": "ami-b082dae2"
+      },
+      "eu-central-1": {
+        "default": "ami-204c7a3d"
+      },
+      "us-west-1": {
+        "default": "ami-2b2b296e"
+      },
+      "eu-west-1": {
+        "default": "ami-3760b040"
+      },
+      "ap-southeast-2": {
+        "default": "ami-996402a3"
+      }
+    },
+    "RegionToAmi": {
+      "us-west-2": {
+        "stable": "ami-00ebfc61"
+      },
+      "sa-east-1": {
+        "stable": "ami-154af179"
+      },
+      "ap-northeast-1": {
+        "stable": "ami-84e0c7ea"
+      },
+      "us-east-1": {
+        "stable": "ami-37bdc15d"
+      },
+      "ap-southeast-1": {
+        "stable": "ami-da67a0b9"
+      },
+      "us-gov-west-1": {
+        "stable": "ami-05bc0164"
+      },
+      "eu-central-1": {
+        "stable": "ami-fdd4c791"
+      },
+      "us-west-1": {
+        "stable": "ami-27553a47"
+      },
+      "eu-west-1": {
+        "stable": "ami-55d20b26"
+      },
+      "ap-southeast-2": {
+        "stable": "ami-f35b0590"
+      }
+    }
+  },
+  "Description": "DCOS AWS CloudFormation Advanced Private Agent Template"
+}

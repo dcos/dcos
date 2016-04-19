@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir -p build
+pushd build
+
+cd /pkg/src/libevent
+./autogen.sh
+./configure --prefix="$PKG_PATH"
+make
+make install

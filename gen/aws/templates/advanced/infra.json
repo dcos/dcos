@@ -1,0 +1,503 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Metadata": {
+    "DcosImageCommit": "unset",
+    "TemplateGenerationDate": "unset"
+  },
+  "Parameters": {
+    "AdminLocation": {
+      "Description" : "\nOptional: Specify the IP range to whitelist for access to the admin zone. Must be a valid CIDR.",
+      "Type" : "String",
+      "MinLength" : "9",
+      "MaxLength" : "18",
+      "Default" : "0.0.0.0/0",
+      "AllowedPattern" : "^([0-9]+\\.){3}[0-9]+\\/[0-9]+$",
+      "ConstraintDescription" : "must be a valid CIDR."
+    },
+    "KeyName": {
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "Description": "\nSpecify your AWS EC2 Key Pair."
+    },
+    "Vpc": {
+      "Description" : "\nExisting VPC to use. Nodes will be launched using subnets and Internet Gateway under this VPC",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PublicSubnet": {
+      "Description" : "\nSubnet ID for use by all public agent nodes",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "PrivateSubnet": {
+      "Description" : "\nSubnet ID for use by all private agent nodes",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "InternetGateway": {
+      "Description" : "\nInternet Gateway ID, must be attached to the 'Vpc'. Used by all nodes for outgoing Internet access.",
+      "Type": "String"
+    }
+  },
+    "Mappings": {
+        "NATAmi" : {
+          "ap-northeast-1": {
+              "default": "ami-55c29e54"
+          },
+          "ap-southeast-1": {
+              "default": "ami-b082dae2"
+          },
+          "ap-southeast-2": {
+              "default": "ami-996402a3"
+          },
+          "eu-central-1": {
+              "default": "ami-204c7a3d"
+          },
+          "eu-west-1": {
+              "default": "ami-3760b040"
+          },
+          "sa-east-1": {
+              "default": "ami-b972dba4"
+          },
+          "us-east-1": {
+              "default": "ami-4c9e4b24"
+          },
+          "us-west-1": {
+              "default": "ami-2b2b296e"
+          },
+          "us-west-2": {
+              "default": "ami-bb69128b"
+          }
+       }
+    },
+  "Resources": {
+    "AdminSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable admin access to servers",
+        "VpcId" : { "Ref" : "Vpc" },
+        "SecurityGroupIngress" : [ {
+          "IpProtocol" : "tcp",
+          "FromPort" : "22",
+          "ToPort" : "22",
+          "CidrIp" : { "Ref" : "AdminLocation" }
+          }, {
+          "IpProtocol" : "tcp",
+          "FromPort" : "80",
+          "ToPort" : "80",
+          "CidrIp" : { "Ref" : "AdminLocation" }
+          }, {
+          "IpProtocol" : "tcp",
+          "FromPort" : "443",
+          "ToPort" : "443",
+          "CidrIp" : { "Ref" : "AdminLocation" }
+        } ]
+      }
+    },
+    "PublicAgentSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Mesos Public Agents",
+        "VpcId" : { "Ref" : "Vpc" }
+      }
+    },
+    "PrivateAgentSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Mesos Private Agents",
+        "VpcId" : { "Ref" : "Vpc" }
+      }
+    },
+    "MasterSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Mesos Masters",
+        "VpcId" : { "Ref" : "Vpc" },
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "5050", "ToPort" : "5050", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "8080", "ToPort" : "8080", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "8181", "ToPort" : "8181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "2181", "ToPort" : "2181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} }
+        ]
+      }
+    },
+    "MasterToPrivateAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PrivateAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "MasterSecurityGroup" }
+      }
+    },
+    "PrivateAgentToMasterIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "MasterSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PrivateAgentSecurityGroup" }
+        }
+    },
+    "PrivateAgentToMasterLBIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "LbSecurityGroup" },
+        "IpProtocol" : "tcp",
+        "FromPort" : "2181",
+        "ToPort" : "2181",
+        "SourceSecurityGroupId" : { "Ref" : "PrivateAgentSecurityGroup" }
+      }
+    },
+    "PrivateAgentToPrivateAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PrivateAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PrivateAgentSecurityGroup" }
+      }
+    },
+    "PublicAgentToPrivateAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PrivateAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PublicAgentSecurityGroup" }
+      }
+    },
+    "PrivateAgentToPublicAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PrivateAgentSecurityGroup" }
+      }
+    },
+    "PublicAgentToPublicAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PublicAgentSecurityGroup" }
+      }
+    },
+    "MasterToMasterIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "MasterSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "MasterSecurityGroup" }
+      }
+    },
+    "LbSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Mesos Master LB",
+        "VpcId" : { "Ref" : "Vpc" }
+      }
+    },
+    "PrivateRouteTable": {
+        "Properties": {
+            "Tags": [
+                {
+                    "Key": "Application",
+                    "Value": {
+                        "Ref": "AWS::StackName"
+                    }
+                },
+                {
+                    "Key": "Network",
+                    "Value": "Private"
+                }
+            ],
+            "VpcId": {
+                "Ref": "Vpc"
+            }
+        },
+        "Type": "AWS::EC2::RouteTable"
+    },
+    "PrivateRoute": {
+        "Properties": {
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "InstanceId": {
+                "Ref": "NATInstance"
+            },
+            "RouteTableId": {
+                "Ref": "PrivateRouteTable"
+            }
+        },
+        "Type": "AWS::EC2::Route"
+    },
+    "PrivateSubnetRouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+    "PublicRouteTable": {
+        "Properties": {
+            "Tags": [
+                {
+                    "Key": "Application",
+                    "Value": {
+                        "Ref": "AWS::StackName"
+                    }
+                },
+                {
+                    "Key": "Network",
+                    "Value": "Public"
+                }
+            ],
+            "VpcId": {
+                "Ref": "Vpc"
+            }
+        },
+        "Type": "AWS::EC2::RouteTable"
+    },
+    "PublicRoute": {
+        "Properties": {
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "GatewayId": {
+                "Ref": "InternetGateway"
+            },
+            "RouteTableId": {
+                "Ref": "PublicRouteTable"
+            }
+        },
+        "Type": "AWS::EC2::Route"
+    },
+    "PublicSubnetRouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+    "PublicNetworkAcl" : {
+      "Type" : "AWS::EC2::NetworkAcl",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+    "InboundNetworkAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : { "Ref" : "PublicNetworkAcl" },
+        "RuleNumber" : "100",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "false",
+        "CidrBlock" : "0.0.0.0/0",
+        "PortRange" : { "From" : "0", "To" : "65535" }
+      }
+    },
+    "OutboundNetworkAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : { "Ref" : "PublicNetworkAcl" },
+        "RuleNumber" : "100",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "true",
+        "CidrBlock" : "0.0.0.0/0",
+        "PortRange" : { "From" : "0", "To" : "65535" }
+      }
+    },
+    "PublicSubnetNetworkAclAssociation" : {
+      "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet" },
+        "NetworkAclId" : { "Ref" : "PublicNetworkAcl" }
+      }
+    },
+    "PrivateNetworkAcl" : {
+      "Type" : "AWS::EC2::NetworkAcl",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+    "PrivateInboundNetworkAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : { "Ref" : "PrivateNetworkAcl" },
+        "RuleNumber" : "100",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "false",
+        "CidrBlock" : "0.0.0.0/0",
+        "PortRange" : { "From" : "0", "To" : "65535" }
+      }
+    },
+    "PrivateOutboundNetworkAclEntry" : {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "NetworkAclId" : { "Ref" : "PrivateNetworkAcl" },
+        "RuleNumber" : "100",
+        "Protocol" : "-1",
+        "RuleAction" : "allow",
+        "Egress" : "true",
+        "CidrBlock" : "0.0.0.0/0",
+        "PortRange" : { "From" : "0", "To" : "65535" }
+      }
+    },
+    "PrivateSubnetNetworkAclAssociation" : {
+      "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet" },
+        "NetworkAclId" : { "Ref" : "PrivateNetworkAcl" }
+      }
+    },
+    "ExhibitorS3Bucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "DeletionPolicy" : "Retain"
+    },
+    "NATInstance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "SourceDestCheck" : "false",
+        "KeyName" : { "Ref" : "KeyName" },
+        "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
+        "InstanceType" : "m3.medium",
+        "Tags" : [
+          {
+            "Key" : "role",
+            "Value" : "NATInstance"
+          }
+        ],
+        "NetworkInterfaces" : [
+          {
+            "SubnetId" : { "Ref" : "PublicSubnet" },
+            "AssociatePublicIpAddress" : "true",
+            "DeviceIndex" : "0",
+            "GroupSet" : [ { "Ref" : "PrivateAgentSecurityGroup" }, { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
+            "DeleteOnTermination" : "true"
+          }
+        ]
+      }
+    },
+    "MasterToPublicAgentIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "MasterSecurityGroup" }
+      }
+    },
+    "PublicAgentToMasterIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "MasterSecurityGroup" },
+        "IpProtocol" : "-1",
+        "FromPort" : "0",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId" : { "Ref" : "PublicAgentSecurityGroup" }
+        }
+    },
+    "PublicAgentIngressOne" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "tcp",
+        "FromPort" : "0",
+        "ToPort" : "21",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    },
+    "PublicAgentIngressTwo" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "tcp",
+        "FromPort" : "23",
+        "ToPort" : "5050",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    },
+    "PublicAgentIngressThree" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "tcp",
+        "FromPort" : "5052",
+        "ToPort" : "65535",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    },
+    "PublicAgentIngressFour" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "udp",
+        "FromPort" : "0",
+        "ToPort" : "21",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    },
+    "PublicAgentIngressFive" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "udp",
+        "FromPort" : "23",
+        "ToPort" : "5050",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    },
+    "PublicAgentIngressSix" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
+        "IpProtocol" : "udp",
+        "FromPort" : "5052",
+        "ToPort" : "65535",
+        "CidrIp" : "0.0.0.0/0"
+        }
+    }
+  },
+    "Outputs" : {
+        "PrivateAgentSecurityGroupId": {
+            "Value" : { "Ref" : "PrivateAgentSecurityGroup" },
+            "Description" : "Security group used by Mesos Private Agents"
+        },
+        "PublicAgentSecurityGroupId": {
+            "Value" : { "Ref" : "PublicAgentSecurityGroup" },
+            "Description" : "Security group used by Mesos Public Agents"
+        },
+        "MasterSecurityGroupId": {
+            "Value" : { "Ref" : "MasterSecurityGroup" },
+            "Description" : "Security group used by Mesos Masters"
+        },
+        "LbSecurityGroupId": {
+            "Value" : { "Ref" : "LbSecurityGroup" },
+            "Description" : "Security group used by Mesos Load Balancers"
+        },
+        "AdminSecurityGroupId": {
+            "Value" : { "Ref" : "AdminSecurityGroup" },
+            "Description" : "Security group used for Mesos Admin UI"
+        },
+        "ExhibitorS3BucketId": {
+          "Value" : { "Ref" : "ExhibitorS3Bucket" },
+          "Description": "S3 bucket name for use by Exhibitor"
+        }
+    }
+}

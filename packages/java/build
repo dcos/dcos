@@ -1,0 +1,15 @@
+#!/bin/bash
+set -o errexit -o nounset -o pipefail
+
+mkdir -p "$PKG_PATH/usr"
+cp -rp "/pkg/src/java" "$PKG_PATH/usr"
+
+#edit JVM DNS caching timeout
+echo "" >> $PKG_PATH/usr/java/jre/lib/security/java.security
+echo "#Updated DNS cache ttl" >> $PKG_PATH/usr/java/jre/lib/security/java.security
+echo "networkaddress.cache.ttl=10" >> $PKG_PATH/usr/java/jre/lib/security/java.security
+
+mkdir -p "$PKG_PATH/bin"
+ln -s "$PKG_PATH/usr/java/bin/java" "$PKG_PATH/bin/java"
+ln -s "$PKG_PATH/usr/java/bin/java_vm" "$PKG_PATH/bin/java_vm"
+ln -s "$PKG_PATH/usr/java/bin/jps" "$PKG_PATH/bin/jps"

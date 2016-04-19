@@ -1,0 +1,8 @@
+#!/bin/bash
+cd "/pkg/src/dcos-installer-ui"
+npm install
+echo "module.exports = {};" > ./src/js/config/Config.dev.js
+
+npm run dist
+
+cp -r dist/ "$PKG_PATH"/usr

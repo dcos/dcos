@@ -1,0 +1,9 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "git",
+    "git": "https://github.com/kennethreitz/requests",
+    "ref": "fa338da717124188b21d48df55f2fa9aca459d12",
+    "ref_origin": "v2.6.0"
+  }
+}

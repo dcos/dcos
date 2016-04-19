@@ -1,0 +1,39 @@
+#!/bin/bash
+export GOPATH=$GOPATH:/pkg
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/3dt /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/3dt/
+go get
+go install
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-ddt.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-ddt.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-ddt.service
+mkdir -p $(dirname $master_service)
+mkdir -p $(dirname $slave_service)
+mkdir -p $(dirname $slave_public_service)
+cat <<EOF | tee $slave_service $slave_public_service
+[Unit]
+Description=Diagnostics: DC/OS Distributed Diagnostics Tool
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+ExecStart=/opt/mesosphere/bin/3dt
+EOF
+
+cat <<EOF | tee $master_service
+[Unit]
+Description=Diagnostics: DC/OS Distributed Diagnostics Tool Master API and Aggregation Service
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
+ExecStart=/opt/mesosphere/bin/3dt -pull
+EOF

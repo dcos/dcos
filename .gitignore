@@ -1,0 +1,25 @@
+__pycache__
+this
+.idea/
+dcos-config--setup*.tar.xz
+tmp/
+runner.env
+artifacts/
+dcos_install.sh
+onprem.tar.xz
+*~
+*backups
+.cache
+docker-tag
+.tox/
+dcos_generate_config.sh
+.*.swp
+*.egg-info
+wheelhouse/
+./dcos-release.config.yaml
+
+# Integration tests related:
+test/build/*
+PASSED
+FAILED
+test/.vagrant/*

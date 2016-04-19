@@ -1,0 +1,9 @@
+{
+  "docker": "golang:1.6",
+  "single_source" : {
+    "kind": "git",
+    "git": "git@github.com:dcos/dcos-signal.git",
+    "ref": "27b9cefb7f1f81f758a9669b8ee320d17dcab65d",
+    "ref_origin": "master"
+  }
+}

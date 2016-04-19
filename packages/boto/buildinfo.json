@@ -1,0 +1,25 @@
+{
+  "requires": ["python", "six", "python-dateutil", "python-requests"],
+  "sources": {
+    "boto3": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/b/boto3/boto3-1.1.4-py2.py3-none-any.whl",
+      "sha1": "8e2062c763c9e1e1c7a4472491e0b4391bdca560"
+    },
+    "jmespath": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/j/jmespath/jmespath-0.9.0-py2.py3-none-any.whl",
+      "sha1": "742976d7293dd23de008b38e8eea9a0c3bb20294"
+    },
+    "futures": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/f/futures/futures-2.2.0-py2.py3-none-any.whl",
+      "sha1": "51a5e9bf2ef09ec23971d57c8ae83719f997d485"
+    },
+    "botocore": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/b/botocore/botocore-1.2.11-py2.py3-none-any.whl",
+      "sha1": "47abb55830a2dde21859406802f828cbeb7c73f6"
+    }
+  }
+}

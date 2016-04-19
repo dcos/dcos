@@ -1,0 +1,22 @@
+coreos:
+  units:
+    - name: format-var-lib-ephemeral.service
+      command: start
+      content: |
+        [Unit]
+        Description=AWS Setup: Formats the /var/lib ephemeral drive
+        Before=var-lib.mount dbus.service
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/bin/bash -c "(blkid -t TYPE=ext4 | grep xvdb) || (/usr/sbin/mkfs.ext4 -F /dev/xvdb)"
+    - name: var-lib.mount
+      command: start
+      content: |
+        [Unit]
+        Description=AWS Setup: Mount /var/lib
+        Before=dbus.service
+        [Mount]
+        What=/dev/xvdb
+        Where=/var/lib
+        Type=ext4

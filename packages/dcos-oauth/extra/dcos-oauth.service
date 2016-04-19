@@ -1,0 +1,16 @@
+[Unit]
+Description=OAuth: OAuth Authentication Service
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+ConditionPathExists=/opt/mesosphere/etc/dcos-oauth.env
+EnvironmentFile=/etc/environment
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
+ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos
+ExecStartPre=/bin/bash -c "/opt/mesosphere/bin/python -c \"import random, string; print(''.join(random.choice(string.ascii_letters) for _ in range(64)))\" | /opt/mesosphere/bin/zk-value-consensus /dcos/auth-token-secret > /var/lib/dcos/auth-token-secret"
+ExecStartPre=/bin/chmod 600 /var/lib/dcos/auth-token-secret
+ExecStart=/opt/mesosphere/bin/dcos-oauth serve --addr=127.0.0.1:8101 --zk-addr=127.0.0.1:2181 --secret-key-path=/var/lib/dcos/auth-token-secret --segment-key=51ybGTeFEFU1xo6u10XMDrr6kATFyRyh

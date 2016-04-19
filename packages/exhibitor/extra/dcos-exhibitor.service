@@ -1,0 +1,16 @@
+[Unit]
+Description=Exhibitor: Zookeeper Supervisor Service
+After=network-online.target
+[Service]
+StandardOutput=journal
+StandardError=journal
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+MountFlags=private
+RuntimeDirectory=dcos_exhibitor
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dns_config
+EnvironmentFile=/opt/mesosphere/etc/exhibitor
+# run in new mount namespace to create custom resolv.conf
+ExecStart=/usr/bin/unshare --mount $PKG_PATH/usr/exhibitor/start_exhibitor.py

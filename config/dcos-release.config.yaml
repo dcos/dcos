@@ -1,0 +1,11 @@
+storage:
+  aws:
+    kind: aws_s3
+    bucket: downloads.dcos.io
+    object_prefix: dcos
+    download_url: https://downloads.dcos.io/dcos/
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    region_name: us-west-2
+options:
+  preferred: aws

@@ -1,0 +1,9 @@
+{
+  "requires": ["openssl"],
+  "single_source": {
+    "kind": "git",
+    "git": "https://github.com/libevent/libevent",
+    "ref": "c51b159cff9f5e86696f5b9a4c6f517276056258",
+    "ref_origin": "release-2.0.22-stable"
+  }
+}

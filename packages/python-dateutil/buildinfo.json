@@ -1,0 +1,10 @@
+{
+  "requires": ["python"],
+  "sources": {
+    "python-dateutil": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/any/p/python-dateutil/python_dateutil-2.4.2-py2.py3-none-any.whl",
+      "sha1": "92219a524cb3e24606b064b98deb6a9ad437e0a3"
+     }
+  }
+}

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+mkdir -p "/build"
+mkdir -p "$PKG_PATH/etc"
+
+# TODO(cmaloney): Fix the rpath
+pushd "/pkg/src/openssl"
+./Configure "--prefix=$PKG_PATH" \
+  --openssldir="$PKG_PATH/etc/ssl" \
+  shared \
+  zlib \
+  no-krb5 \
+  linux-x86_64 \
+  -Wa,--noexecstack \
+  -O2 -DFORTIFY_SOURCE=2
+
+make depend
+make
+make install
+
+# TODO(cmaloney): This sort of stripping static libraries should be a generic
+# mkpanda option to apply to any package.
+find "$PKG_PATH/lib/" ! -type d -name "*.a" -exec rm -f -- '{}' +

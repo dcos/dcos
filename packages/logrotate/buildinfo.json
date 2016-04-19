@@ -1,0 +1,7 @@
+{
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz",
+    "sha1": "7ba734cd1ffa7198b66edc4bca17a28ea8999386"
+  }
+}

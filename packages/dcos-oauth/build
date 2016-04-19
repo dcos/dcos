@@ -1,0 +1,16 @@
+#!/bin/bash -xe
+
+export GOPATH=/pkg:$GOPATH
+mkdir -p /pkg/src/github.com/dcos
+mv /pkg/src/dcos-oauth /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/dcos-oauth
+make install
+
+mkdir -p $PKG_PATH/bin
+cp -v /pkg/bin/dcos-oauth $PKG_PATH/bin
+
+# Create the service file
+service="$PKG_PATH/dcos.target.wants_master/dcos-oauth.service"
+mkdir -p "$(dirname "$service")"
+
+cp /pkg/extra/dcos-oauth.service "$service"

@@ -1,0 +1,92 @@
+import os
+import socket
+import stat
+
+
+def validate_ssh_user(ssh_user):
+    assert ssh_user, 'ssh_user must be set'
+    assert isinstance(ssh_user, str), 'ssh_user must be a string'
+
+
+def validate_ssh_key_path(ssh_key_path):
+    assert isinstance(ssh_key_path, str), 'ssh_key_path must be a string'
+    assert ssh_key_path, 'ssh_key_path must be set'
+    assert os.path.isfile(ssh_key_path), 'could not find ssh private key: {}'.format(ssh_key_path)
+    assert stat.S_IMODE(
+        os.stat(ssh_key_path).st_mode) & (stat.S_IRWXG + stat.S_IRWXO) == 0, (
+            'ssh_key_path must be only read / write / executable by the owner. It may not be read / write / executable '
+            'by group, or other.')
+    with open(ssh_key_path) as fh:
+        assert 'ENCRYPTED' not in fh.read(), ('Encrypted SSH keys (which contain passphrases) '
+                                              'are not allowed. Use a key without a passphrase.')
+
+
+def validate_ssh_port(ssh_port):
+    # Validate ssh port between 1 - 32000
+    assert isinstance(ssh_port, int), 'ssh port should be integer'
+    assert 1 <= ssh_port <= 32000, 'ssh port should be int between 1 - 32000'
+
+
+def validate_hosts_list(agent_list):
+    assert agent_list, 'agent_list must be set'
+    assert isinstance(agent_list, list), 'agent_list must be a list'
+    assert len(agent_list) > 0, 'agent_list should have at least 1 entry'
+    check_duplicates(agent_list)
+    check_ipv4_addrs(agent_list)
+
+
+def validate_master_agent_lists(master_list, agent_list):
+    validate_hosts_list(master_list)
+    assert isinstance(agent_list, list), 'agent_list must be provided along with master_list'
+    assert len(agent_list) > 0, 'agent_list must have at least one entry'
+    compare_lists(master_list, agent_list)
+
+
+def check_duplicates(arg_list):
+    assert isinstance(arg_list, list), 'only lists can be verified for duplicates'
+    dups = list(filter(lambda x: arg_list.count(x) > 1, arg_list))
+    assert len(dups) == 0, 'List cannot contain duplicates: {}'.format(', '.join(set(dups)))
+
+
+def compare_lists(first_list, second_list):
+    assert isinstance(first_list, list), 'can compare only lists'
+    assert isinstance(second_list, list), 'can compare only lists'
+    dups = set(first_list) & set(second_list)
+    assert len(dups) == 0, 'master_list and agent_list cannot contain duplicates {}'.format(', '.join(dups))
+
+
+def check_ipv4_addrs(ips):
+    assert isinstance(ips, list)
+    invalid_ips = []
+    for ip in ips:
+        try:
+            socket.inet_pton(socket.AF_INET, str(ip))
+        except OSError:
+            invalid_ips.append(ip)
+    assert not len(invalid_ips), ('Only IPv4 values are allowed. The following are invalid IPv4 addresses: '
+                                  '{}'.format(invalid_ips))
+
+
+def validate_config(config):
+    assert isinstance(config, dict)
+
+    ssh_keys_checks_map = {
+        'ssh_user': validate_ssh_user,
+        'ssh_port': validate_ssh_port,
+        'ssh_key_path': validate_ssh_key_path,
+        'agent_list': validate_hosts_list,
+        'master_list': lambda master_list: validate_master_agent_lists(master_list, config.get('agent_list'))
+    }
+
+    errors = {}
+    for ssh_key, validate_func in ssh_keys_checks_map.items():
+        input_value = config.get(ssh_key)
+        if not input_value:
+            errors[ssh_key] = 'required parameter {} was not provided'.format(ssh_key)
+            continue
+
+        try:
+            validate_func(input_value)
+        except AssertionError as err:
+            errors[ssh_key] = str(err)
+    return errors

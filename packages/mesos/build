@@ -1,0 +1,65 @@
+#!/bin/bash
+libdir="$PKG_PATH/lib"
+
+# TODO(cmaloney): Check prerequisites installed (glog, protobuf, boost)
+pushd "/pkg/src/mesos"
+./bootstrap
+
+mkdir -p build
+pushd build
+# TODO(cmaloney): --with-glog=/usr --with-protobuf=/usr --with-boost=/usr
+# TODO(cmaloney): DESTDIR builds so we don't have to build as root?
+"/pkg/src/mesos/configure" \
+  --prefix="$PKG_PATH" --enable-optimize --disable-python \
+  --with-ssl=/opt/mesosphere/active/openssl \
+  --with-libevent=/opt/mesosphere/active/libevent \
+  --with-glog=/opt/mesosphere/active/mesos-buildenv \
+  --with-protobuf=/opt/mesosphere/active/mesos-buildenv \
+  --with-boost=/opt/mesosphere/active/mesos-buildenv \
+  --with-curl=/opt/mesosphere/active/curl \
+  --sbindir="$PKG_PATH/bin"
+# TODO(cmaloney): -j8 is almost certainly wrong.
+make -j8
+
+make install
+cp src/java/target/mesos-*.jar "$libdir"
+popd
+popd
+
+# TODO(cmaloney): Make these a seperate mesos library package.
+# Copy the shared libraries from the system which mesos requires
+cp /usr/lib/x86_64-linux-gnu/libsasl2.so.2 "$libdir"
+cp -r /usr/lib/x86_64-linux-gnu/sasl2 "$libdir"
+cp /usr/lib/x86_64-linux-gnu/libsvn_delta-1.so.1 "$libdir"
+cp /usr/lib/x86_64-linux-gnu/libsvn_subr-1.so.1 "$libdir"
+cp /usr/lib/x86_64-linux-gnu/libapr-1.so.0 "$libdir"
+cp /usr/lib/x86_64-linux-gnu/libaprutil-1.so.0 "$libdir"
+
+export PKG_PATH=$PKG_PATH
+systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-mesos-master.service
+mkdir -p "$(dirname "$systemd_master")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-master.service > "$systemd_master"
+
+systemd_slave="$PKG_PATH"/dcos.target.wants_slave/dcos-mesos-slave.service
+mkdir -p "$(dirname "$systemd_slave")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave.service > "$systemd_slave"
+
+systemd_slave_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-mesos-slave-public.service
+mkdir -p "$(dirname "$systemd_slave_public")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_slave_public"
+
+# setup additonal volume service which discovers /dcos/volumeN mounts and creates an optional
+# EnvironmentFile that contains a MESOS_RESOURCES env variable. This MESOS_RESOURCES adds
+# Mount resources to another existing MESOS_RESOURCES variable, which means the EnvironmentFile
+# created by this service has to be the last
+public_volume_service="$PKG_PATH"/dcos.target.wants_slave_public/dcos-vol-discovery-pub-agent.service
+mkdir -p "$(dirname ${public_volume_service})"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-vol-discovery-pub-agent.service > "$public_volume_service"
+
+private_volume_service="$PKG_PATH"/dcos.target.wants_slave/dcos-vol-discovery-priv-agent.service
+mkdir -p "$(dirname ${private_volume_service})"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-vol-discovery-priv-agent.service > "$private_volume_service"
+
+disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
+cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
+chmod +x "$disk_resource_script"

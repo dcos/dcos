@@ -1,0 +1,183 @@
+{
+   "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+    "DcosImageCommit": "unset",
+    "TemplateGenerationDate": "unset"
+    },
+    "Parameters": {
+        "KeyName": {
+          "Type": "AWS::EC2::KeyPair::KeyName",
+          "Description": "\nSpecify your AWS EC2 Key Pair."
+        },
+        "Vpc": {
+          "Description" : "\nExisting VPC to use. Nodes will be launched using subnets and Internet Gateway under this VPC",
+          "Type": "AWS::EC2::VPC::Id"
+        },
+        "PublicSubnet": {
+          "Description" : "\nSubnet ID for use by all public agent nodes",
+          "Type": "AWS::EC2::Subnet::Id"
+        },
+        "PrivateSubnet": {
+          "Description" : "\nSubnet ID for use by all private agent nodes",
+          "Type": "AWS::EC2::Subnet::Id"
+        },
+        "InternetGateway": {
+          "Description" : "\nInternet Gateway ID, must be attached to the 'Vpc'. Used by all nodes for outgoing Internet access.",
+          "Type": "String"
+        },
+        "PublicAgentInstanceCount": {
+          "Type": "Number",
+          "Default": "5",
+          "Description": "\nSpecify the number of public agent nodes or accept the default."
+        },
+        "PrivateAgentInstanceCount": {
+          "Type": "Number",
+          "Default": "5",
+          "Description": "\nSpecify the number of private agent nodes or accept the default."
+        },
+        "MasterInstanceType": {
+          "Type": "String",
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+        },
+        "PublicAgentInstanceType": {
+          "Type": "String",
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+        },
+        "PrivateAgentInstanceType": {
+          "Type": "String",
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+        }
+    },
+   "Resources": {
+       "Infrastructure": {
+           "Type": "AWS::CloudFormation::Stack",
+           "Properties": {
+               "TemplateURL": "{{ cloudformation_s3_url }}/{{ channel_commit_path }}/cloudformation/infra.json",
+               "TimeoutInMinutes": "60",
+               "Parameters": {
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "Vpc": {
+                      "Ref": "Vpc"
+                    },
+                    "PublicSubnet": {
+                      "Ref": "PublicSubnet"
+                    },
+                    "PrivateSubnet": {
+                      "Ref": "PrivateSubnet"
+                    },
+                    "InternetGateway": {
+                      "Ref": "InternetGateway"
+                    }                }
+           }
+       },
+       "MasterStack": {
+           "DependsOn": ["Infrastructure"],
+           "Type": "AWS::CloudFormation::Stack",
+           "Properties": {
+               "TemplateURL": "{{ cloudformation_s3_url }}/{{ channel_commit_path }}/cloudformation/{{ variant_prefix }}advanced-master-{{ num_masters }}.json",
+               "Parameters": {
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "PublicSubnet": {
+                      "Ref": "PublicSubnet"
+                    },
+                    "PrivateSubnet": {
+                      "Ref": "PrivateSubnet"
+                    },
+                    "AdminSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.AdminSecurityGroupId" ]
+                    },
+                    "MasterSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.MasterSecurityGroupId" ]
+                    },
+                    "LbSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.LbSecurityGroupId" ]
+                    },
+                    "PublicAgentSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.PublicAgentSecurityGroupId" ]
+                    },
+                    "PrivateAgentSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.PrivateAgentSecurityGroupId" ]
+                    },
+                    "MasterInstanceType": {
+                      "Ref": "MasterInstanceType"
+                    },
+                    "ExhibitorS3Bucket": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.ExhibitorS3BucketId" ]
+                    }
+               },
+               "TimeoutInMinutes": "60"
+           }
+       },
+       "PublicAgentStack": {
+           "DependsOn": ["Infrastructure", "MasterStack"],
+           "Type": "AWS::CloudFormation::Stack",
+           "Properties": {
+               "TemplateURL": "{{ cloudformation_s3_url }}/{{ channel_commit_path }}/cloudformation/{{ variant_prefix }}advanced-pub-agent.json",
+               "Parameters": {
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "InternalMasterLoadBalancerDnsName": {
+                      "Fn::GetAtt" : [ "MasterStack", "Outputs.InternalMasterLoadBalancerDnsName" ]
+                    },
+                    "PublicAgentSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.PublicAgentSecurityGroupId" ]
+                    },
+                    "PublicSubnet": {
+                      "Ref": "PublicSubnet"
+                    },
+                    "PublicAgentInstanceType": {
+                      "Ref": "PublicAgentInstanceType"
+                    },
+                    "PublicAgentInstanceCount": {
+                      "Ref": "PublicAgentInstanceCount"
+                    }
+               },
+               "TimeoutInMinutes": "60"
+           }
+       },
+       "PrivateAgentStack": {
+           "DependsOn": ["Infrastructure", "MasterStack"],
+           "Type": "AWS::CloudFormation::Stack",
+           "Properties": {
+               "TemplateURL": "{{ cloudformation_s3_url }}/{{ channel_commit_path }}/cloudformation/{{ variant_prefix }}advanced-priv-agent.json",
+               "Parameters": {
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "InternalMasterLoadBalancerDnsName": {
+                      "Fn::GetAtt" : [ "MasterStack", "Outputs.InternalMasterLoadBalancerDnsName" ]
+                    },
+                    "PrivateAgentSecurityGroup": {
+                      "Fn::GetAtt" : [ "Infrastructure", "Outputs.PrivateAgentSecurityGroupId" ]
+                    },
+                    "PrivateSubnet": {
+                      "Ref": "PrivateSubnet"
+                    },
+                    "PrivateAgentInstanceType": {
+                      "Ref": "PrivateAgentInstanceType"
+                    },
+                    "PrivateAgentInstanceCount": {
+                      "Ref": "PrivateAgentInstanceCount"
+                    }
+               },
+               "TimeoutInMinutes": "60"
+           }
+       }
+   },
+   "Outputs": {
+       "StackRef": {
+           "Value": { "Ref": "MasterStack" }
+       },
+       "OutputFromNestedStack": {
+           "Value": { "Fn::GetAtt": [ "MasterStack", "Outputs.MasterDNSName" ]}
+       }
+   }
+}

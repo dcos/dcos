@@ -1,0 +1,7 @@
+{
+  "exclude": [
+    "dcos-installer",
+    "dcos-installer-ui"
+  ]
+}
+

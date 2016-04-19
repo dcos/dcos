@@ -1,0 +1,3 @@
+{
+  "requires": ["python", "python-kazoo", "python-retrying"]
+}

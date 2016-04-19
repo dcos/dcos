@@ -1,0 +1,28 @@
+#!/bin/bash
+# Build
+mkdir -p build
+pushd build
+
+export CFLAGS=-I/opt/mesosphere/include
+export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+export CXXFLAGS=-I/opt/mesosphere/include
+
+/pkg/src/python/configure --enable-shared --prefix="$PKG_PATH" --enable-ipv6 --with-threads --with-computed-gotos
+make -j8
+make install
+
+# Remove some big things we don't use at all
+rm -rf "$PKG_PATH/lib/python3.4/test"
+
+# TODO(cmaloney): This sort of stripping static libraries should be a generic
+# mkpanda option to apply to any package.
+find "$PKG_PATH/lib/" ! -type d -name "*.a" -exec rm -f -- '{}' +
+
+# Setup helper symlinks
+ln -s "$PKG_PATH/bin/python3" "$PKG_PATH/bin/python"
+ln -s "$PKG_PATH/bin/easy_install-3.4" "$PKG_PATH/bin/easy_install-3"
+ln -s "$PKG_PATH/bin/easy_install-3" "$PKG_PATH/bin/easy_install"
+ln -s "$PKG_PATH/bin/pip3" "$PKG_PATH/bin/pip"
+ln -s "$PKG_PATH/bin/python3-config" "$PKG_PATH/bin/python-config"
+ln -s "$PKG_PATH/bin/idle3" "$PKG_PATH/bin/idle"
+ln -s "$PKG_PATH/bin/pydoc3"  "$PKG_PATH/bin/pydoc"

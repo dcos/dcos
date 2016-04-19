@@ -1,0 +1,37 @@
+#!/bin/bash
+set -o errexit -o nounset -o pipefail
+
+# Zookeeper
+
+mkdir -p "$PKG_PATH/usr"
+cp -rp "/pkg/src/zookeeper" "$PKG_PATH/usr"
+rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib}
+
+mkdir -p "$PKG_PATH/bin"
+ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
+
+# Exhibitor
+
+# Generate the build artifacts and store in the local cache, to be used later
+# during the Maven packaging step.
+cd /pkg/src/exhibitor
+./gradlew install
+./gradlew -b exhibitor-standalone/src/main/resources/buildscripts/standalone/gradle/build.gradle shadowJar
+
+exhibitor_path="$PKG_PATH"/usr/exhibitor
+mkdir -p "$exhibitor_path"
+pushd "$exhibitor_path"
+cp /pkg/src/exhibitor/exhibitor-standalone/src/main/resources/buildscripts/standalone/gradle/build/libs/exhibitor-1.5.6-SNAPSHOT-all.jar exhibitor.jar
+popd
+
+exhibitor_service="$PKG_PATH/dcos.target.wants_master/dcos-exhibitor.service"
+mkdir -p $(dirname "$exhibitor_service")
+envsubst '$PKG_PATH' < /pkg/extra/dcos-exhibitor.service > "$exhibitor_service"
+
+exhibitor_start_wrapper="$PKG_PATH/usr/exhibitor/start_exhibitor.py"
+envsubst '$PKG_PATH' < /pkg/extra/start_exhibitor.py > "$exhibitor_start_wrapper"
+chmod +x "$exhibitor_start_wrapper"
+
+exhibitor_wait="$PKG_PATH/bin/exhibitor_wait.py"
+cp /pkg/extra/exhibitor_wait.py "$exhibitor_wait"
+chmod +x "$exhibitor_wait"

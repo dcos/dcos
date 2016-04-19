@@ -1,0 +1,7 @@
+{
+	"requires": ["mesos", "mesos-config"],
+	"environment": {
+		"FOO": "BAR",
+		"BAZ": "TEST"
+	}
+}

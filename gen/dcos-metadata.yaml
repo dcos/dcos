@@ -1,0 +1,16 @@
+package:
+  - path: /pkginfo.json
+    content: |
+      {
+        "environment": {
+          "DCOS_VERSION": "{{ dcos_version }}",
+          "DCOS_IMAGE_COMMIT": "{{ dcos_image_commit }}"
+        }
+      }
+  - path: /etc/dcos-version.json
+    content: |
+      {
+        "version": "{{ dcos_version }}",
+        "dcos-image-commit": "{{ dcos_image_commit }}",
+        "bootstrap-id": "{{ bootstrap_id }}"
+      }

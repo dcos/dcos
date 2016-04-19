@@ -1,0 +1,56 @@
+#!/bin/bash
+# Build
+mkdir -p build
+pushd build
+
+cd /pkg/src/logrotate
+./autogen.sh
+./configure --prefix="$PKG_PATH" --sbindir="$PKG_PATH/bin"
+make
+make install
+
+
+config_file="$PKG_PATH/etc/logrotate.conf"
+mkdir -p $(dirname $config_file)
+cat <<'EOF' > "$config_file"
+compress
+delaycompress
+notifempty
+missingok
+nomail
+
+/var/log/mesos/* {
+    olddir /var/log/mesos/archive
+    maxsize 2000k
+    daily
+    rotate 7
+    copytruncate
+    postrotate
+        find  /var/log/mesos /var/log/mesos/archive -mtime +14 -delete
+    endscript
+}
+EOF
+
+
+logrotate_service="$PKG_PATH/dcos.target.wants/dcos-logrotate.service"
+mkdir -p "$(dirname "$logrotate_service")"
+cat <<EOF > "$logrotate_service"
+[Unit]
+Description=Logrotate: Rotate various logs on the system
+[Service]
+Type=simple
+EnvironmentFile=/etc/environment
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/usr/bin/mkdir -p /var/log/mesos/archive
+ExecStart=$PKG_PATH/bin/logrotate $config_file
+EOF
+
+logrotate_timer="$PKG_PATH/dcos.target.wants/dcos-logrotate.timer"
+mkdir -p "$(dirname "$logrotate_timer")"
+cat <<'EOF' > "$logrotate_timer"
+[Unit]
+Description=Logrotate Timer: Timer to trigger every 2 minutes
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+EOF

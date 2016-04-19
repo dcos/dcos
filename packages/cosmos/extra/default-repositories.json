@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Universe-1.7",
+    "uri": "https://universe.mesosphere.com/repo-1.7"
+  },
+  {
+    "name": "Universe",
+    "uri": "https://universe.mesosphere.com/repo"
+  }
+]

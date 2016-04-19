@@ -1,0 +1,28 @@
+#!/bin/bash
+set -x
+
+export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/ncurses/include -I/opt/mesosphere/active/openssl/include"
+export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/active/ncurses/lib -Wl,-rpath=/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/lib"
+export CXXFLAGS=CFLAGS
+
+pushd /pkg/src/erlang
+./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe
+make -j8
+make install
+popd
+
+service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
+mkdir -p $(dirname $service)
+cat <<EOF > $service
+[Unit]
+Description=Erlang Port Mapping Daemon: DC/OS Erlang Port Mapping Daemon
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+WorkingDirectory=${PKG_PATH}
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=${PKG_PATH}/bin/epmd -port 61420
+Environment=HOME=/opt/mesosphere
+EOF

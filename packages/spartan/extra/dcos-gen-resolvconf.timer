@@ -1,0 +1,5 @@
+[Unit]
+Description=Generate resolv.conf Timer: Periodically update systemd-resolved for mesos-dns
+[Timer]
+OnBootSec=5sec
+OnUnitActiveSec=1min

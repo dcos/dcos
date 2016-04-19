@@ -1,0 +1,223 @@
+package:
+  - path: /pkginfo.json
+    content: |
+      {
+        "environment": {
+          "MESOS_IP_DISCOVERY_COMMAND": "/opt/mesosphere/bin/detect_ip",
+          "PROVIDER": "{{ provider }}"
+        }
+      }
+  - path: /bin/detect_ip
+    permissions: "0755"
+    content: {{ ip_detect_contents }}
+  - path: /check/check_ip
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      ip=$(/opt/mesosphere/bin/detect_ip)
+      if [[ "$ip" =~ ^([0-9]{1,3})[.]([0-9]{1,3})[.]([0-9]{1,3})[.]([0-9]{1,3})$ ]];then
+        for (( i=1; i<${{ curly_pound }}BASH_REMATCH[@]}; ++i ))
+          do
+            (( ${BASH_REMATCH[$i]} <= 255 )) || { echo "Not a valid ip $ip" >&2; exit 1; }
+          done
+      else
+        echo "Not a valid ip: $ip" >&2
+        exit 1;
+      fi
+  - path: /etc_master/master_count
+    content: |
+      {{ num_masters }}
+  - path: /etc/spartan.json
+    content: |
+      {
+        "upstream_resolvers": {{ resolvers }},
+        "local_addresses": ["198.51.100.1", "198.51.100.2", "198.51.100.3"],
+        "udp_port": 53,
+        "tcp_port": 53
+      }
+  - path: /etc/mesos-dns.json
+    content: |
+      {
+        "zk": "zk://127.0.0.1:2181/mesos",
+        "refreshSeconds": 30,
+        "ttl": 60,
+        "domain": "mesos",
+        "port": 61053,
+        {{ mesos_dns_resolvers_str }},
+        "timeout": 5,
+        "listener": "0.0.0.0",
+        "email": "root.mesos-dns.mesos",
+        "IPSources": {{ mesos_dns_ip_sources }}
+      }
+  - path: /etc/mesos-master
+    content: |
+      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_REGISTRY_STORE_TIMEOUT=60secs
+      MESOS_REGISTRY_FETCH_TIMEOUT=60secs
+      MESOS_REGISTRY_STRICT=false
+      MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
+      MESOS_OFFER_TIMEOUT=2mins
+      MESOS_WORK_DIR=/var/lib/mesos/master
+      MESOS_ZK=zk://127.0.0.1:2181/mesos
+      MESOS_WEIGHTS={{ weights }}
+      MESOS_QUORUM={{ master_quorum }}
+      MESOS_HOSTNAME_LOOKUP=false
+      MESOS_MAX_SLAVE_PING_TIMEOUTS=20
+      GLOG_drop_log_memory=false
+      SASL_PATH=/opt/mesosphere/lib/sasl2
+  - path: /etc/mesos-master-provider
+    content: |
+      MESOS_CLUSTER={{ cluster_name }}
+  - path: /etc/mesos-slave-modules.json
+    content: |
+      {{ mesos_slave_modules_json }}
+  - path: /etc/mesos-slave-common
+    content: |
+      MESOS_MASTER=zk://leader.mesos:2181/mesos
+      MESOS_CONTAINERIZERS=docker,mesos
+      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
+      MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
+      MESOS_ISOLATION={{ mesos_isolation_modules }}
+      MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
+      MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_CGROUPS_ENABLE_CFS=true
+      MESOS_CGROUPS_LIMIT_SWAP=false
+      MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
+      MESOS_GC_DELAY={{ gc_delay }}
+      MESOS_HOSTNAME_LOOKUP=false
+      GLOG_drop_log_memory=false
+      {{ mesos_hooks_env_var }}
+  - path: /etc/mesos-slave
+    content: |
+      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
+  - path: /etc/mesos-slave-public
+    content: |
+      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
+      MESOS_DEFAULT_ROLE=slave_public
+      MESOS_ATTRIBUTES=public_ip:true
+  - path: /etc/mesos-executor-environment.json
+    content: |
+      {
+        "PATH": "/usr/bin:/bin",
+        "SHELL": "/usr/bin/bash",
+        "LD_LIBRARY_PATH": "/opt/mesosphere/lib",
+        "SASL_PATH": "/opt/mesosphere/lib/sasl2"
+      }
+  - path: /etc/dns_search_config
+    content: |
+      {{ dcos_gen_resolvconf_search_str }}
+  - path: /etc/minuteman/overrides.json
+    content: |
+      {
+        "forward_metrics": {{ minuteman_forward_metrics }}
+      }
+  - path: /etc/dcos-signal-config.json
+    content: |
+      {
+        "gen_provider": "{{ provider }}",
+        "enabled": "{{ telemetry_enabled }}"
+      }
+  - path: /etc/adminrouter.env
+    content: |
+      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ oauth_enabled }}
+  - path: /etc/dcos-oauth.env
+    content: |
+      OAUTH_ISSUER_URL={{ oauth_issuer_url }}
+      OAUTH_CLIENT_ID={{ oauth_client_id }}
+      OAUTH_AUTH_REDIRECTOR={{ oauth_auth_redirector }}
+{% switch master_discovery %}
+{% case "master_http_loadbalancer" %}
+  - path: /etc/dns_config
+    content: |
+      MASTER_SOURCE=exhibitor
+      EXHIBITOR_ADDRESS={{ exhibitor_address }}
+      RESOLVERS={{ resolvers_str }}
+{% case "static" %}
+  - path: /etc_master/dns_config_master
+    content: |
+      TRY_LOCALHOST=true
+  - path: /etc/dns_config
+    content: |
+      MASTER_SOURCE=master_list
+      RESOLVERS={{ resolvers_str }}
+  - path: /etc/master_list
+    content: |
+      {{ master_list }}
+{% case "vrrp" %}
+  - path: /etc/keepalived
+    content: |
+      KEEPALIVED_VIRTUAL_IPADDRESS={{ keepalived_virtual_ipaddress }}
+      KEEPALIVED_INTERFACE={{ keepalived_interface }}
+      KEEPALIVED_ROUTER_ID={{ keepalived_router_id }}
+      KEEPALIVED_PASS={{ keepalived_pass }}
+  - path: /etc_master/dns_config_master
+    content: |
+      TRY_LOCALHOST=true
+  - path: /etc/dns_config
+    content: |
+      MASTER_SOURCE=exhibitor
+      EXHIBITOR_ADDRESS={{ keepalived_virtual_ipaddress }}
+      RESOLVERS={{ resolvers_str }}
+{% endswitch %}
+{% switch exhibitor_storage_backend %}
+{% case "agent_only_group_no_exhibitor" %}
+  - path: /etc/exhibitor
+    content: |
+      # File intentionally has no settings - Exhibitor is not used on DC/OS Agents
+{% case "aws_s3" %}
+  - path: /etc/exhibitor
+    content: |
+      EXHIBITOR_BACKEND=AWS_S3
+      AWS_REGION={{ aws_region }}
+      AWS_S3_BUCKET={{ s3_bucket }}
+      AWS_S3_PREFIX={{ s3_prefix }}
+{% switch exhibitor_explicit_keys %}
+{% case "true" %}
+  - path: /etc/exhibitor.properties
+    content: |
+      com.netflix.exhibitor.s3.access-key-id={{ aws_access_key_id }}
+      com.netflix.exhibitor.s3.access-secret-key={{ aws_secret_access_key }}
+{% case "false" %}
+{% endswitch %}
+{% case "shared_filesystem" %}
+  - path: /etc/exhibitor
+    content: |
+      EXHIBITOR_BACKEND=SHARED_FS
+      EXHIBITOR_FSCONFIGDIR={{ exhibitor_fs_config_dir }}
+{% case "static" %}
+  - path: /etc/exhibitor
+    content: |
+      EXHIBITOR_BACKEND=STATIC
+      EXHIBITOR_STATICENSEMBLE={{ exhibitor_static_ensemble }}
+{% case "zookeeper" %}
+  - path: /etc/exhibitor
+    content: |
+      EXHIBITOR_BACKEND=ZK
+      ZK_CONFIG_CONNECT={{ exhibitor_zk_hosts }}
+      ZK_CONFIG_ZPATH={{ exhibitor_zk_path }}
+{% case "azure" %}
+  - path: /etc/exhibitor
+    content: |
+      EXHIBITOR_BACKEND=AZURE
+      AZURE_CONTAINER=dcos-exhibitor
+      AZURE_PREFIX={{ exhibitor_azure_prefix }}
+  - path: /etc/exhibitor.properties
+    content: |
+      com.netflix.exhibitor.azure.account-name={{ exhibitor_azure_account_name }}
+      com.netflix.exhibitor.azure.account-key={{ exhibitor_azure_account_key }}
+{% endswitch %}
+# /etc/ui-config.json is minified due to late-binding and to preserve available cloud-config space
+  - path: /etc/ui-config.json
+    content: |
+      {"uiConfiguration":{"plugins":{"banner":{"enabled":{{ ui_banner }},"backgroundColor":"{{ ui_banner_background_color }}","foregroundColor":"{{ ui_banner_foreground_color }}","headerTitle":{{ ui_banner_header_title }},"headerContent":{{ ui_banner_header_content }},"footerContent":{{ ui_banner_footer_content }},"imagePath":{{ ui_banner_image_path }},"dismissible":{{ ui_banner_dismissible }}},"branding":{"enabled":{{ ui_branding }}},"external-links": {"enabled": {{ ui_external_links }}},
+      "authentication":{"enabled":false},
+{% switch oauth_available %}
+{% case "true" %}
+      "oauth":{"enabled":{{ oauth_enabled }},"authHost":"{{ oauth_auth_host }}"},
+{% case "false" %}
+      "oauth":{"enabled":false},
+{% endswitch %}
+      "networking":{"enabled":{{ ui_networking }}},"organization":{"enabled":{{ ui_organization }}},"tracking":{"enabled":{{ telemetry_enabled }}}}}}

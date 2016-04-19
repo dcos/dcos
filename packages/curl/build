@@ -1,0 +1,46 @@
+#!/bin/bash
+
+export CPPFLAGS=-I/opt/mesosphere/include
+export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+export LD_LIBRARY_PATH=/opt/mesosphere/lib
+
+pushd /pkg/src/curl
+./buildconf
+# Configure with a base set of features as present on CoreOS. Err on the side of
+# explicitly enabling the features we need and disabling those we don't.
+./configure --disable-ares \
+            --disable-ldap \
+            --disable-ldaps \
+            --disable-smb \
+            --disable-soname-bump \
+            --disable-sspi \
+            --disable-static \
+            --enable-cookies \
+            --enable-ipv6 \
+            --enable-largefile \
+            --enable-proxy \
+            --enable-threaded-resolver \
+            --enable-versioned-symbols \
+            --prefix="$PKG_PATH" \
+            --with-random=/dev/urandom \
+            --with-ssl=/opt/mesosphere/active/openssl \
+            --with-zlib \
+            --without-axtls \
+            --without-cyassl \
+            --without-darwinssl \
+            --without-gnutls \
+            --without-gssapi \
+            --without-libidn \
+            --without-libmetalink \
+            --without-librtmp \
+            --without-libssh2 \
+            --without-nghttp2 \
+            --without-nss \
+            --without-polarssl \
+            --without-spnego \
+            --without-winidn \
+            --without-winssl \
+            --with-ca-bundle=/opt/mesosphere/active/python-requests/lib/python3.4/site-packages/requests/cacert.pem
+make -j8
+make install
+popd

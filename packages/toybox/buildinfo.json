@@ -1,0 +1,10 @@
+{
+  "requires": ["openssl", "ncurses"],
+  "sources": {
+    "toybox": {
+      "kind": "url_extract",
+      "url": "http://landley.net/toybox/downloads/toybox-0.7.0.tar.gz",
+      "sha1": "154846f3faa7fa00f48b408f607fe85f36bb349e"
+    }
+  }
+}

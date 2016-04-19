@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+
+
+"""
+Send SUCCESS signal to the CloudFormation stack as specified by the
+
+    AWS_STACK_ID
+
+environment variable. The name of the resource that is signaled (within the
+stack) is specified by the environment variable
+
+    AWS_CFN_SIGNAL_THIS_RESOURCE.
+
+According to the docs, this must correspond to "the name of the resource that
+given in the template." (sic)
+
+Obtain and use AWS IAM Temporary Security Credentials from
+
+    http://169.254.169.254/latest/meta-data/iam/security-credentials/<role>
+
+whereas <role> is specified by either
+
+    AWS_IAM_MASTER_ROLE_NAME
+    or
+    AWS_IAM_SLAVE_ROLE_NAME
+
+depending on whether this instance is a slave or master. It is considered
+master only if a file named 'master' is contained in /etc/mesosphere/roles.
+
+(Note: boto3 would query the security-credentials service automatically if
+it does not find credentials in the environment or in one of its config files.
+In this case here, explicit is better than implicit.)
+
+The SignalResource API requires a unique signal ID parameter. Although not
+clearly documented, in this case it seems to be *required* that the signal ID
+corresponds to the instance ID of the current EC2 instance. The most explicit
+way to retrieve the current instance ID is via
+http://169.254.169.254/latest/meta-data/instance-id (injection via CFN
+template is not easily done in case of instances defined by an
+AWS::IAM::InstanceProfile resource, as is the case here).
+
+References:
+
+http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#instance-metadata-security-credentials
+http://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_SignalResource.html
+http://boto3.readthedocs.org/en/latest/reference/services/cloudformation.html#CloudFormation.Client.signal_resource
+"""
+
+
+import os
+import boto3
+import requests
+
+
+EC2_METADATA_URL_BASE = 'http://169.254.169.254/latest/meta-data'
+
+
+print('cfn-signal: get parameters from environment.')
+# Fail fast when these are not available in the environment.
+region = os.environ['AWS_REGION']
+signal_stack_id = os.environ['AWS_STACK_ID']
+signal_resource_name = os.environ['AWS_CFN_SIGNAL_THIS_RESOURCE']
+master_role_name = os.environ['AWS_IAM_MASTER_ROLE_NAME']
+slave_role_name = os.environ['AWS_IAM_SLAVE_ROLE_NAME']
+
+instance_id_url = EC2_METADATA_URL_BASE + '/instance-id'
+print('cfn-signal: retrieve instance ID from %s.' % instance_id_url)
+instance_id = requests.get(instance_id_url).text
+print('cfn-signal: obtained instance ID: %s' % instance_id)
+
+assume_role_name = slave_role_name
+if 'master' in os.listdir('/etc/mesosphere/roles'):
+    print('cfn-signal: master entry found in /etc/mesosphere/roles.')
+    assume_role_name = master_role_name
+
+credential_url = '%s/iam/security-credentials/%s' % (
+    EC2_METADATA_URL_BASE, assume_role_name)
+print('cfn-signal: retrieve temporary credentials from %s.' % credential_url)
+credentials = requests.get(credential_url).json()
+secret_key = credentials['SecretAccessKey']
+access_key = credentials['AccessKeyId']
+session_token = credentials['Token']
+
+print('cfn-signal: set up boto3 CFN client using temporary credentials.')
+c = boto3.client(
+    service_name='cloudformation',
+    region_name=region,
+    aws_access_key_id=access_key,
+    aws_secret_access_key=secret_key,
+    aws_session_token=session_token
+)
+
+print('cfn-signal: send SUCCESS signal to resource %s.' % signal_resource_name)
+# It is important to use the actual Stack ID as StackName parameter:
+# The current access policy does not allow acting on the resource
+# defined only by the name.
+c.signal_resource(
+    StackName=signal_stack_id,
+    LogicalResourceId=signal_resource_name,
+    UniqueId=instance_id,
+    Status='SUCCESS'
+)

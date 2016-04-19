@@ -1,0 +1,6 @@
+# Pandapkg provided environment variables
+LD_LIBRARY_PATH=/home/cody/projects/pkgpanda/tests/resources/install_recovery_move/lib
+PATH=/usr/bin:/home/cody/projects/pkgpanda/tests/resources/install_recovery_move
+
+# package: mesos--0.22.0
+

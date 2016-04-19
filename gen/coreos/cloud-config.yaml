@@ -1,0 +1,15 @@
+coreos:
+  update:
+    reboot-strategy: "off"
+  units:
+    - name: etcd.service
+      mask: true
+      command: stop
+    - name: update-engine.service
+      mask: true
+      command: stop
+    - name: locksmithd.service
+      mask: true
+      command: stop
+    - name: systemd-resolved.service
+      command: stop

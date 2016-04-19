@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.11.tar.gz",
+    "sha1": "1a2d5df8b31124573efb9598ec6d54767f3c4cd4"
+  }
+}

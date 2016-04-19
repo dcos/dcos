@@ -1,0 +1,12 @@
+#!/bin/bash
+source /opt/mesosphere/environment.export
+export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.4/site-packages"
+mkdir -p "$LIB_INSTALL_DIR"
+
+for package in futures jmespath botocore boto3; do
+  pip3 install --no-deps --no-index --target="$LIB_INSTALL_DIR" /pkg/src/$package/*.whl
+done
+
+cfn_signal="$PKG_PATH/bin/cfn-signal"
+mkdir -p $(dirname "$cfn_signal")
+cp /pkg/extra/cfn-signal "$cfn_signal"

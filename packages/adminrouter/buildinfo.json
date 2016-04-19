@@ -1,0 +1,16 @@
+{
+  "requires": ["openssl"],
+  "sources" :{
+      "nginx": {
+          "kind": "url_extract",
+          "url": "https://s3.amazonaws.com/downloads.mesosphere.io/openresty_mirror/ngx_openresty-1.7.10.2.tar.gz",
+          "sha1": "79b086d55ba8a323e36f939026769d16072a7f27"
+      },
+      "adminrouter": {
+          "kind": "git",
+          "git": "git@github.com:dcos/adminrouter.git",
+          "ref": "3bb67d6cc6b424c606f382cb49ded6890428a1e9",
+          "ref_origin": "master"
+      }
+  }
+}

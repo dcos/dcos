@@ -1,0 +1,112 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "DC/OS AWS CloudFormation Network Stack Template",
+  "Metadata": {
+    "DcosImageCommit": "unset",
+    "TemplateGenerationDate": "unset"
+  },
+  "Conditions" : {
+    "RegionIsUsEast1": { "Fn::Equals": [ { "Ref": "AWS::Region" }, "us-east-1" ] }
+  },
+  "Parameters" : {
+    "VpcSubnetRange" : {
+      "Description" : "CIDR of VPC Subnet Range.",
+      "Type" : "String"
+    },
+    "PrivateSubnetRange" : {
+      "Description" : "CIDR of private subnet. Should be a subset of VPC Subnet",
+      "Type" : "String"
+    },
+    "PublicSubnetRange" : {
+      "Description" : "CIDR of public subnet. Should be a subset of VPC Subnet",
+      "Type" : "String"
+    }
+  },
+  "Resources" : {
+    "Vpc" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "EnableDnsSupport" : "true",
+        "EnableDnsHostnames" : "true",
+        "CidrBlock" : { "Ref" : "VpcSubnetRange" },
+        "Tags" : [
+          { "Key" : "Name", "Value" : { "Fn::Join" : [ "", [ "vpc-", { "Ref" : "AWS::StackName" } ] ] } }
+        ]
+      }
+    },
+    "PublicSubnet" : {
+      "Type" : "AWS::EC2::Subnet",
+      "DependsOn" : "Vpc",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "CidrBlock" : { "Ref" : "PublicSubnetRange" },
+        "Tags" : [
+          { "Key" : "Name", "Value" : { "Fn::Join" : [ "", [ "public-", { "Ref" : "AWS::StackName" } ] ] } }
+        ]
+      }
+    },
+    "PrivateSubnet" : {
+      "Type" : "AWS::EC2::Subnet",
+      "DependsOn" : "Vpc",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "CidrBlock" : { "Ref" : "PrivateSubnetRange" },
+        "Tags" : [
+          { "Key" : "Name", "Value" : { "Fn::Join" : [ "", [ "private-", { "Ref" : "AWS::StackName" } ] ] } }
+        ]
+      }
+    },
+    "DHCPOptions" : {
+      "Type" : "AWS::EC2::DHCPOptions",
+      "Properties" : {
+        "DomainName" : { "Fn::If" : [
+            "RegionIsUsEast1",
+            "ec2.internal",
+            { "Fn::Join" :  [  "", [ { "Ref": "AWS::Region" }, ".compute.internal" ] ] } ] },
+            "DomainNameServers": [ "AmazonProvidedDNS" ]
+      }
+    },
+    "VPCDHCPOptionsAssociation" : {
+      "Type": "AWS::EC2::VPCDHCPOptionsAssociation",
+       "Properties": {
+          "DhcpOptionsId": { "Ref": "DHCPOptions" },
+          "VpcId": { "Ref": "Vpc" }
+       }
+    },
+    "InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "DependsOn" : "Vpc",
+      "Properties" : {
+        "Tags" : [
+          { "Key" : "Name", "Value" : { "Fn::Join" : [ "", [ "igw-", { "Ref" : "AWS::StackName" } ] ] } }
+        ]
+      }
+    },
+    "GatewayToInternet" : {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "DependsOn": "InternetGateway",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "InternetGatewayId" : { "Ref" : "InternetGateway" }
+      }
+    }
+  },
+  "Outputs" : {
+    "Vpc" : {
+      "Description" : "Vpc ID",
+      "Value" : { "Ref": "Vpc" }
+    },
+    "PublicSubnet" : {
+      "Description" : "Public Subnet ID",
+      "Value" : { "Ref": "PublicSubnet" }
+    },
+    "PrivateSubnet" : {
+      "Description" : "Private Subnet ID",
+      "Value" : { "Ref": "PrivateSubnet" }
+    },
+    "InternetGateway" : {
+       "Description" : "Internet Gateway associated with Vpc",
+       "Value" : { "Ref": "InternetGateway" }
+    }
+  }
+}

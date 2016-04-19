@@ -1,0 +1,7 @@
+{
+  "single_source": {
+    "kind": "url_extract",
+    "url": "http://downloads.mesosphere.com/strace/strace-4.10.tar.xz",
+    "sha1": "5c3ec4c5a9eeb440d7ec70514923c2e7e7f9ab6c"
+  }
+}

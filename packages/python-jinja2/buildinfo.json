@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/2.7/J/Jinja2/Jinja2-2.8-py2.py3-none-any.whl",
+    "sha1": "7ed6155b057d484586f1bf52fd5f74ae6104bbe9"
+  }
+}

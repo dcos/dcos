@@ -1,0 +1,8 @@
+{
+  "docker": "ubuntu:14.04.4",
+  "single_source" : {
+    "kind": "url",
+    "url" : "file://foo",
+    "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  }
+}

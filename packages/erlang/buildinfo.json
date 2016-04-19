@@ -1,0 +1,10 @@
+{
+  "requires": ["openssl", "ncurses"],
+  "sources": {
+    "erlang": {
+      "kind": "url_extract",
+      "url": "https://downloads.mesosphere.com/pkgpanda-artifact-cache/otp_src_18.1.tar.gz",
+      "sha1": "719962d2558e78fa3cb3768b65505df78d501388"
+    }
+  }
+}

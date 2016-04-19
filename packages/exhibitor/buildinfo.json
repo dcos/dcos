@@ -1,0 +1,16 @@
+{
+  "requires": ["java"],
+  "sources": {
+    "exhibitor": {
+      "kind": "git",
+      "git": "git@github.com:dcos/exhibitor.git",
+      "ref": "7d286ac4a5d458ce182bee53445b8883153b88a9",
+      "ref_origin": "master"
+    },
+    "zookeeper": {
+      "kind": "url_extract",
+      "url": "https://s3.amazonaws.com/downloads.mesosphere.io/zookeeper/zookeeper-3.4.6.tar.gz",
+      "sha1": "2a9e53f5990dfe0965834a525fbcad226bf93474"
+    }
+  }
+}

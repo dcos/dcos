@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <title>D/COS {{ repo_channel_path }} ARM Template</title>
+  </head>
+<body>
+
+  <h1>DC/OS {{ repo_channel_path }} ARM Templates</h1>
+<ul>
+  <li>For more information on creating a DC/OS cluster, see the <a href='https://dcos.io/docs/latest/administration/installing/cloud/azure/'>DC/OS Azure documentation</a>.</li>
+</ul>
+
+  <h2>DC/OS for Azure Container Service</h2>
+  <table>
+    <tr><th>1 Master</th><th>3 Masters</th><th>5 Masters</th></tr>
+    <tr>
+      {% for url in acs_urls %}
+      <td>
+        <a href='https://portal.azure.com/#create/Microsoft.Template/uri/{{ url }}' target="_blank">
+          <img src="http://azuredeploy.net/deploybutton.png"/>
+        </a>
+      </td>
+      {% endfor %}
+    </tr>
+  </table>
+
+  <footer>
+    <pre>
+    DC/OS Release: {{ tag }}
+    DC/OS Commit: {{ commit }}
+    </pre>
+  </footer>
+</body>
+</html>

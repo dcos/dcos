@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/2.7/p/passlib/passlib-1.6.5-py2.py3-none-any.whl",
+    "sha1": "5f5edaae428ecf5005b5263f5d4fcfeafcca4f6c"
+  }
+}

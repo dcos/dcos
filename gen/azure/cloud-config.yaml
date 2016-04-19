@@ -1,0 +1,132 @@
+root:
+  - path: /etc/systemd/system/dcos-link-env.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Before=dcos.target
+      [Service]
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
+      ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
+  - path: /etc/systemd/system/dcos-download.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+      ConditionPathExists=!/opt/mesosphere/
+      [Service]
+      EnvironmentFile=/etc/mesosphere/setup-flags/bootstrap-id
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
+      ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
+      ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
+      ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
+  - path: /etc/systemd/system/dcos-setup.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Requires=dcos-download.service
+      After=dcos-download.service
+      [Service]
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      EnvironmentFile=/opt/mesosphere/environment
+      ExecStart=/opt/mesosphere/bin/pkgpanda setup --no-block-systemd
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/dcos-docker-install.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      Environment=DEBIAN_FRONTEND=noninteractive
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/d.deb https://az837203.vo.msecnd.net/dcos-deps/docker-engine_1.11.0-0~xenial_amd64.deb
+      ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /tmp/d.deb || ((try > 5));do echo retry $((try++));sleep 120;done;systemctl --now start docker"
+  - path: /etc/systemd/system/docker.service.d/execstart.conf
+    permissions: "0644"
+    content: |
+      [Service]
+      Restart=always
+      StartLimitInterval=0
+      RestartSec=15
+      ExecStart=
+      ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay
+  - path: /etc/systemd/system/docker.socket
+    permissions: "0644"
+    content: |
+      [Unit]
+      PartOf=docker.service
+      [Socket]
+      ListenStream=/var/run/docker.sock
+      SocketMode=0660
+      SocketUser=root
+      SocketGroup=docker
+      ListenStream=2375
+      BindIPv6Only=both
+      [Install]
+      WantedBy=sockets.target
+  - path: /etc/systemd/system/dcos-config-writer.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Requires=dcos-setup.service
+      After=dcos-setup.service
+      [Service]
+      Type=oneshot
+      EnvironmentFile=/etc/environment
+      EnvironmentFile=/opt/mesosphere/environment
+      ExecStart=/usr/bin/bash -c "echo $(detect_ip) $(hostname) > /etc/hosts"
+runcmd:
+    - [ ln, -s, /bin/rm, /usr/bin/rm ]
+    - [ ln, -s, /bin/mkdir, /usr/bin/mkdir ]
+    - [ ln, -s, /bin/tar, /usr/bin/tar ]
+    - [ ln, -s, /bin/ln, /usr/bin/ln ]
+    - [ ln, -s, /bin/cp, /usr/bin/cp ]
+    - [ ln, -s, /bin/systemctl, /usr/bin/systemctl ]
+    - [ ln, -s, /bin/mount, /usr/bin/mount ]
+    - [ ln, -s, /bin/bash, /usr/bin/bash ]
+    - [ systemctl, stop, resolvconf.service ]
+    - [ systemctl, disable, resolvconf.service ]
+    - [ systemctl, stop, lxc-net.service ]
+    - [ systemctl, disable, lxc-net.service ]
+    - [ systemctl, mask, lxc-net.service ]
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/1.deb https://az837203.vo.msecnd.net/dcos-deps/libipset3_6.29-1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/2.deb https://az837203.vo.msecnd.net/dcos-deps/ipset_6.29-1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/3.deb https://az837203.vo.msecnd.net/dcos-deps/unzip_6.0-20ubuntu1_amd64.deb
+    - bash -c "try=1;until dpkg -i /tmp/{1,2,3}.deb || ((try > 5));do echo retry \$((try++));sleep 120;done"
+    - [ cp, -p, /etc/resolv.conf, /tmp/resolv.conf ]
+    - [ rm, -f, /etc/resolv.conf ]
+    - [ cp, -p, /tmp/resolv.conf, /etc/resolv.conf ]
+    - [ systemctl, start, dcos-docker-install.service ]
+    - [ systemctl, start, dcos-link-env.service ]
+    - [ systemctl, start, dcos-download.service ]
+    - [ systemctl, start, dcos-setup.service ]
+    - [ systemctl, start, dcos-config-writer.service ]
+bootcmd:
+  - bash -c "if [ ! -f /var/lib/sdb-gpt ];then echo DCOS-5890;parted -s /dev/sdb mklabel gpt;touch /var/lib/sdb-gpt;fi"
+disk_setup:
+  ephemeral0:
+    table_type: gpt
+    layout: [ 50, 50 ]
+    overwrite: True
+fs_setup:
+  - device: ephemeral0.1
+    filesystem: ext4
+    overwrite: True
+  - device: ephemeral0.2
+    filesystem: ext4
+    overwrite: True
+mounts:
+  - [ ephemeral0.1, /var/lib/mesos ]
+  - [ ephemeral0.2, /var/lib/docker ]

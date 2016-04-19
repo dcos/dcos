@@ -1,0 +1,20 @@
+#!/bin/bash
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-cluster-id.service
+mkdir -p $(dirname $master_service)
+
+cat <<EOF | tee $master_service
+[Unit]
+Description=Cluster ID: Generates anonymous DC/OS Cluster ID
+ConditionPathExists=!/var/lib/dcos/cluster-id
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=20
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/bin/mkdir -p /var/lib/dcos
+ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
+ExecStartPre=/bin/bash -c "python -c 'import uuid; print(uuid.uuid4())' | zk-value-consensus /cluster-id > /var/lib/dcos/cluster-id.tmp"
+ExecStartPre=/usr/bin/test -s /var/lib/dcos/cluster-id.tmp
+ExecStart=/bin/mv /var/lib/dcos/cluster-id.tmp /var/lib/dcos/cluster-id
+EOF

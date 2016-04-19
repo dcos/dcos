@@ -1,0 +1,8 @@
+package:
+  - path: /etc/cfn_signal_metadata
+    content: |
+      AWS_REGION={ "Ref" : "AWS::Region" }
+      AWS_STACK_ID={ "Ref" : "AWS::StackId" }
+      AWS_STACK_NAME={ "Ref" : "AWS::StackName" }
+      AWS_IAM_MASTER_ROLE_NAME={{ master_role }}
+      AWS_IAM_SLAVE_ROLE_NAME={{ agent_role }}

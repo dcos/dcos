@@ -1,0 +1,30 @@
+#!/bin/bash
+
+mkdir -p "$PKG_PATH/usr/"
+
+cp -rp /pkg/src/marathon/target/scala-2.11/marathon-assembly-*.jar "$PKG_PATH/usr/marathon.jar"
+
+sudo chmod -R o+r "$PKG_PATH/usr"
+
+marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
+mkdir -p $(dirname "$marathon_service")
+
+cat <<EOF > "$marathon_service"
+[Unit]
+Description=Marathon: DC/OS Init System
+After=dcos-mesos-master.service
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=15
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=-/opt/mesosphere/environment.ip.marathon
+ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
+ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /opt/mesosphere/environment.ip.marathon'
+ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /opt/mesosphere/environment.ip.marathon'
+ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /opt/mesosphere/environment.ip.marathon'
+EOF
+
+cat << EOF >> "$marathon_service"
+ExecStart=/opt/mesosphere/bin/java -Xmx2G -jar "$PKG_PATH/usr/marathon.jar" --zk zk://localhost:2181/marathon --master zk://localhost:2181/mesos --hostname "\$MARATHON_HOSTNAME" --default_accepted_resource_roles "*" --mesos_role "slave_public" --max_tasks_per_offer 100 --task_launch_timeout 86400000 --decline_offer_duration 300000 --revive_offers_for_new_apps --zk_compression --mesos_leader_ui_url "/mesos" --enable_features "vips,task_killing" --mesos_authentication_principal "marathon"
+EOF
