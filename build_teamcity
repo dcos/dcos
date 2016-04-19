@@ -1,0 +1,58 @@
+#!/bin/bash
+set -x
+set -o errexit -o pipefail
+
+# Fail quickly if docker daemon is not up
+systemctl status docker
+
+# Make GitHub trusted
+ssh-keyscan -H github.com > /etc/ssh/ssh_known_hosts
+
+# cleanup from previous builds
+# *active.json and *.bootstrap.tar.xz must be cleaned up, otherwise
+# Teamcity starts picking up artifacts from previous builds.
+#
+# We manually clean rather than having TeamCity always clean so that
+# builds are quicker.
+rm -rf dcos-release.config.yaml
+rm -rf artifacts/
+rm -f packages/*.active.json
+rm -f packages/bootstrap.latest
+rm -f packages/*.bootstrap.tar.xz
+rm -f CHANNEL_NAME
+rm -rf build/env
+rm -f dcos_generate_config*.sh
+rm -rf wheelhouse/
+
+# Force Python stdout/err to be unbuffered.
+export PYTHONUNBUFFERED="notemtpy"
+
+# enable pkgpanda virtualenv *ALWAYS COPY* otherwise the TC cleanup will traverse and corrupt system python
+virtualenv --always-copy build/env
+. build/env/bin/activate
+
+
+if [[ "$TEAMCITY_BRANCH" == "<default>" ]]
+then
+  echo "ERROR: Building with a branch name of <default> is not supported"
+  exit 1
+fi
+
+TAG="$TEAMCITY_BRANCH"
+CHANNEL_NAME=testing/$TAG
+
+echo tag: "$TAG"
+echo channel: "$CHANNEL_NAME"
+
+echo "##teamcity[setParameter name='env.CHANNEL_NAME' value='$CHANNEL_NAME']"
+echo "##teamcity[setParameter name='env.TAG' value='$TAG']"
+
+cp config/dcos-release.config.yaml dcos-release.config.yaml
+
+./prep_teamcity
+release create $TAG $TAG
+if [ -d wheelhouse ]; then
+  cp -r wheelhouse artifacts/
+fi
+
+rm -rf artifacts/dcos_generate_config.*
