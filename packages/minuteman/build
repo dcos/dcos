@@ -3,52 +3,6 @@ set -x
 
 source /opt/mesosphere/environment
 
-cat <<EOF > /tmp/ssh_key
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEApNbENaW+NMyIKDO49N/poNRdDg/E7J90LEQX9calDQVAA/52
-YX4fFAbYkwPNH8KXbOec/+1VofpVQpW8JUf31jgFxrY1X7CBSB6crcJCDsNfpWu/
-z/NnjWNeu5xxnXlNCR3bQIwyl3s525ZKkwsuS5GbPJUvhdOrVBaPkbaCNHFZ/oqx
-3bFJZ2qen9ZFmIXPvbRsVc1Y2GLzFjbqzYiXzkz+vL9UlFSWAXjGrPgzNAT6iAFU
-HkORM55TKIYMUEJxrrCsk2zSZiC5mE1ZTWWPCENhp1BGMaCcvIo8kRZUZUINi2Ut
-N3uQH6fMZkQJT5RK4VKBumZg0jnZQLx8kHl8+wIDAQABAoIBAEpCRlo0tJ9slNon
-kuceCE3f3Zv8FqbSnq9ibbjXKHvZJaGm/QWmn7GR8/cm+z2XmEgDf4L8FFvIPqik
-dAIHjer/ifqfEyRsi5FF2SeeH8wuz+PhyqOP79KONZsnOzfJ8Z5tyNwnTJNZfBMk
-fawImW6Jxflg6+vKE6DqGPt30Oh2fxHuEWZf0MNnDLdvf7sByNH1J5pmHIDp3uMO
-FQe3H07gxtlsOCmMbgtIwqGZkykNPJRYRt4O13IFehh+TD1mOKldgXceltVyfDbR
-4PmQgmQ0EcXUzXHGf8J+K/8y9G3GRaN8cK5KMwxntNq33x/gmkv+ho0TUl3cbMjA
-IvV9C4ECgYEAzhsh7u0gfRCO+HL4HH4VscsUNRStvuSVYqz+tmddnGQ8AYBwJdlo
-rsCSVsvsLWt82skgJgivwuoeV9bkRhVz4PXOEzeAvVBtcYnoc4NYRHEB/WJWuYEm
-7Pr82u5Vpuow0RtTNAskoW0QveIEy7Fm2jG+jY29HNM+02JkiANSQKsCgYEAzL43
-7saoQHeIGF3xfJCpT9M4UyTXZkg8sTa2NaqzkyNPnOZn7tPamYeqR2rgw/c2ZSsn
-j1oHL22zn+kOrLSGcK2YG9ViRG15IyQ6B8i4mCMl3tMwqwzE3gzVbrMZBSeYVX+x
-y0w5O0qMx4hnHGSjww3pC5/CjgkMnoknDcl31PECgYBitvIYunAuFmkzq/UTyHvh
-jO+fwMi6vkaiXVMd0AIw7n0jBv4v0qJl2Iv+kGsNEgdZzqzcKprsEy/3SFBLFOlM
-XM6Xu6Soh8XzdGbmNIlpNmsKjjgVXztik4/Z1/8kE9TPwnOmYJPp0RAMsh0z5kLp
-zJuEttdV4AOeQOj/j/+sQwKBgQDJ6m5O1SvpJ/jXzw3wwtm3F59cn+Ctxl/UhRh9
-JLOkUBabrb6iEdxrvRd5BzZTDOJgM4b4INklNRMIiVcni4FqbkisamxW/3+P4JI6
-SwGBSGh4r943Uoh0VEPIwGfUZZAeAajdzXZDuunLfgHyRm4aVwWVqSC94r7HOouB
-VUcQgQKBgQCxWTo8j9CcrtdHLhKtaQQIIOaTIVfnP47sWJ6wzktBSipRHeFQWdDy
-Nho7vdFyU7J/V10jekW2RnaQaSIYsErQYlvFvOEdCrMyyUyH+P/oGxHP7BZK/R6q
-ArctFWWwKoMvp7CXinO3jyzTtRzsDd/C4LKDPRx71UTMZFsGBvRUEw==
------END RSA PRIVATE KEY-----
-EOF
-
-mkdir -p ~/.ssh
-
-cat <<EOF > ~/.ssh/config
-Host *
-  IdentityFile /tmp/ssh_key
-  StrictHostKeyChecking no
-  ForwardAgent yes
-EOF
-
-eval `ssh-agent`
-
-chmod 600 /tmp/ssh_key
-
-ssh-add /tmp/ssh_key
-
-
 pushd /pkg/src/minuteman
 make rel
 popd
