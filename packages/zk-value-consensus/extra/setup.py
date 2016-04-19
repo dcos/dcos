@@ -15,13 +15,7 @@ requires = [
 version = re.search(
     '^__version__\s*=\s*"(.*)"',
     open('consensus/__init__.py').read(),
-    re.M
-    ).group(1)
-
-
-with open("README.md", "rb") as f:
-    long_descr = f.read().decode("utf-8")
-
+    re.M).group(1)
 
 setup(
     name="zk-value-consensus",
@@ -29,14 +23,13 @@ setup(
     packages=["consensus"],
     entry_points={
         "console_scripts": ['zk-value-consensus = consensus.consensus:main']
-        },
+    },
     version=version,
     description="Achieve consensus across multiple parties through ZooKeeper",
-    long_description=long_descr,
     author="Mesosphere, Inc.",
     author_email="help@dcos.io",
     classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
-        ],
-    )
+    ],
+)

@@ -3,7 +3,7 @@
   "docker": "dcos-builder",
   "single_source" : {
     "kind": "git",
-    "git": "ssh://git@github.com/mesosphere/mesos",
+    "git": "https://github.com/mesosphere/mesos",
     "ref": "76c87d55a78e8cbb380fc0c71388ccec53ed1dc8",
     "ref_origin" : "dcos-1.7"
   },

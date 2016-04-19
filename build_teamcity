@@ -5,9 +5,6 @@ set -o errexit -o pipefail
 # Fail quickly if docker daemon is not up
 systemctl status docker
 
-# Make GitHub trusted
-ssh-keyscan -H github.com > /etc/ssh/ssh_known_hosts
-
 # cleanup from previous builds
 # *active.json and *.bootstrap.tar.xz must be cleaned up, otherwise
 # Teamcity starts picking up artifacts from previous builds.

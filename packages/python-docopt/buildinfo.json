@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/docopt/docopt.git",
+    "git": "https://github.com/docopt/docopt",
     "ref": "944641a7357376a43151bd4a3ca44f9c07c4d1ae",
     "ref_origin": "0.6.2"
   }
