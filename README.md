@@ -1,18 +1,20 @@
 # DC/OS Tools, Packages, and Installers for various platforms
 
-Tools for building DC/OS and launchign a cluster with it in the hardware of a customer's choice.
+Tools for building DC/OS and launching a cluster with it on a hardware of user's choice.
 
-  - *docker/* Locally defined docker containers packages are built in
+  - *docker/* Locally defined docker containers packages are built
+    here
   - *docs/* Documentation
-  - *ext/dcos-installer/* Backend for Web, SSH, and some bits of the Advanced installer. To be merged into the top codebase once the code is cleaned up
-  - *gen/* Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
+  - *ext/dcos-installer/* Backend for Web, SSH, and some bits of the
+    *Advanced Installer*.
+  - *gen/* Python library for rendering YAML config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
   - *gen/installer/* Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
   - *packages/* Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.
   - *pkgpanda/* DC/OS baseline/host package management system. Tools for building, deploying, upgrading, and bundling packages together which live on the root filesystem of a machine / underneath Mesos.
   - *pytest/* Misc. tests. Should be moved to live next to the appropriate code
   - *release/* Release tools for DC/OS. (Building releases, building installers for releases, promoting between channels)
   - *ssh/* AsyncIO based parallel ssh library used by the installer
-  - *test_util/* various scripts, utilties to help with integration testing
+  - *test_util/* Various scripts and utilties to help with integration testing
 
 All code in this repository is Python 3
 
