@@ -16,12 +16,44 @@ Tools for building DC/OS and launchign a cluster with it in the hardware of a cu
 
 All code in this repository is Python 3
 
+# Doing a local build
+
+## Requirements
+
+ - Linux
+ - Docker (1.9+)
+ - SELinux disabled
+ - Python 3 as /usr/bin/python
+
+## Steps
+
+Create a config file based on config/dcos-release.config.yaml.
+  - AWS, Azure, and Local storage are supported. See https://github.com/dcos/dcos/tree/master/release/storage.
+
+Local storage example:
+```
+storage:
+  local:
+    kind: local_path
+    path: /artifact-storage/
+options:
+  preferred: local
+```
+
+
+Setup a local build environment:
+1. Make a python virtualenv `pyvenv ../env`
+1. Activate the environment `source ../env/bin/activate`
+1. Install dcos-image python to the environment as editable packages `./prep_local`
+
+Doing a release build:
+`release create <release-name> <tag>` where <release-name> is something like your name (cmaloney), tag lets you see what the build was from on pages like aws.html.
+
 
 # TODO
 
 Lots of docs are still being written. If you have immediate questions please ask the [DC/OS Community](https://dcos.io/community/). Someone else probably has exactly the same question.
 
- - Building locally
  - Add getting started on common distros / dependencies
  - Add overview of what is in here, how it works
  - Add general theory of stuff that goes in here.
