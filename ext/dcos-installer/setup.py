@@ -7,6 +7,10 @@ setup(
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
     packages=['dcos_installer'] + find_packages(),
+    license='apache2',
+    classifiers=[
+        'License :: OSI Approved :: Apache Software License',
+    ],
     install_requires=[
         'aiohttp==0.20.0',
         'aiohttp_jinja2',
@@ -22,7 +26,7 @@ setup(
     entry_points={
         'console_scripts': [
             'dcos_installer = dcos_installer.entrypoint:main']
-        },
+    },
     include_package_data=True,
     zip_safe=False
-    )
+)
