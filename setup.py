@@ -15,10 +15,10 @@ setup(
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
-    license='TODO',
+    license='apache2',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'License :: OSI Approved :: TODO License',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
     ],
