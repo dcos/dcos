@@ -1,6 +1,6 @@
 # DC/OS Tools, Packages, and Installers for various platforms
 
-Tools for building DC/OS and launchign a cluster with it in the hardware of a customer's choice.
+Tools for building DC/OS and launching a cluster with it in the hardware of a customer's choice.
 
   - *docker/* Locally defined docker containers packages are built in
   - *docs/* Documentation
@@ -12,7 +12,7 @@ Tools for building DC/OS and launchign a cluster with it in the hardware of a cu
   - *pytest/* Misc. tests. Should be moved to live next to the appropriate code
   - *release/* Release tools for DC/OS. (Building releases, building installers for releases, promoting between channels)
   - *ssh/* AsyncIO based parallel ssh library used by the installer
-  - *test_util/* various scripts, utilties to help with integration testing
+  - *test_util/* various scripts, utilities to help with integration testing
 
 All code in this repository is Python 3
 
