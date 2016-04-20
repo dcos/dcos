@@ -123,7 +123,7 @@ def get_bootstrap_packages(bootstrap_id):
 def load_providers():
     return {name: importlib.import_module("gen.installer." + name)
             for name in provider_names}
-    
+
 
 # Transforms artifact definitions from the Release Manager into sets of commands
 # the storage providers understand, adding in the full path prefixes as needed
