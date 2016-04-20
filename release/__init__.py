@@ -287,8 +287,11 @@ def make_stable_artifacts(cache_repository_url, skip_build):
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
     # so explicity remove installer here so people don't accidentally hit it.
-    bootstrap_dict = {name: info for name, info in all_bootstraps.items()
-                      if not (name is not None and name.endswith('installer'))}
+    bootstrap_dict = dict()
+    for name, info in copy.copy(all_bootstraps).items():
+        if name is not None and name.endswith('installer'):
+            continue
+        bootstrap_dict[name] = info
 
     metadata["bootstrap_dict"] = bootstrap_dict
     metadata["all_bootstraps"] = all_bootstraps
