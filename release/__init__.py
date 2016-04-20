@@ -288,7 +288,7 @@ def make_stable_artifacts(cache_repository_url, skip_build):
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
     # so explicity remove installer here so people don't accidentally hit it.
     bootstrap_dict = {name: info for name, info in all_bootstraps.items()
-                      if name and not name.endswith('installer')}
+                      if not (name is not None and name.endswith('installer'))}
 
     metadata["bootstrap_dict"] = bootstrap_dict
     metadata["all_bootstraps"] = all_bootstraps
@@ -489,9 +489,7 @@ def get_storage_provider_factory(kind):
         raise ConfigError("Storage kind must be of the form <provider>_<name>")
     parts = kind.split('_', 1)
     assert len(parts) == 2
-
-    provider = parts[0]
-    name = parts[1]
+    provider, name = parts
 
     try:
         module = importlib.import_module("release.storage." + provider)
