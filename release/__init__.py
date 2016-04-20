@@ -35,22 +35,18 @@ class ConfigError(Exception):
 def expand_env_vars(config):
     # Iterate recursively through config dictionaries, mapping any string keys that begin with `$` into
     # env vars.
-    # If they don't being with $ skip.
-    # If it begins with \$ simply replace with $.
+    # If they don't begin with $ then skip.
+    # If they begin with \$ simply replace with $.
     if isinstance(config, dict):
-        config = copy.deepcopy(config)
-        for key in config.keys():
-            config[key] = expand_env_vars(config[key])
-        return config
+        return {key: expand_env_vars(value) for key, value in config.items()}
     elif isinstance(config, list):
         return [expand_env_vars(item) for item in config]
     elif isinstance(config, str):
         # Env variable replacement
         # Escaped $
         if config.startswith('$$'):
-            return '$' + config[2:]
-
-        if config.startswith('$'):
+            return config[1:]
+        elif config.startswith('$'):
             key = config[1:]
             if key not in os.environ:
                 raise ConfigError("Requested environment variable {} in config isn't set in the "
@@ -79,12 +75,8 @@ def strip_locals(data):
     """
 
     if isinstance(data, dict):
-        data = copy.copy(data)
-        for k in set(data.keys()):
-            if isinstance(k, str) and k.startswith('local_'):
-                del data[k]
-            else:
-                data[k] = strip_locals(data[k])
+        return {key: strip_locals(value) for key, value in data.items()
+                if not (isinstance(key, str) and key.startswith('local_'))}
     elif isinstance(data, list):
         data = [strip_locals(item) for item in data]
 
@@ -105,7 +97,7 @@ def to_json(data):
         except AttributeError:
             return obj
         # Don't make any ambiguities by requiring null to not be a key.
-        assert 'null' not in obj.keys()
+        assert 'null' not in obj
         return {'null' if key is None else key: none_to_null(val) for key, val in items}
 
     return json.dumps(none_to_null(data), indent=2, sort_keys=True)
@@ -129,10 +121,8 @@ def get_bootstrap_packages(bootstrap_id):
 
 
 def load_providers():
-    modules = dict()
-    for name in provider_names:
-        modules[name] = importlib.import_module("gen.installer." + name)
-    return modules
+    return {name: importlib.import_module("gen.installer." + name)
+            for name in provider_names}
 
 
 # Transforms artifact definitions from the Release Manager into sets of commands
@@ -142,7 +132,7 @@ def load_providers():
 class Repository():
 
     def __init__(self, repository_path, channel_name, commit):
-        if len(repository_path) == 0:
+        if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
         assert not repository_path.endswith('/')
@@ -171,10 +161,7 @@ class Repository():
 
     @property
     def channel_prefix(self):
-        if self.__channel_name:
-            return self.__channel_name + '/'
-        else:
-            return ''
+        return self.__channel_name + '/' if self.__channel_name else ''
 
     # TODO(cmaloney): This function is too big. Break it into testable chunks.
     # TODO(cmaloney): Assert the same path/destination_path is never used twice.
@@ -505,9 +492,7 @@ def get_storage_provider_factory(kind):
         raise ConfigError("Storage kind must be of the form <provider>_<name>")
     parts = kind.split('_', 1)
     assert len(parts) == 2
-
-    provider = parts[0]
-    name = parts[1]
+    provider, name = parts
 
     try:
         module = importlib.import_module("release.storage." + provider)
