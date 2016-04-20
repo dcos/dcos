@@ -76,7 +76,7 @@ def strip_locals(data):
 
     if isinstance(data, dict):
         return {key: strip_locals(value) for key, value in data.items()
-                if not (isinstance(k, str) and k.startswith('local_'))}
+                if not (isinstance(key, str) and key.startswith('local_'))}
     elif isinstance(data, list):
         data = [strip_locals(item) for item in data]
 
@@ -121,11 +121,9 @@ def get_bootstrap_packages(bootstrap_id):
 
 
 def load_providers():
-    modules = dict()
-    for name in provider_names:
-        modules[name] = importlib.import_module("gen.installer." + name)
-    return modules
-
+    return {name: importlib.import_module("gen.installer." + name)
+            for name in provider_names}
+    
 
 # Transforms artifact definitions from the Release Manager into sets of commands
 # the storage providers understand, adding in the full path prefixes as needed
@@ -134,7 +132,7 @@ def load_providers():
 class Repository():
 
     def __init__(self, repository_path, channel_name, commit):
-        if len(repository_path) == 0:
+        if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
         assert not repository_path.endswith('/')
@@ -163,10 +161,7 @@ class Repository():
 
     @property
     def channel_prefix(self):
-        if self.__channel_name:
-            return self.__channel_name + '/'
-        else:
-            return ''
+        return self.__channel_name + '/' if self.__channel_name else ''
 
     # TODO(cmaloney): This function is too big. Break it into testable chunks.
     # TODO(cmaloney): Assert the same path/destination_path is never used twice.
@@ -292,11 +287,8 @@ def make_stable_artifacts(cache_repository_url, skip_build):
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
     # so explicity remove installer here so people don't accidentally hit it.
-    bootstrap_dict = dict()
-    for name, info in copy.copy(all_bootstraps).items():
-        if name is not None and name.endswith('installer'):
-            continue
-        bootstrap_dict[name] = info
+    bootstrap_dict = {name: info for name, info in all_bootstraps.items()
+                      if name and not name.endswith('installer')}
 
     metadata["bootstrap_dict"] = bootstrap_dict
     metadata["all_bootstraps"] = all_bootstraps
