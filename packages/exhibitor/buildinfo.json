@@ -3,7 +3,7 @@
   "sources": {
     "exhibitor": {
       "kind": "git",
-      "git": "git@github.com:dcos/exhibitor.git",
+      "git": "https://github.com/dcos/exhibitor.git",
       "ref": "7d286ac4a5d458ce182bee53445b8883153b88a9",
       "ref_origin": "master"
     },

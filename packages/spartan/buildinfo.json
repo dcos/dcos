@@ -3,7 +3,7 @@
   "sources": {
     "spartan": {
       "kind": "git",
-      "git": "git@github.com:dcos/spartan.git",
+      "git": "https://github.com/dcos/spartan.git",
       "ref": "745435dc7d1bbc186d756b1f9d701ae54e2a5b36",
       "ref_origin": "master"
     }

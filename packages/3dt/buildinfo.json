@@ -3,7 +3,7 @@
   "docker": "golang:1.6",
   "single_source" : {
     "kind": "git",
-    "git": "git@github.com:dcos/3dt.git",
+    "git": "https://github.com/dcos/3dt.git",
     "ref": "8f184f1a4673743ea905530d33705d8a0f2dd0c4",
     "ref_origin": "master"
   }
