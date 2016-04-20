@@ -19,7 +19,7 @@ All code in this repository is Python 3
 # Doing a local build
 
 ## Dependencies
-  1. Linux distribution:
+  1. You will need to use a Linux distribution, as:
     - Docker doesn't have all the features needed on OS X or Windows
     - `tar` needs to be GNU tar for the set of flags used
   1. [tox](https://tox.readthedocs.org/en/latest/)
