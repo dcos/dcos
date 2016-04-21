@@ -122,23 +122,16 @@ def hash_folder(directory):
 
 def get_last_bootstrap_set(path):
     assert path[-1] != '/'
-    last_bootstrap = {}
 
-    # Get all the tree variants. If there is a treeinfo.json for the default
-    # variant this won't catch it because that would be just 'treeinfo.json' /
-    # not have the '.' before treeinfo.json.
-    for filename in os.listdir(path):
-        if filename.endswith('.treeinfo.json'):
-            variant_name = filename[:-len('.treeinfo.json')]
-            bootstrap_id = load_string(path + '/' + variant_name + '.bootstrap.latest')
-            last_bootstrap[variant_name] = bootstrap_id
+    def get_last_bootstrap(variant):
+        bootstrap_latest = path + '/' + pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
+        if not os.path.exists(bootstrap_latest):
+            raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
+                             "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
+                                         pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
+        return load_string(bootstrap_latest)
 
-    # Add in None / the default variant with a python None.
-    # Use a python none so that handling it incorrectly around strings will
-    # result in more visible errors than empty string would.
-    last_bootstrap[None] = load_string(path + '/' + 'bootstrap.latest')
-
-    return last_bootstrap
+    return for_each_variant(path, get_last_bootstrap, 'treeinfo.json', {})
 
 
 def last_build_filename(variant):
@@ -552,16 +545,12 @@ def for_each_variant(variant_dir, fn, extension, extra_kwargs):
     extension = '.' + extension
     # Find all the files which end in the extension. Remove the extension to get just the variant. Include
     # the None / default variant always
-    variants = []
+    results = dict()
     for filename in os.listdir(variant_dir):
         if not filename.endswith(extension):
             continue
 
-        variants.append(filename[:-len(extension)])
-
-    # Do all named variants
-    results = dict()
-    for variant in variants:
+        variant = filename[:-len(extension)]
         results[variant] = fn(variant=variant, **extra_kwargs)
 
     # Always do the base variant
