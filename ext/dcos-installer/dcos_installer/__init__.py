@@ -121,13 +121,14 @@ class DcosInstaller:
         # If no args are passed to the class, then we're calling this
         # class from another library or code so we shouldn't execute
         # parser or anything else
-        make_default_dir()
         if args:
             options = self.parse_args(args)
             if len(options.hash_password) > 0:
                 print_header("HASHING PASSWORD TO SHA512")
                 backend.hash_password(options.hash_password)
                 sys.exit(0)
+
+            make_default_dir()
 
             if options.web:
                 print_header("Starting DC/OS installer in web mode")
