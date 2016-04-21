@@ -5,15 +5,19 @@ import os
 import random
 import socket
 import subprocess
+import tempfile
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
+from functools import partial
 
 import pytest
 from retrying import retry
 
 import pkgpanda.util
 from ssh.ssh_runner import MultiRunner, Node
+from ssh.ssh_tunnel import (SSHTunnel, TunnelCollection, run_scp_cmd,
+                            run_ssh_cmd)
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -312,3 +316,52 @@ def test_tags_async(sshd_manager, loop):
                     "sleep",
                     "1"
                 ]
+
+
+def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
+    """write random data across the tunnel with a write function, then run a
+    remote command to read that same random data. Finally assert the returned
+    random data is the same
+    """
+    with tempfile.NamedTemporaryFile() as tmp_fh:
+        rando_text = str(uuid.uuid4())
+        tmp_fh.write(rando_text.encode())
+        tmp_fh.flush()
+        remote_tmp_file = '/tmp/' + str(uuid.uuid4())
+        remote_write_fn(src=tmp_fh.name, dst=remote_tmp_file)
+        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file])
+        assert returned_text == rando_text
+
+
+def test_ssh_tunnel(sshd_manager):
+    with sshd_manager.run(1) as sshd_ports:
+        tunnel_args = {
+                'ssh_user': getpass.getuser(),
+                'ssh_key_path': sshd_manager.key_path,
+                'host': '127.0.0.1',
+                'port': sshd_ports[0]}
+        with closing(SSHTunnel(**tunnel_args)) as tunnel:
+            tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
+
+
+def test_ssh_tunnel_collection(sshd_manager):
+    with sshd_manager.run(10) as sshd_ports:
+        tunnel_args = {
+                'ssh_user': getpass.getuser(),
+                'ssh_key_path': sshd_manager.key_path,
+                'host_names': ['127.0.0.1:'+str(i) for i in sshd_ports]}
+        with closing(TunnelCollection(**tunnel_args)) as tunnels:
+            for tunnel in tunnels.tunnels:
+                tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
+
+
+def test_ssh_one_offs(sshd_manager):
+    with sshd_manager.run(1) as sshd_ports:
+        ssh_args = {
+                'ssh_user': getpass.getuser(),
+                'ssh_key_path': sshd_manager.key_path,
+                'host': '127.0.0.1',
+                'port': sshd_ports[0]}
+        scp = partial(run_scp_cmd, **ssh_args)
+        ssh = partial(run_ssh_cmd, **ssh_args)
+        tunnel_write_and_run(scp, ssh)
