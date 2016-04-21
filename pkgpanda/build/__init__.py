@@ -115,9 +115,7 @@ def hash_folder(directory):
         "-o", "errexit",
         "-c",
         "find {} -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1".format(
-            directory)
-        ]).decode('ascii').strip()
-    raise
+            directory)]).decode('ascii').strip()
 
 
 def get_last_bootstrap_set(path):
