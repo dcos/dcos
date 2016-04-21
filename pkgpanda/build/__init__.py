@@ -479,7 +479,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     # Can't compare none to string, so expand none -> "true" / "false", then put
     # the string in a field after "" if none, the string if not.
     def key_func(elem):
-        return elem[0], elem[1] is None,  elem[1] or ""
+        return elem[0], elem[1] is None, elem[1] or ""
 
     # Build everything if no variant is given
     if tree_variant is None:
