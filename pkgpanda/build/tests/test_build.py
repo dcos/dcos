@@ -73,6 +73,7 @@ def test_bootstrap(tmpdir):
     pkg_dir = tmpdir.join("bootstrap_test")
     copytree("resources/", str(pkg_dir))
     with pkg_dir.as_cwd():
+        pkg_dir.join("treeinfo.json").write('', ensure=True)
         check_call(["mkpanda", "tree", "--mkbootstrap"])
         bootstrap_id = open("bootstrap.latest", 'r').read().strip()
         bootstrap_files = get_tar_contents(bootstrap_id + ".bootstrap.tar.xz")
