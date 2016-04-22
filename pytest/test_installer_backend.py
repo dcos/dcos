@@ -76,13 +76,11 @@ def test_do_validate_config(tmpdir):
         'ssh_user': 'required parameter ssh_user was not provided',
         'ssh_key_path': 'could not find ssh private key: /genconf/ssh_key',
         'master_list': 'required parameter master_list was not provided',
-        'agent_list': 'required parameter agent_list was not provided',
     }
     # remove num_masters and masters_quorum since they can change between runs
     messages = backend.do_validate_config(temp_config_path)
     assert messages['ssh_user'] == expected_output['ssh_user']
     assert messages['ssh_key_path'] == expected_output['ssh_key_path']
-    assert messages['agent_list'] == expected_output['agent_list']
     assert messages['master_list'] == expected_output['master_list']
 
 

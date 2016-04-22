@@ -113,13 +113,14 @@ class DcosApiInstaller(AbstractDcosInstaller):
         wait_for_up()
 
     def genconf(
-            self, master_list, agent_list, ssh_user, ssh_key,
+            self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
             ip_detect_script, zk_host=None, expect_errors=False):
         """Runs configuration generation.
 
         Args:
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
+            public_agent_list: list of IPv4 addresses to be used as public agents
             ip_detect_script (str): complete contents of IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
@@ -135,6 +136,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         payload = {
             'master_list': master_list,
             'agent_list': agent_list,
+            'public_agent_list': public_agent_list,
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
             'ip_detect_script': ip_detect_script}
@@ -248,13 +250,14 @@ class DcosCliInstaller(AbstractDcosInstaller):
             print(self.ssh(cmd))
 
     def genconf(
-            self, master_list, agent_list, ssh_user, ssh_key,
+            self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
             ip_detect_script, zk_host=None, expect_errors=False):
         """Runs configuration generation.
 
         Args:
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
+            public_agent_list: list of IPv$ addresses to be used as public agents
             ip_detect_script (str): complete contents of IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
@@ -274,6 +277,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'master_list': master_list,
             'ssh_user': ssh_user,
             'agent_list': agent_list,
+            'public_agent_list': public_agent_list,
             'process_timeout': 900}
         if zk_host:
             test_config['exhibitor_storage_backend'] = 'zookeeper'

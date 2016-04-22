@@ -32,6 +32,7 @@ def cluster():
     assert 'MASTER_HOSTS' in os.environ
     assert 'PUBLIC_MASTER_HOSTS' in os.environ
     assert 'SLAVE_HOSTS' in os.environ
+    assert 'PUBLIC_SLAVE_HOSTS' in os.environ
     assert 'DNS_SEARCH' in os.environ
 
     # dns_search must be true or false (prevents misspellings)
@@ -43,6 +44,7 @@ def cluster():
                    masters=os.environ['MASTER_HOSTS'].split(','),
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
+                   public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
                    dns_search_set=os.environ['DNS_SEARCH'])
 
@@ -217,7 +219,7 @@ class Cluster:
         self.superuser_auth_cookie = r.cookies[
             'dcos-acs-auth-cookie']
 
-    def __init__(self, dcos_uri, masters, public_masters, slaves, registry, dns_search_set):
+    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -234,6 +236,8 @@ class Cluster:
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
         self.slaves = sorted(slaves)
+        self.public_slaves = sorted(public_slaves)
+        self.all_slaves = sorted(slaves+public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.registry = registry
         self.dns_search_set = dns_search_set == 'true'
@@ -501,7 +505,7 @@ def test_if_all_Mesos_slaves_have_registered(cluster):
     data = r.json()
     slaves_ips = sorted(x['hostname'] for x in data['slaves'])
 
-    assert slaves_ips == cluster.slaves
+    assert slaves_ips == cluster.all_slaves
 
 
 # Retry if returncode is False, do not retry on exceptions.
@@ -1005,7 +1009,7 @@ def test_3dt_nodes(cluster):
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
-        assert len(response['nodes']) == len(cluster.masters + cluster.slaves), (
+        assert len(response['nodes']) == len(cluster.masters + cluster.slaves) + len(cluster.public_slaves), (
             'a number of nodes in response must be {}'.format(len(cluster.masters + cluster.slaves)))
 
         # test nodes
@@ -1110,7 +1114,7 @@ def test_3dt_units(cluster):
     """
     # get all unique unit names
     all_units = set()
-    for node in cluster.masters + cluster.slaves:
+    for node in cluster.masters + cluster.all_slaves:
         node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
         for unit in node_response['units']:
             all_units.add(unit['id'])
@@ -1330,10 +1334,10 @@ sleep 3600
         exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_node_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves+cluster.masters)
+        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves+cluster.masters)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
+        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
     # Cluster ID is uncheckable as this runs on an agent
@@ -1341,3 +1345,12 @@ sleep 3600
     r_data['Properties']['clusterId'] = ''
 
     assert r_data == exp_data
+
+
+def test_mesos_agent_role_assignment(cluster):
+    for agent in cluster.public_slaves:
+        r = requests.get('http://{}:5051/state.json'.format(agent))
+        assert r.json()['flags']['default_role'] == 'slave_public'
+    for agent in cluster.all_slaves:
+        r = requests.get('http://{}:5051/state.json'.format(agent))
+        assert r.json()['flags']['default_role'] == '*'
