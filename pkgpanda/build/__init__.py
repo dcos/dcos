@@ -136,23 +136,25 @@ def last_build_filename(variant):
     return "cache/" + ((variant + '.') if variant else "") + "latest"
 
 
+# Try to read json from the given file. If it is an empty file, then return an
+# empty json dictionary.
 def load_optional_json(filename):
-    # Load the package build info.
     try:
+        with open(filename) as f:
+            text = f.read().strip()
+            if text:
+                return json.loads(text)
+            return {}
         return load_json(filename)
     except FileNotFoundError:
-        # not existing -> empty dictionary / no specified values.
-        return {}
+        raise BuildError("Didn't find expected JSON file: {}".format(filename))
     except ValueError as ex:
         raise BuildError("Unable to parse json: {}".format(ex))
 
 
 def load_config_variant(directory, variant, extension):
     assert directory[-1] != '/'
-    filename = extension
-    if variant:
-        filename = variant + '.' + filename
-    return load_optional_json(directory + '/' + filename)
+    return load_optional_json(directory + '/' + pkgpanda.util.variant_prefix(variant) + extension)
 
 
 def load_buildinfo(path, variant):
@@ -170,9 +172,6 @@ def find_packages_fs(packages_dir):
     for name in os.listdir(packages_dir):
         package_folder = packages_dir + '/' + name
         if os.path.isdir(package_folder):
-            if not os.path.exists(package_folder + "/build"):
-                continue
-
             def get_requires(variant):
                 buildinfo = load_buildinfo(package_folder, variant)
                 return {
@@ -540,7 +539,6 @@ def assert_no_duplicate_keys(lhs, rhs):
 
 
 def for_each_variant(variant_dir, fn, extension, extra_kwargs):
-    extension = '.' + extension
     # Find all the files which end in the extension. Remove the extension to get just the variant. Include
     # the None / default variant always
     results = dict()
@@ -549,10 +547,22 @@ def for_each_variant(variant_dir, fn, extension, extra_kwargs):
             continue
 
         variant = filename[:-len(extension)]
-        results[variant] = fn(variant=variant, **extra_kwargs)
 
-    # Always do the base variant
-    results[None] = fn(None, **extra_kwargs)
+        # Empty name variant shouldn't have a `.` following it
+        if variant == '.':
+            raise BuildError("Invalid filename {}. The \"default\" variant file should be just {}".format(
+                filename, extension))
+
+        # Empty / default variant is represented as 'None'.
+        if variant == '':
+            variant = None
+        else:
+            # Should be foo. since we've moved the extension.
+            if variant[-1] != '.':
+                raise BuildError("Invalid variant filename {}. Expected a '.' separating the "
+                                 "variant name and extension.".format(filename))
+            variant = variant[:-1]
+        results[variant] = fn(variant=variant, **extra_kwargs)
 
     return results
 
