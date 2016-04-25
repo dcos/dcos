@@ -1,9 +1,0 @@
-{
-  "requires": ["python"],
-  "single_source": {
-    "kind": "git",
-    "git": "https://github.com/rthalley/dnspython.git",
-    "ref": "f9597eefe62c1bcda08c1a89140248060a07c73c",
-    "ref_origin": "v1.12.0-py3"
-  }
-}
