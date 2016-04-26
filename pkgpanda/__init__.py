@@ -393,7 +393,7 @@ def symlink_tree(src, dest):
 
             # Recuse into the directory symlinking everything so long as the directory isn't
             symlink_tree(src_path, dest_path)
-        else:
+        elif not os.path.exists(dest_path):
             os.symlink(src_path, dest_path)
 
 
