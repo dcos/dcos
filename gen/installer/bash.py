@@ -172,6 +172,7 @@ function check_selinux() {
   fi
 
   print_status $RC "Is SELinux disabled?"
+  (( OVERALL_RC += $RC ))
   return $RC
 }
 
