@@ -253,15 +253,24 @@ def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, asy
 # Run the DC/OS diagnostic script for up to 15 minutes (900 seconds) to ensure
 # we do not return ERROR on a cluster that hasn't fully achieved quorum.
 T=900
-until OUT=$(/opt/mesosphere/bin/./3dt -diag) || [[ T -eq 0 ]]; do
-    sleep 1
-    let T=T-1
+err_msg="Waited $T seconds and DC/OS did not come up"
+test_endpoint="http://leader.mesos/acs/api/v1/logout"
+while [ $T -ne 0 ]; do
+  OUTPUT=$(/opt/mesosphere/bin/3dt -diag 2>/dev/null)
+  if [ $? -eq 0 ]; then
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" $test_endpoint)
+    if [ $STATUS -eq 401 -o $STATUS -eq 200 -o $STATUS -eq 201 ]; then
+      # if 3dt -diag returns success and  http://leader.mesos/acs/api/v1/logout
+      echo "DC/OS is up and running, $test_endpoint status code $STATUS"
+      echo "3dt output: $OUTPUT"
+      exit 0
+    fi
+  fi
+  let T=T-1
+  sleep 1
 done
-RETCODE=$?
-for value in $OUT; do
-    echo $value
-done
-exit $RETCODE"""
+echo "$err_msg, endpoint $test_endpoint returned status code: $STATUS" >&2
+exit 1"""
 
     postflight_chain.add_execute([dcos_diag], comment='Executing local post-flight check for DC/OS servces...')
     add_post_action(postflight_chain)
