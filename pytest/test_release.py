@@ -13,6 +13,8 @@ from pkgpanda.util import variant_prefix, write_json, write_string
 
 @pytest.fixture(scope='module')
 def config():
+    if not os.path.exists('dcos-release.config.yaml'):
+        pytest.skip("Skipping because there is no configuration in dcos-release.config.yaml")
     return release.load_config('dcos-release.config.yaml')
 
 
