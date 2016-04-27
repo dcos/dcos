@@ -213,7 +213,7 @@ def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
         print("bootstrap: {}".format(bootstrap_name))
         print("active: {}".format(active_name))
         print("latest: {}".format(latest_name))
-        return bootstrap_name
+        return bootstrap_id
 
     if (os.path.exists(bootstrap_name)):
         print("Bootstrap already up to date, not recreating")

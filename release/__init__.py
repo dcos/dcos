@@ -273,7 +273,7 @@ def get_package_artifact(package_id_str):
         'local_path': package_filename}
 
 
-def make_stable_artifacts(cache_repository_url, skip_build):
+def make_stable_artifacts(cache_repository_url):
     metadata = {
         "commit": util.dcos_image_commit,
         "core_artifacts": [],
@@ -282,7 +282,7 @@ def make_stable_artifacts(cache_repository_url, skip_build):
 
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
-    all_bootstraps = do_build_packages(cache_repository_url, skip_build)
+    all_bootstraps = do_build_packages(cache_repository_url)
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
@@ -398,7 +398,7 @@ def make_abs(path):
     return os.getcwd() + '/' + path
 
 
-def do_build_packages(cache_repository_url, skip_build):
+def do_build_packages(cache_repository_url):
     dockerfile = 'docker/dcos-builder/Dockerfile'
     container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
     print("Attempting to pull dcos-builder docker:", container_name)
@@ -440,10 +440,14 @@ def do_build_packages(cache_repository_url, skip_build):
     def get_build():
         # TODO(cmaloney): Stop shelling out
         package_dir = os.getcwd() + '/packages'
-        if not skip_build:
-            pkgpanda.build.build_tree(package_dir, True, cache_repository_url, None)
+        result = pkgpanda.build.build_tree(package_dir, True, cache_repository_url, None)
+        last_set = pkgpanda.build.get_last_bootstrap_set(package_dir)
+        assert last_set == result, \
+            "Internal error: get_last_bootstrap_set doesn't match the results of build_tree: {} != {}".format(
+                last_set,
+                result)
 
-        return pkgpanda.build.get_last_bootstrap_set(package_dir)
+        return result
 
     return get_build()
 
@@ -612,12 +616,12 @@ class ReleaseManager():
 
         return metadata
 
-    def create(self, repository_path, channel, tag, skip_build):
+    def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(cloudformation_s3_url + '/' + repository_path, skip_build)
+        metadata = make_stable_artifacts(cloudformation_s3_url + '/' + repository_path)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
@@ -705,7 +709,6 @@ def main():
     # `testing/{channel}`
     create.add_argument('channel')
     create.add_argument('tag')
-    create.add_argument('--skip-build', action='store_true')
 
     # Utility for building just the installers, useful for installer dev work where you don't want
     # to build all of dcos-image locally, and don't care about uploading. Defaults noop to true.
@@ -735,7 +738,7 @@ def main():
     if options.action == 'promote':
         release_manager.promote(options.source_channel, options.destination_repository, options.destination_channel)
     elif options.action == 'create':
-        release_manager.create('testing', options.channel, options.tag, options.skip_build)
+        release_manager.create('testing', options.channel, options.tag)
     elif options.action == 'create-installer':
         release_manager.create_installer(options.src_channel)
     else:
