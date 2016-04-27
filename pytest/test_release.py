@@ -490,7 +490,7 @@ def test_get_package_artifact(tmpdir):
     }
 
 
-def mock_do_build_packages(cache_repository_url, skip_build):
+def mock_do_build_packages(cache_repository_url):
     subprocess.check_call(['mkdir', '-p', 'packages'])
     write_string("packages/bootstrap_id.bootstrap.tar.xz", "bootstrap_contents")
     write_json("packages/bootstrap_id.active.json", ['a--b', 'c--d'])
@@ -550,7 +550,7 @@ def test_make_stable_artifacts(monkeypatch, tmpdir):
     monkeypatch.setattr("gen.installer.util.dcos_image_commit", "commit_sha1")
 
     with tmpdir.as_cwd():
-        metadata = release.make_stable_artifacts("http://test", False)
+        metadata = release.make_stable_artifacts("http://test")
         assert metadata == stable_artifacts_metadata
 
 
