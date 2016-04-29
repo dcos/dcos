@@ -647,7 +647,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
 
     # Add the sha1sum of the buildinfo.json + build file to the build ids
     build_ids = {"sources": checkout_ids}
-    build_ids['build'] = pkgpanda.util.sha1(pkg_abs("build"))
+    build_ids['build'] = pkgpanda.util.sha1(pkg_abs(buildinfo['build_script']))
     build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
     build_ids['variant'] = '' if variant is None else variant
 
