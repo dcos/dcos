@@ -51,6 +51,51 @@ class DockerCmd:
         check_call(docker)
 
 
+class PackageStore:
+
+    def __init__(self, packages_dir):
+        self._packages_dir = packages_dir.rstrip('/')
+
+        # Load all possible packages, making a dictionary from (name, variant) -> buildinfo
+        self._packages = dict()
+        self._packages_by_name = dict()
+
+        # Iterate through the packages directory finding all packages.
+        for name in os.listdir(self._packages_dir):
+            package_folder = self.get_package_folder(name)
+
+            # Ignore files / non-directories
+            if not os.path.isdir(package_folder):
+                continue
+
+            # Search the directory for buildinfo.json files, record the variants
+            variant_buildinfo = for_each_variant(
+                package_folder,
+                lambda variant: load_buildinfo(package_folder, variant),
+                "buildinfo.json",
+                {})
+
+            self._packages_by_name[name] = dict()
+            for variant, buildinfo in variant_buildinfo.items():
+                self._packages[(name, variant)] = buildinfo
+                self._packages_by_name[name][variant] = buildinfo
+
+    def get_package_folder(self, name):
+        return self._packages_dir + '/' + name
+
+    @property
+    def packages(self):
+        return self._packages
+
+    @property
+    def packages_by_name(self):
+        return self._packages_by_name
+
+    @property
+    def packages_dir(self):
+        return self._packages_dir
+
+
 def expand_require(require):
     try:
         return expand_require_exceptions(require)
@@ -169,27 +214,6 @@ def load_buildinfo(path, variant):
     return buildinfo
 
 
-def find_packages_fs(packages_dir):
-    # Treat the current directory as the base of a repository of packages.
-    # The packages are in folders, each containing a buildinfo.json, build.
-    # Load all the requires out of all the buildinfo.json variants and return
-    # them.
-    assert not packages_dir.endswith('/')
-
-    packages = dict()
-    for name in os.listdir(packages_dir):
-        package_folder = packages_dir + '/' + name
-        if os.path.isdir(package_folder):
-            def get_requires(variant):
-                return {'requires': load_buildinfo(package_folder, variant)['requires']}
-            variant_requires = for_each_variant(package_folder, get_requires, "buildinfo.json", {})
-
-            for variant, requires in variant_requires.items():
-                packages[(name, variant)] = requires
-
-    return packages
-
-
 def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
     # Convert filenames to package ids
     pkg_ids = list()
@@ -306,8 +330,8 @@ def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
 ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list'}
 
 
-def get_tree_package_tuples(packages_dir, tree_variant, possible_packages, package_requires):
-    treeinfo = load_config_variant(packages_dir, tree_variant, 'treeinfo.json')
+def get_tree_package_tuples(package_store, tree_variant):
+    treeinfo = load_config_variant(package_store.packages_dir, tree_variant, 'treeinfo.json')
 
     if treeinfo.keys() > ALLOWED_TREEINFO_KEYS:
         raise BuildError(
@@ -355,7 +379,7 @@ def get_tree_package_tuples(packages_dir, tree_variant, possible_packages, packa
             raise BuildError("package {} is in excludes but was needed as a dependency of an "
                              "included package".format(name))
 
-        if name not in possible_packages or variant not in possible_packages[name]:
+        if (name, variant) not in package_store.packages:
             raise BuildError("package {} variant {} is needed but is not in the set of built "
                              "packages but is needed (explicitly requested or as a requires)".format(name, variant))
 
@@ -367,7 +391,7 @@ def get_tree_package_tuples(packages_dir, tree_variant, possible_packages, packa
         package_names.add(name)
         package_tuples.add((name, variant))
 
-    for name in possible_packages.keys():
+    for name in package_store.packages_by_name.keys():
         if core_package_list is not None:
             assert isinstance(core_package_list, list)
 
@@ -400,7 +424,7 @@ def get_tree_package_tuples(packages_dir, tree_variant, possible_packages, packa
     to_visit = list(package_tuples)
     while len(to_visit) > 0:
         name, variant = to_visit.pop()
-        requires = package_requires[(name, variant)]['requires']
+        requires = package_store.packages[(name, variant)]['requires']
         for require in requires:
             require_tuple = expand_require(require)
             if require_tuple not in package_tuples:
@@ -425,13 +449,7 @@ def get_tree_package_tuples(packages_dir, tree_variant, possible_packages, packa
 
 
 def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
-    packages = find_packages_fs(packages_dir)
-
-    # Turn packages into the possible_packages dictionary
-    possible_packages = dict()
-    for name, variant in packages.keys():
-        possible_packages.setdefault(name, set())
-        possible_packages[name].add(variant)
+    package_store = PackageStore(packages_dir)
 
     # Check the requires and figure out a feasible build order
     # depth-first traverse the dependency tree, yielding when we reach a
@@ -458,8 +476,8 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
 
         name = pkg_tuple[0]
 
-        # Ensure all dependencies are built
-        for require in sorted(packages[pkg_tuple].get("requires", list())):
+        # Ensure all dependencies are built. Sorted for stability
+        for require in sorted(package_store.packages[pkg_tuple]['requires']):
             require_tuple = expand_require(require)
             if require_tuple in built:
                 continue
@@ -470,7 +488,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
                 raise BuildError("Depending on a specific package id is not supported. Package {} "
                                  "depends on {}".format(name, require_tuple))
 
-            if require_tuple not in packages:
+            if require_tuple not in package_store.packages:
                 raise BuildError("Package {0} require {1} not buildable from tree.".format(name, require_tuple))
 
             visit(require_tuple)
@@ -487,13 +505,13 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     if tree_variant is None:
         # Since there may be multiple isolated dependency trees, iterate through
         # all packages to find them all.
-        for pkg_tuple in sorted(packages.keys(), key=key_func):
+        for pkg_tuple in sorted(package_store.packages.keys(), key=key_func):
             if pkg_tuple in visited:
                 continue
             visit(pkg_tuple)
     else:
         # Build all the things needed for this variant and only this variant
-        all_tuples = get_tree_package_tuples(packages_dir, tree_variant, possible_packages, packages)
+        all_tuples = get_tree_package_tuples(package_store, tree_variant)
         for pkg_tuple in sorted(all_tuples, key=key_func):
             if pkg_tuple in visited:
                 continue
@@ -505,12 +523,12 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
 
         # Run the build, store the built package path for later use.
         # TODO(cmaloney): Only build the requested variants, rather than all variants.
-        built_packages[name] = build_package_variants(packages_dir + '/' + name, name, repository_url)
+        built_packages[name] = build_package_variants(package_store.get_package_folder(name), name, repository_url)
 
     def make_bootstrap(variant):
         print("Making bootstrap variant:", variant or "<default>")
         package_paths = list()
-        for name, pkg_variant in get_tree_package_tuples(packages_dir, variant, possible_packages, packages):
+        for name, pkg_variant in get_tree_package_tuples(package_store, variant):
             package_paths.append(built_packages[name][pkg_variant])
 
         if mkbootstrap:
