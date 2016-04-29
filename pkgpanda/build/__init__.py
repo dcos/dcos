@@ -158,7 +158,15 @@ def load_config_variant(directory, variant, extension):
 
 
 def load_buildinfo(path, variant):
-    return load_config_variant(path, variant, 'buildinfo.json')
+    buildinfo = load_config_variant(path, variant, 'buildinfo.json')
+
+    # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
+    buildinfo.setdefault('build_script', 'build')
+    buildinfo.setdefault('docker', 'dcos-builder:latest')
+    buildinfo.setdefault('environment', dict())
+    buildinfo.setdefault('requires', list())
+
+    return buildinfo
 
 
 def find_packages_fs(packages_dir):
@@ -173,10 +181,7 @@ def find_packages_fs(packages_dir):
         package_folder = packages_dir + '/' + name
         if os.path.isdir(package_folder):
             def get_requires(variant):
-                buildinfo = load_buildinfo(package_folder, variant)
-                return {
-                    'requires': buildinfo.get('requires', list())
-                }
+                return {'requires': load_buildinfo(package_folder, variant)['requires']}
             variant_requires = for_each_variant(package_folder, get_requires, "buildinfo.json", {})
 
             for variant, requires in variant_requires.items():
@@ -600,10 +605,6 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
         raise BuildError("'name' is not allowed in buildinfo.json, it is implicitly the name of the "
                          "folder containing the buildinfo.json")
 
-    # Make sure build_script is only set on variants
-    if 'build_script' in buildinfo and variant is None:
-        raise BuildError("build_script can only be set on package variants")
-
     # Convert single_source -> sources
     try:
         sources = expand_single_source_alias(name, buildinfo)
@@ -659,7 +660,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
         buildinfo['extra_source'] = extra_id
 
     # Figure out the docker name.
-    docker_name = buildinfo.get('docker', 'dcos-builder:latest')
+    docker_name = buildinfo['docker']
     cmd.container = docker_name
 
     # Add the id of the docker build environment to the build_ids.
@@ -674,7 +675,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
 
     # TODO(cmaloney): The environment variables should be generated during build
     # not live in buildinfo.json.
-    build_ids['environment'] = buildinfo.get('environment', {})
+    build_ids['environment'] = buildinfo['environment']
 
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
@@ -732,7 +733,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
                 pkg_id_str = load_string(last_build)
                 auto_deps.add(pkg_id_str)
                 pkg_buildinfo = load_buildinfo(require_package_dir, requires_variant)
-                pkg_requires = pkg_buildinfo.get('requires', list())
+                pkg_requires = pkg_buildinfo['requires']
                 pkg_path = repository.package_path(pkg_id_str)
                 pkg_tar = pkg_id_str + '.tar.xz'
                 if not os.path.exists(require_package_dir + '/' + pkg_tar):
@@ -861,8 +862,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
         raise BuildError("Validation error when fetching sources for package: {}".format(ex))
 
     # Copy over environment settings
-    if 'environment' in buildinfo:
-        pkginfo['environment'] = buildinfo['environment']
+    pkginfo['environment'] = buildinfo['environment']
 
     # Activate the packages so that we have a proper path, environment
     # variables.
@@ -900,7 +900,7 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
         # TODO(cmaloney): src should be read only...
         pkg_abs("src"): "/pkg/src:rw",
         # The build script
-        pkg_abs(buildinfo.get('build_script', 'build')): "/pkg/build:ro",
+        pkg_abs(buildinfo['build_script']): "/pkg/build:ro",
         # Getting the result out
         pkg_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
         install_dir: "/opt/mesosphere:ro"
