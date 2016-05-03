@@ -512,26 +512,24 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
         assert pkg_tuple not in visited
         visited.add(pkg_tuple)
 
-        name = pkg_tuple[0]
-
         # Ensure all dependencies are built. Sorted for stability
         for require in sorted(package_store.packages[pkg_tuple]['requires']):
             require_tuple = expand_require(require)
             if require_tuple in built:
                 continue
             if require_tuple in visited:
-                raise BuildError("Circular dependency. Circular link {0} -> {1}".format(name, require_tuple))
+                raise BuildError("Circular dependency. Circular link {0} -> {1}".format(pkg_tuple, require_tuple))
 
             if PackageId.is_id(require_tuple[0]):
                 raise BuildError("Depending on a specific package id is not supported. Package {} "
-                                 "depends on {}".format(name, require_tuple))
+                                 "depends on {}".format(pkg_tuple, require_tuple))
 
             if require_tuple not in package_store.packages:
-                raise BuildError("Package {0} require {1} not buildable from tree.".format(name, require_tuple))
+                raise BuildError("Package {0} require {1} not buildable from tree.".format(pkg_tuple, require_tuple))
 
             visit(require_tuple)
 
-        build_order.append(name)
+        build_order.append(pkg_tuple)
         built.add(pkg_tuple)
 
     # Can't compare none to string, so expand none -> "true" / "false", then put
@@ -539,32 +537,39 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     def key_func(elem):
         return elem[0], elem[1] is None, elem[1] or ""
 
-    # Build everything if no variant is given
-    if tree_variant is None:
-        # Since there may be multiple isolated dependency trees, iterate through
-        # all packages to find them all.
-        for pkg_tuple in sorted(package_store.packages.keys(), key=key_func):
-            if pkg_tuple in visited:
-                continue
-            visit(pkg_tuple)
-    else:
-        # Build all the things needed for this variant and only this variant
-        all_tuples = get_tree_package_tuples(package_store, tree_variant)
+    def visit_packages_in_tree(variant):
+        all_tuples = get_tree_package_tuples(package_store, variant)
         for pkg_tuple in sorted(all_tuples, key=key_func):
             if pkg_tuple in visited:
                 continue
             visit(pkg_tuple)
 
+    # Build everything if no variant is given
+    if tree_variant is None:
+        # Since there may be multiple isolated dependency trees, iterate through
+        # all packages to find them all.
+        for variant in sorted(package_store.list_trees()):
+            visit_packages_in_tree(variant)
+    else:
+        # Build all the things needed for this variant and only this variant
+        visit_packages_in_tree(tree_variant)
+
     built_packages = dict()
-    for name in build_order:
-        print("Building: {}".format(name))
+    for (name, variant) in build_order:
+        print("Building: {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
+        built_packages.setdefault(name, dict())
 
         # Run the build, store the built package path for later use.
         # TODO(cmaloney): Only build the requested variants, rather than all variants.
-        built_packages[name] = build_package_variants(package_store, name, repository_url)
+        built_packages[name][variant] = build(
+            package_store,
+            name,
+            variant,
+            repository_url,
+            True)
 
     def make_bootstrap(variant):
-        print("Making bootstrap variant:", variant or "<default>")
+        print("Making bootstrap variant:q", variant or "<default>")
         package_paths = list()
         for name, pkg_variant in get_tree_package_tuples(package_store, variant):
             package_paths.append(built_packages[name][pkg_variant])
