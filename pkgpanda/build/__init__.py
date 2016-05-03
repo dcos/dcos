@@ -51,6 +51,35 @@ class DockerCmd:
         check_call(docker)
 
 
+def get_variants_from_filesystem(directory, extension):
+    results = set()
+    for filename in os.listdir(directory):
+        # Skip things that don't end in the extension
+        if not filename.endswith(extension):
+            continue
+
+        variant = filename[:-len(extension)]
+
+        # Empty name variant shouldn't have a `.` following it
+        if variant == '.':
+            raise BuildError("Invalid filename {}. The \"default\" variant file should be just {}".format(
+                filename, extension))
+
+        # Empty / default variant is represented as 'None'.
+        if variant == '':
+            variant = None
+        else:
+            # Should be foo. since we've moved the extension.
+            if variant[-1] != '.':
+                raise BuildError("Invalid variant filename {}. Expected a '.' separating the "
+                                 "variant name and extension.".format(filename))
+            variant = variant[:-1]
+
+        results.add(variant)
+
+    return results
+
+
 class PackageStore:
 
     def __init__(self, packages_dir):
@@ -69,19 +98,26 @@ class PackageStore:
                 continue
 
             # Search the directory for buildinfo.json files, record the variants
-            variant_buildinfo = for_each_variant(
-                package_folder,
-                lambda variant: load_buildinfo(package_folder, variant),
-                "buildinfo.json",
-                {})
-
             self._packages_by_name[name] = dict()
-            for variant, buildinfo in variant_buildinfo.items():
+            for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
+                buildinfo = load_buildinfo(package_folder, variant)
                 self._packages[(name, variant)] = buildinfo
                 self._packages_by_name[name][variant] = buildinfo
 
     def get_package_folder(self, name):
         return self._packages_dir + '/' + name
+
+    def get_buildinfo(self, name, variant):
+        return self._packages[(name, variant)]
+
+    def get_last_build_filename(self, name, variant):
+        return self.get_package_folder(name) + '/' + last_build_filename(variant)
+
+    def get_treeinfo(self, variant):
+        return load_config_variant(self._packages_dir, variant, 'treeinfo.json')
+
+    def list_trees(self):
+        return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
 
     @property
     def packages(self):
@@ -174,7 +210,9 @@ def get_last_bootstrap_set(path):
                                          pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
         return load_string(bootstrap_latest)
 
-    return for_each_variant(path, get_last_bootstrap, 'treeinfo.json', {})
+    result = {}
+    for variant in PackageStore(path).list_trees():
+        result[variant] = get_last_bootstrap(variant)
 
 
 def last_build_filename(variant):
@@ -331,7 +369,7 @@ ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list'}
 
 
 def get_tree_package_tuples(package_store, tree_variant):
-    treeinfo = load_config_variant(package_store.packages_dir, tree_variant, 'treeinfo.json')
+    treeinfo = package_store.get_treeinfo(tree_variant)
 
     if treeinfo.keys() > ALLOWED_TREEINFO_KEYS:
         raise BuildError(
@@ -523,7 +561,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
 
         # Run the build, store the built package path for later use.
         # TODO(cmaloney): Only build the requested variants, rather than all variants.
-        built_packages[name] = build_package_variants(package_store.get_package_folder(name), name, repository_url)
+        built_packages[name] = build_package_variants(package_store, name, repository_url)
 
     def make_bootstrap(variant):
         print("Making bootstrap variant:", variant or "<default>")
@@ -538,11 +576,17 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     # tarballs if requested.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     if tree_variant is None:
-        return for_each_variant(packages_dir, make_bootstrap, "treeinfo.json", {})
+        variants = package_store.list_trees()
     else:
-        return {
-            tree_variant: make_bootstrap(tree_variant)
-        }
+        variants = {tree_variant}
+
+    assert isinstance(variants, set)
+
+    results = {}
+    for variant in sorted(variants):
+        results[variant] = make_bootstrap(variant)
+
+    return results
 
 
 def expand_single_source_alias(pkg_name, buildinfo):
@@ -561,52 +605,26 @@ def assert_no_duplicate_keys(lhs, rhs):
         assert len(lhs.keys() & rhs.keys()) == 0
 
 
-def for_each_variant(variant_dir, fn, extension, extra_kwargs):
-    # Find all the files which end in the extension. Remove the extension to get just the variant. Include
-    # the None / default variant always
+# Find all build variants and build them
+def build_package_variants(package_store, name, repository_url, clean_after_build=True):
+    # Find the packages dir / root of the packages tree, and create a PackageStore
     results = dict()
-    for filename in os.listdir(variant_dir):
-        if not filename.endswith(extension):
-            continue
-
-        variant = filename[:-len(extension)]
-
-        # Empty name variant shouldn't have a `.` following it
-        if variant == '.':
-            raise BuildError("Invalid filename {}. The \"default\" variant file should be just {}".format(
-                filename, extension))
-
-        # Empty / default variant is represented as 'None'.
-        if variant == '':
-            variant = None
-        else:
-            # Should be foo. since we've moved the extension.
-            if variant[-1] != '.':
-                raise BuildError("Invalid variant filename {}. Expected a '.' separating the "
-                                 "variant name and extension.".format(filename))
-            variant = variant[:-1]
-        results[variant] = fn(variant=variant, **extra_kwargs)
-
+    for variant in package_store.packages_by_name[name].keys():
+        results[variant] = build(
+            package_store,
+            name,
+            variant,
+            repository_url=repository_url,
+            clean_after_build=clean_after_build)
     return results
 
 
-# Find all build variants and build them
-def build_package_variants(package_dir, name, repository_url, clean_after_build=True):
-    return for_each_variant(
-        package_dir,
-        build,
-        "buildinfo.json",
-        {
-            "package_dir": package_dir,
-            "name": name,
-            "repository_url": repository_url,
-            "clean_after_build": clean_after_build})
-
-
-def build(variant, package_dir, name, repository_url, clean_after_build):
-    print("Building package {} variant {}".format(name, variant or "<default>"))
+def build(package_store, name, variant, repository_url, clean_after_build):
+    print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
     repository = Repository(tmpdir.name)
+
+    package_dir = package_store.get_package_folder(name)
 
     def pkg_abs(name):
         return package_dir + '/' + name
@@ -617,7 +635,9 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
     # Build up the docker command arguments over time, translating fields as needed.
     cmd = DockerCmd()
 
-    buildinfo = load_buildinfo(package_dir, variant)
+    assert (name, variant) in package_store.packages, \
+        "Programming error: name, variant should have been validated to be valid before calling build()."
+    buildinfo = copy.deepcopy(package_store.packages[(name, variant)])
 
     if 'name' in buildinfo:
         raise BuildError("'name' is not allowed in buildinfo.json, it is implicitly the name of the "
@@ -741,20 +761,19 @@ def build(variant, package_dir, name, repository_url, clean_after_build):
 
             # Figure out the last build of the dependency, add that as the
             # fully expanded dependency.
-            require_package_dir = os.path.normpath(pkg_abs('../' + requires_name))
-            last_build = require_package_dir + '/' + last_build_filename(requires_variant)
-            if not os.path.exists(last_build):
+            requires_last_build = package_store.get_last_build_filename(requires_name, requires_variant)
+            if not os.path.exists(requires_last_build):
                 raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
                                  "the dependency".format(requires_name, requires_variant))
 
             try:
-                pkg_id_str = load_string(last_build)
+                pkg_id_str = load_string(requires_last_build)
                 auto_deps.add(pkg_id_str)
-                pkg_buildinfo = load_buildinfo(require_package_dir, requires_variant)
+                pkg_buildinfo = package_store.packages.get_buildinfo(requires_name, requires_variant)
                 pkg_requires = pkg_buildinfo['requires']
                 pkg_path = repository.package_path(pkg_id_str)
                 pkg_tar = pkg_id_str + '.tar.xz'
-                if not os.path.exists(require_package_dir + '/' + pkg_tar):
+                if not os.path.exists(package_store.get_package_folder(requires_name) + '/' + pkg_tar):
                     raise BuildError("The build tarball {} refered to by the last_build file of the "
                                      "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
                                         pkg_tar,
