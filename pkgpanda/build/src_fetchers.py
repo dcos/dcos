@@ -66,7 +66,7 @@ def get_git_sha1(bare_folder, ref):
                 "git",
                 "--git-dir", bare_folder,
                 "rev-parse", ref + "^{commit}"
-                ]).decode('ascii').strip()
+            ]).decode('ascii').strip()
         except CalledProcessError as ex:
             raise ValidationError(
                 "Unable to find ref '{}' in '{}': {}".format(ref, bare_folder, ex)) from ex

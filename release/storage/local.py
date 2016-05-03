@@ -65,7 +65,7 @@ class LocalStorageProvider(AbstractStorageProvider):
         final_filenames = set()
         for dirpath, _, filenames in os.walk(self.__full_path(path)):
             assert dirpath.startswith(self.__storage_path)
-            dirpath_no_prefix = dirpath[len(self.__storage_path)+1:]
+            dirpath_no_prefix = dirpath[len(self.__storage_path) + 1:]
             for filename in filenames:
                 final_filenames.add(dirpath_no_prefix + '/' + filename)
 
