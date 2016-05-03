@@ -104,6 +104,11 @@ class PackageStore:
                 self._packages[(name, variant)] = buildinfo
                 self._packages_by_name[name][variant] = buildinfo
 
+            # If there weren't any packages marked by buildinfo.json files, don't leave the index
+            # entry to simplify other code from having to check for empty dictionaries.
+            if len(self._packages_by_name[name]) == 0:
+                del self._packages_by_name[name]
+
     def get_package_folder(self, name):
         return self._packages_dir + '/' + name
 
@@ -213,6 +218,7 @@ def get_last_bootstrap_set(path):
     result = {}
     for variant in PackageStore(path).list_trees():
         result[variant] = get_last_bootstrap(variant)
+    return result
 
 
 def last_build_filename(variant):
@@ -548,7 +554,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     if tree_variant is None:
         # Since there may be multiple isolated dependency trees, iterate through
         # all packages to find them all.
-        for variant in sorted(package_store.list_trees()):
+        for variant in sorted(package_store.list_trees(), key=pkgpanda.util.variant_str):
             visit_packages_in_tree(variant)
     else:
         # Build all the things needed for this variant and only this variant
@@ -588,7 +594,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     assert isinstance(variants, set)
 
     results = {}
-    for variant in sorted(variants):
+    for variant in sorted(variants, key=pkgpanda.util.variant_str):
         results[variant] = make_bootstrap(variant)
 
     return results
@@ -625,6 +631,7 @@ def build_package_variants(package_store, name, repository_url, clean_after_buil
 
 
 def build(package_store, name, variant, repository_url, clean_after_build):
+    assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
     repository = Repository(tmpdir.name)
@@ -774,7 +781,7 @@ def build(package_store, name, variant, repository_url, clean_after_build):
             try:
                 pkg_id_str = load_string(requires_last_build)
                 auto_deps.add(pkg_id_str)
-                pkg_buildinfo = package_store.packages.get_buildinfo(requires_name, requires_variant)
+                pkg_buildinfo = package_store.get_buildinfo(requires_name, requires_variant)
                 pkg_requires = pkg_buildinfo['requires']
                 pkg_path = repository.package_path(pkg_id_str)
                 pkg_tar = pkg_id_str + '.tar.xz'
