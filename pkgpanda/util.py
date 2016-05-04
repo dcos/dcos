@@ -71,6 +71,19 @@ def download(out_filename, url, work_dir):
         raise FetchError(url, out_filename, fetch_exception, rm_passed) from fetch_exception
 
 
+def download_atomic(out_filename, url, work_dir):
+    tmp_filename = out_filename + '.tmp'
+    try:
+        download(tmp_filename, url, work_dir)
+        os.rename(tmp_filename, out_filename)
+    except FetchError:
+        try:
+            os.remove(tmp_filename)
+        except:
+            pass
+        raise
+
+
 def extract_tarball(path, target):
     """Extract the tarball into target.
 

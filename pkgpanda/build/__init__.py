@@ -16,7 +16,7 @@ from pkgpanda import Install, PackageId, Repository
 from pkgpanda.cli import add_to_repository
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
-from pkgpanda.util import (check_forbidden_services, download, load_json,
+from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
                            load_string, make_file, make_tar, rewrite_symlinks,
                            write_json, write_string)
 
@@ -294,34 +294,19 @@ def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
 
     # Try downloading.
     if repository_url:
-        tmp_bootstrap = bootstrap_name + '.tmp'
-        tmp_active = active_name + '.tmp'
         try:
             repository_url = repository_url.rstrip('/')
             bootstrap_url = repository_url + '/bootstrap/{}.bootstrap.tar.xz'.format(bootstrap_id)
             active_url = repository_url + '/bootstrap/{}.active.json'.format(bootstrap_id)
             print("Attempting to download", bootstrap_name, "from", bootstrap_url)
             # Normalize to no trailing slash for repository_url
-            download(tmp_bootstrap, bootstrap_url, packages_dir)
+            download_atomic(bootstrap_name, bootstrap_url, packages_dir)
             print("Attempting to download", active_name, "from", active_url)
-            download(tmp_active, active_url, packages_dir)
-
-            # Move into place
-            os.rename(tmp_bootstrap, bootstrap_name)
-            os.rename(tmp_active, active_name)
+            download_atomic(active_name, active_url, packages_dir)
 
             print("Bootstrap already up to date, Not recreating. Downloaded from repository-url.")
             return mark_latest()
         except FetchError:
-            try:
-                os.remove(tmp_bootstrap)
-            except:
-                pass
-            try:
-                os.remove(tmp_active)
-            except:
-                pass
-
             # Fall out and do the build since the command errored.
             print("Unable to download from cache. Building.")
 
@@ -838,14 +823,12 @@ def build(package_store, name, variant, repository_url, clean_after_build):
 
     # Try downloading.
     if repository_url:
-        tmp_filename = pkg_path + '.tmp'
         try:
             # Normalize to no trailing slash for repository_url
             repository_url = repository_url.rstrip('/')
             url = repository_url + '/packages/{0}/{1}.tar.xz'.format(pkg_id.name, str(pkg_id))
             print("Attempting to download", pkg_id, "from", url)
-            download(tmp_filename, url, package_dir)
-            os.rename(tmp_filename, pkg_path)
+            download_atomic(pkg_path, url, package_dir)
 
             print("Package up to date. Not re-building. Downloaded from repository-url.")
             # TODO(cmaloney): Updating / filling last_build should be moved out of
@@ -854,11 +837,6 @@ def build(package_store, name, variant, repository_url, clean_after_build):
             write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
             return pkg_path
         except FetchError:
-            try:
-                os.remove(tmp_filename)
-            except:
-                pass
-
             # Fall out and do the build since the command errored.
             print("Unable to download from cache. Proceeding to build")
 
