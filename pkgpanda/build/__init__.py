@@ -477,9 +477,7 @@ def get_tree_package_tuples(package_store, tree_variant):
     return package_tuples
 
 
-def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
-    package_store = PackageStore(packages_dir)
-
+def build_tree(package_store, mkbootstrap, repository_url, tree_variant):
     # Check the requires and figure out a feasible build order
     # depth-first traverse the dependency tree, yielding when we reach a
     # leaf or all the dependencies of package have been built. If we get
@@ -564,7 +562,11 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
             package_paths.append(built_packages[name][pkg_variant])
 
         if mkbootstrap:
-            return make_bootstrap_tarball(packages_dir, list(sorted(package_paths)), variant, repository_url)
+            return make_bootstrap_tarball(
+                package_store.packages_dir,
+                list(sorted(package_paths)),
+                variant,
+                repository_url)
 
     # Make sure all treeinfos are satisfied and generate their bootstrap
     # tarballs if requested.

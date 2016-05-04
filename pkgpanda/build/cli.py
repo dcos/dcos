@@ -28,7 +28,8 @@ def main():
 
         # Make a local repository for build dependencies
         if arguments['tree']:
-            build_tree(getcwd(), arguments['--mkbootstrap'], arguments['--repository-url'], arguments['<variant>'])
+            package_store = PackageStore(getcwd())
+            build_tree(package_store, arguments['--mkbootstrap'], arguments['--repository-url'], arguments['<variant>'])
             sys.exit(0)
 
         # Check for the 'build' file to verify this is a valid package directory.
