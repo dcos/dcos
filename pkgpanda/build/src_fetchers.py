@@ -4,7 +4,7 @@ import shutil
 from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.exceptions import ValidationError
-from pkgpanda.util import download, sha1
+from pkgpanda.util import download_atomic, sha1
 
 
 # Ref must be a git sha-1. We then pass it through get_sha1 to make
@@ -66,7 +66,7 @@ def get_git_sha1(bare_folder, ref):
                 "git",
                 "--git-dir", bare_folder,
                 "rev-parse", ref + "^{commit}"
-                ]).decode('ascii').strip()
+            ]).decode('ascii').strip()
         except CalledProcessError as ex:
             raise ValidationError(
                 "Unable to find ref '{}' in '{}': {}".format(ref, bare_folder, ex)) from ex
@@ -305,7 +305,7 @@ class UrlSrcFetcher(SourceFetcher):
         # Download file to cache if it isn't already there
         if not os.path.exists(self.cache_filename):
             print("Downloading source tarball {}".format(self.url))
-            download(self.cache_filename, self.url, self.package_dir)
+            download_atomic(self.cache_filename, self.url, self.package_dir)
 
         # Validate the sha1 of the source is given and matches the sha1
         file_sha = sha1(self.cache_filename)
