@@ -72,7 +72,7 @@ def get_variants_from_filesystem(directory, extension):
             # Should be foo. since we've moved the extension.
             if variant[-1] != '.':
                 raise BuildError("Invalid variant filename {}. Expected a '.' separating the "
-                                 "variant name and extension.".format(filename))
+                                 "variant name and extension '{}'.".format(filename, extension))
             variant = variant[:-1]
 
         results.add(variant)
@@ -468,7 +468,7 @@ def get_tree_package_tuples(package_store, tree_variant):
     to_visit = list(package_tuples)
     while len(to_visit) > 0:
         name, variant = to_visit.pop()
-        requires = package_store.packages[(name, variant)]['requires']
+        requires = package_store.get_buildinfo(name, variant)['requires']
         for require in requires:
             require_tuple = expand_require(require)
             if require_tuple not in package_tuples:
@@ -550,15 +550,13 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
                 continue
             visit(pkg_tuple)
 
-    # Build everything if no variant is given
     if tree_variant is None:
-        # Since there may be multiple isolated dependency trees, iterate through
-        # all packages to find them all.
-        for variant in sorted(package_store.list_trees(), key=pkgpanda.util.variant_str):
-            visit_packages_in_tree(variant)
+        tree_visit_list = list(sorted(package_store.list_trees(), key=pkgpanda.util.variant_str))
     else:
-        # Build all the things needed for this variant and only this variant
-        visit_packages_in_tree(tree_variant)
+        tree_visit_list = [tree_variant]
+
+    for tree in tree_visit_list:
+        visit_packages_in_tree(tree)
 
     built_packages = dict()
     for (name, variant) in build_order:
@@ -575,7 +573,7 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
             True)
 
     def make_bootstrap(variant):
-        print("Making bootstrap variant:q", variant or "<default>")
+        print("Making bootstrap variant:", variant or "<default>")
         package_paths = list()
         for name, pkg_variant in get_tree_package_tuples(package_store, variant):
             package_paths.append(built_packages[name][pkg_variant])
@@ -586,15 +584,8 @@ def build_tree(packages_dir, mkbootstrap, repository_url, tree_variant):
     # Make sure all treeinfos are satisfied and generate their bootstrap
     # tarballs if requested.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
-    if tree_variant is None:
-        variants = package_store.list_trees()
-    else:
-        variants = {tree_variant}
-
-    assert isinstance(variants, set)
-
     results = {}
-    for variant in sorted(variants, key=pkgpanda.util.variant_str):
+    for variant in tree_visit_list:
         results[variant] = make_bootstrap(variant)
 
     return results
@@ -649,7 +640,7 @@ def build(package_store, name, variant, repository_url, clean_after_build):
 
     assert (name, variant) in package_store.packages, \
         "Programming error: name, variant should have been validated to be valid before calling build()."
-    buildinfo = copy.deepcopy(package_store.packages[(name, variant)])
+    buildinfo = copy.deepcopy(package_store.get_buildinfo(name, variant))
 
     if 'name' in buildinfo:
         raise BuildError("'name' is not allowed in buildinfo.json, it is implicitly the name of the "
