@@ -3,6 +3,7 @@ from subprocess import CalledProcessError, check_call, check_output
 
 import pytest
 
+import pkgpanda.build
 import pkgpanda.build.cli
 from pkgpanda.util import expect_fs
 
@@ -22,9 +23,8 @@ def package(resource_dir, name, tmpdir):
     # Build once using programmatic interface
     pkg_dir_2 = str(tmpdir.join("api-build/" + name))
     copytree(resource_dir, pkg_dir_2)
-
-    pkgpanda.build.cli.build_package_variants(pkg_dir_2, name, None)
-    pkgpanda.build.cli.clean(pkg_dir_2)
+    package_store = pkgpanda.build.PackageStore(str(tmpdir.join("api-build")))
+    pkgpanda.build.build_package_variants(package_store, name, None, True)
 
 
 def test_build(tmpdir):

@@ -12,12 +12,12 @@ Usage:
 
 import sys
 from os import getcwd, umask
-from os.path import basename, exists
+from os.path import basename, exists, normpath
 
 from docopt import docopt
 
 import pkgpanda.build.constants
-from pkgpanda.build import (BuildError, build_package_variants, build_tree,
+from pkgpanda.build import (BuildError, PackageStore, build_package_variants, build_tree,
                             clean)
 
 
@@ -32,8 +32,8 @@ def main():
             sys.exit(0)
 
         # Check for the 'build' file to verify this is a valid package directory.
-        if not exists("build"):
-            print("Not a valid package folder. No 'build' file.")
+        if not exists("buildinfo.json"):
+            print("Not a valid package folder. No 'buildinfo.json' file.")
             sys.exit(1)
 
         # Package name is the folder name.
@@ -44,9 +44,14 @@ def main():
             clean(getcwd())
             sys.exit(0)
 
+        package_store = PackageStore(normpath(getcwd() + '/../'))
+
         # No command -> build package.
         pkg_dict = build_package_variants(
-            getcwd(), name, arguments['--repository-url'], not arguments['--dont-clean-after-build'])
+            package_store,
+            name,
+            arguments['--repository-url'],
+            not arguments['--dont-clean-after-build'])
 
         print("Package variants available as:")
         for k, v in pkg_dict.items():
