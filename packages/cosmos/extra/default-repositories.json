@@ -1,5 +1,9 @@
 [
   {
+    "name": "binary-cli-test",
+    "uri": "https://github.com/mesosphere/universe/archive/binary-cli.zip"
+  },
+  {
     "name": "Universe-1.7",
     "uri": "https://universe.mesosphere.com/repo-1.7"
   },
