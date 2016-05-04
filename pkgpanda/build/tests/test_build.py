@@ -23,8 +23,8 @@ def package(resource_dir, name, tmpdir):
     # Build once using programmatic interface
     pkg_dir_2 = str(tmpdir.join("api-build/" + name))
     copytree(resource_dir, pkg_dir_2)
-    package_store = pkgpanda.build.PackageStore(str(tmpdir.join("api-build")))
-    pkgpanda.build.build_package_variants(package_store, name, None, True)
+    package_store = pkgpanda.build.PackageStore(str(tmpdir.join("api-build")), None)
+    pkgpanda.build.build_package_variants(package_store, name, True)
 
 
 def test_build(tmpdir):

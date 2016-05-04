@@ -33,6 +33,7 @@ def variant_prefix(variant):
 
 
 def download(out_filename, url, work_dir):
+    assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
     work_dir = work_dir.rstrip('/')
 
@@ -72,6 +73,7 @@ def download(out_filename, url, work_dir):
 
 
 def download_atomic(out_filename, url, work_dir):
+    assert os.path.isabs(out_filename)
     tmp_filename = out_filename + '.tmp'
     try:
         download(tmp_filename, url, work_dir)

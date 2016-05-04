@@ -28,8 +28,8 @@ def main():
 
         # Make a local repository for build dependencies
         if arguments['tree']:
-            package_store = PackageStore(getcwd())
-            build_tree(package_store, arguments['--mkbootstrap'], arguments['--repository-url'], arguments['<variant>'])
+            package_store = PackageStore(getcwd(), arguments['--repository-url'])
+            build_tree(package_store, arguments['--mkbootstrap'], arguments['<variant>'])
             sys.exit(0)
 
         # Check for the 'build' file to verify this is a valid package directory.
@@ -45,13 +45,12 @@ def main():
             clean(getcwd())
             sys.exit(0)
 
-        package_store = PackageStore(normpath(getcwd() + '/../'))
+        package_store = PackageStore(normpath(getcwd() + '/../'), arguments['--repository-url'])
 
         # No command -> build package.
         pkg_dict = build_package_variants(
             package_store,
             name,
-            arguments['--repository-url'],
             not arguments['--dont-clean-after-build'])
 
         print("Package variants available as:")

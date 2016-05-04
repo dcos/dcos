@@ -439,9 +439,9 @@ def do_build_packages(cache_repository_url):
 
     def get_build():
         # TODO(cmaloney): Stop shelling out
-        package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages')
-        result = pkgpanda.build.build_tree(package_store, True, cache_repository_url, None)
-        last_set = pkgpanda.build.get_last_bootstrap_set(package_dir)
+        package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages', cache_repository_url)
+        result = pkgpanda.build.build_tree(package_store, True, None)
+        last_set = package_store.get_last_bootstrap_set()
         assert last_set == result, \
             "Internal error: get_last_bootstrap_set doesn't match the results of build_tree: {} != {}".format(
                 last_set,

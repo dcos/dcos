@@ -82,7 +82,8 @@ def get_variants_from_filesystem(directory, extension):
 
 class PackageStore:
 
-    def __init__(self, packages_dir):
+    def __init__(self, packages_dir, repository_url):
+        self._repository_url = repository_url.rstrip('/') if repository_url is not None else None
         self._packages_dir = packages_dir.rstrip('/')
 
         # Load all possible packages, making a dictionary from (name, variant) -> buildinfo
@@ -115,6 +116,20 @@ class PackageStore:
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
+    def get_last_bootstrap_set(self):
+        def get_last_bootstrap(variant):
+            bootstrap_latest = self._packages_dir + '/' + pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
+            if not os.path.exists(bootstrap_latest):
+                raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
+                                 "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
+                                             pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
+            return load_string(bootstrap_latest)
+
+        result = {}
+        for variant in self.list_trees():
+            result[variant] = get_last_bootstrap(variant)
+        return result
+
     def get_last_build_filename(self, name, variant):
         return self.get_package_folder(name) + '/' + last_build_filename(variant)
 
@@ -135,6 +150,43 @@ class PackageStore:
     @property
     def packages_dir(self):
         return self._packages_dir
+
+    def try_fetch_by_id(self, pkg_id):
+        assert isinstance(pkg_id, PackageId)
+        if self._repository_url is None:
+            return False
+
+        # TODO(cmaloney): Use storage providers to download instead of open coding.
+        pkg_path = "{}.tar.xz".format(pkg_id)
+        url = self._repository_url + '/packages/{0}/{1}'.format(pkg_id.name, pkg_path)
+        try:
+            directory = self.get_package_folder(pkg_id.name)
+            # TODO(cmaloney): Move to some sort of logging mechanism?
+            print("Attempting to download", pkg_id, "from", url, "to", directory)
+            download_atomic(directory + '/' + pkg_path, url, directory)
+            assert os.path.exists(directory + '/' + pkg_path)
+            return directory + '/' + pkg_path
+        except FetchError:
+            return False
+
+    def try_fetch_bootstrap_and_active(self, bootstrap_id):
+        if self._repository_url is None:
+            return False
+
+        try:
+            bootstrap_name = '{}.bootstrap.tar.xz'.format(bootstrap_id)
+            active_name = '{}.active.json'.format(bootstrap_id)
+            # TODO(cmaloney): Use storage providers to download instead of open coding.
+            bootstrap_url = self._repository_url + '/bootstrap/' + bootstrap_name
+            active_url = self._repository_url + '/bootstrap/' + active_name
+            print("Attempting to download", bootstrap_name, "from", bootstrap_url)
+            # Normalize to no trailing slash for repository_url
+            download_atomic(self._packages_dir + '/' + bootstrap_name, bootstrap_url, self._packages_dir)
+            print("Attempting to download", active_name, "from", active_url)
+            download_atomic(self._packages_dir + '/' + active_name, active_url, self._packages_dir)
+            return True
+        except FetchError:
+            return False
 
 
 def expand_require(require):
@@ -204,23 +256,6 @@ def hash_folder(directory):
             directory)]).decode('ascii').strip()
 
 
-def get_last_bootstrap_set(path):
-    assert path[-1] != '/'
-
-    def get_last_bootstrap(variant):
-        bootstrap_latest = path + '/' + pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
-        if not os.path.exists(bootstrap_latest):
-            raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
-                             "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
-                                         pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
-        return load_string(bootstrap_latest)
-
-    result = {}
-    for variant in PackageStore(path).list_trees():
-        result[variant] = get_last_bootstrap(variant)
-    return result
-
-
 def last_build_filename(variant):
     return "cache/" + ((variant + '.') if variant else "") + "latest"
 
@@ -258,7 +293,7 @@ def load_buildinfo(path, variant):
     return buildinfo
 
 
-def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
+def make_bootstrap_tarball(package_store, packages, variant):
     # Convert filenames to package ids
     pkg_ids = list()
     for pkg_path in packages:
@@ -268,6 +303,8 @@ def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
             raise BuildError("Packages must be packaged / end with a .tar.xz. Got {}".format(filename))
         pkg_id = filename[:-len(".tar.xz")]
         pkg_ids.append(pkg_id)
+
+    packages_dir = package_store.packages_dir
 
     # Filename is output_name.<sha-1>.{active.json|.bootstrap.tar.xz}
     bootstrap_id = hash_checkout(pkg_ids)
@@ -293,22 +330,11 @@ def make_bootstrap_tarball(packages_dir, packages, variant, repository_url):
         return mark_latest()
 
     # Try downloading.
-    if repository_url:
-        try:
-            repository_url = repository_url.rstrip('/')
-            bootstrap_url = repository_url + '/bootstrap/{}.bootstrap.tar.xz'.format(bootstrap_id)
-            active_url = repository_url + '/bootstrap/{}.active.json'.format(bootstrap_id)
-            print("Attempting to download", bootstrap_name, "from", bootstrap_url)
-            # Normalize to no trailing slash for repository_url
-            download_atomic(bootstrap_name, bootstrap_url, packages_dir)
-            print("Attempting to download", active_name, "from", active_url)
-            download_atomic(active_name, active_url, packages_dir)
+    if package_store.try_fetch_bootstrap_and_active(bootstrap_id):
+        print("Bootstrap already up to date, Not recreating. Downloaded from repository-url.")
+        return mark_latest()
 
-            print("Bootstrap already up to date, Not recreating. Downloaded from repository-url.")
-            return mark_latest()
-        except FetchError:
-            # Fall out and do the build since the command errored.
-            print("Unable to download from cache. Building.")
+    print("Unable to download from cache. Building.")
 
     print("Creating bootstrap tarball for variant {}".format(variant))
 
@@ -477,7 +503,7 @@ def get_tree_package_tuples(package_store, tree_variant):
     return package_tuples
 
 
-def build_tree(package_store, mkbootstrap, repository_url, tree_variant):
+def build_tree(package_store, mkbootstrap, tree_variant):
     # Check the requires and figure out a feasible build order
     # depth-first traverse the dependency tree, yielding when we reach a
     # leaf or all the dependencies of package have been built. If we get
@@ -552,7 +578,6 @@ def build_tree(package_store, mkbootstrap, repository_url, tree_variant):
             package_store,
             name,
             variant,
-            repository_url,
             True)
 
     def make_bootstrap(variant):
@@ -563,10 +588,9 @@ def build_tree(package_store, mkbootstrap, repository_url, tree_variant):
 
         if mkbootstrap:
             return make_bootstrap_tarball(
-                package_store.packages_dir,
+                package_store,
                 list(sorted(package_paths)),
-                variant,
-                repository_url)
+                variant)
 
     # Make sure all treeinfos are satisfied and generate their bootstrap
     # tarballs if requested.
@@ -595,7 +619,7 @@ def assert_no_duplicate_keys(lhs, rhs):
 
 
 # Find all build variants and build them
-def build_package_variants(package_store, name, repository_url, clean_after_build=True):
+def build_package_variants(package_store, name, clean_after_build=True):
     # Find the packages dir / root of the packages tree, and create a PackageStore
     results = dict()
     for variant in package_store.packages_by_name[name].keys():
@@ -603,12 +627,11 @@ def build_package_variants(package_store, name, repository_url, clean_after_buil
             package_store,
             name,
             variant,
-            repository_url=repository_url,
             clean_after_build=clean_after_build)
     return results
 
 
-def build(package_store, name, variant, repository_url, clean_after_build):
+def build(package_store, name, variant, clean_after_build):
     assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
@@ -824,23 +847,19 @@ def build(package_store, name, variant, repository_url, clean_after_build):
         return pkg_path
 
     # Try downloading.
-    if repository_url:
-        try:
-            # Normalize to no trailing slash for repository_url
-            repository_url = repository_url.rstrip('/')
-            url = repository_url + '/packages/{0}/{1}.tar.xz'.format(pkg_id.name, str(pkg_id))
-            print("Attempting to download", pkg_id, "from", url)
-            download_atomic(pkg_path, url, package_dir)
+    dl_path = package_store.try_fetch_by_id(pkg_id)
+    if dl_path:
+        print("Package up to date. Not re-building. Downloaded from repository-url.")
+        # TODO(cmaloney): Updating / filling last_build should be moved out of
+        # the build function.
+        check_call(["mkdir", "-p", pkg_abs("cache")])
+        write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+        print(dl_path, pkg_path)
+        assert dl_path == pkg_path
+        return pkg_path
 
-            print("Package up to date. Not re-building. Downloaded from repository-url.")
-            # TODO(cmaloney): Updating / filling last_build should be moved out of
-            # the build function.
-            check_call(["mkdir", "-p", pkg_abs("cache")])
-            write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
-            return pkg_path
-        except FetchError:
-            # Fall out and do the build since the command errored.
-            print("Unable to download from cache. Proceeding to build")
+    # Fall out and do the build since it couldn't be downloaded
+    print("Unable to download from cache. Proceeding to build")
 
     print("Building package {} with buildinfo: {}".format(
         pkg_id,
