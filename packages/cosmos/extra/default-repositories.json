@@ -1,5 +1,9 @@
 [
   {
+    "name": "enterprise-cli-subcommands",
+    "uri": "https://github.com/mesosphere/universe/archive/enterprise-cli-subcommands.zip"
+  },
+  {
     "name": "Universe-1.7",
     "uri": "https://universe.mesosphere.com/repo-1.7"
   },
