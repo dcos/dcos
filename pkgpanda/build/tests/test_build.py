@@ -47,7 +47,9 @@ def test_url_extract_zip(tmpdir):
 def test_single_source_with_extra(tmpdir):
     package("resources/single_source_extra", "single_source_extra", tmpdir)
 
-    expect_fs(str(tmpdir.join("single_source_extra/cache")), ["latest", "foo"])
+    expect_fs(str(tmpdir.join("single_source_extra/cache")), {
+        "latest": None,
+        "single_source_extra": ["foo"]})
 
 
 # TODO(cmaloney): Re-enable once we build a dcos-builder docker as part of this test. Currently the
@@ -66,7 +68,8 @@ def test_single_source_corrupt(tmpdir):
         package("resources-nonbootstrapable/single_source_corrupt", "single_source", tmpdir)
 
     # Check the corrupt file got moved to the right place
-    expect_fs(str(tmpdir.join("single_source/cache")), ["foo.corrupt"])
+    expect_fs(str(tmpdir.join("single_source/cache")), {
+        "single_source": ["foo.corrupt"]})
 
 
 def test_bootstrap(tmpdir):

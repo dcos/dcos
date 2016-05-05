@@ -80,6 +80,30 @@ def get_variants_from_filesystem(directory, extension):
     return results
 
 
+# cache_dir = pkg_abs("cache")
+# if not os.path.exists(cache_dir):
+#     os.mkdir(cache_dir)
+def get_src_fetcher(src_info, cache_dir, working_directory):
+    try:
+        kind = src_info['kind']
+        if kind not in pkgpanda.build.src_fetchers.all_fetchers:
+            raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
+                kind,
+                pkgpanda.src_fetchers.all_fetchers.keys()))
+
+        args = {
+            'src_info': src_info,
+            'cache_dir': cache_dir
+        }
+
+        if src_info['kind'] in ['git_local', 'url', 'url_extract']:
+            args['working_directory'] = working_directory
+
+        return pkgpanda.build.src_fetchers.all_fetchers[kind](**args)
+    except ValidationError as ex:
+        raise BuildError("Validation error when fetching sources for package: {}".format(ex))
+
+
 class PackageStore:
 
     def __init__(self, packages_dir, repository_url):
@@ -674,19 +698,13 @@ def build(package_store, name, variant, clean_after_build):
     fetchers = dict()
     try:
         for src_name, src_info in sorted(sources.items()):
-            if src_info['kind'] not in pkgpanda.build.src_fetchers.all_fetchers:
-                raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
-                    src_info['kind'],
-                    pkgpanda.src_fetchers.all_fetchers.keys()))
-
-            cache_dir = pkg_abs("cache")
+            # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
+            cache_dir = pkg_abs('cache/' + src_name)
             if not os.path.exists(cache_dir):
-                os.mkdir(cache_dir)
-
-            fetchers[src_name] = pkgpanda.build.src_fetchers.all_fetchers[src_info['kind']](src_name,
-                                                                                            src_info,
-                                                                                            package_dir)
-            checkout_ids[src_name] = fetchers[src_name].get_id()
+                check_call(['mkdir', '-p', cache_dir])
+            fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
+            fetchers[src_name] = fetcher
+            checkout_ids[src_name] = fetcher.get_id()
     except ValidationError as ex:
         raise BuildError("Validation error when fetching sources for package: {}".format(ex))
 
