@@ -944,7 +944,7 @@
         "GroupId" : { "Ref" : "PublicSlaveSecurityGroup" },
         "IpProtocol" : "tcp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     },
@@ -974,7 +974,7 @@
         "GroupId" : { "Ref" : "PublicSlaveSecurityGroup" },
         "IpProtocol" : "udp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     }
