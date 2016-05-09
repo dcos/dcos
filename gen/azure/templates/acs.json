@@ -147,7 +147,7 @@
     },
     "linuxSku": {
       "type": "string",
-      "defaultValue": "16.04.0-DAILY-LTS",
+      "defaultValue": "16.04.0-LTS",
       "metadata": {
         "description": "This is the linux sku used by the linux cluster"
       }

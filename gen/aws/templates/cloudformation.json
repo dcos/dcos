@@ -644,9 +644,9 @@
           },
           {
             "LoadBalancerPort" : "80",
-            "Protocol" : "HTTP",
+            "Protocol" : "TCP",
             "InstancePort" : "80",
-            "InstanceProtocol" : "HTTP"
+            "InstanceProtocol" : "TCP"
           },
           {
             "LoadBalancerPort" : "443",
@@ -678,9 +678,9 @@
         "Listeners" : [
           {
             "LoadBalancerPort" : "80",
-            "Protocol" : "HTTP",
+            "Protocol" : "TCP",
             "InstancePort" : "80",
-            "InstanceProtocol" : "HTTP"
+            "InstanceProtocol" : "TCP"
           },
           {
             "LoadBalancerPort" : "443",
@@ -706,9 +706,9 @@
         "Listeners" : [
           {
             "LoadBalancerPort" : "80",
-            "Protocol" : "HTTP",
+            "Protocol" : "TCP",
             "InstancePort" : "80",
-            "InstanceProtocol" : "HTTP"
+            "InstanceProtocol" : "TCP"
           },
           {
             "LoadBalancerPort" : "443",
@@ -944,7 +944,7 @@
         "GroupId" : { "Ref" : "PublicSlaveSecurityGroup" },
         "IpProtocol" : "tcp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     },
@@ -974,7 +974,7 @@
         "GroupId" : { "Ref" : "PublicSlaveSecurityGroup" },
         "IpProtocol" : "udp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     }
