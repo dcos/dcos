@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 @asyncio.coroutine
-def upgrade(config, block=False, state_json_dir=None, hosts=[], async_delegate=None, try_remove_stale_dcos=False,
+def upgrade(config, hosts=[], async_delegate=None, try_remove_stale_dcos=False,
                  roles=None, **kwargs):
     """Upgrdes a host by copying over new packages to the dcos install_tmp directory, then executing pkpanda
     fetch and pkgpanda switch.
@@ -58,28 +58,13 @@ def upgrade(config, block=False, state_json_dir=None, hosts=[], async_delegate=N
         comment=lambda node: 'INSTALLING DC/OS ON NODE {}, ROLE {}'.format(node.ip, node.tags['role'])
     )
 
-    # UI expects total_masters, total_agents to be top level keys in deploy.json
-    delegate_extra_params = {
-        'total_masters': len(config['master_list']),
-        'total_agents': len(config['agent_list'])
-    }
-    if kwargs.get('retry') and state_json_dir:
-        state_file_path = os.path.join(state_json_dir, 'deploy.json')
-        log.debug('retry executed for a state file deploy.json')
-        for _host in hosts:
-            _remove_host(state_file_path, _host)
-
-        # We also need to update total number of hosts
-        json_state = _read_state_file(state_file_path)
-        delegate_extra_params['total_hosts'] = json_state['total_hosts']
 
     # Setup the cleanup chain
     cleanup_chain = ssh.utils.CommandChain('deploy_cleanup')
     add_post_action(cleanup_chain)
     chains.append(cleanup_chain)
 
-    result = yield from runner.run_commands_chain_async(chains, block=block, state_json_dir=state_json_dir,
-                                                        delegate_extra_params=delegate_extra_params)
+    result = yield from runner.run_commands_chain_async(chains, block=True)
     return result
 
 
