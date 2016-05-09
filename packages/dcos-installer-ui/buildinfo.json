@@ -3,7 +3,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-installer-ui.git",
-    "ref": "7eff605712e4eec4122b2b375460dc98545ac39a",
+    "ref": "dfaed125a01b8590d74c58b78c0b080a0ae6428f",
     "ref_origin": "release/1.7"
   }
 }
