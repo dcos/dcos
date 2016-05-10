@@ -80,9 +80,6 @@ def get_variants_from_filesystem(directory, extension):
     return results
 
 
-# cache_dir = pkg_abs("cache")
-# if not os.path.exists(cache_dir):
-#     os.mkdir(cache_dir)
 def get_src_fetcher(src_info, cache_dir, working_directory):
     try:
         kind = src_info['kind']
@@ -117,8 +114,8 @@ class PackageStore:
 
         # Load an upstream if one exists
         # TODO(cmaloney): Allow upstreams to have upstreams
-        self._package_cache_dir = packages_dir + "/cache"
-        self._upstream_dir = self._package_cache_dir + "/upstream"
+        self._package_cache_dir = self._packages_dir + "/cache/packages"
+        self._upstream_dir = self._packages_dir + "/cache/upstream/checkout"
         self._upstream = None
         self._upstream_package_dir = self._upstream_dir + "/packages"
         # TODO(cmaloney): Make it so the upstream directory can be kept around
@@ -128,7 +125,7 @@ class PackageStore:
             try:
                 self._upstream = get_src_fetcher(
                     load_optional_json(upstream_config),
-                    self._package_cache_dir,
+                    self._packages_dir + '/cache/upstream',
                     packages_dir)
                 self._upstream.checkout_to(self._upstream_dir)
                 if os.path.exists(self._upstream_package_dir + "/upstream.json"):
@@ -189,10 +186,15 @@ class PackageStore:
         return result
 
     def get_last_build_filename(self, name, variant):
-        return self.get_package_folder(name) + '/' + last_build_filename(variant)
+        return self.get_package_cache_folder(name) + '/{}latest'.format(pkgpanda.util.variant_prefix(variant))
 
     def get_package_path(self, pkg_id):
-        return self.get_package_folder(pkg_id.name) + '/{}.tar.xz'.format(pkg_id)
+        return self.get_package_cache_folder(pkg_id.name) + '/{}.tar.xz'.format(pkg_id)
+
+    def get_package_cache_folder(self, name):
+        directory = self._package_cache_dir + '/' + name
+        check_call(['mkdir', '-p', directory])
+        return directory
 
     def get_treeinfo(self, variant):
         return load_config_variant(self._packages_dir, variant, 'treeinfo.json')
@@ -221,7 +223,7 @@ class PackageStore:
         pkg_path = "{}.tar.xz".format(pkg_id)
         url = self._repository_url + '/packages/{0}/{1}'.format(pkg_id.name, pkg_path)
         try:
-            directory = self.get_package_folder(pkg_id.name)
+            directory = self.get_package_cache_folder(pkg_id.name)
             # TODO(cmaloney): Move to some sort of logging mechanism?
             print("Attempting to download", pkg_id, "from", url, "to", directory)
             download_atomic(directory + '/' + pkg_path, url, directory)
@@ -315,10 +317,6 @@ def hash_folder(directory):
         "-c",
         "find {} -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1".format(
             directory)]).decode('ascii').strip()
-
-
-def last_build_filename(variant):
-    return "cache/" + ((variant + '.') if variant else "") + "latest"
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -733,9 +731,8 @@ def build(package_store, name, variant, clean_after_build):
     try:
         for src_name, src_info in sorted(sources.items()):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
-            cache_dir = pkg_abs('cache/' + src_name)
-            if not os.path.exists(cache_dir):
-                check_call(['mkdir', '-p', cache_dir])
+            cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
+            check_call(['mkdir', '-p', cache_dir])
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
             fetchers[src_name] = fetcher
             checkout_ids[src_name] = fetcher.get_id()
@@ -841,7 +838,7 @@ def build(package_store, name, variant, clean_after_build):
                 pkg_requires = pkg_buildinfo['requires']
                 pkg_path = repository.package_path(pkg_id_str)
                 pkg_tar = pkg_id_str + '.tar.xz'
-                if not os.path.exists(package_store.get_package_folder(requires_name) + '/' + pkg_tar):
+                if not os.path.exists(package_store.get_package_cache_folder(requires_name) + '/' + pkg_tar):
                     raise BuildError("The build tarball {} refered to by the last_build file of the "
                                      "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
                                         pkg_tar,
@@ -888,7 +885,7 @@ def build(package_store, name, variant, clean_after_build):
     buildinfo['variant'] = variant
 
     # If the package is already built, don't do anything.
-    pkg_path = pkg_abs("{}.tar.xz".format(pkg_id))
+    pkg_path = package_store.get_package_cache_folder(name) + '/{}.tar.xz'.format(pkg_id)
 
     # Done if it exists locally
     if exists(pkg_path):
@@ -896,8 +893,7 @@ def build(package_store, name, variant, clean_after_build):
 
         # TODO(cmaloney): Updating / filling last_build should be moved out of
         # the build function.
-        check_call(["mkdir", "-p", pkg_abs("cache")])
-        write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
         return pkg_path
 
@@ -907,8 +903,7 @@ def build(package_store, name, variant, clean_after_build):
         print("Package up to date. Not re-building. Downloaded from repository-url.")
         # TODO(cmaloney): Updating / filling last_build should be moved out of
         # the build function.
-        check_call(["mkdir", "-p", pkg_abs("cache")])
-        write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
         print(dl_path, pkg_path)
         assert dl_path == pkg_path
         return pkg_path
@@ -1038,8 +1033,7 @@ def build(package_store, name, variant, clean_after_build):
 
     # TODO(cmaloney): Updating / filling last_build should be moved out of
     # the build function.
-    check_call(["mkdir", "-p", pkg_abs("cache")])
-    write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+    write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
