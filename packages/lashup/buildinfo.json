@@ -4,7 +4,7 @@
     "lashup": {
       "kind": "git",
       "git": "https://github.com/dcos/lashup.git",
-      "ref": "5c69c40f26e800b22d0ae76803c5f9111fc94e30",
+      "ref": "b41fb9d5c50aa581fc15686e86c82340a1511ccb",
       "ref_origin": "prepare-for-split"
     }
   }
