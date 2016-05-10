@@ -113,29 +113,63 @@ class PackageStore:
         # Load all possible packages, making a dictionary from (name, variant) -> buildinfo
         self._packages = dict()
         self._packages_by_name = dict()
+        self._package_folders = dict()
 
-        # Iterate through the packages directory finding all packages.
-        for name in os.listdir(self._packages_dir):
-            package_folder = self.get_package_folder(name)
+        # Load an upstream if one exists
+        # TODO(cmaloney): Allow upstreams to have upstreams
+        self._package_cache_dir = packages_dir + "/cache"
+        self._upstream_dir = self._package_cache_dir + "/upstream"
+        self._upstream = None
+        self._upstream_package_dir = self._upstream_dir + "/packages"
+        # TODO(cmaloney): Make it so the upstream directory can be kept around
+        check_call(['rm', '-rf', self._upstream_dir])
+        upstream_config = self._packages_dir + '/upstream.json'
+        if os.path.exists(upstream_config):
+            try:
+                self._upstream = get_src_fetcher(
+                    load_optional_json(upstream_config),
+                    self._package_cache_dir,
+                    packages_dir)
+                self._upstream.checkout_to(self._upstream_dir)
+                if os.path.exists(self._upstream_package_dir + "/upstream.json"):
+                    raise Exception("Support for upstreams which have upstreams is not currently implemented")
+            except Exception as ex:
+                raise BuildError("Error fetching upstream: {}".format(ex))
 
-            # Ignore files / non-directories
-            if not os.path.isdir(package_folder):
-                continue
+        # Iterate through the packages directory finding all packages. Note this package dir comes
+        # first, then we ignore duplicate definitions of the same package
+        package_dirs = [self._packages_dir]
+        if self._upstream:
+            package_dirs.append(self._upstream_package_dir)
 
-            # Search the directory for buildinfo.json files, record the variants
-            self._packages_by_name[name] = dict()
-            for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
-                buildinfo = load_buildinfo(package_folder, variant)
-                self._packages[(name, variant)] = buildinfo
-                self._packages_by_name[name][variant] = buildinfo
+        for directory in package_dirs:
+            for name in os.listdir(directory):
+                package_folder = directory + '/' + name
 
-            # If there weren't any packages marked by buildinfo.json files, don't leave the index
-            # entry to simplify other code from having to check for empty dictionaries.
-            if len(self._packages_by_name[name]) == 0:
-                del self._packages_by_name[name]
+                # Ignore files / non-directories
+                if not os.path.isdir(package_folder):
+                    continue
+
+                # Search the directory for buildinfo.json files, record the variants
+                self._packages_by_name[name] = dict()
+                for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
+                    # Skip packages we already have a build for (they're defined in the current packages
+                    # directory as well as the upstream one)
+                    if (name, variant) in self._packages:
+                        pass
+
+                    buildinfo = load_buildinfo(package_folder, variant)
+                    self._packages[(name, variant)] = buildinfo
+                    self._packages_by_name[name][variant] = buildinfo
+                    self._package_folders[name] = package_folder
+
+                # If there weren't any packages marked by buildinfo.json files, don't leave the index
+                # entry to simplify other code from having to check for empty dictionaries.
+                if len(self._packages_by_name[name]) == 0:
+                    del self._packages_by_name[name]
 
     def get_package_folder(self, name):
-        return self._packages_dir + '/' + name
+        return self._package_folders[name]
 
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
