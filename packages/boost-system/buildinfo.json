@@ -1,7 +1,0 @@
-{
-  "single_source": {
-    "kind": "url_extract",
-    "url": "https://downloads.mesosphere.com/pkgpanda-artifact-cache/boost_1_53_0.tar.gz",
-    "sha1": "0e4ef26cc7780c6bbc63987ef2f29be920e2395b"
-  }
-}
