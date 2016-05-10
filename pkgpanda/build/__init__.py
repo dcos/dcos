@@ -133,6 +133,9 @@ class PackageStore:
     def get_last_build_filename(self, name, variant):
         return self.get_package_folder(name) + '/' + last_build_filename(variant)
 
+    def get_package_path(self, pkg_id):
+        return self.get_package_folder(pkg_id.name) + '/{}.tar.xz'.format(pkg_id)
+
     def get_treeinfo(self, variant):
         return load_config_variant(self._packages_dir, variant, 'treeinfo.json')
 
@@ -273,7 +276,7 @@ def load_optional_json(filename):
     except FileNotFoundError:
         raise BuildError("Didn't find expected JSON file: {}".format(filename))
     except ValueError as ex:
-        raise BuildError("Unable to parse json: {}".format(ex))
+        raise BuildError("Unable to parse json in {}: {}".format(filename, ex))
 
 
 def load_config_variant(directory, variant, extension):
@@ -879,7 +882,7 @@ def build(package_store, name, variant, clean_after_build):
         print("Auto-adding dependency: {}".format(dep))
         # NOTE: Not using the name pkg_id because that overrides the outer one.
         id_obj = PackageId(dep)
-        add_to_repository(repository, pkg_abs('../{0}/{1}.tar.xz'.format(id_obj.name, dep)))
+        add_to_repository(repository, package_store.get_package_path(id_obj))
         package = repository.load(dep)
         active_packages.append(package)
 

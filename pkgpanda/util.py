@@ -95,7 +95,7 @@ def extract_tarball(path, target):
     # TODO(cmaloney): Unpack into a temporary directory then move into place to
     # prevent partial extraction from ever laying around on the filesystem.
     try:
-        assert os.path.exists(path)
+        assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         check_call(['mkdir', '-p', target])
         check_call(['tar', '-xf', path, '-C', target])
     except:
