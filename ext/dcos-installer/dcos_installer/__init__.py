@@ -27,7 +27,7 @@ class CliDelegate(AbstractSSHLibDelegate):
         print_header('STAGE {}'.format(name))
 
 
-def run_loop(action, options):
+def run_loop(action, options, upgrade_host=None):
     assert callable(action)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -36,7 +36,18 @@ def run_loop(action, options):
     try:
         config = backend.get_config()
         cli_delegate = CliDelegate()
-        result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
+
+        if action == action_lib.upgrade_dcos:
+            result = loop.run_until_complete(action(
+                config,
+                upgrade_host,
+                block=True,
+                async_delegate=cli_delegate,
+                options=options))
+
+        else:
+            result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
+
         pp = PrettyPrint(result)
         pp.stage_name = action.__name__
         pp.beautify('print_data')
@@ -174,7 +185,12 @@ class DcosInstaller:
                 print_header("EXECUTING INSTALL PREREQUISITES")
                 action = action_lib.install_prereqs
 
-            sys.exit(run_loop(action, options))
+            if len(options.upgrade) > 0:
+                print_header("EXECUTING DC/OS UPGRADE")
+                action = action_lib.upgrade_dcos
+                upgrade_host = options.upgrade
+
+            sys.exit(run_loop(action, options, upgrade_host=upgrade_host))
 
     def parse_args(self, args):
         def print_usage():
@@ -225,6 +241,13 @@ Environment Settings:
             default=False,
             help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
         )
+
+        mutual_exc.add_argument(
+            '--upgrade',
+            type=str,
+            nargs='+',
+            default='',
+            help='Upgrade a DC/OS host to BOOTSTRAP_ID {}'.format(os.environ['BOOTSTRAP_ID']))
 
         mutual_exc.add_argument(
             '--web',
