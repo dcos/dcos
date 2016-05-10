@@ -41,6 +41,21 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
 
+    binary_chain = ssh.utils.CommandChain('preflight_compatibility')
+
+    # for Ubuntu/Debian derivatives
+    binary_chain.add_execute(
+        'sudo ln -s /bin/rm /usr/bin/rm',
+        'sudo ln -s /bin/mkdir /usr/bin/mkdir',
+        'sudo ln -s /bin/tar /usr/bin/tar',
+        'sudo ln -s /bin/ln /usr/bin/ln',
+        'sudo ln -s /bin/cp /usr/bin/cp',
+        'sudo ln -s /bin/systemctl /usr/bin/systemctl',
+        'sudo ln -s /bin/mount /usr/bin/mount',
+        'sudo ln -s /bin/bash /usr/bin/bash'
+    )
+    chains.append(binary_chain)
+
     preflight_chain = ssh.utils.CommandChain('preflight')
     # In web mode run if no --offline flag used.
     if options.web:
@@ -310,52 +325,96 @@ def _add_prereqs_script(chain):
 # setenforce is in this path
 PATH=$PATH:/sbin
 
-dist=$(cat /etc/*-release | sed -n 's@^ID="\(.*\)"$@\\1@p')
-
-if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ]); then
-  echo "$dist is not supported. Only RHEL and CentOS are supported" >&2
-  exit 0
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    os=$ID
+    version=$VERSION_ID
 fi
 
-version=$(cat /etc/*-release | sed -n 's@^VERSION_ID="\(.*\)"$@\\1@p')
-if [ $version -lt 7 ]; then
-  echo "$version is not supported. Only >= 7 version is supported" >&2
-  exit 0
+if [ $os = "centos" ] || [ $os = "redhat" ] || [ $os = "fedora" ]; then
+    if [ $version -lt 7 ]; then
+        echo "$version is not supported. Only >= 7 version is supported" >&2
+        exit 0
+    fi
+
+    sudo setenforce 0 && \
+    sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
+
+    sudo tee /etc/yum.repos.d/docker.repo <<- EOF
+    [dockerrepo]
+    name=Docker Repository
+    baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://yum.dockerproject.org/gpg
+    EOF
+
+    sudo yum -y update
+
+    sudo mkdir -p /etc/systemd/system/docker.service.d
+    sudo tee /etc/systemd/system/docker.service.d/override.conf <<- EOF
+    [Service]
+    ExecStart=
+    ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
+    EOF
+
+    sudo yum install -y docker-engine
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    sudo yum install -y wget
+    sudo yum install -y git
+    sudo yum install -y unzip
+    sudo yum install -y curl
+    sudo yum install -y xz
+    sudo yum install -y ipset
+
+    sudo getent group nogroup || sudo groupadd nogroup
+elif [ $os = "ubuntu" ] || [ $os = "debian" ]; then
+    if [ $version -ne 15.04 ] || [ $version -ne 15.10 ] || [ $version -ne 16.04 ]; then
+        echo "$version is not supported. Only >= 15.04 version is supported" >&2
+        exit 0
+    fi
+
+    sudo setenforce 0 && \
+    sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
+
+    if [ $version = 15.04 ]; then
+        sudo tee /etc/apt/sources.list.d/docker.list <<- EOF
+        deb https://apt.dockerproject.org/repo ubuntu-vivid main
+        EOF
+    elif [ $version = 15.10 ]; then
+        sudo tee /etc/apt/sources.list.d/docker.list <<- EOF
+        deb https://apt.dockerproject.org/repo ubuntu-wily main
+        EOF
+    elif [ $version = 16.04 ]; then
+        sudo tee /etc/apt/sources.list.d/docker.list <<- EOF
+        deb https://apt.dockerproject.org/repo ubuntu-xenial main
+        EOF
+    fi
+
+    sudo apt-get -y update
+
+    sudo mkdir -p /etc/systemd/system/docker.service.d
+    sudo tee /etc/systemd/system/docker.service.d/override.conf <<- EOF
+    [Service]
+    ExecStart=
+    ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
+    EOF
+
+    sudo apt-get install -y docker-engine
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    sudo apt-get install -y wget
+    sudo apt-get install -y git
+    sudo apt-get install -y unzip
+    sudo apt-get install -y curl
+    sudo apt-get install -y xz
+    sudo apt-get install -y ipset
+
+    sudo getent group nogroup || sudo groupadd nogroup
 fi
-
-sudo setenforce 0 && \
-sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
-
-sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
-[dockerrepo]
-name=Docker Repository
-baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
-enabled=1
-gpgcheck=1
-gpgkey=https://yum.dockerproject.org/gpg
-EOF
-
-sudo yum -y update
-
-sudo mkdir -p /etc/systemd/system/docker.service.d
-sudo tee /etc/systemd/system/docker.service.d/override.conf <<- EOF
-[Service]
-ExecStart=
-ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
-EOF
-
-sudo yum install -y docker-engine
-sudo systemctl start docker
-sudo systemctl enable docker
-
-sudo yum install -y wget
-sudo yum install -y git
-sudo yum install -y unzip
-sudo yum install -y curl
-sudo yum install -y xz
-sudo yum install -y ipset
-
-sudo getent group nogroup || sudo groupadd nogroup
 """
     # Run a first command to get json file generated.
     chain.add_execute(['echo', 'INSTALL', 'PREREQUISITES'])
