@@ -273,7 +273,7 @@ def load_optional_json(filename):
     except FileNotFoundError:
         raise BuildError("Didn't find expected JSON file: {}".format(filename))
     except ValueError as ex:
-        raise BuildError("Unable to parse json: {}".format(ex))
+        raise BuildError("Unable to parse json in {}: {}".format(filename, ex))
 
 
 def load_config_variant(directory, variant, extension):
