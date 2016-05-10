@@ -17,8 +17,8 @@ from os.path import basename, exists, normpath
 from docopt import docopt
 
 import pkgpanda.build.constants
-from pkgpanda.build import (BuildError, PackageStore, build_package_variants, build_tree,
-                            clean)
+from pkgpanda.build import (BuildError, PackageStore, build_package_variants,
+                            build_tree)
 
 
 def main():
@@ -40,11 +40,7 @@ def main():
         # Package name is the folder name.
         name = basename(getcwd())
 
-        # Only clean in valid build locations (Why this is after buildinfo.json)
-        if arguments['clean']:
-            clean(getcwd())
-            sys.exit(0)
-
+        # Package store is always the parent directory
         package_store = PackageStore(normpath(getcwd() + '/../'), arguments['--repository-url'])
 
         # No command -> build package.

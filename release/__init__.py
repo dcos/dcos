@@ -270,6 +270,14 @@ def get_package_artifact(package_id_str):
     package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
     return {
         'reproducible_path': package_filename,
+        'local_path': 'packages/cache/' + package_filename}
+
+
+def get_gen_package_artifact(package_id_str):
+    package_id = pkgpanda.PackageId(package_id_str)
+    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    return {
+        'reproducible_path': package_filename,
         'local_path': package_filename}
 
 
@@ -384,7 +392,7 @@ def make_channel_artifacts(metadata):
         assert provider_data.keys() <= {'packages', 'artifacts'}
 
         for package in provider_data.get('packages', set()):
-            artifacts.append(get_package_artifact(package))
+            artifacts.append(get_gen_package_artifact(package))
 
         # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
         artifacts += provider_data.get('artifacts', list())

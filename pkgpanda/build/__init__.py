@@ -263,16 +263,6 @@ def get_docker_id(docker_name):
     return check_output(["docker", "inspect", "-f", "{{ .Id }}", docker_name]).decode('utf-8').strip()
 
 
-def clean(package_dir):
-    # Run a docker container to remove src/ and result/
-    cmd = DockerCmd()
-    cmd.volumes = {
-        package_dir: "/pkg/:rw",
-    }
-    cmd.container = "ubuntu:14.04.4"
-    cmd.run(["rm", "-rf", "/pkg/src", "/pkg/result"])
-
-
 def hash_checkout(item):
     def hash_str(s):
         hasher = hashlib.sha1()
@@ -698,8 +688,11 @@ def build(package_store, name, variant, clean_after_build):
 
     package_dir = package_store.get_package_folder(name)
 
-    def pkg_abs(name):
+    def src_abs(name):
         return package_dir + '/' + name
+
+    def cache_abs(filename):
+        return package_store.get_package_cache_folder(name) + '/' + filename
 
     # Build pkginfo over time, translating fields from buildinfo.
     pkginfo = {}
@@ -750,11 +743,11 @@ def build(package_store, name, variant, clean_after_build):
 
     # Add the sha1sum of the buildinfo.json + build file to the build ids
     build_ids = {"sources": checkout_ids}
-    build_ids['build'] = pkgpanda.util.sha1(pkg_abs(buildinfo['build_script']))
+    build_ids['build'] = pkgpanda.util.sha1(src_abs(buildinfo['build_script']))
     build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
     build_ids['variant'] = '' if variant is None else variant
 
-    extra_dir = pkg_abs("extra")
+    extra_dir = src_abs("extra")
     # Add the "extra" folder inside the package as an additional source if it
     # exists
     if os.path.exists(extra_dir):
@@ -916,10 +909,19 @@ def build(package_store, name, variant, clean_after_build):
         json.dumps(buildinfo, indent=2, sort_keys=True)))
 
     # Clean out src, result so later steps can use them freely for building.
-    clean(package_dir)
+    def clean():
+        # Run a docker container to remove src/ and result/
+        cmd = DockerCmd()
+        cmd.volumes = {
+            package_store.get_package_cache_folder(name): "/pkg/:rw",
+        }
+        cmd.container = "ubuntu:14.04.4"
+        cmd.run(["rm", "-rf", "/pkg/src", "/pkg/result"])
+
+    clean()
 
     # Only fresh builds are allowed which don't overlap existing artifacts.
-    result_dir = pkg_abs("result")
+    result_dir = cache_abs("result")
     if exists(result_dir):
         raise BuildError("result folder must not exist. It will be made when the package is "
                          "built. {}".format(result_dir))
@@ -935,7 +937,7 @@ def build(package_store, name, variant, clean_after_build):
 
     # Checkout all the sources int their respective 'src/' folders.
     try:
-        src_dir = pkg_abs('src')
+        src_dir = cache_abs('src')
         if os.path.exists(src_dir):
             raise ValidationError(
                 "'src' directory already exists, did you have a previous build? " +
@@ -943,7 +945,7 @@ def build(package_store, name, variant, clean_after_build):
                 "added for re-using a src directory when possible. src={}".format(src_dir))
         os.mkdir(src_dir)
         for src_name, fetcher in sorted(fetchers.items()):
-            root = pkg_abs('src/' + src_name)
+            root = cache_abs('src/' + src_name)
             os.mkdir(root)
 
             fetcher.checkout_to(root)
@@ -971,13 +973,13 @@ def build(package_store, name, variant, clean_after_build):
     # TODO(cmaloney): Run as a specific non-root user, make it possible
     # for non-root to cleanup afterwards.
     # Run the build, prepping the environment as necessary.
-    mkdir(pkg_abs("result"))
+    mkdir(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
-    write_json(pkg_abs("src/buildinfo.full.json"), buildinfo)
-    write_json(pkg_abs("result/buildinfo.full.json"), buildinfo)
+    write_json(cache_abs("src/buildinfo.full.json"), buildinfo)
+    write_json(cache_abs("result/buildinfo.full.json"), buildinfo)
 
-    write_json(pkg_abs("result/pkginfo.json"), pkginfo)
+    write_json(cache_abs("result/pkginfo.json"), pkginfo)
 
     # Make the folder for the package we are building. If docker does it, it
     # gets auto-created with root permissions and we can't actually delete it.
@@ -987,11 +989,11 @@ def build(package_store, name, variant, clean_after_build):
     # Source we checked out
     cmd.volumes.update({
         # TODO(cmaloney): src should be read only...
-        pkg_abs("src"): "/pkg/src:rw",
+        cache_abs("src"): "/pkg/src:rw",
         # The build script
-        pkg_abs(buildinfo['build_script']): "/pkg/build:ro",
+        src_abs(buildinfo['build_script']): "/pkg/build:ro",
         # Getting the result out
-        pkg_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
+        cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
         install_dir: "/opt/mesosphere:ro"
     })
 
@@ -1027,7 +1029,7 @@ def build(package_store, name, variant, clean_after_build):
 
     # Check for forbidden services before packaging the tarball:
     try:
-        check_forbidden_services(pkg_abs("result"), RESERVED_UNIT_NAMES)
+        check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
     except ValidationError as ex:
         raise BuildError("Package validation failed: {}".format(ex))
 
@@ -1037,9 +1039,9 @@ def build(package_store, name, variant, clean_after_build):
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
-    make_tar(tmp_name, pkg_abs("result"))
+    make_tar(tmp_name, cache_abs("result"))
     os.rename(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:
-        clean(package_dir)
+        clean()
     return pkg_path
