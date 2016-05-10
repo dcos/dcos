@@ -3,33 +3,31 @@ set -x
 
 source /opt/mesosphere/environment
 
-pushd /pkg/src/minuteman
+pushd /pkg/src/lashup
 make rel
 popd
 
-cp -r /pkg/src/minuteman/_build/prod/rel/minuteman ${PKG_PATH}
+cp -r /pkg/src/lashup/_build/prod/rel/lashup ${PKG_PATH}
 
-service=${PKG_PATH}/dcos.target.wants/dcos-minuteman.service
+service=${PKG_PATH}/dcos.target.wants/dcos-lashup.service
 mkdir -p $(dirname $service)
 cat <<EOF > $service
 [Unit]
 Description=Layer 4 Load Balancer: DC/OS Layer 4 Load Balancing Service
 After=dcos-gen-resolvconf.service
 After=dcos-epmd.service
-After=dcos-lashup.service
 BindsTo=dcos-epmd.service
-BindsTo=dcos-lashup.service
 
 [Service]
 Restart=always
 StartLimitInterval=0
 RestartSec=5
-WorkingDirectory=${PKG_PATH}/minuteman
+WorkingDirectory=${PKG_PATH}/lashup
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
-ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/mnesia
-ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/lashup
-ExecStart=${PKG_PATH}/minuteman/bin/env foreground
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/lashup
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/lashup/mnesia
+ExecStart=${PKG_PATH}/lashup/bin/env foreground
 Environment=HOME=/opt/mesosphere
 EOF
