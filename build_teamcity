@@ -52,8 +52,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 "$DIR"/prep_teamcity
 
 release create $TAG $TAG
-if [ -d wheelhouse ]; then
-  cp -r wheelhouse artifacts/
-fi
+
+mkdir -p artifacts
+cp -r wheelhouse artifacts/
 
 rm -rf artifacts/dcos_generate_config.*
