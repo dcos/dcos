@@ -1,9 +1,15 @@
 import collections
+import contextlib
 import json
 import logging
 import os
+import shlex
 import urllib.parse
 import uuid
+
+from contextlib import closing
+
+from ssh import ssh_tunnel
 
 import boto3
 import botocore.exceptions
@@ -46,7 +52,10 @@ def cluster():
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
-                   dns_search_set=os.environ['DNS_SEARCH'])
+                   dns_search_set=os.environ['DNS_SEARCH'],
+                   ssh_user=os.environ['SSH_USER'],
+                   ssh_key_path=os.environ['SSH_KEY_PATH']
+                  )
 
 
 @pytest.fixture(scope='module')
@@ -1360,3 +1369,149 @@ def test_mesos_agent_role_assignment(cluster):
     for agent in cluster.slaves:
         r = requests.get('http://{}:5051/state.json'.format(agent))
         assert r.json()['flags']['default_role'] == '*'
+
+
+class AgentManipulator:
+
+    def __init__(self, cluster, ssh_user, key_path):
+        self._cluster = cluster
+        self._ssh_user = cluster.ssh_user
+        self._ssh_key_path = cluster.ssh_key_path
+
+    def _multi_run(self, cmds):
+        with contextlib.closing(ssh_tunnel.SSHTunnel(
+            self._cluster.ssh_user,
+            self._cluster._ssh_key_path,
+            self._cluster.slaves[0])) as ssh_runner:
+            for cmd in cmds:
+                yield ssh_runner.remote_cmd(self.list_or_make(cmd))
+
+    def _run(self, cmd):
+        return ssh_tunnel.run_ssh_cmd(
+            self._cluster.ssh_user,
+            self._cluster._ssh_key_path,
+            self._cluster.slaves[0],
+            self.list_or_make(cmd)
+        )
+
+    @staticmethod
+    def list_or_make(v, split_fn=shlex.split):
+        return v if isinstance(v, list) else split_fn(v)
+
+    def _stop_mesos_agent(self):
+        self._run('systemctl stop dcos-mesos-slave')
+
+    def _start_mesos_agent(self, clear_state, restart=True):
+        if clear_state:
+            self._clear_agent_state()
+        self._run('systemctl start dcos-mesos-slave')
+
+    def _clear_agent_state(self):
+        # TODO: check this path
+        self._run('rm -rf /var/lib/mesos/slave')
+
+    def _run_volume_discovery(self, delete_only=False):
+        steps = (
+            'rm /var/lib/dcos/mesos-resources',
+            'systemctl start dcos-vol-discovery-priv-agent'
+        )
+        return self._multi_run(steps[:1] if delete_only else steps)
+
+    def _make_local_volume(self, size_mb, image_file):
+        return self._run('dd of={} if=/dev/null blocksize={}'.format(image_file, size_mb))
+
+    @contextlib.contextmanager
+    def _a_free_loop(self):
+        loop_device = self._run('losetup --find')
+        yield loop_device
+
+    def _attach_loop_back(self, mount_point, image_file):
+        with self._a_free_loop() as loop_device:
+            cmds = (
+                '/usr/bin/mkdir -p {}'.format(mount_point),
+                '/usr/sbin/losetup {} {}'.format(loop_device, image_file),
+                '/usr/sbin/mkfs -t ext4 {}'.format(loop_device),
+                '/usr/bin/mount {} {}'.format(loop_device, mount_point),
+            )
+            self._multi_run(cmds)
+
+    def _add_volumes_to_agent(self, vol_sizes):
+        for i, vol_size in enumerate(vol_sizes):
+            img = '/root/{}.img'.format(i)
+            mount_point = '/dcos/volume{}'.format(i)
+            self._make_local_volume(vol_size, img)
+            self._attach_loop_back(mount_point, img)
+            yield vol_size, img, mount_point
+
+    def _remove_volumes_from_agent(self, volumes):
+        for _, img, vol in volumes:
+            cmds = (
+                '/usr/bin/umount {}'.format(vol),
+                '/usr/sbin/losetup --detach {}'.format(vol),
+                'rm {}'.format(img),
+            )
+            self._multi_run(cmds)
+
+
+def get_state_json(cluster):
+    r = cluster.get('/mesos/master/slaves')
+    data = r.json()
+    slaves_ids = sorted(x['id'] for x in data['slaves'])
+
+    for slave_id in slaves_ids:
+        uri = '/slave/{}/slave%281%29/state.json'.format(slave_id)
+        r = cluster.get(uri)
+        data = r.json()
+        yield data
+
+
+def test_add_volume_noop(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    added_volumes = agentm._add_volumes_to_agent((200, 200))
+    agentm._run_volume_discovery()
+    agentm._start_mesos_agent(clear_state=False)
+    agentm._remove_volumes_from_agent(added_volumes)
+    # assert on mounted resources
+    for d in get_state_json(cluster):
+        for size, _, vol in added_volumes:
+            assert vol not in d
+
+
+def test_missing_disk_resource_file(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    agentm._run_volume_discovery(delete_only=True)
+    started = agentm._start_mesos_agent(clear_state=False)
+    assert 'error' in started.lower()
+
+
+def test_add_volume_works(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    added_volumes = agentm._add_volumes_to_agent((200, 200))
+    agentm._run_volume_discovery(delete_only=True)
+    started = agentm._start_mesos_agent(clear_state=True)
+    agentm._remove_volumes_from_agent(added_volumes)
+    # assert on mounted resources
+    for d in get_state_json(cluster):
+        for size, _, vol in added_volumes:
+            assert vol in d
+
+
+def test_vol_discovery_fails_due_to_size(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    added_volumes = agentm._add_volumes_to_agent((50,))
+    agentm._run_volume_discovery()
+    res_file = agentm._run('file /var/lib/dcos/mesos-resources')
+    agentm._remove_volumes_from_agent(added_volumes)
+    assert 'No such file or directory' in res_file
+
+
+def test_vol_discovery_non_json_mesos_resources(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._run('echo "MESOS_RESOURCES=ports:[1025-2180]" > /etc/mesos-slave')
+    discovery_status = agentm._run_volume_discovery()
+    assert 'error' in discovery_status
+>>>>>>> DCOS-6050: integration tests
