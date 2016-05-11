@@ -1,10 +1,10 @@
 {
   "requires": ["openssl", "ncurses", "erlang"],
   "sources": {
-    "minuteman": {
+    "lashup": {
       "kind": "git",
-      "git": "https://github.com/dcos/minuteman.git",
-      "ref": "04ea87aa39cdbd2230503f5786e36cf2de698dd8",
+      "git": "https://github.com/dcos/lashup.git",
+      "ref": "9099e8cc6d88dd2c3cec25fb9f4fc1dfc5bda026",
       "ref_origin": "prepare-for-split"
     }
   }
