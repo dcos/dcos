@@ -26,7 +26,7 @@ echo "Fetching dcos-vagrant"
 # TODO(cmaloney): Have TeamCity do this for us.
 # If it already exists, fetch, otherwise clone
 if [ ! -d dcos-vagrant ]; then
-  git clone https://github.com:dcos/dcos-vagrant
+  git clone https://github.com/dcos/dcos-vagrant
 else
   git -C dcos-vagrant fetch origin -t +refs/heads/*:refs/remotes/origin/*
 fi
@@ -107,6 +107,8 @@ docker run -v $PWD/../integration_test.py:/integration_test.py \
     -e "TEAMCITY_VERSION=${TEAMCITY_VERSION:-}" \
     -e "DNS_SEARCH=true" \
     -e "DCOS_OAUTH=false" \
+    -e "SSH_USER=centos" \
+    -e "SSH_KEY_PATH=ssh_path"
     --net=host py.test py.test -vv -s -m "not minuteman and not ccm" ${CI_FLAGS:-} /integration_test.py
 RET=$?
 
