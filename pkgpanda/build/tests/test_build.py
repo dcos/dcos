@@ -1,3 +1,4 @@
+import os
 from shutil import copytree
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -18,7 +19,6 @@ def package(resource_dir, name, tmpdir):
     copytree(resource_dir, str(pkg_dir))
     with pkg_dir.as_cwd():
         check_call(["mkpanda"])
-        check_call(["mkpanda", "clean"])
 
     # Build once using programmatic interface
     pkg_dir_2 = str(tmpdir.join("api-build/" + name))
@@ -47,7 +47,15 @@ def test_url_extract_zip(tmpdir):
 def test_single_source_with_extra(tmpdir):
     package("resources/single_source_extra", "single_source_extra", tmpdir)
 
-    expect_fs(str(tmpdir.join("single_source_extra/cache")), ["latest", "foo"])
+    # remove the built package tarball because that has a variable filename
+    cache_dir = tmpdir.join("cache/packages/single_source_extra/")
+    packages = [str(x) for x in cache_dir.visit(fil="single_source_extra*.tar.xz")]
+    assert len(packages) == 1, "should have built exactly one package: {}".format(packages)
+    os.remove(packages[0])
+
+    expect_fs(str(cache_dir), {
+        "latest": None,
+        "single_source_extra": ["foo"]})
 
 
 # TODO(cmaloney): Re-enable once we build a dcos-builder docker as part of this test. Currently the
@@ -66,7 +74,7 @@ def test_single_source_corrupt(tmpdir):
         package("resources-nonbootstrapable/single_source_corrupt", "single_source", tmpdir)
 
     # Check the corrupt file got moved to the right place
-    expect_fs(str(tmpdir.join("single_source/cache")), ["foo.corrupt"])
+    expect_fs(str(tmpdir.join("cache/packages/single_source/single_source")), ["foo.corrupt"])
 
 
 def test_bootstrap(tmpdir):

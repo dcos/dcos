@@ -485,10 +485,17 @@ def test_repository():
     # TODO(cmaloney): Exercise make_commands with a channel.
 
 
+def test_get_gen_package_artifact(tmpdir):
+    assert release.get_gen_package_artifact('foo--test') == {
+        'reproducible_path': 'packages/foo/foo--test.tar.xz',
+        'local_path': 'packages/foo/foo--test.tar.xz'
+    }
+
+
 def test_get_package_artifact(tmpdir):
     assert release.get_package_artifact('foo--test') == {
         'reproducible_path': 'packages/foo/foo--test.tar.xz',
-        'local_path': 'packages/foo/foo--test.tar.xz'
+        'local_path': 'packages/cache/packages/foo/foo--test.tar.xz'
     }
 
 
@@ -518,9 +525,9 @@ stable_artifacts_metadata = {
             'reproducible_path': 'bootstrap/bootstrap_id.active.json'},
         {'local_path': 'packages/bootstrap.latest',
             'channel_path': 'bootstrap.latest'},
-        {'local_path': 'packages/a/a--b.tar.xz',
+        {'local_path': 'packages/cache/packages/a/a--b.tar.xz',
             'reproducible_path': 'packages/a/a--b.tar.xz'},
-        {'local_path': 'packages/c/c--d.tar.xz',
+        {'local_path': 'packages/cache/packages/c/c--d.tar.xz',
             'reproducible_path': 'packages/c/c--d.tar.xz'},
         {'local_path': 'packages/ee_installer_bootstrap_id.bootstrap.tar.xz',
          'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.bootstrap.tar.xz'},
@@ -534,7 +541,7 @@ stable_artifacts_metadata = {
             'reproducible_path': 'bootstrap/installer_bootstrap_id.active.json'},
         {'local_path': 'packages/installer.bootstrap.latest',
             'channel_path': 'installer.bootstrap.latest'},
-        {'local_path': 'packages/e/e--f.tar.xz',
+        {'local_path': 'packages/cache/packages/e/e--f.tar.xz',
             'reproducible_path': 'packages/e/e--f.tar.xz'}
     ],
     'packages': ['a--b', 'c--d', 'e--f'],

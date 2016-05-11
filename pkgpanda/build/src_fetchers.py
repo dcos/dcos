@@ -44,9 +44,7 @@ def fetch_git(bare_folder, git_uri):
 
 class SourceFetcher(metaclass=abc.ABCMeta):
 
-    def __init__(self, name, src_info, package_dir):
-        self.name = name
-        self.package_dir = package_dir
+    def __init__(self, src_info):
         self.kind = src_info['kind']
 
     @abc.abstractmethod
@@ -73,8 +71,8 @@ def get_git_sha1(bare_folder, ref):
 
 
 class GitSrcFetcher(SourceFetcher):
-    def __init__(self, name, src_info, package_dir):
-        super().__init__(name, src_info, package_dir)
+    def __init__(self, src_info, cache_dir):
+        super().__init__(src_info)
 
         assert self.kind == 'git'
 
@@ -89,7 +87,7 @@ class GitSrcFetcher(SourceFetcher):
         self.url = src_info['git']
         self.ref = src_info['ref']
         self.ref_origin = src_info['ref_origin']
-        self.bare_folder = package_dir + "/cache/{}.git".format(name)
+        self.bare_folder = cache_dir + "/cache.git".format()
 
     def get_id(self):
         return {"commit": self.ref}
@@ -129,8 +127,8 @@ class GitSrcFetcher(SourceFetcher):
 
 
 class GitLocalSrcFetcher(SourceFetcher):
-    def __init__(self, name, src_info, package_dir):
-        super().__init__(name, src_info, package_dir)
+    def __init__(self, src_info, cache_dir, working_directory):
+        super().__init__(src_info)
 
         assert self.kind == 'git_local'
 
@@ -141,7 +139,7 @@ class GitLocalSrcFetcher(SourceFetcher):
                                   "when used with git_local. Using a relative path means others "
                                   "that clone the repository will have things just work rather "
                                   "than a path.")
-        self.src_repo_path = os.path.normpath(package_dir + '/' + src_info['rel_path']).rstrip('/')
+        self.src_repo_path = os.path.normpath(working_directory + '/' + src_info['rel_path']).rstrip('/')
 
         # Make sure there are no local changes, we can't `git clone` local changes.
         try:
@@ -160,9 +158,7 @@ class GitLocalSrcFetcher(SourceFetcher):
                                       "package can be built. One workflow (temporary commit): `git -C {0} "
                                       "commit -am TMP` to commit everything, build the package, "
                                       "`git -C {0} reset --soft HEAD^` to get back to where you were.\n\n"
-                                      "Found changes: {1}".format(
-                                            self.src_repo_path,
-                                            git_status))
+                                      "Found changes: {1}".format(self.src_repo_path, git_status))
         except CalledProcessError:
             raise ValidationError("Unable to check status of git_local_work checkout {}. Is the "
                                   "rel_path correct?".format(src_info['rel_path']))
@@ -277,8 +273,8 @@ def extract_archive(archive, dst_dir):
 
 
 class UrlSrcFetcher(SourceFetcher):
-    def __init__(self, name, src_info, package_dir):
-        super().__init__(name, src_info, package_dir)
+    def __init__(self, src_info, cache_dir, working_directory):
+        super().__init__(src_info)
 
         assert self.kind in {'url', 'url_extract'}
 
@@ -289,7 +285,9 @@ class UrlSrcFetcher(SourceFetcher):
 
         self.url = src_info['url']
         self.extract = (self.kind == 'url_extract')
-        self.cache_filename = self._get_filename(package_dir + "/cache")
+        self.cache_dir = cache_dir
+        self.cache_filename = self._get_filename(cache_dir)
+        self.working_directory = working_directory
         self.sha = src_info['sha1']
 
     def _get_filename(self, out_dir):
@@ -305,7 +303,7 @@ class UrlSrcFetcher(SourceFetcher):
         # Download file to cache if it isn't already there
         if not os.path.exists(self.cache_filename):
             print("Downloading source tarball {}".format(self.url))
-            download_atomic(self.cache_filename, self.url, self.package_dir)
+            download_atomic(self.cache_filename, self.url, self.working_directory)
 
         # Validate the sha1 of the source is given and matches the sha1
         file_sha = sha1(self.cache_filename)

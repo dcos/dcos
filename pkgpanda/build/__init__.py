@@ -80,6 +80,27 @@ def get_variants_from_filesystem(directory, extension):
     return results
 
 
+def get_src_fetcher(src_info, cache_dir, working_directory):
+    try:
+        kind = src_info['kind']
+        if kind not in pkgpanda.build.src_fetchers.all_fetchers:
+            raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
+                kind,
+                pkgpanda.src_fetchers.all_fetchers.keys()))
+
+        args = {
+            'src_info': src_info,
+            'cache_dir': cache_dir
+        }
+
+        if src_info['kind'] in ['git_local', 'url', 'url_extract']:
+            args['working_directory'] = working_directory
+
+        return pkgpanda.build.src_fetchers.all_fetchers[kind](**args)
+    except ValidationError as ex:
+        raise BuildError("Validation error when fetching sources for package: {}".format(ex))
+
+
 class PackageStore:
 
     def __init__(self, packages_dir, repository_url):
@@ -89,29 +110,63 @@ class PackageStore:
         # Load all possible packages, making a dictionary from (name, variant) -> buildinfo
         self._packages = dict()
         self._packages_by_name = dict()
+        self._package_folders = dict()
 
-        # Iterate through the packages directory finding all packages.
-        for name in os.listdir(self._packages_dir):
-            package_folder = self.get_package_folder(name)
+        # Load an upstream if one exists
+        # TODO(cmaloney): Allow upstreams to have upstreams
+        self._package_cache_dir = self._packages_dir + "/cache/packages"
+        self._upstream_dir = self._packages_dir + "/cache/upstream/checkout"
+        self._upstream = None
+        self._upstream_package_dir = self._upstream_dir + "/packages"
+        # TODO(cmaloney): Make it so the upstream directory can be kept around
+        check_call(['rm', '-rf', self._upstream_dir])
+        upstream_config = self._packages_dir + '/upstream.json'
+        if os.path.exists(upstream_config):
+            try:
+                self._upstream = get_src_fetcher(
+                    load_optional_json(upstream_config),
+                    self._packages_dir + '/cache/upstream',
+                    packages_dir)
+                self._upstream.checkout_to(self._upstream_dir)
+                if os.path.exists(self._upstream_package_dir + "/upstream.json"):
+                    raise Exception("Support for upstreams which have upstreams is not currently implemented")
+            except Exception as ex:
+                raise BuildError("Error fetching upstream: {}".format(ex))
 
-            # Ignore files / non-directories
-            if not os.path.isdir(package_folder):
-                continue
+        # Iterate through the packages directory finding all packages. Note this package dir comes
+        # first, then we ignore duplicate definitions of the same package
+        package_dirs = [self._packages_dir]
+        if self._upstream:
+            package_dirs.append(self._upstream_package_dir)
 
-            # Search the directory for buildinfo.json files, record the variants
-            self._packages_by_name[name] = dict()
-            for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
-                buildinfo = load_buildinfo(package_folder, variant)
-                self._packages[(name, variant)] = buildinfo
-                self._packages_by_name[name][variant] = buildinfo
+        for directory in package_dirs:
+            for name in os.listdir(directory):
+                package_folder = directory + '/' + name
 
-            # If there weren't any packages marked by buildinfo.json files, don't leave the index
-            # entry to simplify other code from having to check for empty dictionaries.
-            if len(self._packages_by_name[name]) == 0:
-                del self._packages_by_name[name]
+                # Ignore files / non-directories
+                if not os.path.isdir(package_folder):
+                    continue
+
+                # Search the directory for buildinfo.json files, record the variants
+                self._packages_by_name[name] = dict()
+                for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
+                    # Skip packages we already have a build for (they're defined in the current packages
+                    # directory as well as the upstream one)
+                    if (name, variant) in self._packages:
+                        pass
+
+                    buildinfo = load_buildinfo(package_folder, variant)
+                    self._packages[(name, variant)] = buildinfo
+                    self._packages_by_name[name][variant] = buildinfo
+                    self._package_folders[name] = package_folder
+
+                # If there weren't any packages marked by buildinfo.json files, don't leave the index
+                # entry to simplify other code from having to check for empty dictionaries.
+                if len(self._packages_by_name[name]) == 0:
+                    del self._packages_by_name[name]
 
     def get_package_folder(self, name):
-        return self._packages_dir + '/' + name
+        return self._package_folders[name]
 
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
@@ -131,10 +186,15 @@ class PackageStore:
         return result
 
     def get_last_build_filename(self, name, variant):
-        return self.get_package_folder(name) + '/' + last_build_filename(variant)
+        return self.get_package_cache_folder(name) + '/{}latest'.format(pkgpanda.util.variant_prefix(variant))
 
     def get_package_path(self, pkg_id):
-        return self.get_package_folder(pkg_id.name) + '/{}.tar.xz'.format(pkg_id)
+        return self.get_package_cache_folder(pkg_id.name) + '/{}.tar.xz'.format(pkg_id)
+
+    def get_package_cache_folder(self, name):
+        directory = self._package_cache_dir + '/' + name
+        check_call(['mkdir', '-p', directory])
+        return directory
 
     def get_treeinfo(self, variant):
         return load_config_variant(self._packages_dir, variant, 'treeinfo.json')
@@ -163,7 +223,7 @@ class PackageStore:
         pkg_path = "{}.tar.xz".format(pkg_id)
         url = self._repository_url + '/packages/{0}/{1}'.format(pkg_id.name, pkg_path)
         try:
-            directory = self.get_package_folder(pkg_id.name)
+            directory = self.get_package_cache_folder(pkg_id.name)
             # TODO(cmaloney): Move to some sort of logging mechanism?
             print("Attempting to download", pkg_id, "from", url, "to", directory)
             download_atomic(directory + '/' + pkg_path, url, directory)
@@ -201,16 +261,6 @@ def expand_require(require):
 
 def get_docker_id(docker_name):
     return check_output(["docker", "inspect", "-f", "{{ .Id }}", docker_name]).decode('utf-8').strip()
-
-
-def clean(package_dir):
-    # Run a docker container to remove src/ and result/
-    cmd = DockerCmd()
-    cmd.volumes = {
-        package_dir: "/pkg/:rw",
-    }
-    cmd.container = "ubuntu:14.04.4"
-    cmd.run(["rm", "-rf", "/pkg/src", "/pkg/result"])
 
 
 def hash_checkout(item):
@@ -257,10 +307,6 @@ def hash_folder(directory):
         "-c",
         "find {} -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1".format(
             directory)]).decode('ascii').strip()
-
-
-def last_build_filename(variant):
-    return "cache/" + ((variant + '.') if variant else "") + "latest"
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -642,8 +688,11 @@ def build(package_store, name, variant, clean_after_build):
 
     package_dir = package_store.get_package_folder(name)
 
-    def pkg_abs(name):
+    def src_abs(name):
         return package_dir + '/' + name
+
+    def cache_abs(filename):
+        return package_store.get_package_cache_folder(name) + '/' + filename
 
     # Build pkginfo over time, translating fields from buildinfo.
     pkginfo = {}
@@ -674,19 +723,12 @@ def build(package_store, name, variant, clean_after_build):
     fetchers = dict()
     try:
         for src_name, src_info in sorted(sources.items()):
-            if src_info['kind'] not in pkgpanda.build.src_fetchers.all_fetchers:
-                raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
-                    src_info['kind'],
-                    pkgpanda.src_fetchers.all_fetchers.keys()))
-
-            cache_dir = pkg_abs("cache")
-            if not os.path.exists(cache_dir):
-                os.mkdir(cache_dir)
-
-            fetchers[src_name] = pkgpanda.build.src_fetchers.all_fetchers[src_info['kind']](src_name,
-                                                                                            src_info,
-                                                                                            package_dir)
-            checkout_ids[src_name] = fetchers[src_name].get_id()
+            # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
+            cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
+            check_call(['mkdir', '-p', cache_dir])
+            fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
+            fetchers[src_name] = fetcher
+            checkout_ids[src_name] = fetcher.get_id()
     except ValidationError as ex:
         raise BuildError("Validation error when fetching sources for package: {}".format(ex))
 
@@ -701,11 +743,11 @@ def build(package_store, name, variant, clean_after_build):
 
     # Add the sha1sum of the buildinfo.json + build file to the build ids
     build_ids = {"sources": checkout_ids}
-    build_ids['build'] = pkgpanda.util.sha1(pkg_abs(buildinfo['build_script']))
+    build_ids['build'] = pkgpanda.util.sha1(src_abs(buildinfo['build_script']))
     build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
     build_ids['variant'] = '' if variant is None else variant
 
-    extra_dir = pkg_abs("extra")
+    extra_dir = src_abs("extra")
     # Add the "extra" folder inside the package as an additional source if it
     # exists
     if os.path.exists(extra_dir):
@@ -789,7 +831,7 @@ def build(package_store, name, variant, clean_after_build):
                 pkg_requires = pkg_buildinfo['requires']
                 pkg_path = repository.package_path(pkg_id_str)
                 pkg_tar = pkg_id_str + '.tar.xz'
-                if not os.path.exists(package_store.get_package_folder(requires_name) + '/' + pkg_tar):
+                if not os.path.exists(package_store.get_package_cache_folder(requires_name) + '/' + pkg_tar):
                     raise BuildError("The build tarball {} refered to by the last_build file of the "
                                      "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
                                         pkg_tar,
@@ -836,7 +878,7 @@ def build(package_store, name, variant, clean_after_build):
     buildinfo['variant'] = variant
 
     # If the package is already built, don't do anything.
-    pkg_path = pkg_abs("{}.tar.xz".format(pkg_id))
+    pkg_path = package_store.get_package_cache_folder(name) + '/{}.tar.xz'.format(pkg_id)
 
     # Done if it exists locally
     if exists(pkg_path):
@@ -844,8 +886,7 @@ def build(package_store, name, variant, clean_after_build):
 
         # TODO(cmaloney): Updating / filling last_build should be moved out of
         # the build function.
-        check_call(["mkdir", "-p", pkg_abs("cache")])
-        write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
         return pkg_path
 
@@ -855,8 +896,7 @@ def build(package_store, name, variant, clean_after_build):
         print("Package up to date. Not re-building. Downloaded from repository-url.")
         # TODO(cmaloney): Updating / filling last_build should be moved out of
         # the build function.
-        check_call(["mkdir", "-p", pkg_abs("cache")])
-        write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
         print(dl_path, pkg_path)
         assert dl_path == pkg_path
         return pkg_path
@@ -869,10 +909,19 @@ def build(package_store, name, variant, clean_after_build):
         json.dumps(buildinfo, indent=2, sort_keys=True)))
 
     # Clean out src, result so later steps can use them freely for building.
-    clean(package_dir)
+    def clean():
+        # Run a docker container to remove src/ and result/
+        cmd = DockerCmd()
+        cmd.volumes = {
+            package_store.get_package_cache_folder(name): "/pkg/:rw",
+        }
+        cmd.container = "ubuntu:14.04.4"
+        cmd.run(["rm", "-rf", "/pkg/src", "/pkg/result"])
+
+    clean()
 
     # Only fresh builds are allowed which don't overlap existing artifacts.
-    result_dir = pkg_abs("result")
+    result_dir = cache_abs("result")
     if exists(result_dir):
         raise BuildError("result folder must not exist. It will be made when the package is "
                          "built. {}".format(result_dir))
@@ -888,7 +937,7 @@ def build(package_store, name, variant, clean_after_build):
 
     # Checkout all the sources int their respective 'src/' folders.
     try:
-        src_dir = pkg_abs('src')
+        src_dir = cache_abs('src')
         if os.path.exists(src_dir):
             raise ValidationError(
                 "'src' directory already exists, did you have a previous build? " +
@@ -896,7 +945,7 @@ def build(package_store, name, variant, clean_after_build):
                 "added for re-using a src directory when possible. src={}".format(src_dir))
         os.mkdir(src_dir)
         for src_name, fetcher in sorted(fetchers.items()):
-            root = pkg_abs('src/' + src_name)
+            root = cache_abs('src/' + src_name)
             os.mkdir(root)
 
             fetcher.checkout_to(root)
@@ -924,13 +973,13 @@ def build(package_store, name, variant, clean_after_build):
     # TODO(cmaloney): Run as a specific non-root user, make it possible
     # for non-root to cleanup afterwards.
     # Run the build, prepping the environment as necessary.
-    mkdir(pkg_abs("result"))
+    mkdir(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
-    write_json(pkg_abs("src/buildinfo.full.json"), buildinfo)
-    write_json(pkg_abs("result/buildinfo.full.json"), buildinfo)
+    write_json(cache_abs("src/buildinfo.full.json"), buildinfo)
+    write_json(cache_abs("result/buildinfo.full.json"), buildinfo)
 
-    write_json(pkg_abs("result/pkginfo.json"), pkginfo)
+    write_json(cache_abs("result/pkginfo.json"), pkginfo)
 
     # Make the folder for the package we are building. If docker does it, it
     # gets auto-created with root permissions and we can't actually delete it.
@@ -940,11 +989,11 @@ def build(package_store, name, variant, clean_after_build):
     # Source we checked out
     cmd.volumes.update({
         # TODO(cmaloney): src should be read only...
-        pkg_abs("src"): "/pkg/src:rw",
+        cache_abs("src"): "/pkg/src:rw",
         # The build script
-        pkg_abs(buildinfo['build_script']): "/pkg/build:ro",
+        src_abs(buildinfo['build_script']): "/pkg/build:ro",
         # Getting the result out
-        pkg_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
+        cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
         install_dir: "/opt/mesosphere:ro"
     })
 
@@ -980,20 +1029,19 @@ def build(package_store, name, variant, clean_after_build):
 
     # Check for forbidden services before packaging the tarball:
     try:
-        check_forbidden_services(pkg_abs("result"), RESERVED_UNIT_NAMES)
+        check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
     except ValidationError as ex:
         raise BuildError("Package validation failed: {}".format(ex))
 
     # TODO(cmaloney): Updating / filling last_build should be moved out of
     # the build function.
-    check_call(["mkdir", "-p", pkg_abs("cache")])
-    write_string(pkg_abs(last_build_filename(variant)), str(pkg_id))
+    write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
-    make_tar(tmp_name, pkg_abs("result"))
+    make_tar(tmp_name, cache_abs("result"))
     os.rename(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:
-        clean(package_dir)
+        clean()
     return pkg_path
