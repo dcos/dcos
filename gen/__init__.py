@@ -26,7 +26,7 @@ import yaml
 import gen.calc
 import gen.template
 from pkgpanda import PackageId
-from pkgpanda.util import make_tar
+from pkgpanda.util import load_string, make_tar
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -110,17 +110,33 @@ def merge_dictionaries(base, additions):
     return base_copy
 
 
+def load_templates(template_dict):
+    result = dict()
+    for name, template_list in template_dict.items():
+        result_list = list()
+        for template_name in template_list:
+            result_list.append(gen.template.parse_resources(template_name))
+
+            extra_filename = "gen_extra/" + template_name
+            if os.path.exists(extra_filename):
+                result_list.append(gen.template.parse_str(
+                    load_string(extra_filename)))
+        result[name] = result_list
+    return result
+
+
 # Render the Jinja/YAML into YAML, then load the YAML and merge it to make the
 # final configuration files.
-def render_templates(template_names, arguments):
+def render_templates(template_dict, arguments):
     rendered_templates = dict()
-    for name, templates in template_names.items():
+    templates = load_templates(template_dict)
+    for name, templates in templates.items():
         full_template = None
         for template in templates:
-            rendered_template = gen.template.parse_resources(template).render(arguments)
+            rendered_template = template.render(arguments)
 
             # If not yaml, just treat opaquely.
-            if not template.endswith('.yaml'):
+            if not name.endswith('.yaml'):
                 # No merging support currently.
                 assert len(templates) == 1
                 full_template = rendered_template
@@ -143,12 +159,10 @@ def render_templates(template_names, arguments):
 # are effectively the set of DC/OS parameters.
 def get_parameters(template_dict):
     parameters = {'variables': set(), 'sub_scopes': dict()}
-    for template_list in template_dict.values():
-        assert isinstance(template_list, list)
+    templates = load_templates(template_dict)
+    for template_list in templates.values():
         for template in template_list:
-            assert isinstance(template, str)
-            ast = gen.template.parse_resources(template)
-            parameters = merge_dictionaries(parameters, ast.get_scoped_arguments())
+            parameters = merge_dictionaries(parameters, template.get_scoped_arguments())
 
     return parameters
 
