@@ -1409,7 +1409,7 @@ class AgentManipulator:
     def _stop_mesos_agent(self):
         self._run('systemctl stop dcos-mesos-slave')
 
-    def _start_mesos_agent(self, clear_state, restart=True):
+    def _start_mesos_agent(self, clear_state):
         if clear_state:
             self._clear_agent_state()
         self._run('systemctl start dcos-mesos-slave')
