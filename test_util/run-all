@@ -26,7 +26,7 @@ echo "Fetching dcos-vagrant"
 # TODO(cmaloney): Have TeamCity do this for us.
 # If it already exists, fetch, otherwise clone
 if [ ! -d dcos-vagrant ]; then
-  git clone https://github.com:dcos/dcos-vagrant
+  git clone https://github.com/dcos/dcos-vagrant
 else
   git -C dcos-vagrant fetch origin -t +refs/heads/*:refs/remotes/origin/*
 fi
