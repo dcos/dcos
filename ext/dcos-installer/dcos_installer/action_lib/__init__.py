@@ -373,15 +373,17 @@ def install_prereqs(config, block=False, state_json_dir=None, async_delegate=Non
 
 
 def _add_upgrade_script(chain):
-    active_packages_path = '/artifacts/{}.active.json'.format(os.environ['BOOTSTRAP_ID'])
+    bootstrap_id = os.environ['BOOTSTRAP_ID']
+    active_packages_path = '/artifacts/{}.active.json'.format(bootstrap_id)
     active_packages = json.loads(open(active_packages_path).read())
     string_of_pkgs = ' '.join(pkg for pkg in active_packages)
 
     inline_script = """
 #/bin/bash
-pkgpanda fetch {pkgs} --repository_url {tmp_dir}
-pkgpanda activate {pkgs} --repository_url {tmp_dir}
-""".format(tmp_dir=REMOTE_TEMP_DIR, pkgs=string_of_pkgs)
+tar -axf {tmp_dir}/bootstrap/{bootstrap_id}.bootstrap.tar.xz -C {tmp_dir}/packages
+pkgpanda fetch {pkgs} --repository-url {tmp_dir}
+pkgpanda activate {pkgs} --repository-url {tmp_dir}
+""".format(tmp_dir=REMOTE_TEMP_DIR, pkgs=string_of_pkgs, bootstrap_id=bootstrap_id)
 
     # Run a first command to get json file generated.
     chain.add_execute(['echo', 'UPGRADE', 'DC/OS'])
@@ -399,7 +401,11 @@ def upgrade_dcos(config, host, block=False, state_json_dir=None, async_delegate=
     runner = get_async_runner(config, host,async_delegate=async_delegate)
     upgrade_chain = ssh.utils.CommandChain('upgrade')
     add_pre_action(upgrade_chain, runner.ssh_user)
+
+    bootstrap_tarball = _get_bootstrap_tarball()
+
     _add_copy_packages(upgrade_chain)
+    _add_copy_bootstap(upgrade_chain, bootstrap_tarball)
     _add_upgrade_script(upgrade_chain)
     result = yield from runner.run_commands_chain_async([upgrade_chain], block=block, state_json_dir=state_json_dir)
     return result

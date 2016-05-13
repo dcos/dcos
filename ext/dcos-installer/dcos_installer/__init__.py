@@ -185,6 +185,7 @@ class DcosInstaller:
                 print_header("EXECUTING INSTALL PREREQUISITES")
                 action = action_lib.install_prereqs
 
+            upgrade_host = None
             if len(options.upgrade) > 0:
                 print_header("EXECUTING DC/OS UPGRADE")
                 action = action_lib.upgrade_dcos
@@ -198,7 +199,7 @@ class DcosInstaller:
 Install Mesosophere's Data Center Operating System
 
 dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v]
-[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --test]
+[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --upgrade <host_ip>]
 
 Environment Settings:
 
