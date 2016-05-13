@@ -48,15 +48,16 @@ def cluster():
 
     _setup_logging()
 
-    return Cluster(dcos_uri=os.environ['DCOS_DNS_ADDRESS'],
-                   masters=os.environ['MASTER_HOSTS'].split(','),
-                   public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
-                   slaves=os.environ['SLAVE_HOSTS'].split(','),
-                   registry=os.environ['REGISTRY_HOST'],
-                   dns_search_set=os.environ['DNS_SEARCH'],
-                   ssh_user=os.environ['SSH_USER'],
-                   ssh_key_path=os.environ['SSH_KEY_PATH']
-                  )
+    return Cluster(
+        dcos_uri=os.environ['DCOS_DNS_ADDRESS'],
+        masters=os.environ['MASTER_HOSTS'].split(','),
+        public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
+        slaves=os.environ['SLAVE_HOSTS'].split(','),
+        registry=os.environ['REGISTRY_HOST'],
+        dns_search_set=os.environ['DNS_SEARCH'],
+        ssh_user=os.environ['SSH_USER'],
+        ssh_key_path=os.environ['SSH_KEY_PATH']
+    )
 
 
 @pytest.fixture(scope='module')
@@ -1377,7 +1378,8 @@ class AgentManipulator:
         with contextlib.closing(ssh_tunnel.SSHTunnel(
             self._cluster._ssh_user,
             self._cluster._ssh_key_path,
-            self._cluster.slaves[0])) as ssh_runner:
+            self._cluster.slaves[0])
+        ) as ssh_runner:
             for cmd in cmds:
                 yield ssh_runner.remote_cmd(self.list_or_make(cmd))
 
