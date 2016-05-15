@@ -24,8 +24,8 @@ class DCOSConfig(dict):
     def __init__(self, overrides={}, config_path=CONFIG_PATH, write_default_config=True):
         defaults = """
 ---
-# The name of your DCOS cluster. Visable in the DCOS user interface.
-cluster_name: 'DCOS'
+# The name of your DC/OS cluster. Visable in the DC/OS user interface.
+cluster_name: 'DC/OS'
 master_discovery: static
 exhibitor_storage_backend: 'static'
 resolvers:

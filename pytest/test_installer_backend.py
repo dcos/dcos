@@ -93,7 +93,7 @@ def test_get_config(tmpdir):
 
     expected_file = """
 {
-    "cluster_name": "DCOS",
+    "cluster_name": "DC/OS",
     "master_discovery": "static",
     "exhibitor_storage_backend": "static",
     "resolvers": ["8.8.8.8","8.8.4.4"],
