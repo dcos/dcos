@@ -231,6 +231,10 @@ def calculate_exhibitor_static_ensemble(master_list):
     return ','.join(['%d:%s' % (i+1, m) for i, m in enumerate(masters)])
 
 
+def calculate_adminrouter_auth_enabled(oauth_enabled):
+    return oauth_enabled
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 __logrotate_slave_module = {
     'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
@@ -274,6 +278,7 @@ entry = {
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
+        'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',

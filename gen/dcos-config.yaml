@@ -122,7 +122,7 @@ package:
       }
   - path: /etc/adminrouter.env
     content: |
-      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ oauth_enabled }}
+      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
   - path: /etc/dcos-oauth.env
     content: |
       OAUTH_ISSUER_URL={{ oauth_issuer_url }}
