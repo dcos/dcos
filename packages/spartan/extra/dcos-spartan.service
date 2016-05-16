@@ -1,7 +1,6 @@
 [Unit]
 Description=DNS Dispatcher: An RFC5625 Compliant DNS Forwarder
 After=dcos-epmd.service
-BindsTo=dcos-epmd.service
 
 [Service]
 Restart=always
