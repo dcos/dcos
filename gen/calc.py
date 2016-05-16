@@ -250,11 +250,11 @@ __logrotate_slave_module = {
     }]
 }
 
-__default_mesos_slave_modules = [
+default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]
 
-__default_isolation_modules = [
+default_isolation_modules = [
     'cgroups/cpu',
     'cgroups/mem',
     'posix/disk',
@@ -320,10 +320,10 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_isolation_modules': ','.join(__default_isolation_modules),
+        'mesos_isolation_modules': ','.join(default_isolation_modules),
         'mesos_hooks': '',
         'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            __default_mesos_slave_modules),
+            default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
     },
     'conditional': {
