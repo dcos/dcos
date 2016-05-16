@@ -304,6 +304,7 @@ entry = {
         'ui_banner_dismissible': 'null'
     },
     'must': {
+        'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
