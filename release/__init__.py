@@ -379,6 +379,11 @@ def make_channel_artifacts(metadata):
                 'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
                 })
 
+            # Load additional default variant arguments out of gen_extra
+            if os.path.exists('gen_extra/calc.py'):
+                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
         provider_data = module.do_create(
