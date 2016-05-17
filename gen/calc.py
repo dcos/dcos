@@ -246,27 +246,6 @@ __logrotate_slave_module = {
     }]
 }
 
-__stats_isolator_slave_module_name = 'com_mesosphere_StatsIsolatorModule'
-__stats_hook_slave_module_name = 'com_mesosphere_StatsEnvHook'
-__stats_slave_module = {
-    'file': '/opt/mesosphere/lib/libstats-slave.so',
-    'modules': [{
-        'name': __stats_isolator_slave_module_name,
-    }, {
-        'name': __stats_hook_slave_module_name,
-        'parameters': [
-            {'key': 'dest_host', 'value': 'metrics.marathon.mesos'},
-            {'key': 'dest_port', 'value': '8125'},
-            {'key': 'dest_refresh_seconds', 'value': '60'},
-            {'key': 'listen_host', 'value': '127.0.0.1'},
-            {'key': 'listen_port_mode', 'value': 'ephemeral'},
-            {'key': 'annotation_mode', 'value': 'key_prefix'},
-            {'key': 'chunking', 'value': 'true'},
-            {'key': 'chunk_size_bytes', 'value': '512'},
-        ]
-    }]
-}
-
 __default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]

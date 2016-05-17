@@ -13,7 +13,7 @@ class CommandChain():
 
     :param cmd: String, command to execute
     :param rollback: String (optional) a rollback command
-    :param comment: String (optional)
+    :param stage: String (optional)
     :return:
     '''
     execute_flag = 'execute'
@@ -23,21 +23,21 @@ class CommandChain():
         self.commands_stack = []
         self.namespace = namespace
 
-    def add_execute(self, cmd, rollback=None, comment=None):
+    def add_execute(self, cmd, rollback=None, stage=None):
         assert isinstance(cmd, list) or callable(cmd)
-        self.commands_stack.append((self.execute_flag, cmd, rollback, comment))
+        self.commands_stack.append((self.execute_flag, cmd, rollback, stage))
 
-    def add_copy(self, local_path, remote_path, remote_to_local=False, recursive=False, comment=None):
-        self.commands_stack.append((self.copy_flag, local_path, remote_path, remote_to_local, recursive, comment))
+    def add_copy(self, local_path, remote_path, remote_to_local=False, recursive=False, stage=None):
+        self.commands_stack.append((self.copy_flag, local_path, remote_path, remote_to_local, recursive, stage))
 
     def get_commands(self):
         # Return all commands
         return self.commands_stack
 
-    def prepend_command(self, cmd, rollback=None, comment=None):
+    def prepend_command(self, cmd, rollback=None, stage=None):
         # We can specify a command to be executed before the main chain of commands, for example some setup commands
         assert isinstance(cmd, list)
-        self.commands_stack.insert(0, (self.execute_flag, cmd, rollback, comment))
+        self.commands_stack.insert(0, (self.execute_flag, cmd, rollback, stage))
 
 
 class AbstractSSHLibDelegate(metaclass=abc.ABCMeta):

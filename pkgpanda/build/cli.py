@@ -11,7 +11,7 @@ Usage:
 
 import sys
 from os import getcwd, umask
-from os.path import basename, exists, normpath
+from os.path import basename, normpath
 
 from docopt import docopt
 
@@ -31,16 +31,17 @@ def main():
             build_tree(package_store, arguments['--mkbootstrap'], arguments['<variant>'])
             sys.exit(0)
 
-        # Check for the 'build' file to verify this is a valid package directory.
-        if not exists("buildinfo.json"):
-            print("Not a valid package folder. No 'buildinfo.json' file.")
-            sys.exit(1)
-
         # Package name is the folder name.
         name = basename(getcwd())
 
         # Package store is always the parent directory
         package_store = PackageStore(normpath(getcwd() + '/../'), arguments['--repository-url'])
+
+        # Check that the folder is a package folder (the name was found by the package store as a
+        # valid package with 1+ variants).
+        if name not in package_store.packages_by_name:
+            print("Not a valid package folder. Didn't find any 'buildinfo.json' files.")
+            sys.exit(1)
 
         # No command -> build package.
         pkg_dict = build_package_variants(

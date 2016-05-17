@@ -31,7 +31,7 @@ package:
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
-        "local_addresses": ["198.51.100.1", "198.51.100.2", "198.51.100.3"],
+        "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53
       }

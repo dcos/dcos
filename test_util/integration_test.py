@@ -155,6 +155,7 @@ class Cluster:
     def _wait_for_leader_election(self):
         mesos_resolver = dns.resolver.Resolver()
         mesos_resolver.nameservers = self.public_masters
+        mesos_resolver.port = 61053
         try:
             # Yeah, we can also put it in retry_on_exception, but
             # this way we will loose debug messages
