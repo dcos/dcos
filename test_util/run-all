@@ -103,7 +103,7 @@ docker run -v $PWD/../integration_test.py:/integration_test.py \
     -e MASTER_HOSTS=$MASTER_HOSTS \
     -e PUBLIC_MASTER_HOSTS=$MASTER_HOSTS \
     -e SLAVE_HOSTS="192.168.65.111,192.168.65.121" \
-    -e PUBLIC_SLAVE_HOSTS="192.168.65.70" \
+    -e PUBLIC_SLAVE_HOSTS="192.168.65.60" \
     -e REGISTRY_HOST="boot.dcos" \
     -e "TEAMCITY_VERSION=${TEAMCITY_VERSION:-}" \
     -e "DNS_SEARCH=true" \

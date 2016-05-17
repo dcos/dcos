@@ -1327,6 +1327,9 @@ sleep 3600
     slave_units = [
             'mesos-slave-service',
             'vol-discovery-priv-agent-service']
+    public_slave_units = [
+            'mesos-slave-public-service',
+            'vol-discovery-pub-agent-service']
 
     master_units.append('oauth-service')
 
@@ -1337,7 +1340,10 @@ sleep 3600
         exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves+cluster.masters)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
+        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
+        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+    for unit in public_slave_units:
+        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
     # Cluster ID is uncheckable as this runs on an agent
@@ -1351,6 +1357,6 @@ def test_mesos_agent_role_assignment(cluster):
     for agent in cluster.public_slaves:
         r = requests.get('http://{}:5051/state.json'.format(agent))
         assert r.json()['flags']['default_role'] == 'slave_public'
-    for agent in cluster.all_slaves:
+    for agent in cluster.slaves:
         r = requests.get('http://{}:5051/state.json'.format(agent))
         assert r.json()['flags']['default_role'] == '*'
