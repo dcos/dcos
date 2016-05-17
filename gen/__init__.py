@@ -12,6 +12,7 @@ Operates strictly:
   - empty string is not the same as "not specified"
 """
 
+import importlib.machinery
 import inspect
 import json
 import logging as log
@@ -26,7 +27,7 @@ import yaml
 import gen.calc
 import gen.template
 from pkgpanda import PackageId
-from pkgpanda.util import make_tar
+from pkgpanda.util import load_string, make_tar
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -110,17 +111,71 @@ def merge_dictionaries(base, additions):
     return base_copy
 
 
+# Recursively merge to python dictionaries.
+# If both base and addition contain the same key, that key's value will be
+# merged if it is a dictionary.
+# This is unlike the python dict.update() method which just overwrites matching
+# keys.
+def merge_replace_append_dictionaries(base, additions):
+    base_copy = base.copy()
+    for k, v in additions.items():
+        try:
+            if k not in base:
+                base_copy[k] = v
+                continue
+            if isinstance(v, dict) and isinstance(base_copy[k], dict):
+                base_copy[k] = merge_replace_append_dictionaries(base_copy.get(k, dict()), v)
+                continue
+
+            # Append arrays
+            if isinstance(v, list) and isinstance(base_copy[k], list):
+                base_copy[k].extend(v)
+                continue
+
+            # Merge sets
+            if isinstance(v, set) and isinstance(base_copy[k], set):
+                base_copy[k] |= v
+                continue
+
+            # Overwrite if the new one is a string
+            if isinstance(v, str):
+                base_copy[k] = v
+                continue
+
+            # Unknwon types
+            raise ValueError("Can't merge type {} into type {}".format(type(v), type(base_copy[k])))
+        except ValueError as ex:
+            raise ValueError("{} inside key {}".format(ex, k)) from ex
+    return base_copy
+
+
+def load_templates(template_dict):
+    result = dict()
+    for name, template_list in template_dict.items():
+        result_list = list()
+        for template_name in template_list:
+            result_list.append(gen.template.parse_resources(template_name))
+
+            extra_filename = "gen_extra/" + template_name
+            if os.path.exists(extra_filename):
+                result_list.append(gen.template.parse_str(
+                    load_string(extra_filename)))
+        result[name] = result_list
+    return result
+
+
 # Render the Jinja/YAML into YAML, then load the YAML and merge it to make the
 # final configuration files.
-def render_templates(template_names, arguments):
+def render_templates(template_dict, arguments):
     rendered_templates = dict()
-    for name, templates in template_names.items():
+    templates = load_templates(template_dict)
+    for name, templates in templates.items():
         full_template = None
         for template in templates:
-            rendered_template = gen.template.parse_resources(template).render(arguments)
+            rendered_template = template.render(arguments)
 
             # If not yaml, just treat opaquely.
-            if not template.endswith('.yaml'):
+            if not name.endswith('.yaml'):
                 # No merging support currently.
                 assert len(templates) == 1
                 full_template = rendered_template
@@ -143,12 +198,10 @@ def render_templates(template_names, arguments):
 # are effectively the set of DC/OS parameters.
 def get_parameters(template_dict):
     parameters = {'variables': set(), 'sub_scopes': dict()}
-    for template_list in template_dict.values():
-        assert isinstance(template_list, list)
+    templates = load_templates(template_dict)
+    for template_list in templates.values():
         for template in template_list:
-            assert isinstance(template, str)
-            ast = gen.template.parse_resources(template)
-            parameters = merge_dictionaries(parameters, ast.get_scoped_arguments())
+            parameters = merge_dictionaries(parameters, template.get_scoped_arguments())
 
     return parameters
 
@@ -541,14 +594,13 @@ def generate(
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
 
-    def add_setter(name, value, is_optional, conditions, is_user):
+    def add_setter(name, value, is_optional, conditions, is_user, replace_existing):
+        if replace_existing:
+            if name in setters:
+                del setters[name]
         setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, is_user))
 
-    # Add in all user arguments as setters
-    for name, value in user_arguments.items():
-        add_setter(name, value, False, [], True)
-
-    def add_conditional_scope(scope, conditions):
+    def add_conditional_scope(scope, conditions, replace_existing):
         nonlocal validate
 
         # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
@@ -558,16 +610,26 @@ def generate(
         validate += scope.get('validate', list())
 
         for name, fn in scope.get('must', dict()).items():
-            add_setter(name, fn, False, conditions, False)
+            add_setter(name, fn, False, conditions, False, replace_existing)
 
         for name, fn in scope.get('default', dict()).items():
-            add_setter(name, fn, True, conditions, False)
+            add_setter(name, fn, True, conditions, False, replace_existing)
 
         for name, cond_options in scope.get('conditional', dict()).items():
             for value, sub_scope in cond_options.items():
-                add_conditional_scope(sub_scope, conditions + [(name, value)])
+                add_conditional_scope(sub_scope, conditions + [(name, value)], replace_existing=replace_existing)
 
-    add_conditional_scope(gen.calc.entry, [])
+    add_conditional_scope(gen.calc.entry, [], replace_existing=False)
+
+    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
+    if os.path.exists('gen_extra/calc.py'):
+        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+        add_conditional_scope(mod.entry, [], replace_existing=True)
+
+    # Add in all user arguments as setters.
+    # Happens last so that they are never overwritten with replace_existing=True
+    for name, value in user_arguments.items():
+        add_setter(name, value, False, [], True, False)
 
     # Re-arrange templates to be indexed by common name. Only allow multiple for one key if the key
     # is yaml (ends in .yaml).
@@ -587,7 +649,7 @@ def generate(
     validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
 
     def add_builtin(name, value):
-        add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False)
+        add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False, False)
 
     # TODO(cmaloney): Hash the contents of all teh templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
