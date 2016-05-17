@@ -74,12 +74,15 @@ setup(
             'installer/bash/installer_internal_wrapper.in',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
-            ] + get_advanced_templates(),
+        ] + get_advanced_templates(),
+        'pkgpanda': [
+            'docker/dcos-builder/Dockerfile'
+        ],
         'test_util': [
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
-            'integration_test.py']
+            'integration_test.py'],
     },
     zip_safe=False
 )
