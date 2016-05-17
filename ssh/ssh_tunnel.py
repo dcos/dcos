@@ -54,7 +54,7 @@ class SSHTunnel():
         check_call(start_tunnel)
         logger.debug('SSH Tunnel established!')
 
-    def remote_cmd(self, cmd, timeout=None):
+    def remote_cmd(self, cmd, raw_output=False, timeout=None):
         """
         Args:
             cmd: list of strings that will be interpretted in a subprocess
@@ -66,11 +66,15 @@ class SSHTunnel():
         run_cmd = self.ssh_cmd + ['-p', str(self.port), self.target] + cmd
         logger.debug('Running socket cmd: ' + ' '.join(run_cmd))
         try:
-            return check_output(run_cmd, timeout=timeout).decode('utf-8').rstrip('\r\n')
+            output = check_output(run_cmd, timeout=timeout)
+            if raw_output:
+                return output
+            else:
+                return output.decode('utf-8').rstrip('\r\n')
         except TimeoutExpired as e:
             logging.error('{} timed out after {} seconds'.format(cmd, timeout))
             logging.debug('Timed out process output:\n' + e.output)
-            raise TimeoutExpired
+            raise e
 
     def write_to_remote(self, src, dst):
         """
