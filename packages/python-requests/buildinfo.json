@@ -1,9 +1,8 @@
 {
   "requires": ["python"],
   "single_source": {
-    "kind": "git",
-    "git": "https://github.com/kennethreitz/requests",
-    "ref": "fa338da717124188b21d48df55f2fa9aca459d12",
-    "ref_origin": "v2.6.0"
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/0a/00/8cc925deac3a87046a4148d7846b571cf433515872b5430de4cd9dea83cb/requests-2.7.0.tar.gz",
+    "sha1": "6db8805632521a13789161bccb14f761672ec46f"
   }
 }
