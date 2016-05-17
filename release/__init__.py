@@ -16,6 +16,7 @@ import os.path
 import subprocess
 import sys
 
+import pkg_resources
 import yaml
 
 import gen.installer.util as util
@@ -407,7 +408,7 @@ def make_abs(path):
 
 
 def do_build_packages(cache_repository_url):
-    dockerfile = 'docker/dcos-builder/Dockerfile'
+    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/dcos-builder/Dockerfile')
     container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
     print("Attempting to pull dcos-builder docker:", container_name)
     pulled = False

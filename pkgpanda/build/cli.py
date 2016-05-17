@@ -7,7 +7,6 @@ the necessary dependencies.
 Usage:
   mkpanda [--repository-url=<repository_url>] [--dont-clean-after-build]
   mkpanda tree [--mkbootstrap] [--repository-url=<repository_url>] [<variant>]
-  mkpanda clean
 """
 
 import sys
