@@ -1009,8 +1009,8 @@ def test_3dt_nodes(cluster):
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
-        assert len(response['nodes']) == len(cluster.masters + cluster.slaves) + len(cluster.public_slaves), (
-            'a number of nodes in response must be {}'.format(len(cluster.masters + cluster.slaves)))
+        assert len(response['nodes']) == len(cluster.masters + cluster.all_slaves), (
+            'a number of nodes in response must be {}'.format(len(cluster.masters + cluster.all_slaves)))
 
         # test nodes
         validate_node(response['nodes'])

@@ -81,16 +81,16 @@ def validate_optional_agent(agent_list, public_agent_list):
         compare_lists(agent_list, public_agent_list)
 
 
-def run_validate_config(value_func_map, config, required=True):
+def run_validate_config_chunk(key_validate_fn_map, config, keys_required):
+    assert isinstance(keys_required, bool)
     errors = {}
-    for ssh_key, validate_func in value_func_map.items():
-        input_value = config.get(ssh_key)
-        if not input_value:
-            if required:
+    for ssh_key, validate_func in key_validate_fn_map.items():
+        if ssh_key not in config:
+            if keys_required:
                 errors[ssh_key] = 'required parameter {} was not provided'.format(ssh_key)
             continue
         try:
-            validate_func(input_value)
+            validate_func(config[ssh_key])
         except AssertionError as err:
             errors[ssh_key] = str(err)
     return errors
@@ -98,15 +98,14 @@ def run_validate_config(value_func_map, config, required=True):
 
 def validate_config(config):
     assert isinstance(config, dict)
-
     ssh_keys_checks_map_required = {
         'ssh_user': validate_ssh_user,
         'ssh_port': validate_ssh_port,
         'ssh_key_path': validate_ssh_key_path,
         'master_list': lambda master_list: validate_master_agent_lists(
             master_list,
-            config.get('agent_list'),
-            config.get('public_agent_list'))
+            config.get('agent_list', []),
+            config.get('public_agent_list', []))
     }
     ssh_keys_checks_map_optional = {
         'agent_list': lambda agent_list: validate_optional_agent(agent_list, config.get('public_agent_list')),
@@ -115,6 +114,6 @@ def validate_config(config):
             public_agent_list)
     }
 
-    errors = run_validate_config(ssh_keys_checks_map_required, config)
-    errors.update(run_validate_config(ssh_keys_checks_map_optional, config, required=False))
+    errors = run_validate_config_chunk(ssh_keys_checks_map_required, config, True)
+    errors.update(run_validate_config_chunk(ssh_keys_checks_map_optional, config, False))
     return errors

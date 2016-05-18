@@ -167,6 +167,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
                  **kwargs):
     if hosts is None:
         hosts = []
+    assert isinstance(hosts, list)
 
     # Role specific parameters
     role_params = {
