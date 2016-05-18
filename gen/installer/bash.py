@@ -557,6 +557,12 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
         copy_to_build('packages', installer_bootstrap_filename)
         copy_to_build('packages', bootstrap_active_filename)
 
+        # Copy across gen_extra if it exists
+        if os.path.exists('gen_extra'):
+            subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+        else:
+            subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
+
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])
 
