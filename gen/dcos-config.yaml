@@ -122,7 +122,7 @@ package:
       }
   - path: /etc/adminrouter.env
     content: |
-      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ oauth_enabled }}
+      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
   - path: /etc/dcos-oauth.env
     content: |
       OAUTH_ISSUER_URL={{ oauth_issuer_url }}
@@ -213,6 +213,10 @@ package:
   - path: /etc/ui-config.json
     content: |
       {"uiConfiguration":{"plugins":{"banner":{"enabled":{{ ui_banner }},"backgroundColor":"{{ ui_banner_background_color }}","foregroundColor":"{{ ui_banner_foreground_color }}","headerTitle":{{ ui_banner_header_title }},"headerContent":{{ ui_banner_header_content }},"footerContent":{{ ui_banner_footer_content }},"imagePath":{{ ui_banner_image_path }},"dismissible":{{ ui_banner_dismissible }}},"branding":{"enabled":{{ ui_branding }}},"external-links": {"enabled": {{ ui_external_links }}},
+{% switch custom_auth %}
+{% case "true" %}
+      {{ custom_auth_json }}
+{% case "false" %}
       "authentication":{"enabled":false},
 {% switch oauth_available %}
 {% case "true" %}
@@ -220,4 +224,5 @@ package:
 {% case "false" %}
       "oauth":{"enabled":false},
 {% endswitch %}
-      "networking":{"enabled":{{ ui_networking }}},"organization":{"enabled":{{ ui_organization }}},"tracking":{"enabled":{{ telemetry_enabled }}}}}}
+{% endswitch %}
+      "tracking":{"enabled":{{ telemetry_enabled }}}}}}

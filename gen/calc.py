@@ -231,6 +231,10 @@ def calculate_exhibitor_static_ensemble(master_list):
     return ','.join(['%d:%s' % (i+1, m) for i, m in enumerate(masters)])
 
 
+def calculate_adminrouter_auth_enabled(oauth_enabled):
+    return oauth_enabled
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 __logrotate_slave_module = {
     'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
@@ -246,11 +250,11 @@ __logrotate_slave_module = {
     }]
 }
 
-__default_mesos_slave_modules = [
+default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]
 
-__default_isolation_modules = [
+default_isolation_modules = [
     'cgroups/cpu',
     'cgroups/mem',
     'posix/disk',
@@ -274,6 +278,7 @@ entry = {
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
+        'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
@@ -299,6 +304,7 @@ entry = {
         'ui_banner_dismissible': 'null'
     },
     'must': {
+        'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
@@ -314,10 +320,10 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_isolation_modules': ','.join(__default_isolation_modules),
+        'mesos_isolation_modules': ','.join(default_isolation_modules),
         'mesos_hooks': '',
         'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            __default_mesos_slave_modules),
+            default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
     },
     'conditional': {

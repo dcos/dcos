@@ -26,8 +26,6 @@ import pkgpanda.util
 
 provider_names = ['aws', 'azure', 'bash']
 
-cloudformation_s3_url = 'https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos'
-
 
 class ConfigError(Exception):
     pass
@@ -559,6 +557,7 @@ class ReleaseManager():
     def __init__(self, config, noop):
         self._setup_storage(config.get('storage', dict()))
         self.__noop = noop
+        self.__config = config
 
         preferred_name = config.get('options', dict()).get('preferred')
         if preferred_name:
@@ -633,9 +632,14 @@ class ReleaseManager():
     def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
+        assert ('options' in self.__config) or \
+            ('cloudformation_s3_url' not in self.__config['options']), \
+            "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
+            " templates."
+
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(cloudformation_s3_url + '/' + repository_path)
+        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata

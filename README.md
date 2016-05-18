@@ -50,6 +50,7 @@ storage:
     path: $HOME/dcos-artifacts
 options:
   preferred: local
+  cloudformation_s3_url: https://change_me_to_use_the_aws_templates_and_webpages/
 EOF
 ```
 
