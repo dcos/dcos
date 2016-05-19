@@ -168,12 +168,16 @@ class PackageStore:
     def get_package_folder(self, name):
         return self._package_folders[name]
 
+    def get_bootstrap_cache_dir(self):
+        return self._packages_dir + "/cache/bootstrap"
+
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
     def get_last_bootstrap_set(self):
         def get_last_bootstrap(variant):
-            bootstrap_latest = self._packages_dir + '/' + pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
+            bootstrap_latest = self.get_bootstrap_cache_dir() + '/' + \
+                pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
             if not os.path.exists(bootstrap_latest):
                 raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
                                  "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
@@ -353,13 +357,13 @@ def make_bootstrap_tarball(package_store, packages, variant):
         pkg_id = filename[:-len(".tar.xz")]
         pkg_ids.append(pkg_id)
 
-    packages_dir = package_store.packages_dir
+    bootstrap_cache_dir = package_store.get_bootstrap_cache_dir()
 
     # Filename is output_name.<sha-1>.{active.json|.bootstrap.tar.xz}
     bootstrap_id = hash_checkout(pkg_ids)
-    latest_name = "{}/{}bootstrap.latest".format(packages_dir, pkgpanda.util.variant_prefix(variant))
+    latest_name = "{}/{}bootstrap.latest".format(bootstrap_cache_dir, pkgpanda.util.variant_prefix(variant))
 
-    output_name = packages_dir + '/' + bootstrap_id + '.'
+    output_name = bootstrap_cache_dir + '/' + bootstrap_id + '.'
 
     # bootstrap tarball = <sha1 of packages in tarball>.bootstrap.tar.xz
     bootstrap_name = "{}bootstrap.tar.xz".format(output_name)
@@ -377,6 +381,8 @@ def make_bootstrap_tarball(package_store, packages, variant):
     if (os.path.exists(bootstrap_name)):
         print("Bootstrap already up to date, not recreating")
         return mark_latest()
+
+    check_call(['mkdir', '-p', bootstrap_cache_dir])
 
     # Try downloading.
     if package_store.try_fetch_bootstrap_and_active(bootstrap_id):

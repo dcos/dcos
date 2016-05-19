@@ -83,8 +83,9 @@ def test_bootstrap(tmpdir):
     with pkg_dir.as_cwd():
         pkg_dir.join("treeinfo.json").write('', ensure=True)
         check_call(["mkpanda", "tree", "--mkbootstrap"])
-        bootstrap_id = open("bootstrap.latest", 'r').read().strip()
-        bootstrap_files = get_tar_contents(bootstrap_id + ".bootstrap.tar.xz")
+        cache_dir = str(pkg_dir.join("cache/bootstrap")) + "/"
+        bootstrap_id = open(cache_dir + "bootstrap.latest", 'r').read().strip()
+        bootstrap_files = get_tar_contents(cache_dir + bootstrap_id + ".bootstrap.tar.xz")
 
         # Seperate files that come from individual packages from those in the root directory
         package_files = dict()

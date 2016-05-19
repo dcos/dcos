@@ -116,7 +116,7 @@ def from_json(json_str):
 
 
 def get_bootstrap_packages(bootstrap_id):
-    return set(pkgpanda.util.load_json('packages/{}.active.json'.format(bootstrap_id)))
+    return set(pkgpanda.util.load_json('packages/cache/bootstrap/{}.active.json'.format(bootstrap_id)))
 
 
 def load_providers():
@@ -318,17 +318,17 @@ def make_stable_artifacts(cache_repository_url):
         bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
-            'local_path': 'packages/' + bootstrap_filename
+            'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
             })
         active_filename = "{}.active.json".format(bootstrap_id)
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/' + active_filename
+            'local_path': 'packages/cache/bootstrap/' + active_filename
             })
         latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_filename,
-            'local_path': 'packages/' + latest_filename
+            'local_path': 'packages/cache/bootstrap/' + latest_filename
             })
 
         # Add all the packages which haven't been added yet
@@ -583,11 +583,7 @@ class ReleaseManager():
             if 'reproducible_path' in artifact:
                 assert artifact['reproducible_path'][0] != '/'
 
-                local_path = artifact['reproducible_path']
-
-                # `bootstrap/` artifacts should get placed in `packages/`
-                if artifact['reproducible_path'].startswith('bootstrap/'):
-                    local_path = 'packages/' + artifact['reproducible_path'][9:]
+                local_path = "packages/cache/" + artifact['reproducible_path']
 
                 src_path = metadata['repository_path'] + '/' + artifact['reproducible_path']
 
