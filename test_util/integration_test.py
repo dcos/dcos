@@ -1333,6 +1333,7 @@ sleep 3600
             'spartan-watchdog-service',
             'spartan-watchdog-timer']
     slave_units = [
+            'ports-priv-agent-service',
             'mesos-slave-service',
             'vol-discovery-priv-agent-service']
     public_slave_units = [
