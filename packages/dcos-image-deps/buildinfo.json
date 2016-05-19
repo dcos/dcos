@@ -22,6 +22,11 @@
       "url": "https://pypi.python.org/packages/py3/a/aiohttp_jinja2/aiohttp_jinja2-0.7.0-py3-none-any.whl",
       "sha1": "e5710a2a89210b3b0a804a18f00aa4023498dc38"
     },
+    "analytics-python": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/39/db/ba6ce2c3f13dd046eec3a7767a7d10607c15dc8b23d68bc125ad577f924f/analytics_python-1.2.3-py2.py3-none-any.whl",
+      "sha1": "218ff1fdecb2a0d06499618a6d0e65fcecf50c19"
+    },
     "azure-common": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/sdk/a/azure-common/azure_common-1.0.0-py2.py3-none-any.whl",
