@@ -97,15 +97,12 @@ package:
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
-  - path: /etc/mesos-slave-modules.json
-    content: |
-      {{ mesos_slave_modules_json }}
   - path: /etc/mesos-slave-common
     content: |
       MESOS_MASTER=zk://leader.mesos:2181/mesos
       MESOS_CONTAINERIZERS=docker,mesos
       MESOS_LOG_DIR=/var/log/mesos
-      MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
+      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
       MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
       MESOS_WORK_DIR=/var/lib/mesos/slave
