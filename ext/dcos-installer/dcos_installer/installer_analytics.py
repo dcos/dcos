@@ -6,7 +6,7 @@ import uuid
 class InstallerAnalytics():
     def __init__(self, config):
         self.uuid = self.new_uuid()
-        self.bootstrap_version = os.getenv("BOOTSTRAP_ID", "")
+        self.bootstrap_version = os.getenv("BOOTSTRAP_ID")
         self.customer_key = config["customer_key"] if 'customer_key' in config else ""
         self.source = "onprem"  # If you're using the installer you're not in AWS or Azure
 
