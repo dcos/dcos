@@ -228,7 +228,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
         state_file_path = os.path.join(state_json_dir, 'deploy.json')
         log.debug('retry executed for a state file deploy.json')
         for _host in hosts:
-            _remove_host(state_file_path, _host)
+            _remove_host(state_file_path, '{}:{}'.format(_host.ip, _host.port))
 
         # We also need to update total number of hosts
         json_state = _read_state_file(state_file_path)

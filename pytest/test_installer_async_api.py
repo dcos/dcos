@@ -338,13 +338,15 @@ def test_action_deploy_retry(monkeypatch, mocker):
         return {
             'hosts': {
                 '127.0.0.1:22': {
-                    'host_status': 'failed'
+                    'host_status': 'failed',
+                    'tags': {'role': 'master', 'dcos_install_param': 'master'},
                 },
                 '127.0.0.2:22022': {
                     'host_status': 'success'
                 },
                 '127.0.0.3:22022': {
-                    'host_status': 'failed'
+                    'host_status': 'failed',
+                    'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
                 }
             }
         }
