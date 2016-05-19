@@ -28,6 +28,7 @@ export PYTHONUNBUFFERED="notemtpy"
 virtualenv --always-copy build/env
 . build/env/bin/activate
 
+: ${TEAMCITY_BRANCH?"TEAMCITY_BRANCH must be set (determines the tag and testing/ channel)"}
 
 if [[ "$TEAMCITY_BRANCH" == "<default>" ]]
 then
@@ -46,7 +47,10 @@ echo "##teamcity[setParameter name='env.TAG' value='$TAG']"
 
 cp config/dcos-release.config.yaml dcos-release.config.yaml
 
-./prep_teamcity
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+"$DIR"/prep_teamcity
+
 release create $TAG $TAG
 if [ -d wheelhouse ]; then
   cp -r wheelhouse artifacts/
