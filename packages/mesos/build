@@ -65,7 +65,6 @@ chmod +x "$disk_resource_script"
 #Create the master modules directory.
 mkdir -p "$PKG_PATH/etc/mesos-master-modules"
 
-
 # Copy the json file describing logrotate module.
 module_json="$PKG_PATH/etc/mesos-slave-modules/logrotate.json"
 mkdir -p "$(dirname "$module_json")"
