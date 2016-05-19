@@ -10,6 +10,12 @@ make
 make install
 
 
+# Create the module file
+module="$PKG_PATH/etc/mesos-slave-modules/logrotate.json"
+mkdir -p "$(dirname "$module")"
+cp /pkg/extra/logrotate.json "$module"
+
+
 config_file="$PKG_PATH/etc/logrotate.conf"
 mkdir -p $(dirname $config_file)
 cat <<'EOF' > "$config_file"
