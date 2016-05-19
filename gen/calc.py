@@ -78,14 +78,6 @@ def calculate_mesos_hooks_env_var(mesos_hooks):
     return 'MESOS_HOOKS=' + mesos_hooks
 
 
-def calculate_mesos_slave_modules_json(mesos_slave_modules):
-    # Ensure that this file is readable by humans by including newlines in the output.
-    json_multiline = json.dumps({"libraries": mesos_slave_modules}, indent=2)
-    # Preserve indentation in dcos-config.yaml's template by adding indentation to this content
-    injected_indent = 6 * ' '
-    return json_multiline.replace('\n', '\n' + injected_indent)
-
-
 def validate_telemetry_enabled(telemetry_enabled):
     can_be = ['true', 'false']
     assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
@@ -236,23 +228,7 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 
 
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
-__logrotate_slave_module = {
-    'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
-    'modules': [{
-        'name': __logrotate_slave_module_name,
-        'parameters': [
-            {'key': 'launcher_dir', 'value': '/opt/mesosphere/active/mesos/libexec/mesos/'},
-            {'key': 'max_stdout_size', 'value': '2MB'},
-            {'key': 'logrotate_stdout_options', 'value': 'rotate 9'},
-            {'key': 'max_stderr_size', 'value': '2MB'},
-            {'key': 'logrotate_stderr_options', 'value': 'rotate 9'},
-        ]
-    }]
-}
 
-default_mesos_slave_modules = [
-    __logrotate_slave_module,
-]
 
 default_isolation_modules = [
     'cgroups/cpu',
@@ -322,8 +298,6 @@ entry = {
         'ui_organization': 'false',
         'mesos_isolation_modules': ','.join(default_isolation_modules),
         'mesos_hooks': '',
-        'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
     },
     'conditional': {
