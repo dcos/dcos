@@ -53,6 +53,9 @@ import test_util.installer_api_test
 from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
 from test_util.test_runner import integration_test, setup_integration_test
 
+LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
+logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = 'us-west-2'
 
@@ -85,7 +88,7 @@ def make_vpc(use_bare_os=False):
     """
     random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
     unique_cluster_id = "installer-test-{}".format(random_identifier)
-    print("Spinning up AWS VPC via CCM with ID: {}".format(unique_cluster_id))
+    log.info("Spinning up AWS VPC via CCM with ID: {}".format(unique_cluster_id))
     if use_bare_os:
         os_name = "cent-os-7"
     else:
@@ -102,7 +105,7 @@ def make_vpc(use_bare_os=False):
         )
 
     ssh_key, ssh_key_url = vpc.get_ssh_key()
-    print("Download cluster SSH key: {}".format(ssh_key_url))
+    log.info("Download cluster SSH key: {}".format(ssh_key_url))
     # Write out the ssh key to the local filesystem for the ssh lib to pick up.
     with open("ssh_key", "w") as ssh_key_fh:
         ssh_key_fh.write(ssh_key)
@@ -162,13 +165,13 @@ def check_environment():
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
     options = check_environment()
 
     host_list = None
     vpc = None  # Set if the test owns the VPC
 
     if options.host_list is None:
+        log.info('CCM_VPC_HOSTS not provided, requesting new VPC from CCM...')
         vpc = make_vpc(use_bare_os=options.test_install_prereqs)
         host_list = vpc.hosts()
     else:
@@ -199,6 +202,7 @@ def main():
         """
         return closing(TunnelCollection(ssh_user, ssh_key_path, host_list_w_port))
 
+    log.info('Checking that hosts are accessible')
     with establish_host_connectivity() as tunnels:
         local_ip = {}
         for tunnel in tunnels.tunnels:
@@ -212,8 +216,10 @@ def main():
     registry_host = local_ip[host_list[0]]
     master_list = [local_ip[_] for _ in host_list[1:2]]
     agent_list = [local_ip[_] for _ in host_list[2:]]
+    log.info('Test/registry host public/private IP: ' + test_host + '/' + registry_host)
 
     with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
+        log.info('Setting up installer on test host')
 
         installer.setup_remote(
                 tunnel=test_host_tunnel,
@@ -221,6 +227,7 @@ def main():
                 download_url=options.installer_url)
         if options.do_setup:
             # only do on setup so you can rerun this test against a living installer
+            log.info('Verifying installer password hashing')
             test_pass = 'testpassword'
             hash_passwd = installer.get_hashed_password(test_pass)
             assert passlib.hash.sha512_crypt.verify(test_pass, hash_passwd), 'Hash does not match password'
@@ -233,14 +240,17 @@ def main():
             ssh_key = key_fh.read()
         # Using static exhibitor is the only option in the GUI installer
         if options.use_api:
+            log.info('Installer API is selected, so configure for static backend')
             zk_host = None  # causes genconf to use static exhibitor backend
         else:
+            log.info('Installer CLI is selected, so configure for ZK backend')
             zk_host = registry_host + ':2181'
             zk_cmd = [
                     'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
                     '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
             test_host_tunnel.remote_cmd(zk_cmd)
 
+        log.info("Configuring install...")
         installer.genconf(
                 zk_host=zk_host,
                 master_list=master_list,
@@ -249,6 +259,7 @@ def main():
                 ssh_user=ssh_user,
                 ssh_key=ssh_key)
 
+        log.info("Running Preflight...")
         if options.test_install_prereqs:
             # Runs preflight in --web or --install-prereqs for CLI
             # This may take up 15 minutes...
@@ -261,8 +272,10 @@ def main():
             # Will not fix errors detected in preflight
             installer.preflight()
 
+        log.info("Running Deploy...")
         installer.deploy()
 
+        log.info("Running Postflight")
         installer.postflight()
 
         # Runs dcos-image/integration_test.py inside the cluster
@@ -289,7 +302,7 @@ def main():
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.
 
-    print("Test successsful!")
+    log.info("Test successsful!")
     # Delete the cluster if all was successful to minimize potential costs.
     # Failed clusters the hosts will continue running
     if vpc is not None:
