@@ -54,8 +54,6 @@ import test_util.installer_api_test
 from ssh.ssh_runner import MultiRunner
 from ssh.utils import CommandChain, SyncCmdDelegate
 
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 
 DEFAULT_AWS_REGION = 'us-west-2'
 
@@ -200,7 +198,7 @@ def test_setup(ssh_runner, registry, remote_dir, use_zk_backend):
 
 def integration_test(
         ssh_runner, dcos_dns, master_list, agent_list, public_agent_list, region, registry_host,
-        test_dns_search, ci_flags):
+        test_dns_search, ci_flags, aws_access_key_id, aws_secret_access_key):
     """Runs integration test on host
     Note: check_results() will raise AssertionError if test fails
 
@@ -227,8 +225,8 @@ def integration_test(
         '-e', 'REGISTRY_HOST='+registry_host,
         '-e', 'DCOS_VARIANT=default',
         '-e', 'DNS_SEARCH='+dns_search,
-        '-e', 'AWS_ACCESS_KEY_ID='+AWS_ACCESS_KEY_ID,
-        '-e', 'AWS_SECRET_ACCESS_KEY='+AWS_SECRET_ACCESS_KEY,
+        '-e', 'AWS_ACCESS_KEY_ID='+aws_access_key_id,
+        '-e', 'AWS_SECRET_ACCESS_KEY='+aws_secret_access_key,
         '-e', 'AWS_REGION='+region,
         '--net=host', 'py.test', 'py.test',
         '-vv', ci_flags, '/integration_test.py']
@@ -296,6 +294,7 @@ def make_vpc(use_bare_os=False):
 
 def check_environment():
     """Test uses environment variables to play nicely with TeamCity config templates
+    Grab all the environment variables here to avoid setting params all over
 
     Returns:
         object: generic object used for cleanly passing options through the test
@@ -339,6 +338,8 @@ def check_environment():
         assert os.environ['TEST_INSTALL_PREREQS'] == 'true', "Must be testing install-prereqs!"
 
     options.ci_flags = os.getenv('CI_FLAGS', '')
+    options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     return options
 
 
@@ -494,7 +495,9 @@ def main():
         registry_host=registry_host,
         # Setting dns_search: mesos not currently supported in API
         test_dns_search=not options.use_api,
-        ci_flags=options.ci_flags)
+        ci_flags=options.ci_flags,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.
