@@ -23,6 +23,24 @@ ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay --insecure-re
 """
 
 
+def make_ssl_server_conf():
+    conf_path = pkg_filename('extra/openssl-server.cnf')
+    assert conf_path
+    # append DNS.1 = registry_ip
+    # appent IP.1 = registry_ip
+    pass
+
+
+def generate_ssl_ca_conf():
+    conf_path = pkg_filename('extra/openssl-ca.cnf')
+    assert conf_path
+    # openssl req -x509 -config conf_path -newkey rsa:4096 -sha256
+    # -subj "/C=US/ST=California/L=San Francisco/O=Mesosphere/CN=DCOS Test CA"
+    # -nodes -out root_ca_cert -outform PEM
+    # openssl x509 -noout -text -in
+    pass
+
+
 def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
 
