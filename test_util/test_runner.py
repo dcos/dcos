@@ -26,15 +26,16 @@ ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay --insecure-re
 """
 
 REGISTRY_DOCKERFILE = """FROM registry:2
-ADD {} /certs
+ADD include/certs /certs
 ENV REGISTRY_HTTP_TLS_CERTIFICATE=/certs/client.cert
 ENV REGISTRY_HTTP_TLS_KEY=/certs/client.key
 """
 
 
-def create_togo_registry(tunnel, registry_host, test_dir):
+def create_togo_registry(tunnel, registry_host, test_dir, agent_list=None):
     temp_dir = tempfile.mkdtemp()
-    certs_dir = join(temp_dir, 'certs')
+    certs_dir = join(temp_dir, 'include', 'certs')
+    os.makedirs(certs_dir)
 
     # copy ssl-ca-conf into tmp certs dir
     orig_ca_conf = pkg_filename('extra/openssl-ca.cnf')
@@ -42,10 +43,10 @@ def create_togo_registry(tunnel, registry_host, test_dir):
     shutil.copy(orig_ca_conf, ca_conf)
     # configure Root CA
     rootca_cert = join(certs_dir, 'cacert.pem')
-    check_call(['openssl', 'req', 'x509', '-config', ca_conf,
-                '-newkey', 'rsa:4096', '-sha256', '-subj',
-                '"/C=US/ST=California/L=San Francisco/O=Mesosphere/CN=DCOS Test CA"',
-                '-nodes', '-out', rootca_cert, '-outform', 'PEM'])
+    check_call(['openssl', 'req', '-x509', '-config', ca_conf,
+                '-newkey', 'rsa:4096', '-sha256', '-days', '1000', '-subj',
+                '/C=US/ST=California/L=San Francisco/O=Mesosphere/CN=DCOS Test CA',
+                '-nodes', '-out', rootca_cert, '-outform', 'PEM'], cwd=temp_dir)
     # make server conf
     orig_server_conf = pkg_filename('extra/openssl-server.cnf')
     server_conf = join(certs_dir, 'openssl-server.cnf')
@@ -56,23 +57,24 @@ def create_togo_registry(tunnel, registry_host, test_dir):
 
     # make client CSR
     client_csr = join(certs_dir, 'client.csr')
-    check_call(['openssl', 'req', '-config', 'server_conf', '-newkey',
+    check_call(['openssl', 'req', '-config', server_conf, '-newkey',
                 'rsa:2048', '-sha256', '-subj',
-                '"/C=US/ST=California/L=San Francisco/O=Mesosphere/CN={}"'.format(registry_host),
-                '-nodes', '-out', client_csr, '-outform', 'PEM'])
-    check_call(['openssl', 'req', '-text', '-noout', '-verify', '-in', client_csr])
+                '/C=US/ST=California/L=San Francisco/O=Mesosphere/CN={}'.format(registry_host),
+                '-nodes', '-out', client_csr, '-outform', 'PEM'], cwd=temp_dir)
+    check_call(['openssl', 'req', '-text', '-noout', '-verify', '-in', client_csr], cwd=temp_dir)
 
     # touch index.txt
     check_call(['touch', join(certs_dir, 'index.txt')])
     # make serial.txt
-    check_call(['echo', '01', '>', join(certs_dir, 'serial.txt')])
+    with open(join(certs_dir, 'serial.txt'), 'w') as fh:
+        fh.write('01')
 
     # make client cert
     client_cert = join(certs_dir, 'client.cert')
     check_call(['openssl', 'ca', '-batch', '-config', ca_conf,
                 '-policy', 'signing_policy', '-extensions', 'signing_req',
-                '-out', client_cert, '-infiles', client_csr])
-    check_call(['openssl', 'x509', '-noout', '-text', '-in', client_cert])
+                '-out', client_cert, '-infiles', client_csr], cwd=temp_dir)
+    check_call(['openssl', 'x509', '-noout', '-text', '-in', client_cert], cwd=temp_dir)
 
     # finally, setup the client certs in the right folders
     client_key = join(certs_dir, 'client.key')
@@ -85,7 +87,7 @@ def create_togo_registry(tunnel, registry_host, test_dir):
 
     # build self-signed registry for shipping
     with open(join(temp_dir, 'Dockerfile'), 'w') as fh:
-        fh.write(REGISTRY_DOCKERFILE.format(certs_dir))
+        fh.write(REGISTRY_DOCKERFILE)
 
     check_call(['docker', 'build', '-t', 'registry:custom', '.'], cwd=temp_dir)
     local_tar_path = join(temp_dir, 'registry_custom.tar')
@@ -99,27 +101,35 @@ def create_togo_registry(tunnel, registry_host, test_dir):
     tunnel.remote_cmd(['docker', 'load', '-i', remote_tar_path])
 
     log.info('Starting registry')
-    tunnel.remote_cmd(['docker', 'run', '-d', '--restart=always', '-p'
+    tunnel.remote_cmd(['docker', 'run', '-d', '--restart=always', '-p',
                        '5000:5000', '--name', 'registry', 'registry:custom'])
 
-
-def start_registry():
-    # @docker exec -it $(MASTER_CTR)1 \
-    # docker run \
-    # -d --restart=always \
-    # -p 5000:5000 \
-    # -v /etc/docker/certs.d:/certs \
-    # -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/client.cert \
-    # -e REGISTRY_HTTP_TLS_KEY=/certs/client.key \
-    # --name registry \
-    # registry:2
-    # @$(eval REGISTRY_IP := $(firstword $(MASTER_IPS)):5000)
-    # @$(call copy_registry_certs,$(REGISTRY_IP))
-    # @$(call copy_registry_certs,$(REGISTRY_HOST):5000)
-    # @echo "Your registry is reachable from inside the DC/OS containers at:"
-    # @echo -e "\t$(REGISTRY_HOST):5000"
-    # @echo -e "\t$(REGISTRY_IP)"
-    pass
+    log.info('Tar-ing certs dir')
+    certs_tarball = join(temp_dir, 'certs.tgz')
+    check_call(['tar', 'czf', certs_tarball, 'certs'], cwd=join(temp_dir, 'include'))
+    log.info(certs_tarball)
+    cert_transfer_path = join(test_dir, 'certs.tgz')
+    docker_conf_chain = (
+            ['docker', 'version'],  # checks that docker is available w/o sudo
+            ['tar', 'xzf', cert_transfer_path, '-C', test_dir],
+            ['sudo', 'cp', '-R', join(test_dir, 'certs'), '/etc/docker/certs.d/'])
+    log.info('Reconfiguring dockerd on test host')
+    tunnel.write_to_remote(certs_tarball, cert_transfer_path)
+    remote_key_path = join(test_dir, 'test_ssh_key')
+    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
+    for cmd in docker_conf_chain:
+        tunnel.remote_cmd(cmd)
+    for agent in agent_list:
+        log.info('Reconfiguring dockerd on ' + agent)
+        target = "{}@{}".format(tunnel.ssh_user, agent)
+        target_scp = "{}:{}".format(target, cert_transfer_path)
+        ssh_opts = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
+        scp_cmd = ['/usr/bin/scp', '-i', remote_key_path] + ssh_opts
+        remote_scp = scp_cmd + [cert_transfer_path, target_scp]
+        tunnel.remote_cmd(remote_scp)
+        chain_prefix = ['/usr/bin/ssh', '-tt', '-i', remote_key_path] + ssh_opts + [target]
+        for cmd in docker_conf_chain:
+            tunnel.remote_cmd(chain_prefix+cmd)
 
 
 def pkg_filename(relative_path):
@@ -156,44 +166,18 @@ def setup_integration_test(tunnel, test_dir, registry=None, agent_list=None):
     tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
     tunnel.remote_cmd(['chmod', '600', remote_key_path])
 
-    log.info('Reconfiguring all dockerd to trust insecurity registry: ' + registry)
-    with open('execstart.conf', 'w') as conf_fh:
-        conf_fh.write(TEST_DOCKERD_CONFIG.format(registry))
-    conf_transfer_path = join(test_dir, 'execstart.conf')
-    docker_conf_chain = (
-        ['docker', 'version'],  # checks that docker is available w/o sudo
-        ['sudo', 'cp', conf_transfer_path, '/etc/systemd/system/docker.service.d/execstart.conf'],
-        ['sudo', 'systemctl', 'daemon-reload'],
-        ['sudo', 'systemctl', 'restart', 'docker'])
-    log.info('Reconfiguring dockerd on test host')
-    tunnel.write_to_remote('execstart.conf', conf_transfer_path)
-    for cmd in docker_conf_chain:
-        tunnel.remote_cmd(cmd)
-    for agent in agent_list:
-        log.info('Reconfiguring dockerd on ' + agent)
-        target = "{}@{}".format(tunnel.ssh_user, agent)
-        target_scp = "{}:{}".format(target, conf_transfer_path)
-        ssh_opts = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
-        scp_cmd = ['/usr/bin/scp', '-i', remote_key_path] + ssh_opts
-        remote_scp = scp_cmd + [conf_transfer_path, target_scp]
-        tunnel.remote_cmd(remote_scp)
-        chain_prefix = ['/usr/bin/ssh', '-tt', '-i', remote_key_path] + ssh_opts + [target]
-        for cmd in docker_conf_chain:
-            tunnel.remote_cmd(chain_prefix+cmd)
-
     tunnel.remote_cmd(['mkdir', '-p', join(test_dir, 'test_server')])
     tunnel.write_to_remote(test_server_docker, join(test_dir, 'test_server/Dockerfile'))
     tunnel.write_to_remote(test_server_script, join(test_dir, 'test_server/test_server.py'))
-    log.info('Starting insecure registry on test host')
     try:
         log.debug('Attempt to replace a previously setup registry')
-        tunnel.remote_cmd(['docker', 'kill', 'registry'])
-        tunnel.remote_cmd(['docker', 'rm', 'registry'])
+        tunnel.remote_cmd(['docker', 'kill', 'registry', '&&'
+                           'docker', 'rm', 'registry'])
     except CalledProcessError:
         log.debug('No previous registry to kill or delete')
-    tunnel.remote_cmd([
-        'docker', 'run', '-d', '-p', '5000:5000', '--restart=always', '--name',
-        'registry', 'registry:2'])
+
+    create_togo_registry(tunnel, registry, test_dir, agent_list=agent_list)
+
     log.info('Building test_server Docker image on test host')
     tunnel.remote_cmd([
         'cd', join(test_dir, 'test_server'), '&&', 'docker', 'build', '-t',
