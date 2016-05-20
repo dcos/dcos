@@ -4,9 +4,12 @@ Parameters for integration_test.py are passed via the same environment variables
 Note: ssh_user must be able to use docker without sudo priveleges
 """
 import logging
+import os
+import shutil
+import tempfile
 import time
 from os.path import join
-from subprocess import CalledProcessError, TimeoutExpired
+from subprocess import CalledProcessError, TimeoutExpired, check_call
 
 import pkg_resources
 
@@ -22,22 +25,100 @@ ExecStart=
 ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay --insecure-registry={}:5000
 """
 
-
-def make_ssl_server_conf():
-    conf_path = pkg_filename('extra/openssl-server.cnf')
-    assert conf_path
-    # append DNS.1 = registry_ip
-    # appent IP.1 = registry_ip
-    pass
+REGISTRY_DOCKERFILE = """FROM registry:2
+ADD {} /certs
+ENV REGISTRY_HTTP_TLS_CERTIFICATE=/certs/client.cert
+ENV REGISTRY_HTTP_TLS_KEY=/certs/client.key
+"""
 
 
-def generate_ssl_ca_conf():
-    conf_path = pkg_filename('extra/openssl-ca.cnf')
-    assert conf_path
-    # openssl req -x509 -config conf_path -newkey rsa:4096 -sha256
-    # -subj "/C=US/ST=California/L=San Francisco/O=Mesosphere/CN=DCOS Test CA"
-    # -nodes -out root_ca_cert -outform PEM
-    # openssl x509 -noout -text -in
+def create_togo_registry(tunnel, registry_host, test_dir):
+    temp_dir = tempfile.mkdtemp()
+    certs_dir = join(temp_dir, 'certs')
+
+    # copy ssl-ca-conf into tmp certs dir
+    orig_ca_conf = pkg_filename('extra/openssl-ca.cnf')
+    ca_conf = join(certs_dir, 'openssl-ca.cnf')
+    shutil.copy(orig_ca_conf, ca_conf)
+    # configure Root CA
+    rootca_cert = join(certs_dir, 'cacert.pem')
+    check_call(['openssl', 'req', 'x509', '-config', ca_conf,
+                '-newkey', 'rsa:4096', '-sha256', '-subj',
+                '"/C=US/ST=California/L=San Francisco/O=Mesosphere/CN=DCOS Test CA"',
+                '-nodes', '-out', rootca_cert, '-outform', 'PEM'])
+    # make server conf
+    orig_server_conf = pkg_filename('extra/openssl-server.cnf')
+    server_conf = join(certs_dir, 'openssl-server.cnf')
+    shutil.copy(orig_server_conf, server_conf)
+    with open(server_conf, 'a') as fh:
+        fh.write('DNS.1 = '+registry_host+'\n')
+        fh.write('IP.1 = '+registry_host+'\n')
+
+    # make client CSR
+    client_csr = join(certs_dir, 'client.csr')
+    check_call(['openssl', 'req', '-config', 'server_conf', '-newkey',
+                'rsa:2048', '-sha256', '-subj',
+                '"/C=US/ST=California/L=San Francisco/O=Mesosphere/CN={}"'.format(registry_host),
+                '-nodes', '-out', client_csr, '-outform', 'PEM'])
+    check_call(['openssl', 'req', '-text', '-noout', '-verify', '-in', client_csr])
+
+    # touch index.txt
+    check_call(['touch', join(certs_dir, 'index.txt')])
+    # make serial.txt
+    check_call(['echo', '01', '>', join(certs_dir, 'serial.txt')])
+
+    # make client cert
+    client_cert = join(certs_dir, 'client.cert')
+    check_call(['openssl', 'ca', '-batch', '-config', ca_conf,
+                '-policy', 'signing_policy', '-extensions', 'signing_req',
+                '-out', client_cert, '-infiles', client_csr])
+    check_call(['openssl', 'x509', '-noout', '-text', '-in', client_cert])
+
+    # finally, setup the client certs in the right folders
+    client_key = join(certs_dir, 'client.key')
+    for name in [registry_host, registry_host+':5000']:
+        hostname_dir = join(certs_dir, name)
+        os.mkdir(hostname_dir)
+        shutil.copy(client_cert, join(hostname_dir, 'client.cert'))
+        shutil.copy(client_key, join(hostname_dir, 'client.key'))
+        shutil.copy(rootca_cert, join(hostname_dir, name+'.crt'))
+
+    # build self-signed registry for shipping
+    with open(join(temp_dir, 'Dockerfile'), 'w') as fh:
+        fh.write(REGISTRY_DOCKERFILE.format(certs_dir))
+
+    check_call(['docker', 'build', '-t', 'registry:custom', '.'], cwd=temp_dir)
+    local_tar_path = join(temp_dir, 'registry_custom.tar')
+    check_call(['docker', 'save', '-o', local_tar_path, 'registry:custom'])
+    check_call(['docker', 'rmi', 'registry:custom'])
+
+    log.info('Transferring custom registry image tarfile')
+    remote_tar_path = join(test_dir, 'registry_custom.tar')
+    tunnel.write_to_remote(local_tar_path, remote_tar_path)
+    log.info('Loading custom registry on '+registry_host)
+    tunnel.remote_cmd(['docker', 'load', '-i', remote_tar_path])
+
+    log.info('Starting registry')
+    tunnel.remote_cmd(['docker', 'run', '-d', '--restart=always', '-p'
+                       '5000:5000', '--name', 'registry', 'registry:custom'])
+
+
+def start_registry():
+    # @docker exec -it $(MASTER_CTR)1 \
+    # docker run \
+    # -d --restart=always \
+    # -p 5000:5000 \
+    # -v /etc/docker/certs.d:/certs \
+    # -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/client.cert \
+    # -e REGISTRY_HTTP_TLS_KEY=/certs/client.key \
+    # --name registry \
+    # registry:2
+    # @$(eval REGISTRY_IP := $(firstword $(MASTER_IPS)):5000)
+    # @$(call copy_registry_certs,$(REGISTRY_IP))
+    # @$(call copy_registry_certs,$(REGISTRY_HOST):5000)
+    # @echo "Your registry is reachable from inside the DC/OS containers at:"
+    # @echo -e "\t$(REGISTRY_HOST):5000"
+    # @echo -e "\t$(REGISTRY_IP)"
     pass
 
 
