@@ -16,9 +16,6 @@ CCM_HOST_SETUP: true or false (default=true)
 INSTALLER_URL: URL that curl can grab the installer from (default=None)
     This option is only used if CCM_HOST_SETUP=true. See above.
 
-MINUTEMAN_ENABLED: true or false (default=false)
-    Minuteman requires a setting that is applied when CCM_HOST_SETUP=true
-
 USE_INSTALELR_API: true or false (default=None)
     starts installer web server as daemon when CCM_HOST_SETUP=true and proceeds to only
     communicate with the installer via the API. In this mode, exhibitor backend is set
@@ -203,7 +200,7 @@ def test_setup(ssh_runner, registry, remote_dir, use_zk_backend):
 
 def integration_test(
         ssh_runner, dcos_dns, master_list, agent_list, public_agent_list, region, registry_host,
-        test_minuteman, test_dns_search, ci_flags):
+        test_dns_search, ci_flags):
     """Runs integration test on host
     Note: check_results() will raise AssertionError if test fails
 
@@ -214,15 +211,10 @@ def integration_test(
         region: string indicating AWS region in which cluster is running
         agent_list: string of comma separated agent addresses
         registry_host: string for address where marathon can pull test app
-        test_minuteman: if set to True then test for minuteman service
         test_dns_search: if set to True, test for deployed mesos DNS app
         ci_flags: optional additional string to be passed to test
 
     """
-    marker_args = '-m "not minuteman"'
-    if test_minuteman:
-        marker_args = ''
-
     run_test_chain = CommandChain('run_test')
     dns_search = 'true' if test_dns_search else 'false'
     test_cmd = [
@@ -239,14 +231,14 @@ def integration_test(
         '-e', 'AWS_SECRET_ACCESS_KEY='+AWS_SECRET_ACCESS_KEY,
         '-e', 'AWS_REGION='+region,
         '--net=host', 'py.test', 'py.test',
-        '-vv', ci_flags, marker_args, '/integration_test.py']
+        '-vv', ci_flags, '/integration_test.py']
     print("To run this test again, ssh to test node and run:\n{}".format(' '.join(test_cmd)))
     run_test_chain.add_execute(test_cmd)
 
     check_results(run_loop(ssh_runner, run_test_chain), force_print=True)
 
 
-def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
+def prep_hosts(ssh_runner, registry):
     """Runs steps so that nodes can pass preflight checks. Nodes are expected
     to either use the custom AMI or have install-prereqs run on them. Additionally,
     Note: break_prereqs is run before this always
@@ -254,7 +246,6 @@ def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
     Args:
         ssh_runner: instance of ssh.ssh_runner.MultiRunner
         registry: string to configure hosts with trusted registry for app deployment
-        minuteman_enabled: if True, minuteman will be available after DC/OS install
     """
     host_prep_chain = CommandChain('host_prep')
     host_prep_chain.add_execute([
@@ -265,10 +256,6 @@ def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
     host_prep_chain.add_execute(['sudo', 'systemctl', 'restart', 'docker'])
     host_prep_chain.add_execute(['sudo', 'groupadd', '-g', '65500', 'nogroup'])
     host_prep_chain.add_execute(['sudo', 'usermod', '-aG', 'docker', 'centos'])
-
-    if minuteman_enabled:
-        host_prep_chain.add_execute(['sudo', 'mkdir', '-p', '/etc/mesosphere/roles'])
-        host_prep_chain.add_execute(['sudo', 'touch', '/etc/mesosphere/roles/minuteman'])
 
     check_results(run_loop(ssh_runner, host_prep_chain))
 
@@ -335,10 +322,6 @@ def check_environment():
         options.installer_url = os.environ['INSTALLER_URL']
     else:
         options.installer_url = None
-
-    if 'MINUTEMAN_ENABLED' in os.environ:
-        assert os.environ['MINUTEMAN_ENABLED'] in ['true', 'false']
-    options.minuteman_enabled = os.getenv('MINUTEMAN_ENABLED', 'false') == 'true'
 
     assert 'USE_INSTALLER_API' in os.environ, 'USE_INSTALLER_API must be set in environ'
     assert os.environ['USE_INSTALLER_API'] in ['true', 'false']
@@ -473,7 +456,7 @@ def main():
         print('Check that --preflight gives an error')
         installer.preflight(expect_errors=True)
         print("Prepping all hosts...")
-        prep_hosts(dcos_host_runner, registry=registry_host, minuteman_enabled=options.minuteman_enabled)
+        prep_hosts(dcos_host_runner, registry=registry_host)
         # This will setup the integration test and its resources
         print('Setting up test node while deploy runs...')
         # TODO: remove calls to both multiprocessing and asyncio
@@ -511,7 +494,6 @@ def main():
         registry_host=registry_host,
         # Setting dns_search: mesos not currently supported in API
         test_dns_search=not options.use_api,
-        test_minuteman=options.minuteman_enabled,
         ci_flags=options.ci_flags)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
