@@ -410,9 +410,12 @@ def main():
 
     # If installer_url is not set, then no downloading occurs
     installer.setup_remote(
-            host_list[0], ssh_user, ssh_key_path,
-            remote_dir+'/dcos_generate_config.sh',
-            download_url=options.installer_url)
+            tunnel=None,
+            installer_path=remote_dir+'/dcos_generate_config.sh',
+            download_url=options.installer_url,
+            host=host_list[0],
+            ssh_user=ssh_user,
+            ssh_key_path=ssh_key_path)
 
     if options.do_setup:
         host_prep_chain = CommandChain('host_prep')
