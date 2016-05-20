@@ -113,8 +113,16 @@ RET=$?
 mkdir -p $WORKDIR/test/vagrant-logs
 if [ $RET -ne 0 ]; then
   echo "TEST FAILED"
+  echo "Attempting to gather logs"
+  export LOG_REPLAY_LINES=${LOG_REPLAY_LINES:=20}
   for i in boot m1 m2 m3 a1 a2; do
-    vagrant ssh $i -c 'sudo journalctl -o short' > $WORKDIR/test/vagrant-logs/$i
+    if [ "$TEAMCITY_BUILD_ENV" == "true" ]; then
+      echo "##teamcity[blockOpened name='$i']"
+      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+      echo "##teamcity[blockClosed name='$i']"
+    else
+      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+    fi
   done
   exit 1
 fi
