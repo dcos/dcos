@@ -16,6 +16,31 @@ class ExecuteException(Exception):
     """Raised when execution fails"""
 
 
+def nodes_count_by_type(config):
+    total_agents_count = len(config.get('agent_list', [])) + len(config.get('public_agent_list', []))
+    return {
+        'total_masters': len(config['master_list']),
+        'total_agents': total_agents_count
+    }
+
+
+def get_full_nodes_list(config):
+    def add_nodes(nodes, tag):
+        return [Node(node, tag) for node in nodes]
+
+    node_role_map = {
+        'master_list': 'master',
+        'agent_list': 'agent',
+        'public_agent_list': 'public_agent'
+    }
+    full_target_list = []
+    for config_field, role in node_role_map.items():
+        if config_field in config:
+            full_target_list += add_nodes(config[config_field], {'role': role})
+    log.debug("full_target_list: {}".format(full_target_list))
+    return full_target_list
+
+
 @asyncio.coroutine
 def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block=False, state_json_dir=None,
                   async_delegate=None, retry=False, options=None):
@@ -29,14 +54,7 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     if not os.path.isfile(pf_script_path):
         log.error("genconf/serve/dcos_install.sh does not exist. Please run --genconf before executing preflight.")
         raise FileNotFoundError('genconf/serve/dcos_install.sh does not exist')
-    targets = []
-    for host in config['master_list']:
-        s = Node(host, {'role': 'master'})
-        targets += [s]
-
-    for host in config['agent_list']:
-        s = Node(host, {'role': 'agent'})
-        targets += [s]
+    targets = get_full_nodes_list(config)
 
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
@@ -61,15 +79,9 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     # Setup the cleanup chain
     cleanup_chain = ssh.utils.CommandChain('preflight_cleanup')
     add_post_action(cleanup_chain)
-
     chains.append(cleanup_chain)
-    master_agent_count = {
-        'total_masters': len(config['master_list']),
-        'total_agents': len(config['agent_list'])
-    }
-
     result = yield from pf.run_commands_chain_async(chains, block=block, state_json_dir=state_json_dir,
-                                                    delegate_extra_params=master_agent_count)
+                                                    delegate_extra_params=nodes_count_by_type(config))
     return result
 
 
@@ -151,35 +163,38 @@ def _remove_host(state_file, host):
 
 
 @asyncio.coroutine
-def install_dcos(config, block=False, state_json_dir=None, hosts=[], async_delegate=None, try_remove_stale_dcos=False,
-                 roles=None, **kwargs):
-    if roles is None:
-        roles = ['master', 'agent']
+def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_delegate=None, try_remove_stale_dcos=False,
+                 **kwargs):
+    if hosts is None:
+        hosts = []
+    assert isinstance(hosts, list)
 
     # Role specific parameters
     role_params = {
         'master': {
             'tags': {'role': 'master', 'dcos_install_param': 'master'},
-            'hosts': hosts if hosts else config['master_list']
+            'hosts': config['master_list']
         },
         'agent': {
             'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
-            'hosts': hosts if hosts else config['agent_list']
+            'hosts': config.get('agent_list', [])
+        },
+        'public_agent': {
+            'tags': {'role': 'public_agent', 'dcos_install_param': 'slave_public'},
+            'hosts': config.get('public_agent_list', [])
         }
     }
 
     bootstrap_tarball = _get_bootstrap_tarball()
-
     log.debug("Local bootstrap found: %s", bootstrap_tarball)
 
     targets = []
-    for role in roles:
-        default_params = role_params[role]
-        for host in default_params['hosts']:
-            node = Node(host, default_params['tags'])
-            targets += [node]
+    if hosts:
+        targets = hosts
+    else:
+        for role, params in role_params.items():
+            targets += [Node(node, params['tags']) for node in params['hosts']]
 
-    log.debug('Got {} hosts'.format(targets))
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
     if try_remove_stale_dcos:
@@ -208,15 +223,12 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=[], async_deleg
     )
 
     # UI expects total_masters, total_agents to be top level keys in deploy.json
-    delegate_extra_params = {
-        'total_masters': len(config['master_list']),
-        'total_agents': len(config['agent_list'])
-    }
+    delegate_extra_params = nodes_count_by_type(config)
     if kwargs.get('retry') and state_json_dir:
         state_file_path = os.path.join(state_json_dir, 'deploy.json')
         log.debug('retry executed for a state file deploy.json')
         for _host in hosts:
-            _remove_host(state_file_path, _host)
+            _remove_host(state_file_path, '{}:{}'.format(_host.ip, _host.port))
 
         # We also need to update total number of hosts
         json_state = _read_state_file(state_file_path)
@@ -235,15 +247,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=[], async_deleg
 @asyncio.coroutine
 def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, async_delegate=None, retry=False,
                    options=None):
-    targets = []
-    for host in config['master_list']:
-        s = Node(host, {'role': 'master'})
-        targets += [s]
-
-    for host in config['agent_list']:
-        s = Node(host, {'role': 'agent'})
-        targets += [s]
-
+    targets = get_full_nodes_list(config)
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     postflight_chain = ssh.utils.CommandChain('postflight')
     add_pre_action(postflight_chain, pf.ssh_user)
@@ -270,24 +274,18 @@ exit $RETCODE"""
     # Setup the cleanup chain
     cleanup_chain = ssh.utils.CommandChain('postflight_cleanup')
     add_post_action(cleanup_chain)
-
-    master_agent_count = {
-        'total_masters': len(config['master_list']),
-        'total_agents': len(config['agent_list'])
-    }
-
     result = yield from pf.run_commands_chain_async([postflight_chain, cleanup_chain], block=block,
                                                     state_json_dir=state_json_dir,
-                                                    delegate_extra_params=master_agent_count)
+                                                    delegate_extra_params=nodes_count_by_type(config))
     return result
 
 
 @asyncio.coroutine
 def uninstall_dcos(config, block=False, state_json_dir=None, async_delegate=None, options=None):
-    all_targets = config['master_list'] + config['agent_list']
+    targets = get_full_nodes_list(config)
 
     # clean the file to all targets
-    runner = get_async_runner(config, all_targets, async_delegate=async_delegate)
+    runner = get_async_runner(config, targets, async_delegate=async_delegate)
     uninstall_chain = ssh.utils.CommandChain('uninstall')
 
     uninstall_chain.add_execute([
@@ -365,8 +363,8 @@ sudo getent group nogroup || sudo groupadd nogroup
 
 @asyncio.coroutine
 def install_prereqs(config, block=False, state_json_dir=None, async_delegate=None, options=None):
-    all_targets = config['master_list'] + config['agent_list']
-    runner = get_async_runner(config, all_targets, async_delegate=async_delegate)
+    targets = get_full_nodes_list(config)
+    runner = get_async_runner(config, targets, async_delegate=async_delegate)
     prereqs_chain = ssh.utils.CommandChain('install_prereqs')
     _add_prereqs_script(prereqs_chain)
     result = yield from runner.run_commands_chain_async([prereqs_chain], block=block, state_json_dir=state_json_dir)
