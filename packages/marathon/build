@@ -26,5 +26,5 @@ ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)"
 EOF
 
 cat << EOF >> "$marathon_service"
-ExecStart=/opt/mesosphere/bin/java -Xmx2G -jar "$PKG_PATH/usr/marathon.jar" --zk zk://localhost:2181/marathon --master zk://localhost:2181/mesos --hostname "\$MARATHON_HOSTNAME" --default_accepted_resource_roles "*" --mesos_role "slave_public" --max_tasks_per_offer 100 --task_launch_timeout 86400000 --decline_offer_duration 300000 --revive_offers_for_new_apps --zk_compression --mesos_leader_ui_url "/mesos" --enable_features "vips,task_killing" --mesos_authentication_principal "marathon"
+ExecStart=/opt/mesosphere/bin/java -Xmx2G -jar "$PKG_PATH/usr/marathon.jar" --zk zk://localhost:2181/marathon --master zk://localhost:2181/mesos --hostname "\$MARATHON_HOSTNAME" --default_accepted_resource_roles "*" --mesos_role "slave_public" --max_tasks_per_offer 100 --task_launch_timeout 86400000 --decline_offer_duration 300000 --revive_offers_for_new_apps --zk_compression --mesos_leader_ui_url "/mesos" --enable_features "vips,task_killing" --mesos_authentication_principal "marathon" --event_subscriber http_callback
 EOF
