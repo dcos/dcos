@@ -8,8 +8,6 @@ import shlex
 import urllib.parse
 import uuid
 
-from ssh import ssh_tunnel
-
 import boto3
 import botocore.exceptions
 import bs4
@@ -19,6 +17,8 @@ import kazoo.client
 import pytest
 import requests
 import retrying
+
+from ssh import ssh_tunnel
 
 LOG_LEVEL = logging.INFO
 TEST_APP_NAME_FMT = '/integration-test-{}'
