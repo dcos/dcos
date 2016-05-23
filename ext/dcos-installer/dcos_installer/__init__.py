@@ -1,57 +1,19 @@
 import argparse
-import asyncio
 import logging
 import os
 import sys
 
-from dcos_installer import action_lib, backend
-from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
+from dcos_installer import backend
+from dcos_installer.cli import dispatch_action
+from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer import async_server
 from dcos_installer.util import GENCONF_DIR
-from ssh.utils import AbstractSSHLibDelegate
 
 import coloredlogs
 
 log = logging.getLogger(__name__)
 
 LOG_FORMAT = '%(asctime)-15s %(module)s %(message)s'
-
-
-class CliDelegate(AbstractSSHLibDelegate):
-    def on_update(self, future, callback_called):
-        chain_name, result_object, host = future.result()
-        callback_called.set_result(True)
-        log.debug('on_update executed for {}'.format(chain_name))
-
-    def on_done(self, name, result, host_status=None):
-        print_header('STAGE {}'.format(name))
-
-
-def run_loop(action, options):
-    assert callable(action)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    print_header('START {}'.format(action.__name__))
-    try:
-        config = backend.get_config()
-        cli_delegate = CliDelegate()
-        result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
-        pp = PrettyPrint(result)
-        pp.stage_name = action.__name__
-        pp.beautify('print_data')
-
-    finally:
-        loop.close()
-    exitcode = 0
-    for host_result in result:
-        for command_result in host_result:
-            for host, process_result in command_result.items():
-                if process_result['returncode'] != 0:
-                    exitcode = process_result['returncode']
-    print_header('END {} with returncode: {}'.format(action.__name__, exitcode))
-    pp.print_summary()
-    return exitcode
 
 
 def make_default_dir(dir=GENCONF_DIR):
@@ -81,21 +43,6 @@ def log_warn_only():
         fmt='%(message)s',
         isatty=True
     )
-
-
-def tall_enough_to_ride():
-    choices_true = ['yes', 'y']
-    choices_false = ['no', 'n']
-    while True:
-        do_uninstall = input('This will uninstall DC/OS on your cluster. You may need to manually remove '
-                             '/var/lib/zookeeper in some cases after this completes, please see our documentation '
-                             'for details. Are you ABSOLUTELY sure you want to proceed? [ (y)es/(n)o ]: ')
-        if do_uninstall.lower() in choices_true:
-            return
-        elif do_uninstall.lower() in choices_false:
-            sys.exit(1)
-        else:
-            log.error('Choices are [y]es or [n]o. "{}" is not a choice'.format(do_uninstall))
 
 
 def print_validation_errors(messages):
@@ -134,13 +81,6 @@ class DcosInstaller:
                 print_header("Starting DC/OS installer in web mode")
                 async_server.start(options)
 
-            if options.genconf:
-                print_header("EXECUTING CONFIGURATION GENERATION")
-                code = backend.do_configure()
-                if code != 0:
-                    sys.exit(1)
-                sys.exit(0)
-
             if options.validate_config:
                 print_header('VALIDATING CONFIGURATION')
                 log_warn_only()
@@ -150,31 +90,16 @@ class DcosInstaller:
                     sys.exit(1)
                 sys.exit(0)
 
+            if options.genconf:
+                print_header("EXECUTING CONFIGURATION GENERATION")
+                code = backend.do_configure()
+                if code != 0:
+                    sys.exit(1)
+                sys.exit(0)
+
             validate_ssh_config_or_exit()
-            action = None
 
-            if options.preflight:
-                print_header("EXECUTING PREFLIGHT")
-                action = action_lib.run_preflight
-
-            if options.deploy:
-                print_header("EXECUTING DC/OS INSTALLATION")
-                action = action_lib.install_dcos
-
-            if options.postflight:
-                print_header("EXECUTING POSTFLIGHT")
-                action = action_lib.run_postflight
-
-            if options.uninstall:
-                print_header("EXECUTING UNINSTALL")
-                tall_enough_to_ride()
-                action = action_lib.uninstall_dcos
-
-            if options.install_prereqs:
-                print_header("EXECUTING INSTALL PREREQUISITES")
-                action = action_lib.install_prereqs
-
-            sys.exit(run_loop(action, options))
+            dispatch_action(options)
 
     def parse_args(self, args):
         def print_usage():
@@ -197,6 +122,12 @@ Environment Settings:
         """
         parser = argparse.ArgumentParser(usage=print_usage())
         mutual_exc = parser.add_mutually_exclusive_group()
+
+        parser.add_argument(
+            '--disable-analytics',
+            action='store_true',
+            default=False,
+            help="Disable sending installer analytics data to SegementIO")
 
         parser.add_argument(
             '--hash-password',

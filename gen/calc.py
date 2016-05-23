@@ -231,6 +231,10 @@ def calculate_exhibitor_static_ensemble(master_list):
     return ','.join(['%d:%s' % (i+1, m) for i, m in enumerate(masters)])
 
 
+def calculate_adminrouter_auth_enabled(oauth_enabled):
+    return oauth_enabled
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 __logrotate_slave_module = {
     'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
@@ -246,32 +250,11 @@ __logrotate_slave_module = {
     }]
 }
 
-__stats_isolator_slave_module_name = 'com_mesosphere_StatsIsolatorModule'
-__stats_hook_slave_module_name = 'com_mesosphere_StatsEnvHook'
-__stats_slave_module = {
-    'file': '/opt/mesosphere/lib/libstats-slave.so',
-    'modules': [{
-        'name': __stats_isolator_slave_module_name,
-    }, {
-        'name': __stats_hook_slave_module_name,
-        'parameters': [
-            {'key': 'dest_host', 'value': 'metrics.marathon.mesos'},
-            {'key': 'dest_port', 'value': '8125'},
-            {'key': 'dest_refresh_seconds', 'value': '60'},
-            {'key': 'listen_host', 'value': '127.0.0.1'},
-            {'key': 'listen_port_mode', 'value': 'ephemeral'},
-            {'key': 'annotation_mode', 'value': 'key_prefix'},
-            {'key': 'chunking', 'value': 'true'},
-            {'key': 'chunk_size_bytes', 'value': '512'},
-        ]
-    }]
-}
-
-__default_mesos_slave_modules = [
+default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]
 
-__default_isolation_modules = [
+default_isolation_modules = [
     'cgroups/cpu',
     'cgroups/mem',
     'posix/disk',
@@ -295,11 +278,13 @@ entry = {
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
+        'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
         'docker_remove_delay': '1hrs',
         'gc_delay': '2days',
+        'ip_detect_contents': calculate_ip_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
@@ -319,10 +304,10 @@ entry = {
         'ui_banner_dismissible': 'null'
     },
     'must': {
+        'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
-        'ip_detect_contents': calculate_ip_detect_contents,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'dcos_version': '1.8-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
@@ -335,10 +320,10 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_isolation_modules': ','.join(__default_isolation_modules),
+        'mesos_isolation_modules': ','.join(default_isolation_modules),
         'mesos_hooks': '',
         'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            __default_mesos_slave_modules),
+            default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
     },
     'conditional': {

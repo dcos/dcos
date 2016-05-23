@@ -202,7 +202,7 @@ def test_setup(ssh_runner, registry, remote_dir, use_zk_backend):
 
 
 def integration_test(
-        ssh_runner, dcos_dns, master_list, agent_list, region, registry_host,
+        ssh_runner, dcos_dns, master_list, agent_list, public_agent_list, region, registry_host,
         test_minuteman, test_dns_search, ci_flags):
     """Runs integration test on host
     Note: check_results() will raise AssertionError if test fails
@@ -231,6 +231,7 @@ def integration_test(
         '-e', 'MASTER_HOSTS='+','.join(master_list),
         '-e', 'PUBLIC_MASTER_HOSTS='+','.join(master_list),
         '-e', 'SLAVE_HOSTS='+','.join(agent_list),
+        '-e', 'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
         '-e', 'REGISTRY_HOST='+registry_host,
         '-e', 'DCOS_VARIANT=default',
         '-e', 'DNS_SEARCH='+dns_search,
@@ -398,7 +399,8 @@ def main():
     # use first node as bootstrap node, second node as master, all others as agents
     registry_host = local_ip[host_list[0]]
     master_list = [local_ip[_] for _ in host_list[1:2]]
-    agent_list = [local_ip[_] for _ in host_list[2:]]
+    agent_list = [local_ip[_] for _ in host_list[2:3]]
+    public_agent_list = [local_ip[_] for _ in host_list[3:]]
 
     if options.use_api:
         installer = test_util.installer_api_test.DcosApiInstaller()
@@ -410,9 +412,12 @@ def main():
 
     # If installer_url is not set, then no downloading occurs
     installer.setup_remote(
-            host_list[0], ssh_user, ssh_key_path,
-            remote_dir+'/dcos_generate_config.sh',
-            download_url=options.installer_url)
+            tunnel=None,
+            installer_path=remote_dir+'/dcos_generate_config.sh',
+            download_url=options.installer_url,
+            host=host_list[0],
+            ssh_user=ssh_user,
+            ssh_key_path=ssh_key_path)
 
     if options.do_setup:
         host_prep_chain = CommandChain('host_prep')
@@ -448,6 +453,7 @@ def main():
             zk_host=zk_host,
             master_list=master_list,
             agent_list=agent_list,
+            public_agent_list=public_agent_list,
             ip_detect_script=ip_detect_script,
             ssh_user=ssh_user,
             ssh_key=ssh_key)
@@ -501,6 +507,7 @@ def main():
         dcos_dns=master_list[0],
         master_list=master_list,
         agent_list=agent_list,
+        public_agent_list=public_agent_list,
         registry_host=registry_host,
         # Setting dns_search: mesos not currently supported in API
         test_dns_search=not options.use_api,

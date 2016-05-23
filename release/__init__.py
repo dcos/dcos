@@ -16,6 +16,7 @@ import os.path
 import subprocess
 import sys
 
+import pkg_resources
 import yaml
 
 import gen.installer.util as util
@@ -24,8 +25,6 @@ import pkgpanda.build
 import pkgpanda.util
 
 provider_names = ['aws', 'azure', 'bash']
-
-cloudformation_s3_url = 'https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos'
 
 
 class ConfigError(Exception):
@@ -378,6 +377,11 @@ def make_channel_artifacts(metadata):
                 'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
                 })
 
+            # Load additional default variant arguments out of gen_extra
+            if os.path.exists('gen_extra/calc.py'):
+                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
         provider_data = module.do_create(
@@ -407,7 +411,7 @@ def make_abs(path):
 
 
 def do_build_packages(cache_repository_url):
-    dockerfile = 'docker/dcos-builder/Dockerfile'
+    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/dcos-builder/Dockerfile')
     container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
     print("Attempting to pull dcos-builder docker:", container_name)
     pulled = False
@@ -553,6 +557,7 @@ class ReleaseManager():
     def __init__(self, config, noop):
         self._setup_storage(config.get('storage', dict()))
         self.__noop = noop
+        self.__config = config
 
         preferred_name = config.get('options', dict()).get('preferred')
         if preferred_name:
@@ -627,9 +632,14 @@ class ReleaseManager():
     def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
+        assert ('options' in self.__config) or \
+            ('cloudformation_s3_url' not in self.__config['options']), \
+            "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
+            " templates."
+
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(cloudformation_s3_url + '/' + repository_path)
+        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata

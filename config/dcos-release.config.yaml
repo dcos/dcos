@@ -9,3 +9,4 @@ storage:
     region_name: us-west-2
 options:
   preferred: aws
+  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos

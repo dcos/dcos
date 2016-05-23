@@ -369,6 +369,14 @@ class Repository:
         shutil.rmtree(path)
 
 
+class ConflictingFile(ValidationError):
+    def __init__(self, src, dest, ex):
+        super().__init__(ex)
+        self.src = src
+        self.dest = dest
+        self.ex = ex
+
+
 # Create folders and symlink files inside the folders. Allows multiple
 # packages to have the same folder and provide it publicly.
 def symlink_tree(src, dest):
@@ -394,7 +402,10 @@ def symlink_tree(src, dest):
             # Recuse into the directory symlinking everything so long as the directory isn't
             symlink_tree(src_path, dest_path)
         else:
-            os.symlink(src_path, dest_path)
+            try:
+                os.symlink(src_path, dest_path)
+            except FileNotFoundError as ex:
+                raise ConflictingFile(src_path, dest_path, ex) from ex
 
 
 # A rooted instal lgtree.
@@ -541,12 +552,21 @@ class Install:
                 assert os.path.isabs(new)
                 assert os.path.isabs(pkg_dir)
 
-                symlink_all(pkg_dir, new)
+                try:
+                    symlink_all(pkg_dir, new)
 
-                # Symlink all applicable role-based config
-                for role in self.__roles:
-                    role_dir = os.path.join(package.path, "{0}_{1}".format(dir_name, role))
-                    symlink_all(role_dir, new)
+                    # Symlink all applicable role-based config
+                    for role in self.__roles:
+                        role_dir = os.path.join(package.path, "{0}_{1}".format(dir_name, role))
+                        symlink_all(role_dir, new)
+                except ConflictingFile as ex:
+                    raise ValidationError("Two packages are trying to install the same file {0} or "
+                                          "two roles in the set of roles {1} are causing a package "
+                                          "to try activating multiple versions of the same file. "
+                                          "One of the package files is {2}.".format(
+                                            ex.dest,
+                                            self.__roles,
+                                            ex.src))
 
             # Add to the active folder
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))

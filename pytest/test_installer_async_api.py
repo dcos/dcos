@@ -281,7 +281,8 @@ def test_action_deploy_post(monkeypatch, mocker):
     mocked_get_config.return_value = {
         'ssh_user': 'centos',
         'master_list': ['127.0.0.1'],
-        'agent_list': ['127.0.0.2']
+        'agent_list': ['127.0.0.2'],
+        'public_agent_list': []
     }
 
     mocked_get_bootstrap_tarball = mocker.patch('dcos_installer.action_lib._get_bootstrap_tarball')
@@ -321,7 +322,8 @@ def test_action_deploy_retry(monkeypatch, mocker):
     mocked_get_config.return_value = {
         'ssh_user': 'centos',
         'master_list': ['127.0.0.1'],
-        'agent_list': ['127.0.0.2']
+        'agent_list': ['127.0.0.2'],
+        'public_agent_list': []
     }
 
     mocked_get_bootstrap_tarball = mocker.patch('dcos_installer.action_lib._get_bootstrap_tarball')
@@ -336,13 +338,15 @@ def test_action_deploy_retry(monkeypatch, mocker):
         return {
             'hosts': {
                 '127.0.0.1:22': {
-                    'host_status': 'failed'
+                    'host_status': 'failed',
+                    'tags': {'role': 'master', 'dcos_install_param': 'master'},
                 },
                 '127.0.0.2:22022': {
                     'host_status': 'success'
                 },
                 '127.0.0.3:22022': {
-                    'host_status': 'failed'
+                    'host_status': 'failed',
+                    'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
                 }
             }
         }
@@ -355,31 +359,3 @@ def test_action_deploy_retry(monkeypatch, mocker):
     mocked_remove_host.assert_any_call('/genconf/state/deploy.json', '127.0.0.1:22')
     assert mocked_remove_host.call_count == 2
     mocked_read_state_file.assert_called_with('/genconf/state/deploy.json')
-
-
-# def test_logs(monkeypatch):
-#    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-#    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
-#    route = '/api/v{}/logs'.format(version)
-
-# def test_serve_assets(monkeypatch):
-#    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-#    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
-#    route = '/api/v{}/assets'.format(version)
-#    featured_methods = {
-#        'GET': [200],
-#        'POST': [405, 'text/plain'],
-#        'PUT': [405, 'text/plain'],
-#        'DELETE': [405, 'text/plain'],
-#        'HEAD': [405, 'text/plain'],
-#        'TRACE': [405, 'text/plain'],
-#        'CONNECT': [405, 'text/plain']
-#    }
-#    filetypes = {
-#        '.js': 'application/javascript',
-#        '.json': 'application/json',
-#        '.txt': 'text/plain'
-#    }
-#    for method, expected in featured_methods.items():
-#       res = client.request(route, method=method, expect_errors=True)
-#       assert res.status_code == expected[0], '{}: {}'.format(method, expected)

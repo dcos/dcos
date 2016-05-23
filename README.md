@@ -41,7 +41,7 @@ $ git clone https://github.com/dcos/dcos.git
 $ cd dcos
 ```
 
-Write a configuration file for the release tool. We're going to use a local folder $HOME/dcos-artifacts as a repository for all of the DCOS build artifacts for development / testing. Amazon Web Services S3 and Azure Blob Storage can also both be used. The storage providers are all defined in `release/storage/`. config/dcos-release.config.yaml has the configuration used for the CI that pushes to downloads.dcos.io.
+Write a configuration file for the release tool. We're going to use a local folder $HOME/dcos-artifacts as a repository for all of the DC/OS build artifacts for development / testing. Amazon Web Services S3 and Azure Blob Storage can also both be used. The storage providers are all defined in `release/storage/`. config/dcos-release.config.yaml has the configuration used for the CI that pushes to downloads.dcos.io.
 ```
 $ cat <<EOF > dcos-release.config.yaml
 storage:
@@ -50,12 +50,13 @@ storage:
     path: $HOME/dcos-artifacts
 options:
   preferred: local
+  cloudformation_s3_url: https://change_me_to_use_the_aws_templates_and_webpages/
 EOF
 ```
 
 ## Building and Pushing to the Storage
 
-Setup a python virtual environment, and then use `release` tool to build / release DCOS and publish it into the storage locations in the configuration file.
+Setup a python virtual environment, and then use `release` tool to build / release DC/OS and publish it into the storage locations in the configuration file.
 ```
 $ pyvenv ../env
 $ source ../env/bin/activate

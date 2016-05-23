@@ -1,5 +1,7 @@
 [Unit]
 Description=DNS Dispatcher: An RFC5625 Compliant DNS Forwarder
+After=dcos-epmd.service
+
 [Service]
 Restart=always
 StartLimitInterval=0
@@ -15,6 +17,6 @@ ExecStartPre=/usr/bin/env ip link set spartan up
 ExecStartPre=-/usr/bin/env ip addr add 198.51.100.1/32 dev spartan
 ExecStartPre=-/usr/bin/env ip addr add 198.51.100.2/32 dev spartan
 ExecStartPre=-/usr/bin/env ip addr add 198.51.100.3/32 dev spartan
-ExecStart=/opt/mesosphere/active/spartan/spartan/bin/spartan foreground
+ExecStart=/opt/mesosphere/active/spartan/spartan/bin/spartan-env foreground
 Environment=HOME=/opt/mesosphere
 
