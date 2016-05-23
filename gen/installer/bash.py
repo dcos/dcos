@@ -553,9 +553,9 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
         subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
-        copy_to_build('packages', bootstrap_filename)
-        copy_to_build('packages', installer_bootstrap_filename)
-        copy_to_build('packages', bootstrap_active_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
