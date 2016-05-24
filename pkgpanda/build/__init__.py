@@ -247,10 +247,11 @@ class PackageStore:
             bootstrap_url = self._repository_url + '/bootstrap/' + bootstrap_name
             active_url = self._repository_url + '/bootstrap/' + active_name
             print("Attempting to download", bootstrap_name, "from", bootstrap_url)
+            dest_dir = self.get_bootstrap_cache_dir()
             # Normalize to no trailing slash for repository_url
-            download_atomic(self._packages_dir + '/' + bootstrap_name, bootstrap_url, self.get_bootstrap_cache_dir())
+            download_atomic(dest_dir + '/' + bootstrap_name, bootstrap_url, self._packages_dir)
             print("Attempting to download", active_name, "from", active_url)
-            download_atomic(self._packages_dir + '/' + active_name, active_url, self.get_bootstrap_cache_dir())
+            download_atomic(dest_dir + '/' + active_name, active_url, self._packages_dir)
             return True
         except FetchError:
             return False
