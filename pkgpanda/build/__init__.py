@@ -1,4 +1,3 @@
-import binascii
 import copy
 import hashlib
 import json
@@ -272,7 +271,7 @@ def hash_checkout(item):
     def hash_str(s):
         hasher = hashlib.sha1()
         hasher.update(s.encode('utf-8'))
-        return binascii.hexlify(hasher.digest()).decode('ascii')
+        return hasher.hexdigest()
 
     def hash_int(i):
         return hash_str(str(i))
@@ -304,14 +303,12 @@ def hash_checkout(item):
 
 
 def hash_folder(directory):
-    return check_output([
-        "/bin/bash",
-        "-o", "nounset",
-        "-o", "pipefail",
-        "-o", "errexit",
-        "-c",
-        "find {} -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1".format(
-            directory)]).decode('ascii').strip()
+    file_hash_dict = {}
+    for root, dirs, filenames in os.walk(directory):
+        for name in filenames:
+            filename = root + '/' + name
+            file_hash_dict[filename] = pkgpanda.util.sha1(filename)
+    return hash_checkout(file_hash_dict)
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -748,7 +745,7 @@ def build(package_store, name, variant, clean_after_build):
         assert_no_duplicate_keys(checkout_id, buildinfo['sources'][src_name])
         buildinfo['sources'][src_name].update(checkout_id)
 
-    # Add the sha1sum of the buildinfo.json + build file to the build ids
+    # Add the sha1 of the buildinfo.json + build file to the build ids
     build_ids = {"sources": checkout_ids}
     build_ids['build'] = pkgpanda.util.sha1(src_abs(buildinfo['build_script']))
     build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
