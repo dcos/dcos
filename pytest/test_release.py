@@ -346,30 +346,9 @@ copy_make_commands_result = {'stage1': [
             'source_path': 'stable/commit/testing_commit_2/metadata.json',
             'destination_path': 'stable/metadata.json'},
         'method': 'copy'}
-    ],
-    'local_cp': [{
-        'destination_path': 'artifacts/3.html',
-        'source_content': '3'},
-    {
-        'source_path': '/test/foo.json',
-        'destination_path': 'artifacts/3.json'},
-    {
-        'destination_path': 'artifacts/2.html',
-        'source_content': '2'},
-    {
-        'destination_path': 'artifacts/cf.json',
-        'source_content': '{"a": "b"}'},
-    {
-        'destination_path': 'artifacts/metadata.json',
-        'source_content': '{\n  "channel_artifacts": [\n    {\n      "channel_path": "2.html"\n    },\n    {\n      "channel_path": "cf.json",\n      "content_type": "application/json"\n    },\n    {\n      "reproducible_path": "some_big_hash.txt"\n    }\n  ],\n  "core_artifacts": [\n    {\n      "reproducible_path": "1.html"\n    },\n    {\n      "channel_path": "3.html",\n      "content_type": "text/html",\n      "reproducible_path": "3.html"\n    },\n    {\n      "channel_path": "3.json",\n      "content_type": "application/json",\n      "reproducible_path": "3.json"\n    }\n  ],\n  "foo": "bar"\n}'  # noqa
-    }
-]}
+    ]}
 
 upload_make_command_results = {
-    'local_cp': [{
-        'destination_path':
-        'artifacts/metadata.json',
-        'source_content': '{\n  "channel_artifacts": [],\n  "core_artifacts": [\n    {\n      "reproducible_path": "foo"\n    }\n  ]\n}'}],  # noqa
     'stage2': [{
         'args': {
             'source_path': 'stable/commit/testing_commit_2/metadata.json',
