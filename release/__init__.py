@@ -167,7 +167,6 @@ class Repository():
     def make_commands(self, metadata):
         stage1 = []
         stage2 = []
-        local_cp = []
 
         def process_artifact(artifact, base_artifact):
             # First destination is upload
@@ -233,15 +232,6 @@ class Repository():
                 action_count += 2
                 stage1.append(add_dest(self.path_channel_commit_prefix + channel_path, False))
                 stage2.append(add_dest(self.path_channel_prefix + channel_path, False))
-                if 'local_path' in artifact:
-                    local_cp.append({
-                        'source_path': artifact['local_path'],
-                        'destination_path': 'artifacts/' + channel_path})
-                else:
-                    assert 'local_content' in artifact
-                    local_cp.append({
-                        'source_content': artifact['local_content'],
-                        'destination_path': 'artifacts/' + channel_path})
 
             # Must have done at least one thing with the artifact (reproducible_path or channel_path).
             assert action_count > 0
@@ -260,7 +250,6 @@ class Repository():
         return {
             'stage1': stage1,
             'stage2': stage2,
-            'local_cp': local_cp
         }
 
 
@@ -654,7 +643,7 @@ class ReleaseManager():
         return metadata
 
     def apply_storage_commands(self, storage_commands):
-        assert storage_commands.keys() == {'stage1', 'stage2', 'local_cp'}
+        assert storage_commands.keys() == {'stage1', 'stage2'}
 
         if self.__noop:
             return
@@ -672,16 +661,6 @@ class ReleaseManager():
                         continue
                     print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
                     getattr(provider, artifact['method'])(**artifact['args'])
-
-        for artifact in storage_commands['local_cp']:
-            destination_path = artifact['destination_path']
-            print("Saving to local artifact path", destination_path)
-            subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_path)])
-            if 'source_path' in artifact:
-                subprocess.check_call(['cp', artifact['source_path'], destination_path])
-            else:
-                assert 'source_content' in artifact
-                pkgpanda.util.write_string(destination_path, artifact['source_content'])
 
 _config = None
 
