@@ -88,7 +88,7 @@ def activate_packages():
         current_app.install,
         current_app.repository,
         request.json,
-        systemd=True,
+        systemd=(not current_app.config.get('TESTING')),
         block_systemd=False)
 
     return empty_response
