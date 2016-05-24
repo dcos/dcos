@@ -281,9 +281,7 @@ def main():
         # Runs dcos-image/integration_test.py inside the cluster
         setup_integration_test(
                 tunnel=test_host_tunnel,
-                test_dir=remote_dir,
-                registry=registry_host,
-                agent_list=agent_list)
+                test_dir=remote_dir)
         integration_test(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir,
