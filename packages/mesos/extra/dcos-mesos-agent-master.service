@@ -1,0 +1,15 @@
+[Unit]
+Description=Mesos Agent on Masters
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+KillMode=control-group
+Delegate=true
+LimitNOFILE=infinity
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
+EnvironmentFile=/opt/mesosphere/etc/mesos-agent-master
+EnvironmentFile=-/var/lib/dcos/mesos-slave-common
+ExecStartPre=/bin/ping -c1 leader.mesos
+ExecStart=$PKG_PATH/bin/mesos-slave

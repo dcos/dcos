@@ -40,6 +40,11 @@ systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-mesos-master.service
 mkdir -p "$(dirname "$systemd_master")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-master.service > "$systemd_master"
 
+systemd_agent_master="$PKG_PATH"/dcos.target.wants_master/dcos-mesos-agent-master.service
+mkdir -p "$(dirname "$systemd_agent_master")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-agent-master.service > "$systemd_agent_master"
+
+
 systemd_slave="$PKG_PATH"/dcos.target.wants_slave/dcos-mesos-slave.service
 mkdir -p "$(dirname "$systemd_slave")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave.service > "$systemd_slave"
