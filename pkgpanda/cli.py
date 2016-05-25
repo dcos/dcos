@@ -170,8 +170,8 @@ def main():
             install,
             repository,
             arguments['<id>'],
-            arguments['--no-systemd'],
-            arguments['--no-block-systemd'])
+            not arguments['--no-systemd'],
+            not arguments['--no-block-systemd'])
         sys.exit(0)
 
     if arguments['swap']:
@@ -179,8 +179,8 @@ def main():
             install,
             repository,
             arguments['<package-id>'],
-            arguments['--no-systemd'],
-            arguments['--no-block-systemd'])
+            not arguments['--no-systemd'],
+            not arguments['--no-block-systemd'])
         sys.exit(0)
 
     if arguments['remove']:

@@ -15,20 +15,20 @@ WantedBy=multi-user.target
 """
 
 
-def activate_packages(install, repository, package_ids, no_systemd=False, noblock_systemd=True):
+def activate_packages(install, repository, package_ids, systemd=True, block_systemd=False):
     """Replace the active package set with package_ids.
 
     install: pkgpanda.Install
     repository: pkgpanda.Repository
     package_ids: sequence of package IDs to activate
-    no_systemd: don't start/stop systemd services (default: False)
-    noblock_systemd: if not no_systemd, don't block waiting for systemd services to come up (default: True)
+    systemd: start/stop systemd services (default: True)
+    block_systemd: if systemd, block waiting for systemd services to come up (default: False)
 
     """
     assert isinstance(package_ids, collections.Sequence)
     try:
         install.activate(repository.load_packages(package_ids))
-        _start_dcos_target(no_systemd, noblock_systemd)
+        _start_dcos_target(systemd, block_systemd)
     except ValidationError as ex:
         print("Validation Error: {0}".format(ex))
         sys.exit(1)
@@ -36,7 +36,7 @@ def activate_packages(install, repository, package_ids, no_systemd=False, nobloc
         print("Package Error: {0}".format(ex))
 
 
-def swap_active_package(install, repository, package_id, no_systemd=False, noblock_systemd=True):
+def swap_active_package(install, repository, package_id, systemd=True, block_systemd=False):
     """Replace an active package with a package_id with the same name.
 
     swap(install, repository, 'foo--version') will replace the active 'foo'
@@ -45,8 +45,8 @@ def swap_active_package(install, repository, package_id, no_systemd=False, noblo
     install: pkgpanda.Install
     repository: pkgpanda.Repository
     package_id: package ID to activate
-    no_systemd: don't start/stop systemd services (default: False)
-    noblock_systemd: if not no_systemd, don't block waiting for systemd services to come up (default: True)
+    systemd: start/stop systemd services (default: True)
+    block_systemd: if systemd, block waiting for systemd services to come up (default: False)
 
     """
     active = install.get_active()
@@ -64,7 +64,7 @@ def swap_active_package(install, repository, package_id, no_systemd=False, noblo
     packages_by_name[new_id.name] = new_id
     new_active = list(map(str, packages_by_name.values()))
     # Activate with the new package name
-    activate_packages(install, repository, new_active, no_systemd, noblock_systemd)
+    activate_packages(install, repository, new_active, systemd, block_systemd)
 
 
 def fetch_package(repository, repository_url, package_id, work_dir):
@@ -173,7 +173,7 @@ def setup(install, repository):
         # Enable dcos.target only after we have populated it to prevent starting
         # up stuff inside of it before we activate the new set of packages.
         if install.manage_systemd:
-            _start_dcos_target(False, noblock_systemd=False)
+            _start_dcos_target(True, block_systemd=True)
         os.remove(bootstrap_path)
 
     # Check for /opt/mesosphere/install_progress. If found, recover the partial
@@ -184,9 +184,9 @@ def setup(install, repository):
             print("No recovery performed: {}".format(msg))
 
 
-def _start_dcos_target(no_systemd, noblock_systemd):
-    if not no_systemd:
-        no_block = ["--no-block"] if noblock_systemd else []
+def _start_dcos_target(systemd, block_systemd):
+    if systemd:
+        no_block = [] if block_systemd else ["--no-block"]
         check_call(["systemctl", "daemon-reload"])
         check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
         check_call(["systemctl", "start", "dcos.target"] + no_block)
