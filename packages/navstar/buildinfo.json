@@ -1,0 +1,11 @@
+{
+  "requires": ["openssl", "ncurses", "erlang"],
+  "sources": {
+    "navstar": {
+      "kind": "git",
+      "git": "https://github.com/dcos/navstar.git",
+      "ref": "86dbce6f6fed54791cb554a3cf3b49a41973a054",
+      "ref_origin": "master"
+    }
+  }
+}
