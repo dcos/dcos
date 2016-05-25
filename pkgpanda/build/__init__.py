@@ -964,6 +964,11 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Copy over environment settings
     pkginfo['environment'] = buildinfo['environment']
 
+    # Whether pkgpanda should on the host make sure a `/var/lib` state directory is available
+    pkginfo['state_directory'] = buildinfo.get('state_directory', False)
+    if pkginfo['state_directory'] not in [True, False]:
+        raise BuildError("state_directory in buildinfo.json must be a boolean `true` or `false`")
+
     # Activate the packages so that we have a proper path, environment
     # variables.
     # TODO(cmaloney): RAII type thing for temproary directory so if we

@@ -162,6 +162,10 @@ class Package:
     def version(self):
         return self.__id.version
 
+    @property
+    def state_directory(self):
+        return self.__pkginfo.get('state_directory', False)
+
     def __repr__(self):
         return str(self.__id)
 
@@ -590,6 +594,11 @@ class Install:
                 # TODO(cmaloney): These only come from setup-packages. Should update
                 # setup-packages to add a buildinfo.full for those packages
                 active_buildinfo_full[package.name] = None
+
+            # Ensure the state directory in `/var/lib/dcos` exists
+            # TODO(cmaloney): On upgrade take a snapshot?
+            if package.state_directory:
+                check_call(['mkdir', '-p', '/var/lib/dcos/{}'.format(package.name)])
 
         # Write out the new environment file.
         new_env = self._make_abs("environment.new")
