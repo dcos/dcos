@@ -142,7 +142,7 @@ def integration_test(
         raise e
     finally:
         get_logs_cmd = ['docker', 'logs', test_container_name]
-        test_log = tunnel.remote_cmd(get_logs_cmd, raw_output=True)
+        test_log = tunnel.remote_cmd(get_logs_cmd)
         log_file = 'integration_test.log'
         with open(log_file, 'wb') as fh:
             fh.write(test_log)

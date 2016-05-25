@@ -75,7 +75,7 @@ def get_local_address(tunnel, remote_dir):
     """
     ip_detect_script = pkg_resources.resource_filename('gen', 'ip-detect/aws.sh')
     tunnel.write_to_remote(ip_detect_script, join(remote_dir, 'ip-detect.sh'))
-    local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')])
+    local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')]).decode('utf-8')
     assert len(local_ip.split('.')) == 4
     return local_ip
 
