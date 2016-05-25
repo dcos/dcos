@@ -34,66 +34,78 @@ All code in this repository is Python 3
     - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.
     - Fedora 23: `sudo dnf install pxz`
 
-## Setup a build environment
-Get the code, move into the repository
+## Running local code quality tests
 ```
-$ git clone https://github.com/dcos/dcos.git
-$ cd dcos
+tox
 ```
 
-Write a configuration file for the release tool. We're going to use a local folder $HOME/dcos-artifacts as a repository for all of the DC/OS build artifacts for development / testing. Amazon Web Services S3 and Azure Blob Storage can also both be used. The storage providers are all defined in `release/storage/`. config/dcos-release.config.yaml has the configuration used for the CI that pushes to downloads.dcos.io.
+[Tox](https://tox.readthedocs.io/en/latest/) is used to run the codebase unit tests, as well as coding standard checks. The config is in `tox.ini`.
+
+## Running a DC/OS Build
+
 ```
-$ cat <<EOF > dcos-release.config.yaml
+./build_local.sh
+```
+
+That will run a simple local build, and output the resulting DC/OS installers to $HOME/dcos-artifacts. You can run the created `dcos_generate_config.sh like so:
+
+NOTE: Building a release from scratch the first time on a modern dev machine (4 cores / 8 hyper threads, SSD, reasonable interent bandwidth) takes about 1 hour.
+
+```
+$ $HOME/dcos-artifacts/testing/`whoami`/dcos_generate_config.sh
+```
+
+## What's happening under the covers
+
+If you look inside of the bash script `build_local.sh` there are the commands with discriptions of each.
+
+The general flow is to:
+1. Check the environment is reasonable
+2. Write a `release` tool configuration if one doesn't exist
+3. Setup a python virtualenv where we can install the DC/OS python tools to in order to run them
+4. Install the DC/OS python tools to the virtualenv
+5. Build the release using the `release` tool
+
+These steps can all be done by hand and customized / tweaked like standard python projects. You can hand create a virtualenvironment, and then do an editable pip install (`pip install -e`) to have a "live" working environment (as you change code you can run the tool and see the results).
+
+## Release Tool Configuration
+
+This release tool always loads the config in `dcos-release.config.yaml` in the current directory.
+
+The config is [YAML](http://yaml.org/). Inside it has two main sections. `storage` which contains a dictionary of different storage providers which the built artifacts should be sent to, and `options` which sets general DC/OS build configuration options.
+
+Config values can either be specified directly, or you may use $ prefixed environment variables (the env variable must set the whole value).
+
+### Storage Providers
+All the available storage providers are in [release/storage](./release/storage/). The configuration is a dictionary of a reference name for the storage provider (local, aws, my_azure), to the configuration.
+
+Each storage provider (ex: aws.py) is an available kind prefix. The dictionary `factories` defines the suffix for a particular kind. For instance `kind: aws_s3` would map to the S3StorageProvider.
+
+The configuration options for a storage provider are the storage provider's constructor parameters.
+
+Sample config storage that will save to my home directory (/home/cmaloney):
+```yaml
 storage:
   local:
     kind: local_path
-    path: $HOME/dcos-artifacts
-options:
-  preferred: local
-  cloudformation_s3_url: https://change_me_to_use_the_aws_templates_and_webpages/
-EOF
+    path: /home/cmaloney/dcos-artifacts
 ```
 
-## Building and Pushing to the Storage
-
-Setup a python virtual environment, and then use `release` tool to build / release DC/OS and publish it into the storage locations in the configuration file.
+Sample config that will store to a local archive path as wll as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
+```yaml
+storage:
+  aws:
+    kind: aws_s3
+    bucket: downloads.dcos.io
+    object_prefix: dcos
+    download_url: https://downloads.dcos.io/dcos/
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    region_name: us-west-2
+  local:
+    kind: local_path
+    path: /mnt/big_artifact_store/dcos/
 ```
-$ pyvenv ../env
-$ source ../env/bin/activate
-
-# Install the release tools, pkgpanda, etc to the virtualenvironment
-$ ./prep_local
-
-# NOTE: prep_local doses a "editable" pip install, so most local code changes
-# will be visible immediately in `release`, `pkgpanda`, `mkpanda` and the other
-# python tools in the repository.
-
-# Create the release release, have it published according to your conifg to the
-# channel `testing/first` with a tag `build-demo`
-# NOTE: Building a release from scratch the first time on a modern dev machine
-# (4 cores / 8 hyper threads, SSD, reasonable interent bandwidth) takes about
-# 1 hour.
-$ release create first build-demo
-
-# NOTE: release create's first argument is the channel to push two, and the
-# second is a tag. The channel could be something like your username, or
-#"master". it will make the build appear at
-# <storage-path>/testing/<channel-name>/. The tag is an arbitrary identifier to
-# denote what the build contains and help track a particular build / feature
-# across channels.
-
-# NOTE: Most errors / problems result in Python exceptions + stacktraces. This
-# is expected. Usually if you look just above the python exception you'll get a
-# more human error message which was the root cause.
-
-
-# Run the newly built web installer
-$ $HOME/dcos-artifacts/testing/first/dcos_generate_config.sh --web
-```
-
-## Running python code quality checks
-`$ tox`
-
 
 # TODO
 
