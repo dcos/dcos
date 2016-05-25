@@ -16,18 +16,27 @@ LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-SSH_OPTS = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
-
 
 @contextmanager
-def proxy_registry_as_local(tunnel, agent_list):
-    tunnel.write_to_remote(tunnel.ssh_key_path, 'ssh_key')
-    tunnel.remote_cmd(['chmod', '600', 'ssh_key'])
-    cmd_list = ['ssh', '-i', 'ssh_key'] + SSH_OPTS
+def proxy_registry_as_local(tunnel, agent_list, test_dir):
+    """Will create a proxy network on nodes in agent_list so that requests
+    to localhost:5000 will be routed to port 5000 on the tunnel host
+    """
+    remote_key_path = join(test_dir, 'ssh_key')
+    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
+    tunnel.remote_cmd(['chmod', '600', remote_key_path])
+    cmd_list = [
+            'ssh', '-i', remote_key_path,
+            '-l', tunnel.ssh_user,
+            '-T', '-n', '-N',
+            '-oStrictHostKeyChecking=no',
+            '-oUserKnownHostsFile=/dev/null',
+            '-oExitOnForwardFailure=yes',
+            '-R', '5000:127.0.0.1:5000']
     p_list = []
+    log.info('Starting registry proxy')
     for agent in agent_list:
-        target = tunnel.ssh_user + '@' + agent
-        agent_cmd_list = cmd_list + ['-T', '-R', '5000:localhost:5000', target]
+        agent_cmd_list = cmd_list + [agent]
         p = Process(target=tunnel.remote_cmd, args=(agent_cmd_list,))
         p.start()
         p_list.append(p)
@@ -74,9 +83,9 @@ def setup_integration_test(tunnel, test_dir):
     log.info('Building test_server Docker image on test host')
     tunnel.remote_cmd([
         'cd', join(test_dir, 'test_server'), '&&', 'docker', 'build', '-t',
-        'localhost:5000/test_server', '.'])
+        '127.0.0.1:5000/test_server', '.'])
     log.info('Pushing built test server to insecure registry')
-    tunnel.remote_cmd(['docker', 'push', 'localhost:5000/test_server'])
+    tunnel.remote_cmd(['docker', 'push', '127.0.0.1:5000/test_server'])
     log.debug('Cleaning up test_server files')
     tunnel.remote_cmd(['rm', '-rf', join(test_dir, 'test_server')])
     log.info('Building base integration_test.py container on test host')
@@ -89,7 +98,7 @@ def setup_integration_test(tunnel, test_dir):
 
 def integration_test(
         tunnel, test_dir,
-        dcos_dns, master_list, agent_list, registry_host,
+        dcos_dns, master_list, agent_list, public_agent_list, registry_host,
         variant, test_dns_search, ci_flags, timeout=None,
         aws_access_key_id='', aws_secret_access_key='', region=''):
     """Runs integration test on host
@@ -121,7 +130,8 @@ def integration_test(
         '-e', 'MASTER_HOSTS='+','.join(master_list),
         '-e', 'PUBLIC_MASTER_HOSTS='+','.join(master_list),
         '-e', 'SLAVE_HOSTS='+','.join(agent_list),
-        '-e', 'REGISTRY_HOST=localhost',
+        '-e', 'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
+        '-e', 'REGISTRY_HOST=127.0.0.1',
         '-e', 'DCOS_VARIANT='+variant,
         '-e', 'DNS_SEARCH='+dns_search,
         '-e', 'AWS_ACCESS_KEY_ID='+aws_access_key_id,
@@ -131,15 +141,15 @@ def integration_test(
         '-vv', ci_flags, '/integration_test.py']
     log.info('Running integration test...')
     try:
-        with proxy_registry_as_local(tunnel, agent_list):
+        with proxy_registry_as_local(tunnel, agent_list, test_dir):
             tunnel.remote_cmd(test_cmd, timeout=timeout)
         log.info('Successful test run!')
-    except TimeoutExpired as e:
+    except TimeoutExpired:
         log.error('Test failed due to timing out after {} seconds'.format(timeout))
-        raise e
-    except CalledProcessError as e:
+        raise
+    except CalledProcessError:
         log.error('Test failed!')
-        raise e
+        raise
     finally:
         get_logs_cmd = ['docker', 'logs', test_container_name]
         test_log = tunnel.remote_cmd(get_logs_cmd)

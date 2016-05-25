@@ -42,7 +42,7 @@ import stat
 import string
 import sys
 from contextlib import closing
-from os import join
+from os.path import join
 
 import passlib.hash
 import pkg_resources
@@ -75,7 +75,7 @@ def get_local_address(tunnel, remote_dir):
     """
     ip_detect_script = pkg_resources.resource_filename('gen', 'ip-detect/aws.sh')
     tunnel.write_to_remote(ip_detect_script, join(remote_dir, 'ip-detect.sh'))
-    local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')]).decode('utf-8')
+    local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')]).decode('utf-8').strip('\n')
     assert len(local_ip.split('.')) == 4
     return local_ip
 
@@ -214,8 +214,9 @@ def main():
     # use first node as bootstrap node, second node as master, all others as agents
     test_host = host_list[0]
     registry_host = local_ip[host_list[0]]
-    master_list = [local_ip[_] for _ in host_list[1:2]]
-    agent_list = [local_ip[_] for _ in host_list[2:]]
+    master_list = [local_ip[host_list[1]]]
+    agent_list = [local_ip[host_list[2]]]
+    public_agent_list = [local_ip[host_list[3]]]
     log.info('Test/registry host public/private IP: ' + test_host + '/' + registry_host)
 
     with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
@@ -255,6 +256,7 @@ def main():
                 zk_host=zk_host,
                 master_list=master_list,
                 agent_list=agent_list,
+                public_agent_list=public_agent_list,
                 ip_detect_script=ip_detect_script,
                 ssh_user=ssh_user,
                 ssh_key=ssh_key)
@@ -289,6 +291,7 @@ def main():
                 dcos_dns=master_list[0],
                 master_list=master_list,
                 agent_list=agent_list,
+                public_agent_list=public_agent_list,
                 registry_host=registry_host,
                 variant=options.variant,
                 # Setting dns_search: mesos not currently supported in API
