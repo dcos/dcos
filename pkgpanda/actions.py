@@ -1,3 +1,4 @@
+import collections
 import os
 import sys
 from functools import partial
@@ -24,7 +25,7 @@ def activate_packages(install, repository, package_ids, no_systemd=False, nobloc
     noblock_systemd: if not no_systemd, don't block waiting for systemd services to come up (default: True)
 
     """
-    assert type(package_ids) == list
+    assert isinstance(package_ids, collections.Sequence)
     try:
         install.activate(repository.load_packages(package_ids))
         _start_dcos_target(no_systemd, noblock_systemd)
