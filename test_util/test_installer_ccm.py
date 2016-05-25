@@ -16,9 +16,6 @@ CCM_HOST_SETUP: true or false (default=true)
 INSTALLER_URL: URL that curl can grab the installer from (default=None)
     This option is only used if CCM_HOST_SETUP=true. See above.
 
-MINUTEMAN_ENABLED: true or false (default=false)
-    Minuteman requires a setting that is applied when CCM_HOST_SETUP=true
-
 USE_INSTALELR_API: true or false (default=None)
     starts installer web server as daemon when CCM_HOST_SETUP=true and proceeds to only
     communicate with the installer via the API. In this mode, exhibitor backend is set
@@ -57,8 +54,6 @@ import test_util.installer_api_test
 from ssh.ssh_runner import MultiRunner
 from ssh.utils import CommandChain, SyncCmdDelegate
 
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 
 DEFAULT_AWS_REGION = 'us-west-2'
 
@@ -202,8 +197,8 @@ def test_setup(ssh_runner, registry, remote_dir, use_zk_backend):
 
 
 def integration_test(
-        ssh_runner, dcos_dns, master_list, agent_list, region, registry_host,
-        test_minuteman, test_dns_search, ci_flags):
+        ssh_runner, dcos_dns, master_list, agent_list, public_agent_list, region, registry_host,
+        test_dns_search, ci_flags, aws_access_key_id, aws_secret_access_key):
     """Runs integration test on host
     Note: check_results() will raise AssertionError if test fails
 
@@ -214,15 +209,10 @@ def integration_test(
         region: string indicating AWS region in which cluster is running
         agent_list: string of comma separated agent addresses
         registry_host: string for address where marathon can pull test app
-        test_minuteman: if set to True then test for minuteman service
         test_dns_search: if set to True, test for deployed mesos DNS app
         ci_flags: optional additional string to be passed to test
 
     """
-    marker_args = '-m "not minuteman"'
-    if test_minuteman:
-        marker_args = ''
-
     run_test_chain = CommandChain('run_test')
     dns_search = 'true' if test_dns_search else 'false'
     test_cmd = [
@@ -231,21 +221,22 @@ def integration_test(
         '-e', 'MASTER_HOSTS='+','.join(master_list),
         '-e', 'PUBLIC_MASTER_HOSTS='+','.join(master_list),
         '-e', 'SLAVE_HOSTS='+','.join(agent_list),
+        '-e', 'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
         '-e', 'REGISTRY_HOST='+registry_host,
         '-e', 'DCOS_VARIANT=default',
         '-e', 'DNS_SEARCH='+dns_search,
-        '-e', 'AWS_ACCESS_KEY_ID='+AWS_ACCESS_KEY_ID,
-        '-e', 'AWS_SECRET_ACCESS_KEY='+AWS_SECRET_ACCESS_KEY,
+        '-e', 'AWS_ACCESS_KEY_ID='+aws_access_key_id,
+        '-e', 'AWS_SECRET_ACCESS_KEY='+aws_secret_access_key,
         '-e', 'AWS_REGION='+region,
         '--net=host', 'py.test', 'py.test',
-        '-vv', ci_flags, marker_args, '/integration_test.py']
+        '-vv', ci_flags, '/integration_test.py']
     print("To run this test again, ssh to test node and run:\n{}".format(' '.join(test_cmd)))
     run_test_chain.add_execute(test_cmd)
 
     check_results(run_loop(ssh_runner, run_test_chain), force_print=True)
 
 
-def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
+def prep_hosts(ssh_runner, registry):
     """Runs steps so that nodes can pass preflight checks. Nodes are expected
     to either use the custom AMI or have install-prereqs run on them. Additionally,
     Note: break_prereqs is run before this always
@@ -253,7 +244,6 @@ def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
     Args:
         ssh_runner: instance of ssh.ssh_runner.MultiRunner
         registry: string to configure hosts with trusted registry for app deployment
-        minuteman_enabled: if True, minuteman will be available after DC/OS install
     """
     host_prep_chain = CommandChain('host_prep')
     host_prep_chain.add_execute([
@@ -264,10 +254,6 @@ def prep_hosts(ssh_runner, registry, minuteman_enabled=False):
     host_prep_chain.add_execute(['sudo', 'systemctl', 'restart', 'docker'])
     host_prep_chain.add_execute(['sudo', 'groupadd', '-g', '65500', 'nogroup'])
     host_prep_chain.add_execute(['sudo', 'usermod', '-aG', 'docker', 'centos'])
-
-    if minuteman_enabled:
-        host_prep_chain.add_execute(['sudo', 'mkdir', '-p', '/etc/mesosphere/roles'])
-        host_prep_chain.add_execute(['sudo', 'touch', '/etc/mesosphere/roles/minuteman'])
 
     check_results(run_loop(ssh_runner, host_prep_chain))
 
@@ -308,6 +294,7 @@ def make_vpc(use_bare_os=False):
 
 def check_environment():
     """Test uses environment variables to play nicely with TeamCity config templates
+    Grab all the environment variables here to avoid setting params all over
 
     Returns:
         object: generic object used for cleanly passing options through the test
@@ -335,10 +322,6 @@ def check_environment():
     else:
         options.installer_url = None
 
-    if 'MINUTEMAN_ENABLED' in os.environ:
-        assert os.environ['MINUTEMAN_ENABLED'] in ['true', 'false']
-    options.minuteman_enabled = os.getenv('MINUTEMAN_ENABLED', 'false') == 'true'
-
     assert 'USE_INSTALLER_API' in os.environ, 'USE_INSTALLER_API must be set in environ'
     assert os.environ['USE_INSTALLER_API'] in ['true', 'false']
     options.use_api = os.getenv('USE_INSTALLER_API', 'false') == 'true'
@@ -355,6 +338,8 @@ def check_environment():
         assert os.environ['TEST_INSTALL_PREREQS'] == 'true', "Must be testing install-prereqs!"
 
     options.ci_flags = os.getenv('CI_FLAGS', '')
+    options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     return options
 
 
@@ -398,7 +383,8 @@ def main():
     # use first node as bootstrap node, second node as master, all others as agents
     registry_host = local_ip[host_list[0]]
     master_list = [local_ip[_] for _ in host_list[1:2]]
-    agent_list = [local_ip[_] for _ in host_list[2:]]
+    agent_list = [local_ip[_] for _ in host_list[2:3]]
+    public_agent_list = [local_ip[_] for _ in host_list[3:]]
 
     if options.use_api:
         installer = test_util.installer_api_test.DcosApiInstaller()
@@ -410,9 +396,12 @@ def main():
 
     # If installer_url is not set, then no downloading occurs
     installer.setup_remote(
-            host_list[0], ssh_user, ssh_key_path,
-            remote_dir+'/dcos_generate_config.sh',
-            download_url=options.installer_url)
+            tunnel=None,
+            installer_path=remote_dir+'/dcos_generate_config.sh',
+            download_url=options.installer_url,
+            host=host_list[0],
+            ssh_user=ssh_user,
+            ssh_key_path=ssh_key_path)
 
     if options.do_setup:
         host_prep_chain = CommandChain('host_prep')
@@ -448,6 +437,7 @@ def main():
             zk_host=zk_host,
             master_list=master_list,
             agent_list=agent_list,
+            public_agent_list=public_agent_list,
             ip_detect_script=ip_detect_script,
             ssh_user=ssh_user,
             ssh_key=ssh_key)
@@ -467,7 +457,7 @@ def main():
         print('Check that --preflight gives an error')
         installer.preflight(expect_errors=True)
         print("Prepping all hosts...")
-        prep_hosts(dcos_host_runner, registry=registry_host, minuteman_enabled=options.minuteman_enabled)
+        prep_hosts(dcos_host_runner, registry=registry_host)
         # This will setup the integration test and its resources
         print('Setting up test node while deploy runs...')
         # TODO: remove calls to both multiprocessing and asyncio
@@ -501,11 +491,13 @@ def main():
         dcos_dns=master_list[0],
         master_list=master_list,
         agent_list=agent_list,
+        public_agent_list=public_agent_list,
         registry_host=registry_host,
         # Setting dns_search: mesos not currently supported in API
         test_dns_search=not options.use_api,
-        test_minuteman=options.minuteman_enabled,
-        ci_flags=options.ci_flags)
+        ci_flags=options.ci_flags,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.

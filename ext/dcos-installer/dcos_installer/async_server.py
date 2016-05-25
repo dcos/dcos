@@ -1,5 +1,6 @@
 import asyncio
 import glob
+import importlib
 import json
 import logging
 import os
@@ -11,6 +12,8 @@ import dcos_installer
 from dcos_installer import backend
 from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer.util import STATE_DIR
+
+from ssh.ssh_runner import Node
 
 
 log = logging.getLogger()
@@ -186,7 +189,7 @@ def action_action_name(request):
                     failed_hosts = []
                     for deploy_host, deploy_params in json_state['hosts'].items():
                         if deploy_params['host_status'] != 'success':
-                            failed_hosts.append(deploy_host)
+                            failed_hosts.append(Node(deploy_host, tags=deploy_params['tags']))
                     log.debug('failed hosts: {}'.format(failed_hosts))
                     if failed_hosts:
                         yield from asyncio.async(
@@ -196,7 +199,10 @@ def action_action_name(request):
                                 hosts=failed_hosts,
                                 try_remove_stale_dcos=True,
                                 **params))
-                        return web.json_response({'status': 'retried', 'details': sorted(failed_hosts)})
+                        return web.json_response({
+                            'status': 'retried',
+                            'details': sorted(['{}:{}'.format(node.ip, node.port) for node in failed_hosts])
+                        })
 
             if action_name not in remove_on_done:
                 return web.json_response({'status': '{} was already executed, skipping'.format(action_name)})
@@ -272,6 +278,11 @@ app.router.add_route('GET', '/api/v1/action/{action_name:preflight|postflight|de
 app.router.add_route('POST', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
 app.router.add_route('GET', '/api/v{}/action/current'.format(VERSION), action_current)
 app.router.add_route('GET', '/api/v{}/logs'.format(VERSION), logs_handler)
+
+# Allow overriding calculators with a `gen_extra/async_server.py` if it exists
+if os.path.exists('gen_extra/async_server.py'):
+    mod = importlib.machinery.SourceFileLoader('gen_extra.async_server', 'gen_extra/async_server.py').load_module()
+    mod.extend_app(app)
 
 app.on_response_prepare.append(no_caching)
 

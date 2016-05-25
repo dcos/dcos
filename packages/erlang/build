@@ -6,7 +6,7 @@ export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/op
 export CXXFLAGS=CFLAGS
 
 pushd /pkg/src/erlang
-./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe
+./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe --enable-kernel-poll
 make -j8
 make install
 popd

@@ -5,7 +5,7 @@ Usage:
   pkgpanda swap <package-id> [options]
   pkgpanda active [options]
   pkgpanda fetch --repository-url=<url> <id>... [options]
-  pkgpanda add <package-tarball>
+  pkgpanda add <package-tarball> [options]
   pkgpanda list [options]
   pkgpanda remove <id>... [options]
   pkgpanda setup [options]

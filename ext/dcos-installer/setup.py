@@ -16,6 +16,7 @@ setup(
         'aiohttp_jinja2',
         'coloredlogs',
         'passlib',
+        'analytics-python',
         'pyyaml'],
     tests_require=[
         'pytest==2.9.0',

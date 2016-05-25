@@ -240,9 +240,9 @@
           },
           {
             "LoadBalancerPort" : "80",
-            "Protocol" : "HTTP",
+            "Protocol" : "TCP",
             "InstancePort" : "80",
-            "InstanceProtocol" : "HTTP"
+            "InstanceProtocol" : "TCP"
           },
           {
             "LoadBalancerPort" : "443",
@@ -273,9 +273,9 @@
         "Listeners" : [
           {
             "LoadBalancerPort" : "80",
-            "Protocol" : "HTTP",
+            "Protocol" : "TCP",
             "InstancePort" : "80",
-            "InstanceProtocol" : "HTTP"
+            "InstanceProtocol" : "TCP"
           },
           {
             "LoadBalancerPort" : "443",

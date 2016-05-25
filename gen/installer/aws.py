@@ -16,8 +16,6 @@ import pkgpanda.util
 import release
 import release.storage
 
-cloudformation_s3_url = 'https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos'
-
 aws_region_names = [
     {
         'name': 'US West (N. California)',
@@ -139,6 +137,21 @@ def get_test_session(config=None):
 
     # TODO(cmaloney): get_session shouldn't live in release.storage
     return release.call_matching_arguments(release.storage.aws.get_session, config, True)
+
+
+def get_cloudformation_s3_url():
+    assert release._config is not None
+    # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
+    # is definitely not the right way to do this.
+
+    if 'options' not in release._config:
+        raise RuntimeError("No options section in configuration")
+
+    if 'cloudformation_s3_url' not in release._config['options']:
+        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
+
+    # TODO(cmaloney): get_session shouldn't live in release.storage
+    return release._config['options']['cloudformation_s3_url']
 
 
 def transform(line):
@@ -277,7 +290,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path):
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         channel_commit_path=channel_commit_path,
-                        cloudformation_s3_url=cloudformation_s3_url,
+                        cloudformation_s3_url=get_cloudformation_s3_url(),
                         **bunch.results.arguments
                         ),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
@@ -358,7 +371,7 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
                 region_id=region['id'],
                 channel_commit_path=channel_commit_path,
                 template_name=template_name,
-                cloudformation_s3_url=cloudformation_s3_url)
+                cloudformation_s3_url=get_cloudformation_s3_url())
 
         regular_buttons.append(region_line_template.format(
                 region_name=region['name'],
