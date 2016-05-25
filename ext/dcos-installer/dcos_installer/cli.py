@@ -21,6 +21,9 @@ class CliDelegate(AbstractSSHLibDelegate):
     def on_done(self, name, result, host_status=None):
         print_header('STAGE {}'.format(name))
 
+    def prepare_status(self, name, nodes):
+        pass
+
 
 def run_loop(action, options):
     assert callable(action)

@@ -1,5 +1,6 @@
 import asyncio
 import glob
+import importlib
 import json
 import logging
 import os
@@ -277,6 +278,11 @@ app.router.add_route('GET', '/api/v1/action/{action_name:preflight|postflight|de
 app.router.add_route('POST', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
 app.router.add_route('GET', '/api/v{}/action/current'.format(VERSION), action_current)
 app.router.add_route('GET', '/api/v{}/logs'.format(VERSION), logs_handler)
+
+# Allow overriding calculators with a `gen_extra/async_server.py` if it exists
+if os.path.exists('gen_extra/async_server.py'):
+    mod = importlib.machinery.SourceFileLoader('gen_extra.async_server', 'gen_extra/async_server.py').load_module()
+    mod.extend_app(app)
 
 app.on_response_prepare.append(no_caching)
 

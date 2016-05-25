@@ -193,7 +193,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             output = self.check_action(action)
             assert output != {}
             host_data = output['hosts']
-            finished_run = all(map(lambda host: host['host_status'] != 'running', host_data.values()))
+            finished_run = all(map(lambda host: host['host_status'] not in ['running', 'unstarted'],
+                                   host_data.values()))
             assert finished_run, 'Action timed out! Last output: {}'.format(output)
             return host_data
 
