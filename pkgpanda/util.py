@@ -1,10 +1,11 @@
+import hashlib
 import json
 import os
 import re
 import shutil
 from itertools import chain
 from shutil import rmtree, which
-from subprocess import check_call, check_output
+from subprocess import check_call
 
 import requests
 
@@ -140,7 +141,9 @@ def if_exists(fn, *args, **kwargs):
 
 
 def sha1(filename):
-    return check_output(["sha1sum", filename]).split()[0].decode('ascii')
+    hasher = hashlib.sha1()
+    hasher.update(open(filename, 'rb').read())
+    return hasher.hexdigest()
 
 
 def expect_folder(path, files):
