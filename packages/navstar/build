@@ -10,6 +10,9 @@ popd
 
 cp -r /pkg/src/navstar/_build/prod/rel/navstar ${PKG_PATH}
 
+service=${PKG_PATH}/dcos.target.wants/dcos-navstar.service
+mkdir -p $(dirname $service)
+
 cat <<EOF > $service
 [Unit]
 Description=Navstar
