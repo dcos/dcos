@@ -46,6 +46,12 @@
       "Type": "String",
       "Default": "m3.xlarge",
       "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "NumMasters" : {
+      "Type": "Number",
+      "Default": 1,
+      "AllowedValues": [1,3,5,7],
+      "Description": "Number of master nodes to run"
     }
   },
   "Mappings": {
@@ -176,9 +182,9 @@
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
         "LaunchConfigurationName" : { "Ref" : "MasterLaunchConfig" },
-        "MinSize" : {{ num_masters }},
-        "MaxSize" : {{ num_masters }},
-        "DesiredCapacity" : {{ num_masters }},
+        "MinSize" : { "Ref": "NumMasters" },
+        "MaxSize" : { "Ref": "NumMasters" },
+        "DesiredCapacity" : { "Ref": "NumMasters" },
         "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" }, { "Ref" : "InternalMasterLoadBalancer"} ],
         "VPCZoneIdentifier" : [{ "Ref" : "PublicSubnet" }],
         "Tags" : [
@@ -192,7 +198,7 @@
       "CreationPolicy" : {
         "ResourceSignal" : {
           "Timeout" : { "Fn::FindInMap" : [ "Parameters", "StackCreationTimeout", "default" ] },
-          "Count" : {{ num_masters }}
+          "Count" : { "Ref": "NumMasters" }
         }
       }
     },
