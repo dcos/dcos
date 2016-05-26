@@ -672,7 +672,7 @@ def assert_no_duplicate_keys(lhs, rhs):
 
 
 # Find all build variants and build them
-def build_package_variants(package_store, name, clean_after_build=True):
+def build_package_variants(package_store, name, clean_after_build=True, recursive=False):
     # Find the packages dir / root of the packages tree, and create a PackageStore
     results = dict()
     for variant in package_store.packages_by_name[name].keys():
@@ -680,11 +680,12 @@ def build_package_variants(package_store, name, clean_after_build=True):
             package_store,
             name,
             variant,
-            clean_after_build=clean_after_build)
+            clean_after_build=clean_after_build,
+            recursive=recursive)
     return results
 
 
-def build(package_store, name, variant, clean_after_build):
+def build(package_store, name, variant, clean_after_build, recursive=False):
     assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
@@ -825,8 +826,12 @@ def build(package_store, name, variant, clean_after_build):
             # fully expanded dependency.
             requires_last_build = package_store.get_last_build_filename(requires_name, requires_variant)
             if not os.path.exists(requires_last_build):
-                raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
-                                 "the dependency".format(requires_name, requires_variant))
+                if recursive:
+                    # Build the dependency
+                    build(package_store, requires_name, requires_variant, clean_after_build, recursive)
+                else:
+                    raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
+                                     "the dependency".format(requires_name, requires_variant))
 
             try:
                 pkg_id_str = load_string(requires_last_build)
