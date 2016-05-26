@@ -72,8 +72,8 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
     def get_hashed_password(self, password):
         p = self.ssh(["bash", self.installer_path, "--hash-password", password])
-        # password hash is last line output
-        passwd_hash = p.split('\n')[-1]
+        # password hash is last line output but output ends with newline
+        passwd_hash = p.decode('utf-8').split('\n')[-2]
         return passwd_hash
 
     @abc.abstractmethod
