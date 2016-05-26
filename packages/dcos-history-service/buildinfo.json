@@ -1,3 +1,5 @@
 {
-  "requires": ["flask", "python", "python-requests"]
+  "requires": ["flask", "python", "python-requests"],
+  "state_directory": true,
+  "username": "dcos_history"
 }
