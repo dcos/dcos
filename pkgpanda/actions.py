@@ -61,6 +61,7 @@ def swap_active_package(install, repository, package_id, systemd, block_systemd)
     new_id = PackageId(package_id)
     if new_id.name not in packages_by_name:
         print("ERROR: No package with name {} currently active to swap with.".format(new_id.name))
+        sys.exit(1)
 
     packages_by_name[new_id.name] = new_id
     new_active = list(map(str, packages_by_name.values()))
