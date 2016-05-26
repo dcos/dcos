@@ -49,6 +49,15 @@
           "Type": "String",
           "Default": "m3.xlarge",
           "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+        },
+        "AdminLocation": {
+          "Description" : "\nOptional: Specify the IP range to whitelist for access to the admin zone. Must be a valid CIDR.",
+          "Type" : "String",
+          "MinLength" : "9",
+          "MaxLength" : "18",
+          "Default" : "0.0.0.0/0",
+          "AllowedPattern" : "^([0-9]+\\.){3}[0-9]+\\/[0-9]+$",
+          "ConstraintDescription" : "must be a valid CIDR."
         }
     },
    "Resources": {
@@ -72,7 +81,11 @@
                     },
                     "InternetGateway": {
                       "Ref": "InternetGateway"
-                    }                }
+                    },
+                    "AdminLocation": {
+                      "Ref": "AdminLocation"
+                    }
+              }
            }
        },
        "MasterStack": {

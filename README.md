@@ -107,6 +107,16 @@ storage:
     path: /mnt/big_artifact_store/dcos/
 ```
 
+# Status Check
+
+Before a pull request can be merged into master, the following checks are required:
+ - teamcity/create-release-pr: in the CI system, [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity) is triggered and developers should use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above)
+ - teamcity/code-quality: simply run `tox` in the top-level dir to run all syntax checks as well as pytest (unit-tests). See [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini) for more details
+ - integration-test/*: runs [integration_test.py](https://github.com/dcos/dcos/blob/master/test_util/integration_test.py) in the network of a DC/OS cluster
+    - /vagrant-bash: Tests the on-prem bash provider by using [dcos-vagrant](https://github.com/dcos/dcos-vagrant). Invoke this test through [run-all](https://github.com/dcos/dcos/blob/master/test_util/run-all)
+    - /deploy-vpc-cli: runs [ccm-deploy-test](https://github.com/dcos/dcos/blob/master/test_util/test_installer_ccm.py) with USE_INSTALLER_API=false. A Virtual Private Cloud of centos nodes is spun up by CCM (Mesosphere's Cloud Cluster Manager) and the installer (dcos_generate_config.sh) is used via the CLI options to deploy DC/OS. Finally, the same integration_test.py is run
+    - /deploy-vpc-api: the same as /deploy-vpc-cli (see above) except uses USE_INSTALLER_API=true, which causes the installer to be started with the `--web` option and then controlled entirely by the HTTP API
+
 # TODO
 
 Lots of docs are still being written. If you have immediate questions please ask the [DC/OS Community](https://dcos.io/community/). Someone else probably has exactly the same question.
