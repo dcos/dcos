@@ -12,7 +12,7 @@ import pkgpanda.build.constants
 import pkgpanda.build.src_fetchers
 from pkgpanda import expand_require as expand_require_exceptions
 from pkgpanda import Install, PackageId, Repository
-from pkgpanda.cli import add_to_repository
+from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
@@ -940,7 +940,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         print("Auto-adding dependency: {}".format(dep))
         # NOTE: Not using the name pkg_id because that overrides the outer one.
         id_obj = PackageId(dep)
-        add_to_repository(repository, package_store.get_package_path(id_obj))
+        add_package_file(repository, package_store.get_package_path(id_obj))
         package = repository.load(dep)
         active_packages.append(package)
 
