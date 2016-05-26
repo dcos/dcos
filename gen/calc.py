@@ -86,6 +86,22 @@ def calculate_mesos_slave_modules_json(mesos_slave_modules):
     return json_multiline.replace('\n', '\n' + injected_indent)
 
 
+def calculate_mesos_slave_modules(dcos_overlay_enable):
+    if dcos_overlay_enable == 'false':
+        return calculate_mesos_slave_modules_json(__default_mesos_slave_modules)
+    else:
+        return \
+          calculate_mesos_slave_modules_json(__dcos_overlay_mesos_slave_modules)
+
+
+def calculate_mesos_master_modules_json(mesos_master_modules):
+    # Ensure that this file is readable by humans by including newlines in the output.
+    json_multiline = json.dumps({"libraries": mesos_master_modules}, indent=2)
+    # Preserve indentation in dcos-config.yaml's template by adding indentation to this content
+    injected_indent = 6 * ' '
+    return json_multiline.replace('\n', '\n' + injected_indent)
+
+
 def validate_telemetry_enabled(telemetry_enabled):
     can_be = ['true', 'false']
     assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
@@ -235,6 +251,27 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
+def calculate_mesos_cni_config_dir_env_var(dcos_overlay_enable):
+    if dcos_overlay_enable == 'true':
+        return 'MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni/'
+    else:
+        return ''
+
+
+def calculate_mesos_cni_plugins_dir_env_var(dcos_overlay_enable):
+    if dcos_overlay_enable == 'true':
+        return 'MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/'
+    else:
+        return ''
+
+
+def calculate_mesos_master_modules_env_var(dcos_overlay_enable):
+    if dcos_overlay_enable == 'true':
+        return \
+          'MESOS_MODULES=file:///opt/mesosphere/etc/mesos-master-modules.json'
+    else:
+        return ''
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 __logrotate_slave_module = {
     'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
@@ -250,14 +287,47 @@ __logrotate_slave_module = {
     }]
 }
 
-default_mesos_slave_modules = [
+__dcos_overlay_master_module_name = 'com_mesosphere_mesos_OverlayMasterManager'
+__dcos_overlay_config = '/opt/mesosphere/etc/dcos/network/overlay'
+__dcos_overlay_master_module = {
+    'file':
+    '/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so',
+    'modules': [{
+        'name': __dcos_overlay_master_module_name,
+        'parameters': [
+            {'key': 'network_config', 'value': __dcos_overlay_config},
+        ]
+    }]
+}
+
+__dcos_overlay_slave_module_name = 'com_mesosphere_mesos_OverlayAgentManager'
+__dcos_overlay_slave_module = {
+    'file':
+    '/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so',
+    'modules': [{
+        'name': __dcos_overlay_slave_module_name,
+        'parameters': [
+            {'key': 'master', 'value': 'zk://leader.mesos:2181/mesos'},
+            {'key': 'cni_dir', 'value': '/opt/mesosphere/etc/dcos/network/cni'}
+        ]
+    }]
+}
+
+__default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]
 
-default_isolation_modules = [
+__dcos_overlay_mesos_slave_modules = [
+    __logrotate_slave_module,
+    __dcos_overlay_slave_module
+]
+
+__default_isolation_modules = [
     'cgroups/cpu',
     'cgroups/mem',
     'posix/disk',
+    'filesystem/linux',
+    'docker/runtime'
 ]
 
 
@@ -301,7 +371,18 @@ entry = {
         'ui_banner_header_content': 'null',
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
-        'ui_banner_dismissible': 'null'
+        'ui_banner_dismissible': 'null',
+        'dcos_overlay_network': '{                    \
+          "vtep_subnet": "198.15.0.0/20",             \
+          "vtep_mac_oui": "70:B3:D5:00:00:00",        \
+          "overlays": [                               \
+            {                                         \
+              "name": "overlay-1",                    \
+              "subnet": "44.128.0.0/16",             \
+              "prefix": 24                            \
+            }                                         \
+          ]}',
+        'dcos_overlay_enable': 'true'
     },
     'must': {
         'custom_auth': 'false',
@@ -320,11 +401,15 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_isolation_modules': ','.join(default_isolation_modules),
+        'mesos_isolation_modules': ','.join(__default_isolation_modules),
         'mesos_hooks': '',
-        'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            default_mesos_slave_modules),
+        'mesos_slave_modules_json': calculate_mesos_slave_modules,
+        'mesos_master_modules_json': calculate_mesos_master_modules_json(
+            __dcos_overlay_master_module),
         'minuteman_forward_metrics': 'false',
+        'mesos_cni_config_dir_env_var': calculate_mesos_cni_config_dir_env_var,
+        'mesos_cni_plugins_dir_env_var': calculate_mesos_cni_plugins_dir_env_var,
+        'mesos_master_modules_env_var': calculate_mesos_master_modules_env_var,
     },
     'conditional': {
         'master_discovery': {

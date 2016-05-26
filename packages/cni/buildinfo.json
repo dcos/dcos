@@ -1,0 +1,9 @@
+{
+    "docker": "golang:1.6",
+    "single_source" : {
+      "kind": "git",
+      "git": "git@github.com:asridharan/cni.git",
+      "ref" : "57b28f3936e60001e4ccd54a8eb74ccf3df7c792",
+      "ref_origin": "master"
+    }
+}
