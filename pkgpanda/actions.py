@@ -15,14 +15,14 @@ WantedBy=multi-user.target
 """
 
 
-def activate_packages(install, repository, package_ids, systemd=True, block_systemd=False):
+def activate_packages(install, repository, package_ids, systemd, block_systemd):
     """Replace the active package set with package_ids.
 
     install: pkgpanda.Install
     repository: pkgpanda.Repository
     package_ids: sequence of package IDs to activate
-    systemd: start/stop systemd services (default: True)
-    block_systemd: if systemd, block waiting for systemd services to come up (default: False)
+    systemd: start/stop systemd services
+    block_systemd: if systemd, block waiting for systemd services to come up
 
     """
     assert isinstance(package_ids, collections.Sequence)
@@ -36,7 +36,7 @@ def activate_packages(install, repository, package_ids, systemd=True, block_syst
         print("Package Error: {0}".format(ex))
 
 
-def swap_active_package(install, repository, package_id, systemd=True, block_systemd=False):
+def swap_active_package(install, repository, package_id, systemd, block_systemd):
     """Replace an active package with a package_id with the same name.
 
     swap(install, repository, 'foo--version') will replace the active 'foo'
@@ -45,8 +45,8 @@ def swap_active_package(install, repository, package_id, systemd=True, block_sys
     install: pkgpanda.Install
     repository: pkgpanda.Repository
     package_id: package ID to activate
-    systemd: start/stop systemd services (default: True)
-    block_systemd: if systemd, block waiting for systemd services to come up (default: False)
+    systemd: start/stop systemd services
+    block_systemd: if systemd, block waiting for systemd services to come up
 
     """
     active = install.get_active()
