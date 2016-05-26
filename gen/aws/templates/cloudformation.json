@@ -71,10 +71,10 @@
         "stable": "ami-05bc0164"
       },
       "us-west-1": {
-        "stable": "ami-27553a47"
+        "stable": "ami-652c5505"
       },
       "us-west-2": {
-        "stable": "ami-00ebfc61"
+        "stable": "ami-f5bc4e95"
       }
     },
     "NATAmi" : {
