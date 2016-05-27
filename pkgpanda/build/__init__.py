@@ -1,4 +1,3 @@
-import binascii
 import copy
 import hashlib
 import json
@@ -13,7 +12,7 @@ import pkgpanda.build.constants
 import pkgpanda.build.src_fetchers
 from pkgpanda import expand_require as expand_require_exceptions
 from pkgpanda import Install, PackageId, Repository
-from pkgpanda.cli import add_to_repository
+from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
@@ -168,12 +167,16 @@ class PackageStore:
     def get_package_folder(self, name):
         return self._package_folders[name]
 
+    def get_bootstrap_cache_dir(self):
+        return self._packages_dir + "/cache/bootstrap"
+
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
     def get_last_bootstrap_set(self):
         def get_last_bootstrap(variant):
-            bootstrap_latest = self._packages_dir + '/' + pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
+            bootstrap_latest = self.get_bootstrap_cache_dir() + '/' + \
+                pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
             if not os.path.exists(bootstrap_latest):
                 raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
                                  "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
@@ -243,10 +246,11 @@ class PackageStore:
             bootstrap_url = self._repository_url + '/bootstrap/' + bootstrap_name
             active_url = self._repository_url + '/bootstrap/' + active_name
             print("Attempting to download", bootstrap_name, "from", bootstrap_url)
+            dest_dir = self.get_bootstrap_cache_dir()
             # Normalize to no trailing slash for repository_url
-            download_atomic(self._packages_dir + '/' + bootstrap_name, bootstrap_url, self._packages_dir)
+            download_atomic(dest_dir + '/' + bootstrap_name, bootstrap_url, self._packages_dir)
             print("Attempting to download", active_name, "from", active_url)
-            download_atomic(self._packages_dir + '/' + active_name, active_url, self._packages_dir)
+            download_atomic(dest_dir + '/' + active_name, active_url, self._packages_dir)
             return True
         except FetchError:
             return False
@@ -267,7 +271,7 @@ def hash_checkout(item):
     def hash_str(s):
         hasher = hashlib.sha1()
         hasher.update(s.encode('utf-8'))
-        return binascii.hexlify(hasher.digest()).decode('ascii')
+        return hasher.hexdigest()
 
     def hash_int(i):
         return hash_str(str(i))
@@ -299,14 +303,12 @@ def hash_checkout(item):
 
 
 def hash_folder(directory):
-    return check_output([
-        "/bin/bash",
-        "-o", "nounset",
-        "-o", "pipefail",
-        "-o", "errexit",
-        "-c",
-        "find {} -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1".format(
-            directory)]).decode('ascii').strip()
+    file_hash_dict = {}
+    for root, dirs, filenames in os.walk(directory):
+        for name in filenames:
+            filename = root + '/' + name
+            file_hash_dict[filename] = pkgpanda.util.sha1(filename)
+    return hash_checkout(file_hash_dict)
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -353,13 +355,13 @@ def make_bootstrap_tarball(package_store, packages, variant):
         pkg_id = filename[:-len(".tar.xz")]
         pkg_ids.append(pkg_id)
 
-    packages_dir = package_store.packages_dir
+    bootstrap_cache_dir = package_store.get_bootstrap_cache_dir()
 
     # Filename is output_name.<sha-1>.{active.json|.bootstrap.tar.xz}
     bootstrap_id = hash_checkout(pkg_ids)
-    latest_name = "{}/{}bootstrap.latest".format(packages_dir, pkgpanda.util.variant_prefix(variant))
+    latest_name = "{}/{}bootstrap.latest".format(bootstrap_cache_dir, pkgpanda.util.variant_prefix(variant))
 
-    output_name = packages_dir + '/' + bootstrap_id + '.'
+    output_name = bootstrap_cache_dir + '/' + bootstrap_id + '.'
 
     # bootstrap tarball = <sha1 of packages in tarball>.bootstrap.tar.xz
     bootstrap_name = "{}bootstrap.tar.xz".format(output_name)
@@ -377,6 +379,8 @@ def make_bootstrap_tarball(package_store, packages, variant):
     if (os.path.exists(bootstrap_name)):
         print("Bootstrap already up to date, not recreating")
         return mark_latest()
+
+    check_call(['mkdir', '-p', bootstrap_cache_dir])
 
     # Try downloading.
     if package_store.try_fetch_bootstrap_and_active(bootstrap_id):
@@ -668,7 +672,7 @@ def assert_no_duplicate_keys(lhs, rhs):
 
 
 # Find all build variants and build them
-def build_package_variants(package_store, name, clean_after_build=True):
+def build_package_variants(package_store, name, clean_after_build=True, recursive=False):
     # Find the packages dir / root of the packages tree, and create a PackageStore
     results = dict()
     for variant in package_store.packages_by_name[name].keys():
@@ -676,11 +680,12 @@ def build_package_variants(package_store, name, clean_after_build=True):
             package_store,
             name,
             variant,
-            clean_after_build=clean_after_build)
+            clean_after_build=clean_after_build,
+            recursive=recursive)
     return results
 
 
-def build(package_store, name, variant, clean_after_build):
+def build(package_store, name, variant, clean_after_build, recursive=False):
     assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
@@ -741,7 +746,7 @@ def build(package_store, name, variant, clean_after_build):
         assert_no_duplicate_keys(checkout_id, buildinfo['sources'][src_name])
         buildinfo['sources'][src_name].update(checkout_id)
 
-    # Add the sha1sum of the buildinfo.json + build file to the build ids
+    # Add the sha1 of the buildinfo.json + build file to the build ids
     build_ids = {"sources": checkout_ids}
     build_ids['build'] = pkgpanda.util.sha1(src_abs(buildinfo['build_script']))
     build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
@@ -821,8 +826,12 @@ def build(package_store, name, variant, clean_after_build):
             # fully expanded dependency.
             requires_last_build = package_store.get_last_build_filename(requires_name, requires_variant)
             if not os.path.exists(requires_last_build):
-                raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
-                                 "the dependency".format(requires_name, requires_variant))
+                if recursive:
+                    # Build the dependency
+                    build(package_store, requires_name, requires_variant, clean_after_build, recursive)
+                else:
+                    raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
+                                     "the dependency".format(requires_name, requires_variant))
 
             try:
                 pkg_id_str = load_string(requires_last_build)
@@ -931,7 +940,7 @@ def build(package_store, name, variant, clean_after_build):
         print("Auto-adding dependency: {}".format(dep))
         # NOTE: Not using the name pkg_id because that overrides the outer one.
         id_obj = PackageId(dep)
-        add_to_repository(repository, package_store.get_package_path(id_obj))
+        add_package_file(repository, package_store.get_package_path(id_obj))
         package = repository.load(dep)
         active_packages.append(package)
 

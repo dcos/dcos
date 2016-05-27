@@ -5,6 +5,5 @@ After=dcos-mesos-master.service
 Restart=always
 StartLimitInterval=0
 RestartSec=5
-EnvironmentFile=/etc/environment
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=/opt/mesosphere/bin/mesos-dns --config=/opt/mesosphere/etc/mesos-dns.json -logtostderr=true

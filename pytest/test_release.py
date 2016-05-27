@@ -346,30 +346,9 @@ copy_make_commands_result = {'stage1': [
             'source_path': 'stable/commit/testing_commit_2/metadata.json',
             'destination_path': 'stable/metadata.json'},
         'method': 'copy'}
-    ],
-    'local_cp': [{
-        'destination_path': 'artifacts/3.html',
-        'source_content': '3'},
-    {
-        'source_path': '/test/foo.json',
-        'destination_path': 'artifacts/3.json'},
-    {
-        'destination_path': 'artifacts/2.html',
-        'source_content': '2'},
-    {
-        'destination_path': 'artifacts/cf.json',
-        'source_content': '{"a": "b"}'},
-    {
-        'destination_path': 'artifacts/metadata.json',
-        'source_content': '{\n  "channel_artifacts": [\n    {\n      "channel_path": "2.html"\n    },\n    {\n      "channel_path": "cf.json",\n      "content_type": "application/json"\n    },\n    {\n      "reproducible_path": "some_big_hash.txt"\n    }\n  ],\n  "core_artifacts": [\n    {\n      "reproducible_path": "1.html"\n    },\n    {\n      "channel_path": "3.html",\n      "content_type": "text/html",\n      "reproducible_path": "3.html"\n    },\n    {\n      "channel_path": "3.json",\n      "content_type": "application/json",\n      "reproducible_path": "3.json"\n    }\n  ],\n  "foo": "bar"\n}'  # noqa
-    }
-]}
+    ]}
 
 upload_make_command_results = {
-    'local_cp': [{
-        'destination_path':
-        'artifacts/metadata.json',
-        'source_content': '{\n  "channel_artifacts": [],\n  "core_artifacts": [\n    {\n      "reproducible_path": "foo"\n    }\n  ]\n}'}],  # noqa
     'stage2': [{
         'args': {
             'source_path': 'stable/commit/testing_commit_2/metadata.json',
@@ -500,14 +479,14 @@ def test_get_package_artifact(tmpdir):
 
 
 def mock_do_build_packages(cache_repository_url):
-    subprocess.check_call(['mkdir', '-p', 'packages'])
-    write_string("packages/bootstrap_id.bootstrap.tar.xz", "bootstrap_contents")
-    write_json("packages/bootstrap_id.active.json", ['a--b', 'c--d'])
-    write_string("packages/bootstrap.latest", "bootstrap_id")
-    write_string("packages/installer.bootstrap.latest", "installer_bootstrap_id")
-    write_json("packages/installer_bootstrap_id.active.json", ['c--d', 'e--f'])
-    write_string("packages/ee.installer.bootstrap.latest", "ee_installer_bootstrap_id")
-    write_json("packages/ee_installer_bootstrap_id.active.json", [])
+    subprocess.check_call(['mkdir', '-p', 'packages/cache/bootstrap'])
+    write_string("packages/cache/bootstrap/bootstrap_id.bootstrap.tar.xz", "bootstrap_contents")
+    write_json("packages/cache/bootstrap/bootstrap_id.active.json", ['a--b', 'c--d'])
+    write_string("packages/cache/bootstrap/bootstrap.latest", "bootstrap_id")
+    write_string("packages/cache/bootstrap/installer.bootstrap.latest", "installer_bootstrap_id")
+    write_json("packages/cache/bootstrap/installer_bootstrap_id.active.json", ['c--d', 'e--f'])
+    write_string("packages/cache/bootstrap/ee.installer.bootstrap.latest", "ee_installer_bootstrap_id")
+    write_json("packages/cache/bootstrap/ee_installer_bootstrap_id.active.json", [])
 
     return {
         None: "bootstrap_id",
@@ -519,27 +498,27 @@ def mock_do_build_packages(cache_repository_url):
 stable_artifacts_metadata = {
     'commit': 'commit_sha1',
     'core_artifacts': [
-        {'local_path': 'packages/bootstrap_id.bootstrap.tar.xz',
+        {'local_path': 'packages/cache/bootstrap/bootstrap_id.bootstrap.tar.xz',
             'reproducible_path': 'bootstrap/bootstrap_id.bootstrap.tar.xz'},
-        {'local_path': 'packages/bootstrap_id.active.json',
+        {'local_path': 'packages/cache/bootstrap/bootstrap_id.active.json',
             'reproducible_path': 'bootstrap/bootstrap_id.active.json'},
-        {'local_path': 'packages/bootstrap.latest',
+        {'local_path': 'packages/cache/bootstrap/bootstrap.latest',
             'channel_path': 'bootstrap.latest'},
         {'local_path': 'packages/cache/packages/a/a--b.tar.xz',
             'reproducible_path': 'packages/a/a--b.tar.xz'},
         {'local_path': 'packages/cache/packages/c/c--d.tar.xz',
             'reproducible_path': 'packages/c/c--d.tar.xz'},
-        {'local_path': 'packages/ee_installer_bootstrap_id.bootstrap.tar.xz',
+        {'local_path': 'packages/cache/bootstrap/ee_installer_bootstrap_id.bootstrap.tar.xz',
          'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.bootstrap.tar.xz'},
-        {'local_path': 'packages/ee_installer_bootstrap_id.active.json',
+        {'local_path': 'packages/cache/bootstrap/ee_installer_bootstrap_id.active.json',
          'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.active.json'},
         {'channel_path': 'ee.installer.bootstrap.latest',
-         'local_path': 'packages/ee.installer.bootstrap.latest'},
-        {'local_path': 'packages/installer_bootstrap_id.bootstrap.tar.xz',
+         'local_path': 'packages/cache/bootstrap/ee.installer.bootstrap.latest'},
+        {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.bootstrap.tar.xz',
             'reproducible_path': 'bootstrap/installer_bootstrap_id.bootstrap.tar.xz'},
-        {'local_path': 'packages/installer_bootstrap_id.active.json',
+        {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.active.json',
             'reproducible_path': 'bootstrap/installer_bootstrap_id.active.json'},
-        {'local_path': 'packages/installer.bootstrap.latest',
+        {'local_path': 'packages/cache/bootstrap/installer.bootstrap.latest',
             'channel_path': 'installer.bootstrap.latest'},
         {'local_path': 'packages/cache/packages/e/e--f.tar.xz',
             'reproducible_path': 'packages/e/e--f.tar.xz'}

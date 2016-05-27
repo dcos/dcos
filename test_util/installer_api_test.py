@@ -72,8 +72,8 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
     def get_hashed_password(self, password):
         p = self.ssh(["bash", self.installer_path, "--hash-password", password])
-        # password hash is last line output
-        passwd_hash = p.split('\n')[-1]
+        # password hash is last line output but output ends with newline
+        passwd_hash = p.decode('utf-8').split('\n')[-2]
         return passwd_hash
 
     @abc.abstractmethod
@@ -193,7 +193,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             output = self.check_action(action)
             assert output != {}
             host_data = output['hosts']
-            finished_run = all(map(lambda host: host['host_status'] != 'running', host_data.values()))
+            finished_run = all(map(lambda host: host['host_status'] not in ['running', 'unstarted'],
+                                   host_data.values()))
             assert finished_run, 'Action timed out! Last output: {}'.format(output)
             return host_data
 

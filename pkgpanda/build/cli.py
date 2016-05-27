@@ -5,7 +5,7 @@ package version, then builds the package in an isolated environment along with
 the necessary dependencies.
 
 Usage:
-  mkpanda [--repository-url=<repository_url>] [--dont-clean-after-build]
+  mkpanda [--repository-url=<repository_url>] [--dont-clean-after-build] [--recursive]
   mkpanda tree [--mkbootstrap] [--repository-url=<repository_url>] [<variant>]
 """
 
@@ -47,7 +47,8 @@ def main():
         pkg_dict = build_package_variants(
             package_store,
             name,
-            not arguments['--dont-clean-after-build'])
+            not arguments['--dont-clean-after-build'],
+            arguments['--recursive'])
 
         print("Package variants available as:")
         for k, v in pkg_dict.items():

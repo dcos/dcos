@@ -49,6 +49,15 @@ package:
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }}
       }
+  - path: /etc_master/minuteman.app.config
+    content: |
+      [
+        {minuteman,
+          [
+            {agent_polling_enabled, false}
+          ]
+        }
+      ].
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/log/mesos

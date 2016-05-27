@@ -137,16 +137,16 @@ class Cluster:
             logging.info(msg.format(r.status_code))
             return False
         data = r.json()
-        num_slaves = len([x['hostname'] for x in data['slaves']])
-        # For single node setup there is only one slave node:
-        min_slaves = min(len(self.slaves), 2)
-        if num_slaves >= min_slaves:
+        # Check that there are all the slaves the test knows about. They are all
+        # needed to pass the test.
+        num_slaves = len(data['slaves'])
+        if num_slaves >= len(self.all_slaves):
             msg = "Sufficient ({} >= {}) number of slaves have joined the cluster"
-            logging.info(msg.format(num_slaves, min_slaves))
+            logging.info(msg.format(num_slaves, self.all_slaves))
             return True
         else:
             msg = "Current number of slaves: {} < {}, continuing to wait..."
-            logging.info(msg.format(num_slaves, min_slaves))
+            logging.info(msg.format(num_slaves, self.all_slaves))
             return False
 
     @retrying.retry(wait_fixed=1000,

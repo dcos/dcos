@@ -39,7 +39,6 @@ cat <<EOF > "$logrotate_service"
 Description=Logrotate: Rotate various logs on the system
 [Service]
 Type=simple
-EnvironmentFile=/etc/environment
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/usr/bin/mkdir -p /var/log/mesos/archive
 ExecStart=$PKG_PATH/bin/logrotate $config_file

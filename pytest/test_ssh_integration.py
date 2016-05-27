@@ -108,6 +108,9 @@ def test_ssh_async(sshd_manager, loop):
         def on_done(self, *args, **kwargs):
             pass
 
+        def prepare_status(self, name, nodes):
+            pass
+
     with sshd_manager.run(20) as sshd_ports:
         runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
                              ssh_key_path=sshd_manager.key_path, async_delegate=DummyAsyncDelegate())
@@ -329,7 +332,7 @@ def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
         tmp_fh.flush()
         remote_tmp_file = '/tmp/' + str(uuid.uuid4())
         remote_write_fn(src=tmp_fh.name, dst=remote_tmp_file)
-        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file])
+        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file]).decode('utf-8').strip('\n')
         assert returned_text == rando_text
 
 

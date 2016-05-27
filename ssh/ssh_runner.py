@@ -177,6 +177,12 @@ class MultiRunner():
 
     def _run_chain_command(self, chain, host, chain_result):
         assert isinstance(chain, CommandChain)
+
+        # Prepare status json
+        if self.async_delegate is not None:
+            log.debug('Preparing a status json')
+            self.async_delegate.prepare_status(chain.namespace, self.__targets)
+
         host_status = 'hosts_success'
         host_port = '{}:{}'.format(host.ip, host.port)
 
