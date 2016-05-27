@@ -33,7 +33,7 @@ from subprocess import CalledProcessError, check_call
 from docopt import docopt
 
 from pkgpanda import Install, PackageId, Repository, actions
-from pkgpanda.exceptions import ValidationError
+from pkgpanda.exceptions import PackageError, ValidationError
 
 
 def print_repo_list(packages):
@@ -135,70 +135,76 @@ def main():
         not arguments['--no-systemd'], not arguments['--no-block-systemd'])
     repository = Repository(os.path.abspath(arguments['--repository']))
 
-    if arguments['setup']:
-        try:
+    try:
+        if arguments['setup']:
             actions.setup(install, repository)
-        except ValidationError as ex:
-            print("Validation Error: {0}".format(ex))
-            sys.exit(1)
-        sys.exit(0)
-
-    if arguments['list']:
-        print_repo_list(repository.list())
-        sys.exit(0)
-
-    if arguments['active']:
-        for pkg in sorted(install.get_active()):
-            print(pkg)
-        sys.exit(0)
-
-    if arguments['add']:
-        actions.add_package_file(repository, arguments['<package-tarball>'])
-        sys.exit(0)
-
-    if arguments['fetch']:
-        for package_id in arguments['<id>']:
-            actions.fetch_package(
-                repository,
-                arguments['--repository-url'],
-                package_id,
-                os.getcwd())
-        sys.exit(0)
-
-    if arguments['activate']:
-        actions.activate_packages(
-            install,
-            repository,
-            arguments['<id>'],
-            not arguments['--no-systemd'],
-            not arguments['--no-block-systemd'])
-        sys.exit(0)
-
-    if arguments['swap']:
-        actions.swap_active_package(
-            install,
-            repository,
-            arguments['<package-id>'],
-            not arguments['--no-systemd'],
-            not arguments['--no-block-systemd'])
-        sys.exit(0)
-
-    if arguments['remove']:
-        for package_id in arguments['<id>']:
-            actions.remove_package(install, repository, package_id)
-        sys.exit(0)
-
-    if arguments['uninstall']:
-        uninstall(install, repository)
-        sys.exit(0)
-
-    if arguments['check']:
-        checks = find_checks(install, repository)
-        if arguments['--list']:
-            list_checks(checks)
             sys.exit(0)
-        # Run all checks
-        sys.exit(run_checks(checks, install, repository))
+
+        if arguments['list']:
+            print_repo_list(repository.list())
+            sys.exit(0)
+
+        if arguments['active']:
+            for pkg in sorted(install.get_active()):
+                print(pkg)
+            sys.exit(0)
+
+        if arguments['add']:
+            actions.add_package_file(repository, arguments['<package-tarball>'])
+            sys.exit(0)
+
+        if arguments['fetch']:
+            for package_id in arguments['<id>']:
+                actions.fetch_package(
+                    repository,
+                    arguments['--repository-url'],
+                    package_id,
+                    os.getcwd())
+            sys.exit(0)
+
+        if arguments['activate']:
+            actions.activate_packages(
+                install,
+                repository,
+                arguments['<id>'],
+                not arguments['--no-systemd'],
+                not arguments['--no-block-systemd'])
+            sys.exit(0)
+
+        if arguments['swap']:
+            actions.swap_active_package(
+                install,
+                repository,
+                arguments['<package-id>'],
+                not arguments['--no-systemd'],
+                not arguments['--no-block-systemd'])
+            sys.exit(0)
+
+        if arguments['remove']:
+            for package_id in arguments['<id>']:
+                actions.remove_package(install, repository, package_id)
+            sys.exit(0)
+
+        if arguments['uninstall']:
+            uninstall(install, repository)
+            sys.exit(0)
+
+        if arguments['check']:
+            checks = find_checks(install, repository)
+            if arguments['--list']:
+                list_checks(checks)
+                sys.exit(0)
+            # Run all checks
+            sys.exit(run_checks(checks, install, repository))
+    except Exception as ex:
+        print("ERROR: {0}".format(ex))
+        sys.exit(1)
+    except ValidationError as ex:
+        print("Validation Error: {0}".format(ex))
+        sys.exit(1)
+    except PackageError as ex:
+        print("Package Error: {0}".format(ex))
+        sys.exit(1)
 
     print("unknown command")
     sys.exit(1)

@@ -64,7 +64,6 @@ After=dcos-gen-resolvconf.service
 Restart=always
 StartLimitInterval=0
 RestartSec=5
-EnvironmentFile=/etc/environment
 EnvironmentFile=/opt/mesosphere/environment
 Type=forking
 PIDFile=$PKG_PATH/nginx/logs/nginx.pid
@@ -98,7 +97,6 @@ Description=Admin Router Reloader: Reload admin router to get new DNS
 
 [Service]
 Type=oneshot
-EnvironmentFile=/etc/environment
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=-$PKG_PATH/nginx/sbin/nginx -s reload
 EOF
