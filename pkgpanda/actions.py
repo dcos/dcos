@@ -5,7 +5,7 @@ from functools import partial
 from subprocess import check_call
 
 from pkgpanda import PackageId, requests_fetcher
-from pkgpanda.exceptions import FetchError, PackageError, ValidationError
+from pkgpanda.exceptions import FetchError, ValidationError
 from pkgpanda.util import (extract_tarball, if_exists, load_json, load_string,
                            write_string)
 
@@ -26,15 +26,9 @@ def activate_packages(install, repository, package_ids, systemd, block_systemd):
 
     """
     assert isinstance(package_ids, collections.Sequence)
-    try:
-        install.activate(repository.load_packages(package_ids))
-        if systemd:
-            _start_dcos_target(block_systemd)
-    except ValidationError as ex:
-        print("Validation Error: {0}".format(ex))
-        sys.exit(1)
-    except PackageError as ex:
-        print("Package Error: {0}".format(ex))
+    install.activate(repository.load_packages(package_ids))
+    if systemd:
+        _start_dcos_target(block_systemd)
 
 
 def swap_active_package(install, repository, package_id, systemd, block_systemd):
@@ -60,8 +54,7 @@ def swap_active_package(install, repository, package_id, systemd, block_systemd)
 
     new_id = PackageId(package_id)
     if new_id.name not in packages_by_name:
-        print("ERROR: No package with name {} currently active to swap with.".format(new_id.name))
-        sys.exit(1)
+        raise ValidationError("No package with name {} currently active to swap with.".format(new_id.name))
 
     packages_by_name[new_id.name] = new_id
     new_active = list(map(str, packages_by_name.values()))
@@ -88,10 +81,12 @@ def fetch_package(repository, repository_url, package_id, work_dir):
     try:
         repository.add(fetcher, package_id)
     except FetchError as ex:
-        print("\nUnable to fetch package {0}: {1}".format(package_id, ex))
-        sys.exit(1)
-    sys.stdout.write("\rFetched: {0}\n".format(package_id))
-    sys.stdout.flush()
+        raise Exception("Unable to fetch package {0}: {1}".format(package_id, ex)) from ex
+    else:
+        sys.stdout.write("\rFetched: {0}".format(package_id))
+    finally:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
 
 
 def add_package_file(repository, package_filename):
@@ -131,8 +126,7 @@ def remove_package(install, repository, package_id):
 
     """
     if package_id in install.get_active():
-        print("Refusing to remove active package {0}".format(package_id))
-        sys.exit(1)
+        raise ValidationError("Refusing to remove active package {0}".format(package_id))
 
     sys.stdout.write("\rRemoving: {0}".format(package_id))
     sys.stdout.flush()
@@ -140,15 +134,15 @@ def remove_package(install, repository, package_id):
         # Validate package id, that package is installed.
         PackageId(package_id)
         repository.remove(package_id)
-    except ValidationError:
-        print("\nInvalid package id {0}".format(package_id))
-        sys.exit(1)
+    except ValidationError as ex:
+        raise ValidationError("Invalid package id {0}".format(package_id)) from ex
     except OSError as ex:
-        print("\nError removing package {0}".format(package_id))
-        print(ex)
-        sys.exit(1)
-    sys.stdout.write("\rRemoved: {0}\n".format(package_id))
-    sys.stdout.flush()
+        raise Exception("Error removing package {0}: {1}".format(package_id, ex)) from ex
+    else:
+        sys.stdout.write("\rRemoved: {0}".format(package_id))
+    finally:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
 
 
 def setup(install, repository):
@@ -202,8 +196,7 @@ def _do_bootstrap(install, repository):
     # If the config can't be grabbed from any of them, fail.
     def fetcher(id, target):
         if repository_url is None:
-            print("ERROR: Non-local package {} but no repository url given.".format(repository_url))
-            sys.exit(1)
+            raise ValidationError("ERROR: Non-local package {} but no repository url given.".format(repository_url))
         return requests_fetcher(repository_url, id, target, os.getcwd())
 
     # Copy host/cluster-specific packages written to the filesystem manually
@@ -216,13 +209,12 @@ def _do_bootstrap(install, repository):
         for pkg_id_str in os.listdir(setup_pkg_dir):
             print("Installing setup package: {}".format(pkg_id_str))
             if not PackageId.is_id(pkg_id_str):
-                print("Invalid package id in setup package: {}".format(pkg_id_str))
-                sys.exit(1)
+                raise ValidationError("Invalid package id in setup package: {}".format(pkg_id_str))
             pkg_id = PackageId(pkg_id_str)
             if pkg_id.version != "setup":
-                print("Setup packages (those in `{0}`) must have the version setup. Bad package: {1}"
-                      .format(setup_pkg_dir, pkg_id_str))
-                sys.exit(1)
+                raise ValidationError(
+                    "Setup packages (those in `{0}`) must have the version setup. "
+                    "Bad package: {1}".format(setup_pkg_dir, pkg_id_str))
 
             # Make sure there is no existing package
             if repository.has_package(pkg_id_str):
