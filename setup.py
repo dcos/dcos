@@ -40,7 +40,6 @@ setup(
         'botocore',
         'coloredlogs',
         'docopt',
-        'ipdb',
         'passlib',
         'pyyaml',
         'requests',

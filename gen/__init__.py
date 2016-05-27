@@ -673,7 +673,6 @@ def generate(
 
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
-    #ipdb.set_trace()
     for name, template in rendered_templates.items():
         if name == 'dcos-services.yaml':  # yaml list of the service files
             assert isinstance(template, dict)
