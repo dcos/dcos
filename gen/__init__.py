@@ -49,7 +49,7 @@ def add_roles(cloudconfig, roles):
 
 
 def add_units(cloudconfig, services):
-    cloudconfig['coreos']['units'] += services
+    cloudconfig['write_files'] += services
     return cloudconfig
 
 
