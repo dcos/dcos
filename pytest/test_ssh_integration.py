@@ -332,7 +332,7 @@ def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
         tmp_fh.flush()
         remote_tmp_file = '/tmp/' + str(uuid.uuid4())
         remote_write_fn(src=tmp_fh.name, dst=remote_tmp_file)
-        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file])
+        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file]).decode('utf-8').strip('\n')
         assert returned_text == rando_text
 
 

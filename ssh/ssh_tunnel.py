@@ -66,11 +66,12 @@ class SSHTunnel():
         run_cmd = self.ssh_cmd + ['-p', str(self.port), self.target] + cmd
         logger.debug('Running socket cmd: ' + ' '.join(run_cmd))
         try:
-            return check_output(run_cmd, timeout=timeout).decode('utf-8').rstrip('\r\n')
+            output = check_output(run_cmd, timeout=timeout)
+            return output
         except TimeoutExpired as e:
-            logging.error('{} timed out after {} seconds'.format(cmd, timeout))
+            logging.exception('{} timed out after {} seconds'.format(cmd, timeout))
             logging.debug('Timed out process output:\n' + e.output)
-            raise TimeoutExpired
+            raise
 
     def write_to_remote(self, src, dst):
         """
