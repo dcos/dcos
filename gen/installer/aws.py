@@ -219,7 +219,7 @@ def gen_supporting_template():
         })
 
 
-extra_templates = ['aws/dcos-config.yaml', 'coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml', 'aws/dcos-docker-services.yaml']
+extra_templates = ['aws/dcos-config.yaml', 'aws/dcos-docker-services.yaml']
 
 
 def make_advanced_bunch(variant_args, template_name, cc_params):

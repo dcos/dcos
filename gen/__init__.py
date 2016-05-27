@@ -49,7 +49,7 @@ def add_roles(cloudconfig, roles):
 
 
 def add_units(cloudconfig, services):
-    cloudconfig['coreos']['units'] += services
+    cloudconfig['write_files'] += services
     return cloudconfig
 
 
@@ -673,9 +673,10 @@ def generate(
 
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
+    #ipdb.set_trace()
     for name, template in rendered_templates.items():
         if name == 'dcos-services.yaml':  # yaml list of the service files
-            assert isinstance(template, list)
+            assert isinstance(template, dict)
         elif name == 'cloud-config.yaml':
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template
