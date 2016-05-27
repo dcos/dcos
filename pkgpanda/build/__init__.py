@@ -411,7 +411,16 @@ def make_bootstrap_tarball(package_store, packages, variant):
     # Activate the packages inside the repository.
     # Do generate dcos.target.wants inside the root so that we don't
     # try messing with /etc/systemd/system.
-    install = Install(pkgpanda_root, None, True, False, True, True, True)
+    install = Install(
+        root=pkgpanda_root,
+        config_dir=None,
+        rooted_systemd=True,
+        manage_systemd=False,
+        block_systemd=True,
+        fake_path=True,
+        skip_systemd_dirs=True,
+        manage_users=False,
+        manage_state_dir=False)
     install.activate(repository.load_packages(pkg_ids))
 
     # Mark the tarball as a bootstrap tarball/filesystem so that
@@ -964,11 +973,35 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Copy over environment settings
     pkginfo['environment'] = buildinfo['environment']
 
+    # Whether pkgpanda should on the host make sure a `/var/lib` state directory is available
+    pkginfo['state_directory'] = buildinfo.get('state_directory', False)
+    if pkginfo['state_directory'] not in [True, False]:
+        raise BuildError("state_directory in buildinfo.json must be a boolean `true` or `false`")
+
+    username = buildinfo.get('username')
+    if not (username is None or isinstance(username, str)):
+        raise BuildError("username in buildinfo.json must be either not set (no user for this"
+                         " package), or a user name string")
+    if username:
+        try:
+            pkgpanda.UserManagement.validate_username(username)
+        except ValidationError as ex:
+            raise BuildError("username in buildinfo.json didn't meet the validation rules. {}".format(ex))
+    pkginfo['username'] = username
+
     # Activate the packages so that we have a proper path, environment
     # variables.
     # TODO(cmaloney): RAII type thing for temproary directory so if we
     # don't get all the way through things will be cleaned up?
-    install = Install(install_dir, None, True, False, True, True)
+    install = Install(
+        root=install_dir,
+        config_dir=None,
+        rooted_systemd=True,
+        manage_systemd=False,
+        block_systemd=True,
+        fake_path=True,
+        manage_users=False,
+        manage_state_dir=False)
     install.activate(active_packages)
     # Rewrite all the symlinks inside the active path because we will
     # be mounting the folder into a docker container, and the absolute

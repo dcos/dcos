@@ -132,7 +132,11 @@ def main():
         os.path.abspath(arguments['--root']),
         os.path.abspath(arguments['--config-dir']),
         arguments['--rooted-systemd'],
-        not arguments['--no-systemd'], not arguments['--no-block-systemd'])
+        not arguments['--no-systemd'],
+        not arguments['--no-block-systemd'],
+        manage_users=True,
+        add_users=not os.path.exists('/etc/mesosphere/manual_host_users'),
+        manage_state_dir=True)
     repository = Repository(os.path.abspath(arguments['--repository']))
 
     try:
