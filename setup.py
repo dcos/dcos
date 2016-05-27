@@ -62,6 +62,7 @@ setup(
             'dcos-metadata.yaml',
             'dcos-services.yaml',
             'aws/dcos-config.yaml',
+            'aws/dcos-docker-services.yaml',
             'aws/templates/aws.html',
             'aws/templates/cloudformation.json',
             'azure/cloud-config.yaml',
