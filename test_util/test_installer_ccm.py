@@ -50,8 +50,8 @@ from retrying import retry
 
 import test_util.ccm
 import test_util.installer_api_test
+import test_util.test_runner
 from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
-from test_util.test_runner import integration_test, setup_integration_test
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -213,11 +213,11 @@ def main():
 
     # use first node as bootstrap node, second node as master, all others as agents
     test_host = host_list[0]
-    registry_host = local_ip[host_list[0]]
+    test_host_local = local_ip[host_list[0]]
     master_list = [local_ip[host_list[1]]]
     agent_list = [local_ip[host_list[2]]]
     public_agent_list = [local_ip[host_list[3]]]
-    log.info('Test/registry host public/private IP: ' + test_host + '/' + registry_host)
+    log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
 
     with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
         log.info('Setting up installer on test host')
@@ -245,7 +245,7 @@ def main():
             zk_host = None  # causes genconf to use static exhibitor backend
         else:
             log.info('Installer CLI is selected, so configure for ZK backend')
-            zk_host = registry_host + ':2181'
+            zk_host = test_host_local + ':2181'
             zk_cmd = [
                     'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
                     '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
@@ -281,10 +281,10 @@ def main():
         installer.postflight()
 
         # Runs dcos-image/integration_test.py inside the cluster
-        setup_integration_test(
+        test_util.test_runner.prepare_test_registry(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir)
-        integration_test(
+        test_util.test_runner.integration_test(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir,
                 region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
@@ -292,7 +292,6 @@ def main():
                 master_list=master_list,
                 agent_list=agent_list,
                 public_agent_list=public_agent_list,
-                registry_host=registry_host,
                 variant=options.variant,
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
