@@ -312,8 +312,7 @@ function check_all() {
             print version
         }
     ')
-    # CoreOS stable as of Aug 2015 has 1.6.2
-    check docker 1.6 "$docker_version"
+    check docker 1.10 "$docker_version"
 
     check curl
     check bash
