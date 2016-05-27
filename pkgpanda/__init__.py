@@ -15,11 +15,12 @@ envrionment variables from the package.
 import json
 import os
 import os.path
+import pwd
 import re
 import shutil
 import tempfile
 from itertools import chain
-from subprocess import CalledProcessError, check_call
+from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import InstallError, PackageError, ValidationError
@@ -39,6 +40,7 @@ export PATH="{0}/bin:$PATH"\n\n"""
 
 name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
 version_regex = "^[a-zA-Z0-9@_+:.]+$"
+username_regex = "^dcos_[a-z_]+$"
 
 
 # Manage starting/stopping all systemd services inside a folder.
@@ -161,6 +163,14 @@ class Package:
     @property
     def version(self):
         return self.__id.version
+
+    @property
+    def state_directory(self):
+        return self.__pkginfo.get('state_directory', False)
+
+    @property
+    def username(self):
+        return self.__pkginfo.get('username', None)
 
     def __repr__(self):
         return str(self.__id)
@@ -408,6 +418,72 @@ def symlink_tree(src, dest):
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
 
+# Manages a systemd-sysusers user set.
+# Can have users
+class UserManagement:
+    """Manages a systemd-sysusers configuration file / user set
+
+    add_user() can be called until `ensure_users_exist` is called.
+    get_uid() can only be called once `ensure_users_exist` is called.
+
+    This helps enforce the code pattern which is needed to build one big sysusers configuration file
+    and then create all the users / validate they all exist once. After that the users can be
+    referenced / used.
+    """
+
+    def __init__(self, manage_users, add_users):
+        assert isinstance(manage_users, bool)
+        self._manage_users = manage_users
+        self._add_users = add_users
+        self._users = set()
+
+    @staticmethod
+    def validate_username(username):
+        if not re.match(username_regex, username):
+            raise ValidationError("Username must begin with `dcos_` and only have a-z and underscore after that")
+
+    def add_user(self, username):
+        UserManagement.validate_username(username)
+
+        if not self._manage_users:
+            return
+
+        # Check if hte user already exists and exit.
+        try:
+            pwd.getpwnam(username)
+            self._users.add(username)
+            return
+        except KeyError as ex:
+            # Doesn't exist, fall through
+            pass
+
+        # If we're not allowed to manage users, error
+        if not self._add_users:
+            raise ValidationError("User {} doesn't exist but is required by a DC/OS Component, and "
+                                  "automatic user addition is disabled".format(username))
+
+        # Add the user:
+        try:
+            check_output([
+                'useradd',
+                '--system',
+                '--home-dir', '/opt/mesosphere',
+                '--shell', '/sbin/nologin',
+                '-c', 'DCOS System User',
+                username])
+            self._users.add(username)
+        except CalledProcessError as ex:
+            raise ValidationError("User {} doesn't exist and couldn't be created because of: {}"
+                                  .format(username, ex.output))
+
+    def get_uid(self, username):
+        # Code should have already asserted all users exist, and be passing us
+        # a user we know about. This method only works for package users.
+        assert username in self._users
+
+        return pwd.getpwnam(username).pw_uid
+
+
 # A rooted instal lgtree.
 # Inside the install tree there will be all the well known folders and files as
 # described in `docs/package_concepts.md`
@@ -424,7 +500,10 @@ class Install:
             manage_systemd,
             block_systemd,
             fake_path=False,
-            skip_systemd_dirs=False):
+            skip_systemd_dirs=False,
+            manage_users=False,
+            add_users=False,
+            manage_state_dir=False):
         assert type(rooted_systemd) == bool
         assert type(fake_path) == bool
         self.__root = os.path.abspath(root)
@@ -450,6 +529,9 @@ class Install:
 
         self.__fake_path = fake_path
         self.__skip_systemd_dirs = skip_systemd_dirs
+        self.__manage_users = manage_users
+        self.__add_users = add_users
+        self.__manage_state_dir = manage_state_dir
 
     def get_active_dir(self):
         return os.path.join(self.__root, "active")
@@ -538,6 +620,9 @@ class Install:
 
         active_buildinfo_full = {}
 
+        # Building up the set of users
+        sysusers = UserManagement(self.__manage_users, self.__add_users)
+
         # Add the folders, config in each package.
         for package in packages:
             # Package folders
@@ -590,6 +675,25 @@ class Install:
                 # TODO(cmaloney): These only come from setup-packages. Should update
                 # setup-packages to add a buildinfo.full for those packages
                 active_buildinfo_full[package.name] = None
+
+            # NOTE: It is critical the state dir, the package name and the user name are all the
+            # same. Otherwise on upgrades we might remove access to a files by changing their chown
+            # to something incompatible. We survive the first upgrade because everything goes from
+            # root to specific users, and root can access all user files.
+            if package.username is not None:
+                sysusers.add_user(package.username)
+
+            # Ensure the state directory in `/var/lib/dcos` exists
+            # TODO(cmaloney): On upgrade take a snapshot?
+            if self.__manage_state_dir:
+                state_dir_path = '/var/lib/dcos/{}'.format(package.name)
+                if package.state_directory:
+                    check_call(['mkdir', '-p', state_dir_path])
+
+                if package.username:
+                    state_dir_path = '/var/lib/dcos/{}'.format(package.name)
+                    uid = sysusers.get_uid(package.username)
+                    check_call(['chown', '-R', str(uid), state_dir_path])
 
         # Write out the new environment file.
         new_env = self._make_abs("environment.new")

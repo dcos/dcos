@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Module for running integration_test.py inside of a remote cluster
-Parameters for integration_test.py are passed via the same environment variables
 Note: ssh_user must be able to use docker without sudo priveleges
 """
 import logging
@@ -18,11 +17,16 @@ log = logging.getLogger(__name__)
 
 
 @contextmanager
-def proxy_registry_as_local(tunnel, agent_list, test_dir):
-    """Will create a proxy network on nodes in agent_list so that requests
-    to localhost:5000 will be routed to port 5000 on the tunnel host
+def remote_port_forwarding(tunnel, host_list, remote_key_path):
+    """Forwards port 5000 from each host in in host_list to port 5000
+    on tunnnel.host. This allows docker on hosts in host_list to pull from
+    an insecure registry on tunnel host
+
+    Args:
+        tunnel: SSHTunnel instance connecting to host to be forwarded to
+        host_list: list of host names to forward port 5000 from
+        remote_key_path: arbitary path on tunnel.host for storing key
     """
-    remote_key_path = join(test_dir, 'ssh_key')
     tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
     tunnel.remote_cmd(['chmod', '600', remote_key_path])
     cmd_list = [
@@ -34,10 +38,10 @@ def proxy_registry_as_local(tunnel, agent_list, test_dir):
             '-oExitOnForwardFailure=yes',
             '-R', '5000:127.0.0.1:5000']
     p_list = []
-    log.info('Starting registry proxy')
-    for agent in agent_list:
-        agent_cmd_list = cmd_list + [agent]
-        p = Process(target=tunnel.remote_cmd, args=(agent_cmd_list,))
+    log.info('Starting proxy of port 5000 from {} to {}'.format(host_list, tunnel.host))
+    for host in host_list:
+        host_cmd_list = cmd_list + [host]
+        p = Process(target=tunnel.remote_cmd, args=(host_cmd_list,))
         p.start()
         p_list.append(p)
     yield
@@ -49,17 +53,13 @@ def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
 
 
-def setup_integration_test(tunnel, test_dir):
+def prepare_test_registry(tunnel, test_dir):
     """Transfer resources and issues commands on host to build test app,
     host it on a docker registry, and prepare the integration_test container
-    Note: we perform configuration of the nodes via a single establish tunnel
-        so that the test may run through a load balance (i.e. Azure tests)
 
     Args:
-        test_dir (str): path to be used for setup and file transfer on host
-
-    Returns:
-        result from async chain that can be checked later for success
+        tunnel: SSHTunnel instance
+        test_dir (str): path to be used for landing docker archives
     """
     test_server_docker = pkg_filename('docker/test_server/Dockerfile')
     test_server_script = pkg_filename('docker/test_server/test_server.py')
@@ -98,7 +98,7 @@ def setup_integration_test(tunnel, test_dir):
 
 def integration_test(
         tunnel, test_dir,
-        dcos_dns, master_list, agent_list, public_agent_list, registry_host,
+        dcos_dns, master_list, agent_list, public_agent_list,
         variant, test_dns_search, ci_flags, timeout=None,
         aws_access_key_id='', aws_secret_access_key='', region=''):
     """Runs integration test on host
@@ -108,7 +108,6 @@ def integration_test(
         dcos_dns: string representing IP of DCOS DNS host
         master_list: string of comma separated master addresses
         agent_list: string of comma separated agent addresses
-        registry_host: string for address where marathon can pull test app
         variant: 'ee' or 'default'
         test_dns_search: if set to True, test for deployed mesos DNS app
         ci_flags: optional additional string to be passed to test
@@ -139,9 +138,9 @@ def integration_test(
         '-e', 'AWS_REGION='+region,
         '--net=host', '--name='+test_container_name, 'py.test', 'py.test',
         '-vv', ci_flags, '/integration_test.py']
-    log.info('Running integration test...')
     try:
-        with proxy_registry_as_local(tunnel, agent_list, test_dir):
+        with remote_port_forwarding(tunnel, agent_list, join(test_dir, 'ssh_key')):
+            log.info('Running integration test...')
             tunnel.remote_cmd(test_cmd, timeout=timeout)
         log.info('Successful test run!')
     except TimeoutExpired:
