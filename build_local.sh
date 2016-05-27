@@ -30,7 +30,7 @@ EOF
 fi
 
 # Create a python virtual environment to install the DC/OS tools to
-pyvenv-3.4 build/env
+pyvenv build/env
 . build/env/bin/activate
 
 # Install the DC/OS tools
