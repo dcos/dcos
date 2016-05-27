@@ -18,7 +18,7 @@ import pytest
 import requests
 import retrying
 
-from ssh import ssh_tunnel
+import ssh_tunnel
 
 LOG_LEVEL = logging.INFO
 TEST_APP_NAME_FMT = '/integration-test-{}'
