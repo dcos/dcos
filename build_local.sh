@@ -9,7 +9,7 @@ set -o errexit -o pipefail
 docker ps
 
 # Cleanup from previous build
-rm -rf build/venv
+rm -rf /tmp/dcos_build_venv
 
 # Force Python stdout/err to be unbuffered.
 export PYTHONUNBUFFERED="notemtpy"
@@ -30,8 +30,8 @@ EOF
 fi
 
 # Create a python virtual environment to install the DC/OS tools to
-pyvenv build/env
-. build/env/bin/activate
+pyvenv /tmp/dcos_build_venv
+. /tmp/dcos_build_venv/bin/activate
 
 # Install the DC/OS tools
 ./prep_local
