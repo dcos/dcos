@@ -1,0 +1,37 @@
+root:
+  - path: /etc/systemd/system/dcos-docker-install.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      Environment=DEBIAN_FRONTEND=noninteractive
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/d.deb https://az837203.vo.msecnd.net/dcos-deps/docker-engine_1.11.0-0~xenial_amd64.deb
+      ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /tmp/d.deb || ((try > 5));do echo retry $((try++));sleep 120;done;systemctl --now start docker"
+  - path: /etc/systemd/system/docker.service.d/execstart.conf
+    permissions: "0644"
+    content: |
+      [Service]
+      Restart=always
+      StartLimitInterval=0
+      RestartSec=15
+      ExecStart=
+      ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay
+  - path: /etc/systemd/system/docker.socket
+    permissions: "0644"
+    content: |
+      [Unit]
+      PartOf=docker.service
+      [Socket]
+      ListenStream=/var/run/docker.sock
+      SocketMode=0660
+      SocketUser=root
+      SocketGroup=docker
+      ListenStream=2375
+      BindIPv6Only=both
+      [Install]
+      WantedBy=sockets.target
