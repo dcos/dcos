@@ -1,6 +1,9 @@
-DCOS_ROOT = '/opt/mesosphere/'
-DCOS_CONFIG_DIR = '/etc/mesosphere/'
-DCOS_REPO_DIR = '/opt/mesosphere/packages/'
+from pkgpanda import constants
+
+
+DCOS_ROOT = constants.install_root
+DCOS_CONFIG_DIR = constants.config_dir
+DCOS_REPO_DIR = constants.repository_base
 DCOS_ROOTED_SYSTEMD = False
 
 try:
