@@ -48,8 +48,48 @@ def add_roles(cloudconfig, roles):
     return cloudconfig
 
 
-def add_units(cloudconfig, services):
-    cloudconfig['coreos']['units'] += services
+def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
+    '''
+    Takes a services dict in the format of CoreOS cloud-init 'units' and
+    injects into cloudconfig a transformed version appropriate for the
+    cloud_init_implementation.  See:
+    https://coreos.com/os/docs/latest/cloud-config.html for the CoreOS 'units'
+    specification. See: https://cloudinit.readthedocs.io/en/latest/index.html
+    for the Canonical implementation.
+
+    Parameters:
+    * cloudconfig is a dict
+    * services is a list of dict's
+    * cloud_init_implementation is a string: 'coreos' or 'canonical'
+    '''
+    if cloud_init_implementation == 'canonical':
+        for unit in services:
+            unit_name = unit['name']
+            if 'content' in unit:
+                write_files_entry = {'path': '/etc/systemd/system/{}'.format(unit_name),
+                                     'content': unit['content'],
+                                     'permissions': '0644'}
+                cloudconfig.setdefault('write_files', []).append(write_files_entry)
+            if 'enable' in unit and unit['enable']:
+                runcmd_entry = ['systemctl', 'enable', unit_name]
+                cloudconfig.setdefault('runcmd', []).append(runcmd_entry)
+            if 'command' in unit:
+                opts = []
+                if 'no_block' in unit and unit['no_block']:
+                    opts.append('--no-block')
+                if unit['command'] in ['start', 'stop', 'reload', 'restart', 'try-restart', 'reload-or-restart',
+                                       'reload-or-try-restart']:
+                    runcmd_entry = ['systemctl'] + opts + [unit['command'], unit_name]
+                else:
+                    raise Exception("Unsupported unit command: {}".format(unit['command']))
+                cloudconfig.setdefault('runcmd', []).append(runcmd_entry)
+    elif cloud_init_implementation == 'coreos':
+        cloudconfig.setdefault('coreos', {}).setdefault('units', [])
+        cloudconfig['coreos']['units'] += services
+    else:
+        raise Exception("Parameter value '{}' is invalid for cloud_init_implementation".format(
+            cloud_init_implementation))
+
     return cloudconfig
 
 
@@ -743,8 +783,8 @@ def generate(
 
     # Add in the add_services util. Done here instead of the initial
     # map since we need to bind in parameters
-    def add_services(cloudconfig):
-        return add_units(cloudconfig, rendered_templates['dcos-services.yaml'])
+    def add_services(cloudconfig, cloud_init_implementation):
+        return add_units(cloudconfig, rendered_templates['dcos-services.yaml'], cloud_init_implementation)
 
     utils.add_services = add_services
 

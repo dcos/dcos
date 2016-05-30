@@ -56,11 +56,10 @@ aws_region_names = [
 
 late_services = """- name: dcos-cfn-signal.service
   command: start
+  no_block: true
   content: |
     [Unit]
     Description=AWS Setup: Signal CloudFormation Success
-    After=dcos.target
-    Requires=dcos.target
     ConditionPathExists=!/var/lib/dcos-cfn-signal
     [Service]
     Type=simple
@@ -219,13 +218,17 @@ def gen_supporting_template():
         })
 
 
-extra_templates = ['aws/dcos-config.yaml', 'coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
-
-
 def make_advanced_bunch(variant_args, template_name, cc_params):
+    extra_templates = ['aws/dcos-config.yaml', 'aws/templates/advanced/{}'.format(template_name)]
+    if cc_params['os_type'] == 'coreos':
+        extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
+        cloud_init_implementation = 'coreos'
+    else:
+        cloud_init_implementation = 'canonical'
+
     results = gen.generate(
         arguments=variant_args,
-        extra_templates=extra_templates + ['aws/templates/advanced/' + template_name],
+        extra_templates=extra_templates,
         cc_package_files=[
             '/etc/cfn_signal_metadata',
             '/etc/dns_config',
@@ -235,12 +238,13 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     cloud_config = results.templates['cloud-config.yaml']
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config)
+    cloud_config = results.utils.add_services(cloud_config, cloud_init_implementation)
 
     cc_variant = deepcopy(cloud_config)
     cc_variant = results.utils.add_units(
         cc_variant,
-        yaml.load(gen.template.parse_str(late_services).render(cc_params)))
+        yaml.load(gen.template.parse_str(late_services).render(cc_params)),
+        cloud_init_implementation)
 
     # Add roles
     cc_variant = results.utils.add_roles(cc_variant, cc_params['roles'] + ['aws'])
@@ -264,20 +268,21 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     })
 
 
-def gen_advanced_template(arguments, variant_prefix, channel_commit_path):
+def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type):
     for node_type in ['master', 'priv-agent', 'pub-agent']:
-        print('Building advanced template for {}'.format(node_type))
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
         node_args.update(arguments)
+        node_args['os_type'] = os_type
         params = deepcopy(cf_instance_groups[node_template_id])
         params['report_name'] = node_args.pop('report_name')
+        params['os_type'] = os_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
-                master_tk = '{}-{}'.format(template_key, num_masters)
-                print('Building {} for num_masters = {}'.format(node_type, num_masters))
+                master_tk = '{}-{}-{}'.format(os_type, template_key, num_masters)
+                print('Building {} {} for num_masters = {}'.format(os_type, node_type, num_masters))
                 node_args['num_masters'] = str(num_masters)
                 bunch = make_advanced_bunch(node_args,
                                             template_name,
@@ -285,7 +290,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path):
                 yield '{}.json'.format(master_tk), bunch
 
                 # Zen template corresponding to this number of masters
-                yield 'zen-{}.json'.format(num_masters), gen.Bunch({
+                yield '{}-zen-{}.json'.format(os_type, num_masters), gen.Bunch({
                     'cloudformation': render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
@@ -301,13 +306,13 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path):
             bunch = make_advanced_bunch(node_args,
                                         template_name,
                                         params)
-            yield template_name, bunch
+            yield '{}-{}'.format(os_type, template_name), bunch
 
 
 def gen_templates(arguments):
     results = gen.generate(
         arguments=arguments,
-        extra_templates=extra_templates + ['aws/templates/cloudformation.json'],
+        extra_templates=['aws/templates/cloudformation.json', 'aws/dcos-config.yaml'],
         cc_package_files=[
             '/etc/cfn_signal_metadata',
             '/etc/adminrouter.env',
@@ -319,7 +324,7 @@ def gen_templates(arguments):
     cloud_config = results.templates['cloud-config.yaml']
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config)
+    cloud_config = results.utils.add_services(cloud_config, 'coreos')
 
     # Specialize for master, slave, slave_public
     variant_cloudconfig = {}
@@ -436,10 +441,13 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
         multi_args['num_masters'] = "3"
         add(multi_args, 'multi-master.cloudformation.json')
 
-        for template_name, advanced_template in gen_advanced_template(variant_base_args,
-                                                                      variant_prefix,
-                                                                      channel_commit_path):
-            add_pre_genned(template_name, advanced_template)
+        # Advanced templates
+        for os_type in ['coreos', 'el7']:
+            for template_name, advanced_template in gen_advanced_template(variant_base_args,
+                                                                          variant_prefix,
+                                                                          channel_commit_path,
+                                                                          os_type):
+                add_pre_genned(template_name, advanced_template)
 
     # Button page linking to the basic templates.
     button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments)
