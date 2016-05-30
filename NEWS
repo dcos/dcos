@@ -1,0 +1,15 @@
+Documentation of changes which may break some install environments
+
+
+1.8-dev
+ - Make the admin load balancer in all templates do TCP, not HTTP load balancing
+ - Switch Ubuntu in Azure to 16.04 LTS final release
+ - Teach spartan / DNS to only listen on a local internal address
+ - Make the installer preflight actually faile if SELinux is enabled
+ - Took ownership of several sysctl settings for minuteman
+    net.netfilter.nf_conntrack_tcp_be_liberal=1
+    net.netfilter.ip_conntrack_tcp_be_liberal=1
+    net.ipv4.netfilter.ip_conntrack_tcp_be_liberal=1
+
+1.7-OPEN -- 4/18/2016
+ - Open DC/OS Released

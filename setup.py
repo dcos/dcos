@@ -15,10 +15,10 @@ setup(
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
-    license='TODO',
+    license='apache2',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'License :: OSI Approved :: TODO License',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
     ],
@@ -74,12 +74,15 @@ setup(
             'installer/bash/installer_internal_wrapper.in',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
-            ] + get_advanced_templates(),
+        ] + get_advanced_templates(),
+        'pkgpanda': [
+            'docker/dcos-builder/Dockerfile'
+        ],
         'test_util': [
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
-            'integration_test.py']
+            'integration_test.py'],
     },
     zip_safe=False
 )

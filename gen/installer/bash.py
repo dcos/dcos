@@ -33,7 +33,19 @@ bash_template = """#!/bin/bash
 #   dcos image commit: {{ dcos_image_commit }}
 #   generation date: {{ generation_date }}
 #
-# TODO(cmaloney): Copyright + License string here
+# Copyright 2016 Mesosphere, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 set -o errexit -o nounset -o pipefail
 
@@ -160,6 +172,7 @@ function check_selinux() {
   fi
 
   print_status $RC "Is SELinux disabled?"
+  (( OVERALL_RC += $RC ))
   return $RC
 }
 
@@ -540,9 +553,15 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
         subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
-        copy_to_build('packages', bootstrap_filename)
-        copy_to_build('packages', installer_bootstrap_filename)
-        copy_to_build('packages', bootstrap_active_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
+
+        # Copy across gen_extra if it exists
+        if os.path.exists('gen_extra'):
+            subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+        else:
+            subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])

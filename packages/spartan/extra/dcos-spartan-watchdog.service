@@ -6,7 +6,6 @@ After=dcos-spartan.service
 Type=oneshot
 StandardOutput=journal
 StandardError=journal
-EnvironmentFile=/etc/environment
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/dns_search_config

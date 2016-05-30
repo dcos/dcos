@@ -13,26 +13,30 @@ set -o errexit -o nounset -o pipefail
 # cleaned up between builds to guarantee we get the artifacts we expect.
 mkdir wheelhouse || (echo wheelhouse folder must be deleted before prep_teamcity is rerun && exit 1)
 
+# Make a clean copy of pkgpanda so the python artifacts build fast
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+pushd $DIR
 if [ -d ext/dcos-image ]
 then
   rm -rf ext/dcos-image
 fi
 
-# Make a clean copy of pkgpanda so the python artifacts build fast
-git clone file://$PWD ext/dcos-image
+git clone "file://$DIR" ext/dcos-image
 git -C ext/dcos-image checkout -qf `git rev-parse --verify HEAD^{commit}`
+popd
 
 # We have wheel as a dependency since we use it to build the wheels
 pip install wheel
 
 # Download distro independent artifacts
-pip install --download wheelhouse ext/dcos-image
+pip install --download wheelhouse $DIR/ext/dcos-image
 
 # Make the wheels, they will be output into the folder `wheelhouse` by default.
-pip wheel --wheel-dir=wheelhouse --no-index --find-links=wheelhouse ext/dcos-image
+pip wheel --wheel-dir=wheelhouse --no-index --find-links=wheelhouse $DIR/ext/dcos-image
 
 # Install the wheels
 pip install --no-index --find-links=wheelhouse dcos-image
 
 # Cleanup the checkout
-rm -rf ext/dcos-image
+rm -rf $DIR/ext/dcos-image

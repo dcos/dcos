@@ -247,5 +247,5 @@
       }
     }
   },
-  "Description": "DCOS AWS CloudFormation Advanced Private Agent Template"
+  "Description": "DC/OS AWS CloudFormation Advanced Private Agent Template"
 }

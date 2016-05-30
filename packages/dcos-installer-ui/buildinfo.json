@@ -2,8 +2,8 @@
   "docker": "node:4.2.6",
   "single_source": {
     "kind": "git",
-    "git": "git@github.com:dcos/dcos-installer-ui.git",
-    "ref": "ba16865174fdf51a3f487112f5c390d500c155c1",
+    "git": "https://github.com/dcos/dcos-installer-ui.git",
+    "ref": "34ff08c0ffa7af2f56ee29865f10f68e351df3f3",
     "ref_origin": "release/1.7"
   }
 }

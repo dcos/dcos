@@ -439,7 +439,7 @@
         "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
         "IpProtocol" : "tcp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     },
@@ -469,7 +469,7 @@
         "GroupId" : { "Ref" : "PublicAgentSecurityGroup" },
         "IpProtocol" : "udp",
         "FromPort" : "5052",
-        "ToPort" : "65535",
+        "ToPort" : "32000",
         "CidrIp" : "0.0.0.0/0"
         }
     }
@@ -498,6 +498,14 @@
         "ExhibitorS3BucketId": {
           "Value" : { "Ref" : "ExhibitorS3Bucket" },
           "Description": "S3 bucket name for use by Exhibitor"
+        },
+        "PublicRouteTable": {
+          "Value" : { "Ref": "PublicRouteTable" },
+          "Description" : "Route table used by public agent nodes"
+        },
+        "PrivateRouteTable": {
+          "Value" : { "Ref": "PrivateRouteTable" },
+          "Description" : "Route table used by private agent nodes"
         }
     }
 }

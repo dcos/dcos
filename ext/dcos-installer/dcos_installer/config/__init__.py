@@ -24,8 +24,8 @@ class DCOSConfig(dict):
     def __init__(self, overrides={}, config_path=CONFIG_PATH, write_default_config=True):
         defaults = """
 ---
-# The name of your DCOS cluster. Visable in the DCOS user interface.
-cluster_name: 'DCOS'
+# The name of your DC/OS cluster. Visable in the DC/OS user interface.
+cluster_name: 'DC/OS'
 master_discovery: static
 exhibitor_storage_backend: 'static'
 resolvers:
@@ -148,14 +148,15 @@ bootstrap_url: file:///opt/dcos_install_tmp
                 log.debug("Caught list for genconf configuration, transforming to JSON string: %s", value)
                 value = json.dumps(value)
 
-            elif isinstance(value, int):
-                log.debug("Caught int for genconf configuration, transforming to string: %s", value)
-                value = str(value)
             elif isinstance(value, bool):
                 if value:
                     value = 'true'
                 else:
                     value = 'false'
+
+            elif isinstance(value, int):
+                log.debug("Caught int for genconf configuration, transforming to string: %s", value)
+                value = str(value)
 
             gen_config[key] = value
 
