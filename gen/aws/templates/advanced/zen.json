@@ -50,6 +50,12 @@
           "Default": "m3.xlarge",
           "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
         },
+        "CustomAMI": {
+          "Default": "default",
+          "Type": "String",
+          "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
+          "AllowedPattern": "(default|ami-[a-f0-9]{8})"
+        },
         "AdminLocation": {
           "Description" : "\nOptional: Specify the IP range to whitelist for access to the admin zone. Must be a valid CIDR.",
           "Type" : "String",
@@ -121,6 +127,9 @@
                     "MasterInstanceType": {
                       "Ref": "MasterInstanceType"
                     },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
+                    },
                     "ExhibitorS3Bucket": {
                       "Fn::GetAtt" : [ "Infrastructure", "Outputs.ExhibitorS3BucketId" ]
                     }
@@ -151,6 +160,9 @@
                     },
                     "PublicAgentInstanceCount": {
                       "Ref": "PublicAgentInstanceCount"
+                    },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
                     }
                },
                "TimeoutInMinutes": "60"
@@ -179,6 +191,9 @@
                     },
                     "PrivateAgentInstanceCount": {
                       "Ref": "PrivateAgentInstanceCount"
+                    },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
                     }
                },
                "TimeoutInMinutes": "60"
