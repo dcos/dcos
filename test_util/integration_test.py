@@ -1,7 +1,10 @@
 import collections
+import contextlib
 import json
 import logging
 import os
+import re
+import shlex
 import urllib.parse
 import uuid
 
@@ -15,12 +18,18 @@ import pytest
 import requests
 import retrying
 
+from ssh.ssh_tunnel import SSHTunnel, run_ssh_cmd
+
 LOG_LEVEL = logging.INFO
 TEST_APP_NAME_FMT = '/integration-test-{}'
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 AWS_REGION = os.environ.get('AWS_REGION', '')
+
+MOUNT_PATTERN = re.compile(
+    'on\s+(/dcos/volume([^0][0-9]{2,}|[0]\d{3,}))\s+', re.M | re.I
+)
 
 BASE_ENDPOINT_3DT = '/system/health/v1'
 PORT_3DT = 1050
@@ -46,7 +55,9 @@ def cluster():
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
-                   dns_search_set=os.environ['DNS_SEARCH'])
+                   dns_search_set=os.environ['DNS_SEARCH'],
+                   ssh_user=os.environ['SSH_USER'],
+                   ssh_key_path=os.environ['SSH_KEY_PATH'])
 
 
 @pytest.fixture(scope='module')
@@ -1369,3 +1380,217 @@ def test_mesos_agent_role_assignment(cluster):
     for agent in cluster.slaves:
         r = requests.get('http://{}:5051/state.json'.format(agent))
         assert r.json()['flags']['default_role'] == '*'
+
+
+class AgentManipulator:
+
+    def __init__(self, cluster, ssh_user, key_path):
+        '''
+        @param cluster : py.test cluster object. this is magical
+        @param ssh_user: str
+        @param key_path: str
+        '''
+        self._cluster = cluster
+        self._ssh_user = cluster.ssh_user
+        self._ssh_key_path = cluster.ssh_key_path
+        self.volumes = []
+        self._reset(detect=True)
+
+    def _multi_run(self, cmds):
+        '''
+        Run multiple commands
+
+        @param cmds: list/tuple, of commands to execute
+        '''
+        with contextlib.closing(SSHTunnel(
+            self._cluster._ssh_user,
+            self._cluster._ssh_key_path,
+            self._cluster.slaves[0])
+        ) as ssh_runner:
+            for cmd in cmds:
+                yield ssh_runner.remote_cmd(self.list_or_make(cmd))
+
+    def _run(self, cmd):
+        '''
+        Run a single command
+
+        @param cmd: str
+        '''
+        return run_ssh_cmd(
+            self._cluster._ssh_user,
+            self._cluster._ssh_key_path,
+            self._cluster.slaves[0],
+            self.list_or_make(cmd)
+        )
+
+    @staticmethod
+    def list_or_make(v, split_fn=shlex.split):
+        '''
+        Return a list of strings, by splitting the string passed
+
+        @param v: str
+        @param split_fn: function to split, default shlex.split
+
+        @rtype: list
+        '''
+        return v if isinstance(v, list) else split_fn(v)
+
+    def _stop_mesos_agent(self):
+        self._run('systemctl stop dcos-mesos-slave')
+
+    def _start_mesos_agent(self, clear_state):
+        if clear_state:
+            self._clear_agent_state()
+        self._run('systemctl start dcos-mesos-slave')
+
+    def _clear_agent_state(self):
+        self._run('rm -rf /var/lib/mesos/slave')
+
+    def _clear_volume_discovery_state(self):
+        self._run('rm /var/lib/dcos/mesos-resources')
+
+    def _start_volume_discovery(self, clear_state):
+        if clear_state:
+            self._clear_volume_discovery_state()
+        self._run('systemctl start dcos-vol-discovery-priv-agent')
+
+    def _make_local_volume(self, size_mb, image_file):
+        return self._run('dd of={} if=/dev/null bs=1M count={}'.format(
+            image_file, size_mb
+        ))
+
+    @contextlib.contextmanager
+    def _a_free_loop(self):
+        '''
+        Find a free loop device
+
+        rtype: contextmanager str loop device name
+        '''
+        loop_device = self._run('losetup --find')
+        yield loop_device
+
+    def _attach_loop_back(self, mount_point, image_file):
+        with self._a_free_loop() as loop_device:
+            cmds = (
+                '/usr/bin/mkdir -p {}'.format(mount_point),
+                '/usr/sbin/losetup {} {}'.format(loop_device, image_file),
+                '/usr/sbin/mkfs -t ext4 {}'.format(loop_device),
+                '/usr/bin/mount {} {}'.format(loop_device, mount_point),
+            )
+            self._multi_run(cmds)
+
+    def _add_volumes_to_agent(self, vol_sizes):
+        # reserve /dcos/volume100+ for our tests
+        for i, vol_size in enumerate(vol_sizes, 100):
+            img = '/root/{}.img'.format(i)
+            mount_point = '/dcos/volume{}'.format(i)
+            self._make_local_volume(vol_size, img)
+            self._attach_loop_back(mount_point, img)
+            self.volumes.append((vol_size, img, mount_point))
+
+    def _remove_addtional_volumes_from_agent(self):
+        '''
+        Remove additional volumes added.
+        '''
+        for i, _, img, vol in enumerate(self.volumes[:]):
+            cmds = (
+                '/usr/bin/umount {}'.format(vol),
+                '/usr/sbin/losetup --detach {}'.format(vol),
+                'rm -f {}'.format(img),
+            )
+            self._multi_run(cmds)
+            del self.volumes[i]
+
+    def _umount_detected(self):
+        '''
+        Remotely detect volumes added
+        '''
+        # Detect only /dcos/volume100+
+        dcos_mounts = MOUNT_PATTERN.findall(self._run('mount'))
+        cmds = map('/usr/bin/umount {}'.format, (m[0] for m in dcos_mounts))
+        self._multi_run(cmds)
+
+    def reset_agent(self, detect):
+        self._stop_mesos_agent()
+        if detect:
+            # Detect volumes when we don't have state as an "agent" object
+            self._umount_detected()
+        else:
+            self._remove_additional_volumes_from_agent()
+        self._start_volume_discovery(clear_state=True)
+        self._start_mesos_agent(clear_state=True)
+
+
+def get_state_json(cluster):
+    r = cluster.get('/mesos/master/slaves')
+    data = r.json()
+    slaves_ids = sorted(x['id'] for x in data['slaves'])
+
+    for slave_id in slaves_ids:
+        uri = '/slave/{}/slave%281%29/state.json'.format(slave_id)
+        r = cluster.get(uri)
+        data = r.json()
+        yield data
+
+
+def test_add_volume_noop(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    agentm._add_volumes_to_agent((200, 200))
+    agentm._start_volume_discovery()
+    agentm._start_mesos_agent(clear_state=False)
+    try:
+        # assert on mounted resources
+        for d in get_state_json(cluster):
+            for size, _, vol in agentm.volumes:
+                assert vol not in d
+    finally:
+        agentm.reset_agent(detect=False)
+
+
+def test_missing_disk_resource_file(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    agentm._clear_volume_discovery_state()
+    started = agentm._start_mesos_agent(clear_state=False)
+    try:
+        assert 'error' in started.lower()
+    finally:
+        agentm.reset_agent(detect=False)
+
+
+def test_add_volume_works(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    agentm._add_volumes_to_agent((200, 200))
+    agentm._clear_volume_discovery_state()
+    agentm._start_mesos_agent(clear_state=True)
+    try:
+        # assert on mounted resources
+        for d in get_state_json(cluster):
+            for _, _, vol in agentm.volumes:
+                assert vol in d
+    finally:
+        agentm.reset_agent(detect=False)
+
+
+def test_vol_discovery_fails_due_to_size(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._stop_mesos_agent()
+    agentm._add_volumes_to_agent((200, 200, 50,))
+    agentm._start_volume_discovery()
+    res_file = agentm._run('file /var/lib/dcos/mesos-resources')
+    try:
+        assert 'No such file or directory' in res_file
+    finally:
+        agentm.reset_agent(detect=False)
+
+
+def test_vol_discovery_non_json_mesos_resources(cluster):
+    agentm = AgentManipulator(cluster)
+    agentm._run('echo "MESOS_RESOURCES=ports:[1025-2180]" > /etc/mesos-slave')
+    discovery_status = agentm._start_volume_discovery()
+    try:
+        assert 'error' in discovery_status
+    finally:
+        agentm.reset_agent(detect=False)
