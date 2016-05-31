@@ -12,9 +12,9 @@ Type=simple
 Restart=always
 RestartSec=20
 EnvironmentFile=/opt/mesosphere/environment
-ExecStartPre=/bin/mkdir -p /var/lib/dcos
+User=dcos_clusterid
 ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
-ExecStartPre=/bin/bash -c "python -c 'import uuid; print(uuid.uuid4())' | zk-value-consensus /cluster-id > /var/lib/dcos/cluster-id.tmp"
-ExecStartPre=/usr/bin/test -s /var/lib/dcos/cluster-id.tmp
-ExecStart=/bin/mv /var/lib/dcos/cluster-id.tmp /var/lib/dcos/cluster-id
+ExecStartPre=/bin/bash -c "python -c 'import uuid; print(uuid.uuid4())' | zk-value-consensus /cluster-id > /var/lib/dcos/dcos-cluster-id/cluster-id.tmp"
+ExecStartPre=/usr/bin/test -s /var/lib/dcos/dcos-cluster-id/cluster-id.tmp
+ExecStart=/bin/mv /var/lib/dcos/dcos-cluster-id/cluster-id.tmp /var/lib/dcos/dcos-cluster-id/cluster-id
 EOF
