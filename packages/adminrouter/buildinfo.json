@@ -12,5 +12,6 @@
           "ref": "20f08a120fed3ae0e837d7dc2aa102c329c8fd3f",
           "ref_origin": "master"
       }
-  }
+  },
+  "username": "dcos_adminrouter"
 }

@@ -70,6 +70,7 @@ PIDFile=$PKG_PATH/nginx/logs/nginx.pid
 PrivateDevices=yes
 StandardOutput=journal
 StandardError=journal
+User=dcos_adminrouter
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 marathon.mesos
 ExecStartPre=/bin/ping -c1 leader.mesos
@@ -98,6 +99,7 @@ Description=Admin Router Reloader: Reload admin router to get new DNS
 [Service]
 Type=oneshot
 EnvironmentFile=/opt/mesosphere/environment
+User=dcos_adminrouter
 ExecStart=-$PKG_PATH/nginx/sbin/nginx -s reload
 EOF
 
