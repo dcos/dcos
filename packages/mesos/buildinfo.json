@@ -3,9 +3,9 @@
   "docker": "dcos-builder",
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/mesosphere/mesos",
-    "ref": "76c87d55a78e8cbb380fc0c71388ccec53ed1dc8",
-    "ref_origin" : "dcos-1.7"
+    "git": "git@github.com:apache/mesos.git",
+    "ref": "905391ea1c728287ee2b3b23d0fcae6bbafb3e37",
+    "ref_origin" : "master"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
