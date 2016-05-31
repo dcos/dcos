@@ -35,7 +35,7 @@ role_names = {"master", "slave", "slave_public"}
 role_template = '/etc/mesosphere/roles/{}'
 
 CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
-PACKAGE_KEYS = {'package', 'root'}
+PACKAGE_KEYS = {'package', 'root', 'runcmd'}
 
 
 def add_roles(cloudconfig, roles):
@@ -49,7 +49,7 @@ def add_roles(cloudconfig, roles):
 
 
 def add_units(cloudconfig, services):
-    cloudconfig['coreos']['units'] += services
+    cloudconfig['write_files'] += services
     return cloudconfig
 
 
@@ -675,7 +675,7 @@ def generate(
     # (likely indicates a misspelling)
     for name, template in rendered_templates.items():
         if name == 'dcos-services.yaml':  # yaml list of the service files
-            assert isinstance(template, list)
+            assert isinstance(template, dict)
         elif name == 'cloud-config.yaml':
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template
