@@ -1320,6 +1320,7 @@ sleep 3600
             'logrotate-service',
             'logrotate-timer',
             'minuteman-service',
+            'navstar-service',
             'signal-timer',
             'spartan-service',
             'spartan-watchdog-service',
