@@ -1,18 +1,45 @@
-# DC/OS Tools, Packages, and Installers for various platforms
+# DC/OS - The Datacenter Operating System
 
-Tools for building DC/OS and launching a cluster with it in the hardware of a customer's choice.
+The easiest way to run microservices, big data, and containers in production.
 
-  - *docker/* Locally defined docker containers packages are built in
-  - *docs/* Documentation
-  - *ext/dcos-installer/* Backend for Web, SSH, and some bits of the Advanced installer. To be merged into the top codebase once the code is cleaned up
-  - *gen/* Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
-  - *gen/installer/* Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
-  - *packages/* Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.
-  - *pkgpanda/* DC/OS baseline/host package management system. Tools for building, deploying, upgrading, and bundling packages together which live on the root filesystem of a machine / underneath Mesos.
-  - *pytest/* Misc. tests. Should be moved to live next to the appropriate code
-  - *release/* Release tools for DC/OS. (Building releases, building installers for releases, promoting between channels)
-  - *ssh/* AsyncIO based parallel ssh library used by the installer
-  - *test_util/* various scripts, utilities to help with integration testing
+# What is DC/OS?
+
+Like traditional operating systems, DC/OS is system software that manages computer hardware and software resources and provides common services for computer programs.
+
+Unlike traditional operating systems, DC/OS spans multiple machines within a network, aggregating their resources to maximize utilization by distributed applications.
+
+To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
+
+# How Do I...?
+
+- Learn More - <https://dcos.io/>
+- Find the Docs - <https://dcos.io/docs/>
+- Install - <https://dcos.io/install/>
+- Get Started - <https://dcos.io/get-started/>
+- Get Help - <http://chat.dcos.io/>
+- Join the Discussion - <https://groups.google.com/a/dcos.io/d/forum/users>
+- Report an Issue - <https://dcosjira.atlassian.net>
+- Contribute - <https://dcos.io/contribute/>
+
+# What's In This Repo?
+
+DC/OS itself is composed of many individual components precisely configured to work together in concert.
+
+This repo contains the release and package building tools necessary to produce installers for various on-premise and cloud platforms.
+
+| Directory | Contents |
+| --------- | -------- |
+| *docker*             | Locally defined docker containers packages are built in
+| *docs*               | Documentation
+| *ext/dcos-installer* | Backend for Web, SSH, and some bits of the Advanced installer. To be merged into the top codebase once the code is cleaned up
+| *gen*                | Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
+| *gen/installer*      | Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
+| *packages*           | Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.
+| *pkgpanda*           | DC/OS baseline/host package management system. Tools for building, deploying, upgrading, and bundling packages together which live on the root filesystem of a machine / underneath Mesos.
+| *pytest*             | Misc. tests. Should be moved to live next to the appropriate code
+| *release*            | Release tools for DC/OS. (Building releases, building installers for releases, promoting between channels)
+| *ssh*                | AsyncIO based parallel ssh library used by the installer
+| *test_util*          | various scripts, utilities to help with integration testing
 
 All code in this repository is Python 3
 
