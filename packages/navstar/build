@@ -1,0 +1,34 @@
+#!/bin/bash
+set -x
+
+source /opt/mesosphere/environment
+
+pushd /pkg/src/navstar
+./rebar3 update
+make rel
+popd
+
+cp -r /pkg/src/navstar/_build/prod/rel/navstar ${PKG_PATH}
+
+service=${PKG_PATH}/dcos.target.wants/dcos-navstar.service
+mkdir -p $(dirname $service)
+
+cat <<EOF > $service
+[Unit]
+Description=Navstar: A distributed systems & network overlay orchestration engine
+After=dcos-gen-resolvconf.service
+After=dcos-epmd.service
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+WorkingDirectory=${PKG_PATH}/navstar
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/bin/ping -c1 ready.spartan
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/mnesia
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/lashup
+ExecStart=${PKG_PATH}/navstar/bin/navstar-env foreground
+Environment=HOME=/opt/mesosphere
+EOF
+

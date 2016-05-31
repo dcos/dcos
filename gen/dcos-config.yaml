@@ -58,6 +58,15 @@ package:
           ]
         }
       ].
+  - path: /etc_master/navstar.app.config
+    content: |
+      [
+        {navstar,
+          [
+            {is_master, true}
+          ]
+        }
+      ].
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/log/mesos
@@ -74,9 +83,22 @@ package:
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
       GLOG_drop_log_memory=false
       SASL_PATH=/opt/mesosphere/lib/sasl2
+      {{ mesos_master_modules_env_var }}
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
+  - path: /etc/mesos-master-modules.json
+    content: |
+      {{ mesos_master_modules_json }}
+  - path: /etc/dcos/network/cni/dummy.cni
+    content: |
+      {
+        "name": "dummy",
+        "type": "bridge"
+      }
+  - path: /etc/dcos/network/overlay
+    content: |
+      {{ dcos_overlay_network }}
   - path: /etc/mesos-slave-modules.json
     content: |
       {{ mesos_slave_modules_json }}
@@ -97,8 +119,11 @@ package:
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
+      MESOS_IMAGE_PROVIDERS=docker
       GLOG_drop_log_memory=false
       {{ mesos_hooks_env_var }}
+      {{ mesos_cni_config_dir_env_var }}
+      {{ mesos_cni_plugins_dir_env_var }}
   - path: /etc/mesos-slave
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
