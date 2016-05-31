@@ -9,7 +9,8 @@
   <li>For more information on creating a DC/OS cluster, see the <a href='https://dcos.io/docs/latest/administration/installing/cloud/aws/'>DC/OS AWS documentation</a>.</li>
 </ul>
 <table>
-<tr><th>Region Name</th><th>Region Code</th><th>Single Master</th><th>HA: Three Master</th></tr>
+<tr><th>Region Name</th><th>Region Code</th>
+{% for variant in variant_list %}<th>{{ variant }} Single Master</th><th>{{ variant }} HA: Three Master</th></tr>{% endfor %}
 {% for button in regular_buttons %}{{ button }}{% endfor %}
 </table>
 

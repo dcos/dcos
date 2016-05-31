@@ -360,12 +360,13 @@ button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?r
 region_line_template = "<tr><td>{region_name}</td><td>{region_id}</td><td>{single_master_button}</td><td>{multi_master_button}</td></tr>"  # noqa
 
 
-def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
+def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments):
     # Generate the button page.
     # TODO(cmaloney): Switch to package_resources
+    variant_list = list(sorted(pkgpanda.util.variant_prefix(x) for x in variant_arguments.keys()))
     regular_buttons = list()
-    for region in aws_region_names:
 
+    for region in aws_region_names:
         def get_button(template_name):
             return button_template.format(
                 region_id=region['id'],
@@ -373,11 +374,15 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
                 template_name=template_name,
                 cloudformation_s3_url=get_cloudformation_s3_url())
 
-        regular_buttons.append(region_line_template.format(
+        button_line = ""
+        for variant in variant_list:
+            button_line += region_line_template.format(
                 region_name=region['name'],
                 region_id=region['id'],
-                single_master_button=get_button('single-master'),
-                multi_master_button=get_button('multi-master')))
+                single_master_button=get_button(variant + 'single-master'),
+                multi_master_button=get_button(variant + 'multi-master'))
+
+        regular_buttons.append(button_line)
 
     return gen.template.parse_resources('aws/templates/aws.html').render(
         {
@@ -386,6 +391,7 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
             'tag': tag,
             'commit': commit,
             'regular_buttons': regular_buttons,
+            'variant_list': variant_list
         })
 
 
@@ -436,7 +442,7 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
             add_pre_genned(template_name, advanced_template)
 
     # Button page linking to the basic templates.
-    button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit)
+    button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments)
     artifacts.append({
         'channel_path': 'aws.html',
         'local_content': button_page,
