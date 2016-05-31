@@ -66,7 +66,23 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "ImageId": {
+          "Fn::If": [
+            "UseCentOSAMI",
+            {
+              "Fn::FindInMap": [
+                "RegionToAmi",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "centos7"
+              ]
+            },
+            {
+              "Ref": "CustomAMI"
+            }
+          ]
+        },
         "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
         "SecurityGroups" : [ { "Ref" : "PublicAgentSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "PublicAgentInstanceProfile" },
@@ -164,6 +180,38 @@
       "Type": "String",
       "Default": "m3.xlarge",
       "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "OS": {
+      "Type": "String",
+      "Description": "Base Operating System",
+      "Default": "centos",
+      "AllowedValues": [
+        "centos",
+        "custom"
+      ],
+      "ConstraintDescription": "Must specify centos or custom"
+    },
+    "CustomAMI": {
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "Conditions": {
+    "UseCentOSAMI": {
+      "Fn::Equals": [
+        {
+          "Ref": "OS"
+        },
+        "centos"
+      ]
+    },
+    "UseCustomAMI": {
+      "Fn::Equals": [
+        {
+          "Ref": "OS"
+        },
+        "custom"
+      ]
     }
   },
   "AWSTemplateFormatVersion": "2010-09-09",
@@ -208,34 +256,31 @@
     },
     "RegionToAmi": {
       "us-west-2": {
-        "stable": "ami-00ebfc61"
+        "centos7": "ami-e56f9185"
       },
       "sa-east-1": {
-        "stable": "ami-154af179"
+        "centos7": "ami-26b93b4a"
       },
       "ap-northeast-1": {
-        "stable": "ami-84e0c7ea"
+        "centos7": "ami-eec1c380"
       },
       "us-east-1": {
-        "stable": "ami-37bdc15d"
+        "centos7": "ami-edb84980"
       },
       "ap-southeast-1": {
-        "stable": "ami-da67a0b9"
-      },
-      "us-gov-west-1": {
-        "stable": "ami-05bc0164"
+        "centos7": "ami-f068a193"
       },
       "eu-central-1": {
-        "stable": "ami-fdd4c791"
+        "centos7": "ami-9bf712f4"
       },
       "us-west-1": {
-        "stable": "ami-27553a47"
+        "centos7": "ami-af4333cf"
       },
       "eu-west-1": {
-        "stable": "ami-55d20b26"
+        "centos7": "ami-7abd0209"
       },
       "ap-southeast-2": {
-        "stable": "ami-f35b0590"
+        "centos7": "ami-fedafc9d"
       }
     }
   },

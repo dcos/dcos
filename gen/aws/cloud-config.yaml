@@ -1,0 +1,49 @@
+root:
+  - path: /etc/systemd/system/dcos-link-env.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Before=dcos.target
+      [Service]
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
+      ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
+  - path: /etc/systemd/system/dcos-download.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Pkgpanda: Download DC/OS to this host.
+      After=network-online.target
+      Wants=network-online.target
+      ConditionPathExists=!/opt/mesosphere/
+      [Service]
+      EnvironmentFile=/etc/mesosphere/setup-flags/bootstrap-id
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
+      ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
+      ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
+      ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
+  - path: /etc/systemd/system/dcos-setup.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Pkgpanda: Specialize DC/OS for this host.
+      Requires=dcos-download.service
+      After=dcos-download.service
+      [Service]
+      Type=oneshot
+      StandardOutput=journal+console
+      StandardError=journal+console
+      EnvironmentFile=/opt/mesosphere/environment
+      ExecStart=/opt/mesosphere/bin/pkgpanda setup --no-block-systemd
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - systemctl start dcos-link-env.service
+  - systemctl start dcos-download.service
+  - systemctl start dcos-setup.service
+  - systemctl --no-block start dcos-cfn-signal.service

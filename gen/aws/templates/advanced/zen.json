@@ -50,6 +50,20 @@
           "Default": "m3.xlarge",
           "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
         },
+        "OS": {
+          "Type": "String",
+          "Description": "\nBase Operating System",
+          "Default": "centos",
+          "AllowedValues": [
+            "centos",
+            "custom"
+          ],
+          "ConstraintDescription": "Must specify centos or custom"
+        },
+        "CustomAMI": {
+          "Type": "String",
+          "Default": ""
+        },
         "AdminLocation": {
           "Description" : "\nOptional: Specify the IP range to whitelist for access to the admin zone. Must be a valid CIDR.",
           "Type" : "String",
@@ -121,6 +135,12 @@
                     "MasterInstanceType": {
                       "Ref": "MasterInstanceType"
                     },
+                    "OS": {
+                      "Ref": "OS"
+                    },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
+                    },
                     "ExhibitorS3Bucket": {
                       "Fn::GetAtt" : [ "Infrastructure", "Outputs.ExhibitorS3BucketId" ]
                     }
@@ -151,6 +171,12 @@
                     },
                     "PublicAgentInstanceCount": {
                       "Ref": "PublicAgentInstanceCount"
+                    },
+                    "OS": {
+                      "Ref": "OS"
+                    },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
                     }
                },
                "TimeoutInMinutes": "60"
@@ -179,6 +205,12 @@
                     },
                     "PrivateAgentInstanceCount": {
                       "Ref": "PrivateAgentInstanceCount"
+                    },
+                    "OS": {
+                      "Ref": "OS"
+                    },
+                    "CustomAMI": {
+                      "Ref": "CustomAMI"
                     }
                },
                "TimeoutInMinutes": "60"
