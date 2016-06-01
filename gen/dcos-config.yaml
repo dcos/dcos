@@ -80,13 +80,13 @@ package:
       ].
   - path: /etc/mesos-master
     content: |
-      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_LOG_DIR=/var/lib/dcos/mesos/log
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
-      MESOS_WORK_DIR=/var/lib/mesos/master
+      MESOS_WORK_DIR=/var/lib/dcos/mesos/master
       MESOS_ZK=zk://127.0.0.1:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
