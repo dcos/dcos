@@ -1316,7 +1316,6 @@ sleep 3600
             'cosmos-service',
             'exhibitor-service',
             'history-service-service',
-            'keepalived-service',
             'marathon-service',
             'mesos-dns-service',
             'mesos-master-service',
