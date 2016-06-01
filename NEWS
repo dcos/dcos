@@ -2,6 +2,11 @@ Documentation of changes which may break some install environments
 
 
 1.8-dev
+ - Most software doesn't run as root. Lots of paths that things use for storage
+   or intermediate state changed as a result.
+ - Zookeeper, exhibitor storage paths changed. Prior to upgrade, exhibitor
+   config must be edited to point to new storage locations
+ - Zookeeper should now log to journald
  - dcos-history-serivce was renamed to dcos-history
  - dcos-ddt.service was renamed to dcos-3dt.service
  - Updated to CoreOS Alpha 1053. See https://github.com/dcos/dcos/pull/148 and
