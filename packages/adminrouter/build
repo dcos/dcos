@@ -27,25 +27,10 @@ make install
 popd
 
 # Incorporate adminrouter components.
-# TODO(jp): Currently, we need to support multiple build variants
-# from the same build script which seems unclean. Also, shouldn't
-# we just copy the entire AR repo content instead of cherry-picking?
-pushd "/pkg/src/adminrouter"
-
 nginx_config_path="$PKG_PATH/nginx/conf"
-mkdir -p $nginx_config_path
-cp nginx.conf $nginx_config_path/
-cp snakeoil.crt $nginx_config_path/
-cp snakeoil.key $nginx_config_path/
-cp *.lua $nginx_config_path/
-if [ -d errorpages ]; then
-    cp -r errorpages $nginx_config_path/
-fi
-# Copy OpenResty Lua modules.
-if [ -d resty ]; then
-    cp -r resty $nginx_config_path/
-fi
-
+mkdir -p "$(dirname "$nginx_config_path")"
+pushd /pkg/src/adminrouter
+cp -r . $nginx_config_path
 popd
 
 # Copy  in needed libraries
