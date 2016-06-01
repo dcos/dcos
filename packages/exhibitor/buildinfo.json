@@ -12,5 +12,7 @@
       "url": "https://s3.amazonaws.com/downloads.mesosphere.io/zookeeper/zookeeper-3.4.6.tar.gz",
       "sha1": "2a9e53f5990dfe0965834a525fbcad226bf93474"
     }
-  }
+  },
+  "username": "dcos_exhibitor",
+  "state_dir": true
 }
