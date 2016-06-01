@@ -72,12 +72,6 @@ def calculate_gen_resolvconf_search(dns_search):
         return ""
 
 
-def calculate_mesos_hooks_env_var(mesos_hooks):
-    if mesos_hooks == '':
-        return ''
-    return 'MESOS_HOOKS=' + mesos_hooks
-
-
 def calculate_mesos_slave_modules_json(mesos_slave_modules):
     # Ensure that this file is readable by humans by including newlines in the output.
     json_multiline = json.dumps({"libraries": mesos_slave_modules}, indent=2)
@@ -254,12 +248,6 @@ default_mesos_slave_modules = [
     __logrotate_slave_module,
 ]
 
-default_isolation_modules = [
-    'cgroups/cpu',
-    'cgroups/mem',
-    'posix/disk',
-]
-
 
 entry = {
     'validate': [
@@ -314,14 +302,11 @@ entry = {
         'curly_pound': '{#',
         'cluster_packages': calculate_cluster_packages,
         'config_id': calculate_config_id,
-        'mesos_hooks_env_var': calculate_mesos_hooks_env_var,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'ui_branding': 'false',
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_isolation_modules': ','.join(default_isolation_modules),
-        'mesos_hooks': '',
         'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
             default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
@@ -329,7 +314,6 @@ entry = {
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},
-            'vrrp': {},
             'static': {
                 'must': {'num_masters': calc_num_masters}
             }

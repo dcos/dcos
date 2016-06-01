@@ -87,7 +87,7 @@ package:
       MESOS_LOG_DIR=/var/log/mesos
       MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION={{ mesos_isolation_modules }}
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
@@ -98,7 +98,6 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
-      {{ mesos_hooks_env_var }}
   - path: /etc/mesos-slave
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
@@ -155,21 +154,6 @@ package:
   - path: /etc/master_list
     content: |
       {{ master_list }}
-{% case "vrrp" %}
-  - path: /etc/keepalived
-    content: |
-      KEEPALIVED_VIRTUAL_IPADDRESS={{ keepalived_virtual_ipaddress }}
-      KEEPALIVED_INTERFACE={{ keepalived_interface }}
-      KEEPALIVED_ROUTER_ID={{ keepalived_router_id }}
-      KEEPALIVED_PASS={{ keepalived_pass }}
-  - path: /etc_master/dns_config_master
-    content: |
-      TRY_LOCALHOST=true
-  - path: /etc/dns_config
-    content: |
-      MASTER_SOURCE=exhibitor
-      EXHIBITOR_ADDRESS={{ keepalived_virtual_ipaddress }}
-      RESOLVERS={{ resolvers_str }}
 {% endswitch %}
 {% switch exhibitor_storage_backend %}
 {% case "agent_only_group_no_exhibitor" %}

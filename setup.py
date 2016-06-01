@@ -11,7 +11,7 @@ def get_advanced_templates():
 setup(
     name='dcos_image',
     version='0.1',
-    description='DC/OS packaging, , management, install utilities',
+    description='DC/OS packaging, management, install utilities',
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
