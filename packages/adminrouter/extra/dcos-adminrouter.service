@@ -1,5 +1,5 @@
 [Unit]
-Description=Admin Router: A high performance web server and a reverse proxy server
+Description=Admin Router Master: A high performance web server and a reverse proxy server
 After=dcos-gen-resolvconf.service
 
 [Service]
