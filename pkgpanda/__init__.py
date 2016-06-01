@@ -40,7 +40,7 @@ export PATH="{0}/bin:$PATH"\n\n"""
 
 name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
 version_regex = "^[a-zA-Z0-9@_+:.]+$"
-username_regex = "^dcos_[a-z_]+$"
+username_regex = "^dcos_[a-z0-9_]+$"
 
 
 # Manage starting/stopping all systemd services inside a folder.
