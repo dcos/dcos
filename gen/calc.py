@@ -314,7 +314,6 @@ entry = {
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},
-            'vrrp': {},
             'static': {
                 'must': {'num_masters': calc_num_masters}
             }
