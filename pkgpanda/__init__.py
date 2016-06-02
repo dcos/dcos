@@ -690,10 +690,9 @@ class Install:
                 if package.state_directory:
                     check_call(['mkdir', '-p', state_dir_path])
 
-                if package.username:
-                    state_dir_path = '/var/lib/dcos/{}'.format(package.name)
-                    uid = sysusers.get_uid(package.username)
-                    check_call(['chown', '-R', str(uid), state_dir_path])
+                    if package.username:
+                        uid = sysusers.get_uid(package.username)
+                        check_call(['chown', '-R', str(uid), state_dir_path])
 
         # Write out the new environment file.
         new_env = self._make_abs("environment.new")
