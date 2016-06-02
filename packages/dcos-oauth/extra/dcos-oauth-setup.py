@@ -3,8 +3,6 @@ import random
 import string
 import subprocess
 
-subprocess.check_call(['mkdir', '-p', '/var/lib/dcos'])
-
 possible_auth_token = ''.join(random.choice(string.ascii_letters) for _ in range(64))
 
 auth_proc = subprocess.Popen([
@@ -18,7 +16,7 @@ consensus_auth_token = consensus_auth_token.decode().strip()
 
 consensus_auth_token
 # TODO(cmaloney): Create the file with chmod 600 rather than doing it post-hoc.
-with open('/var/lib/dcos/auth-token-secret', 'w') as f:
+with open('/var/lib/dcos/dcos-oauth/auth-token-secret', 'w') as f:
     f.write(consensus_auth_token)
 
-subprocess.check_call(['chmod', '600', '/var/lib/dcos/auth-token-secret'])
+subprocess.check_call(['chmod', '600', '/var/lib/dcos/dcos-oauth/auth-token-secret'])
