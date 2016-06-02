@@ -2,6 +2,7 @@
 Description=OAuth: OAuth Authentication Service
 
 [Service]
+User=dcos_oauth
 Restart=always
 StartLimitInterval=0
 RestartSec=5
