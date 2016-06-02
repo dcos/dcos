@@ -46,6 +46,11 @@ package:
   - path: /etc_master/spartan.json
     content: |
       {
+{% switch master_dns_bindall %}
+{% case "true" %}
+{% case "false" %}
+        "bind_interface": "spartan",
+{% endswitch %}
         "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53
