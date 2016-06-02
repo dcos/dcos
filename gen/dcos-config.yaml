@@ -35,7 +35,7 @@ package:
         "udp_port": 53,
         "tcp_port": 53
       }
-  - path: /etc_public_slave/spartan.json
+  - path: /etc_slave_public/spartan.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
