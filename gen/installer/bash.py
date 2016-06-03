@@ -518,7 +518,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     genconf_tar = "dcos-genconf." + image_version + ".tar"
-    installer_filename = "dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
+    installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_bootstrap_id + '.bootstrap.tar.xz'
