@@ -340,6 +340,7 @@ def load_buildinfo(path, variant):
     buildinfo.setdefault('docker', 'dcos-builder:latest')
     buildinfo.setdefault('environment', dict())
     buildinfo.setdefault('requires', list())
+    buildinfo.setdefault('state_directory', False)
 
     return buildinfo
 
@@ -664,16 +665,6 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     return results
 
 
-def expand_single_source_alias(pkg_name, buildinfo):
-    if "sources" in buildinfo:
-        return buildinfo["sources"]
-    elif "single_source" in buildinfo:
-        return {pkg_name: buildinfo["single_source"]}
-    else:
-        print("NOTICE: No sources specified")
-        return {}
-
-
 def assert_no_duplicate_keys(lhs, rhs):
     if len(lhs.keys() & rhs.keys()) != 0:
         print("ASSERTION FAILED: Duplicate keys between {} and {}".format(lhs, rhs))
@@ -692,6 +683,49 @@ def build_package_variants(package_store, name, clean_after_build=True, recursiv
             clean_after_build=clean_after_build,
             recursive=recursive)
     return results
+
+
+class IdBuilder():
+
+    def __init__(self, buildinfo):
+        self._start_keys = set(buildinfo.keys())
+        self._buildinfo = copy.deepcopy(buildinfo)
+        self._taken = set()
+
+    def _check_no_key(self, field):
+        if field in self._buildinfo:
+            raise BuildError("Key {} shouldn't be in buildinfo, but was".format(field))
+
+    def add(self, field, value):
+        self._check_no_key(field)
+        self._buildinfo[field] = value
+
+    def has(self, field):
+        return field in self._buildinfo
+
+    def take(self, field):
+        self._taken.add(field)
+        return self._buildinfo[field]
+
+    def replace(self, taken_field, new_field, new_value):
+        assert taken_field in self._buildinfo
+        self._check_no_key(new_field)
+        del self._buildinfo[taken_field]
+        self._buildinfo[new_field] = new_value
+        self._taken.add(new_field)
+
+    def update(self, field, new_value):
+        assert field in self._buildinfo
+        self._buildinfo[field] = new_value
+
+    def get_build_ids(self):
+        # If any keys are left in the buildinfo, error that there were unused keys
+        remaining_keys = self._start_keys - self._taken
+
+        if remaining_keys:
+            raise BuildError("ERROR: Unknown keys {} in buildinfo.json".format(remaining_keys))
+
+        return self._buildinfo
 
 
 def build(package_store, name, variant, clean_after_build, recursive=False):
@@ -716,21 +750,27 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
 
     assert (name, variant) in package_store.packages, \
         "Programming error: name, variant should have been validated to be valid before calling build()."
-    buildinfo = copy.deepcopy(package_store.get_buildinfo(name, variant))
 
-    if 'name' in buildinfo:
-        raise BuildError("'name' is not allowed in buildinfo.json, it is implicitly the name of the "
-                         "folder containing the buildinfo.json")
+    builder = IdBuilder(package_store.get_buildinfo(name, variant))
+    final_buildinfo = dict()
+
+    builder.add('name', name)
+    builder.add('variant', pkgpanda.util.variant_str(variant))
 
     # Convert single_source -> sources
-    try:
-        sources = expand_single_source_alias(name, buildinfo)
-    except ValidationError as ex:
-        raise BuildError("Invalid buildinfo.json for package: {}".format(ex)) from ex
+    if builder.has('sources'):
+        if builder.has('single_source'):
+            raise BuildError('Both sources and single_source cannot be specified at the same time')
+        sources = builder.take('sources')
+    elif builder.has('single_source'):
+        sources = {name: builder.take('single_source')}
+        builder.replace('single_source', 'sources', sources)
+    else:
+        builder.add('sources', {})
+        sources = dict()
+        print("NOTICE: No sources specified")
 
-    # Save the final sources back into buildinfo so it gets written into
-    # buildinfo.json. This also means buildinfo.json is always expanded form.
-    buildinfo['sources'] = sources
+    final_buildinfo['sources'] = sources
 
     # Construct the source fetchers, gather the checkout ids from them
     checkout_ids = dict()
@@ -752,25 +792,26 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         # Make sure we never accidentally overwrite something which might be
         # important. Fields should match if specified (And that should be
         # tested at some point). For now disallowing identical saves hassle.
-        assert_no_duplicate_keys(checkout_id, buildinfo['sources'][src_name])
-        buildinfo['sources'][src_name].update(checkout_id)
+        assert_no_duplicate_keys(checkout_id, final_buildinfo['sources'][src_name])
+        final_buildinfo['sources'][src_name].update(checkout_id)
 
     # Add the sha1 of the buildinfo.json + build file to the build ids
-    build_ids = {"sources": checkout_ids}
-    build_ids['build'] = pkgpanda.util.sha1(src_abs(buildinfo['build_script']))
-    build_ids['pkgpanda_version'] = pkgpanda.build.constants.version
-    build_ids['variant'] = '' if variant is None else variant
+    builder.update('sources', checkout_ids)
+    build_script = src_abs(builder.take('build_script'))
+    # TODO(cmaloney): Change dest name to build_script_sha1
+    builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
+    builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
     extra_dir = src_abs("extra")
     # Add the "extra" folder inside the package as an additional source if it
     # exists
     if os.path.exists(extra_dir):
         extra_id = hash_folder(extra_dir)
-        build_ids['extra_source'] = extra_id
-        buildinfo['extra_source'] = extra_id
+        builder.add('extra_source', extra_id)
+        final_buildinfo['extra_source'] = extra_id
 
     # Figure out the docker name.
-    docker_name = buildinfo['docker']
+    docker_name = builder.take('docker')
     cmd.container = docker_name
 
     # Add the id of the docker build environment to the build_ids.
@@ -781,29 +822,28 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         check_call(['docker', 'pull', docker_name])
         docker_id = get_docker_id(docker_name)
 
-    build_ids['docker'] = docker_id
+    builder.update('docker', docker_id)
 
     # TODO(cmaloney): The environment variables should be generated during build
     # not live in buildinfo.json.
-    build_ids['environment'] = buildinfo['environment']
+    pkginfo['environment'] = builder.take('environment')
 
     # Whether pkgpanda should on the host make sure a `/var/lib` state directory is available
-    pkginfo['state_directory'] = buildinfo.get('state_directory', False)
-    build_ids['state_directory'] = pkginfo['state_directory']
+    pkginfo['state_directory'] = builder.take('state_directory')
     if pkginfo['state_directory'] not in [True, False]:
         raise BuildError("state_directory in buildinfo.json must be a boolean `true` or `false`")
 
-    username = buildinfo.get('username')
-    if not (username is None or isinstance(username, str)):
-        raise BuildError("username in buildinfo.json must be either not set (no user for this"
-                         " package), or a user name string")
-    if username:
+    username = None
+    if builder.has('username'):
+        username = builder.take('username')
+        if not isinstance(username, str):
+            raise BuildError("username in buildinfo.json must be either not set (no user for this"
+                             " package), or a user name string")
         try:
             pkgpanda.UserManagement.validate_username(username)
         except ValidationError as ex:
             raise BuildError("username in buildinfo.json didn't meet the validation rules. {}".format(ex))
-    build_ids['username'] = username if username is not None else ""
-    pkginfo['username'] = username
+        pkginfo['username'] = username
 
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
@@ -814,13 +854,15 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     active_package_ids = set()
     active_package_variants = dict()
     auto_deps = set()
+    builder.take('requires')
     # Verify all requires are in the repository.
-    if 'requires' in buildinfo:
+    if builder.has('requires'):
         # Final package has the same requires as the build.
-        pkginfo['requires'] = buildinfo['requires']
+        requires = builder.take('requires')
+        pkginfo['requires'] = requires
 
         # TODO(cmaloney): Pull generating the full set of requires a function.
-        to_check = copy.deepcopy(buildinfo['requires'])
+        to_check = copy.deepcopy(requires)
         if type(to_check) != list:
             raise BuildError("`requires` in buildinfo.json must be an array of dependencies.")
         while to_check:
@@ -894,24 +936,34 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Add requires to the package id, calculate the final package id.
     # NOTE: active_packages isn't fully constructed here since we lazily load
     # packages not already in the repository.
-    build_ids['requires'] = list(active_package_ids)
+    builder.update('requires', list(active_package_ids))
+    version_extra = None
+    if builder.has('version_extra'):
+        version_extra = builder.take('version_extra')
+
+    build_ids = builder.get_build_ids()
     version_base = hash_checkout(build_ids)
     version = None
-    if "version_extra" in buildinfo:
-        version = "{0}-{1}".format(buildinfo["version_extra"], version_base)
+    if builder.has('version_extra'):
+        version = "{0}-{1}".format(version_extra, version_base)
     else:
         version = version_base
     pkg_id = PackageId.from_parts(name, version)
 
+    # Everything must have been extracted by now. If it wasn't, then we just
+    # had a hard error that it was set but not used, as well as didn't include
+    # it in the caluclation of the PackageId.
+    builder = None
+
     # Save the build_ids. Useful for verify exactly what went into the
     # package build hash.
-    buildinfo['build_ids'] = build_ids
-    buildinfo['package_version'] = version
+    final_buildinfo['build_ids'] = build_ids
+    final_buildinfo['package_version'] = version
 
     # Save the package name and variant. The variant is used when installing
     # packages to validate dependencies.
-    buildinfo['name'] = name
-    buildinfo['variant'] = variant
+    final_buildinfo['name'] = name
+    final_buildinfo['variant'] = variant
 
     # If the package is already built, don't do anything.
     pkg_path = package_store.get_package_cache_folder(name) + '/{}.tar.xz'.format(pkg_id)
@@ -942,7 +994,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
 
     print("Building package {} with buildinfo: {}".format(
         pkg_id,
-        json.dumps(buildinfo, indent=2, sort_keys=True)))
+        json.dumps(final_buildinfo, indent=2, sort_keys=True)))
 
     # Clean out src, result so later steps can use them freely for building.
     def clean():
@@ -988,9 +1040,6 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     except ValidationError as ex:
         raise BuildError("Validation error when fetching sources for package: {}".format(ex))
 
-    # Copy over environment settings
-    pkginfo['environment'] = buildinfo['environment']
-
     # Activate the packages so that we have a proper path, environment
     # variables.
     # TODO(cmaloney): RAII type thing for temproary directory so if we
@@ -1020,8 +1069,8 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     mkdir(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
-    write_json(cache_abs("src/buildinfo.full.json"), buildinfo)
-    write_json(cache_abs("result/buildinfo.full.json"), buildinfo)
+    write_json(cache_abs("src/buildinfo.full.json"), final_buildinfo)
+    write_json(cache_abs("result/buildinfo.full.json"), final_buildinfo)
 
     write_json(cache_abs("result/pkginfo.json"), pkginfo)
 
@@ -1035,7 +1084,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         # TODO(cmaloney): src should be read only...
         cache_abs("src"): "/pkg/src:rw",
         # The build script
-        src_abs(buildinfo['build_script']): "/pkg/build:ro",
+        build_script: "/pkg/build:ro",
         # Getting the result out
         cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
         install_dir: "/opt/mesosphere:ro"
