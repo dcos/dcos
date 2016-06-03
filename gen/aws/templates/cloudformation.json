@@ -158,7 +158,8 @@
           { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName" } },
           { "Key" : "Network", "Value" : "Public" }
         ]
-      }
+      },
+      "DependsOn": "Vpc"
     },
 
     "PrivateSubnet" : {
@@ -170,7 +171,8 @@
           { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName" } },
           { "Key" : "Network", "Value" : "Private" }
         ]
-      }
+      },
+      "DependsOn": "Vpc"
     },
 
     "DHCPOptions" : {
@@ -189,7 +191,8 @@
        "Properties": {
           "DhcpOptionsId": { "Ref": "DHCPOptions" },
           "VpcId": { "Ref": "Vpc" }
-       }
+       },
+      "DependsOn": "Vpc"
     },
 
     "InternetGateway" : {
@@ -220,7 +223,8 @@
           { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName" } },
           { "Key" : "Network", "Value" : "Public" }
         ]
-      }
+      },
+      "DependsOn": "Vpc"
     },
 
     "PublicRoute" : {
