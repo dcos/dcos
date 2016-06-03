@@ -6,5 +6,6 @@
     "git": "https://github.com/dcos/3dt.git",
     "ref": "af89f74746c0df24066ed01bed8e96151ef84bc7",
     "ref_origin": "master"
-  }
+  },
+  "username": "dcos_3dt"
 }
