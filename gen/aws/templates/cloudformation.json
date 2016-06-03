@@ -988,6 +988,10 @@
     "PublicSlaveDnsAddress" : {
       "Description" : "Public slaves",
       "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
+    },
+    "ExhibitorS3Bucket" : {
+      "Description" : "Exhibitor S3 bucket name",
+      "Value" : { "Ref" : "ExhibitorS3Bucket" }
     }
   }
 }
