@@ -1,5 +1,5 @@
 {
-  "requires": ["openssl", "ncurses", "erlang"],
+  "requires": ["openssl", "ncurses", "erlang", "libsodium"],
   "sources": {
     "navstar": {
       "kind": "git",
