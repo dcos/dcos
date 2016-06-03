@@ -1,5 +1,5 @@
 {
-  "requires": ["java"],
+  "requires": ["java", "python-requests"],
   "sources": {
     "exhibitor": {
       "kind": "git",

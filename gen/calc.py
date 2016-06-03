@@ -180,6 +180,11 @@ def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
     return validate_json_list(mesos_dns_ip_sources)
 
 
+def validate_master_dns_bindall(master_dns_bindall):
+    can_be = ['true', 'false']
+    assert master_dns_bindall in can_be, 'Must be one of {}. Got {}.'.format(can_be, master_dns_bindall)
+
+
 def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
 
@@ -262,7 +267,8 @@ entry = {
         validate_cluster_packages,
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
-        validate_telemetry_enabled],
+        validate_telemetry_enabled,
+        validate_master_dns_bindall],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -275,6 +281,7 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
+        'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_container_logger': __logrotate_slave_module_name,
         'oauth_issuer_url': 'https://dcos.auth0.com/',
