@@ -96,6 +96,7 @@ runcmd:
     - [ ln, -s, /bin/systemctl, /usr/bin/systemctl ]
     - [ ln, -s, /bin/mount, /usr/bin/mount ]
     - [ ln, -s, /bin/bash, /usr/bin/bash ]
+    - [ ln, -s, /usr/sbin/useradd, /usr/bin/useradd ]
     - [ systemctl, stop, resolvconf.service ]
     - [ systemctl, disable, resolvconf.service ]
     - [ systemctl, stop, lxc-net.service ]
