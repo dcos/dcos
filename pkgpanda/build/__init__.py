@@ -787,6 +787,24 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # not live in buildinfo.json.
     build_ids['environment'] = buildinfo['environment']
 
+    # Whether pkgpanda should on the host make sure a `/var/lib` state directory is available
+    pkginfo['state_directory'] = buildinfo.get('state_directory', False)
+    build_ids['state_directory'] = pkginfo['state_directory']
+    if pkginfo['state_directory'] not in [True, False]:
+        raise BuildError("state_directory in buildinfo.json must be a boolean `true` or `false`")
+
+    username = buildinfo.get('username')
+    if not (username is None or isinstance(username, str)):
+        raise BuildError("username in buildinfo.json must be either not set (no user for this"
+                         " package), or a user name string")
+    if username:
+        try:
+            pkgpanda.UserManagement.validate_username(username)
+        except ValidationError as ex:
+            raise BuildError("username in buildinfo.json didn't meet the validation rules. {}".format(ex))
+    build_ids['username'] = username if username is not None else ""
+    pkginfo['username'] = username
+
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
     # install root now, and make the package directories in it as we go.
@@ -972,22 +990,6 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
 
     # Copy over environment settings
     pkginfo['environment'] = buildinfo['environment']
-
-    # Whether pkgpanda should on the host make sure a `/var/lib` state directory is available
-    pkginfo['state_directory'] = buildinfo.get('state_directory', False)
-    if pkginfo['state_directory'] not in [True, False]:
-        raise BuildError("state_directory in buildinfo.json must be a boolean `true` or `false`")
-
-    username = buildinfo.get('username')
-    if not (username is None or isinstance(username, str)):
-        raise BuildError("username in buildinfo.json must be either not set (no user for this"
-                         " package), or a user name string")
-    if username:
-        try:
-            pkgpanda.UserManagement.validate_username(username)
-        except ValidationError as ex:
-            raise BuildError("username in buildinfo.json didn't meet the validation rules. {}".format(ex))
-    pkginfo['username'] = username
 
     # Activate the packages so that we have a proper path, environment
     # variables.
