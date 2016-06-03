@@ -27,11 +27,31 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
-  - path: /etc/spartan.json
+  - path: /etc_slave/spartan.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
         "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53
+      }
+  - path: /etc_slave_public/spartan.json
+    content: |
+      {
+        "upstream_resolvers": {{ resolvers }},
+        "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53
+      }
+  - path: /etc_master/spartan.json
+    content: |
+      {
+{% switch master_dns_bindall %}
+{% case "true" %}
+{% case "false" %}
+        "bind_interface": "spartan",
+{% endswitch %}
+        "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53
       }
