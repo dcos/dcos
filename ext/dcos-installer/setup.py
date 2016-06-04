@@ -26,7 +26,7 @@ setup(
     test_suite='pytest',
     entry_points={
         'console_scripts': [
-            'dcos_installer = dcos_installer.entrypoint:main']
+            'dcos_installer = dcos_installer.cli:main']
     },
     include_package_data=True,
     zip_safe=False

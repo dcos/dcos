@@ -1,8 +1,8 @@
-from dcos_installer import DcosInstaller
+from dcos_installer import cli
 
 
 def test_default_arg_parser():
-    parser = DcosInstaller().parse_args([])
+    parser = cli.parse_args([])
     assert parser.verbose is False
     assert parser.port == 9000
     assert parser.web is False
@@ -16,22 +16,22 @@ def test_default_arg_parser():
 
 
 def test_set_arg_parser():
-    parser = DcosInstaller().parse_args(['-v', '-p 12345'])
+    parser = cli.parse_args(['-v', '-p 12345'])
     assert parser.verbose is True
     assert parser.port == 12345
-    parser = DcosInstaller().parse_args(['--web'])
+    parser = cli.parse_args(['--web'])
     assert parser.web is True
-    parser = DcosInstaller().parse_args(['--genconf'])
+    parser = cli.parse_args(['--genconf'])
     assert parser.genconf is True
-    parser = DcosInstaller().parse_args(['--preflight'])
+    parser = cli.parse_args(['--preflight'])
     assert parser.preflight is True
-    parser = DcosInstaller().parse_args(['--postflight'])
+    parser = cli.parse_args(['--postflight'])
     assert parser.postflight is True
-    parser = DcosInstaller().parse_args(['--deploy'])
+    parser = cli.parse_args(['--deploy'])
     assert parser.deploy is True
-    parser = DcosInstaller().parse_args(['--validate-config'])
+    parser = cli.parse_args(['--validate-config'])
     assert parser.validate_config is True
-    parser = DcosInstaller().parse_args(['--test'])
+    parser = cli.parse_args(['--test'])
     assert parser.test is True
-    parser = DcosInstaller().parse_args(['--uninstall'])
+    parser = cli.parse_args(['--uninstall'])
     assert parser.uninstall is True
