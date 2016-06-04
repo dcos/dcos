@@ -1,0 +1,8 @@
+{
+  "requires": [
+      "dcos-image",
+      "python",
+      "python-gunicorn"
+  ],
+  "docker": "dcos-builder"
+}

@@ -1,0 +1,1 @@
+WORK_DIR = '${WORK_DIR}'

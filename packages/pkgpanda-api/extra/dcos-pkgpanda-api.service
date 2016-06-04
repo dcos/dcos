@@ -1,0 +1,21 @@
+[Unit]
+Description=Pkgpanda API: Package Management Service
+After=dcos-gen-resolvconf.service
+
+
+[Service]
+Type=simple
+StandardOutput=journal
+StandardError=journal
+Restart=always
+Environment=PKGPANDA_HTTP_CONFIG=${PKG_PATH}/etc/pkgpanda-api.conf.py
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=${PKG_PATH}/bin/pkgpanda-api
+
+# Allow pkgpanda-api to upgrade itself gracefully.
+# When a pkgpanda-api worker stops pkgpanda-api, the master process receives
+# SIGTERM and waits for the worker to finish processing the upgrade request
+# before exiting.
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=$STOP_TIMEOUT

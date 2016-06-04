@@ -1,0 +1,8 @@
+[Unit]
+Description=Pkgpanda API socket: Package Management Service Socket
+
+[Socket]
+ListenStream=/run/dcos/pkgpanda-api.sock
+
+[Install]
+WantedBy=dcos-pkgpanda-api.service
