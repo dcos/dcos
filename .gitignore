@@ -1,4 +1,5 @@
 __pycache__
+ext/dcos-installer/packages/
 this
 .idea/
 dcos-config--setup*.tar.xz
