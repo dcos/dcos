@@ -507,6 +507,7 @@
     "agentStoragePublicAccountName": "[concat(variables('storageAccountBaseName'), 'agntpub')]",
     "agentStoragePrivateAccountName": "[concat(variables('storageAccountBaseName'), 'agntpri')]",
     "masterStorageAccountName": "[concat(variables('storageAccountBaseName'), 'mstr0')]",
+    "masterStorageAccountExhibitorName": "[concat(variables('storageAccountBaseName'), 'exhb0')]",
     "omsStorageAccount": "none",
     "omsStorageAccountKey": "none",
     "clusterInstallParameters": "[concat(variables('masterCount'), ' ',variables('masterVMNamePrefix'), ' ',variables('masterFirstAddr'), ' ',variables('swarmEnabled'),' ',variables('marathonEnabled'),' ',variables('chronosEnabled'),' ',variables('omsStorageAccount'),' ',variables('omsStorageAccountKey'),' ', variables('adminUsername'),' ',variables('postInstallScriptURI'))]",
@@ -578,6 +579,18 @@
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('masterStorageAccountExhibitorName')]",
+      "apiVersion": "[variables('apiVersionStorage')]",
+      "location": "[variables('storageLocation')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('masterPublicIPAddressName'))]"
+      ],
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('diagnosticsStorageAccountName')]",
       "apiVersion": "[variables('apiVersionStorage')]",
       "location": "[variables('storageLocation')]",
@@ -585,7 +598,7 @@
         "[concat('Microsoft.Network/publicIPAddresses/', variables('masterPublicIPAddressName'))]"
       ],
       "properties": {
-        "accountType": "[variables('vmSizesMap')[variables('masterVMSize')].storageAccountType]"
+        "accountType": "Standard_LRS"
       }
     },
     {
@@ -837,6 +850,7 @@
         "[concat('Microsoft.Network/networkInterfaces/', variables('masterVMNamePrefix'), 'nic-', copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/',variables('masterAvailabilitySet'))]",
         "[variables('masterStorageAccountName')]",
+        "[variables('masterStorageAccountExhibitorName')]",
         "[variables('diagnosticsStorageAccountName')]"
       ],
       "properties": {
