@@ -1,3 +1,4 @@
+import json
 import os
 from shutil import copytree
 from subprocess import CalledProcessError, check_call, check_output
@@ -56,6 +57,21 @@ def test_single_source_with_extra(tmpdir):
     expect_fs(str(cache_dir), {
         "latest": None,
         "single_source_extra": ["foo"]})
+
+
+def test_bad_buildinfo(tmpdir):
+    def tmp_pkg(name, buildinfo):
+        pkg_dir = tmpdir.join(name)
+        pkg_dir.ensure(dir=True)
+        pkg_dir.join('buildinfo.json').write(json.dumps(buildinfo).encode())
+        pkg_dir.join('build').ensure()
+        with pytest.raises(pkgpanda.build.BuildError):
+            package_store = pkgpanda.build.PackageStore(str(tmpdir), None)
+            pkgpanda.build.build_package_variants(package_store, name, True)
+            package(str(pkg_dir), name, tmpdir.join('build'))
+
+    tmp_pkg('unknown_field', {'user': 'dcos_user', 'docker': 'ubuntu:14.04.4'})
+    tmp_pkg('disallowed_field', {'name': 'disallowed_field', 'docker': 'ubuntu:14.04.4'})
 
 
 # TODO(cmaloney): Re-enable once we build a dcos-builder docker as part of this test. Currently the
