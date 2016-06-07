@@ -288,27 +288,35 @@ __logrotate_slave_module = {
 }
 
 __dcos_overlay_master_module_name = 'com_mesosphere_mesos_OverlayMasterManager'
-__dcos_overlay_config = '/opt/mesosphere/etc/dcos/network/overlay'
+__dcos_overlay_slave_module_name = 'com_mesosphere_mesos_OverlayAgentManager'
+__dcos_overlay_master_config = '/opt/mesosphere/etc/dcos/network/overlay-master'
+__dcos_overlay_agent_master_config = '/opt/mesosphere/etc/dcos/network/overlay-agent-master'
 __dcos_overlay_master_module = {
     'file':
     '/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so',
     'modules': [{
         'name': __dcos_overlay_master_module_name,
         'parameters': [
-            {'key': 'network_config', 'value': __dcos_overlay_config},
+            {'key': 'network_config', 'value': __dcos_overlay_master_config},
         ]
-    }]
+    },
+    {
+        'name': __dcos_overlay_slave_module_name,
+        'parameters': [
+            {'key': 'agent_config', 'value': __dcos_overlay_agent_master_config}
+        ]
+    }
+    ]
 }
 
-__dcos_overlay_slave_module_name = 'com_mesosphere_mesos_OverlayAgentManager'
+__dcos_overlay_agent_config = '/opt/mesosphere/etc/dcos/network/overlay-agent'
 __dcos_overlay_slave_module = {
     'file':
     '/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so',
     'modules': [{
         'name': __dcos_overlay_slave_module_name,
         'parameters': [
-            {'key': 'master', 'value': 'zk://leader.mesos:2181/mesos'},
-            {'key': 'cni_dir', 'value': '/opt/mesosphere/etc/dcos/network/cni'}
+            {'key': 'agent_config', 'value': __dcos_overlay_agent_config}
         ]
     }]
 }

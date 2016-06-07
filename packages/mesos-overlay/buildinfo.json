@@ -4,7 +4,7 @@
     "single_source" : {
       "kind": "git",
       "git": "git@github.com:mesosphere/mesos-overlay.git",
-      "ref" : "bd17a881532bcfe032d826a6d8fb7b1301cea87b",
+      "ref" : "e1a0ecb1bee0209c8dfb78b3f54f70e318f36742",
       "ref_origin": "master"
     }
 }
