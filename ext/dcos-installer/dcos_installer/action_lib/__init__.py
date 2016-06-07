@@ -68,7 +68,7 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
             _add_prereqs_script(preflight_chain)
 
     add_pre_action(preflight_chain, pf.ssh_user)
-    preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Coping preflight script')
+    preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Copying preflight script')
 
     preflight_chain.add_execute(
         'sudo bash {} --preflight-only master'.format(
@@ -89,7 +89,7 @@ def _add_copy_dcos_install(chain, local_install_path='/genconf/serve'):
     dcos_install_script = 'dcos_install.sh'
     local_install_path = os.path.join(local_install_path, dcos_install_script)
     remote_install_path = os.path.join(REMOTE_TEMP_DIR, dcos_install_script)
-    chain.add_copy(local_install_path, remote_install_path, stage='Coping dcos_install.sh')
+    chain.add_copy(local_install_path, remote_install_path, stage='Copying dcos_install.sh')
 
 
 def _add_copy_packages(chain, local_pkg_base_path='/genconf/serve'):
@@ -103,16 +103,16 @@ def _add_copy_packages(chain, local_pkg_base_path='/genconf/serve'):
         destination_package_dir = os.path.join(REMOTE_TEMP_DIR, 'packages', package)
         local_pkg_path = os.path.join(local_pkg_base_path, params['filename'])
 
-        chain.add_execute(['mkdir', '-p', destination_package_dir], stage='Creating package dir')
+        chain.add_execute(['mkdir', '-p', destination_package_dir], stage='Creating package directory')
         chain.add_copy(local_pkg_path, destination_package_dir,
-                       stage='Coping packages {}'.format(local_pkg_path))
+                       stage='Copying packages')
 
 
 def _add_copy_bootstap(chain, local_bs_path):
     remote_bs_path = REMOTE_TEMP_DIR + '/bootstrap'
-    chain.add_execute(['mkdir', '-p', remote_bs_path], stage='Creating dir {}'.format(remote_bs_path))
+    chain.add_execute(['mkdir', '-p', remote_bs_path], stage='Creating directory')
     chain.add_copy(local_bs_path, remote_bs_path,
-                   stage='Coping bootstrap')
+                   stage='Copying bootstrap')
 
 
 def _get_bootstrap_tarball(tarball_base_dir='/genconf/serve/bootstrap'):
@@ -205,7 +205,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
 
         remove_dcos_chain = ssh.utils.CommandChain('remove_stale_dcos')
         remove_dcos_chain.add_execute(['rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'],
-                                      stage="Removing /opt/mesosphere, /etc/mesosphere")
+                                      stage="Removing DC/OS files")
         chains.append(remove_dcos_chain)
 
     chain = ssh.utils.CommandChain('deploy')
@@ -219,7 +219,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     chain.add_execute(
         lambda node: (
             'sudo bash {}/dcos_install.sh {}'.format(REMOTE_TEMP_DIR, node.tags['dcos_install_param'])).split(),
-        stage=lambda node: 'Installing DC/OS on node {}, role {}'.format(node.ip, node.tags['role'])
+        stage=lambda node: 'Installing DC/OS'
     )
 
     # UI expects total_masters, total_agents to be top level keys in deploy.json
@@ -268,7 +268,7 @@ for value in $OUT; do
 done
 exit $RETCODE"""
 
-    postflight_chain.add_execute([dcos_diag], stage='Executing local post-flight check for DC/OS servces...')
+    postflight_chain.add_execute([dcos_diag], stage='Executing post-flight check')
     add_post_action(postflight_chain)
 
     # Setup the cleanup chain
