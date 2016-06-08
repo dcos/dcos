@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "git@github.com:nlsun/colander.git",
-    "ref": "71070e4d693065ffcffc0767950e28c83fd35478",
+    "ref": "cd789ac3130af03c4867483f121a0b78a3aad0e3",
     "ref_origin": "nlsun-version"
   }
 }
