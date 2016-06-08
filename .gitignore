@@ -1,5 +1,5 @@
 __pycache__
-/Users/malnick/projects/mesosphere/dcos/ext/dcos-installer/packages/
+ext/dcos-installer/packages/
 this
 .idea/
 dcos-config--setup*.tar.xz
