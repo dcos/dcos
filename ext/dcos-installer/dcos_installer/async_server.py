@@ -10,6 +10,7 @@ from aiohttp import web
 
 import dcos_installer
 from dcos_installer import backend
+from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer.util import STATE_DIR
 
@@ -22,6 +23,7 @@ options = None
 
 VERSION = '1'
 
+web_analytics = InstallerAnalytics()
 
 """Define the aiohttp web application framework and setup
 # the routes to be used in the API"""
@@ -102,6 +104,11 @@ def configure_status(request):
     messages = backend.do_validate_config()
     if messages:
         code = 400
+    web_analytics.send(
+        action="installer_configure",
+        install_method="web",
+        num_errors=1,
+    )
     resp = web.json_response(messages, status=code)
     return resp
 
