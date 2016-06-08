@@ -1319,14 +1319,14 @@ sleep 3600
             'marathon-service',
             'mesos-dns-service',
             'mesos-master-service',
-            'signal-service']
+            'signal-service',
+            'logrotate-master-service',
+            'logrotate-master-timer']
     all_node_units = [
             'ddt-service',
             'epmd-service',
             'gen-resolvconf-service',
             'gen-resolvconf-timer',
-            'logrotate-service',
-            'logrotate-timer',
             'minuteman-service',
             'signal-timer',
             'spartan-service',
@@ -1338,6 +1338,9 @@ sleep 3600
     public_slave_units = [
             'mesos-slave-public-service',
             'vol-discovery-pub-agent-service']
+    all_slave_units = [
+            'logrotate-agent-service',
+            'logrotate-agent-timer']
 
     master_units.append('oauth-service')
 
@@ -1352,6 +1355,9 @@ sleep 3600
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in public_slave_units:
         exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
+        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+    for unit in all_slave_units:
+        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
         exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
     # Cluster ID is uncheckable as this runs on an agent
