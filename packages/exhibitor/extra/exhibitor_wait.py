@@ -3,7 +3,7 @@ import os
 import sys
 
 import requests
-
+import requests.exceptions
 
 EXHIBITOR_STATUS_URL = 'http://127.0.0.1:8181/exhibitor/v1/cluster/status'
 
@@ -17,7 +17,11 @@ os.environ.pop('no_proxy', None)
 
 cluster_size = int(open('/opt/mesosphere/etc/master_count').read().strip())
 
-resp = requests.get(EXHIBITOR_STATUS_URL)
+try:
+    resp = requests.get(EXHIBITOR_STATUS_URL)
+except requests.exceptions.ConnectionError as ex:
+    print('Could not connect to exhibitor: {}'.format(ex), file=sys.stderr)
+    sys.exit(1)
 if resp.status_code != 200:
     print('Could not get exhibitor status: {}, Status code: {}'.format(
           EXHIBITOR_STATUS_URL, resp.status_code), file=sys.stderr)
