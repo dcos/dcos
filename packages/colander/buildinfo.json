@@ -2,8 +2,8 @@
   "docker": "golang:1.6",
   "single_source" : {
     "kind": "git",
-    "git": "git@github.com:mesosphere/colander.git",
+    "git": "git@github.com:nlsun/colander.git",
     "ref": "71070e4d693065ffcffc0767950e28c83fd35478",
-    "ref_origin": "mesosphere-vers"
+    "ref_origin": "nlsun-version"
   }
 }

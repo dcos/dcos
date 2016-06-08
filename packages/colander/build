@@ -1,9 +1,9 @@
 #!/bin/bash
 export GOPATH=$GOPATH:/pkg
-mkdir -p /pkg/src/github.com/mesosphere
+mkdir -p /pkg/src/github.com/nlsun
 # Create the GOPATH for the go tool to work properly
-mv /pkg/src/colander /pkg/src/github.com/mesosphere/
-cd /pkg/src/github.com/mesosphere/colander/
+mv /pkg/src/colander /pkg/src/github.com/nlsun/
+cd /pkg/src/github.com/nlsun/colander/
 go get
 go install
 # Copy the build from the bin to the correct place
