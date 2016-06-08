@@ -4,6 +4,6 @@
     "kind": "git",
     "git": "git@github.com:mesosphere/colander.git",
     "ref": "71070e4d693065ffcffc0767950e28c83fd35478",
-    "ref_origin": "master"
+    "ref_origin": "mesosphere-vers"
   }
 }
