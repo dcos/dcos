@@ -65,6 +65,10 @@ def calculate_ip_detect_contents(ip_detect_filename):
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
+def calculate_ip_detect_public_contents(ip_detect_contents):
+    return ip_detect_contents
+
+
 def calculate_gen_resolvconf_search(dns_search):
     if len(dns_search) > 0:
         return "SEARCH=" + dns_search
@@ -279,6 +283,7 @@ entry = {
         'docker_remove_delay': '1hrs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
+        'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',

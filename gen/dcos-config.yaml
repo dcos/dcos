@@ -10,6 +10,9 @@ package:
   - path: /bin/detect_ip
     permissions: "0755"
     content: {{ ip_detect_contents }}
+  - path: /bin/detect_ip_public
+    permissions: "0755"
+    content: {{ ip_detect_public_contents }}
   - path: /check/check_ip
     permissions: "0755"
     content: |
