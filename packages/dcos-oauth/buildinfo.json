@@ -5,5 +5,7 @@
     "git": "https://github.com/dcos/dcos-oauth.git",
     "ref": "5780c204b87bfb5a23e209b3856d45d1f4624f4b",
     "ref_origin": "master"
-  }
+  },
+  "username": "dcos_oauth",
+  "state_directory": true
 }
