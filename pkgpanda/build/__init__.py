@@ -854,84 +854,82 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     active_package_ids = set()
     active_package_variants = dict()
     auto_deps = set()
-    builder.take('requires')
-    # Verify all requires are in the repository.
-    if builder.has('requires'):
-        # Final package has the same requires as the build.
-        requires = builder.take('requires')
-        pkginfo['requires'] = requires
 
-        # TODO(cmaloney): Pull generating the full set of requires a function.
-        to_check = copy.deepcopy(requires)
-        if type(to_check) != list:
-            raise BuildError("`requires` in buildinfo.json must be an array of dependencies.")
-        while to_check:
-            requires_info = to_check.pop(0)
-            requires_name, requires_variant = expand_require(requires_info)
+    # Final package has the same requires as the build.
+    requires = builder.take('requires')
+    pkginfo['requires'] = requires
 
-            if requires_name in active_package_variants:
-                # TODO(cmaloney): If one package depends on the <default>
-                # variant of a package and 1+ others depends on a non-<default>
-                # variant then update the dependency to the non-default variant
-                # rather than erroring.
-                if requires_variant != active_package_variants[requires_name]:
-                    # TODO(cmaloney): Make this contain the chains of
-                    # dependencies which contain the conflicting packages.
-                    # a -> b -> c -> d {foo}
-                    # e {bar} -> d {baz}
-                    raise BuildError("Dependncy on multiple variants of the same package {}. "
-                                     "variants: {} {}".format(
-                                        requires_name,
-                                        requires_variant,
-                                        active_package_variants[requires_name]))
+    # TODO(cmaloney): Pull generating the full set of requires a function.
+    to_check = copy.deepcopy(requires)
+    if type(to_check) != list:
+        raise BuildError("`requires` in buildinfo.json must be an array of dependencies.")
+    while to_check:
+        requires_info = to_check.pop(0)
+        requires_name, requires_variant = expand_require(requires_info)
 
-                # The variant has package {requires_name, variant} already is a
-                # dependency, don't process it again / move on to the next.
-                continue
+        if requires_name in active_package_variants:
+            # TODO(cmaloney): If one package depends on the <default>
+            # variant of a package and 1+ others depends on a non-<default>
+            # variant then update the dependency to the non-default variant
+            # rather than erroring.
+            if requires_variant != active_package_variants[requires_name]:
+                # TODO(cmaloney): Make this contain the chains of
+                # dependencies which contain the conflicting packages.
+                # a -> b -> c -> d {foo}
+                # e {bar} -> d {baz}
+                raise BuildError("Dependncy on multiple variants of the same package {}. "
+                                 "variants: {} {}".format(
+                                    requires_name,
+                                    requires_variant,
+                                    active_package_variants[requires_name]))
 
-            active_package_variants[requires_name] = requires_variant
+            # The variant has package {requires_name, variant} already is a
+            # dependency, don't process it again / move on to the next.
+            continue
 
-            # Figure out the last build of the dependency, add that as the
-            # fully expanded dependency.
-            requires_last_build = package_store.get_last_build_filename(requires_name, requires_variant)
-            if not os.path.exists(requires_last_build):
-                if recursive:
-                    # Build the dependency
-                    build(package_store, requires_name, requires_variant, clean_after_build, recursive)
-                else:
-                    raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
-                                     "the dependency".format(requires_name, requires_variant))
+        active_package_variants[requires_name] = requires_variant
 
-            try:
-                pkg_id_str = load_string(requires_last_build)
-                auto_deps.add(pkg_id_str)
-                pkg_buildinfo = package_store.get_buildinfo(requires_name, requires_variant)
-                pkg_requires = pkg_buildinfo['requires']
-                pkg_path = repository.package_path(pkg_id_str)
-                pkg_tar = pkg_id_str + '.tar.xz'
-                if not os.path.exists(package_store.get_package_cache_folder(requires_name) + '/' + pkg_tar):
-                    raise BuildError("The build tarball {} refered to by the last_build file of the "
-                                     "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
-                                        pkg_tar,
-                                        requires_name,
-                                        requires_variant))
+        # Figure out the last build of the dependency, add that as the
+        # fully expanded dependency.
+        requires_last_build = package_store.get_last_build_filename(requires_name, requires_variant)
+        if not os.path.exists(requires_last_build):
+            if recursive:
+                # Build the dependency
+                build(package_store, requires_name, requires_variant, clean_after_build, recursive)
+            else:
+                raise BuildError("No last build file found for dependency {} variant {}. Rebuild "
+                                 "the dependency".format(requires_name, requires_variant))
 
-                active_package_ids.add(pkg_id_str)
+        try:
+            pkg_id_str = load_string(requires_last_build)
+            auto_deps.add(pkg_id_str)
+            pkg_buildinfo = package_store.get_buildinfo(requires_name, requires_variant)
+            pkg_requires = pkg_buildinfo['requires']
+            pkg_path = repository.package_path(pkg_id_str)
+            pkg_tar = pkg_id_str + '.tar.xz'
+            if not os.path.exists(package_store.get_package_cache_folder(requires_name) + '/' + pkg_tar):
+                raise BuildError("The build tarball {} refered to by the last_build file of the "
+                                 "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
+                                    pkg_tar,
+                                    requires_name,
+                                    requires_variant))
 
-                # Mount the package into the docker container.
-                cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
-                os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
+            active_package_ids.add(pkg_id_str)
 
-                # Add the dependencies of the package to the set which will be
-                # activated.
-                # TODO(cmaloney): All these 'transitive' dependencies shouldn't
-                # be available to the package being built, only what depends on
-                # them directly.
-                to_check += pkg_requires
-            except ValidationError as ex:
-                raise BuildError("validating package needed as dependency {0}: {1}".format(requires_name, ex)) from ex
-            except PackageError as ex:
-                raise BuildError("loading package needed as dependency {0}: {1}".format(requires_name, ex)) from ex
+            # Mount the package into the docker container.
+            cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
+            os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
+
+            # Add the dependencies of the package to the set which will be
+            # activated.
+            # TODO(cmaloney): All these 'transitive' dependencies shouldn't
+            # be available to the package being built, only what depends on
+            # them directly.
+            to_check += pkg_requires
+        except ValidationError as ex:
+            raise BuildError("validating package needed as dependency {0}: {1}".format(requires_name, ex)) from ex
+        except PackageError as ex:
+            raise BuildError("loading package needed as dependency {0}: {1}".format(requires_name, ex)) from ex
 
     # Add requires to the package id, calculate the final package id.
     # NOTE: active_packages isn't fully constructed here since we lazily load
