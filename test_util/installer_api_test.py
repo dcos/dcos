@@ -59,16 +59,8 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.scp = scp
 
         if download_url:
-            dir_name = os.path.dirname(self.installer_path)
-            if len(dir_name) > 0:
-                self.ssh(['mkdir', '-p', dir_name])
-
-            @retry
-            def curl_download():
-                # If it takes more than 5 minutes, it probably got hung
-                self.ssh(['curl', '-s', '-m', '300', download_url, '>', self.installer_path])
-
-            curl_download()
+            self.ssh(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
+                      '--create-dirs', '-o', self.installer_path, download_url])
 
     def get_hashed_password(self, password):
         p = self.ssh(["bash", self.installer_path, "--hash-password", password])
