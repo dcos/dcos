@@ -55,6 +55,7 @@ setup(
     package_data={
         'gen': [
             'ip-detect/aws.sh',
+            'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
             'ip-detect/vagrant.sh',
             'cloud-config.yaml',
