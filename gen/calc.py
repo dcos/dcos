@@ -238,6 +238,11 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
+def validate_os_type(os_type):
+    can_be = ['coreos', 'el7']
+    assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 __logrotate_slave_module = {
     'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
@@ -272,7 +277,8 @@ entry = {
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
         validate_telemetry_enabled,
-        validate_master_dns_bindall],
+        validate_master_dns_bindall,
+        validate_os_type],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',

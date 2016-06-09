@@ -18,6 +18,7 @@ entry = {
         'slave_instance_type': 'm3.xlarge',
         'public_slave_instance_type': 'm3.xlarge',
         'nat_instance_type': 'm3.medium',
+        'os_type': '',
 
         # If set to empty strings / unset then no spot instances will be used.
         'master_spot_price': '',
