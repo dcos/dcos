@@ -31,4 +31,5 @@ class InstallerAnalytics():
             "errors": num_errors,
             "customerKey": customer_key,
         })
+        print("Sending data to SegmentIO")
         analytics.flush()
