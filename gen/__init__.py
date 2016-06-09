@@ -63,16 +63,18 @@ def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
     * cloud_init_implementation is a string: 'coreos' or 'canonical'
     '''
     if cloud_init_implementation == 'canonical':
+        cloudconfig.setdefault('write_files', [])
+        cloudconfig.setdefault('runcmd', [])
         for unit in services:
             unit_name = unit['name']
             if 'content' in unit:
                 write_files_entry = {'path': '/etc/systemd/system/{}'.format(unit_name),
                                      'content': unit['content'],
                                      'permissions': '0644'}
-                cloudconfig.setdefault('write_files', []).append(write_files_entry)
+                cloudconfig['write_files'].append(write_files_entry)
             if 'enable' in unit and unit['enable']:
                 runcmd_entry = ['systemctl', 'enable', unit_name]
-                cloudconfig.setdefault('runcmd', []).append(runcmd_entry)
+                cloudconfig['runcmd'].append(runcmd_entry)
             if 'command' in unit:
                 opts = []
                 if 'no_block' in unit and unit['no_block']:
@@ -82,7 +84,7 @@ def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
                     runcmd_entry = ['systemctl'] + opts + [unit['command'], unit_name]
                 else:
                     raise Exception("Unsupported unit command: {}".format(unit['command']))
-                cloudconfig.setdefault('runcmd', []).append(runcmd_entry)
+                cloudconfig['runcmd'].append(runcmd_entry)
     elif cloud_init_implementation == 'coreos':
         cloudconfig.setdefault('coreos', {}).setdefault('units', [])
         cloudconfig['coreos']['units'] += services

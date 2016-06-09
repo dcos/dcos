@@ -273,7 +273,8 @@ entry = {
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
         validate_telemetry_enabled,
-        validate_master_dns_bindall],
+        validate_master_dns_bindall,
+        validate_os_type],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',

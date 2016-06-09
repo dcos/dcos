@@ -223,8 +223,10 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     if cc_params['os_type'] == 'coreos':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
-    else:
+    elif cc_params['os_type'] == 'el7':
         cloud_init_implementation = 'canonical'
+    else:
+        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
 
     results = gen.generate(
         arguments=variant_args,
