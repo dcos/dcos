@@ -287,6 +287,7 @@ entry = {
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
         'docker_remove_delay': '1hrs',
+        'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
