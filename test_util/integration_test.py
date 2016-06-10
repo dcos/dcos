@@ -1289,6 +1289,7 @@ sleep 3600
     cluster.deploy_marathon_app(signal_app_definition, ignore_failed_tasks=True)
 
     r = requests.get(test_cache_url)
+    print('SIGNAL TEST // GET {} Returned: {}'.format(test_cache_url, r))
 
     r_data = json.loads(r.json())
 
