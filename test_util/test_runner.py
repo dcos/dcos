@@ -139,7 +139,7 @@ def integration_test(
         '--net=host', '--name='+test_container_name, 'py.test', 'py.test',
         '-vv', ci_flags, '/integration_test.py']
     try:
-        with remote_port_forwarding(tunnel, agent_list, join(test_dir, 'ssh_key')):
+        with remote_port_forwarding(tunnel, agent_list+public_agent_list, join(test_dir, 'ssh_key')):
             log.info('Running integration test...')
             tunnel.remote_cmd(test_cmd, timeout=timeout)
         log.info('Successful test run!')
