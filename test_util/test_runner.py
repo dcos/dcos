@@ -33,6 +33,8 @@ def remote_port_forwarding(tunnel, host_list, remote_key_path):
             'ssh', '-i', remote_key_path,
             '-l', tunnel.ssh_user,
             '-T', '-n', '-N',
+            '-oBatchMode=yes',
+            '-oGatewayPorts=yes',
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
             '-oExitOnForwardFailure=yes',
