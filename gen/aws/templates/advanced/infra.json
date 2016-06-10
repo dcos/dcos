@@ -63,6 +63,9 @@
           },
           "us-west-2": {
               "default": "ami-bb69128b"
+          },
+          "us-gov-west-1": {
+              "default": "ami-e8ab1489"
           }
        }
     },
