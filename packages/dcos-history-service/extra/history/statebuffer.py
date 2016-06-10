@@ -16,7 +16,7 @@ def parse_log_time(fname):
     return datetime.strptime(fname, '%Y-%m-%dT%H:%M:%S.%f{}'.format(FILE_EXT))
 
 
-def fetch_state():
+def fetch_state(headers_cb):
     timestamp = datetime.now()
     try:
         # TODO(cmaloney): Access the mesos master redirect before requesting
@@ -24,7 +24,7 @@ def fetch_state():
         # state-summary. leader.mesos isn't updated instantly.
         # That requires mesos stop returning hostnames from `/master/redirect`.
         # See: https://github.com/apache/mesos/blob/master/src/master/http.cpp#L746
-        resp = requests.get(FETCH_URL, timeout=FETCH_PERIOD*.9)
+        resp = requests.get(FETCH_URL, timeout=FETCH_PERIOD*.9, headers=headers_cb())
         resp.raise_for_status()
         state = resp.text
     except Exception as e:
@@ -138,12 +138,16 @@ class BufferCollection():
 
 class BufferUpdater():
     """Class that fetchs and pushes that fetched update to BufferCollection
+    Args:
+        headers_cb (method): a callback method that returns a dictionary
+            of headers to be used for mesos state-summary requests
     """
-    def __init__(self, buffer_collection):
+    def __init__(self, buffer_collection, headers_cb):
         self.buffer_collection = buffer_collection
+        self.headers_cb = headers_cb
 
     def update(self):
-        self.buffer_collection.add_data(*fetch_state())
+        self.buffer_collection.add_data(*fetch_state(self.headers_cb))
 
     def run(self):
         self.update()

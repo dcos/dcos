@@ -96,6 +96,11 @@ def run_validate_config_chunk(key_validate_fn_map, config, keys_required):
     return errors
 
 
+def validate_ssh_parallelism(value):
+    assert isinstance(value, int), 'ssh_parallelism must be integer'
+    assert 0 < value <= 100, 'ssh_parallelism must be within the range 1..100'
+
+
 def validate_config(config):
     assert isinstance(config, dict)
     ssh_keys_checks_map_required = {
@@ -111,7 +116,8 @@ def validate_config(config):
         'agent_list': lambda agent_list: validate_optional_agent(agent_list, config.get('public_agent_list')),
         'public_agent_list': lambda public_agent_list: validate_optional_agent(
             config.get('agent_list'),
-            public_agent_list)
+            public_agent_list),
+        'ssh_parallelism': validate_ssh_parallelism
     }
 
     errors = run_validate_config_chunk(ssh_keys_checks_map_required, config, True)
