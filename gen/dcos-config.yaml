@@ -118,6 +118,7 @@ package:
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
+      MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
