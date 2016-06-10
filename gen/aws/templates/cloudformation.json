@@ -47,34 +47,34 @@
   "Mappings": {
     "RegionToAmi": {
       "ap-northeast-1": {
-        "stable": "ami-84e0c7ea"
+        "stable": "ami-802dcde1"
       },
       "ap-southeast-1": {
-        "stable": "ami-da67a0b9"
+        "stable": "ami-4c97462f"
       },
       "ap-southeast-2": {
-        "stable": "ami-f35b0590"
+        "stable": "ami-55f6d936"
       },
       "eu-central-1": {
-        "stable": "ami-fdd4c791"
+        "stable": "ami-3b1cf054"
       },
       "eu-west-1": {
-        "stable": "ami-55d20b26"
+        "stable": "ami-2a118659"
       },
       "sa-east-1": {
-        "stable": "ami-154af179"
+        "stable": "ami-ee1b9382"
       },
       "us-east-1": {
-        "stable": "ami-37bdc15d"
+        "stable": "ami-3cf20751"
       },
       "us-gov-west-1": {
-        "stable": "ami-05bc0164"
+        "stable": "ami-9041fef1"
       },
       "us-west-1": {
-        "stable": "ami-27553a47"
+        "stable": "ami-61e99101"
       },
       "us-west-2": {
-        "stable": "ami-00ebfc61"
+        "stable": "ami-c30af5a3"
       }
     },
     "NATAmi" : {
