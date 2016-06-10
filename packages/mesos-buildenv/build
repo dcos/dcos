@@ -1,4 +1,0 @@
-#!/bin/bash
-set -o nounset -o pipefail
-export MAKEFLAGS=-j8
-/pkg/src/mesos-buildenv/make_env $PKG_PATH
