@@ -11,6 +11,7 @@ pushd build
 # TODO(cmaloney): DESTDIR builds so we don't have to build as root?
 "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
+  --enable-install-module-dependencies \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-glog=/opt/mesosphere/active/mesos-buildenv \
