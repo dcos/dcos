@@ -6,6 +6,5 @@
       "url": "https://downloads.mesosphere.com/pkgpanda-artifact-cache/otp_src_18.3.tar.gz",
       "sha1": "efc229b75e0b0614a187efe858faf33027bcf3d1"
     }
-  },
-  "username": "dcos_epmd"
+  }
 }

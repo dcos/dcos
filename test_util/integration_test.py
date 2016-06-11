@@ -1328,6 +1328,7 @@ sleep 3600
             'gen-resolvconf-service',
             'gen-resolvconf-timer',
             'minuteman-service',
+            'navstar-service',
             'signal-timer',
             'spartan-service',
             'spartan-watchdog-service',
