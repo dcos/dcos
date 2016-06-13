@@ -114,7 +114,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, zk_host=None, expect_errors=False):
+            ip_detect_script, zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -127,6 +127,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
                 be installed on tagets as authorized_key
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
+            add_config_path (optional): string pointing to a file with additional
+                config parameters to be merged or used as overide
 
         Raises:
             AssertionError: "error" present in returned json keys when error
@@ -142,6 +144,10 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'ip_detect_script': ip_detect_script}
         if zk_host:
             payload['exhibitor_zk_hosts'] = zk_host
+        if add_config_path:
+            with open(add_config_path, 'r') as fh:
+                add_config = yaml.load(fh)
+            payload.update(add_config)
         response = requests.post(self.url + '/api/v1/configure', headers=headers, data=json.dumps(payload))
         assert response.status_code == 200
         response_json_keys = list(response.json().keys())
@@ -252,7 +258,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, zk_host=None, expect_errors=False):
+            ip_detect_script, zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -265,6 +271,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
                 be installed on tagets as authorized_key
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
+            add_config_path (optional): string pointing to a file with additional
+                config parameters to be merged or used as overide
 
         Raises:
             AssertionError: "error" present in returned json keys when error
@@ -286,6 +294,10 @@ class DcosCliInstaller(AbstractDcosInstaller):
             test_config['exhibitor_zk_path'] = '/exhibitor'
         else:
             test_config['exhibitor_storage_backend'] = 'static'
+        if add_config_path:
+            with open(add_config_path, 'r'):
+                add_config = yaml.load(add_config_path)
+            test_config.update(add_config)
         with open('config.yaml', 'w') as config_fh:
             config_fh.write(yaml.dump(test_config))
         with open('ip-detect', 'w') as ip_detect_fh:
