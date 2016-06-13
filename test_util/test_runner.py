@@ -100,7 +100,7 @@ def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
         variant, test_dns_search, ci_flags, timeout=None,
-        aws_access_key_id='', aws_secret_access_key='', region=''):
+        aws_access_key_id='', aws_secret_access_key='', region='', add_env=None):
     """Runs integration test on host
 
     Args:
@@ -115,6 +115,8 @@ def integration_test(
         aws_access_key_id: needed for REXRAY tests
         aws_secret_access_key: needed for REXRAY tests
         region: string indicating AWS region in which cluster is running
+        add_env: a python dict with any number of key=value assignments to be passed to
+            the test environment
     """
     log.info('Transfering integration_test.py')
     test_script = pkg_filename('integration_test.py')
@@ -125,6 +127,8 @@ def integration_test(
     dns_search = 'true' if test_dns_search else 'false'
     test_cmd = [
         'docker', 'run', '-v', test_dir+'/integration_test.py:/integration_test.py',
+        '--net=host', '--name='+test_container_name]
+    test_cmd.extend([
         '-e', 'DCOS_DNS_ADDRESS=http://'+dcos_dns,
         '-e', 'MASTER_HOSTS='+','.join(master_list),
         '-e', 'PUBLIC_MASTER_HOSTS='+','.join(master_list),
@@ -135,9 +139,12 @@ def integration_test(
         '-e', 'DNS_SEARCH='+dns_search,
         '-e', 'AWS_ACCESS_KEY_ID='+aws_access_key_id,
         '-e', 'AWS_SECRET_ACCESS_KEY='+aws_secret_access_key,
-        '-e', 'AWS_REGION='+region,
-        '--net=host', '--name='+test_container_name, 'py.test', 'py.test',
-        '-vv', ci_flags, '/integration_test.py']
+        '-e', 'AWS_REGION='+region])
+    if add_env:
+        for key, value in add_env.items():
+            extra_env = ['-e', key+'='+value]
+            test_cmd.extend(extra_env)
+    test_cmd.extend(['py.test', 'py.test', '-vv', ci_flags, '/integration_test.py'])
     try:
         with remote_port_forwarding(tunnel, agent_list, join(test_dir, 'ssh_key')):
             log.info('Running integration test...')

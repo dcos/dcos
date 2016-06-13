@@ -34,6 +34,10 @@ TEST_INSTALL_PREREQS_ONLY: true or false (default=false)
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
+
+TEST_ADD_ENV_*: string (default=None)
+    Any number of environment variables can be passed to integration_test.py if
+    prefixed with 'TEST_ADD_ENV_'. The prefix will be removed before passing
 """
 import logging
 import os
@@ -161,6 +165,13 @@ def check_environment():
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
     options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+
+    add_env = {}
+    prefix = 'TEST_ADD_ENV_'
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            add_env[k.replace(prefix, '')] = v
+    options.add_env = add_env
     return options
 
 
@@ -297,7 +308,8 @@ def main():
                 test_dns_search=not options.use_api,
                 ci_flags=options.ci_flags,
                 aws_access_key_id=options.aws_access_key_id,
-                aws_secret_access_key=options.aws_secret_access_key)
+                aws_secret_access_key=options.aws_secret_access_key,
+                add_env=options.add_env)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.
