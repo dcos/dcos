@@ -1,11 +1,12 @@
 #!/bin/bash
 set -x
-export LD_LIBRARY_PATH=/opt/mesosphere/lib:/opt/mesosphere/active/libsodium/lib
+
+source /opt/mesosphere/environment
+
 export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/libsodium/include"
 export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/libsodium/lib -Wl,-rpath=/opt/mesosphere/active/libsodium/lib"
 export CXXFLAGS=CFLAGS
 
-source /opt/mesosphere/environment
 
 pushd /pkg/src/navstar
 ./rebar3 update
@@ -34,5 +35,7 @@ ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/mnesia
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/lashup
 ExecStart=${PKG_PATH}/navstar/bin/navstar-env foreground
 Environment=HOME=/opt/mesosphere
+User=dcos_navstar
+AmbientCapabilities=CAP_NET_ADMIN
 EOF
 

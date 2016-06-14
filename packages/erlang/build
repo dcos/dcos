@@ -18,6 +18,7 @@ cat <<EOF > $service
 Description=Erlang Port Mapping Daemon: DC/OS Erlang Port Mapping Daemon
 
 [Service]
+User=dcos_epmd
 Restart=always
 StartLimitInterval=0
 RestartSec=5
