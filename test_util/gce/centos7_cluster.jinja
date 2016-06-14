@@ -1,0 +1,80 @@
+# Make a network / VPC which contains the set of instances. All instances are
+# inside one instance group for this template (raw host installs)
+{% set NETWORK = env["deployment"] + "-network" %}
+{% set INSTANCE_TEMPLATE = env["deployment"] + "-instance-template" %}
+resources:
+# Network
+# - Allows Mesosphere office inbound
+# - Allows all internal traffic
+# - Doesn't allow general internet to access
+- name: {{ NETWORK }}
+  type: compute.v1.network
+  properties:
+    IPv4Range: "10.240.0.0/16"
+- name: {{ NETWORK }}-allow-office
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.{{ NETWORK }}.selfLink)
+    allowed:
+     - IPProtocol: tcp
+       ports:
+        - 22
+        - 80
+        - 443
+     # - IPProtocol: udp
+     # - IPProtocol: icmp
+    sourceRanges:
+     - 0.0.0.0/0
+     # - 12.161.175.2/32
+     # - 199.116.75.18/32
+     # - 212.53.142.20/32
+     # - 192.195.82.206/32
+     # TODO / TEMP: Cody's home IP
+     # - 67.180.197.95/32
+- name: {{ NETWORK }}-internal
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.{{ NETWORK }}.selfLink)
+    allowed:
+     - IPProtocol: tcp
+     - IPProtocol: udp
+     - IPProtocol: icmp
+    sourceRanges:
+     - 10.240.0.0/16
+
+# VMs
+# One pool of machines, all reasonable sized
+- name: {{ INSTANCE_TEMPLATE }}
+  type: compute.v1.instanceTemplate
+  properties:
+    zone: us-central1-b
+    properties:
+      machineType: n1-standard-4
+      networkInterfaces:
+        - network: $(ref.{{ NETWORK }}.selfLink)
+          # Make instances accessible without `gcloud ssh`
+          accessConfigs:
+           - name: external-nat
+             type: ONE_TO_ONE_NAT
+      scheduling:
+        onHostMaintenance: MIGRATE
+      serviceAccounts:
+        - scopes:
+          - https://www.googleapis.com/auth/devstorage.read_only
+          - https://www.googleapis.com/auth/logging.write
+      disks:
+        - deviceName: boot
+          type: PERSISTENT
+          boot: true
+          autoDelete: true
+          initializeParams:
+            sourceImage: https://www.googleapis.com/compute/v1/projects/centos-cloud/global/images/centos-7-v20160606
+            diskSizeGb: 128
+            diskType: pd-standard
+- name: {{ env["deployment"] + "-instance-group" }}
+  type: compute.v1.instanceGroupManager
+  properties:
+    baseInstanceName: {{ env["deployment"] }}-vms
+    instanceTemplate: $(ref.{{ INSTANCE_TEMPLATE }}.selfLink)
+    targetSize: {{ properties['instanceCount'] }}
+    zone: us-central1-b

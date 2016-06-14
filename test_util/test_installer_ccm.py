@@ -46,30 +46,25 @@ TEST_ADD_ENV_*: string (default=None)
 import logging
 import os
 import random
-import stat
 import string
-import sys
 from contextlib import closing
 from os.path import join
 
-import passlib.hash
 import pkg_resources
 from retrying import retry
 
 import test_util.ccm
-import test_util.installer_api_test
+import test_util.gce
+import test_util.installer_runner
 import test_util.test_runner
-from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
+from ssh.ssh_tunnel import TunnelCollection
+from test_util.installer_runner import Host
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = 'us-west-2'
-
-
-def pkg_filename(relative_path):
-    return pkg_resources.resource_filename(__name__, relative_path)
 
 
 def get_local_address(tunnel, remote_dir):
@@ -86,39 +81,6 @@ def get_local_address(tunnel, remote_dir):
     local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')]).decode('utf-8').strip('\n')
     assert len(local_ip.split('.')) == 4
     return local_ip
-
-
-def make_vpc(use_bare_os=False):
-    """uses CCM to provision a test VPC of minimal size (3).
-    Args:
-        use_bare_os: if True, vanilla AMI is used. If False, custom AMI is used
-            with much faster prereq satisfaction time
-    """
-    random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-    unique_cluster_id = "installer-test-{}".format(random_identifier)
-    log.info("Spinning up AWS VPC via CCM with ID: {}".format(unique_cluster_id))
-    if use_bare_os:
-        os_name = "cent-os-7"
-    else:
-        os_name = "cent-os-7-dcos-prereqs"
-    ccm = test_util.ccm.Ccm()
-    vpc = ccm.create_vpc(
-        name=unique_cluster_id,
-        time=60,
-        instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
-        instance_type="m4.xlarge",
-        instance_os=os_name,
-        region=DEFAULT_AWS_REGION,
-        key_pair_name=unique_cluster_id
-        )
-
-    ssh_key, ssh_key_url = vpc.get_ssh_key()
-    log.info("Download cluster SSH key: {}".format(ssh_key_url))
-    # Write out the ssh key to the local filesystem for the ssh lib to pick up.
-    with open("ssh_key", "w") as ssh_key_fh:
-        ssh_key_fh.write(ssh_key)
-
-    return vpc
 
 
 def check_environment():
@@ -172,6 +134,13 @@ def check_environment():
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
+    options.ssh_user = os.environ.get('TEST_SSH_USER', 'centos')
+    options.ssh_key_path = os.environ.get('TEST_SSH_KEY_PATH', 'ssh_key')
+    options.remote_dir = os.environ.get('TEST_REMOTE_DIR', '/home/centos')
+    options.aws_region = os.environ.get('TEST_AWS_REGION', DEFAULT_AWS_REGION)
+
+    assert os.path.exists(options.ssh_key_path), 'Valid SSH key for hosts must be in {}!'.format(options.ssh_key_path)
+
     add_env = {}
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
@@ -181,151 +150,74 @@ def check_environment():
     return options
 
 
-def main():
-    options = check_environment()
-
-    host_list = None
-    vpc = None  # Set if the test owns the VPC
-
-    if options.host_list is None:
-        log.info('CCM_VPC_HOSTS not provided, requesting new VPC from CCM...')
-        vpc = make_vpc(use_bare_os=options.test_install_prereqs)
-        host_list = vpc.hosts()
-    else:
-        host_list = options.host_list
-
-    assert os.path.exists('ssh_key'), 'Valid SSH key for hosts must be in working dir!'
-    # key must be chmod 600 for test_runner to use
-    os.chmod('ssh_key', stat.S_IREAD | stat.S_IWRITE)
-
-    # Create custom SSH Runnner to help orchestrate the test
-    ssh_user = 'centos'
-    ssh_key_path = 'ssh_key'
-    remote_dir = '/home/centos'
-
-    if options.use_api:
-        installer = test_util.installer_api_test.DcosApiInstaller()
-        if not options.test_install_prereqs:
-            # If we dont want to test the prereq install, use offline mode to avoid it
-            installer.offline_mode = True
-    else:
-        installer = test_util.installer_api_test.DcosCliInstaller()
-
-    host_list_w_port = [i+':22' for i in host_list]
+def run_install(options):
+    host_list = options.host_list
+    host_list_w_port = [i + ':22' for i in host_list]
 
     @retry(stop_max_delay=120000)
     def establish_host_connectivity():
         """Continually try to recreate the SSH Tunnels to all hosts for 2 minutes
         """
-        return closing(TunnelCollection(ssh_user, ssh_key_path, host_list_w_port))
+        return closing(TunnelCollection(options.ssh_user, options.ssh_key_path, host_list_w_port))
 
     log.info('Checking that hosts are accessible')
     with establish_host_connectivity() as tunnels:
         local_ip = {}
         for tunnel in tunnels.tunnels:
-            local_ip[tunnel.host] = get_local_address(tunnel, remote_dir)
+            local_ip[tunnel.host] = get_local_address(tunnel, options.remote_dir)
             if options.do_setup:
                 # Make the default user priveleged to use docker
-                tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', ssh_user])
+                tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', options.ssh_user])
 
     # use first node as bootstrap node, second node as master, all others as agents
-    test_host = host_list[0]
-    test_host_local = local_ip[host_list[0]]
-    master_list = [local_ip[host_list[1]]]
-    agent1 = local_ip[host_list[2]]
-    agent2 = local_ip[host_list[3]]
-    agent_list = [agent1, agent2]
-    public_agent_list = [local_ip[host_list[4]]]
-    log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
+    test_util.installer_runner.do_install(
+        installer_url=options.installer_url,
+        ssh_user=options.ssh_user,
+        ssh_key_path=options.ssh_key_path,
+        test_host=Host(local_ip[host_list[0]], host_list[0]),
+        master_list=[Host(local_ip[host_list[1]], host_list[1])],
+        agent_list=[Host(local_ip[host_list[2], host_list[2]]), Host(local_ip[host_list[3], host_list[3]])],
+        public_agent_list=[Host(local_ip[host_list[4]], host_list[4])],
+        method='web_api' if options.use_api else 'ssh',
+        install_prereqs=options.test_install_prereqs,
+        do_setup=options.do_setup,
+        remote_dir=options.remote_dir,
+        add_config_path=options.add_config_path,
+        stop_after_prereqs=options.stop_after_prereqs,
+        run_test=True,
+        aws_region=options.aws_region,
+        dcos_variant=options.variant,
+        provider='onprem',
+        ci_flags=options.ci_flags,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key,
+        add_env=options.add_env)
 
-    with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
-        log.info('Setting up installer on test host')
 
-        installer.setup_remote(
-                tunnel=test_host_tunnel,
-                installer_path=remote_dir+'/dcos_generate_config.sh',
-                download_url=options.installer_url)
-        if options.do_setup:
-            # only do on setup so you can rerun this test against a living installer
-            log.info('Verifying installer password hashing')
-            test_pass = 'testpassword'
-            hash_passwd = installer.get_hashed_password(test_pass)
-            assert passlib.hash.sha512_crypt.verify(test_pass, hash_passwd), 'Hash does not match password'
-            if options.use_api:
-                installer.start_web_server()
+def main():
+    options = check_environment()
 
-        with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
-            ip_detect_script = ip_detect_fh.read()
-        with open('ssh_key', 'r') as key_fh:
-            ssh_key = key_fh.read()
-        # Using static exhibitor is the only option in the GUI installer
-        if options.use_api:
-            log.info('Installer API is selected, so configure for static backend')
-            zk_host = None  # causes genconf to use static exhibitor backend
-        else:
-            log.info('Installer CLI is selected, so configure for ZK backend')
-            zk_host = test_host_local + ':2181'
-            zk_cmd = [
-                    'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
-                    '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
-            test_host_tunnel.remote_cmd(zk_cmd)
+    vpc = None  # Set if the test owns the VPC
 
-        log.info("Configuring install...")
-        installer.genconf(
-                zk_host=zk_host,
-                master_list=master_list,
-                agent_list=agent_list,
-                public_agent_list=public_agent_list,
-                ip_detect_script=ip_detect_script,
-                ssh_user=ssh_user,
-                ssh_key=ssh_key,
-                add_config_path=options.add_config_path)
+    if options.host_list is None:
+        random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        unique_cluster_id = "installer-test-{}".format(random_identifier)
 
-        log.info("Running Preflight...")
-        if options.test_install_prereqs:
-            # Runs preflight in --web or --install-prereqs for CLI
-            # This may take up 15 minutes...
-            installer.install_prereqs()
-            if options.test_install_prereqs_only:
-                if vpc:
-                    vpc.delete()
-                sys.exit(0)
-        else:
-            # Will not fix errors detected in preflight
-            installer.preflight()
+        log.info('Manual host list not provided, requesting new VPC')
+        make_vpc = test_util.gce.make_vpc if os.getenv('TEST_VPC_PROVIDER', 'gce') == 'gce' else test_util.ccm.make_vpc
+        metadata, vpc = make_vpc(unique_cluster_id, use_bare_os=options.test_install_prereqs)
 
-        log.info("Running Deploy...")
-        installer.deploy()
+        options.ssh_user = metadata['ssh_user']
+        options.ssh_key_path = metadata['ssh_key_path']
+        options.host_list = vpc.hosts()
+        options.aws_region = vpc.get_region()
 
-        log.info("Running Postflight")
-        installer.postflight()
+    run_install(options)
 
-        # Runs dcos-image/integration_test.py inside the cluster
-        result = test_util.test_runner.integration_test(
-                tunnel=test_host_tunnel,
-                test_dir=remote_dir,
-                region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
-                dcos_dns=master_list[0],
-                master_list=master_list,
-                agent_list=agent_list,
-                public_agent_list=public_agent_list,
-                provider='onprem',
-                # Setting dns_search: mesos not currently supported in API
-                test_dns_search=not options.use_api,
-                ci_flags=options.ci_flags,
-                aws_access_key_id=options.aws_access_key_id,
-                aws_secret_access_key=options.aws_secret_access_key,
-                add_env=options.add_env)
-
-    # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
-    # on every host to see if they are working.
-
-    if result:
-        log.info("Test successsful!")
-        # Delete the cluster if all was successful to minimize potential costs.
-        # Failed clusters the hosts will continue running
-        if vpc is not None:
-            vpc.delete()
+    # Delete the cluster if all was successful to minimize potential costs.
+    # Failed clusters the hosts will continue running
+    if vpc is not None:
+        vpc.delete()
 
 
 if __name__ == "__main__":

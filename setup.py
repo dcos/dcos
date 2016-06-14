@@ -44,6 +44,7 @@ setup(
         'botocore',
         'coloredlogs',
         'docopt',
+        'google-api-python-client',
         'passlib',
         'pyyaml',
         'requests',
@@ -52,6 +53,7 @@ setup(
     entry_points={
         'console_scripts': [
             'release=release:main',
+            'dcos-launch=test_util.launch:main',
             'ccm-deploy-test=test_util.test_installer_ccm:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',

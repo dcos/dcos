@@ -20,10 +20,14 @@ import os
 import sys
 
 import docopt
+import logging
 import requests
+import stat
 from retrying import retry
 
 CCM_HOST = "https://ccm.mesosphere.com"
+
+log = logging.getLogger(__name__)
 
 
 class VpcCluster():
@@ -135,6 +139,40 @@ class Ccm():
 
     def VpcCluster(self, pk, instance_count):
         return VpcCluster(self, pk, node_count=instance_count)
+
+
+def make_vpc(unique_cluster_id, use_bare_os):
+    """uses CCM to provision a test VPC of minimal size (3).
+    Args:
+        use_bare_os: if True, vanilla AMI is used. If False, custom AMI is used
+            with much faster prereq satisfaction time
+    """
+    log.info("Spinning up AWS VPC via CCM with ID: {}".format(unique_cluster_id))
+    if use_bare_os:
+        os_name = "cent-os-7"
+    else:
+        os_name = "cent-os-7-dcos-prereqs"
+    ccm = Ccm()
+    vpc = ccm.create_vpc(
+        name=unique_cluster_id,
+        time=60,
+        instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
+        instance_type="m4.xlarge",
+        instance_os=os_name,
+        region='us-west-2',
+        key_pair_name=unique_cluster_id)
+
+    ssh_key, ssh_key_url = vpc.get_ssh_key()
+    log.info("Download cluster SSH key: {}".format(ssh_key_url))
+    # Write out the ssh key to the local filesystem for the ssh lib to pick up.
+    with open("ssh_key", "w") as ssh_key_fh:
+        ssh_key_fh.write(ssh_key)
+    os.chmod('ssh_key', stat.S_IREAD | stat.S_IWRITE)
+
+    return {
+        "ssh_user": "centos",
+        "ssh_key_path": "ssh_key"
+    }, vpc
 
 
 def main():

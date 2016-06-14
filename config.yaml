@@ -1,0 +1,4 @@
+deployment: cody-test
+project: inbound-bee-664
+num_agent: 1
+num_agent_public: 1

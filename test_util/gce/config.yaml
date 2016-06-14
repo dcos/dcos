@@ -1,0 +1,8 @@
+imports:
+  - path: centos7_cluster.jinja
+
+resources:
+  - type: centos7_cluster.jinja
+    name: centos-7-cluster
+    properties:
+      instanceCount: {instance_count}
