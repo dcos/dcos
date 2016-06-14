@@ -38,6 +38,10 @@ CI_FLAGS: string (default=None)
 TEST_ADD_CONFIG: string (default=None)
     A path to a YAML config file containing additional values that will be injected
     into the DCOS config during genconf
+
+TEST_ADD_ENV_*: string (default=None)
+    Any number of environment variables can be passed to integration_test.py if
+    prefixed with 'TEST_ADD_ENV_'. The prefix will be removed before passing
 """
 import logging
 import os
@@ -170,6 +174,12 @@ def check_environment():
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
+    add_env = {}
+    prefix = 'TEST_ADD_ENV_'
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            add_env[k.replace(prefix, '')] = v
+    options.add_env = add_env
     return options
 
 
@@ -307,7 +317,8 @@ def main():
                 test_dns_search=not options.use_api,
                 ci_flags=options.ci_flags,
                 aws_access_key_id=options.aws_access_key_id,
-                aws_secret_access_key=options.aws_secret_access_key)
+                aws_secret_access_key=options.aws_secret_access_key,
+                add_env=options.add_env)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.
