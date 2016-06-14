@@ -18,12 +18,19 @@ import retrying
 LOG_LEVEL = logging.INFO
 TEST_APP_NAME_FMT = '/integration-test-{}'
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-AWS_REGION = os.environ.get('AWS_REGION', '')
-
 BASE_ENDPOINT_3DT = '/system/health/v1'
 PORT_3DT = 1050
+
+# If auth is enabled, by default, tests use hard-coded OAuth token
+AUTH_ENABLED = os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true'
+# Set these to run test against a custom configured user instead
+LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
+LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
+
+# AWS creds for volume control (not used currently)
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_REGION = os.getenv('AWS_REGION')
 
 
 @pytest.fixture(scope='module')
@@ -51,7 +58,7 @@ def cluster():
 
 @pytest.fixture(scope='module')
 def auth_cluster(cluster):
-    if not cluster.is_oauth:
+    if not AUTH_ENABLED:
         pytest.skip("Skipped because not running against cluster with auth.")
     return cluster
 
@@ -195,7 +202,7 @@ class Cluster:
         self._wait_for_DCOS_history_up()
 
     def _authenticate(self):
-        if self.is_oauth:
+        if AUTH_ENABLED:
             # token valid until 2036 for user albert@bekstil.net
             # {
             #   "email": "albert@bekstil.net",
@@ -207,6 +214,8 @@ class Cluster:
             #   "iat": 1460164974
             # }
             js = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}  # noqa
+            if LOGIN_UNAME and LOGIN_PW:
+                js = {'uid': LOGIN_UNAME, 'password': LOGIN_PW}
         else:
             # no authentication required
             return
@@ -231,7 +240,6 @@ class Cluster:
             registry: hostname or IP address of a private Docker registry.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
-
         """
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
@@ -250,7 +258,6 @@ class Cluster:
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
-        self.is_oauth = os.environ.get('DCOS_OAUTH', 'true') == 'true'
         self._wait_for_DCOS()
 
     @staticmethod
@@ -258,7 +265,7 @@ class Cluster:
         return {'Accept': 'application/json, text/plain, */*'}
 
     def _suheader(self, disable_suauth):
-        if not disable_suauth and self.is_oauth:
+        if not disable_suauth and AUTH_ENABLED:
             return self.superuser_auth_header
         return {}
 
@@ -1328,6 +1335,7 @@ sleep 3600
             'gen-resolvconf-service',
             'gen-resolvconf-timer',
             'minuteman-service',
+            'navstar-service',
             'signal-timer',
             'spartan-service',
             'spartan-watchdog-service',

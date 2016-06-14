@@ -34,6 +34,14 @@ TEST_INSTALL_PREREQS_ONLY: true or false (default=false)
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
+
+TEST_ADD_CONFIG: string (default=None)
+    A path to a YAML config file containing additional values that will be injected
+    into the DCOS config during genconf
+
+TEST_ADD_ENV_*: string (default=None)
+    Any number of environment variables can be passed to integration_test.py if
+    prefixed with 'TEST_ADD_ENV_'. The prefix will be removed before passing
 """
 import logging
 import os
@@ -161,6 +169,17 @@ def check_environment():
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
     options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+
+    options.add_config_path = os.getenv('TEST_ADD_CONFIG')
+    if options.add_config_path:
+        assert os.path.isfile(options.add_config_path)
+
+    add_env = {}
+    prefix = 'TEST_ADD_ENV_'
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            add_env[k.replace(prefix, '')] = v
+    options.add_env = add_env
     return options
 
 
@@ -259,7 +278,8 @@ def main():
                 public_agent_list=public_agent_list,
                 ip_detect_script=ip_detect_script,
                 ssh_user=ssh_user,
-                ssh_key=ssh_key)
+                ssh_key=ssh_key,
+                add_config_path=options.add_config_path)
 
         log.info("Running Preflight...")
         if options.test_install_prereqs:
@@ -297,7 +317,8 @@ def main():
                 test_dns_search=not options.use_api,
                 ci_flags=options.ci_flags,
                 aws_access_key_id=options.aws_access_key_id,
-                aws_secret_access_key=options.aws_secret_access_key)
+                aws_secret_access_key=options.aws_secret_access_key,
+                add_env=options.add_env)
 
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.

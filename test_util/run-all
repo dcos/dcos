@@ -107,7 +107,7 @@ docker run -v $PWD/../integration_test.py:/integration_test.py \
     -e REGISTRY_HOST="boot.dcos" \
     -e "TEAMCITY_VERSION=${TEAMCITY_VERSION:-}" \
     -e "DNS_SEARCH=true" \
-    -e "DCOS_OAUTH=false" \
+    -e "DCOS_AUTH_ENABLED=false" \
     --net=host py.test py.test -vv -s -m "not minuteman and not ccm" ${CI_FLAGS:-} /integration_test.py
 RET=$?
 
