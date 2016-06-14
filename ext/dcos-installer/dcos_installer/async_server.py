@@ -168,7 +168,6 @@ def action_action_name(request):
 
     elif request.method == 'POST':
         log.info('POST {}'.format(action_name))
-        segment_error_count = 0
         action = action_map.get(action_name)
         # If the action name is preflight, attempt to run configuration
         # generation. If genconf fails, present the UI with a usable error
@@ -179,7 +178,7 @@ def action_action_name(request):
                 backend.do_configure()
 
                 web_analytics.send(
-                    action='installer_genconf',
+                    action='genconf',
                     install_method="web",
                     num_errors=segment_error_count,
                 )
@@ -189,11 +188,10 @@ def action_action_name(request):
                     "errors": "Configuration generation failed, please see command line for details"
                 }
 
-                segment_error_count += 1
                 web_analytics.send(
-                    action='installer_genconf',
+                    action='genconf',
                     install_method="web",
-                    num_errors=segment_error_count,
+                    num_errors=1,
                 )
 
                 return web.json_response(genconf_failure, status=400)
@@ -206,7 +204,6 @@ def action_action_name(request):
                     failed_hosts = []
                     for deploy_host, deploy_params in json_state['hosts'].items():
                         if deploy_params['host_status'] != 'success':
-                            segment_error_count += 1
                             failed_hosts.append(Node(deploy_host, tags=deploy_params['tags']))
                     log.debug('failed hosts: {}'.format(failed_hosts))
                     if failed_hosts:
@@ -217,12 +214,6 @@ def action_action_name(request):
                                 hosts=failed_hosts,
                                 try_remove_stale_dcos=True,
                                 **params))
-
-                        web_analytics.send(
-                            action='installer_{}_start'.format(action_name),
-                            install_method="web",
-                            num_errors=segment_error_count,
-                        )
 
                         return web.json_response({
                             'status': 'retried',
@@ -244,12 +235,6 @@ def action_action_name(request):
                 unlink_state_file(action_name)
 
         yield from asyncio.async(action(backend.get_config(), state_json_dir=STATE_DIR, options=options, **params))
-
-        web_analytics.send(
-            action='installer_{}_start'.format(action_name),
-            install_method="web",
-            num_errors=segment_error_count,
-        )
 
         return web.json_response({'status': '{} started'.format(action_name)})
 

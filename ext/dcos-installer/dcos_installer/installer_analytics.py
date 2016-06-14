@@ -5,6 +5,18 @@ import uuid
 from dcos_installer import backend
 
 
+def track_me(analysis, action, num_errors):
+    def decorate_it(name):
+        def track_it(name):
+            return analysis.send(
+                action=action,
+                install_method="onprem",
+                num_errorrs=num_errors
+            )
+        return decorate_it
+    return track_me
+
+
 class InstallerAnalytics():
     def __init__(self):
         self.uuid = str(uuid.uuid4())
