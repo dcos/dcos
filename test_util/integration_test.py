@@ -1295,76 +1295,13 @@ sleep 3600
     cluster.destroy_marathon_app(signal_app_definition['id'])
     cluster.destroy_marathon_app(test_server_app_definition['id'])
 
-    exp_data = {
-            'Event': 'health',
-            'UserId': '',
-            'ClusterId': '',
-            'Properties': {
-                'provider': 'onprem',
-                'source': 'cluster',
-                'clusterId': '',
-                'customerKey': '',
-                'environmentVersion': '',
-                'variant': 'open'}
-            }
+    exp_keys = ['Event', 'UserId', 'ClusterId', 'Properties']
+    exp_properties = ['provider', 'source', 'clusterId', 'customerKey', 'environmentVersion', 'variant']
+    for key in exp_keys:
+        assert key in r_data
 
-    master_units = [
-            'adminrouter-reload-service',
-            'adminrouter-reload-timer',
-            'adminrouter-service',
-            'cluster-id-service',
-            'cosmos-service',
-            'exhibitor-service',
-            'history-service-service',
-            'marathon-service',
-            'mesos-dns-service',
-            'mesos-master-service',
-            'signal-service',
-            'logrotate-master-service',
-            'logrotate-master-timer']
-    all_node_units = [
-            'ddt-service',
-            'epmd-service',
-            'gen-resolvconf-service',
-            'gen-resolvconf-timer',
-            'minuteman-service',
-            'signal-timer',
-            'spartan-service',
-            'spartan-watchdog-service',
-            'spartan-watchdog-timer']
-    slave_units = [
-            'mesos-slave-service',
-            'vol-discovery-priv-agent-service']
-    public_slave_units = [
-            'mesos-slave-public-service',
-            'vol-discovery-pub-agent-service']
-    all_slave_units = [
-            'logrotate-agent-service',
-            'logrotate-agent-timer']
-
-    master_units.append('oauth-service')
-
-    for unit in master_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
-    for unit in all_node_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves+cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
-    for unit in slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
-    for unit in public_slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
-    for unit in all_slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
-
-    # Cluster ID is uncheckable as this runs on an agent
-    r_data['ClusterId'] = ''
-    r_data['Properties']['clusterId'] = ''
-
-    assert r_data == exp_data
+    for prop in exp_properties:
+        assert prop in r_data['Properties']
 
 
 def test_mesos_agent_role_assignment(cluster):
