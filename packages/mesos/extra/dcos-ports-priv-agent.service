@@ -1,0 +1,18 @@
+[Unit]
+Description=Mesos Ports Reconfiguration Service: Determines if resources can be ports extended and generates MESOS_RESOURCES
+ConditionPathExists=!/var/lib/dcos/mesos-ports-resources
+
+[Service]
+Type=simple
+StandardOutput=journal+console
+StandardError=journal+console
+Restart=always
+StartLimitInterval=0
+RestartSec=60
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
+EnvironmentFile=/opt/mesosphere/etc/mesos-slave
+EnvironmentFile=-/var/lib/dcos/mesos-slave-common
+EnvironmentFile=/var/lib/dcos/mesos-resources
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos
+ExecStart=/opt/mesosphere/bin/expand_port_resource.py /var/lib/dcos/mesos-port-resources
