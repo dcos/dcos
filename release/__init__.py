@@ -278,7 +278,11 @@ def make_stable_artifacts(cache_repository_url):
 
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
-    all_bootstraps = do_build_packages(cache_repository_url)
+    try:
+        all_bootstraps = do_build_packages(cache_repository_url)
+    except pkgpanda.build.BuildError as ex:
+        print("ERROR Building packages:", ex, file=sys.stderr)
+        raise
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
