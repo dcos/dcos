@@ -35,7 +35,5 @@ ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/mnesia
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/lashup
 ExecStart=${PKG_PATH}/navstar/bin/navstar-env foreground
 Environment=HOME=/opt/mesosphere
-User=dcos_navstar
-AmbientCapabilities=CAP_NET_ADMIN
 EOF
 
