@@ -34,6 +34,10 @@ TEST_INSTALL_PREREQS_ONLY: true or false (default=false)
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
+
+TEST_ADD_CONFIG: string (default=None)
+    A path to a YAML config file containing additional values that will be injected
+    into the DCOS config during genconf
 """
 import logging
 import os
@@ -161,6 +165,11 @@ def check_environment():
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
     options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+
+    options.add_config_path = os.getenv('TEST_ADD_CONFIG')
+    if options.add_config_path:
+        assert os.path.isfile(options.add_config_path)
+
     return options
 
 
@@ -259,7 +268,8 @@ def main():
                 public_agent_list=public_agent_list,
                 ip_detect_script=ip_detect_script,
                 ssh_user=ssh_user,
-                ssh_key=ssh_key)
+                ssh_key=ssh_key,
+                add_config_path=options.add_config_path)
 
         log.info("Running Preflight...")
         if options.test_install_prereqs:
