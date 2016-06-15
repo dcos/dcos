@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir -p $PKG_PATH/bin/
+tar -xf /pkg/src/dvdcli/dvdcli-Linux-x86_64-0.2.0.tar.gz -C $PKG_PATH/bin/
