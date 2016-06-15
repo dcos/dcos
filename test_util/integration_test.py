@@ -1309,6 +1309,8 @@ sleep 3600
     print('CACHE SERVER STATUS:\n{}'.format(r.status_code))
 
     r_data = json.loads(r.json())
+    variant = r_data['diagnostics']['properties']['variant']
+    print('VARIANT: {}'.format(variant))
 
     cluster.destroy_marathon_app(signal_app_definition['id'])
     cluster.destroy_marathon_app(test_server_app_definition['id'])
@@ -1338,7 +1340,7 @@ sleep 3600
         'clusterId': 'test-id',
         'customerKey': '',
         'environmentVersion': '',
-        'variant': 'open'
+        'variant': variant,
     }
 
     # Insert the generic property data which is the same between all signal tracks
@@ -1361,6 +1363,14 @@ sleep 3600
         'mesos-dns-service',
         'mesos-master-service',
         'signal-service']
+
+    ee_master_units = [
+        'gunicorn-bouncer-service',
+        'networking_api-service']
+
+    open_master_units = [
+        'oauth-service']
+
     all_node_units = [
         'ddt-service',
         'epmd-service',
@@ -1372,17 +1382,26 @@ sleep 3600
         'spartan-service',
         'spartan-watchdog-service',
         'spartan-watchdog-timer']
+
     slave_units = [
         'mesos-slave-service',
         'vol-discovery-priv-agent-service']
+
     public_slave_units = [
         'mesos-slave-public-service',
         'vol-discovery-pub-agent-service']
+
     all_slave_units = [
         'logrotate-agent-service',
         'logrotate-agent-timer']
 
-    master_units.append('oauth-service')
+    if variant == 'enterprise':
+        for unit in ee_master_units:
+            master_units.append(unit)
+
+    if variant == 'open':
+        for unit in open_master_units:
+            master_units.append(unit)
 
     for unit in master_units:
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
