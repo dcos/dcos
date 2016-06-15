@@ -116,8 +116,9 @@ package:
       MESOS_LOG_DIR=/var/log/mesos
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk,filesystem/linux,docker/volume
       MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins

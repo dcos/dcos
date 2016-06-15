@@ -13,6 +13,17 @@ from pkgpanda import PackageId
 from pkgpanda.build import hash_checkout
 
 
+AWS_REXRAY_CONFIG = """
+rexray:
+  loglevel: info
+  storageDrivers:
+    - ec2
+  volume:
+    unmount:
+      ignoreusedcount: true
+"""
+
+
 def calculate_bootstrap_variant():
     variant = os.getenv('BOOTSTRAP_VARIANT')
     assert variant is not None, "BOOTSTRAP_VARIANT must be set"
@@ -67,6 +78,14 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents):
     return ip_detect_contents
+
+
+def calculate_rexray_config_contents(rexray_config_filename):
+    try:
+        with open(rexray_config_filename, encoding='utf-8') as f:
+            return yaml.dump(f.read())
+    except IOError as err:
+        raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err))
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -283,7 +302,8 @@ entry = {
         'ui_banner_header_content': 'null',
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
-        'ui_banner_dismissible': 'null'
+        'ui_banner_dismissible': 'null',
+        'rexray_config_method': 'empty'
     },
     'must': {
         'custom_auth': 'false',
@@ -320,5 +340,16 @@ entry = {
             'aws': gen.aws.calc.entry,
             'other': {}
         },
+        'rexray_config_method': {
+            'file': {
+                'must': {'rexray_config_contents': calculate_rexray_config_contents},
+            },
+            'aws': {
+                'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
+            },
+            'empty': {
+                'must': {'rexray_config_contents': yaml.dump('')},
+            },
+        }
     }
 }

@@ -1,0 +1,13 @@
+[Unit]
+Description=REX-Ray: A vendor agnostic storage orchestration engine
+
+[Service]
+StartLimitInterval=0
+RestartSec=15
+Restart=always
+EnvironmentFile=/etc/environment
+EnvironmentFile=/opt/mesosphere/environment
+Environment=REXRAY_HOME=/
+ExecStart=__PKG_PATH__/bin/rexray start -f
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
