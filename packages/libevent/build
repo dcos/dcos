@@ -5,6 +5,6 @@ pushd build
 
 cd /pkg/src/libevent
 ./autogen.sh
-./configure --prefix="$PKG_PATH"
+LDFLAGS="-L/opt/mesosphere/active/openssl/lib" ./configure --prefix="$PKG_PATH"
 make
 make install

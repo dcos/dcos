@@ -150,13 +150,16 @@ def integration_test(
     try:
         with remote_port_forwarding(tunnel, agent_list+public_agent_list, join(test_dir, 'ssh_key')):
             log.info('Running integration test...')
-            tunnel.remote_cmd(test_cmd, timeout=timeout)
+            try:
+                tunnel.remote_cmd(test_cmd, timeout=timeout)
+            except CalledProcessError:
+                log.exception('Test failed!')
+                if ci_flags:
+                    return False
+                raise
         log.info('Successful test run!')
     except TimeoutExpired:
         log.error('Test failed due to timing out after {} seconds'.format(timeout))
-        raise
-    except CalledProcessError:
-        log.error('Test failed!')
         raise
     finally:
         get_logs_cmd = ['docker', 'logs', test_container_name]
@@ -165,3 +168,5 @@ def integration_test(
         with open(log_file, 'wb') as fh:
             fh.write(test_log)
         log.info('Logs from test container can be found in '+log_file)
+
+    return True
