@@ -40,6 +40,8 @@ entry = {
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'oauth_available': 'true',
-        'oauth_enabled': '{ "Ref" : "OAuthEnabled" }'
+        'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
+        # Use IAM Instance profile for auth
+        'rexray_config_method': 'aws'
     }
 }

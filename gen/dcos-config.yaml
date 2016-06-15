@@ -220,7 +220,8 @@ package:
       MESOS_LOG_DIR=/var/log/mesos
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk,network/cni,filesystem/linux,docker/runtime
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk,network/cni,filesystem/linux,docker/runtime,docker/volume
+      MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/

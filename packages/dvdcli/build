@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir -p $PKG_PATH/bin/
+tar -xf /pkg/src/dvdcli/* -C $PKG_PATH/bin/
