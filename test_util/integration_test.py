@@ -1309,8 +1309,17 @@ sleep 3600
     print('CACHE SERVER STATUS:\n{}'.format(r.status_code))
 
     r_data = json.loads(r.json())
+    assert 'diagnostics' in r_data, "Diagnostics data is missing in signal data"
+    assert 'properties' in r_data['diagnostics'], "Properties are missing in diagnostics signal data."
+    assert 'variant' in r_data['diagnostics']['properties'], "Variant is missing in diagnostics properties."
     variant = r_data['diagnostics']['properties']['variant']
     print('VARIANT: {}'.format(variant))
+
+    assert 'cosmos' in r_data, "Cosmos data is missing in signal data"
+    assert 'properties' in r_data['cosmos'], "Properties are missing in cosmos signal data."
+
+    assert 'mesos' in r_data, "Mesos data is missing in signal data"
+    assert 'properties' in r_data['mesos'], "Properties are missing in mesos signal data."
 
     cluster.destroy_marathon_app(signal_app_definition['id'])
     cluster.destroy_marathon_app(test_server_app_definition['id'])
