@@ -9,9 +9,13 @@ go install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
 
+# Copy the snapshot config file
+cp -v /pkg/src/github.com/dcos/3dt/endpoints_config.json $PKG_PATH/
+
 master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
+
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
@@ -24,7 +28,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt
+ExecStart=/opt/mesosphere/bin/3dt -endpoint-config ${PKG_PATH}/endpoints_config.json
 EOF
 
 cat <<EOF | tee $master_service
@@ -37,5 +41,5 @@ StartLimitInterval=0
 RestartSec=5
 ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -pull
+ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json
 EOF
