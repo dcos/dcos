@@ -9,19 +9,22 @@ def get_async_runner(config, hosts, async_delegate=None):
     extra_ssh_options = config.get('extra_ssh_options', '')
     ssh_key_path = config.get('ssh_key_path', '/genconf/ssh_key')
 
+    # if ssh_parallelism is not set, use 20 concurrent ssh sessions by default.
+    parallelism = config.get('ssh_parallelism', 20)
+
     return ssh.ssh_runner.MultiRunner(hosts, ssh_user=config['ssh_user'], ssh_key_path=ssh_key_path,
                                       process_timeout=process_timeout, extra_opts=extra_ssh_options,
-                                      async_delegate=async_delegate)
+                                      async_delegate=async_delegate, parallelism=parallelism)
 
 
 def add_pre_action(chain, ssh_user):
     # Do setup steps for a chain
-    chain.add_execute(['sudo', 'mkdir', '-p', REMOTE_TEMP_DIR], comment='CREATING TEMP DIRECTORY ON TARGETS')
+    chain.add_execute(['sudo', 'mkdir', '-p', REMOTE_TEMP_DIR], stage='Creating temp directory')
     chain.add_execute(['sudo', 'chown', ssh_user, REMOTE_TEMP_DIR],
-                      comment='ENSURING {} OWNS TEMPORARY DIRECTORY'.format(ssh_user))
+                      stage='Ensuring {} owns temporary directory'.format(ssh_user))
 
 
 def add_post_action(chain):
     # Do cleanup steps for a chain
     chain.add_execute(['sudo', 'rm', '-rf', REMOTE_TEMP_DIR],
-                      comment='CLEANING UP TEMPORARY DIRECTORIES ON TARGETS')
+                      stage='Cleaning up temporary directory')

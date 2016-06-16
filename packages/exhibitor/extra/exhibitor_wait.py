@@ -1,11 +1,9 @@
 #!/opt/mesosphere/bin/python
-
-import codecs
-import json
 import os
 import sys
-import urllib.request
 
+import requests
+import requests.exceptions
 
 EXHIBITOR_STATUS_URL = 'http://127.0.0.1:8181/exhibitor/v1/cluster/status'
 
@@ -20,13 +18,16 @@ os.environ.pop('no_proxy', None)
 cluster_size = int(open('/opt/mesosphere/etc/master_count').read().strip())
 
 try:
-    response = urllib.request.urlopen(EXHIBITOR_STATUS_URL)
-except urllib.error.URLError:
-    print('Could not get exhibitor status: {}'.format(
-        EXHIBITOR_STATUS_URL), file=sys.stderr)
+    resp = requests.get(EXHIBITOR_STATUS_URL)
+except requests.exceptions.ConnectionError as ex:
+    print('Could not connect to exhibitor: {}'.format(ex), file=sys.stderr)
     sys.exit(1)
-reader = codecs.getreader("utf-8")
-data = json.load(reader(response))
+if resp.status_code != 200:
+    print('Could not get exhibitor status: {}, Status code: {}'.format(
+          EXHIBITOR_STATUS_URL, resp.status_code), file=sys.stderr)
+    sys.exit(1)
+
+data = resp.json()
 
 serving = 0
 leaders = 0

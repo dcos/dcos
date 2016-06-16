@@ -83,3 +83,35 @@ def test_ssh_port(default_config):
         default_config['ssh_key_path'] = tmp.name
         default_config['ssh_port'] = 100000
         assert ssh.validate.validate_config(default_config) == {'ssh_port': 'ssh port should be int between 1 - 32000'}
+
+
+def test_public_agent_list(default_config):
+    with tempfile.NamedTemporaryFile() as tmp:
+        default_config['ssh_key_path'] = tmp.name
+        default_config['public_agent_list'] = ['10.10.0.1']
+        default_config['agent_list'] = ['10.10.0.1']
+        assert ssh.validate.validate_config(default_config) == {
+            'agent_list': 'master_list and agent_list cannot contain duplicates 10.10.0.1',
+            'public_agent_list': 'master_list and agent_list cannot contain duplicates 10.10.0.1',
+            'master_list': 'master_list and agent_list cannot contain duplicates 10.10.0.1'}
+
+
+def test_ssh_parallelism(default_config):
+    with tempfile.NamedTemporaryFile() as tmp:
+        default_config['ssh_key_path'] = tmp.name
+
+        # test ssh_parallelism range, should be ok within 1.100
+        default_config['ssh_parallelism'] = 101
+        assert ssh.validate.validate_config(default_config) == {
+            'ssh_parallelism': 'ssh_parallelism must be within the range 1..100'}
+
+        default_config['ssh_parallelism'] = 0
+        assert ssh.validate.validate_config(default_config) == {
+            'ssh_parallelism': 'ssh_parallelism must be within the range 1..100'}
+
+        default_config['ssh_parallelism'] = 20
+        assert ssh.validate.validate_config(default_config) == {}
+
+        # ssh_parallelism must be integer
+        default_config['ssh_parallelism'] = '20'
+        assert ssh.validate.validate_config(default_config) == {'ssh_parallelism': 'ssh_parallelism must be integer'}

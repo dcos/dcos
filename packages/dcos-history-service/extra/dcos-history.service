@@ -2,9 +2,10 @@
 Description=Mesos History: DC/OS Resource Metrics History Service/API
 After=dcos-mesos-master.service
 [Service]
+User=dcos_history
 Restart=always
 StartLimitInterval=0
 RestartSec=5
 EnvironmentFile=/opt/mesosphere/environment
-Environment=HISTORY_BUFFER_DIR=/var/lib/mesosphere/dcos/history-service
+Environment=HISTORY_BUFFER_DIR=/var/lib/dcos/dcos-history-service
 ExecStart=/opt/mesosphere/bin/dcos-history

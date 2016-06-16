@@ -1,45 +1,4 @@
 root:
-  - path: /etc/systemd/system/dcos-link-env.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Before=dcos.target
-      [Service]
-      Type=oneshot
-      StandardOutput=journal+console
-      StandardError=journal+console
-      ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
-      ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
-  - path: /etc/systemd/system/dcos-download.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      After=network-online.target
-      Wants=network-online.target
-      ConditionPathExists=!/opt/mesosphere/
-      [Service]
-      EnvironmentFile=/etc/mesosphere/setup-flags/bootstrap-id
-      Type=oneshot
-      StandardOutput=journal+console
-      StandardError=journal+console
-      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
-      ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
-      ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
-      ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
-  - path: /etc/systemd/system/dcos-setup.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Requires=dcos-download.service
-      After=dcos-download.service
-      [Service]
-      Type=oneshot
-      StandardOutput=journal+console
-      StandardError=journal+console
-      EnvironmentFile=/opt/mesosphere/environment
-      ExecStart=/opt/mesosphere/bin/pkgpanda setup --no-block-systemd
-      [Install]
-      WantedBy=multi-user.target
   - path: /etc/systemd/system/dcos-docker-install.service
     permissions: "0644"
     content: |
@@ -96,6 +55,7 @@ runcmd:
     - [ ln, -s, /bin/systemctl, /usr/bin/systemctl ]
     - [ ln, -s, /bin/mount, /usr/bin/mount ]
     - [ ln, -s, /bin/bash, /usr/bin/bash ]
+    - [ ln, -s, /usr/sbin/useradd, /usr/bin/useradd ]
     - [ systemctl, stop, resolvconf.service ]
     - [ systemctl, disable, resolvconf.service ]
     - [ systemctl, stop, lxc-net.service ]
@@ -109,9 +69,6 @@ runcmd:
     - [ rm, -f, /etc/resolv.conf ]
     - [ cp, -p, /tmp/resolv.conf, /etc/resolv.conf ]
     - [ systemctl, start, dcos-docker-install.service ]
-    - [ systemctl, start, dcos-link-env.service ]
-    - [ systemctl, start, dcos-download.service ]
-    - [ systemctl, start, dcos-setup.service ]
     - [ systemctl, start, dcos-config-writer.service ]
 bootcmd:
   - bash -c "if [ ! -f /var/lib/sdb-gpt ];then echo DCOS-5890;parted -s /dev/sdb mklabel gpt;touch /var/lib/sdb-gpt;fi"

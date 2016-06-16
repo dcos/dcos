@@ -16,16 +16,15 @@ import os.path
 import subprocess
 import sys
 
+import pkg_resources
 import yaml
 
 import gen.installer.util as util
 import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
-
+import release.storage
 provider_names = ['aws', 'azure', 'bash']
-
-cloudformation_s3_url = 'https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos'
 
 
 class ConfigError(Exception):
@@ -117,7 +116,7 @@ def from_json(json_str):
 
 
 def get_bootstrap_packages(bootstrap_id):
-    return set(pkgpanda.util.load_json('packages/{}.active.json'.format(bootstrap_id)))
+    return set(pkgpanda.util.load_json('packages/cache/bootstrap/{}.active.json'.format(bootstrap_id)))
 
 
 def load_providers():
@@ -168,7 +167,6 @@ class Repository():
     def make_commands(self, metadata):
         stage1 = []
         stage2 = []
-        local_cp = []
 
         def process_artifact(artifact, base_artifact):
             # First destination is upload
@@ -234,15 +232,6 @@ class Repository():
                 action_count += 2
                 stage1.append(add_dest(self.path_channel_commit_prefix + channel_path, False))
                 stage2.append(add_dest(self.path_channel_prefix + channel_path, False))
-                if 'local_path' in artifact:
-                    local_cp.append({
-                        'source_path': artifact['local_path'],
-                        'destination_path': 'artifacts/' + channel_path})
-                else:
-                    assert 'local_content' in artifact
-                    local_cp.append({
-                        'source_content': artifact['local_content'],
-                        'destination_path': 'artifacts/' + channel_path})
 
             # Must have done at least one thing with the artifact (reproducible_path or channel_path).
             assert action_count > 0
@@ -261,11 +250,18 @@ class Repository():
         return {
             'stage1': stage1,
             'stage2': stage2,
-            'local_cp': local_cp
         }
 
 
 def get_package_artifact(package_id_str):
+    package_id = pkgpanda.PackageId(package_id_str)
+    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    return {
+        'reproducible_path': package_filename,
+        'local_path': 'packages/cache/' + package_filename}
+
+
+def get_gen_package_artifact(package_id_str):
     package_id = pkgpanda.PackageId(package_id_str)
     package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
     return {
@@ -282,7 +278,11 @@ def make_stable_artifacts(cache_repository_url):
 
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
-    all_bootstraps = do_build_packages(cache_repository_url)
+    try:
+        all_bootstraps = do_build_packages(cache_repository_url)
+    except pkgpanda.build.BuildError as ex:
+        print("ERROR Building packages:", ex, file=sys.stderr)
+        raise
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the bootstrap_dict to enumerate all variants a whole lot,
@@ -311,17 +311,17 @@ def make_stable_artifacts(cache_repository_url):
         bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
-            'local_path': 'packages/' + bootstrap_filename
+            'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
             })
         active_filename = "{}.active.json".format(bootstrap_id)
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/' + active_filename
+            'local_path': 'packages/cache/bootstrap/' + active_filename
             })
         latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_filename,
-            'local_path': 'packages/' + latest_filename
+            'local_path': 'packages/cache/bootstrap/' + latest_filename
             })
 
         # Add all the packages which haven't been added yet
@@ -370,6 +370,11 @@ def make_channel_artifacts(metadata):
                 'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
                 })
 
+            # Load additional default variant arguments out of gen_extra
+            if os.path.exists('gen_extra/calc.py'):
+                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
         provider_data = module.do_create(
@@ -384,7 +389,7 @@ def make_channel_artifacts(metadata):
         assert provider_data.keys() <= {'packages', 'artifacts'}
 
         for package in provider_data.get('packages', set()):
-            artifacts.append(get_package_artifact(package))
+            artifacts.append(get_gen_package_artifact(package))
 
         # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
         artifacts += provider_data.get('artifacts', list())
@@ -399,7 +404,7 @@ def make_abs(path):
 
 
 def do_build_packages(cache_repository_url):
-    dockerfile = 'docker/dcos-builder/Dockerfile'
+    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/dcos-builder/Dockerfile')
     container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
     print("Attempting to pull dcos-builder docker:", container_name)
     pulled = False
@@ -428,7 +433,7 @@ def do_build_packages(cache_repository_url):
         # necessary.
         try:
             subprocess.check_call(['docker', 'push', container_name])
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             print("NOTICE: docker push of dcos-builder failed. This means it will be very difficult "
                   "for this build to be reproduced (others will have a different / non-identical "
                   "base docker for most packages.")
@@ -439,9 +444,9 @@ def do_build_packages(cache_repository_url):
 
     def get_build():
         # TODO(cmaloney): Stop shelling out
-        package_dir = os.getcwd() + '/packages'
-        result = pkgpanda.build.build_tree(package_dir, True, cache_repository_url, None)
-        last_set = pkgpanda.build.get_last_bootstrap_set(package_dir)
+        package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages', cache_repository_url)
+        result = pkgpanda.build.build_tree(package_store, True, None)
+        last_set = package_store.get_last_bootstrap_set()
         assert last_set == result, \
             "Internal error: get_last_bootstrap_set doesn't match the results of build_tree: {} != {}".format(
                 last_set,
@@ -538,13 +543,14 @@ class ReleaseManager():
 
             # If read only wrap in the read_only proxy
             if read_only:
-                storage = ReadOnlyProxy(storage)
+                storage = release.storage.ReadOnlyProxy(storage)
 
             self.__storage_providers[name] = storage
 
     def __init__(self, config, noop):
         self._setup_storage(config.get('storage', dict()))
         self.__noop = noop
+        self.__config = config
 
         preferred_name = config.get('options', dict()).get('preferred')
         if preferred_name:
@@ -570,11 +576,7 @@ class ReleaseManager():
             if 'reproducible_path' in artifact:
                 assert artifact['reproducible_path'][0] != '/'
 
-                local_path = artifact['reproducible_path']
-
-                # `bootstrap/` artifacts should get placed in `packages/`
-                if artifact['reproducible_path'].startswith('bootstrap/'):
-                    local_path = 'packages/' + artifact['reproducible_path'][9:]
+                local_path = "packages/cache/" + artifact['reproducible_path']
 
                 src_path = metadata['repository_path'] + '/' + artifact['reproducible_path']
 
@@ -619,9 +621,14 @@ class ReleaseManager():
     def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
+        assert ('options' in self.__config) or \
+            ('cloudformation_s3_url' not in self.__config['options']), \
+            "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
+            " templates."
+
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(cloudformation_s3_url + '/' + repository_path)
+        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
@@ -640,7 +647,7 @@ class ReleaseManager():
         return metadata
 
     def apply_storage_commands(self, storage_commands):
-        assert storage_commands.keys() == {'stage1', 'stage2', 'local_cp'}
+        assert storage_commands.keys() == {'stage1', 'stage2'}
 
         if self.__noop:
             return
@@ -658,16 +665,6 @@ class ReleaseManager():
                         continue
                     print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
                     getattr(provider, artifact['method'])(**artifact['args'])
-
-        for artifact in storage_commands['local_cp']:
-            destination_path = artifact['destination_path']
-            print("Saving to local artifact path", destination_path)
-            subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_path)])
-            if 'source_path' in artifact:
-                subprocess.check_call(['cp', artifact['source_path'], destination_path])
-            else:
-                assert 'source_content' in artifact
-                pkgpanda.util.write_string(destination_path, artifact['source_content'])
 
 _config = None
 

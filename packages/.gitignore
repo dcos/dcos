@@ -1,10 +1,6 @@
 #mktarball artifacts
-*.active.json
-*.bootstrap.tar.xz
-bootstrap.latest
+cache/
 
 # Per-pacage artifacts
-*/*.tar.xz
 */result
 */src
-*/cache

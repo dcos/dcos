@@ -14,3 +14,4 @@ service="$PKG_PATH/dcos.target.wants_master/dcos-oauth.service"
 mkdir -p "$(dirname "$service")"
 
 cp /pkg/extra/dcos-oauth.service "$service"
+cp /pkg/extra/dcos-oauth-setup.py $PKG_PATH/bin/dcos-oauth-setup.py

@@ -27,3 +27,20 @@ def test_fetch(tmpdir):
         })
     # TODO(cmaloney): Test multiple fetches on one line.
     # TODO(cmaloney): Test unable to fetch case.
+
+
+def test_add(tmpdir):
+    assert run([
+               "pkgpanda",
+               "add",
+               "{0}/../tests/resources/remote_repo/packages/mesos/mesos--0.22.0.tar.xz".format(os.getcwd()),
+               "--repository={0}".format(tmpdir),
+               ]) == ""
+
+    # Ensure that the package at least somewhat extracted correctly.
+    expect_fs(
+        "{0}".format(tmpdir),
+        {
+            "mesos--0.22.0": ["lib", "bin_master", "bin_slave", "pkginfo.json", "bin"]
+        })
+    # TODO(branden): Test unable to add case.

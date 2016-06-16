@@ -518,7 +518,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     genconf_tar = "dcos-genconf." + image_version + ".tar"
-    installer_filename = "dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
+    installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_bootstrap_id + '.bootstrap.tar.xz'
@@ -553,9 +553,15 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
         subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
-        copy_to_build('packages', bootstrap_filename)
-        copy_to_build('packages', installer_bootstrap_filename)
-        copy_to_build('packages', bootstrap_active_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
+
+        # Copy across gen_extra if it exists
+        if os.path.exists('gen_extra'):
+            subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+        else:
+            subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])

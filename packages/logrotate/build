@@ -10,7 +10,29 @@ make
 make install
 
 
-config_file="$PKG_PATH/etc/logrotate.conf"
+config_file="$PKG_PATH/etc/logrotate_master.conf"
+mkdir -p $(dirname $config_file)
+cat <<'EOF' > "$config_file"
+compress
+delaycompress
+notifempty
+missingok
+nomail
+
+/var/lib/dcos/mesos/log/* {
+    olddir /var/lib/dcos/mesos/log/archive
+    maxsize 2000k
+    daily
+    rotate 7
+    copytruncate
+    postrotate
+        find  /var/lib/dcos/mesos/log/ /var/lib/dcos/mesos/log/archive -mtime +14 -delete
+    endscript
+}
+EOF
+
+
+config_file="$PKG_PATH/etc/logrotate_agent.conf"
 mkdir -p $(dirname $config_file)
 cat <<'EOF' > "$config_file"
 compress
@@ -26,27 +48,40 @@ nomail
     rotate 7
     copytruncate
     postrotate
-        find  /var/log/mesos /var/log/mesos/archive -mtime +14 -delete
+        find  /var/log/mesos/ /var/log/mesos/archive -mtime +14 -delete
     endscript
 }
 EOF
 
+mkdir -p "$PKG_PATH/dcos.target.wants_"{master,slave,slave_public}
 
-logrotate_service="$PKG_PATH/dcos.target.wants/dcos-logrotate.service"
-mkdir -p "$(dirname "$logrotate_service")"
+logrotate_service="$PKG_PATH/dcos.target.wants_master/dcos-logrotate-master.service"
 cat <<EOF > "$logrotate_service"
 [Unit]
-Description=Logrotate: Rotate various logs on the system
+Description=Logrotate Mesos Master: Rotate Mesos master logs
 [Service]
 Type=simple
-EnvironmentFile=/etc/environment
+User=dcos_mesos
 EnvironmentFile=/opt/mesosphere/environment
-ExecStartPre=/usr/bin/mkdir -p /var/log/mesos/archive
-ExecStart=$PKG_PATH/bin/logrotate $config_file
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/mesos/log/archive
+ExecStart=$PKG_PATH/bin/logrotate $config_file -s /var/lib/dcos/mesos/logrotate_master.status
 EOF
 
-logrotate_timer="$PKG_PATH/dcos.target.wants/dcos-logrotate.timer"
-mkdir -p "$(dirname "$logrotate_timer")"
+logrotate_service="$PKG_PATH/dcos.target.wants_slave/dcos-logrotate-agent.service"
+cat <<EOF > "$logrotate_service"
+[Unit]
+Description=Logrotate Mesos Slave: Rotate Mesos agent logs
+[Service]
+Type=simple
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/usr/bin/mkdir -p /var/log/mesos/archive
+ExecStart=$PKG_PATH/bin/logrotate $config_file -s /var/lib/dcos/mesos/logrotate_agent.status
+EOF
+
+# slave_public service is identical to slave.
+cp "$logrotate_service" "$PKG_PATH/dcos.target.wants_slave_public/dcos-logrotate-agent.service"
+
+logrotate_timer="$PKG_PATH/dcos.target.wants_master/dcos-logrotate-master.timer"
 cat <<'EOF' > "$logrotate_timer"
 [Unit]
 Description=Logrotate Timer: Timer to trigger every 2 minutes
@@ -54,3 +89,6 @@ Description=Logrotate Timer: Timer to trigger every 2 minutes
 OnBootSec=2min
 OnUnitActiveSec=2min
 EOF
+
+cp "$logrotate_timer" "$PKG_PATH/dcos.target.wants_slave/dcos-logrotate-agent.timer"
+cp "$logrotate_timer" "$PKG_PATH/dcos.target.wants_slave_public/dcos-logrotate-agent.timer"

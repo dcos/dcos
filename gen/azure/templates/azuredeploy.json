@@ -75,7 +75,7 @@
     "vmSize": "Standard_A5",
     "osPublisher": "Canonical",
     "osOffer": "UbuntuServer",
-    "osSKU": "16.04.0-DAILY-LTS",
+    "osSKU": "16.04.0-LTS",
     "osVersion": "latest",
     "vmsPerStorageAccount": 10,
     "storageAccountsCount": "[add(div(add(parameters('numberOfPrivateSlaves'),parameters('numberOfPublicSlaves')),variables('vmsPerStorageAccount')),mod(add(mod(add(parameters('numberOfPrivateSlaves'),parameters('numberOfPublicSlaves')), variables('vmsPerStorageAccount')),2), add(mod(add(parameters('numberOfPrivateSlaves'),parameters('numberOfPublicSlaves')), variables('vmsPerStorageAccount')),1)))]",

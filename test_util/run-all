@@ -26,13 +26,13 @@ echo "Fetching dcos-vagrant"
 # TODO(cmaloney): Have TeamCity do this for us.
 # If it already exists, fetch, otherwise clone
 if [ ! -d dcos-vagrant ]; then
-  git clone https://github.com:dcos/dcos-vagrant
+  git clone https://github.com/dcos/dcos-vagrant
 else
   git -C dcos-vagrant fetch origin -t +refs/heads/*:refs/remotes/origin/*
 fi
 
 # Pin to just the right dcos-vagrant commit
-git -C dcos-vagrant checkout -qf 69d6429fe46828010e4c14037c253d6cd8a6d564
+git -C dcos-vagrant checkout -qf d6a22b68f344cf51a2136735c826746bb841c60e
 
 cp ../dcos_generate_config.sh dcos-vagrant/dcos_generate_config.sh
 
@@ -77,7 +77,7 @@ cleanup_vagrant_leftovers
 
 echo "Starting Vagrant VMs"
 
-vagrant up m1 m2 m3 a1 a2 boot
+vagrant up m1 m2 m3 a1 a2 p1 boot
 
 # TODO(cmaloney): Configure insecure registry inside the dcos-vagrant cluster
 
@@ -103,18 +103,27 @@ docker run -v $PWD/../integration_test.py:/integration_test.py \
     -e MASTER_HOSTS=$MASTER_HOSTS \
     -e PUBLIC_MASTER_HOSTS=$MASTER_HOSTS \
     -e SLAVE_HOSTS="192.168.65.111,192.168.65.121" \
+    -e PUBLIC_SLAVE_HOSTS="192.168.65.60" \
     -e REGISTRY_HOST="boot.dcos" \
     -e "TEAMCITY_VERSION=${TEAMCITY_VERSION:-}" \
     -e "DNS_SEARCH=true" \
-    -e "DCOS_OAUTH=false" \
+    -e "DCOS_AUTH_ENABLED=false" \
     --net=host py.test py.test -vv -s -m "not minuteman and not ccm" ${CI_FLAGS:-} /integration_test.py
 RET=$?
 
 mkdir -p $WORKDIR/test/vagrant-logs
 if [ $RET -ne 0 ]; then
   echo "TEST FAILED"
-  for i in boot m1 m2 m3 a1 a2; do
-    vagrant ssh $i -c 'sudo journalctl -o short' > $WORKDIR/test/vagrant-logs/$i
+  echo "Attempting to gather logs"
+  export LOG_REPLAY_LINES=${LOG_REPLAY_LINES:=20}
+  for i in boot m1 m2 m3 a1 a2 p1; do
+    if [ "$TEAMCITY_BUILD_ENV" == "true" ]; then
+      echo "##teamcity[blockOpened name='$i']"
+      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+      echo "##teamcity[blockClosed name='$i']"
+    else
+      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+    fi
   done
   exit 1
 fi

@@ -13,7 +13,7 @@ class CommandChain():
 
     :param cmd: String, command to execute
     :param rollback: String (optional) a rollback command
-    :param comment: String (optional)
+    :param stage: String (optional)
     :return:
     '''
     execute_flag = 'execute'
@@ -23,21 +23,21 @@ class CommandChain():
         self.commands_stack = []
         self.namespace = namespace
 
-    def add_execute(self, cmd, rollback=None, comment=None):
+    def add_execute(self, cmd, rollback=None, stage=None):
         assert isinstance(cmd, list) or callable(cmd)
-        self.commands_stack.append((self.execute_flag, cmd, rollback, comment))
+        self.commands_stack.append((self.execute_flag, cmd, rollback, stage))
 
-    def add_copy(self, local_path, remote_path, remote_to_local=False, recursive=False, comment=None):
-        self.commands_stack.append((self.copy_flag, local_path, remote_path, remote_to_local, recursive, comment))
+    def add_copy(self, local_path, remote_path, remote_to_local=False, recursive=False, stage=None):
+        self.commands_stack.append((self.copy_flag, local_path, remote_path, remote_to_local, recursive, stage))
 
     def get_commands(self):
         # Return all commands
         return self.commands_stack
 
-    def prepend_command(self, cmd, rollback=None, comment=None):
+    def prepend_command(self, cmd, rollback=None, stage=None):
         # We can specify a command to be executed before the main chain of commands, for example some setup commands
         assert isinstance(cmd, list)
-        self.commands_stack.insert(0, (self.execute_flag, cmd, rollback, comment))
+        self.commands_stack.insert(0, (self.execute_flag, cmd, rollback, stage))
 
 
 class AbstractSSHLibDelegate(metaclass=abc.ABCMeta):
@@ -62,6 +62,15 @@ class AbstractSSHLibDelegate(metaclass=abc.ABCMeta):
         :return:
         '''
         pass
+
+    @abc.abstractmethod
+    def prepare_status(self, name, nodes):
+        '''
+        A method called before executing commands from a chain. Used to prepare status json file.
+        :param name: A unique chain identifier
+        :param nodes: A list of nodes of type ssh.Node
+        :return:
+        '''
 
 
 class JsonDelegate(AbstractSSHLibDelegate):
@@ -132,8 +141,9 @@ class JsonDelegate(AbstractSSHLibDelegate):
                 if host_object.tags and 'tags' not in status_json['hosts'][host]:
                     status_json['hosts'][host]['tags'] = host_object.tags
 
-                # Update chain status to running if not other state found.
-                if 'host_status' not in status_json['hosts'][host]:
+                # Update chain status to running if not other state found or the status is unstarted.
+                if ('host_status' not in status_json['hosts'][host] or
+                        status_json['hosts'][host]['host_status'] == 'unstarted'):
                     status_json['hosts'][host]['host_status'] = 'running'
 
         # Update chain status: success or fail
@@ -143,6 +153,28 @@ class JsonDelegate(AbstractSSHLibDelegate):
         self._dump_json_state(name, status_json)
         if callback_called:
                 callback_called.set_result(True)
+
+    # When the function is invoked the json status file will be populated with a list of nodes passed as a parameter.
+    # In this case a node should not be in any state and should just wait to be processed.
+    def prepare_status(self, name, nodes):
+        assert isinstance(name, str)
+        assert isinstance(nodes, list)
+
+        json_status = self._read_json_state(name)
+
+        # if status file already exists we should not proceed.
+        if json_status:
+            return
+
+        json_status['hosts'] = {}
+        for node in nodes:
+            ip_port = '{}:{}'.format(node.ip, node.port)
+            json_status['hosts'][ip_port] = {}
+            json_status['hosts'][ip_port]['commands'] = []
+            json_status['hosts'][ip_port]['tags'] = node.tags
+            json_status['hosts'][ip_port]['host_status'] = 'unstarted'
+
+        self._dump_json_state(name, json_status)
 
 
 class SyncCmdDelegate(AbstractSSHLibDelegate):
@@ -154,4 +186,7 @@ class SyncCmdDelegate(AbstractSSHLibDelegate):
         callback_called.set_result(True)
 
     def on_done(self, name, result, host_status=None):
+        pass
+
+    def prepare_status(self, name, nodes):
         pass

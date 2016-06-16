@@ -2,7 +2,7 @@
 set -x
 
 mkdir -p $PKG_PATH/bin
-cp /pkg/src/mesos-dns/mesos-dns-v0.5.2-linux-amd64 $PKG_PATH/bin/mesos-dns
+cp /pkg/src/mesos-dns/mesos-dns-v0.5.3-rc1-linux-amd64 $PKG_PATH/bin/mesos-dns
 chmod 755 $PKG_PATH/bin/mesos-dns
 
 # Create the service file

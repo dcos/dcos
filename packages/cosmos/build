@@ -21,13 +21,10 @@ After=dcos-gen-resolvconf.service
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/var/lib/dcos/environment.proxy
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
-## CoreOS
-ExecStartPre=-/usr/bin/mkdir -p /var/lib/cosmos
-## Ubuntu
-ExecStartPre=-/bin/mkdir -p /var/lib/cosmos
-ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/lib/:${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot
+ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/lib/:${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos
 EOF

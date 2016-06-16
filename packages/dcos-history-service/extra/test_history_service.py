@@ -21,7 +21,7 @@ def history_service(monkeypatch, tmpdir):
     # is set to be datetime.now at initialization. Using FETCH_PERIOD means that
     # each call to update will result in a appended /history/minute buffer
 
-    def mock_state():
+    def mock_state(headers):
         nonlocal update_counter
         nonlocal start_time
         nonlocal mock_data
@@ -33,13 +33,19 @@ def history_service(monkeypatch, tmpdir):
         return timestamp, data
 
     monkeypatch.setattr(history.statebuffer, 'fetch_state', mock_state)
+
+    def mock_headers():
+        return {'Authorization': 'test'}
+
+    monkeypatch.setattr(history.server, 'add_headers_cb', mock_headers)
+
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     start_time = datetime.now()
     history.server.state_buffer = sb  # connect mock to app
     test_app = history.server.app
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
-    updater = history.statebuffer.BufferUpdater(sb)
+    updater = history.statebuffer.BufferUpdater(sb, None)
 
     def populate_buffer(update_count):
         for i in range(update_count):
@@ -85,7 +91,7 @@ def test_file_trimming(history_service):
 
 def test_data_recovery(monkeypatch, tmpdir):
 
-    def mock_state():
+    def mock_state(headers):
         nonlocal start_time
         return start_time, 'baz'
 
@@ -119,7 +125,7 @@ def test_data_recovery(monkeypatch, tmpdir):
     test_app = history.server.app
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
-    updater = history.statebuffer.BufferUpdater(sb)
+    updater = history.statebuffer.BufferUpdater(sb, None)
     updater.update()
     resp = test_client.get("/history/minute")
     # recovery data w/gap + 8 FF updates + first real update
@@ -133,3 +139,11 @@ def test_data_recovery(monkeypatch, tmpdir):
     resp = test_client.get("/history/hour")
     # No data was left for hour, so nothing loads other than the first update
     assert resp.data.decode() == '[baz]'
+
+
+def test_add_headers(history_service):
+    resp = history_service[0].get('/history/minute')
+    # check that new header is added
+    assert resp.headers['Authorization'] == 'test'
+    # check that original headers are still there
+    assert resp.headers['Access-Control-Max-Age'] == '86400'

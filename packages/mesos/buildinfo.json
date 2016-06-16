@@ -10,5 +10,7 @@
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
     "MESOS_NATIVE_JAVA_LIBRARY": "/opt/mesosphere/lib/libmesos.so"
-  }
+  },
+  "username": "dcos_mesos",
+  "state_directory": true
 }

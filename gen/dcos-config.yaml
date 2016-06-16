@@ -10,6 +10,9 @@ package:
   - path: /bin/detect_ip
     permissions: "0755"
     content: {{ ip_detect_contents }}
+  - path: /bin/detect_ip_public
+    permissions: "0755"
+    content: {{ ip_detect_public_contents }}
   - path: /check/check_ip
     permissions: "0755"
     content: |
@@ -27,11 +30,31 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
-  - path: /etc/spartan.json
+  - path: /etc_slave/spartan.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
-        "local_addresses": ["198.51.100.1", "198.51.100.2", "198.51.100.3"],
+        "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53
+      }
+  - path: /etc_slave_public/spartan.json
+    content: |
+      {
+        "upstream_resolvers": {{ resolvers }},
+        "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53
+      }
+  - path: /etc_master/spartan.json
+    content: |
+      {
+{% switch master_dns_bindall %}
+{% case "true" %}
+{% case "false" %}
+        "bind_interface": "spartan",
+{% endswitch %}
+        "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53
       }
@@ -49,15 +72,24 @@ package:
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }}
       }
+  - path: /etc_master/minuteman.app.config
+    content: |
+      [
+        {minuteman,
+          [
+            {agent_polling_enabled, false}
+          ]
+        }
+      ].
   - path: /etc/mesos-master
     content: |
-      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_LOG_DIR=/var/lib/dcos/mesos/log
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
-      MESOS_WORK_DIR=/var/lib/mesos/master
+      MESOS_WORK_DIR=/var/lib/dcos/mesos/master
       MESOS_ZK=zk://127.0.0.1:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
@@ -78,7 +110,7 @@ package:
       MESOS_LOG_DIR=/var/log/mesos
       MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION={{ mesos_isolation_modules }}
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
@@ -86,10 +118,10 @@ package:
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
+      MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
-      {{ mesos_hooks_env_var }}
   - path: /etc/mesos-slave
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
@@ -118,11 +150,21 @@ package:
     content: |
       {
         "gen_provider": "{{ provider }}",
+        "diagnostics_urls": [
+          "http://leader.mesos:1050/system/health/v1/report"
+        ],
+        "cosmos_urls": [
+          "http://leader.mesos:7070/package/list"
+        ],
+        "mesos_urls": [
+          "http://leader.mesos:5050/frameworks",
+          "http://leader.mesos:5050/metrics/snapshot"
+        ],
         "enabled": "{{ telemetry_enabled }}"
       }
   - path: /etc/adminrouter.env
     content: |
-      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ oauth_enabled }}
+      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
   - path: /etc/dcos-oauth.env
     content: |
       OAUTH_ISSUER_URL={{ oauth_issuer_url }}
@@ -146,21 +188,6 @@ package:
   - path: /etc/master_list
     content: |
       {{ master_list }}
-{% case "vrrp" %}
-  - path: /etc/keepalived
-    content: |
-      KEEPALIVED_VIRTUAL_IPADDRESS={{ keepalived_virtual_ipaddress }}
-      KEEPALIVED_INTERFACE={{ keepalived_interface }}
-      KEEPALIVED_ROUTER_ID={{ keepalived_router_id }}
-      KEEPALIVED_PASS={{ keepalived_pass }}
-  - path: /etc_master/dns_config_master
-    content: |
-      TRY_LOCALHOST=true
-  - path: /etc/dns_config
-    content: |
-      MASTER_SOURCE=exhibitor
-      EXHIBITOR_ADDRESS={{ keepalived_virtual_ipaddress }}
-      RESOLVERS={{ resolvers_str }}
 {% endswitch %}
 {% switch exhibitor_storage_backend %}
 {% case "agent_only_group_no_exhibitor" %}
@@ -213,6 +240,10 @@ package:
   - path: /etc/ui-config.json
     content: |
       {"uiConfiguration":{"plugins":{"banner":{"enabled":{{ ui_banner }},"backgroundColor":"{{ ui_banner_background_color }}","foregroundColor":"{{ ui_banner_foreground_color }}","headerTitle":{{ ui_banner_header_title }},"headerContent":{{ ui_banner_header_content }},"footerContent":{{ ui_banner_footer_content }},"imagePath":{{ ui_banner_image_path }},"dismissible":{{ ui_banner_dismissible }}},"branding":{"enabled":{{ ui_branding }}},"external-links": {"enabled": {{ ui_external_links }}},
+{% switch custom_auth %}
+{% case "true" %}
+      {{ custom_auth_json }}
+{% case "false" %}
       "authentication":{"enabled":false},
 {% switch oauth_available %}
 {% case "true" %}
@@ -220,4 +251,5 @@ package:
 {% case "false" %}
       "oauth":{"enabled":false},
 {% endswitch %}
-      "networking":{"enabled":{{ ui_networking }}},"organization":{"enabled":{{ ui_organization }}},"tracking":{"enabled":{{ telemetry_enabled }}}}}}
+{% endswitch %}
+      "tracking":{"enabled":{{ telemetry_enabled }}}}}}

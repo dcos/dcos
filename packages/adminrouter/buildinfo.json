@@ -9,7 +9,7 @@
       "adminrouter": {
           "kind": "git",
           "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "3bb67d6cc6b424c606f382cb49ded6890428a1e9",
+          "ref": "9bafbe37097b8bc329eb89552075185620da1267",
           "ref_origin": "master"
       }
   }

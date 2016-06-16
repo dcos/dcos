@@ -11,7 +11,7 @@ def get_advanced_templates():
 setup(
     name='dcos_image',
     version='0.1',
-    description='DC/OS packaging, , management, install utilities',
+    description='DC/OS packaging, management, install utilities',
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
@@ -55,6 +55,7 @@ setup(
     package_data={
         'gen': [
             'ip-detect/aws.sh',
+            'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
             'ip-detect/vagrant.sh',
             'cloud-config.yaml',
@@ -74,12 +75,15 @@ setup(
             'installer/bash/installer_internal_wrapper.in',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
-            ] + get_advanced_templates(),
+        ] + get_advanced_templates(),
+        'pkgpanda': [
+            'docker/dcos-builder/Dockerfile'
+        ],
         'test_util': [
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
-            'integration_test.py']
+            'integration_test.py'],
     },
     zip_safe=False
 )

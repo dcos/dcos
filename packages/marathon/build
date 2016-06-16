@@ -18,11 +18,11 @@ Restart=always
 StartLimitInterval=0
 RestartSec=15
 EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/opt/mesosphere/environment.ip.marathon
+EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
 ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
-ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /opt/mesosphere/environment.ip.marathon'
-ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /opt/mesosphere/environment.ip.marathon'
-ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /opt/mesosphere/environment.ip.marathon'
+ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
+ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
+ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
 EOF
 
 cat << EOF >> "$marathon_service"

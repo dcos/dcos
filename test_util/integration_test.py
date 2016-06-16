@@ -18,12 +18,19 @@ import retrying
 LOG_LEVEL = logging.INFO
 TEST_APP_NAME_FMT = '/integration-test-{}'
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-AWS_REGION = os.environ.get('AWS_REGION', '')
-
 BASE_ENDPOINT_3DT = '/system/health/v1'
 PORT_3DT = 1050
+
+# If auth is enabled, by default, tests use hard-coded OAuth token
+AUTH_ENABLED = os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true'
+# Set these to run test against a custom configured user instead
+LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
+LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
+
+# AWS creds for volume control (not used currently)
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_REGION = os.getenv('AWS_REGION')
 
 
 @pytest.fixture(scope='module')
@@ -32,6 +39,7 @@ def cluster():
     assert 'MASTER_HOSTS' in os.environ
     assert 'PUBLIC_MASTER_HOSTS' in os.environ
     assert 'SLAVE_HOSTS' in os.environ
+    assert 'PUBLIC_SLAVE_HOSTS' in os.environ
     assert 'DNS_SEARCH' in os.environ
 
     # dns_search must be true or false (prevents misspellings)
@@ -43,13 +51,14 @@ def cluster():
                    masters=os.environ['MASTER_HOSTS'].split(','),
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
+                   public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
                    dns_search_set=os.environ['DNS_SEARCH'])
 
 
 @pytest.fixture(scope='module')
 def auth_cluster(cluster):
-    if not cluster.is_oauth:
+    if not AUTH_ENABLED:
         pytest.skip("Skipped because not running against cluster with auth.")
     return cluster
 
@@ -123,16 +132,16 @@ class Cluster:
             logging.info(msg.format(r.status_code))
             return False
         data = r.json()
-        num_slaves = len([x['hostname'] for x in data['slaves']])
-        # For single node setup there is only one slave node:
-        min_slaves = min(len(self.slaves), 2)
-        if num_slaves >= min_slaves:
+        # Check that there are all the slaves the test knows about. They are all
+        # needed to pass the test.
+        num_slaves = len(data['slaves'])
+        if num_slaves >= len(self.all_slaves):
             msg = "Sufficient ({} >= {}) number of slaves have joined the cluster"
-            logging.info(msg.format(num_slaves, min_slaves))
+            logging.info(msg.format(num_slaves, self.all_slaves))
             return True
         else:
             msg = "Current number of slaves: {} < {}, continuing to wait..."
-            logging.info(msg.format(num_slaves, min_slaves))
+            logging.info(msg.format(num_slaves, self.all_slaves))
             return False
 
     @retrying.retry(wait_fixed=1000,
@@ -155,6 +164,7 @@ class Cluster:
     def _wait_for_leader_election(self):
         mesos_resolver = dns.resolver.Resolver()
         mesos_resolver.nameservers = self.public_masters
+        mesos_resolver.port = 61053
         try:
             # Yeah, we can also put it in retry_on_exception, but
             # this way we will loose debug messages
@@ -192,7 +202,7 @@ class Cluster:
         self._wait_for_DCOS_history_up()
 
     def _authenticate(self):
-        if self.is_oauth:
+        if AUTH_ENABLED:
             # token valid until 2036 for user albert@bekstil.net
             # {
             #   "email": "albert@bekstil.net",
@@ -204,6 +214,8 @@ class Cluster:
             #   "iat": 1460164974
             # }
             js = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}  # noqa
+            if LOGIN_UNAME and LOGIN_PW:
+                js = {'uid': LOGIN_UNAME, 'password': LOGIN_PW}
         else:
             # no authentication required
             return
@@ -216,7 +228,7 @@ class Cluster:
         self.superuser_auth_cookie = r.cookies[
             'dcos-acs-auth-cookie']
 
-    def __init__(self, dcos_uri, masters, public_masters, slaves, registry, dns_search_set):
+    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -228,11 +240,12 @@ class Cluster:
             registry: hostname or IP address of a private Docker registry.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
-
         """
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
         self.slaves = sorted(slaves)
+        self.public_slaves = sorted(public_slaves)
+        self.all_slaves = sorted(slaves+public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.registry = registry
         self.dns_search_set = dns_search_set == 'true'
@@ -245,7 +258,6 @@ class Cluster:
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
-        self.is_oauth = os.environ.get('DCOS_OAUTH', 'true') == 'true'
         self._wait_for_DCOS()
 
     @staticmethod
@@ -253,7 +265,7 @@ class Cluster:
         return {'Accept': 'application/json, text/plain, */*'}
 
     def _suheader(self, disable_suauth):
-        if not disable_suauth and self.is_oauth:
+        if not disable_suauth and AUTH_ENABLED:
             return self.superuser_auth_header
         return {}
 
@@ -500,7 +512,7 @@ def test_if_all_Mesos_slaves_have_registered(cluster):
     data = r.json()
     slaves_ips = sorted(x['hostname'] for x in data['slaves'])
 
-    assert slaves_ips == cluster.slaves
+    assert slaves_ips == cluster.all_slaves
 
 
 # Retry if returncode is False, do not retry on exceptions.
@@ -828,7 +840,7 @@ def test_if_search_is_working(cluster):
 def test_if_DCOSHistoryService_is_getting_data(cluster):
     r = cluster.get('/dcos-history-service/history/last')
     assert r.status_code == 200
-    # Make sure some basic fields are present from state-summary which the DCOS
+    # Make sure some basic fields are present from state-summary which the DC/OS
     # UI relies upon. Their exact content could vary so don't test the value.
     json = r.json()
     assert 'cluster' in json
@@ -945,8 +957,9 @@ def test_3dt_health(cluster):
     """
     test health endpoint /system/health/v1
     """
-    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', '3dt_version']
+    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', '3dt_version', 'system']
     required_fields_unit = ['id', 'health', 'output', 'description', 'help', 'name']
+    required_system_fields = ['memory', 'load_avarage', 'partitions', 'disk_usage']
 
     for host in cluster.masters + cluster.slaves:
         response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
@@ -974,6 +987,14 @@ def test_3dt_health(cluster):
         for required_field in required_fields[1:]:
             assert required_field in response, '{} field not found'.format(required_field)
             assert response[required_field], '{} cannot be empty'.format(required_field)
+
+        # check system metrics
+        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
+            ', '.join(required_system_fields))
+
+        for sys_field in required_system_fields:
+            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
+            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
 
 
 def validate_node(nodes):
@@ -1004,8 +1025,8 @@ def test_3dt_nodes(cluster):
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
-        assert len(response['nodes']) == len(cluster.masters + cluster.slaves), (
-            'a number of nodes in response must be {}'.format(len(cluster.masters + cluster.slaves)))
+        assert len(response['nodes']) == len(cluster.masters + cluster.all_slaves), (
+            'a number of nodes in response must be {}'.format(len(cluster.masters + cluster.all_slaves)))
 
         # test nodes
         validate_node(response['nodes'])
@@ -1109,7 +1130,7 @@ def test_3dt_units(cluster):
     """
     # get all unique unit names
     all_units = set()
-    for node in cluster.masters + cluster.slaves:
+    for node in cluster.masters + cluster.all_slaves:
         node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
         for unit in node_response['units']:
             all_units.add(unit['id'])
@@ -1246,12 +1267,18 @@ def test_signal_service(cluster):
 
     wait_for_endpoint()
 
-    test_cache_url = "http://{}:{}/signal_test_cache".format(service_points[0].host, service_points[0].port)
+    test_host = service_points[0].host
+    test_port = service_points[0].port
+    test_cache_url = "http://{}:{}/signal_test_cache".format(test_host, test_port)
+
     cmd = """
-data=`/opt/mesosphere/bin/dcos-signal -report-host leader.mesos -test 2> /dev/null`;
-curl -H 'Content-Type: application/json' -X POST -d "$data" {};
+ID_PATH="/${PWD}/test-cluster-id"
+echo 'test-id' > $ID_PATH
+/opt/mesosphere/bin/dcos-signal \
+    -cluster-id-path $ID_PATH \
+    -test-url %s
 sleep 3600
-""".format(test_cache_url)
+""" % test_cache_url
 
     test_uuid = uuid.uuid4().hex
     signal_app_definition = {
@@ -1276,67 +1303,116 @@ sleep 3600
 
     r = requests.get(test_cache_url)
 
+    # Handy for diagnosing strange signal service test behavior, not sure if we should
+    # leave these in for master branch, or remove for the final PR.
+    print('TESTING SIGNAL RETURN:\n{}'.format(r.text))
+    print('CACHE SERVER STATUS:\n{}'.format(r.status_code))
+
     r_data = json.loads(r.json())
 
     cluster.destroy_marathon_app(signal_app_definition['id'])
     cluster.destroy_marathon_app(test_server_app_definition['id'])
 
     exp_data = {
-            'Event': 'health',
-            'UserId': '',
-            'ClusterId': '',
-            'Properties': {
-                'provider': 'onprem',
-                'source': 'cluster',
-                'clusterId': '',
-                'customerKey': '',
-                'environmentVersion': '',
-                'variant': 'open'}
-            }
+        'diagnostics': {
+            'event': 'health',
+            'anonymousId': 'test-id',
+            'properties': {}
+        },
+        'cosmos': {
+            'event': 'package_list',
+            'anonymousId': 'test-id',
+            'properties': {}
+        },
+        'mesos': {
+            'event': 'mesos_track',
+            'anonymousId': 'test-id',
+            'properties': {}
+        }
+    }
 
+    # Generic properties which are the same between all tracks
+    generic_properties = {
+        'provider': 'onprem',
+        'source': 'cluster',
+        'clusterId': 'test-id',
+        'customerKey': '',
+        'environmentVersion': '',
+        'variant': 'open'
+    }
+
+    # Insert the generic property data which is the same between all signal tracks
+    exp_data['diagnostics']['properties'].update(generic_properties)
+    exp_data['cosmos']['properties'].update(generic_properties)
+    exp_data['mesos']['properties'].update(generic_properties)
+
+    # Insert all the diagnostics data programmatically
     master_units = [
-            'adminrouter-reload-service',
-            'adminrouter-reload-timer',
-            'adminrouter-service',
-            'cluster-id-service',
-            'cosmos-service',
-            'exhibitor-service',
-            'history-service-service',
-            'keepalived-service',
-            'marathon-service',
-            'mesos-dns-service',
-            'mesos-master-service',
-            'signal-service']
+        'adminrouter-reload-service',
+        'adminrouter-reload-timer',
+        'adminrouter-service',
+        'cluster-id-service',
+        'cosmos-service',
+        'exhibitor-service',
+        'history-service-service',
+        'logrotate-master-service',
+        'logrotate-master-timer',
+        'marathon-service',
+        'mesos-dns-service',
+        'mesos-master-service',
+        'signal-service']
     all_node_units = [
-            'ddt-service',
-            'epmd-service',
-            'gen-resolvconf-service',
-            'gen-resolvconf-timer',
-            'logrotate-service',
-            'logrotate-timer',
-            'minuteman-service',
-            'signal-timer',
-            'spartan-service',
-            'spartan-watchdog-service',
-            'spartan-watchdog-timer']
+        'ddt-service',
+        'epmd-service',
+        'gen-resolvconf-service',
+        'gen-resolvconf-timer',
+        'minuteman-service',
+        'navstar-service',
+        'signal-timer',
+        'spartan-service',
+        'spartan-watchdog-service',
+        'spartan-watchdog-timer']
     slave_units = [
-            'mesos-slave-service',
-            'vol-discovery-priv-agent-service']
+        'mesos-slave-service',
+        'vol-discovery-priv-agent-service']
+    public_slave_units = [
+        'mesos-slave-public-service',
+        'vol-discovery-pub-agent-service']
+    all_slave_units = [
+        'logrotate-agent-service',
+        'logrotate-agent-timer']
 
     master_units.append('oauth-service')
 
     for unit in master_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_node_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves+cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(
+            cluster.all_slaves+cluster.masters)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+    for unit in public_slave_units:
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+    for unit in all_slave_units:
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
-    # Cluster ID is uncheckable as this runs on an agent
-    r_data['ClusterId'] = ''
-    r_data['Properties']['clusterId'] = ''
+    # Check the entire hash of diagnostics data
+    assert r_data['diagnostics'] == exp_data['diagnostics']
+    # Check a subset of things regarding Mesos that we can logically check for
+    assert r_data['mesos']['properties']['frameworks'][0]['name'] == 'marathon'
+    # There are no packages installed by default on the integration test, ensure the key exists
+    assert r_data['cosmos']['properties']['package_list'] is None
 
-    assert r_data == exp_data
+
+def test_mesos_agent_role_assignment(cluster):
+    for agent in cluster.public_slaves:
+        r = requests.get('http://{}:5051/state.json'.format(agent))
+        assert r.json()['flags']['default_role'] == 'slave_public'
+    for agent in cluster.slaves:
+        r = requests.get('http://{}:5051/state.json'.format(agent))
+        assert r.json()['flags']['default_role'] == '*'

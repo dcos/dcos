@@ -103,7 +103,7 @@ class MultiRunner():
         return shared_opts
 
     @asyncio.coroutine
-    def run_cmd_return_dict_async(self, cmd, host, namespace, future):
+    def run_cmd_return_dict_async(self, cmd, host, namespace, future, stage):
         with make_slave_pty() as slave_pty:
             process = yield from asyncio.create_subprocess_exec(
                 *cmd, stdout=asyncio.subprocess.PIPE,
@@ -134,7 +134,8 @@ class MultiRunner():
                 "stdout": stdout.decode().split('\n'),
                 "stderr": stderr.decode().split('\n'),
                 "returncode": process.returncode,
-                "pid": process.pid
+                "pid": process.pid,
+                "stage": stage
             }
         }
 
@@ -142,8 +143,8 @@ class MultiRunner():
         return process_output
 
     @asyncio.coroutine
-    def run_async(self, host, command, namespace, future):
-        # command consists of (command_flag, command, rollback, comment)
+    def run_async(self, host, command, namespace, future, stage):
+        # command consists of (command_flag, command, rollback, stage)
         # we will ignore all but command for now
         _, cmd, _, _ = command
 
@@ -153,12 +154,12 @@ class MultiRunner():
 
         full_cmd = self._get_base_args(self.ssh_bin, host) + ['{}@{}'.format(self.ssh_user, host.ip)] + cmd
         log.debug('executing command {}'.format(full_cmd))
-        result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future)
+        result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future, stage)
         return result
 
     @asyncio.coroutine
-    def copy_async(self, host, command, namespace, future):
-        # command[0] is command_flag, command[-1] is comment
+    def copy_async(self, host, command, namespace, future, stage):
+        # command[0] is command_flag, command[-1] is stage
         # we will ignore them here.
         _, local_path, remote_path, remote_to_local, recursive, _ = command
         copy_command = []
@@ -171,11 +172,17 @@ class MultiRunner():
             copy_command += [local_path, remote_full_path]
         full_cmd = self._get_base_args(self.scp_bin, host) + copy_command
         log.debug('copy with command {}'.format(full_cmd))
-        result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future)
+        result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future, stage)
         return result
 
     def _run_chain_command(self, chain, host, chain_result):
         assert isinstance(chain, CommandChain)
+
+        # Prepare status json
+        if self.async_delegate is not None:
+            log.debug('Preparing a status json')
+            self.async_delegate.prepare_status(chain.namespace, self.__targets)
+
         host_status = 'hosts_success'
         host_port = '{}:{}'.format(host.ip, host.port)
 
@@ -199,12 +206,12 @@ class MultiRunner():
             }
         }
         for command in chain.get_commands():
-            comment = command[-1]
-            if comment is not None:
-                # a comment can be a function which takes a Node() object and does evaluation
-                if callable(comment):
-                    comment = comment(host)
-                log.debug('{}: {}'.format(host_port, comment))
+            stage = command[-1]
+            if stage is not None:
+                # a stage can be a function which takes a Node() object and does evaluation
+                if callable(stage):
+                    stage = stage(host)
+                log.debug('{}: {}'.format(host_port, stage))
             future = asyncio.Future()
 
             if self.async_delegate is not None:
@@ -213,7 +220,7 @@ class MultiRunner():
                 future.add_done_callback(lambda future: self.async_delegate.on_update(future, callback_called))
 
             # command[0] is a type of a command, could be CommandChain.execute_flag, CommandChain.copy_flag
-            result = yield from command_map.get(command[0], None)(host, command, chain.namespace, future)
+            result = yield from command_map.get(command[0], None)(host, command, chain.namespace, future, stage)
             status = process_exit_code_map.get(result[host_port]['returncode'], process_exit_code_map['failed'])
             host_status = status['host_status']
 

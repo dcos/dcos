@@ -1,6 +1,7 @@
 [Unit]
 Description=Mesos Master: DC/OS Mesos Master Service
 [Service]
+User=dcos_mesos
 Restart=always
 StartLimitInterval=0
 RestartSec=15
