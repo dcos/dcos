@@ -26,7 +26,7 @@ class CliDelegate(AbstractSSHLibDelegate):
         pass
 
 
-def run_loop(action, options):
+def run_loop(action, options, upgrade_host=None):
     assert callable(action)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -35,7 +35,18 @@ def run_loop(action, options):
     try:
         config = backend.get_config()
         cli_delegate = CliDelegate()
-        result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
+
+        if action == action_lib.upgrade_dcos:
+            result = loop.run_until_complete(action(
+                config,
+                upgrade_host,
+                block=True,
+                async_delegate=cli_delegate,
+                options=options))
+
+        else:
+            result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
+
         pp = PrettyPrint(result)
         pp.stage_name = action.__name__
         pp.beautify('print_data')
@@ -47,8 +58,8 @@ def run_loop(action, options):
         for command_result in host_result:
             for host, process_result in command_result.items():
                 if process_result['returncode'] != 0:
-                    exitcode += 1
-    print_header('ACTION {} COMPLETE'.format(action.__name__))
+                    exitcode = process_result['returncode']
+    print_header('END {} with returncode: {}'.format(action.__name__, exitcode))
     pp.print_summary()
     return exitcode
 
@@ -159,9 +170,14 @@ def dispatch_action(args):
         print_header("EXECUTING INSTALL PREREQUISITES")
         return action_lib.install_prereqs
 
-    for action in ['deploy', 'preflight', 'postflight', 'uninstall', 'install_prereqs']:
+    def upgrade(args):
+        print_header("EXECUTING DC/OS UPGRADE")
+        return action_lib.upgrade_dcos
+
+    for action in ['deploy', 'preflight', 'postflight', 'uninstall', 'install_prereqs', 'upgrade']:
         if getattr(args, action):
-            errors = run_loop(locals()[action](args), args)
+            upgrade_host = args.upgrade if action == 'upgrade' else None
+            errors = run_loop(locals()[action](args, upgrade_host=upgrade_host), args)
             installer_analytics.send(
                 action="installer_{}".format(action),
                 install_method="cli",
