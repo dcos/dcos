@@ -51,7 +51,7 @@ def parse_args(args):
 Install Mesosophere's Data Center Operating System
 
 dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v]
-[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --test]
+[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --version]
 
 Environment Settings:
 
@@ -144,10 +144,10 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         help='Validate the configuration for executing --genconf and deploy arguments in config.yaml')
 
     mutual_exc.add_argument(
-        '--test',
+        '--version',
         action='store_true',
         default=False,
-        help='Performs tests on the dcos_installer application')
+        help='Print the BOOTSTRAP_ID (version) of this DC/OS artifact.')
 
     options = parser.parse_args(args)
     return options

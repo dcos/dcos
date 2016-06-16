@@ -1,6 +1,7 @@
 import asyncio
 import coloredlogs
 import logging
+import os
 import sys
 
 from dcos_installer import async_server, action_lib, backend
@@ -128,7 +129,10 @@ def dispatch_option(args):
             return 1
         return 0
 
-    for action in ['web', 'hash_password', 'validate_config', 'genconf']:
+    def version(args):
+        print("DC/OS Bootstrap ID: " + os.environ["BOOTSTRAP_ID"])
+
+    for action in ['web', 'hash_password', 'validate_config', 'version', 'genconf']:
         if getattr(args, action):
             sys.exit(locals()[action](args))
 
