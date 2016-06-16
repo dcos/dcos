@@ -1,0 +1,10 @@
+{
+  "requires": ["mesos"],
+    "docker": "dcos-builder",
+    "single_source" : {
+      "kind": "git",
+      "git": "git@github.com:dcos/mesos-overlay-modules.git",
+      "ref": "7ab71790e3dce8f8b725f32c51c5552735966108",
+      "ref_origin": "master"
+    }
+}
