@@ -40,7 +40,7 @@ class SSHTunnel():
             '/usr/bin/ssh',
             '-oConnectTimeout=10',
             '-oControlMaster=auto',
-            '-oControlPath={}/%r@%h:%p'.format(self.socket_dir),
+            '-oControlPath={}/%C'.format(self.socket_dir),
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
             '-oBatchMode=yes',
