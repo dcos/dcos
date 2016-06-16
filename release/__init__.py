@@ -23,7 +23,7 @@ import gen.installer.util as util
 import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
-
+import release.storage
 provider_names = ['aws', 'azure', 'bash']
 
 
@@ -433,7 +433,7 @@ def do_build_packages(cache_repository_url):
         # necessary.
         try:
             subprocess.check_call(['docker', 'push', container_name])
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             print("NOTICE: docker push of dcos-builder failed. This means it will be very difficult "
                   "for this build to be reproduced (others will have a different / non-identical "
                   "base docker for most packages.")
@@ -543,7 +543,7 @@ class ReleaseManager():
 
             # If read only wrap in the read_only proxy
             if read_only:
-                storage = ReadOnlyProxy(storage)
+                storage = release.storage.ReadOnlyProxy(storage)
 
             self.__storage_providers[name] = storage
 
