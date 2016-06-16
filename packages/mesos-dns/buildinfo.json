@@ -1,10 +1,10 @@
 {
-  "sources": {
-    "mesos-dns": {
-      "kind": "url",
-      "url": "https://circle-artifacts.com/gh/mesosphere/mesos-dns/679/artifacts/0/tmp/circle-artifacts.4z05vWw/mesos-dns-v0.5.3-rc1-linux-amd64",
-      "sha1": "d3798dcc09d77b85d0d8ef77931705a595aa5b93"
-    }
+  "docker": "golang:1.5.3",
+  "single_source" : {
+    "kind": "git",
+    "git": "git@github.com:mesosphere/mesos-dns.git",
+    "ref": "3d42620a12936fccf77435526f5aaee0fb409416",
+    "ref_origin": "master"
   },
   "username": "dcos_mesos_dns"
 }

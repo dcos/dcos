@@ -8,3 +8,6 @@ RUN pip install \
     requests \
     retrying \
     teamcity-messages
+ADD integration_test.py /integration_test.py
+ADD test_wrapper.sh /test_wrapper.sh
+CMD bash /test_wrapper.sh
