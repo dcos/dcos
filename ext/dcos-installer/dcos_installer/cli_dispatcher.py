@@ -177,7 +177,7 @@ def dispatch_action(args):
     for action in ['deploy', 'preflight', 'postflight', 'uninstall', 'install_prereqs', 'upgrade']:
         if getattr(args, action):
             upgrade_host = args.upgrade if action == 'upgrade' else None
-            errors = run_loop(locals()[action](args, upgrade_host=upgrade_host), args)
+            errors = run_loop(locals()[action](args), args, upgrade_host=upgrade_host)
             installer_analytics.send(
                 action="installer_{}".format(action),
                 install_method="cli",
