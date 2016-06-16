@@ -684,7 +684,7 @@ def generate(
         if len(templates[key]) > 1 and not key.endswith('.yaml'):
             raise Exception(
                 "Internal Error: Only know how to merge YAML templates at this point in time. "
-                "Can't merge template {} in template_list {}".format(name, template_list))
+                "Can't merge template {} in template_list {}".format(name, templates[key]))
 
     mandatory_parameters = get_parameters(templates)
 
