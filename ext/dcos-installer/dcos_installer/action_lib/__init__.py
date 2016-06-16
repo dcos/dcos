@@ -379,9 +379,10 @@ def _add_upgrade_script(chain):
 
     inline_script = """
 #/bin/bash
+source /opt/mesosphere/environment.export
 tar -axf {tmp_dir}/bootstrap/{bootstrap_id}.bootstrap.tar.xz -C {tmp_dir}/packages
-pkgpanda fetch {pkgs} --repository-url {tmp_dir}
-pkgpanda activate {pkgs}
+/opt/mesosphere/bin/pkgpanda fetch {pkgs} --repository-url {tmp_dir}
+/opt/mesosphere/bin/pkgpanda activate {pkgs}
 """.format(tmp_dir=REMOTE_TEMP_DIR, pkgs=string_of_pkgs, bootstrap_id=bootstrap_id)
 
     # Run a first command to get json file generated.
