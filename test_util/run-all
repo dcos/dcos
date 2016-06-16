@@ -85,7 +85,26 @@ vagrant up m1 m2 m3 a1 a2 p1 boot
 # with DC/OS assembling itself to save some time.
 # Build a docker container for running py.test inside of.
 echo "Building py.test container"
-docker build -t py.test - < ../docker/py.test/Dockerfile
+mkdir tmp_build_dir_for_pytest
+pushd tmp_build_dir_for_pytest
+cat <<EOF > test_wrapper.sh
+#!/bin/bash
+export DCOS_DNS_ADDRESS=$DCOS_DNS_ADDRESS
+export MASTER_HOSTS=$MASTER_HOSTS
+export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
+export SLAVE_HOSTS=192.168.65.111,192.168.65.121
+export PUBLIC_SLAVE_HOSTS=192.168.65.60
+export REGISTRY_HOST=boot.dcos
+export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
+export DNS_SEARCH=true
+export DCOS_AUTH_ENABLED=false
+py.test -vv -s ${CI_FLAGS:-} /integration_test.py
+EOF
+cp $PWD/../../integration_test.py .
+cp $PWD/../../docker/py.test/Dockerfile .
+docker build -t py.test .
+popd
+rm -rf tmp_build_dir_for_pytest
 
 # Build and push test server to local registry:
 echo "Building&pushing test_server container"
@@ -97,21 +116,9 @@ vagrant ssh boot -- -N -L 5000:192.168.65.50:5000 -f && docker push 127.0.0.1:50
 
 echo "Running integration test"
 set +e # So we can potentially capture the logs
-
-docker run -v $PWD/../integration_test.py:/integration_test.py \
-    -e DCOS_DNS_ADDRESS=$DCOS_DNS_ADDRESS \
-    -e MASTER_HOSTS=$MASTER_HOSTS \
-    -e PUBLIC_MASTER_HOSTS=$MASTER_HOSTS \
-    -e SLAVE_HOSTS="192.168.65.111,192.168.65.121" \
-    -e PUBLIC_SLAVE_HOSTS="192.168.65.60" \
-    -e REGISTRY_HOST="boot.dcos" \
-    -e "TEAMCITY_VERSION=${TEAMCITY_VERSION:-}" \
-    -e "DNS_SEARCH=true" \
-    -e "DCOS_AUTH_ENABLED=false" \
-    --net=host py.test py.test -vv -s -m "not minuteman and not ccm" ${CI_FLAGS:-} /integration_test.py
+docker run --net=host py.test
 RET=$?
 
-mkdir -p $WORKDIR/test/vagrant-logs
 if [ $RET -ne 0 ]; then
   echo "TEST FAILED"
   echo "Attempting to gather logs"
