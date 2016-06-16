@@ -386,7 +386,7 @@ pkgpanda activate {pkgs}
 
     # Run a first command to get json file generated.
     chain.add_execute(['echo', 'UPGRADE', 'DC/OS'])
-    chain.add_execute([inline_script], comment='EXECUTING DC/OS UPGRADE')
+    chain.add_execute([inline_script], stage='EXECUTING DC/OS UPGRADE')
 
 
 @asyncio.coroutine
