@@ -96,7 +96,7 @@ def prepare_test_registry(tunnel, test_dir):
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        variant, test_dns_search, ci_flags, timeout=None,
+        variant, test_dns_search, provider, ci_flags, timeout=None,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None):
     """Runs integration test on host
 
@@ -108,6 +108,7 @@ def integration_test(
         variant: 'ee' or 'default'
         test_dns_search: if set to True, test for deployed mesos DNS app
         ci_flags: optional additional string to be passed to test
+        provider: (str) either onprem, aws, or azure
         # The following variables correspond to currently disabled tests
         aws_access_key_id: needed for REXRAY tests
         aws_secret_access_key: needed for REXRAY tests
@@ -127,6 +128,7 @@ def integration_test(
         'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
         'REGISTRY_HOST=127.0.0.1',
         'DCOS_VARIANT='+variant,
+        'DCOS_PROVIDER='+provider,
         'DNS_SEARCH='+dns_search,
         'AWS_ACCESS_KEY_ID='+aws_access_key_id,
         'AWS_SECRET_ACCESS_KEY='+aws_secret_access_key,

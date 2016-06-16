@@ -313,6 +313,7 @@ def main():
                 agent_list=agent_list,
                 public_agent_list=public_agent_list,
                 variant=options.variant,
+                provider='onprem',
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
                 ci_flags=options.ci_flags,

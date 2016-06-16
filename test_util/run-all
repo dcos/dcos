@@ -98,6 +98,7 @@ export REGISTRY_HOST=boot.dcos
 export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DNS_SEARCH=true
 export DCOS_AUTH_ENABLED=false
+export DCOS_PROVIDER=onprem
 py.test -vv -s ${CI_FLAGS:-} /integration_test.py
 EOF
 cp $PWD/../../integration_test.py .
