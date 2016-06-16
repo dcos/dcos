@@ -144,10 +144,10 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         help='Validate the configuration for executing --genconf and deploy arguments in config.yaml')
 
     mutual_exc.add_argument(
-        '--version',
+        '--bootstrap-id',
         action='store_true',
         default=False,
-        help='Print the BOOTSTRAP_ID (version) of this DC/OS artifact.')
+        help='Print the BOOTSTRAP_ID of this DC/OS artifact.')
 
     options = parser.parse_args(args)
     return options

@@ -129,8 +129,8 @@ def dispatch_option(args):
             return 1
         return 0
 
-    def version(args):
-        print("DC/OS Bootstrap ID: " + os.environ["BOOTSTRAP_ID"])
+    def bootstrap_id(args):
+        print("Bootstrap ID: " + os.environ["BOOTSTRAP_ID"])
 
     for action in ['web', 'hash_password', 'validate_config', 'version', 'genconf']:
         if getattr(args, action):
