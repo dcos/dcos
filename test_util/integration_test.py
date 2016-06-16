@@ -1362,7 +1362,7 @@ sleep 3600
         'mesos-master-service',
         'signal-service']
     all_node_units = [
-        'ddt-service',
+        '3dt-service',
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
