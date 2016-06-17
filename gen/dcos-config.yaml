@@ -81,9 +81,82 @@ package:
           ]
         }
       ].
+  - path: /etc/overlay/config/master.json
+    content: |
+      {
+        "zk":
+        {
+          "url": "zk://127.0.0.1:2181/mesos",
+          "quorum": {{ master_quorum }}
+        },
+        "replicated_log_dir":"/var/lib/dcos/mesos/master/",
+        "network": {{ dcos_overlay_network }}
+       }
+  - path: /etc/dcos/network/cni/dummy.cni
+    content: |
+      {
+        "name": "dummy",
+        "type": "bridge"
+      }
+  - path: /etc/overlay/config/agent.json
+    content: |
+      {
+        "master": "zk://leader.mesos:2181/mesos",
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni"
+       }
+  - path: /etc/overlay/config/agent-master.json
+    content: |
+      {
+        "master": "zk://127.0.0.1:2181/mesos",
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "network_config" :
+        {
+          "allocate_subnet": true,
+          "mesos_bridge": false,
+          "docker_bridge": true
+        }
+      }
+  {% switch dcos_overlay_enable %}
+  {% case "true" %}
+  - path: /etc/mesos-master-modules/overlay_master_modules.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_OverlayMasterManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "master_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/master.json"
+                      }
+                    ]
+                },
+                {
+                  "name": "com_mesosphere_mesos_OverlayAgentManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "agent_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/agent-master.json"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  {% case "false" %}
+  {% endswitch %}
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/lib/dcos/mesos/log
+      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
@@ -100,6 +173,33 @@ package:
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
+  {% switch dcos_overlay_enable %}
+  {% case "true" %}
+  - path: /etc/mesos-slave-modules/overlay_slave_modules.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_OverlayAgentManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "agent_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/agent.json"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  {% case "false" %}
+  {% endswitch %}
   - path: /etc/mesos-slave-common
     content: |
       MESOS_MASTER=zk://leader.mesos:2181/mesos
