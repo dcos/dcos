@@ -41,9 +41,12 @@ def cluster():
     assert 'SLAVE_HOSTS' in os.environ
     assert 'PUBLIC_SLAVE_HOSTS' in os.environ
     assert 'DNS_SEARCH' in os.environ
+    assert 'DCOS_PROVIDER' in os.environ
 
     # dns_search must be true or false (prevents misspellings)
     assert os.environ['DNS_SEARCH'] in ['true', 'false']
+
+    assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
 
     _setup_logging()
 
@@ -53,7 +56,8 @@ def cluster():
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
-                   dns_search_set=os.environ['DNS_SEARCH'])
+                   dns_search_set=os.environ['DNS_SEARCH'],
+                   provider=os.environ['DCOS_PROVIDER'])
 
 
 @pytest.fixture(scope='module')
@@ -228,7 +232,7 @@ class Cluster:
         self.superuser_auth_cookie = r.cookies[
             'dcos-acs-auth-cookie']
 
-    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set):
+    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set, provider):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -240,6 +244,7 @@ class Cluster:
             registry: hostname or IP address of a private Docker registry.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
+            provider: onprem, azure, or aws
         """
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
@@ -249,6 +254,7 @@ class Cluster:
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.registry = registry
         self.dns_search_set = dns_search_set == 'true'
+        self.provider = provider
 
         assert len(self.masters) == len(self.public_masters)
 
@@ -1333,7 +1339,7 @@ sleep 3600
 
     # Generic properties which are the same between all tracks
     generic_properties = {
-        'provider': 'onprem',
+        'provider': cluster.provider,
         'source': 'cluster',
         'clusterId': 'test-id',
         'customerKey': '',
@@ -1354,7 +1360,7 @@ sleep 3600
         'cluster-id-service',
         'cosmos-service',
         'exhibitor-service',
-        'history-service-service',
+        'history-service',
         'logrotate-master-service',
         'logrotate-master-timer',
         'marathon-service',

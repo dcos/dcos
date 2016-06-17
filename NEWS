@@ -2,6 +2,8 @@ Documentation of changes which may break some install environments
 
 
 1.8-dev
+ - dcos-history-serivce was renamed to dcos-history
+ - dcos-ddt.service was renamed to dcos-3dt.service
  - Updated to CoreOS Alpha 1053. See https://github.com/dcos/dcos/pull/148 and
    https://dcosjira.atlassian.net/browse/DCOS-38 for why CoreOS alpha was chosen
    (It was the best of bad options)
