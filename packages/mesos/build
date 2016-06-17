@@ -62,6 +62,10 @@ disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
 
+#Create the master modules directory.
+mkdir -p "$PKG_PATH/etc/mesos-master-modules"
+
+
 # Copy the json file describing logrotate module.
 module_json="$PKG_PATH/etc/mesos-slave-modules/logrotate.json"
 mkdir -p "$(dirname "$module_json")"
