@@ -33,7 +33,7 @@ def copy_makedirs(src, dest):
     shutil.copy(src, dest)
 
 fetch_pkg_template = """
-mkdir -p dirname {package_path}
+mkdir -p $(dirname {package_path})
 curl -fLsSv --retry 20 -Y 100000 -y 60 -o {package_path} {bootstrap_url}/{package_path}
 """
 
