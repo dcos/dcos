@@ -266,6 +266,17 @@ function check_all() {
     check_selinux
     check_sort_capability
 
+     # Check to see that the /var/lib partition has enough space
+    varFree=$(( $( df /var/lib | tail -1 | awk '{print $4}')/1024/1024 ))
+    varFreeInt=${varFree%.*}
+    if [ $varFreeInt -ge 20 ]; then
+        varFreeStatus="PASS"
+    else
+        varFreeStatus="FAIL"
+    fi
+    echo "/var has" $varFree "GB available" 
+    echo $varFreeStatus
+
     local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
         BEGIN {
             version = 0
