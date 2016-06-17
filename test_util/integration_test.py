@@ -1360,7 +1360,7 @@ sleep 3600
         'cluster-id-service',
         'cosmos-service',
         'exhibitor-service',
-        'history-service-service',
+        'history-service',
         'logrotate-master-service',
         'logrotate-master-timer',
         'marathon-service',
