@@ -63,6 +63,9 @@
           },
           "us-west-2": {
               "default": "ami-bb69128b"
+          },
+          "us-gov-west-1": {
+              "default": "ami-e8ab1489"
           }
        }
     },
@@ -112,6 +115,7 @@
         "SecurityGroupIngress" : [
           { "IpProtocol" : "tcp", "FromPort" : "5050", "ToPort" : "5050", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "8080", "ToPort" : "8080", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "8181", "ToPort" : "8181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "2181", "ToPort" : "2181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} }

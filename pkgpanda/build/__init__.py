@@ -146,23 +146,24 @@ class PackageStore:
                 if not os.path.isdir(package_folder):
                     continue
 
+                # If we've already found this package, it means 1+ versions have been defined. Use
+                # those and ignore everything in the upstreams.
+                if name in self._packages_by_name:
+                    continue
+
                 # Search the directory for buildinfo.json files, record the variants
-                self._packages_by_name[name] = dict()
                 for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
-                    # Skip packages we already have a build for (they're defined in the current packages
-                    # directory as well as the upstream one)
-                    if (name, variant) in self._packages:
-                        pass
+                    # Only adding the default dictionary once we know we have a package.
+                    self._packages_by_name.setdefault(name, dict())
 
                     buildinfo = load_buildinfo(package_folder, variant)
                     self._packages[(name, variant)] = buildinfo
                     self._packages_by_name[name][variant] = buildinfo
-                    self._package_folders[name] = package_folder
 
-                # If there weren't any packages marked by buildinfo.json files, don't leave the index
-                # entry to simplify other code from having to check for empty dictionaries.
-                if len(self._packages_by_name[name]) == 0:
-                    del self._packages_by_name[name]
+                    if name in self._package_folders:
+                        assert self._package_folders[name] == package_folder
+                    else:
+                        self._package_folders[name] = package_folder
 
     def get_package_folder(self, name):
         return self._package_folders[name]

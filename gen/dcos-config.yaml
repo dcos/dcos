@@ -10,6 +10,9 @@ package:
   - path: /bin/detect_ip
     permissions: "0755"
     content: {{ ip_detect_contents }}
+  - path: /bin/detect_ip_public
+    permissions: "0755"
+    content: {{ ip_detect_public_contents }}
   - path: /check/check_ip
     permissions: "0755"
     content: |
@@ -212,6 +215,7 @@ package:
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
+      MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
@@ -243,6 +247,16 @@ package:
     content: |
       {
         "gen_provider": "{{ provider }}",
+        "diagnostics_urls": [
+          "http://leader.mesos:1050/system/health/v1/report"
+        ],
+        "cosmos_urls": [
+          "http://leader.mesos:7070/package/list"
+        ],
+        "mesos_urls": [
+          "http://leader.mesos:5050/frameworks",
+          "http://leader.mesos:5050/metrics/snapshot"
+        ],
         "enabled": "{{ telemetry_enabled }}"
       }
   - path: /etc/adminrouter.env

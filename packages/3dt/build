@@ -9,9 +9,9 @@ go install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
 
-master_service=${PKG_PATH}/dcos.target.wants_master/dcos-ddt.service
-slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-ddt.service
-slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-ddt.service
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)

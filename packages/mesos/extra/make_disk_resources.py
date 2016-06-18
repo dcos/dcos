@@ -18,7 +18,7 @@ PROG = os.path.basename(__file__)
 JSON_COMMON_TEMPLATE = Template('''
 {
     "name": "disk",
-    "role": "*",
+    "role": "$role",
     "scalar": {
         "value": $free_space
     },
@@ -68,7 +68,7 @@ def find_mounts_matching(pattern):
     return pattern.findall(mounts)
 
 
-def make_disk_resources_json(mounts):
+def make_disk_resources_json(mounts, role):
     '''
     Disk resources are defined in https://mesos.apache.org/documentation/latest/multiple-disk/
 
@@ -78,7 +78,7 @@ def make_disk_resources_json(mounts):
     @rtype: list
     '''
     for (mp, fs) in mounts:
-        common = JSON_COMMON_TEMPLATE.substitute(free_space=fs)
+        common = JSON_COMMON_TEMPLATE.substitute(free_space=fs, role=role)
         disk = JSON_DISK_TEMPLATE.substitute(mp=mp)
         yield json.loads(common), json.loads(disk)
 
@@ -104,9 +104,9 @@ def get_mounts_and_freespace(matching_mounts):
         yield (mount, net_free_space)
 
 
-def _handle_root_volume(root_volume):
+def _handle_root_volume(root_volume, role):
     os.makedirs(root_volume, exist_ok=True)
-    for common, _ in make_disk_resources_json(get_mounts_and_freespace([root_volume])):
+    for common, _ in make_disk_resources_json(get_mounts_and_freespace([root_volume]), role):
         yield common, {}
 
 
@@ -127,11 +127,13 @@ def main(output_env_file):
     mounts_dfree = list(get_mounts_and_freespace(find_mounts_matching(MOUNT_PATTERN)))
     print('Found matching mounts : {}'.format(mounts_dfree))
 
+    role = os.getenv('MESOS_DEFAULT_ROLE', '*')
+
     disk_resources = list(
         map(
             stitch, chain(
-                make_disk_resources_json(mounts_dfree),
-                _handle_root_volume(os.environ['MESOS_WORK_DIR'])
+                make_disk_resources_json(mounts_dfree, role),
+                _handle_root_volume(os.environ['MESOS_WORK_DIR'], role)
             )
         )
     )

@@ -18,6 +18,7 @@ entry = {
         'slave_instance_type': 'm3.xlarge',
         'public_slave_instance_type': 'm3.xlarge',
         'nat_instance_type': 'm3.medium',
+        'os_type': '',
 
         # If set to empty strings / unset then no spot instances will be used.
         'master_spot_price': '',
@@ -31,6 +32,8 @@ entry = {
             lambda slave_public_spot_price: get_spot('slave_public', slave_public_spot_price),
         'aws_region': '{ "Ref" : "AWS::Region" }',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws.sh').decode()),
+        'ip_detect_public_contents':
+            yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws_public.sh').decode()),
         'exhibitor_explicit_keys': 'false',
         'cluster_name': '{ "Ref" : "AWS::StackName" }',
         'master_discovery': 'master_http_loadbalancer',

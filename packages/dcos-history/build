@@ -9,6 +9,6 @@ cp -r /pkg/extra /build
 pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /build
 
 # Create the service file
-service="$PKG_PATH/dcos.target.wants_master/dcos-history-service.service"
+service="$PKG_PATH/dcos.target.wants_master/dcos-history.service"
 mkdir -p "$(dirname "$service")"
 cp /pkg/extra/dcos-history.service  "$service"

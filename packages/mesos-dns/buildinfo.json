@@ -1,10 +1,10 @@
 {
-  "sources": {
-    "mesos-dns": {
-      "kind": "url",
-      "url": "https://github.com/mesosphere/mesos-dns/releases/download/v0.5.2/mesos-dns-v0.5.2-linux-amd64",
-      "sha1": "e731deba705f6599fb6c20bf760e72480b895b82"
-    }
+  "docker": "golang:1.5.3",
+  "single_source" : {
+    "kind": "git",
+    "git": "git@github.com:mesosphere/mesos-dns.git",
+    "ref": "3d42620a12936fccf77435526f5aaee0fb409416",
+    "ref_origin": "master"
   },
   "username": "dcos_mesos_dns"
 }

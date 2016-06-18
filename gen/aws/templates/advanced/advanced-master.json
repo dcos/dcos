@@ -46,39 +46,69 @@
       "Type": "String",
       "Default": "m3.xlarge",
       "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "CustomAMI": {
+      "Default": "default",
+      "Type": "String",
+      "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
+      "AllowedPattern": "(default|ami-[a-f0-9]{8})"
+    }
+  },
+  "Conditions": {
+    "UseCustomAMI": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "CustomAMI"
+            },
+            "default"
+          ]
+        }
+      ]
     }
   },
   "Mappings": {
     "RegionToAmi": {
       "ap-northeast-1": {
-        "stable": "ami-84e0c7ea"
+        "coreos": "ami-802dcde1",
+        "el7": "ami-b8d831d9"
       },
       "ap-southeast-1": {
-        "stable": "ami-da67a0b9"
+        "coreos": "ami-4c97462f",
+        "el7": "ami-133eee70"
       },
       "ap-southeast-2": {
-        "stable": "ami-f35b0590"
+        "coreos": "ami-55f6d936",
+        "el7": "ami-f57d5496"
       },
       "eu-central-1": {
-        "stable": "ami-fdd4c791"
+        "coreos": "ami-3b1cf054",
+        "el7": "ami-2e6f8141"
       },
       "eu-west-1": {
-        "stable": "ami-55d20b26"
+        "coreos": "ami-2a118659",
+        "el7": "ami-20af3253"
       },
       "sa-east-1": {
-        "stable": "ami-154af179"
+        "coreos": "ami-ee1b9382",
+        "el7": "ami-89179ce5"
       },
       "us-east-1": {
-        "stable": "ami-37bdc15d"
+        "coreos": "ami-3cf20751",
+        "el7": "ami-7848b115"
       },
       "us-gov-west-1": {
-        "stable": "ami-05bc0164"
+        "coreos": "ami-9041fef1",
+        "el7": ""
       },
       "us-west-1": {
-        "stable": "ami-27553a47"
+        "coreos": "ami-61e99101",
+        "el7": "ami-a891ebc8"
       },
       "us-west-2": {
-        "stable": "ami-00ebfc61"
+        "coreos": "ami-c30af5a3",
+        "el7": "ami-1e22d97e"
       }
     },
     "Parameters": {
@@ -200,7 +230,23 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "ImageId": {
+          "Fn::If": [
+            "UseCustomAMI",
+            {
+              "Ref": "CustomAMI"
+            },
+            {
+              "Fn::FindInMap": [
+                "RegionToAmi",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "{{ os_type }}"
+              ]
+            }
+          ]
+        },
         "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
         "SecurityGroups" : [ { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },

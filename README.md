@@ -87,11 +87,11 @@ $ $HOME/dcos-artifacts/testing/`whoami`/dcos_generate_config.sh
 If you look inside of the bash script `build_local.sh` there are the commands with discriptions of each.
 
 The general flow is to:
-1. Check the environment is reasonable
-2. Write a `release` tool configuration if one doesn't exist
-3. Setup a python virtualenv where we can install the DC/OS python tools to in order to run them
-4. Install the DC/OS python tools to the virtualenv
-5. Build the release using the `release` tool
+ 1. Check the environment is reasonable
+ 2. Write a `release` tool configuration if one doesn't exist
+ 3. Setup a python virtualenv where we can install the DC/OS python tools to in order to run them
+ 4. Install the DC/OS python tools to the virtualenv
+ 5. Build the release using the `release` tool
 
 These steps can all be done by hand and customized / tweaked like standard python projects. You can hand create a virtualenvironment, and then do an editable pip install (`pip install -e`) to have a "live" working environment (as you change code you can run the tool and see the results).
 

@@ -65,6 +65,10 @@ def calculate_ip_detect_contents(ip_detect_filename):
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
+def calculate_ip_detect_public_contents(ip_detect_contents):
+    return ip_detect_contents
+
+
 def calculate_gen_resolvconf_search(dns_search):
     if len(dns_search) > 0:
         return "SEARCH=" + dns_search
@@ -226,6 +230,11 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
+def validate_os_type(os_type):
+    can_be = ['coreos', 'el7']
+    assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -244,7 +253,8 @@ entry = {
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
         validate_telemetry_enabled,
-        validate_master_dns_bindall],
+        validate_master_dns_bindall,
+        validate_os_type],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -253,8 +263,10 @@ entry = {
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
         'docker_remove_delay': '1hrs',
+        'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
+        'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
