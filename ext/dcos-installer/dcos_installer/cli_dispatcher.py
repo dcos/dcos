@@ -1,8 +1,11 @@
 import asyncio
 import coloredlogs
+import json
 import logging
+import os
 import sys
 
+import gen.calc
 from dcos_installer import async_server, action_lib, backend
 from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
 from dcos_installer.installer_analytics import InstallerAnalytics
@@ -100,9 +103,19 @@ def validate_ssh_config_or_exit():
         sys.exit(1)
 
 
+def do_version(args):
+    print(json.dumps(
+        {
+            'version': gen.calc.entry['must']['dcos_version'],
+            'variant': os.environ['BOOTSTRAP_VARIANT']},
+        indent=2, sort_keys=True))
+    return 0
+
+
 def do_web(args):
     print_header("Starting DC/OS installer in web mode")
     async_server.start(args)
+    return 0
 
 
 def do_validate_config(args):
@@ -150,6 +163,7 @@ def do_uninstall(args):
 
 
 dispatch_dict_simple = {
+    'version': (do_version, 'Print the DC/OS version'),
     'web': (do_web, 'Run the web interface'),
     'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
     'validate-config': (

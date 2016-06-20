@@ -19,6 +19,15 @@ def test_password_hash():
     assert passlib.hash.sha512_crypt.verify(password, hash_pw), 'Hash does not match password'
 
 
+def test_version(monkeypatch):
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
+    version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
+    assert json.loads(version_data) == {
+        'version': '1.8-dev',
+        'variant': 'some-variant'
+    }
+
+
 def test_good_create_config_from_post(tmpdir):
     """
     Test that it creates the config
