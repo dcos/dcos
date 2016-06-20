@@ -356,7 +356,7 @@ function check_all() {
     for role in "$ROLES"
     do
         if [ "$role" != "master" -a "$role" != "slave" -a "$role" != "slave_public" -a "$role" != "minuteman" ]; then
-            echo -e "${RED}FAIL Invalid role $role. Role must be one of {master,slave,slave_public}{NORMAL}"
+            echo -e "${RED}FAIL Invalid role $role. Role must be one of {master,slave,slave_public}${NORMAL}"
             (( OVERALL_RC += 1 ))
         fi
     done
