@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import warnings
 
 import pkgpanda
 from ssh.ssh_runner import Node
@@ -10,6 +11,23 @@ import ssh.utils
 from .utils import REMOTE_TEMP_DIR, CLUSTER_PACKAGES_FILE, get_async_runner, add_post_action, add_pre_action
 
 log = logging.getLogger(__name__)
+
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning) #turn off filter
+        warnings.warn("Call to deprecated function {}.".format(func.__name__), category=DeprecationWarning, stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning) #reset filter
+        return func(*args, **kwargs)
+
+    new_func.__name__ = func.__name__
+    new_func.__doc__ = func.__doc__
+    new_func.__dict__.update(func.__dict__)
+    return new_func
 
 
 class ExecuteException(Exception):
@@ -107,14 +125,14 @@ def _add_copy_packages(chain, local_pkg_base_path='/genconf/serve'):
         chain.add_copy(local_pkg_path, destination_package_dir,
                        stage='Copying packages')
 
-
+@deprecated
 def _add_copy_bootstap(chain, local_bs_path):
     remote_bs_path = REMOTE_TEMP_DIR + '/bootstrap'
     chain.add_execute(['mkdir', '-p', remote_bs_path], stage='Creating directory')
     chain.add_copy(local_bs_path, remote_bs_path,
                    stage='Copying bootstrap')
 
-
+@deprecated
 def _get_bootstrap_tarball(tarball_base_dir='/genconf/serve/bootstrap'):
     '''
     Get a bootstrap tarball from a local filesystem
@@ -185,9 +203,6 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
         }
     }
 
-    bootstrap_tarball = _get_bootstrap_tarball()
-    log.debug("Local bootstrap found: %s", bootstrap_tarball)
-
     targets = []
     if hosts:
         targets = hosts
@@ -214,7 +229,6 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     add_pre_action(chain, runner.ssh_user)
     _add_copy_dcos_install(chain)
     _add_copy_packages(chain)
-    _add_copy_bootstap(chain, bootstrap_tarball)
 
     chain.add_execute(
         lambda node: (
