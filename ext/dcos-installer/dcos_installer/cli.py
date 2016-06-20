@@ -3,7 +3,7 @@ import coloredlogs
 import logging
 import sys
 
-from dcos_installer.cli_dispatcher import dispatch_option, dispatch_action
+import dcos_installer.cli_dispatcher
 
 
 log = logging.getLogger(__name__)
@@ -41,8 +41,7 @@ def start_installer(args):
     # parser or anything else
     options = parse_args(args)
     setup_logger(options)
-    dispatch_option(options)
-    dispatch_action(options)
+    dcos_installer.cli_dispatcher.dispatch(options)
 
 
 def parse_args(args):
@@ -51,7 +50,7 @@ def parse_args(args):
 Install Mesosophere's Data Center Operating System
 
 dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v]
-[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --test]
+[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config]
 
 Environment Settings:
 
@@ -67,18 +66,17 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
     parser = argparse.ArgumentParser(usage=print_usage())
     mutual_exc = parser.add_mutually_exclusive_group()
 
-    parser.add_argument(
+    mutual_exc.add_argument(
         '--hash-password',
         default='',
         type=str,
         help='Hash a password on the CLI for use in the config.yaml.'
     )
 
-    parser.add_argument(
+    mutual_exc.add_argument(
         '-v',
         '--verbose',
         action='store_true',
-        default=False,
         help='Verbose log output (DEBUG).')
 
     parser.add_argument(
@@ -91,63 +89,22 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
     parser.add_argument(
         '--offline',
         action='store_true',
-        default=False,
         help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
     )
 
-    mutual_exc.add_argument(
-        '--web',
-        action='store_true',
-        default=False,
-        help='Run the web interface.')
+    def add_mode(name, help):
+        mutual_exc.add_argument(
+            '--{}'.format(name),
+            action='store_const',
+            const=name,
+            dest='action')
 
-    mutual_exc.add_argument(
-        '--genconf',
-        action='store_true',
-        default=False,
-        help='Execute the configuration generation (genconf).')
+    # Add all arg modes
+    for name, value in dcos_installer.cli_dispatcher.dispatch_dict_simple.items():
+        add_mode(name, value[1])
 
-    mutual_exc.add_argument(
-        '--preflight',
-        action='store_true',
-        default=False,
-        help='Execute the preflight checks on a series of nodes.')
-
-    mutual_exc.add_argument(
-        '--install-prereqs',
-        action='store_true',
-        default=False,
-        help='Install preflight prerequisites. Works only on CentOS7 and RHEL7.')
-
-    mutual_exc.add_argument(
-        '--deploy',
-        action='store_true',
-        default=False,
-        help='Execute a deploy.')
-
-    mutual_exc.add_argument(
-        '--postflight',
-        action='store_true',
-        default=False,
-        help='Execute postflight checks on a series of nodes.')
-
-    mutual_exc.add_argument(
-        '--uninstall',
-        action='store_true',
-        default=False,
-        help='Execute uninstall on target hosts.')
-
-    mutual_exc.add_argument(
-        '--validate-config',
-        action='store_true',
-        default=False,
-        help='Validate the configuration for executing --genconf and deploy arguments in config.yaml')
-
-    mutual_exc.add_argument(
-        '--test',
-        action='store_true',
-        default=False,
-        help='Performs tests on the dcos_installer application')
+    for name, value in dcos_installer.cli_dispatcher.dispatch_dict_aio.items():
+        add_mode(name, value[1])
 
     options = parser.parse_args(args)
     return options

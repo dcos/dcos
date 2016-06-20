@@ -100,72 +100,96 @@ def validate_ssh_config_or_exit():
         sys.exit(1)
 
 
-def dispatch_option(args):
-    """Dispatches ClI options which are not installer actions"""
-    def web(args):
-        print_header("Starting DC/OS installer in web mode")
-        async_server.start(args)
+def do_web(args):
+    print_header("Starting DC/OS installer in web mode")
+    async_server.start(args)
 
+
+def do_validate_config(args):
+    print_header('VALIDATING CONFIGURATION')
+    log_warn_only()
+    validation_errors = backend.do_validate_gen_config()
+    if validation_errors:
+        print_validation_errors(validation_errors)
+        return 1
+    return 0
+
+
+def do_genconf(args):
+    print_header("EXECUTING CONFIGURATION GENERATION")
+    code = backend.do_configure()
+    if code != 0:
+        return 1
+    return 0
+
+
+def do_preflight(args):
+    print_header("EXECUTING PREFLIGHT")
+    return action_lib.run_preflight
+
+
+def do_install_prereqs(args):
+    print_header("EXECUTING INSTALL PREREQUISITES")
+    return action_lib.install_prereqs
+
+
+def do_deploy(args):
+    print_header("EXECUTING DC/OS INSTALLATION")
+    return action_lib.install_dcos
+
+
+def do_postflight(args):
+    print_header("EXECUTING POSTFLIGHT")
+    return action_lib.run_postflight
+
+
+def do_uninstall(args):
+    print_header("EXECUTING UNINSTALL")
+    tall_enough_to_ride()
+    return action_lib.uninstall_dcos
+
+
+dispatch_dict_simple = {
+    'web': (do_web, 'Run the web interface'),
+    'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
+    'validate-config': (
+        do_validate_config,
+        'Validate the configuration for executing --genconf and deploy arguments in config.yaml')
+}
+
+dispatch_dict_aio = {
+    'preflight': (do_preflight, 'Execute the preflight checks on a series of nodes.'),
+    'install-prereqs': (do_install_prereqs, 'Execute the preflight checks on a series of nodes.'),
+    'deploy': (do_deploy, 'Execute a deploy.'),
+    'postflight': (do_postflight, 'Execute postflight checks on a series of nodes.'),
+    'uninstall': (do_uninstall, 'Execute uninstall on target hosts.')
+}
+
+
+def dispatch(args):
+    """ Dispatches the selected mode based on command line args. """
     def hash_password(args):
         if len(args.hash_password) > 0:
             print_header("HASHING PASSWORD TO SHA512")
             backend.hash_password(args.hash_password)
             return 0
 
-    def validate_config(args):
-        print_header('VALIDATING CONFIGURATION')
-        log_warn_only()
-        validation_errors = backend.do_validate_gen_config()
-        if validation_errors:
-            print_validation_errors(validation_errors)
-            return 1
-        return 0
+    if getattr(args, 'hash_password'):
+        sys.exit(hash_password(args))
 
-    def genconf(args):
-        print_header("EXECUTING CONFIGURATION GENERATION")
-        code = backend.do_configure()
-        if code != 0:
-            return 1
-        return 0
+    if args.action in dispatch_dict_simple:
+        sys.exit(dispatch_dict_simple[args.action][0](args))
 
-    for action in ['web', 'hash_password', 'validate_config', 'genconf']:
-        if getattr(args, action):
-            sys.exit(locals()[action](args))
+    # Dispatches CLI options which are installer actions ran through AIO event loop
+    if args.action in dispatch_dict_aio:
+        validate_ssh_config_or_exit()
+        errors = run_loop(dispatch_dict_aio[args.action][0](args), args)
+        installer_analytics.send(
+            action="installer_{}".format(args.action),
+            install_method="cli",
+            num_errors=errors,
+        )
+        sys.exit(1 if errors > 0 else 0)
 
-
-def dispatch_action(args):
-    """Dispatches CLI options which are installer actions ran through
-    AIO loop construct"""
-    validate_ssh_config_or_exit()
-
-    def preflight(args):
-        print_header("EXECUTING PREFLIGHT")
-        return action_lib.run_preflight
-
-    def postflight(args):
-        print_header("EXECUTING POSTFLIGHT")
-        return action_lib.run_postflight
-
-    def deploy(args):
-        print_header("EXECUTING DC/OS INSTALLATION")
-        return action_lib.install_dcos
-
-    def uninstall(args):
-        print_header("EXECUTING UNINSTALL")
-        tall_enough_to_ride()
-        return action_lib.uninstall_dcos
-
-    def install_prereqs(args):
-        print_header("EXECUTING INSTALL PREREQUISITES")
-        return action_lib.install_prereqs
-
-    for action in ['deploy', 'preflight', 'postflight', 'uninstall', 'install_prereqs']:
-        if getattr(args, action):
-            errors = run_loop(locals()[action](args), args)
-            installer_analytics.send(
-                action="installer_{}".format(action),
-                install_method="cli",
-                num_errors=errors,
-            )
-            exit_code = 1 if errors > 0 else 0
-            sys.exit(exit_code)
+    print("Internal Error: No known way to dispatch {}".format(args.action))
+    sys.exit(1)
