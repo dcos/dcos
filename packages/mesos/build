@@ -11,11 +11,9 @@ pushd build
 # TODO(cmaloney): DESTDIR builds so we don't have to build as root?
 "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
+  --enable-install-module-dependencies \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
-  --with-glog=/opt/mesosphere/active/mesos-buildenv \
-  --with-protobuf=/opt/mesosphere/active/mesos-buildenv \
-  --with-boost=/opt/mesosphere/active/mesos-buildenv \
   --with-curl=/opt/mesosphere/active/curl \
   --sbindir="$PKG_PATH/bin"
 # TODO(cmaloney): -j8 is almost certainly wrong.
@@ -63,3 +61,12 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-vol-discovery-priv-agent.service > "$priv
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
+
+#Create the master modules directory.
+mkdir -p "$PKG_PATH/etc/mesos-master-modules"
+
+
+# Copy the json file describing logrotate module.
+module_json="$PKG_PATH/etc/mesos-slave-modules/logrotate.json"
+mkdir -p "$(dirname "$module_json")"
+cp /pkg/extra/logrotate.json "$module_json"
