@@ -134,8 +134,6 @@ def check_environment():
     """
     options = type('Options', (object,), {})()
 
-    options.variant = os.getenv('DCOS_VARIANT', 'default')
-
     if 'CCM_VPC_HOSTS' in os.environ:
         options.host_list = os.environ['CCM_VPC_HOSTS'].split(',')
     else:
@@ -312,7 +310,6 @@ def main():
                 master_list=master_list,
                 agent_list=agent_list,
                 public_agent_list=public_agent_list,
-                variant=options.variant,
                 provider='onprem',
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
