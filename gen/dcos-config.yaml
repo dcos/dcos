@@ -150,6 +150,16 @@ package:
     content: |
       {
         "gen_provider": "{{ provider }}",
+        "diagnostics_urls": [
+          "http://leader.mesos:1050/system/health/v1/report"
+        ],
+        "cosmos_urls": [
+          "http://leader.mesos:7070/package/list"
+        ],
+        "mesos_urls": [
+          "http://leader.mesos:5050/frameworks",
+          "http://leader.mesos:5050/metrics/snapshot"
+        ],
         "enabled": "{{ telemetry_enabled }}"
       }
   - path: /etc/adminrouter.env

@@ -41,9 +41,12 @@ def cluster():
     assert 'SLAVE_HOSTS' in os.environ
     assert 'PUBLIC_SLAVE_HOSTS' in os.environ
     assert 'DNS_SEARCH' in os.environ
+    assert 'DCOS_PROVIDER' in os.environ
 
     # dns_search must be true or false (prevents misspellings)
     assert os.environ['DNS_SEARCH'] in ['true', 'false']
+
+    assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
 
     _setup_logging()
 
@@ -53,7 +56,8 @@ def cluster():
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    registry=os.environ['REGISTRY_HOST'],
-                   dns_search_set=os.environ['DNS_SEARCH'])
+                   dns_search_set=os.environ['DNS_SEARCH'],
+                   provider=os.environ['DCOS_PROVIDER'])
 
 
 @pytest.fixture(scope='module')
@@ -228,7 +232,7 @@ class Cluster:
         self.superuser_auth_cookie = r.cookies[
             'dcos-acs-auth-cookie']
 
-    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set):
+    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves, registry, dns_search_set, provider):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -240,6 +244,7 @@ class Cluster:
             registry: hostname or IP address of a private Docker registry.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
+            provider: onprem, azure, or aws
         """
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
@@ -249,6 +254,7 @@ class Cluster:
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.registry = registry
         self.dns_search_set = dns_search_set == 'true'
+        self.provider = provider
 
         assert len(self.masters) == len(self.public_masters)
 
@@ -1267,12 +1273,18 @@ def test_signal_service(cluster):
 
     wait_for_endpoint()
 
-    test_cache_url = "http://{}:{}/signal_test_cache".format(service_points[0].host, service_points[0].port)
+    test_host = service_points[0].host
+    test_port = service_points[0].port
+    test_cache_url = "http://{}:{}/signal_test_cache".format(test_host, test_port)
+
     cmd = """
-data=`/opt/mesosphere/bin/dcos-signal -report-host leader.mesos -test 2> /dev/null`;
-curl -H 'Content-Type: application/json' -X POST -d "$data" {};
+ID_PATH="/${PWD}/test-cluster-id"
+echo 'test-id' > $ID_PATH
+/opt/mesosphere/bin/dcos-signal \
+    -cluster-id-path $ID_PATH \
+    -test-url %s
 sleep 3600
-""".format(test_cache_url)
+""" % test_cache_url
 
     test_uuid = uuid.uuid4().hex
     signal_app_definition = {
@@ -1297,82 +1309,110 @@ sleep 3600
 
     r = requests.get(test_cache_url)
 
+    # Handy for diagnosing strange signal service test behavior, not sure if we should
+    # leave these in for master branch, or remove for the final PR.
+    print('TESTING SIGNAL RETURN:\n{}'.format(r.text))
+    print('CACHE SERVER STATUS:\n{}'.format(r.status_code))
+
     r_data = json.loads(r.json())
 
     cluster.destroy_marathon_app(signal_app_definition['id'])
     cluster.destroy_marathon_app(test_server_app_definition['id'])
 
     exp_data = {
-            'Event': 'health',
-            'UserId': '',
-            'ClusterId': '',
-            'Properties': {
-                'provider': 'onprem',
-                'source': 'cluster',
-                'clusterId': '',
-                'customerKey': '',
-                'environmentVersion': '',
-                'variant': 'open'}
-            }
+        'diagnostics': {
+            'event': 'health',
+            'anonymousId': 'test-id',
+            'properties': {}
+        },
+        'cosmos': {
+            'event': 'package_list',
+            'anonymousId': 'test-id',
+            'properties': {}
+        },
+        'mesos': {
+            'event': 'mesos_track',
+            'anonymousId': 'test-id',
+            'properties': {}
+        }
+    }
 
+    # Generic properties which are the same between all tracks
+    generic_properties = {
+        'provider': cluster.provider,
+        'source': 'cluster',
+        'clusterId': 'test-id',
+        'customerKey': '',
+        'environmentVersion': '',
+        'variant': 'open'
+    }
+
+    # Insert the generic property data which is the same between all signal tracks
+    exp_data['diagnostics']['properties'].update(generic_properties)
+    exp_data['cosmos']['properties'].update(generic_properties)
+    exp_data['mesos']['properties'].update(generic_properties)
+
+    # Insert all the diagnostics data programmatically
     master_units = [
-            'adminrouter-reload-service',
-            'adminrouter-reload-timer',
-            'adminrouter-service',
-            'cluster-id-service',
-            'cosmos-service',
-            'exhibitor-service',
-            'history-service-service',
-            'marathon-service',
-            'mesos-dns-service',
-            'mesos-master-service',
-            'signal-service',
-            'logrotate-master-service',
-            'logrotate-master-timer']
+        'adminrouter-reload-service',
+        'adminrouter-reload-timer',
+        'adminrouter-service',
+        'cluster-id-service',
+        'cosmos-service',
+        'exhibitor-service',
+        'history-service',
+        'logrotate-master-service',
+        'logrotate-master-timer',
+        'marathon-service',
+        'mesos-dns-service',
+        'mesos-master-service',
+        'signal-service']
     all_node_units = [
-            'ddt-service',
-            'epmd-service',
-            'gen-resolvconf-service',
-            'gen-resolvconf-timer',
-            'minuteman-service',
-            'navstar-service',
-            'signal-timer',
-            'spartan-service',
-            'spartan-watchdog-service',
-            'spartan-watchdog-timer']
+        '3dt-service',
+        'epmd-service',
+        'gen-resolvconf-service',
+        'gen-resolvconf-timer',
+        'minuteman-service',
+        'navstar-service',
+        'signal-timer',
+        'spartan-service',
+        'spartan-watchdog-service',
+        'spartan-watchdog-timer']
     slave_units = [
-            'mesos-slave-service',
-            'vol-discovery-priv-agent-service']
+        'mesos-slave-service',
+        'vol-discovery-priv-agent-service']
     public_slave_units = [
-            'mesos-slave-public-service',
-            'vol-discovery-pub-agent-service']
+        'mesos-slave-public-service',
+        'vol-discovery-pub-agent-service']
     all_slave_units = [
-            'logrotate-agent-service',
-            'logrotate-agent-timer']
+        'logrotate-agent-service',
+        'logrotate-agent-timer']
 
     master_units.append('oauth-service')
 
     for unit in master_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_node_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves+cluster.masters)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(
+            cluster.all_slaves+cluster.masters)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in public_slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_slave_units:
-        exp_data['Properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
-        exp_data['Properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
-    # Cluster ID is uncheckable as this runs on an agent
-    r_data['ClusterId'] = ''
-    r_data['Properties']['clusterId'] = ''
-
-    assert r_data == exp_data
+    # Check the entire hash of diagnostics data
+    assert r_data['diagnostics'] == exp_data['diagnostics']
+    # Check a subset of things regarding Mesos that we can logically check for
+    assert r_data['mesos']['properties']['frameworks'][0]['name'] == 'marathon'
+    # There are no packages installed by default on the integration test, ensure the key exists
+    assert r_data['cosmos']['properties']['package_list'] is None
 
 
 def test_mesos_agent_role_assignment(cluster):

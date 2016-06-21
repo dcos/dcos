@@ -304,7 +304,7 @@ def main():
         test_util.test_runner.prepare_test_registry(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir)
-        test_util.test_runner.integration_test(
+        result = test_util.test_runner.integration_test(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir,
                 region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
@@ -313,6 +313,7 @@ def main():
                 agent_list=agent_list,
                 public_agent_list=public_agent_list,
                 variant=options.variant,
+                provider='onprem',
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
                 ci_flags=options.ci_flags,
@@ -323,11 +324,12 @@ def main():
     # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
     # on every host to see if they are working.
 
-    log.info("Test successsful!")
-    # Delete the cluster if all was successful to minimize potential costs.
-    # Failed clusters the hosts will continue running
-    if vpc is not None:
-        vpc.delete()
+    if result:
+        log.info("Test successsful!")
+        # Delete the cluster if all was successful to minimize potential costs.
+        # Failed clusters the hosts will continue running
+        if vpc is not None:
+            vpc.delete()
 
 
 if __name__ == "__main__":
