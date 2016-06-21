@@ -301,18 +301,19 @@ def main():
         installer.postflight()
 
         # Runs dcos-image/integration_test.py inside the cluster
-        test_util.test_runner.prepare_test_registry(
+        test_util.test_runner.deploy_testing_registry(
                 tunnel=test_host_tunnel,
-                test_dir=remote_dir)
+                test_dir=remote_dir,
+                agent_list=agent_list+public_agent_list)
         result = test_util.test_runner.integration_test(
                 tunnel=test_host_tunnel,
                 test_dir=remote_dir,
+                registry=test_host,
                 region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
                 dcos_dns=master_list[0],
                 master_list=master_list,
                 agent_list=agent_list,
                 public_agent_list=public_agent_list,
-                variant=options.variant,
                 provider='onprem',
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
