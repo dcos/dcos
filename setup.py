@@ -83,6 +83,8 @@ setup(
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
+            'openssl/openssl-server.cnf',
+            'openssl/openssl-ca.cnf',
             'integration_test.py'],
     },
     zip_safe=False
