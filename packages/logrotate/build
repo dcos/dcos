@@ -61,7 +61,6 @@ cat <<EOF > "$logrotate_service"
 Description=Logrotate Mesos Master: Rotate Mesos master logs
 [Service]
 Type=simple
-User=dcos_mesos
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/mesos/log/archive
 ExecStart=$PKG_PATH/bin/logrotate $config_file -s /var/lib/dcos/mesos/logrotate_master.status
