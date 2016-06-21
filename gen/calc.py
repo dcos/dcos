@@ -238,7 +238,6 @@ def validate_os_type(os_type):
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
-
 entry = {
     'validate': [
         validate_num_masters,
