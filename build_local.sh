@@ -30,7 +30,7 @@ EOF
 fi
 
 # Create a python virtual environment to install the DC/OS tools to
-pyvenv /tmp/dcos_build_venv
+python3 -m venv /tmp/dcos_build_venv
 . /tmp/dcos_build_venv/bin/activate
 
 # Install the DC/OS tools
