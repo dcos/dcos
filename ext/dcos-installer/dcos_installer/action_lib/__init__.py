@@ -369,3 +369,43 @@ def install_prereqs(config, block=False, state_json_dir=None, async_delegate=Non
     _add_prereqs_script(prereqs_chain)
     result = yield from runner.run_commands_chain_async([prereqs_chain], block=block, state_json_dir=state_json_dir)
     return result
+
+
+def _add_upgrade_script(chain):
+    bootstrap_id = os.environ['BOOTSTRAP_ID']
+    active_packages_path = '/artifacts/{}.active.json'.format(bootstrap_id)
+    active_packages = json.loads(open(active_packages_path).read())
+    string_of_pkgs = ' '.join(pkg for pkg in active_packages)
+
+    inline_script = """
+#/bin/bash
+source /opt/mesosphere/environment.export
+tar -axf {tmp_dir}/bootstrap/{bootstrap_id}.bootstrap.tar.xz -C {tmp_dir}/packages
+/opt/mesosphere/bin/pkgpanda fetch {pkgs} --repository-url {tmp_dir}
+/opt/mesosphere/bin/pkgpanda activate {pkgs}
+""".format(tmp_dir=REMOTE_TEMP_DIR, pkgs=string_of_pkgs, bootstrap_id=bootstrap_id)
+
+    # Run a first command to get json file generated.
+    chain.add_execute(['echo', 'UPGRADE', 'DC/OS'])
+    chain.add_execute([inline_script], stage='EXECUTING DC/OS UPGRADE')
+
+
+@asyncio.coroutine
+def upgrade_dcos(config, host, block=False, state_json_dir=None, async_delegate=None, options=None):
+    """Upgrades a single host using pkgpanda fetch and activate via ssh."""
+
+    if not host:
+        log.error("Must pass one or more IPv4 address(s) to upgrade")
+        return
+
+    runner = get_async_runner(config, host,async_delegate=async_delegate)
+    upgrade_chain = ssh.utils.CommandChain('upgrade')
+    add_pre_action(upgrade_chain, runner.ssh_user)
+
+    bootstrap_tarball = _get_bootstrap_tarball()
+
+    _add_copy_packages(upgrade_chain)
+    _add_copy_bootstap(upgrade_chain, bootstrap_tarball)
+    _add_upgrade_script(upgrade_chain)
+    result = yield from runner.run_commands_chain_async([upgrade_chain], block=block, state_json_dir=state_json_dir)
+    return result
