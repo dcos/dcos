@@ -81,6 +81,15 @@ package:
           ]
         }
       ].
+  - path: /etc_master/navstar.app.config
+    content: |
+      [
+        {navstar,
+          [
+            {is_master, true}
+          ]
+        }
+      ].
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/lib/dcos/mesos/log
