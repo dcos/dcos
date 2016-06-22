@@ -74,6 +74,8 @@ def prepare_test_registry(tunnel, test_dir):
     tunnel.write_to_remote(test_server_docker, join(test_dir, 'test_server/Dockerfile'))
     tunnel.write_to_remote(test_server_script, join(test_dir, 'test_server/test_server.py'))
     log.info('Starting insecure registry on test host')
+    # ensure docker is accessible
+    tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', tunnel.ssh_user])
     try:
         log.debug('Attempt to replace a previously setup registry')
         tunnel.remote_cmd(['docker', 'kill', 'registry'])
@@ -162,6 +164,8 @@ set -euo pipefail; set -x
     log.info('Transferring py.test image')
     tunnel.write_to_remote(join(temp_dir, pytest_image_tar), join(test_dir, pytest_image_tar))
     log.info('Loading py.test image on remote host')
+    # ensure docker is accessible
+    tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', tunnel.ssh_user])
     tunnel.remote_cmd(['docker', 'load', '-i', join(test_dir, pytest_image_tar)])
 
     test_container_name = 'int_test_' + str(int(time.time()))

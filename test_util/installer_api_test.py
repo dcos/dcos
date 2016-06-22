@@ -43,6 +43,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             def scp(src, dst):
                 return tunnel.write_to_remote(src, dst)
 
+            tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', tunnel.ssh_user])
         else:
             assert ssh_user, 'ssh_user must be set if tunnel not set'
             assert ssh_key_path, 'ssh_key_path must be set if tunnel not set'
@@ -55,8 +56,11 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             def scp(src, dst):
                 return run_scp_cmd(ssh_user, ssh_key_path, host, src, dst)
 
+            run_ssh_cmd(['sudo', 'usermod', '-aG', 'docker', ssh_user])
+
         self.ssh = ssh
         self.scp = scp
+        # ensure docker is accessible
 
         if download_url:
             self.ssh(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',

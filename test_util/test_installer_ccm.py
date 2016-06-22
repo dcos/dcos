@@ -226,9 +226,6 @@ def main():
         local_ip = {}
         for tunnel in tunnels.tunnels:
             local_ip[tunnel.host] = get_local_address(tunnel, remote_dir)
-            if options.do_setup:
-                # Make the default user priveleged to use docker
-                tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', ssh_user])
 
     # use first node as bootstrap node, second node as master, all others as agents
     test_host = host_list[0]
