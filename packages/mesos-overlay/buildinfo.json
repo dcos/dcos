@@ -4,7 +4,7 @@
     "single_source" : {
       "kind": "git",
       "git": "git@github.com:asridharan/mesos-overlay.git",
-      "ref" : "80796b8ac934eeff1e1dec8eac0d597749895a3e",
-      "ref_origin": "master"
+      "ref": "e332aefc9ee5926a0039dab0250e9d15a0da78b8",
+      "ref_origin": "CORE-529"
     }
 }
