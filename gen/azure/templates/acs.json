@@ -1136,7 +1136,7 @@
               "publisher": "[variables('osImagePublisher')]",
               "offer": "[variables('osImageOffer')]",
               "sku": "[variables('osImageSKU')]",
-              "version": "latest"
+              "version": "[variables('osImageVersion')]"
             }
           },
           "osProfile": {
@@ -1271,7 +1271,7 @@
               "publisher": "[variables('osImagePublisher')]",
               "offer": "[variables('osImageOffer')]",
               "sku": "[variables('osImageSKU')]",
-              "version": "latest"
+              "version": "[variables('osImageVersion')]"
             }
           },
           "osProfile": {
