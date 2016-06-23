@@ -37,22 +37,22 @@ def invoke_detect_ip():
 
 detected_ip = invoke_detect_ip()
 
+# Make the zk conf directory (exhibitor assumes the dir exists)
+check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhibitor/zookeeper/transactions'])
+
 # TODO(cmaloney): Move exhibitor_defaults to a temp runtime conf dir.
 # Base for building up the command line
 exhibitor_cmdline = [
     'java',
+    '-Djava.util.prefs.systemRoot=/var/lib/dcos/exhibitor/',
+    '-Djava.util.prefs.userRoot=/var/lib/dcos/exhibitor/',
+    '-Duser.home=/var/lib/dcos/exhibitor/',
+    '-Duser.dir=/var/lib/dcos/exhibitor/',
     '-jar', '$PKG_PATH/usr/exhibitor/exhibitor.jar',
     '--port', '8181',
     '--defaultconfig', '/run/dcos_exhibitor/exhibitor_defaults.conf',
     '--hostname', detected_ip
 ]
-
-# Make necessary exhibitor runtime directories
-check_call(['mkdir', '-p', '/var/lib/zookeeper/snapshot'])
-check_call(['mkdir', '-p', '/var/lib/zookeeper/transactions'])
-
-# Older systemd doesn't support RuntimeDirectory, make one if systemd didn't.
-check_call(['mkdir', '-p', '/run/dcos_exhibitor'])
 
 zookeeper_cluster_size = int(open('/opt/mesosphere/etc/master_count').read().strip())
 
@@ -65,10 +65,12 @@ write_str('/run/dcos_exhibitor/exhibitor_defaults.conf', """
 # These Exhibitor properties are used to first initialize the config stored in
 # an empty shared storage location. Any subsequent invocations of Exhibitor will
 # ignore these properties and use the config found in shared storage.
-zookeeper-data-directory=/var/lib/zookeeper/snapshot
+zookeeper-data-directory=/var/lib/dcos/exhibitor/zookeeper/snapshot
 zookeeper-install-directory=/opt/mesosphere/active/exhibitor/usr/zookeeper
-zookeeper-log-directory=/var/lib/zookeeper/transactions
-log-index-directory=/var/lib/zookeeper/transactions
+zookeeper-log-directory=/var/lib/dcos/exhibitor/zookeeper/transactions
+zookeeper-config-directory=/var/lib/dcos/exhibitor/conf
+zookeeper-pid-path=/var/lib/dcos/exhibitor/zk.pid
+log-index-directory=/var/lib/dcos/exhibitor/zookeeper/transactions
 cleanup-period-ms=300000
 check-ms={check_ms}
 backup-period-ms=600000
@@ -87,20 +89,19 @@ auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
     check_ms=check_ms
 ))
 
-# Make a custom /etc/resolv.conf and mount it for exhibitor
-resolvers = get_var_assert_set('RESOLVERS').split(',')
-resolvconf_text = '# Generated for exhibitor by start_exhibitor.py\n'
-for resolver in resolvers:
-    resolvconf_text += "nameserver {}\n".format(resolver)
-write_str("/run/dcos_exhibitor/resolv.conf", resolvconf_text)
+write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """
+log4j.rootLogger=INFO, journal, console
 
-# Bind mount the resolv.conf. Do a "--make-rprivate" to guarantee the
-# "/etc/resolv.conf" of the system isn't overriden. The systemd unit running
-# this _should_ have already made the mounts private, but we do this here as an
-# extra bit of safety.
-check_call(['mount', '--make-rprivate', '/'])
-check_call(
-    ['mount', '--bind', '/run/dcos_exhibitor/resolv.conf', '/etc/resolv.conf'])
+log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppender
+log4j.appender.journal.logStacktrace=true
+log4j.appender.journal.logThreadName=true
+log4j.appender.journal.logLoggerName=true
+
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.Threshold=INFO
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L] - %m%n
+""")
 
 # Add backend specific arguments
 exhibitor_backend = get_var_assert_set('EXHIBITOR_BACKEND')

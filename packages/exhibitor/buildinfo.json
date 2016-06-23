@@ -4,13 +4,25 @@
     "exhibitor": {
       "kind": "git",
       "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "ed0374761ec73b46a645142673a9520f73305200",
+      "ref": "a04453d14d49e1a3774bef235462b120e1eff3e1",
       "ref_origin": "master"
     },
     "zookeeper": {
       "kind": "url_extract",
       "url": "https://s3.amazonaws.com/downloads.mesosphere.io/zookeeper/zookeeper-3.4.6.tar.gz",
       "sha1": "2a9e53f5990dfe0965834a525fbcad226bf93474"
+    },
+    "log4j": {
+        "kind": "url",
+        "url": "https://repo1.maven.org/maven2/de/bwaldvogel/log4j-systemd-journal-appender/1.3.2/log4j-systemd-journal-appender-1.3.2.jar",
+        "sha1": "4baf482f0de6ed330e0d3ca77e062f6d944039b7"
+    },
+    "jna": {
+        "kind": "url",
+        "url": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.2.2/jna-4.2.2.jar",
+        "sha1": "5012450aee579c3118ff09461d5ce210e0cdc2a9"
     }
-  }
+  },
+  "username": "dcos_exhibitor",
+  "state_directory": true
 }
