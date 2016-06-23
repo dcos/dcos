@@ -308,7 +308,13 @@ entry = {
         'ui_banner_header_content': 'null',
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
-        'ui_banner_dismissible': 'null'
+        'ui_banner_dismissible': 'null',
+        'mesos_public_agent_ports': '{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},'
+                                    '{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}',
+        'mesos_private_agent_ports': '{"name":"ports","type":"RANGES","ranges": '
+                                     '{"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},'
+                                     '{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},'
+                                     '{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}'
     },
     'must': {
         'custom_auth': 'false',

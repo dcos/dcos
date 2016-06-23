@@ -6,3 +6,12 @@ package:
       AWS_STACK_NAME={ "Ref" : "AWS::StackName" }
       AWS_IAM_MASTER_ROLE_NAME={{ master_role }}
       AWS_IAM_SLAVE_ROLE_NAME={{ agent_role }}
+  - path: /etc/mesos-slave
+    content: |
+      MESOS_RESOURCES=[{{ mesos_private_agent_ports }}]
+      MESOS_ATTRIBUTES=aws_stack_name:{ "Ref" : "AWS::StackName" }
+  - path: /etc/mesos-slave-public
+    content: |
+      MESOS_RESOURCES=[{{ mesos_public_agent_ports }}]
+      MESOS_DEFAULT_ROLE=slave_public
+      MESOS_ATTRIBUTES=aws_stack_name:{ "Ref" : "AWS::StackName" };public_ip:true
