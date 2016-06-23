@@ -57,7 +57,7 @@ def cluster():
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-                   registry=os.environ['REGISTRY_HOST'],
+                   registry=os.getenv('REGISTRY_HOST'),
                    dns_search_set=os.environ['DNS_SEARCH'],
                    provider=os.environ['DCOS_PROVIDER'])
 
@@ -66,6 +66,132 @@ def cluster():
 def auth_cluster(cluster):
     if not AUTH_ENABLED:
         pytest.skip("Skipped because not running against cluster with auth.")
+    return cluster
+
+
+def read_file(fname):
+    with open(fname, 'r') as fh:
+        return fh.read()
+
+
+@pytest.fixture(scope='module')
+def registry_cluster(cluster):
+    if cluster.registry:
+        return cluster
+    client_cert = read_file('client.cert')
+    client_key = read_file('client.key')
+    root_ca = read_file('123.1.1.1:5000.crt')
+    add_certs_cmd = """
+#!/bin/bash
+certs_dir='/etc/docker/certs.d/123.1.1.1:5000'
+mkdir -p $certs_dir
+cat <<EOF > $certs_dir/client.cert
+{client_cert}
+EOF
+cat <<EOF > $certs_dir/client.key
+{client_key}
+EOF
+cat <<EOF > $certs_dir/123.1.1.1:5000.crt
+{root_ca}
+EOF
+touch /tmp/add_certs_success
+sleep 3600
+    """.format(client_cert=client_cert, client_key=client_key, root_ca=root_ca)
+    add_certs_healthcheck = {
+            'protocol': 'COMMAND',
+            'command': {'value': 'test -f /tmp/add_certs_success'},
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3}
+    add_certs_app = {
+            'id': '/add_certs',
+            'cmd': add_certs_cmd,
+            'ports': 6666,
+            'requirePorts': True,
+            'cpus': 0.1,
+            'mem': 64,
+            'instances': len(cluster.all_slaves),
+            'healthChecks': [add_certs_healthcheck]}
+    registry_app_healthcheck = {
+            'protocol': 'HTTPS',
+            'path': '/v2/_catalog',
+            'portIndex': 5000,
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3}
+    registry_docker_config = {
+            'image': 'registry:2',
+            'network': 'BRIDGE',
+            'forcePullImage': True,
+            'portMappings': [{
+                'containerPort': 5000,
+                'hostPort': 5000,
+                'servicePort': 0,
+                'protocol': 'tcp'}],
+            'volumes': [{
+                'containerPath': '/certs',
+                'hostPath': '/etc/docker/certs.d/123.1.1.1:5000',
+                'mode': 'RO'}]}
+    registry_app = {
+            'id': '/registry',
+            'container': {
+                'type': 'DOCKER',
+                'docker': registry_docker_config},
+            'cmd': '',
+            'ports': 5000,
+            'cpus': 0.1,
+            'mem': 64,
+            'instances': 1,
+            'healthChecks': [registry_app_healthcheck],
+            'env': {
+                'REGISTRY_HTTP_TLS_CERTIFICATE': '/certs/client.cert',
+                'REGISTRY_HTTP_TLS_KEY': '/certs/client.key'},
+            'portDefinitions': {
+                'port': 5000,
+                'protocol': 'tcp',
+                'labels': [{'VIP_0': '123.1.1.1:5000'}]}}
+    with open('/test_server.py', 'r') as fh:
+        test_server = fh.read()
+    with open('/Dockerfile', 'r') as fh:
+        dockerfile = fh.read()
+    docker_cmds = """
+#!/bin/bash
+mkdir tmp
+cat <<EOF > tmp/test_server.py
+{test_server}
+EOF
+cat <<EOF > tmp/Dockerfile
+{dockerfile}
+EOF
+docker build -t 123.1.1.1:5000/test_server tmp/
+docker push 123.1.1.1:5000/test_server
+sleep 3600
+""".format(test_server=test_server, dockerfile=dockerfile)
+    docker_build_and_push_app = {
+            'id': '/build_and_push',
+            'cmd': docker_cmds,
+            'ports': 0,
+            'cpus': 0.1,
+            'mem': 64,
+            'instances': 1,
+            'healthChecks':
+            [
+                {
+                    'protocol': 'COMMAND',
+                    'command': {'value': 'curl -fsSlv http://123.1.1.1:5000/v2/test_server/manifests/latest'},
+                    'gracePeriodSeconds': 5,
+                    'intervalSeconds': 10,
+                    'timeoutSeconds': 10,
+                    'maxConsecutiveFailures': 3
+                }
+            ],
+            }
+    cluster.deploy_marathon_app(add_certs_app)
+    cluster.deploy_marathon_app(registry_app)
+    cluster.deploy_marathon_app(docker_build_and_push_app)
+    cluster.registry = '123.1.1.1:5000'
     return cluster
 
 
@@ -658,7 +784,7 @@ def test_if_PkgPanda_metadata_is_available(cluster):
     assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
 
 
-def test_if_Marathon_app_can_be_deployed(cluster):
+def test_if_Marathon_app_can_be_deployed(registry_cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -672,6 +798,7 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
+    cluster = registry_cluster
     app_definition, test_uuid = cluster.get_base_testapp_definition()
 
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -794,15 +921,15 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=False)
 
 
-def test_if_search_is_working(cluster):
+def test_if_search_is_working(registry_cluster):
     """Test if custom set search is working.
 
     Verifies that a marathon app running on the cluster can resolve names using
@@ -813,6 +940,7 @@ def test_if_search_is_working(cluster):
     The application being deployed is a simple http server written in python.
     Please check test/dockers/test_server for more details.
     """
+    cluster = registry_cluster
     # Launch the app
     app_definition, test_uuid = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -1257,11 +1385,12 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
-def test_signal_service(cluster):
+def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
+    cluster = registry_cluster
     test_server_app_definition, _ = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(test_server_app_definition)
 

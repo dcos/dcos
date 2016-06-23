@@ -79,8 +79,6 @@ echo "Starting Vagrant VMs"
 
 vagrant up m1 m2 m3 a1 a2 p1 boot
 
-# TODO(cmaloney): Configure insecure registry inside the dcos-vagrant cluster
-
 # Prep for the integration test after vagrant up so that it happens in parallel
 # with DC/OS assembling itself to save some time.
 # Build a docker container for running py.test inside of.
@@ -94,7 +92,6 @@ export MASTER_HOSTS=$MASTER_HOSTS
 export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
 export SLAVE_HOSTS=192.168.65.111,192.168.65.121
 export PUBLIC_SLAVE_HOSTS=192.168.65.60
-export REGISTRY_HOST=boot.dcos
 export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DNS_SEARCH=true
 export DCOS_AUTH_ENABLED=false
@@ -103,17 +100,13 @@ py.test -vv -s ${CI_FLAGS:-} /integration_test.py
 EOF
 cp $PWD/../../integration_test.py .
 cp $PWD/../../docker/py.test/Dockerfile .
+cp $PWD/../../certs/* .
+cp $PWD/../../docker/test_server/Dockerfile test_server_Dockerfile
+cp $PWD/../../docker/test_server/test_server.py .
 docker build -t py.test .
 popd
 rm -rf tmp_build_dir_for_pytest
 
-# Build and push test server to local registry:
-echo "Building&pushing test_server container"
-docker build -t 127.0.0.1:5000/test_server -f ../docker/test_server/Dockerfile ../docker/test_server/
-
-# Make an ssh tunnel to the vagrant machine then push the container over it to get around
-# host insecure registry setting...
-vagrant ssh boot -- -N -L 5000:192.168.65.50:5000 -f && docker push 127.0.0.1:5000/test_server
 
 echo "Running integration test"
 set +e # So we can potentially capture the logs
