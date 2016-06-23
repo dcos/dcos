@@ -299,8 +299,9 @@ def main():
         installer.postflight()
 
         # Runs dcos-image/integration_test.py inside the cluster
-        test_util.test_runner.prepare_test_registry(
+        test_util.test_runner.distribute_registry_certs(
                 tunnel=test_host_tunnel,
+                agent_list=agent_list+public_agent_list,
                 test_dir=remote_dir)
         result = test_util.test_runner.integration_test(
                 tunnel=test_host_tunnel,

@@ -57,7 +57,7 @@ def cluster():
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-                   registry=os.environ['REGISTRY_HOST'],
+                   registry=os.getenv('REGISTRY_HOST'),
                    dns_search_set=os.environ['DNS_SEARCH'],
                    provider=os.environ['DCOS_PROVIDER'])
 
@@ -66,6 +66,80 @@ def cluster():
 def auth_cluster(cluster):
     if not AUTH_ENABLED:
         pytest.skip("Skipped because not running against cluster with auth.")
+    return cluster
+
+
+@pytest.fixture(scope='module')
+def registry_cluster(cluster, request):
+    """Provides a cluster that has a registry deployed via marathon.
+    Note: cluster nodes must have hard-coded certs from dcos.git installed
+    """
+    if cluster.registry:
+        return cluster
+    registry_app = {
+            "id": "/registry",
+            "cmd": "docker run -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/123.1.1.1\:5000/client.cert -e REGISTRY_HTTP_TLS_KEY=/certs/123.1.1.1\:5000/client.key -v /etc/docker/certs.d:/certs:ro -p $PORT0:5000 registry:2",  # noqa
+            "cpus": 0.1,
+            "mem": 128,
+            "disk": 0,
+            "instances": 1,
+            "healthChecks": [{
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "CURL_CA_BUNDLE=/etc/docker/certs.d/123.1.1.1\:5000/123.1.1.1\:5000.crt curl -sSfv https://123.1.1.1:5000/v2/_catalog"},  # noqa
+                "gracePeriodSeconds": 300,
+                "intervalSeconds": 60,
+                "timeoutSeconds": 20,
+                "maxConsecutiveFailures": 3,
+                "ignoreHttp1xx": True}],
+            "portDefinitions": [{
+                "port": 0,
+                "protocol": "tcp",
+                "labels": {"VIP_0": "123.1.1.1:5000"}}]
+            }
+    with open('/test_server.py', 'r') as fh:
+        test_server = fh.read()
+    with open('/test_server_Dockerfile', 'r') as fh:
+        dockerfile = fh.read()
+    docker_cmds = """
+#!/bin/bash
+mkdir tmp
+cat <<EOF > tmp/test_server.py
+{test_server}
+EOF
+cat <<EOF > tmp/Dockerfile
+{dockerfile}
+EOF
+docker build -t 123.1.1.1:5000/test_server tmp/
+docker push 123.1.1.1:5000/test_server
+sleep 36000
+""".format(test_server=test_server, dockerfile=dockerfile)
+    docker_build_and_push_app = {
+            'id': '/build-and-push',
+            'cmd': docker_cmds,
+            'cpus': 0.1,
+            'mem': 64,
+            'instances': 1,
+            'healthChecks':
+            [
+                {
+                    'protocol': 'COMMAND',
+                    'command': {'value': 'CURL_CA_BUNDLE=/etc/docker/certs.d/123.1.1.1\:5000/123.1.1.1\:5000.crt curl -fsSlv https://123.1.1.1:5000/v2/test_server/manifests/latest'},  # noqa
+                    'gracePeriodSeconds': 20,
+                    'intervalSeconds': 20,
+                    'timeoutSeconds': 10,
+                    'maxConsecutiveFailures': 3
+                }
+            ],
+            }
+    cluster.deploy_marathon_app(registry_app)
+    cluster.deploy_marathon_app(docker_build_and_push_app)
+    cluster.registry = '123.1.1.1:5000'
+
+    def kill_registry():
+        cluster.destroy_marathon_app(docker_build_and_push_app['id'])
+        cluster.destroy_marathon_app(registry_app['id'])
+    request.addfinalizer(kill_registry)
     return cluster
 
 
@@ -303,7 +377,7 @@ class Cluster:
         test_uuid = uuid.uuid4().hex
 
         docker_config = {
-            'image': '{}:5000/test_server'.format(self.registry),
+            'image': '{}/test_server'.format(self.registry),
             'forcePullImage': True,
         }
         if docker_network_bridge:
@@ -373,7 +447,7 @@ class Cluster:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
         r = self.post('/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
-        assert r.ok
+        assert r.ok, r.text
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
                         retry_on_result=lambda ret: ret is None,
@@ -658,7 +732,7 @@ def test_if_PkgPanda_metadata_is_available(cluster):
     assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
 
 
-def test_if_Marathon_app_can_be_deployed(cluster):
+def test_if_Marathon_app_can_be_deployed(registry_cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -672,6 +746,7 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
+    cluster = registry_cluster
     app_definition, test_uuid = cluster.get_base_testapp_definition()
 
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -794,15 +869,15 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=False)
 
 
-def test_if_search_is_working(cluster):
+def test_if_search_is_working(registry_cluster):
     """Test if custom set search is working.
 
     Verifies that a marathon app running on the cluster can resolve names using
@@ -813,6 +888,7 @@ def test_if_search_is_working(cluster):
     The application being deployed is a simple http server written in python.
     Please check test/dockers/test_server for more details.
     """
+    cluster = registry_cluster
     # Launch the app
     app_definition, test_uuid = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -1257,11 +1333,12 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
-def test_signal_service(cluster):
+def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
+    cluster = registry_cluster
     test_server_app_definition, _ = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(test_server_app_definition)
 
