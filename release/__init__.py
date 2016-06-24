@@ -9,13 +9,13 @@ Co-ordinates across all gen installers.
 
 import argparse
 import copy
-from distutils.version import LooseVersion
 import importlib
 import inspect
 import json
 import os.path
 import subprocess
 import sys
+from distutils.version import LooseVersion
 
 import pkg_resources
 import yaml
@@ -25,6 +25,7 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+
 provider_names = ['aws', 'azure', 'bash']
 
 
