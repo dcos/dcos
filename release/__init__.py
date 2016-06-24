@@ -440,7 +440,7 @@ def do_build_packages(cache_repository_url):
             pass
 
     # mark as latest so it will be used when building packages
-    subprocess.check_call(['docker', 'tag', '-f', container_name, 'dcos-builder:latest'])
+    subprocess.check_call(['docker', 'tag', container_name, 'dcos-builder:latest'])
 
     def get_build():
         # TODO(cmaloney): Stop shelling out
