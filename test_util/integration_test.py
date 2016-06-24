@@ -1435,7 +1435,7 @@ def _get_snapshot_list(cluster):
     for _, snapshot_list in response.items():
         if snapshot_list is not None and isinstance(snapshot_list, list) and len(snapshot_list) > 0:
             # append snapshots and get just the filename.
-            snapshots += map(lambda s: os.path.basename(s), snapshot_list)
+            snapshots += map(lambda s: os.path.basename(s['file_name']), snapshot_list)
     return snapshots
 
 
