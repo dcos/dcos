@@ -109,8 +109,8 @@
     },
     "keyring": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/a3/17/d55bcbb3b1b2af50118953231a6cbc255efba9d9dae2257c0f6658c5c471/keyring-8.0.1-py2.py3-none-any.whl",
-      "sha1": "3d41c156836ce480238d2fbfe4727f98bef8228c"
+      "url": "https://pypi.python.org/packages/9a/1e/8b0290dc98de928b04c6fc73c301faebf52b9479a3c772edc77b92b4d6f6/keyring-9.1-py2.py3-none-any.whl",
+      "sha1": "9c1d41e9e9e30c02cb49f4d6c7f377311c0f347d"
     },
     "oauthlib": {
       "kind": "url_extract",

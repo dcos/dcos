@@ -47,7 +47,8 @@ setup(
         'passlib',
         'pyyaml',
         'requests',
-        'retrying'],
+        'retrying',
+        'keyring==9.1'],  # FIXME: pin keyring to prevent dbus dep
     entry_points={
         'console_scripts': [
             'release=release:main',
