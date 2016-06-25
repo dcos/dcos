@@ -232,6 +232,8 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         arguments=variant_args,
         extra_templates=extra_templates,
         cc_package_files=[
+            '/etc/mesos-slave',
+            '/etc/mesos-slave-public',
             '/etc/cfn_signal_metadata',
             '/etc/dns_config',
             '/etc/exhibitor',
@@ -316,6 +318,8 @@ def gen_templates(arguments):
         arguments=arguments,
         extra_templates=['aws/templates/cloudformation.json', 'aws/dcos-config.yaml'],
         cc_package_files=[
+            '/etc/mesos-slave',
+            '/etc/mesos-slave-public',
             '/etc/cfn_signal_metadata',
             '/etc/adminrouter.env',
             '/etc/ui-config.json',
