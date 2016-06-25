@@ -1,5 +1,5 @@
 {
-  "requires": ["python", "dcos-image-deps"],
+  "requires": ["python", "dcos-image-deps", "python-azure-mgmt-resource"],
   "single_source": {
     "kind": "git_local",
     "rel_path": "../../"
