@@ -25,10 +25,18 @@ def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
 
+def noop(b, opts):
+    return
+
+
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
+    'dcos-3dt': noop,
+    'dcos-marathon': noop,
+    'dcos-mesos-master': noop,
+    'dcos-cosmos': noop,
 }
 
 
