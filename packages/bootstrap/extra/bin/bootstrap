@@ -21,9 +21,14 @@ def dcos_signal(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
 
+def dcos_oauth(b, opts):
+    b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
+
+
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
+    'dcos-oauth': dcos_oauth,
 }
 
 

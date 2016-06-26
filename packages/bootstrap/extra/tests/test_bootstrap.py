@@ -1,5 +1,7 @@
+import getpass
 import logging
 import os
+import pwd
 import random
 import string
 import subprocess
@@ -41,15 +43,31 @@ class TestBootstrap():
         self.zk.close()
         subprocess.check_call(['sudo', 'docker', 'rm', '-f', self.zk_container_name])
 
-    def test_bootstrap(self):
+    def _test_consensus(self, methodname, monkeypatch):
+        orig_getpwnam = pwd.getpwnam
+
+        def mock_getpwnam(user):
+            return orig_getpwnam(getpass.getuser())
+        monkeypatch.setattr(pwd, 'getpwnam', mock_getpwnam)
+
         b = bootstrap.Bootstrapper(self.zk_hosts)
 
+        path = self.tmpdir + '/cluster-id'
+
         try:
-            os.remove(self.tmpdir + '/cluster-id')
+            os.remove(path)
         except FileNotFoundError:
             pass
 
-        id1 = b.cluster_id(self.tmpdir + '/cluster-id')
-        # repeat to test reading from file
-        id2 = b.cluster_id(self.tmpdir + '/cluster-id')
+        method = getattr(b, methodname)
+
+        id1 = method(path)
+        os.remove(path)
+        id2 = method(path)
         assert id1 == id2
+
+    def test_bootstrap(self, monkeypatch):
+        self._test_consensus('cluster_id', monkeypatch)
+
+    def test_generate_oauth_secret(self, monkeypatch):
+        self._test_consensus('generate_oauth_secret', monkeypatch)

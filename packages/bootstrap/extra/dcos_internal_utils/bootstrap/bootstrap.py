@@ -1,5 +1,8 @@
 import logging
 import os
+import pwd
+import random
+import string
 import uuid
 
 import kazoo.exceptions
@@ -13,6 +16,7 @@ log = logging.getLogger(__name__)
 
 
 ANYONE_READ = [ACL(Permissions.READ, ANYONE_ID_UNSAFE)]
+ANYONE_ALL = [ACL(Permissions.ALL, ANYONE_ID_UNSAFE)]
 
 
 class Bootstrapper(object):
@@ -60,6 +64,13 @@ class Bootstrapper(object):
 
                 return zkid
 
+    def generate_oauth_secret(self, path):
+        possible_auth_token = ''.join(random.choice(string.ascii_letters) for _ in range(64))
+        self.zk.ensure_path('/dcos', ANYONE_ALL)
+        consensus_auth_token = self._consensus('/dcos/auth-token-secret',
+                                               possible_auth_token.encode('ascii'), ANYONE_READ)
+        _write_file(path, consensus_auth_token, 0o600, 'dcos_oauth')
+
     def _consensus(self, path, value, acl=None):
         if value is not None:
             log.info('Reaching consensus about znode {}'.format(path))
@@ -72,3 +83,19 @@ class Bootstrapper(object):
 
         self.zk.sync(path)
         return self.zk.get(path)[0]
+
+
+def _write_file(path, data, mode, owner='root'):
+    dirpath = os.path.dirname(os.path.abspath(path))
+    with utils.Directory(dirpath) as d:
+        with d.lock():
+            umask_original = os.umask(0)
+            try:
+                flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+                log.info('Writing {} with mode {:o}'.format(path, mode))
+                with os.fdopen(os.open(path, flags, mode), 'wb') as f:
+                    f.write(data)
+                user = pwd.getpwnam(owner)
+                os.chown(path, user.pw_uid, user.pw_gid)
+            finally:
+                os.umask(umask_original)

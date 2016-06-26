@@ -9,6 +9,5 @@ RestartSec=5
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/var/lib/dcos/environment.proxy
 EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
-ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py
-ExecStartPre=/opt/mesosphere/bin/dcos-oauth-setup.py
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-signal
 ExecStart=/opt/mesosphere/bin/dcos-oauth serve --addr=127.0.0.1:8101 --zk-addr=127.0.0.1:2181 --secret-key-path=/var/lib/dcos/dcos-oauth/auth-token-secret --segment-key=51ybGTeFEFU1xo6u10XMDrr6kATFyRyh
