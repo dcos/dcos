@@ -314,7 +314,11 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
 def gen_templates(arguments):
     results = gen.generate(
         arguments=arguments,
-        extra_templates=['aws/templates/cloudformation.json', 'aws/dcos-config.yaml'],
+        extra_templates=[
+            'aws/templates/cloudformation.json',
+            'aws/dcos-config.yaml',
+            'coreos-aws/cloud-config.yaml',
+            'coreos/cloud-config.yaml'],
         cc_package_files=[
             '/etc/cfn_signal_metadata',
             '/etc/adminrouter.env',
