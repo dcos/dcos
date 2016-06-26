@@ -958,6 +958,7 @@ def test_ip_per_container(cluster):
         app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
         cmd = "curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
         r = requests.post('http://{}:{}/run_cmd'.format(service_points[1].host, service_points[1].port), data=cmd)
+        logging.info('IP Per Container Curl Response: %s', repr(r.json()))
         assert(r.json()['status'] == 0)
 
     _ensure_works()
