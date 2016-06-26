@@ -8,5 +8,5 @@ RestartSec=20
 User=dcos_signal
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/cfn_signal_metadata
-ExecStartPre=/bin/bash -c '[ -f /var/lib/dcos/cluster-id ] || exit 1'
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-signal
 ExecStart=/opt/mesosphere/bin/dcos-signal -segment-key 51ybGTeFEFU1xo6u10XMDrr6kATFyRyh
