@@ -111,7 +111,14 @@ package:
     content: |
       {
         "master": "zk://leader.mesos:2181/mesos",
-        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni"
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "network_config":
+        {
+          "allocate_subnet": true,
+          "mesos_bridge": true,
+          "docker_bridge": true,
+          "overlay_mtu": {{ dcos_overlay_mtu }}
+        }
        }
   - path: /etc/overlay/config/agent-master.json
     content: |
@@ -122,7 +129,8 @@ package:
         {
           "allocate_subnet": true,
           "mesos_bridge": false,
-          "docker_bridge": true
+          "docker_bridge": true,
+          "overlay_mtu": {{ dcos_overlay_mtu }}
         }
       }
   {% switch dcos_overlay_enable %}
@@ -133,7 +141,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -166,7 +174,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -224,6 +232,7 @@ package:
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
       MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
+      MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
