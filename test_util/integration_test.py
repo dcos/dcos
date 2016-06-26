@@ -956,6 +956,9 @@ def test_ip_per_container(cluster):
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
 
+    @retrying.retry(wait_fixed=5000, stop_max_delay=300*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
     def _ensure_works():
         app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
         cmd = "curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
