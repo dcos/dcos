@@ -32,10 +32,6 @@ exhibitor_start_wrapper="$PKG_PATH/usr/exhibitor/start_exhibitor.py"
 envsubst '$PKG_PATH' < /pkg/extra/start_exhibitor.py > "$exhibitor_start_wrapper"
 chmod +x "$exhibitor_start_wrapper"
 
-exhibitor_wait="$PKG_PATH/bin/exhibitor_wait.py"
-cp /pkg/extra/exhibitor_wait.py "$exhibitor_wait"
-chmod +x "$exhibitor_wait"
-
 mkdir -p "$PKG_PATH/usr/zookeeper/build/lib/"
 cp /pkg/src/log4j/log4j-systemd-journal-appender-1.3.2.jar "$PKG_PATH/usr/zookeeper/lib/"
 cp /pkg/src/jna/jna-4.2.2.jar "$PKG_PATH/usr/zookeeper/lib/"

@@ -1359,7 +1359,6 @@ sleep 3600
         'adminrouter-reload-service',
         'adminrouter-reload-timer',
         'adminrouter-service',
-        'cluster-id-service',
         'cosmos-service',
         'exhibitor-service',
         'history-service',

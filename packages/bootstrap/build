@@ -7,4 +7,3 @@ mkdir -p "$LIB_INSTALL_DIR"
 cp -r /pkg/extra /build
 
 pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /build
-

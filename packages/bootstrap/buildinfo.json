@@ -1,0 +1,8 @@
+{
+  "requires": [
+    "python",
+    "python-kazoo",
+    "python-requests"
+  ],
+  "docker": "dcos-builder"
+}
