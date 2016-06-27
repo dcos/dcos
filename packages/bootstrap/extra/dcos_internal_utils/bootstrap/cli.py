@@ -84,7 +84,3 @@ def parse_args():
         default='/opt/mesosphere/etc/master_count',
         help='File with number of master servers')
     return parser.parse_args()
-
-
-if __name__ == '__main__':
-    main()
