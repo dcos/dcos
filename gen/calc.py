@@ -290,7 +290,7 @@ entry = {
             "vtep_mac_oui": "70:B3:D5:00:00:00",        \
             "overlays": [                               \
               {                                         \
-                "name": "overlay-1",                    \
+                "name": "dcos",                         \
                 "subnet": "44.128.0.0/16",              \
                 "prefix": 24                            \
               }                                         \

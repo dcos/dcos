@@ -343,7 +343,7 @@ class Cluster:
                 # https://mesosphere.slack.com/archives/marathon/p1466936625000682
                 del base_app['healthChecks']
                 base_app['container']['docker']['network'] = 'USER'
-                base_app['ipAddress'] = {'networkName': 'overlay-1'}
+                base_app['ipAddress'] = {'networkName': 'dcos'}
             else:
                 base_app['container']['docker']['network'] = 'BRIDGE'
                 # I think this can be removed actually
