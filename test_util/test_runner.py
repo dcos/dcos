@@ -83,12 +83,48 @@ set -euo pipefail; set -x
     write_string(join(temp_dir, 'test_wrapper.sh'), cmd_script)
     check_call(['cp', test_script, join(temp_dir, 'integration_test.py')])
     check_call(['cp', pytest_docker, join(temp_dir, 'Dockerfile')])
-    check_call(['cp', client_cert, join(temp_dir, 'client.cert')])
-    check_call(['cp', client_key, join(temp_dir, 'client.key')])
-    check_call(['cp', root_ca, join(temp_dir, '123.1.1.1:5000.crt')])
     check_call(['cp', test_server, join(temp_dir, 'test_server.py')])
     check_call(['cp', test_server_docker, join(temp_dir, 'test_server_Dockerfile')])
     check_call(['docker', 'build', '-t', 'py.test', temp_dir])
+
+    # Put certs in a temp dir we'll use to tar them up and scp to boostrapper later
+    certs_temp_dir = tempfile.mkdtemp()
+    check_call(['cp', client_cert, join(certs_temp_dir, 'client.cert')])
+    check_call(['cp', client_key, join(certs_temp_dir, 'client.key')])
+    check_call(['cp', root_ca, join(certs_temp_dir, '123.1.1.1:5000.crt')])
+
+    log.info('Tar-ing certs dir')
+    certs_tarball = join(certs_temp_dir, 'certs.tgz')
+    check_call(['tar', 'czf', certs_tarball, 'certs'], cwd=join(certs_temp_dir, 'include'))
+
+    log.info("Certs Tarball: {}".format(certs_tarball))
+    # Transfer certs to bootstrap host
+    cert_transfer_path = join(test_dir, 'certs.tgz')
+    tunnel.write_to_remote(certs_tarball, cert_transfer_path)
+
+    log.info('Setting up SSH key on bootstrap host for daisy-chain-ing')
+    remote_key_path = join(test_dir, 'test_ssh_key')
+    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
+    tunnel.remote_cmd(['chmod', '600', remote_key_path])
+
+    docker_conf_chain = (
+        ['docker', 'version'],  # checks that docker is available w/o sudo
+        ['tar', 'xzf', cert_transfer_path, '-C', test_dir],
+        ['sudo', 'cp', '-R', join(test_dir, 'certs'), '/etc/docker/certs.d/'])
+
+    for cmd in docker_conf_chain:
+        tunnel.remote_cmd(cmd)
+    for agent in agent_list:
+        log.info('Adding self-signed certs to:  ' + agent)
+        target = "{}@{}".format(tunnel.ssh_user, agent)
+        target_scp = "{}:{}".format(target, cert_transfer_path)
+        ssh_opts = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
+        scp_cmd = ['/usr/bin/scp', '-i', remote_key_path] + ssh_opts
+        remote_scp = scp_cmd + [cert_transfer_path, target_scp]
+        tunnel.remote_cmd(remote_scp)
+        chain_prefix = ['/usr/bin/ssh', '-tt', '-i', remote_key_path] + ssh_opts + [target]
+        for cmd in docker_conf_chain:
+            tunnel.remote_cmd(chain_prefix+cmd)
 
     log.info('Exporting py.test image')
     pytest_image_tar = 'DCOS_integration_test.tar'
