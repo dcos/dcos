@@ -299,36 +299,18 @@ class Cluster:
         hdrs = self._suheader(disable_suauth)
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
-    def get_base_testapp_definition(self, docker_network_bridge=True):
+    def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
         test_uuid = uuid.uuid4().hex
-
-        docker_config = {
-            'image': '{}:5000/test_server'.format(self.registry),
-            'forcePullImage': True,
-        }
-        if docker_network_bridge:
-            cmd = '/opt/test_server.py 9080'
-            docker_config['network'] = 'BRIDGE'
-            docker_config['portMappings'] = [{
-                'containerPort':  9080,
-                'hostPort': 0,
-                'servicePort': 0,
-                'protocol': 'tcp',
-            }]
-            ports = []
-        else:
-            cmd = '/opt/test_server.py $PORT0'
-            docker_config['network'] = 'HOST'
-            ports = [0]
-
-        return {
+        base_app = {
             'id': TEST_APP_NAME_FMT.format(test_uuid),
             'container': {
                 'type': 'DOCKER',
-                'docker': docker_config,
+                'docker': {
+                    'image': '{}:5000/test_server'.format(self.registry),
+                    'forcePullImage': True,
+                },
             },
-            'cmd': cmd,
-            'ports': ports,
+            'cmd': '/opt/test_server.py 9080',
             'cpus': 0.1,
             'mem': 64,
             'instances': 1,
@@ -347,7 +329,31 @@ class Cluster:
             "env": {
                 "DCOS_TEST_UUID": test_uuid
             },
-        }, test_uuid
+        }
+
+        if docker_network_bridge:
+            base_app['container']['docker']['portMappings'] = [{
+                'containerPort':  9080,
+                'hostPort': 0,
+                'servicePort': 0,
+                'protocol': 'tcp',
+            }]
+            if ip_per_container:
+                # TODO(sargun): Marathon HTTP Healthchecks + Overlay = NOGO
+                # https://mesosphere.slack.com/archives/marathon/p1466936625000682
+                del base_app['healthChecks']
+                base_app['container']['docker']['network'] = 'USER'
+                base_app['ipAddress'] = {'networkName': 'dcos'}
+            else:
+                base_app['container']['docker']['network'] = 'BRIDGE'
+                # I think this can be removed actually
+                base_app['ports'] = []
+        else:
+            base_app['cmd'] = '/opt/test_server.py $PORT0'
+            base_app['container']['docker']['network'] = 'HOST'
+            base_app['ports'] = [0]
+
+        return base_app, test_uuid
 
     def deploy_marathon_app(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
@@ -373,13 +379,14 @@ class Cluster:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
         r = self.post('/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
+        logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _pool_for_marathon_app(app_id):
-            Endpoint = collections.namedtuple("Endpoint", ["host", "port"])
+            Endpoint = collections.namedtuple("Endpoint", ["host", "port", "ip"])
             # Some of the counters need to be explicitly enabled now and/or in
             # future versions of Marathon:
             req_params = (('embed', 'apps.lastTaskFailure'),
@@ -400,7 +407,8 @@ class Cluster:
                 data['app']['tasksRunning'] == app_definition['instances'] and
                 (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
             ):
-                res = [Endpoint(t['host'], t['ports'][0]) for t in data['app']['tasks']]
+                res = [Endpoint(t['host'], t['ports'][0], t['ipAddresses'][0]['ipAddress'])
+                       for t in data['app']['tasks']]
                 logging.info('Application deployed, running on {}'.format(res))
                 return res
             else:
@@ -871,6 +879,85 @@ def test_if_we_have_capabilities(cluster):
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
 
 
+def test_octarine_http(cluster, timeout=30):
+    """
+    Test if we are able to send traffic through octarine.
+    """
+
+    test_uuid = uuid.uuid4().hex
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
+
+    app_definition = {
+        'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
+        'cpus': 0.1,
+        'mem': 128,
+        'ports': [10001],
+        'cmd': '/opt/mesosphere/bin/octarine marathon',
+        'disk': 0,
+        'instances': 1,
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
+def test_octarine_srv(cluster, timeout=30):
+    """
+    Test resolving SRV records through octarine.
+    """
+
+    # Limit string length so we don't go past the max SRV record length
+    test_uuid = uuid.uuid4().hex[:16]
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    port_name = 'pinger'
+    cmd = ('/opt/mesosphere/bin/octarine marathon & ' +
+           '/opt/mesosphere/bin/python -m http.server ${PORT0}')
+    raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
+    check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')
+    check_command = check_command.format(proxy, port_name, raw_app_id)
+
+    app_definition = {
+        'id': '/{}'.format(raw_app_id),
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': cmd,
+        'disk': 0,
+        'instances': 1,
+        'portDefinitions': [
+          {
+            'port': 10002,
+            'protocol': 'tcp',
+            'name': port_name,
+            'labels': {}
+          }
+        ],
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
 # By default telemetry-net sends the metrics about once a minute
 # Therefore, we wait up till 2 minutes and a bit before we give up
 def test_if_minuteman_routes_to_vip(cluster, timeout=125):
@@ -932,6 +1019,34 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         assert 'imok' in data
 
     _ensure_routable()
+
+
+def test_ip_per_container(cluster):
+    """Test if we are able to connect to a task with ip-per-container mode
+    """
+    # Launch the test_server in ip-per-container mode
+
+    app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
+
+    app_definition['constraints'] = [['hostname', 'UNIQUE']]
+    if len(cluster.slaves) >= 2:
+        app_definition['instances'] = 2
+    else:
+        logging.warning('The IP Per Container tests needs 2 (private) agents to work')
+    service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
+
+    @retrying.retry(wait_fixed=5000, stop_max_delay=300*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
+    def _ensure_works():
+        app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
+        cmd = "curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
+        r = requests.post('http://{}:{}/run_cmd'.format(service_points[1].host, service_points[1].port), data=cmd)
+        logging.info('IP Per Container Curl Response: %s', repr(r.json()))
+        assert(r.json()['status'] == 0)
+
+    _ensure_works()
+    cluster.destroy_marathon_app(app_definition['id'])
 
 
 def make_3dt_request(ip, endpoint, cluster, port=80):
@@ -1448,10 +1563,10 @@ def test_3dt_snapshot_create(cluster):
     response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
     logging.info('POST {}, response: {}'.format(create_url, response))
 
-    # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
+    # make sure the job is done, timeout is 8 sec, wait between retying is 1 sec
     status_url = '/system/health/v1/report/snapshot/status/all'
 
-    @retrying.retry(stop_max_delay=5000, wait_fixed=1000)
+    @retrying.retry(stop_max_delay=8000, wait_fixed=1000)
     def wait_for_job():
         response = cluster.get(path=status_url).json()
         logging.info('GET {}, response: {}'.format(status_url, response))
@@ -1459,6 +1574,10 @@ def test_3dt_snapshot_create(cluster):
         # check `is_running` attribute for each host. All of them must be False
         for _, attributes in response.items():
             assert not attributes['is_running']
+
+        # sometimes it may take extra seconds to list snapshots after the job is finished.
+        # the job should finish within 5 seconds and listing should be available after 3 seconds.
+        assert _get_snapshot_list(cluster), 'get a list of snapshot timeout'
 
     wait_for_job()
 
