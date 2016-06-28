@@ -152,6 +152,9 @@ sleep 3600
                 'port': 5000,
                 'protocol': 'tcp',
                 'labels': [{'VIP_0': '123.1.1.1:5000'}]}}
+
+    print("Registry App Definition:\n{}".format(registry_app)
+
     with open('/test_server.py', 'r') as fh:
         test_server = fh.read()
     with open('/Dockerfile', 'r') as fh:
