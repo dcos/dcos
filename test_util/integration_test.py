@@ -22,6 +22,7 @@ TEST_APP_NAME_FMT = '/integration-test-{}'
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 BASE_ENDPOINT_3DT = '/system/health/v1'
 PORT_3DT = 1050
+PORT_3DT_AGENT = 61001
 
 # If auth is enabled, by default, tests use hard-coded OAuth token
 AUTH_ENABLED = os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true'
@@ -937,8 +938,8 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
 def make_3dt_request(ip, endpoint, cluster, port=80):
     """
     a helper function to get info from 3dt endpoint. Default port is 80 for pulled data from agents.
-    if a destination port in 80, that means all requests should go though adminrouter and we can re-use cluster.get
-    otherwise we can query 3dt agents directly to port 1050.
+    if a destination port in 80, that means all requests should go though master (adminrouter) and we can re-use
+    cluster.get otherwise we can query 3dt agents directly to port 61001 (agent-adminrouter).
     """
     if port == 80:
         assert endpoint.startswith('/'), 'endpoint {} must start with /'.format(endpoint)
@@ -969,8 +970,45 @@ def test_3dt_health(cluster):
     required_fields_unit = ['id', 'health', 'output', 'description', 'help', 'name']
     required_system_fields = ['memory', 'load_avarage', 'partitions', 'disk_usage']
 
-    for host in cluster.masters + cluster.slaves:
+    # Check all masters 3DT instances on base port since this is extra-cluster request (outside localhost)
+    for host in cluster.masters:
         response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
+        assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
+            ', '.join(required_fields)
+        )
+
+        # validate units
+        assert 'units' in response, 'units field not found'
+        assert isinstance(response['units'], list), 'units field must be a list'
+        assert len(response['units']) > 0, 'units field cannot be empty'
+        for unit in response['units']:
+            assert len(unit) == len(required_fields_unit), 'unit must have the following fields: {}'.format(
+                ', '.join(required_fields_unit)
+            )
+            for required_field_unit in required_fields_unit:
+                assert required_field_unit in unit, '{} must be in a unit repsonse'
+
+            # id, health and description cannot be empty
+            assert unit['id'], 'id field cannot be empty'
+            assert unit['health'] in [0, 1], 'health field must be 0 or 1'
+            assert unit['description'], 'description field cannot be empty'
+
+        # check all required fields but units
+        for required_field in required_fields[1:]:
+            assert required_field in response, '{} field not found'.format(required_field)
+            assert response[required_field], '{} cannot be empty'.format(required_field)
+
+        # check system metrics
+        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
+            ', '.join(required_system_fields))
+
+        for sys_field in required_system_fields:
+            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
+            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
+
+    # Check all agents running 3DT behind agent-adminrouter on 61001
+    for host in cluster.slaves:
+        response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
