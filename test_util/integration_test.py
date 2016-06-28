@@ -1176,11 +1176,17 @@ def test_3dt_units(cluster):
     """
     # get all unique unit names
     all_units = set()
-    for node in cluster.masters + cluster.all_slaves:
+    for node in cluster.masters:
         node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
         for unit in node_response['units']:
             all_units.add(unit['id'])
-    logging.info('all units: {}'.format(all_units))
+
+    for node in cluster.all_slaves:
+        node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
+        for unit in node_response['units']:
+            all_units.add(unit['id'])
+
+    logging.info('Master units: {}'.format(all_units))
 
     # test agaist masters
     for master in cluster.masters:
