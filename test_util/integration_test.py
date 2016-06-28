@@ -879,6 +879,85 @@ def test_if_we_have_capabilities(cluster):
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
 
 
+def test_octarine_http(cluster, timeout=30):
+    """
+    Test if we are able to send traffic through octarine.
+    """
+
+    test_uuid = uuid.uuid4().hex
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
+
+    app_definition = {
+        'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
+        'cpus': 0.1,
+        'mem': 128,
+        'ports': [10001],
+        'cmd': '/opt/mesosphere/bin/octarine marathon',
+        'disk': 0,
+        'instances': 1,
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
+def test_octarine_srv(cluster, timeout=30):
+    """
+    Test resolving SRV records through octarine.
+    """
+
+    # Limit string length so we don't go past the max SRV record length
+    test_uuid = uuid.uuid4().hex[:16]
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    port_name = 'pinger'
+    cmd = ('/opt/mesosphere/bin/octarine marathon & ' +
+           '/opt/mesosphere/bin/python -m http.server ${PORT0}')
+    raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
+    check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')
+    check_command = check_command.format(proxy, port_name, raw_app_id)
+
+    app_definition = {
+        'id': '/{}'.format(raw_app_id),
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': cmd,
+        'disk': 0,
+        'instances': 1,
+        'portDefinitions': [
+          {
+            'port': 10002,
+            'protocol': 'tcp',
+            'name': port_name,
+            'labels': {}
+          }
+        ],
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
 # By default telemetry-net sends the metrics about once a minute
 # Therefore, we wait up till 2 minutes and a bit before we give up
 def test_if_minuteman_routes_to_vip(cluster, timeout=125):
