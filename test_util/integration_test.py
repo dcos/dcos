@@ -1448,10 +1448,10 @@ def test_3dt_snapshot_create(cluster):
     response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
     logging.info('POST {}, response: {}'.format(create_url, response))
 
-    # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
+    # make sure the job is done, timeout is 8 sec, wait between retying is 1 sec
     status_url = '/system/health/v1/report/snapshot/status/all'
 
-    @retrying.retry(stop_max_delay=5000, wait_fixed=1000)
+    @retrying.retry(stop_max_delay=8000, wait_fixed=1000)
     def wait_for_job():
         response = cluster.get(path=status_url).json()
         logging.info('GET {}, response: {}'.format(status_url, response))
@@ -1459,6 +1459,10 @@ def test_3dt_snapshot_create(cluster):
         # check `is_running` attribute for each host. All of them must be False
         for _, attributes in response.items():
             assert not attributes['is_running']
+
+        # sometimes it may take extra seconds to list snapshots after the job is finished.
+        # the job should finish within 5 seconds and listing should be available after 3 seconds.
+        assert _get_snapshot_list(cluster), 'get a list of snapshot timeout'
 
     wait_for_job()
 
