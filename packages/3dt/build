@@ -22,6 +22,7 @@ slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
+
 cat <<EOF | tee $slave_service $slave_public_service
 [Unit]
 Description=Diagnostics: DC/OS Distributed Diagnostics Tool

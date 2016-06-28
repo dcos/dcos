@@ -1428,13 +1428,13 @@ sleep 3600
         'spartan-watchdog-service',
         'spartan-watchdog-timer']
     slave_units = [
-        '3dt-socket',
         'mesos-slave-service',
         'vol-discovery-priv-agent-service']
     public_slave_units = [
         'mesos-slave-public-service',
         'vol-discovery-pub-agent-service']
     all_slave_units = [
+        '3dt-socket',
         'adminrouter-agent-service',
         'logrotate-agent-service',
         'logrotate-agent-timer']
