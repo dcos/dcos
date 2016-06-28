@@ -1413,7 +1413,7 @@ sleep 3600
     # Check a subset of things regarding Mesos that we can logically check for
     assert r_data['mesos']['properties']['frameworks'][0]['name'] == 'marathon'
     # There are no packages installed by default on the integration test, ensure the key exists
-    assert r_data['cosmos']['properties']['package_list'] is None
+    assert len(r_data['cosmos']['properties']['package_list']) == 0
 
 
 def test_mesos_agent_role_assignment(cluster):
