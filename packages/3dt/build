@@ -56,5 +56,5 @@ RestartSec=5
 PermissionsStartOnly=True
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json
+ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
 EOF
