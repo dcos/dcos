@@ -16,6 +16,9 @@ master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
 
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-ddt.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-ddt.socket
+
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
@@ -44,3 +47,13 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
 ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json
 EOF
+
+cat <<EOF | tee $slave_socket_service $slave_public_socket_service
+[Unit]
+Description=Diagnostics socket: DCOS Distributed Diagnostics Tool Master API and Aggregation Socket
+[Socket]
+ListenStream=/run/dcos/3dt.sock
+[Install]
+WantedBy=dcos-ddt.service
+EOF
+
