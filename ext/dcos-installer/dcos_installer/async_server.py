@@ -10,6 +10,7 @@ from aiohttp import web
 
 import dcos_installer
 from dcos_installer import backend
+from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer.util import STATE_DIR
 
@@ -22,6 +23,7 @@ options = None
 
 VERSION = '1'
 
+web_analytics = InstallerAnalytics()
 
 """Define the aiohttp web application framework and setup
 # the routes to be used in the API"""
@@ -80,7 +82,6 @@ def configure(request):
         resp = web.json_response({}, status=200)
         if validation_err:
             resp = web.json_response(messages, status=400)
-
         return resp
 
     elif request.method == 'GET':
@@ -175,10 +176,24 @@ def action_action_name(request):
             try:
                 print_header("GENERATING CONFIGURATION")
                 backend.do_configure()
+
+                web_analytics.send(
+                    action='genconf',
+                    install_method="web",
+                    num_errors=segment_error_count,
+                )
+
             except:
                 genconf_failure = {
                     "errors": "Configuration generation failed, please see command line for details"
                 }
+
+                web_analytics.send(
+                    action='genconf',
+                    install_method="web",
+                    num_errors=1,
+                )
+
                 return web.json_response(genconf_failure, status=400)
 
         params = yield from request.post()
@@ -199,6 +214,7 @@ def action_action_name(request):
                                 hosts=failed_hosts,
                                 try_remove_stale_dcos=True,
                                 **params))
+
                         return web.json_response({
                             'status': 'retried',
                             'details': sorted(['{}:{}'.format(node.ip, node.port) for node in failed_hosts])
@@ -219,6 +235,7 @@ def action_action_name(request):
                 unlink_state_file(action_name)
 
         yield from asyncio.async(action(backend.get_config(), state_json_dir=STATE_DIR, options=options, **params))
+
         return web.json_response({'status': '{} started'.format(action_name)})
 
 

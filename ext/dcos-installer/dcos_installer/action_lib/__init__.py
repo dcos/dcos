@@ -4,6 +4,7 @@ import logging
 import os
 
 import pkgpanda
+#from dcos_installer.installer_analytics import InstallerAnalytics
 from ssh.ssh_runner import Node
 import ssh.utils
 
@@ -11,6 +12,7 @@ from .utils import REMOTE_TEMP_DIR, CLUSTER_PACKAGES_FILE, get_async_runner, add
 
 log = logging.getLogger(__name__)
 
+#web_analytics = InstallerAnalytics()
 
 class ExecuteException(Exception):
     """Raised when execution fails"""
@@ -82,6 +84,15 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     chains.append(cleanup_chain)
     result = yield from pf.run_commands_chain_async(chains, block=block, state_json_dir=state_json_dir,
                                                     delegate_extra_params=nodes_count_by_type(config))
+
+#    web_analytics.send(
+#        action='installer_preflight',
+#        install_method="web",
+#        num_errors=segment_error_count,
+#    )
+
+    print("RESULT:\n", result)
+
     return result
 
 
