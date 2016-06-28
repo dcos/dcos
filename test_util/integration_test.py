@@ -1356,8 +1356,6 @@ sleep 3600
 
     # Insert all the diagnostics data programmatically
     master_units = [
-        'adminrouter-reload-service',
-        'adminrouter-reload-timer',
         'adminrouter-service',
         'cosmos-service',
         'exhibitor-service',
@@ -1369,6 +1367,8 @@ sleep 3600
         'mesos-master-service',
         'signal-service']
     all_node_units = [
+        'adminrouter-reload-service',
+        'adminrouter-reload-timer',
         '3dt-service',
         'epmd-service',
         'gen-resolvconf-service',
@@ -1386,6 +1386,7 @@ sleep 3600
         'mesos-slave-public-service',
         'vol-discovery-pub-agent-service']
     all_slave_units = [
+        'adminrouter-agent-service',
         'logrotate-agent-service',
         'logrotate-agent-timer']
 
