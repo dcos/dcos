@@ -16,8 +16,8 @@ master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
 
-slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-ddt.socket
-slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-ddt.socket
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.socket
 
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
