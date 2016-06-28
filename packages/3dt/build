@@ -54,6 +54,6 @@ Description=Diagnostics socket: DCOS Distributed Diagnostics Tool Master API and
 [Socket]
 ListenStream=/run/dcos/3dt.sock
 [Install]
-WantedBy=dcos-ddt.service
+WantedBy=dcos-3dt.service
 EOF
 
