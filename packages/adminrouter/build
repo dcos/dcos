@@ -52,6 +52,14 @@ popd
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
+systemd_agent="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent.service
+mkdir -p "$(dirname "$systemd_agent")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent"
+
+systemd_agent_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent.service
+mkdir -p "$(dirname "$systemd_agent_public")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent_public"
+
 # From: https://projects.archlinux.org/svntogit/packages.git/tree/trunk/service?h=packages/nginx
 systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter.service
 mkdir -p "$(dirname "$systemd_master")"
