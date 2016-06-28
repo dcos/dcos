@@ -2,6 +2,7 @@
 set -euo pipefail
 set -x
 WORKDIR=$(pwd)
+SKIPME='false'
 
 cleanup_vagrant_leftovers() {
   echo "Cleaning up Vagrant leftovers (if any)"
@@ -108,7 +109,8 @@ rm -rf tmp_build_dir_for_pytest
 
 echo "Running integration test"
 set +e # So we can potentially capture the logs
-docker run --net=host py.test
+# Sets env so pytest skips certain tests
+docker run  --net=host py.test
 RET=$?
 
 if [ $RET -ne 0 ]; then
