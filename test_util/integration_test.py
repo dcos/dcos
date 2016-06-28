@@ -1428,8 +1428,7 @@ sleep 3600
         'spartan-watchdog-service',
         'spartan-watchdog-timer']
     slave_units = [
-        'health-unit-dcos-3dt-socket-total',
-        'health-unit-dcos-3dt-socket-unhealthy',
+        '3dt-socket',
         'mesos-slave-service',
         'vol-discovery-priv-agent-service']
     public_slave_units = [
