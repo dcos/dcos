@@ -1217,8 +1217,12 @@ def make_nodes_ip_map(cluster):
     a helper function to make a map detected_ip -> external_ip
     """
     node_private_public_ip_map = {}
-    for node in cluster.masters + cluster.slaves:
+    for node in cluster.masters:
         detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)['ip']
+        node_private_public_ip_map[detected_ip] = node
+
+    for node in cluster.slaves:
+        detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)['ip']
         node_private_public_ip_map[detected_ip] = node
 
     logging.info('detected ips: {}'.format(node_private_public_ip_map))
