@@ -153,8 +153,7 @@ sleep 3600
                 'protocol': 'tcp',
                 'labels': [{'VIP_0': '123.1.1.1:5000'}]}}
 
-    print("Registry App Definition:\n{}".format(registry_app)
-
+    print("Registry App Definition:\n{}".format(registry_app))
     with open('/test_server.py', 'r') as fh:
         test_server = fh.read()
     with open('/Dockerfile', 'r') as fh:
@@ -172,6 +171,7 @@ docker build -t 123.1.1.1:5000/test_server tmp/
 docker push 123.1.1.1:5000/test_server
 sleep 3600
 """.format(test_server=test_server, dockerfile=dockerfile)
+
     docker_build_and_push_app = {
             'id': '/build_and_push',
             'cmd': docker_cmds,
