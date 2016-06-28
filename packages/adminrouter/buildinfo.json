@@ -9,7 +9,7 @@
       "adminrouter": {
           "kind": "git",
           "git": "https://github.com/malnick/adminrouter.git",
-          "ref": "61b4d661feac753ab2a1eadb6cce6d658133c57a",
+          "ref": "0559eb64464600dd5e353648cc14e02db73e22f1",
           "ref_origin": "malnick/agent_adminrouter"
       }
   }
