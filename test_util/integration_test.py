@@ -188,10 +188,10 @@ sleep 3600
                 }
             ],
             }
+    cluster.registry = '123.1.1.1:5000'
     cluster.deploy_marathon_app(add_certs_app)
     cluster.deploy_marathon_app(registry_app)
     cluster.deploy_marathon_app(docker_build_and_push_app)
-    cluster.registry = '123.1.1.1:5000'
     return cluster
 
 
