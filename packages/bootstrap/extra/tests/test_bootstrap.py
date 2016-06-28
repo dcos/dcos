@@ -21,7 +21,7 @@ class TestBootstrap():
         os.makedirs(self.tmpdir, exist_ok=True)
 
         self.zk_container_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-        subprocess.check_call(['sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
+        subprocess.check_call(['docker', 'run', '-d', '-p', '2181:2181', '-p',
                                '2888:2888', '-p', '3888:3888', '--name', self.zk_container_name, 'jplock/zookeeper'])
         self.zk_hosts = '127.0.0.1:2181'
 
@@ -41,7 +41,7 @@ class TestBootstrap():
     def teardown_class(self):
         self.zk.stop()
         self.zk.close()
-        subprocess.check_call(['sudo', 'docker', 'rm', '-f', self.zk_container_name])
+        subprocess.check_call(['docker', 'rm', '-f', self.zk_container_name])
 
     def _test_consensus(self, methodname, monkeypatch):
         orig_getpwnam = pwd.getpwnam
