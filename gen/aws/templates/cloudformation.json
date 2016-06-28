@@ -108,10 +108,10 @@
     },
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.xlarge"
       },
       "SlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.xlarge"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
