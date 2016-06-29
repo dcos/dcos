@@ -1367,6 +1367,7 @@ sleep 3600
         'marathon-service',
         'mesos-dns-service',
         'mesos-master-service',
+        'metronome-service',
         'signal-service']
     all_node_units = [
         '3dt-service',
