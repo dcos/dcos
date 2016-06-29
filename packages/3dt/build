@@ -16,9 +16,13 @@ master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
 
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.socket
+
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
+
 cat <<EOF | tee $slave_service $slave_public_service
 [Unit]
 Description=Diagnostics: DC/OS Distributed Diagnostics Tool
@@ -28,7 +32,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -endpoint-config ${PKG_PATH}/endpoints_config.json
+ExecStart=/opt/mesosphere/bin/3dt -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
 EOF
 
 cat <<EOF | tee $master_service
@@ -42,5 +46,15 @@ RestartSec=5
 PermissionsStartOnly=True
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json
+ExecStart=/opt/mesosphere/bin/3dt -pull -snapshot-dir /var/lib/dcos/3dt/snapshot -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
 EOF
+
+cat <<EOF | tee $slave_socket_service $slave_public_socket_service
+[Unit]
+Description=Diagnostics socket: DCOS Distributed Diagnostics Tool Master API and Aggregation Socket
+[Socket]
+ListenStream=/run/dcos/3dt.sock
+[Install]
+WantedBy=dcos-3dt.service
+EOF
+
