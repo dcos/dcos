@@ -1,0 +1,26 @@
+#!/bin/bash
+pushd "/pkg/src/metronome"
+rm -rf bin/metronome.bat README.md RUNNING_PID share/ logs/
+cp -a * "$PKG_PATH/"
+cp -f /pkg/extra/logback.xml "$PKG_PATH/conf/"
+
+metronome_service="$PKG_PATH/dcos.target.wants_master/dcos-metronome.service"
+mkdir -p $(dirname "$metronome_service")
+
+cat <<EOF > "$metronome_service"
+[Unit]
+Description=Jobs Service: DC/OS Metronome
+After=dcos-mesos-master.service
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=15
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/metronome
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome
+ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'
+ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
+ExecStartPre=-/usr/bin/env rm -f /opt/mesosphere/active/metronome/RUNNING_PID
+ExecStart=/opt/mesosphere/bin/metronome
+EOF
