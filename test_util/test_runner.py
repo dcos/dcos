@@ -98,7 +98,7 @@ set -euo pipefail; set -x
 
     log.info('Tar-ing certs dir')
     certs_tarball = join(certs_temp_dir, 'certs.tgz')
-    check_call(['tar', 'czf', certs_tarball, 'certs'], cwd=join(certs_temp_dir, 'include'))
+    check_call(['tar', 'czf', certs_tarball, certs_temp_dir], cwd=certs_temp_dir)
 
     log.info("Certs Tarball: {}".format(certs_tarball))
     # Transfer certs to bootstrap host
