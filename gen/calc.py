@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import os
 import socket
@@ -87,6 +88,48 @@ def validate_oauth_enabled(oauth_enabled):
         return
     can_be = ['true', 'false']
     assert oauth_enabled in can_be, 'Must be one of {}. Got {}'.format(can_be, oauth_enabled)
+
+
+def validate_dcos_overlay_enable(dcos_overlay_enable):
+    can_be = ['true', 'false']
+    assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
+
+
+def validate_dcos_overlay_network(dcos_overlay_network):
+    assert isinstance(dcos_overlay_network, str)
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except json.JSONDecodeError as ex:
+        assert False, "Must be a valid JSON . Errors while parsing at position {}: {}".format(ex.pos, ex.msg)
+    # Check the VTEP IP, VTEP MAC keys are present in the overlay
+    # configuration
+    assert 'vtep_subnet' in overlay_network.keys(), (
+        'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
+
+    try:
+        ipaddress.ip_network(overlay_network['vtep_subnet'])
+    except ValueError as ex:
+        assert False, (
+            "Incorrect value for vtep_subnet. Only IPv4 "
+            "values are allowed: {}".format(ex))
+
+    assert 'vtep_mac_oui' in overlay_network.keys(), (
+        'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
+
+    assert 'overlays' in overlay_network.keys(), (
+        'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+    assert len(overlay_network['overlays']) > 0, (
+        'We need at least one overlay network configuration {}'.format(overlay_network))
+
+    for overlay in overlay_network['overlays']:
+        if (len(overlay['name']) > 13):
+            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        try:
+            ipaddress.ip_network(overlay['subnet'])
+        except ValueError as ex:
+            assert False, (
+                "Incorrect value for vtep_subnet. Only IPv4 "
+                "values are allowed: {}".format(ex))
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -253,7 +296,9 @@ entry = {
         validate_mesos_dns_ip_sources,
         validate_telemetry_enabled,
         validate_master_dns_bindall,
-        validate_os_type],
+        validate_os_type,
+        validate_dcos_overlay_network,
+        validate_dcos_overlay_enable],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -283,7 +328,18 @@ entry = {
         'ui_banner_header_content': 'null',
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
-        'ui_banner_dismissible': 'null'
+        'ui_banner_dismissible': 'null',
+        'dcos_overlay_enable': "true",
+        'dcos_overlay_network': '{                      \
+            "vtep_subnet": "198.15.0.0/20",             \
+            "vtep_mac_oui": "70:B3:D5:00:00:00",        \
+            "overlays": [                               \
+              {                                         \
+                "name": "dcos",                         \
+                "subnet": "44.128.0.0/16",              \
+                "prefix": 24                            \
+              }                                         \
+            ]}'
     },
     'must': {
         'custom_auth': 'false',

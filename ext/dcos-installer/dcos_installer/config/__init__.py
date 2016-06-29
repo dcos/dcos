@@ -144,8 +144,8 @@ bootstrap_url: file:///opt/dcos_install_tmp
         to send to gen.generate()"""
         gen_config = {}
         for key, value in self.items():
-            if isinstance(value, list):
-                log.debug("Caught list for genconf configuration, transforming to JSON string: %s", value)
+            if isinstance(value, list) or isinstance(value, dict):
+                log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
                 value = json.dumps(value)
 
             elif isinstance(value, bool):
