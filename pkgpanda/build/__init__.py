@@ -110,36 +110,42 @@ class TreeInfo:
                 "treeinfo can only include the keys {}. Found {}".format(
                     self.ALLOWED_TREEINFO_KEYS, treeinfo_dict.keys()))
 
-        self.excludes = treeinfo_dict.get('exclude', list())
-        if not isinstance(self.excludes, list):
-            raise BuildError("treeinfo exclude must be a list of packages to exclude.")
+        self.excludes = set(self._get_package_list(treeinfo_dict, 'exclude'))
+        self.core_package_list = set(self._get_package_list(treeinfo_dict, 'core_package_list'))
 
-        for exclude in self.excludes:
-            if not isinstance(exclude, str):
-                raise BuildError("Excludes should be a list of strings of package names. Found a {} "
-                                 "with the value: {}".format(type(exclude), exclude))
-
-        self.core_package_list = treeinfo_dict.get('core_package_list')
-        if self.core_package_list is not None:
-            if not isinstance(self.core_package_list, list):
-                raise BuildError(
-                    "core_package_list must either be null meaning don't use or a list of the core "
-                    "packages to include (dependencies are automatically picked up).")
-
-            # Validate core_package_lists is formatted as expected, doesn't contain
-            # any of exclude.
-            for name in self.core_package_list:
-                if not isinstance(name, str):
-                    raise BuildError("core_package_list should be a list of package name strings, found "
-                                     "a {} with the value: {}".format(type(name), name))
-
-                if name in self.excludes:
-                    raise BuildError("Package found in both exclude and core_package_list: {}".format(name))
+        # Validate core_package_lists doesn't contain any of exclude.
+        for name in self.core_package_list:
+            if name in self.excludes:
+                raise BuildError("Package found in both exclude and core_package_list: {}".format(name))
 
         # List of mandatory package variants to include in the buildinfo.
         self.variants = treeinfo_dict.get('variants', dict())
         if not isinstance(self.variants, dict):
             raise BuildError("treeinfo variants must be a dictionary of package name to variant name")
+
+    @staticmethod
+    def _get_package_list(treeinfo_dict, key):
+        """Return a list of package name strings from treeinfo_dict by key.
+
+        If key isn't present in treeinfo_dict, an empty list is returned.
+
+        """
+        package_list = treeinfo_dict.get(key, list())
+
+        # Validate package list.
+        if not isinstance(package_list, list):
+            raise BuildError("{} must be either null (meaning don't use) or a list of package names.".format(key))
+        for package_name in package_list:
+            if not isinstance(package_name, str):
+                raise BuildError("{} must be a list of strings. Found a {} with the value: {}".format(
+                    key, type(package_name), package_name))
+
+            try:
+                PackageId.validate_name(package_name)
+            except ValidationError as ex:
+                raise BuildError("Invalid package name in {}: {}".format(key, package_name)) from ex
+
+        return package_list
 
 
 class PackageStore:
@@ -514,11 +520,10 @@ def get_tree_package_tuples(package_store, tree_variant):
         package_tuples.add((name, variant))
 
     for name in package_store.packages_by_name.keys():
-        if treeinfo.core_package_list is not None:
-            # Skip over packages not in the core package list. We'll add requires
-            # later when resolving / validating the requires graph.
-            if name not in treeinfo.core_package_list:
-                continue
+        # Skip over packages not in the core package list. We'll add requires
+        # later when resolving / validating the requires graph.
+        if treeinfo.core_package_list and name not in treeinfo.core_package_list:
+            continue
 
         if name in treeinfo.excludes:
             continue
@@ -548,7 +553,7 @@ def get_tree_package_tuples(package_store, tree_variant):
         for require in requires:
             require_tuple = expand_require(require)
             if require_tuple not in package_tuples:
-                if treeinfo.core_package_list is not None:
+                if treeinfo.core_package_list:
                     # TODO(cmaloney): Include the context information of the
                     # else case when printing out the info.
                     include_package(require_tuple[0], require_tuple[1])
