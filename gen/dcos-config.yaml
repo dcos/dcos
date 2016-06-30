@@ -119,7 +119,9 @@ package:
       MESOS_LOG_DIR=/var/log/mesos
       MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
+      MESOS_ISOLATION=filesystem/linux,cgroups/cpu,cgroups/mem,posix/disk,docker/runtime,docker/volume,network/cni
+      MESOS_IMAGE_PROVIDERS=docker
+      MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
