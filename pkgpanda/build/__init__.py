@@ -500,79 +500,39 @@ def make_bootstrap_tarball(package_store, packages, variant):
 def get_tree_package_tuples(package_store, tree_variant):
     treeinfo = package_store.get_treeinfo(tree_variant)
 
-    # Generate the list of package paths of all packages variants which were
-    # included and excluding those removed.
-    package_names = set()
-    package_tuples = set()
+    def package_tuples_with_dependencies(packages):
+        package_tuples = set((name, treeinfo.variants.get(name)) for name in set(packages))
+        to_visit = list(package_tuples)
+        while to_visit:
+            package_tuple = to_visit.pop()
+            for require in package_store.get_buildinfo(*package_tuple)['requires']:
+                require_tuple = expand_require(require)
+                if require_tuple not in package_tuples:
+                    to_visit.append(require_tuple)
+                    package_tuples.add(require_tuple)
+        return package_tuples
 
-    def include_package(name, variant):
-        if name in treeinfo.excludes:
-            raise BuildError("package {} is in excludes but was needed as a dependency of an "
-                             "included package".format(name))
+    # If core_package_list is empty, default to all non-excluded packages.
+    core_packages = treeinfo.core_package_list or (package_store.packages_by_name.keys() - treeinfo.excludes)
 
-        if (name, variant) not in package_store.packages:
-            raise BuildError("package {} variant {} is needed but is not in the set of built "
-                             "packages but is needed (explicitly requested or as a requires)".format(name, variant))
+    package_tuples = package_tuples_with_dependencies(core_packages)
 
-        # Allow adding duplicates. There is a check that we don't have a repeat
-        # of the same package name with different variants, so we can ignore the
-        # variant name.
-        if name in package_names:
-            pass
-        package_names.add(name)
-        package_tuples.add((name, variant))
-
-    for name in package_store.packages_by_name.keys():
-        # Skip over packages not in the core package list. We'll add requires
-        # later when resolving / validating the requires graph.
-        if treeinfo.core_package_list and name not in treeinfo.core_package_list:
-            continue
-
-        if name in treeinfo.excludes:
-            continue
-
-        # Sanity check
-        assert name not in package_names
-
-        include_package(name, treeinfo.variants.get(name))
-
-    # Validate that all mandatory package variants are included
-    for name, variant in treeinfo.variants.items():
-        if (name, variant) not in package_tuples:
+    # Validate that all package variants listed in treeinfo are included.
+    for package_name, variant in treeinfo.variants.keys():
+        if (package_name, variant) not in package_tuples:
             raise BuildError("package {} is supposed to have variant {} included in "
                              "the tree according to the treeinfo.json, but the no such package "
-                             "(let alone variant) was found".format(name, variant))
+                             "(let alone variant) was found".format(package_name, variant))
 
-    # Validate that all required packages are included. This implicitly
-    # validates that no two packages include conflicting variants. If they
-    # included different variants, only one of the variant could be included
-    # because we iterate over the list of packages once so only one variant
-    # could get included. If another variant is asked for in the requires,
-    # then that variant won't be included and we'll error.
-    to_visit = list(package_tuples)
-    while len(to_visit) > 0:
-        name, variant = to_visit.pop()
-        requires = package_store.get_buildinfo(name, variant)['requires']
-        for require in requires:
-            require_tuple = expand_require(require)
-            if require_tuple not in package_tuples:
-                if treeinfo.core_package_list:
-                    # TODO(cmaloney): Include the context information of the
-                    # else case when printing out the info.
-                    include_package(require_tuple[0], require_tuple[1])
-                    to_visit.append(require_tuple)
-                else:
-                    raise BuildError("Package {} requires {} variant {} but that is not in the set "
-                                     "of packages listed for the tree {}: {}".format(
-                                        name,
-                                        require_tuple[0],
-                                        require_tuple[1],
-                                        tree_variant,
-                                        package_tuples))
+    # Validate that all needed packages are built and not excluded by treeinfo.
+    for package_name, variant in package_tuples:
+        if (package_name, variant) not in package_store.packages:
+            raise BuildError("package {} variant {} is needed (explicitly requested or as a requires) "
+                             "but is not in the set of built packages.".format(package_name, variant))
+        if package_name in treeinfo.excludes:
+            raise BuildError("package {} is needed (explicitly requested or as a requires) "
+                             "but is excluded according to the treeinfo.json.".format(package_name))
 
-    # Integrity / programming check excludes were all excluded.
-    for exclude in treeinfo.excludes:
-        assert exclude not in package_names
     return package_tuples
 
 
