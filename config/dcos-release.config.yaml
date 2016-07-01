@@ -7,6 +7,12 @@ storage:
     access_key_id: $AWS_ACCESS_KEY_ID
     secret_access_key: $AWS_SECRET_ACCESS_KEY
     region_name: us-west-2
+  azure:
+    kind: azure_block_blob
+    account_name: $AZURE_STORAGE_ACCOUNT
+    account_key: $AZURE_STORAGE_ACCESS_KEY
+    container: dcos
+    download_url: https://dcosio.azureedge.net/dcos/
 options:
   preferred: aws
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos
