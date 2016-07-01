@@ -885,7 +885,16 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'mem': 128,
         'ports': [10000],
         'cmd': 'touch imok && /opt/mesosphere/bin/python -mhttp.server ${PORT0}',
-        'labels': {'vip_PORT0': 'tcp://1.2.3.4:5000'},
+        'portDefinitions': [
+            {
+                'port': 10000,
+                'protocol': 'tcp',
+                'name': 'test',
+                'labels': {
+                    'VIP_0': '1.2.3.4:5000'
+                }
+            }
+        ],
         'uris': [],
         'instances': 1,
         'healthChecks': [{
