@@ -15,6 +15,7 @@ import json
 import os.path
 import subprocess
 import sys
+from distutils.version import LooseVersion
 
 import pkg_resources
 import yaml
@@ -24,6 +25,7 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+
 provider_names = ['aws', 'azure', 'bash']
 
 
@@ -440,7 +442,13 @@ def do_build_packages(cache_repository_url):
             pass
 
     # mark as latest so it will be used when building packages
-    subprocess.check_call(['docker', 'tag', '-f', container_name, 'dcos-builder:latest'])
+    # extract the docker client version string
+    docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
+    # only use force tag if using docker version 1.9 or earlier
+    if LooseVersion(docker_version) < LooseVersion('1.10'):
+        subprocess.check_call(['docker', 'tag', '-f', container_name, 'dcos-builder:latest'])
+    else:
+        subprocess.check_call(['docker', 'tag', container_name, 'dcos-builder:latest'])
 
     def get_build():
         # TODO(cmaloney): Stop shelling out

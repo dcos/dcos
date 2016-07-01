@@ -35,7 +35,7 @@ def config_aws(config_testing):
 @pytest.fixture(scope='module')
 def config_azure(config_testing):
     if 'azure' not in config_testing:
-        pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
+        pytest.skip("Skipped because there is no `testing.azure` configuration in dcos-release.config.yaml")
     return config_testing['azure']
 
 

@@ -34,8 +34,12 @@ setup(
         'ssh',
         'test_util'],
     install_requires=[
-        'azure-common==1.0.0',
-        'azure-storage==0.30.0',
+        # Pins taken from 'azure==2.0.0rc4'
+        'msrest==0.4.0',
+        'msrestazure==0.4.1',
+        'azure-storage==0.32.0',
+        'azure-mgmt-network==0.30.0rc4',
+        'azure-mgmt-resource==0.30.0rc4',
         'boto3',
         'botocore',
         'coloredlogs',
@@ -43,7 +47,8 @@ setup(
         'passlib',
         'pyyaml',
         'requests',
-        'retrying'],
+        'retrying',
+        'keyring==9.1'],  # FIXME: pin keyring to prevent dbus dep
     entry_points={
         'console_scripts': [
             'release=release:main',

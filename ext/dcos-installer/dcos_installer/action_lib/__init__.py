@@ -61,7 +61,7 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
 
     preflight_chain = ssh.utils.CommandChain('preflight')
     # In web mode run if no --offline flag used.
-    if options.web:
+    if options.action == 'web':
         if options.offline:
             log.debug('Offline mode used. Do not install prerequisites on CentOS7, RHEL7 in web mode')
         else:
@@ -258,7 +258,7 @@ def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, asy
 # Run the DC/OS diagnostic script for up to 15 minutes (900 seconds) to ensure
 # we do not return ERROR on a cluster that hasn't fully achieved quorum.
 T=900
-until OUT=$(/opt/mesosphere/bin/./3dt -diag) || [[ T -eq 0 ]]; do
+until OUT=$(sudo /opt/mesosphere/bin/./3dt -diag) || [[ T -eq 0 ]]; do
     sleep 1
     let T=T-1
 done

@@ -2,8 +2,10 @@ import collections
 import json
 import logging
 import os
+import tempfile
 import urllib.parse
 import uuid
+import zipfile
 
 import boto3
 import botocore.exceptions
@@ -1357,7 +1359,6 @@ sleep 3600
         'adminrouter-reload-service',
         'adminrouter-reload-timer',
         'adminrouter-service',
-        'cluster-id-service',
         'cosmos-service',
         'exhibitor-service',
         'history-service',
@@ -1422,3 +1423,149 @@ def test_mesos_agent_role_assignment(cluster):
     for agent in cluster.slaves:
         r = requests.get('http://{}:5051/state.json'.format(agent))
         assert r.json()['flags']['default_role'] == '*'
+
+
+def _get_snapshot_list(cluster):
+    list_url = '/system/health/v1/report/snapshot/list/all'
+    response = cluster.get(path=list_url).json()
+    logging.info('GET {}, response: {}'.format(list_url, response))
+
+    snapshots = []
+    for _, snapshot_list in response.items():
+        if snapshot_list is not None and isinstance(snapshot_list, list) and len(snapshot_list) > 0:
+            # append snapshots and get just the filename.
+            snapshots += map(lambda s: os.path.basename(s['file_name']), snapshot_list)
+    return snapshots
+
+
+def test_3dt_snapshot_create(cluster):
+    """
+    test snapshot create functionality
+    """
+
+    # start the snapshot job
+    create_url = '/system/health/v1/report/snapshot/create'
+    response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
+    logging.info('POST {}, response: {}'.format(create_url, response))
+
+    # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
+    status_url = '/system/health/v1/report/snapshot/status/all'
+
+    @retrying.retry(stop_max_delay=5000, wait_fixed=1000)
+    def wait_for_job():
+        response = cluster.get(path=status_url).json()
+        logging.info('GET {}, response: {}'.format(status_url, response))
+
+        # check `is_running` attribute for each host. All of them must be False
+        for _, attributes in response.items():
+            assert not attributes['is_running']
+
+    wait_for_job()
+
+    # the job should be complete at this point.
+    # check the listing for a zip file
+    snapshots = _get_snapshot_list(cluster)
+    assert len(snapshots) == 1, 'snapshot file not found'
+    assert snapshots[0] == response['extra']['snapshot_name']
+
+
+def test_3dt_snapshot_download_and_extract(cluster):
+    """
+    test snapshot download and validate zip file
+    """
+
+    snapshots = _get_snapshot_list(cluster)
+    assert snapshots
+
+    expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz', '3dt-health.json']
+
+    # these files are expected to be in archive for a master host
+    expected_master_files = ['dcos-mesos-master.service.gz'] + expected_common_files
+
+    # for agent host
+    expected_agent_files = ['dcos-mesos-slave.service.gz'] + expected_common_files
+
+    # for public agent host
+    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        download_base_url = '/system/health/v1/report/snapshot/serve'
+        for snapshot in snapshots:
+            snapshot_full_location = os.path.join(tmp_dir, snapshot)
+            with open(snapshot_full_location, 'wb') as f:
+                r = cluster.get(path=os.path.join(download_base_url, snapshot), stream=True)
+                for chunk in r.iter_content(1024):
+                    f.write(chunk)
+
+            # validate snapshot zip file.
+            assert zipfile.is_zipfile(snapshot_full_location)
+            z = zipfile.ZipFile(snapshot_full_location)
+
+            # get a list of all files in a zip archive.
+            archived_items = z.namelist()
+
+            # make sure all required log files for master node are in place.
+            for master_ip in cluster.masters:
+                master_folder = master_ip + '_master/'
+
+                # try to load 3dt health report and validate the report is for this host
+                health_report = json.loads(z.read(master_folder + '3dt-health.json').decode())
+                assert 'ip' in health_report
+                assert health_report['ip'] == master_ip
+
+                for expected_master_file in expected_master_files:
+                    expected_file = master_folder + expected_master_file
+                    assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
+
+            # make sure all required log files for agent node are in place.
+            for slave_ip in cluster.slaves:
+                agent_folder = slave_ip + '_agent/'
+
+                # try to load 3dt health report and validate the report is for this host
+                health_report = json.loads(z.read(agent_folder + '3dt-health.json').decode())
+                assert 'ip' in health_report
+                assert health_report['ip'] == slave_ip
+
+                for expected_agent_file in expected_agent_files:
+                    expected_file = agent_folder + expected_agent_file
+                    assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
+
+            # make sure all required log files for public agent node are in place.
+            for public_slave_ip in cluster.public_slaves:
+                agent_public_folder = public_slave_ip + '_agent_public/'
+
+                # try to load 3dt health report and validate the report is for this host
+                health_report = json.loads(z.read(agent_public_folder + '3dt-health.json').decode())
+                assert 'ip' in health_report
+                assert health_report['ip'] == public_slave_ip
+
+                for expected_public_agent_file in expected_public_agent_files:
+                    expected_file = agent_public_folder + expected_public_agent_file
+                    assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
+
+
+def test_snapshot_delete(cluster):
+    snapshots = _get_snapshot_list(cluster)
+    assert snapshots, 'no snapshots found'
+    delete_base_url = '/system/health/v1/report/snapshot/delete'
+    for snapshot in snapshots:
+        cluster.post(os.path.join(delete_base_url, snapshot))
+
+    snapshots = _get_snapshot_list(cluster)
+    assert len(snapshots) == 0, 'Could not remove snapshots {}'.format(snapshots)
+
+
+def test_snapshot_status(cluster):
+    # validate snapshot status response
+    snapshot_status = cluster.get(path='/system/health/v1/report/snapshot/status/all').json()
+    required_status_fields = ['is_running', 'status', 'errors', 'last_snapshot_dir', 'job_started', 'job_ended',
+                              'job_duration', 'snapshot_dir', 'snapshot_job_timeout_min', 'journald_logs_since_hours',
+                              'snapshot_job_get_since_url_timeout_min', 'command_exec_timeout_sec',
+                              'snapshot_partition_disk_usage_percent']
+
+    for _, properties in snapshot_status.items():
+        assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
+            required_status_fields
+        )
+        for required_status_field in required_status_fields:
+            assert required_status_field in properties, 'property {} not found'.format(required_status_field)
