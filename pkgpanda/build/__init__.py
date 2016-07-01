@@ -102,7 +102,7 @@ def get_src_fetcher(src_info, cache_dir, working_directory):
 
 class TreeInfo:
 
-    ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list'}
+    ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list', 'bootstrap_package_list'}
 
     def __init__(self, treeinfo_dict):
         if treeinfo_dict.keys() > self.ALLOWED_TREEINFO_KEYS:
@@ -111,12 +111,11 @@ class TreeInfo:
                     self.ALLOWED_TREEINFO_KEYS, treeinfo_dict.keys()))
 
         self.excludes = set(self._get_package_list(treeinfo_dict, 'exclude'))
-        self.core_package_list = set(self._get_package_list(treeinfo_dict, 'core_package_list'))
-
-        # Validate core_package_lists doesn't contain any of exclude.
-        for name in self.core_package_list:
-            if name in self.excludes:
-                raise BuildError("Package found in both exclude and core_package_list: {}".format(name))
+        self.core_package_list = set(self._get_package_list(treeinfo_dict, 'core_package_list', self.excludes))
+        self.bootstrap_package_list = set(self._get_package_list(
+            treeinfo_dict,
+            'bootstrap_package_list',
+            self.excludes))
 
         # List of mandatory package variants to include in the buildinfo.
         self.variants = treeinfo_dict.get('variants', dict())
@@ -124,12 +123,13 @@ class TreeInfo:
             raise BuildError("treeinfo variants must be a dictionary of package name to variant name")
 
     @staticmethod
-    def _get_package_list(treeinfo_dict, key):
+    def _get_package_list(treeinfo_dict, key, excludes=None):
         """Return a list of package name strings from treeinfo_dict by key.
 
         If key isn't present in treeinfo_dict, an empty list is returned.
 
         """
+        excludes = excludes or list()
         package_list = treeinfo_dict.get(key, list())
 
         # Validate package list.
@@ -144,6 +144,9 @@ class TreeInfo:
                 PackageId.validate_name(package_name)
             except ValidationError as ex:
                 raise BuildError("Invalid package name in {}: {}".format(key, package_name)) from ex
+
+            if package_name in excludes:
+                raise BuildError("Package found in both exclude and {}: {}".format(key, package_name))
 
         return package_list
 
