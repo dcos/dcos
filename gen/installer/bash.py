@@ -26,7 +26,7 @@ bash_template = """#!/bin/bash
 #
 # Usage:
 #
-#   dcos_install.sh <role>...
+#   dcos_install.sh <role>
 #
 #
 # Metadata:
@@ -54,7 +54,8 @@ declare -i PREFLIGHT_ONLY=0
 declare -i DISABLE_PREFLIGHT=0
 declare -i SYSTEMCTL_NO_BLOCK=0
 
-declare ROLES=""
+declare ROLE=""
+declare ROLE_LIST=""
 declare RED=""
 declare BOLD=""
 declare NORMAL=""
@@ -84,13 +85,10 @@ function setup_directories() {
     mkdir -p /etc/mesosphere/setup-flags
 }
 
-function setup_dcos_roles() {
-    # Set DC/OS roles
-    for role in $ROLES
-    do
-        echo "Creating role file for ${role}"
-        touch "/etc/mesosphere/roles/$role"
-    done
+function set_dcos_role() {
+    # Set node role
+    echo "Creating role file for ${ROLE}"
+    touch "/etc/mesosphere/roles/$ROLE"
 }
 
 # Set DC/OS machine configuration
@@ -262,12 +260,10 @@ function check_all() {
     set +e
     echo -e "${BOLD}Running preflight checks${NORMAL}"
     AGENT_ONLY=0
-    for ROLE in $ROLES; do
-        if [[ $ROLE = "slave" || $ROLE = "slave_public" ]]; then
-            AGENT_ONLY=1
-            break
-        fi
-    done
+    if [[ $ROLE = "slave" || $ROLE = "slave_public" ]]; then
+        AGENT_ONLY=1
+        break
+    fi
 
     check_preexisting_dcos
     check_selinux
@@ -397,13 +393,10 @@ function check_all() {
     # Check we're not in docker on devicemapper loopback as storage driver.
     check_docker_device_mapper_loopback
 
-    for role in "$ROLES"
-    do
-        if [ "$role" != "master" -a "$role" != "slave" -a "$role" != "slave_public" -a "$role" != "minuteman" ]; then
-            echo -e "${RED}FAIL Invalid role $role. Role must be one of {master,slave,slave_public}${NORMAL}"
-            (( OVERALL_RC += 1 ))
-        fi
-    done
+    if [ "$ROLE" != "master" -a "$ROLE" != "slave" -a "$ROLE" != "slave_public" -a "$ROLE" != "" ]; then
+        echo -e "${RED}FAIL Invalid role $ROLE. Role must be one of {master,slave,slave_public}${NORMAL}"
+        (( OVERALL_RC += 1 ))
+    fi
 
 
     return $OVERALL_RC
@@ -415,7 +408,7 @@ function dcos_install()
     set -e
 
     setup_directories
-    setup_dcos_roles
+    set_dcos_role
     configure_dcos
     setup_and_start_services
 
@@ -423,7 +416,7 @@ function dcos_install()
 
 function usage()
 {
-    echo -e "${BOLD}Usage: $0 [--disable-preflight|--preflight-only] <roles>${NORMAL}"
+    echo -e "${BOLD}Usage: $0 [--disable-preflight|--preflight-only] <role>${NORMAL}"
 }
 
 function main()
@@ -448,16 +441,26 @@ function main()
     fi
 
     shift $(($OPTIND - 1))
-    ROLES=$@
+    ROLE_LIST=$@
 
     if [[ $PREFLIGHT_ONLY -eq 1 ]] ; then
         check_all
     else
-        if [[ -z $ROLES ]] ; then
-            echo -e 'Atleast one role name must be specified'
+        if [[ -z ${ROLE_LIST-} ]]; then
+            echo -e 'Exactly one role master, slave, or slave_public must be specified'
             usage
             exit 1
         fi
+
+        NUM_ROLES=${#ROLE_LIST[@]}
+        if [[ "$NUM_ROLES" -ne 1 ]]; then
+            echo -e 'Exactly one role master, slave, or slave_public must be specified'
+            usage
+            exit 1
+        fi
+
+        ROLE=${ROLE_LIST[1]}
+
         echo -e "${BOLD}Starting DC/OS Install Process${NORMAL}"
         if [[ $DISABLE_PREFLIGHT -eq 0 ]] ; then
             check_all
