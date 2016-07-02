@@ -164,6 +164,22 @@ class PackageSet:
         )
         self.validate_package_tuples(self.all_packages, treeinfo, package_store)
 
+        if treeinfo.bootstrap_package_list:
+            self.bootstrap_packages = self.package_tuples_with_dependencies(
+                treeinfo.bootstrap_package_list,
+                treeinfo,
+                package_store
+            )
+            self.validate_package_tuples(self.bootstrap_packages, treeinfo, package_store)
+        else:
+            self.bootstrap_packages = self.all_packages
+
+        # Validate bootstrap packages are a subset of all packages.
+        for package_name, variant in self.bootstrap_packages:
+            if (package_name, variant) not in self.all_packages:
+                raise BuildError("Bootstrap package {} (variant {}) not found in set of all packages".format(
+                    package_name, pkgpanda.util.variant_name(variant)))
+
     @staticmethod
     def package_tuples_with_dependencies(package_names, treeinfo, package_store):
         package_tuples = set((name, treeinfo.variants.get(name)) for name in set(package_names))
@@ -629,7 +645,7 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     def make_bootstrap(package_set):
         print("Making bootstrap variant:", pkgpanda.util.variant_name(package_set.variant))
         package_paths = list()
-        for name, pkg_variant in package_set.all_packages:
+        for name, pkg_variant in package_set.bootstrap_packages:
             package_paths.append(built_packages[name][pkg_variant])
 
         if mkbootstrap:
