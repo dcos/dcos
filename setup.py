@@ -88,7 +88,10 @@ setup(
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
-            'integration_test.py'],
+            'integration_test.py',
+            'certs/client.key',
+            'certs/client.cert',
+            'certs/123.1.1.1:5000.crt'],
     },
     zip_safe=False
 )
