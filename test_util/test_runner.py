@@ -5,8 +5,6 @@ Note: ssh_user must be able to use docker without sudo priveleges
 import logging
 import tempfile
 import time
-from contextlib import contextmanager
-from multiprocessing import Process
 from os.path import join
 from subprocess import CalledProcessError, TimeoutExpired, check_call
 
@@ -19,78 +17,8 @@ logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-@contextmanager
-def remote_port_forwarding(tunnel, host_list, remote_key_path):
-    """Forwards port 5000 from each host in in host_list to port 5000
-    on tunnnel.host. This allows docker on hosts in host_list to pull from
-    an insecure registry on tunnel host
-
-    Args:
-        tunnel: SSHTunnel instance connecting to host to be forwarded to
-        host_list: list of host names to forward port 5000 from
-        remote_key_path: arbitary path on tunnel.host for storing key
-    """
-    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
-    tunnel.remote_cmd(['chmod', '600', remote_key_path])
-    cmd_list = [
-            'ssh', '-i', remote_key_path,
-            '-l', tunnel.ssh_user,
-            '-T', '-n', '-N',
-            '-oBatchMode=yes',
-            '-oGatewayPorts=yes',
-            '-oStrictHostKeyChecking=no',
-            '-oUserKnownHostsFile=/dev/null',
-            '-oExitOnForwardFailure=yes',
-            '-R', '5000:127.0.0.1:5000']
-    p_list = []
-    log.info('Starting proxy of port 5000 from {} to {}'.format(host_list, tunnel.host))
-    for host in host_list:
-        host_cmd_list = cmd_list + [host]
-        p = Process(target=tunnel.remote_cmd, args=(host_cmd_list,))
-        p.start()
-        p_list.append(p)
-    yield
-    for p in p_list:
-        p.terminate()
-
-
 def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
-
-
-def prepare_test_registry(tunnel, test_dir):
-    """Transfer resources and issues commands on host to build test app,
-    host it on a docker registry, and prepare the integration_test container
-
-    Args:
-        tunnel: SSHTunnel instance
-        test_dir (str): path to be used for landing docker archives
-    """
-    test_server_docker = pkg_filename('docker/test_server/Dockerfile')
-    test_server_script = pkg_filename('docker/test_server/test_server.py')
-    log.info('Setting up integration_test.py to run on ' + tunnel.host)
-
-    tunnel.remote_cmd(['mkdir', '-p', join(test_dir, 'test_server')])
-    tunnel.write_to_remote(test_server_docker, join(test_dir, 'test_server/Dockerfile'))
-    tunnel.write_to_remote(test_server_script, join(test_dir, 'test_server/test_server.py'))
-    log.info('Starting insecure registry on test host')
-    try:
-        log.debug('Attempt to replace a previously setup registry')
-        tunnel.remote_cmd(['docker', 'kill', 'registry'])
-        tunnel.remote_cmd(['docker', 'rm', 'registry'])
-    except CalledProcessError:
-        log.debug('No previous registry to kill or delete')
-    tunnel.remote_cmd([
-        'docker', 'run', '-d', '-p', '5000:5000', '--restart=always', '--name',
-        'registry', 'registry:2'])
-    log.info('Building test_server Docker image on test host')
-    tunnel.remote_cmd([
-        'cd', join(test_dir, 'test_server'), '&&', 'docker', 'build', '-t',
-        '127.0.0.1:5000/test_server', '.'])
-    log.info('Pushing built test server to insecure registry')
-    tunnel.remote_cmd(['docker', 'push', '127.0.0.1:5000/test_server'])
-    log.debug('Cleaning up test_server files')
-    tunnel.remote_cmd(['rm', '-rf', join(test_dir, 'test_server')])
 
 
 def integration_test(
@@ -117,6 +45,11 @@ def integration_test(
     """
     test_script = pkg_filename('integration_test.py')
     pytest_docker = pkg_filename('docker/py.test/Dockerfile')
+    client_cert = pkg_filename('certs/client.cert')
+    client_key = pkg_filename('certs/client.key')
+    root_ca = pkg_filename('certs/123.1.1.1:5000.crt')
+    test_server = pkg_filename('docker/test_server/test_server.py')
+    test_server_docker = pkg_filename('docker/test_server/Dockerfile')
 
     dns_search = 'true' if test_dns_search else 'false'
     test_env = [
@@ -125,7 +58,6 @@ def integration_test(
         'PUBLIC_MASTER_HOSTS='+','.join(master_list),
         'SLAVE_HOSTS='+','.join(agent_list),
         'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
-        'REGISTRY_HOST=127.0.0.1',
         'DCOS_PROVIDER='+provider,
         'DNS_SEARCH='+dns_search,
         'AWS_ACCESS_KEY_ID='+aws_access_key_id,
@@ -151,7 +83,51 @@ set -euo pipefail; set -x
     write_string(join(temp_dir, 'test_wrapper.sh'), cmd_script)
     check_call(['cp', test_script, join(temp_dir, 'integration_test.py')])
     check_call(['cp', pytest_docker, join(temp_dir, 'Dockerfile')])
+    check_call(['cp', client_cert, join(temp_dir, 'client.cert')])
+    check_call(['cp', client_key, join(temp_dir, 'client.key')])
+    check_call(['cp', root_ca, join(temp_dir, '123.1.1.1:5000.crt')])
+    check_call(['cp', test_server, join(temp_dir, 'test_server.py')])
+    check_call(['cp', test_server_docker, join(temp_dir, 'test_server_Dockerfile')])
     check_call(['docker', 'build', '-t', 'py.test', temp_dir])
+
+    # Put certs in a temp dir we'll use to tar them up and scp to boostrapper later
+    certs_temp_dir = tempfile.mkdtemp()
+    check_call(['cp', client_cert, join(certs_temp_dir, 'client.cert')])
+    check_call(['cp', client_key, join(certs_temp_dir, 'client.key')])
+    check_call(['cp', root_ca, join(certs_temp_dir, '123.1.1.1:5000.crt')])
+
+    log.info('Tar-ing certs dir')
+    certs_tarball = join(certs_temp_dir, 'certs.tgz')
+    check_call(['tar', 'czf', certs_tarball, certs_temp_dir], cwd=certs_temp_dir)
+
+    log.info("Certs Tarball: {}".format(certs_tarball))
+    # Transfer certs to bootstrap host
+    cert_transfer_path = join(test_dir, 'certs.tgz')
+    tunnel.write_to_remote(certs_tarball, cert_transfer_path)
+
+    log.info('Setting up SSH key on bootstrap host for daisy-chain-ing')
+    remote_key_path = join(test_dir, 'test_ssh_key')
+    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
+    tunnel.remote_cmd(['chmod', '600', remote_key_path])
+
+    docker_conf_chain = (
+        ['docker', 'version'],  # checks that docker is available w/o sudo
+        ['tar', 'xzf', cert_transfer_path, '-C', test_dir],
+        ['sudo', 'cp', '-R', join(test_dir, 'certs'), '/etc/docker/certs.d/'])
+
+    for cmd in docker_conf_chain:
+        tunnel.remote_cmd(cmd)
+    for agent in agent_list:
+        log.info('Adding self-signed certs to:  ' + agent)
+        target = "{}@{}".format(tunnel.ssh_user, agent)
+        target_scp = "{}:{}".format(target, cert_transfer_path)
+        ssh_opts = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
+        scp_cmd = ['/usr/bin/scp', '-i', remote_key_path] + ssh_opts
+        remote_scp = scp_cmd + [cert_transfer_path, target_scp]
+        tunnel.remote_cmd(remote_scp)
+        chain_prefix = ['/usr/bin/ssh', '-tt', '-i', remote_key_path] + ssh_opts + [target]
+        for cmd in docker_conf_chain:
+            tunnel.remote_cmd(chain_prefix+cmd)
 
     log.info('Exporting py.test image')
     pytest_image_tar = 'DCOS_integration_test.tar'
@@ -165,16 +141,14 @@ set -euo pipefail; set -x
     test_container_name = 'int_test_' + str(int(time.time()))
     docker_cmd = ['docker', 'run', '--net=host', '--name='+test_container_name, 'py.test']
     try:
-        with remote_port_forwarding(tunnel, agent_list+public_agent_list, join(test_dir, 'ssh_key')):
-            log.info('Running integration test...')
-            try:
-                tunnel.remote_cmd(docker_cmd, timeout=timeout)
-            except CalledProcessError:
-                log.exception('Test failed!')
-                if ci_flags:
-                    return False
-                raise
+        log.info('Running integration test...')
+        tunnel.remote_cmd(docker_cmd, timeout=timeout)
         log.info('Successful test run!')
+    except CalledProcessError:
+        log.exception('Test failed!')
+        if ci_flags:
+            return False
+        raise
     except TimeoutExpired:
         log.error('Test failed due to timing out after {} seconds'.format(timeout))
         raise
