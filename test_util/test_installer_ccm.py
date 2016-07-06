@@ -295,7 +295,7 @@ def main():
                 add_config_path=options.add_config_path,
                 rexray_config=REXRAY_CONFIG)
 
-        log.info("Running Preflight...")
+        log.info("Running Install Prereqs...")
         if options.test_install_prereqs:
             # Runs preflight in --web or --install-prereqs for CLI
             # This may take up 15 minutes...
@@ -310,14 +310,7 @@ def main():
             pub_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDDlq/HSU9B5HyCTdSh6opW6NpXT3uxBYrDNnNj4YllVOyp/HCucHorSn40vwtAQNDWWZD3jUFXdB7RN3qVqrfYXrfsNp12Pb5pKsiDZcQbe+rRMOaaBXQ7wylDWj/rp0SIH7AIYnZ8PzEb4PXqCM0MaVMZukUFb8frvv8B0I1YwMJiK0qocVAuacWhWmXJ29zktpqfuHE5RArCycVR6QU+6/EvyDfjL/HM+YYz3DMDvOH9PxG6uOuiYSsXBo02H2y4GhI/HhaUPJMmUHweIbFZcn6RMEF0nNIULnlDNPTsDTtuDY4p5Li/pLDtU71MIlp5ubbgCBA9UolUCoKSkDFN root@bohr"  # noqa
             installer.genconf(
                 expect_errors=True,
-                zk_host=zk_host,
-                master_list=master_list,
-                agent_list=agent_list,
-                public_agent_list=public_agent_list,
-                ip_detect_script=ip_detect_script,
-                ssh_user=ssh_user,
-                ssh_key=pub_key,
-                add_config_path=options.add_config_path)
+                ssh_key=pub_key)
 
             log.info("Configuring with bad SSH key (encrypted key test)")
             enc_key = """
