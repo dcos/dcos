@@ -4,6 +4,7 @@ import os
 CONFIG_PATH = '/genconf/config.yaml'
 SSH_KEY_PATH = '/genconf/ssh_key'
 IP_DETECT_PATH = '/genconf/ip-detect'
+REXRAY_CONFIG_PATH = '/genconf/rexray.yaml'
 SERVE_DIR = '/genconf/serve'
 STATE_DIR = '/genconf/state'
 GENCONF_DIR = '/genconf'
