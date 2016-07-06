@@ -283,6 +283,27 @@ def main():
                     '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
             test_host_tunnel.remote_cmd(zk_cmd)
 
+        # Test bad config cases
+        log.info("Cofiguring with bad SSH key (pub key test)")
+        pub_key = """
+-----BEGIN RSA PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD25aZJq71JXxeRdkm6sN3nJSu9
+rNxDRtJftnMR//j0V9tMLHMDyg/jQQDBy8XVtFigd8YFr92mtwhzzp7QfCPp1ZUu
+HqoK/sb84MIPtNL1fcdutKlPYoouM1XAvicd4YHpgft391QmjCDxiSXusqblZToS
+GEZP81JU5JpIyIn13wIDAQAB
+-----END RSA PUBLIC KEY-----
+        """
+        installer.genconf(
+            zk_host=zk_host,
+            master_list=master_list,
+            agent_list=agent_list,
+            public_agent_list=public_agent_list,
+            ip_detect_script=ip_detect_script,
+            ssh_user=ssh_user,
+            ssh_key=pub_key,
+            add_config_path=options.add_config_path)
+        installer.preflight(expect_errors=True)
+
         log.info("Configuring install...")
         installer.genconf(
                 zk_host=zk_host,
