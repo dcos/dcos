@@ -104,11 +104,8 @@ def validate_ssh_config_or_exit():
 
 
 def do_version(args):
-    print(json.dumps(
-        {
-            'version': gen.calc.entry['must']['dcos_version'],
-            'variant': os.environ['BOOTSTRAP_VARIANT']},
-        indent=2, sort_keys=True))
+    print("version: ", gen.calc.entry['must']['dcos_version'])
+    print("variant: ", os.environ['BOOTSTRAP_VARIANT']})
     return 0
 
 
