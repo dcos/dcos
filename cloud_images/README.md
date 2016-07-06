@@ -22,6 +22,7 @@ Steps to create a new AMI with the DC/OS pre-requisites installed using a base C
 
 1. Change the working directory to the `centos7` subdirectory
 2. Run the helper script `create_dcos_ami.sh` to build and deploy new DC/OS AMI's. Default values can be overridden by setting the appropriate environment variables.
+  - If you get a 401 error from `amazon-ebs` API endpoint, try passing `AWS_SECRET_KEY_ID` and `AWS_SECRET_KEY` manually when you run `create_dcos_ami.sh`.
 
 # Reference Material
 

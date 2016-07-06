@@ -28,17 +28,47 @@ do
   esac
 done
 
-function ensure_lvm_installed {
-  which lvm
-  if $? -ne 0; then
-    echo "Installing LVM2..."
-    yum install -y lvm2*
-  else
-    echo "LVM2 installed."
-  fi
+function configure_lvm {
+  # init a physical vol for the LVM
+  pvcreate -yf "$device" 
+
+  # create the docker volume group
+  echo "Creating volume group \"docker\""
+  vgcreate docker "$device"
+
+  # Create thinpool named thinpool
+  echo "Creating the thinpool named \"thinpool\""
+  lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+  lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+
+  # convert the pool to thinpool
+  echo "Converting the pool to thinpool"
+  lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+
+  echo "Creating /etc/lvm/profile/docker-thinpool.profile"
+  cat << EOF > /etc/lvm/profile/docker-thinpool.profile
+  activation {
+      thin_pool_autoextend_threshold=80
+      thin_pool_autoextend_percent=20
+  }
+EOF
+
+  # Apply the profile created above
+  echo "Applying LVM changes to the system."
+  lvchange --metadataprofile docker-thinpool docker/thinpool
+
+  echo "Done creating logical volume"
 }
 
-function create_partition {
+function partition_device {
+  echo "Partition $partition not detected, creating partitions..."
+  parted -s -a optimal "$device" -- \
+    mklabel gpt \
+    mkpart primary ext4 1 -1
+  partprobe "$device"
+}
+
+function main {
   if [[ -z "$mount_location" || -z "$device" ]]
   then
     usage
@@ -48,12 +78,13 @@ function create_partition {
   partition=${device}1
   if [[ ! -b "$partition" ]]
   then
-    echo "Partition $partition not detected: creating partitions"
-    parted -s -a optimal "$device" -- \
-      mklabel gpt \
-      mkpart primary ext4 1 -1
-    partprobe "$device"
-    echo "Formatting: $partition"
+    if [[ $mount_location == "/var/lib/docker" ]]; then
+      systemctl stop docker
+      configure_lvm
+    else
+      partition_device
+    fi 
+    echo "Formatting $partition to ext4 filesystem..."
     mkfs.ext4 "$partition" >/dev/null
     echo "Setting up partition mount"
     mkdir -p "$mount_location"
@@ -62,49 +93,14 @@ function create_partition {
     echo "$fstab" >> /etc/fstab
     echo "Mounting: $partition to $mount_location"
     mount -a
+    systemctl start docker
   else
     echo "Partition $partition detected: no action taken"
     exit
   fi
 }
 
-function create_thinpool_volume {
-  echo "Ensureing LVM2 is installed."
-  ensure_lvm_installed
-  # init a physical vol for the LVM 
-  pvcreate /dev/xvdf
-  
-  # create the docker volume group
-  echo "Creating volume group \"docker\""
-  vgcreate docker /dev/xvdf
-  
-  # Create thinpool named thinpool
-  echo "Creating the thinpool named \"thinpool\""
-  lvcreate --wipesignatures y -n thinpool docker -l 95%VG
-  lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
-  
-  # convert the pool to thinpool
-  echo "Converting the pool to thinpool"
-  lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
-  
-  echo "Creating /etc/lvm/profile/docker-thinpool.profile"
-  cat << EOF > /etc/lvm/profile/docker-thinpool.profile
-activation {
-    thin_pool_autoextend_threshold=80
-    thin_pool_autoextend_percent=20
-}
-  EOF
-
-  # Apply the profile created above
-  echo "Applying LVM changes to the system."
-  lvchange --metadataprofile docker-thinpool docker/thinpool
-  
-  echo "Done creating logical volume"
-}
-
 if [[ ${1:-} ]] && declare -F | cut -d' ' -f3 | fgrep -qx -- "${1:-}"
 then "$@"
-else 
-  create_partition && \
-  create_thinpool_volume "$@"
+else main "$@"
 fi

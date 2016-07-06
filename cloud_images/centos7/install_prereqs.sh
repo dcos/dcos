@@ -21,9 +21,9 @@ sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
 echo ">>> Installing DC/OS dependencies and essential packages"
-yum install --assumeyes --tolerant perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync
+yum install --assumeyes --tolerant lvm2 perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync
 
-echo ">>> Set up filesystem mounts"
+echo ">>> Set up filesystem mounts systemd unit"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
 [Unit]
 Description=Initial setup of volume mounts
@@ -31,7 +31,7 @@ Description=Initial setup of volume mounts
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker
+### ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0
 
 [Install]
@@ -50,13 +50,13 @@ systemctl enable docker
 echo ">>> Creating docker group"
 /usr/sbin/groupadd -f docker
 
-echo ">>> Customizing Docker storage driver to use Overlay"
+echo ">>> Customizing Docker storage driver to use devicemapper with thinpool"
 docker_service_d=/etc/systemd/system/docker.service.d
 mkdir -p "$docker_service_d"
 cat << 'EOF' > "${docker_service_d}/execstart.conf"
 [Service]
 ExecStart=
-ExecStart=/usr/bin/docker daemon -H fd:// --graph=/var/lib/docker --storage-driver=overlay
+ExecStart=/usr/bin/docker daemon -H fd:// --graph=/var/lib/docker --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt dm.use_deferred_removal=true 
 EOF
 
 echo ">>> Adding group [nogroup]"
