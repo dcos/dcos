@@ -73,7 +73,7 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         help='Hash a password on the CLI for use in the config.yaml.'
     )
 
-    mutual_exc.add_argument(
+    parser.add_argument(
         '-v',
         '--verbose',
         action='store_true',
