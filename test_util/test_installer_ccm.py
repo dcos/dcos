@@ -308,13 +308,8 @@ def main():
             # Test bad config cases
             log.info("Configuring with bad SSH key (pub key test)")
             pub_key = """
-    -----BEGIN RSA PUBLIC KEY-----
-    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD25aZJq71JXxeRdkm6sN3nJSu9
-    rNxDRtJftnMR//j0V9tMLHMDyg/jQQDBy8XVtFigd8YFr92mtwhzzp7QfCPp1ZUu
-    HqoK/sb84MIPtNL1fcdutKlPYoouM1XAvicd4YHpgft391QmjCDxiSXusqblZToS
-    GEZP81JU5JpIyIn13wIDAQAB
-    -----END RSA PUBLIC KEY-----
-"""
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDDlq/HSU9B5HyCTdSh6opW6NpXT3uxBYrDNnNj4YllVOyp/HCucHorSn40vwtAQNDWWZD3jUFXdB7RN3qVqrfYXrfsNp12Pb5pKsiDZcQbe+rRMOaaBXQ7wylDWj/rp0SIH7AIYnZ8PzEb4PXqCM0MaVMZukUFb8frvv8B0I1YwMJiK0qocVAuacWhWmXJ29zktpqfuHE5RArCycVR6QU+6/EvyDfjL/HM+YYz3DMDvOH9PxG6uOuiYSsXBo02H2y4GhI/HhaUPJMmUHweIbFZcn6RMEF0nNIULnlDNPTsDTtuDY4p5Li/pLDtU71MIlp5ubbgCBA9UolUCoKSkDFN root@bohr\n
+"""  # noqa
             installer.genconf(
                 expect_errors=True,
                 zk_host=zk_host,
