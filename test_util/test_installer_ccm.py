@@ -105,7 +105,7 @@ def make_vpc(use_bare_os=False):
     vpc = ccm.create_vpc(
         name=unique_cluster_id,
         time=60,
-        instance_count=4,  # 1 bootstrap, 1 master, 2 agents
+        instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
         instance_type="m4.xlarge",
         instance_os=os_name,
         region=DEFAULT_AWS_REGION,
@@ -232,8 +232,10 @@ def main():
     test_host = host_list[0]
     test_host_local = local_ip[host_list[0]]
     master_list = [local_ip[host_list[1]]]
-    agent_list = [local_ip[host_list[2]]]
-    public_agent_list = [local_ip[host_list[3]]]
+    agent1 = local_ip[host_list[2]]
+    agent2 = local_ip[host_list[3]]
+    agent_list = [agent1, agent2]
+    public_agent_list = [local_ip[host_list[4]]]
     log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
 
     with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
