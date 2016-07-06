@@ -3,9 +3,7 @@
 mkdir -p "$PKG_PATH/lib/"
 mkdir -p "$PKG_PATH/usr/"
 
-cp -rp /pkg/extra/default-repositories.json "${PKG_PATH}/lib/default-repositories.json"
 cp -rp /pkg/src/cosmos/cosmos-*-one-jar.jar "${PKG_PATH}/usr/cosmos.jar"
-sudo chmod -R o+r "${PKG_PATH}/lib"
 sudo chmod -R o+r "${PKG_PATH}/usr"
 
 cosmos_service="${PKG_PATH}/dcos.target.wants_master/dcos-cosmos.service"
@@ -27,5 +25,5 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/var/lib/dcos/environment.proxy
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
-ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/lib/:${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos
+ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos
 EOF
