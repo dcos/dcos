@@ -565,11 +565,13 @@ def make_bootstrap_tarball(package_store, packages, variant):
 
 
 def build_tree(package_store, mkbootstrap, tree_variant):
-    # Check the requires and figure out a feasible build order
-    # depth-first traverse the dependency tree, yielding when we reach a
-    # leaf or all the dependencies of package have been built. If we get
-    # back to a node without all it's dependencies built, error (likely
-    # circular).
+    """Build packages and bootstrap tarballs for one or all tree variants.
+
+    Returns a dict mapping tree variants to bootstrap IDs.
+
+    If tree_variant is None, builds all available tree variants.
+
+    """
     # TODO(cmaloney): Add support for circular dependencies. They are doable
     # long as there is a pre-built version of enough of the packages.
 
@@ -580,19 +582,29 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     built = set()
 
     def visit(pkg_tuple):
-        # Visit the node for the first (and only time). Finding a node again
-        # means a cycle and should be detected at caller.
+        """Add a package and its requires to the build order.
 
+        Raises AssertionError if pkg_tuple is in the set of visited packages.
+
+        If the package has any requires, they're recursively visited and added
+        to the build order depth-first. Then the package itself is added.
+
+        """
         assert isinstance(pkg_tuple, tuple)
 
+        # Visit the node for the first (and only) time.
         assert pkg_tuple not in visited
         visited.add(pkg_tuple)
 
         # Ensure all dependencies are built. Sorted for stability
         for require in sorted(package_store.packages[pkg_tuple]['requires']):
             require_tuple = expand_require(require)
+
+            # If the dependency has already been built, we can move on.
             if require_tuple in built:
                 continue
+            # If the dependency has not been built but has been visited, then
+            # there's a cycle in the dependency graph.
             if require_tuple in visited:
                 raise BuildError("Circular dependency. Circular link {0} -> {1}".format(pkg_tuple, require_tuple))
 
@@ -603,6 +615,8 @@ def build_tree(package_store, mkbootstrap, tree_variant):
             if require_tuple not in package_store.packages:
                 raise BuildError("Package {0} require {1} not buildable from tree.".format(pkg_tuple, require_tuple))
 
+            # Add the dependency (after its dependencies, if any) to the build
+            # order.
             visit(require_tuple)
 
         build_order.append(pkg_tuple)
