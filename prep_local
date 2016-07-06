@@ -10,5 +10,6 @@ set -o errexit -o nounset -o pipefail
 : ${VIRTUAL_ENV?"Must be run in a python virtual environment"}
 
 # Install the packages in editable mode to the virtual environment.
+pip install wheel
 pip install -e $PWD
 pip install -e ext/dcos-installer
