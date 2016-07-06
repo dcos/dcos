@@ -283,27 +283,6 @@ def main():
                     '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
             test_host_tunnel.remote_cmd(zk_cmd)
 
-        # Test bad config cases
-        log.info("Cofiguring with bad SSH key (pub key test)")
-        pub_key = """
------BEGIN RSA PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD25aZJq71JXxeRdkm6sN3nJSu9
-rNxDRtJftnMR//j0V9tMLHMDyg/jQQDBy8XVtFigd8YFr92mtwhzzp7QfCPp1ZUu
-HqoK/sb84MIPtNL1fcdutKlPYoouM1XAvicd4YHpgft391QmjCDxiSXusqblZToS
-GEZP81JU5JpIyIn13wIDAQAB
------END RSA PUBLIC KEY-----
-        """
-        installer.genconf(
-            zk_host=zk_host,
-            master_list=master_list,
-            agent_list=agent_list,
-            public_agent_list=public_agent_list,
-            ip_detect_script=ip_detect_script,
-            ssh_user=ssh_user,
-            ssh_key=pub_key,
-            add_config_path=options.add_config_path)
-        installer.preflight(expect_errors=True)
-
         log.info("Configuring install...")
         installer.genconf(
                 zk_host=zk_host,
@@ -326,8 +305,73 @@ GEZP81JU5JpIyIn13wIDAQAB
                     vpc.delete()
                 sys.exit(0)
         else:
-            # Will not fix errors detected in preflight
-            installer.preflight()
+            # Test bad config cases
+            log.info("Configuring with bad SSH key (pub key test)")
+            pub_key = """
+    -----BEGIN RSA PUBLIC KEY-----
+    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD25aZJq71JXxeRdkm6sN3nJSu9
+    rNxDRtJftnMR//j0V9tMLHMDyg/jQQDBy8XVtFigd8YFr92mtwhzzp7QfCPp1ZUu
+    HqoK/sb84MIPtNL1fcdutKlPYoouM1XAvicd4YHpgft391QmjCDxiSXusqblZToS
+    GEZP81JU5JpIyIn13wIDAQAB
+    -----END RSA PUBLIC KEY-----
+"""
+            installer.genconf(
+                expect_errors=True,
+                zk_host=zk_host,
+                master_list=master_list,
+                agent_list=agent_list,
+                public_agent_list=public_agent_list,
+                ip_detect_script=ip_detect_script,
+                ssh_user=ssh_user,
+                ssh_key=pub_key,
+                add_config_path=options.add_config_path)
+
+            log.info("Configuring with bad SSH key (encrypted key test)")
+            enc_key = """
+-----BEGIN RSA PRIVATE KEY-----
+Proc-Type: 4,ENCRYPTED
+DEK-Info: AES-128-CBC,17BFB09306B652FA1076B02005D9741E
+
+YfLNy+GcIE1j2JrdSVNagzZF+UZ2LNnp9iAM406nqzgnt/G7eVAYt5CotYWydAtl
+ONHHuwMYMnymXifM1BjpbOi9PFVNQ6HTRGXZAAK4RnLlUu9JGzvP/Qvuo8j1F0PQ
+4/RvNsrkBwj6WvMwt3gsjI7SP7l0xL5gzMFgYryOlrbykxe1Y0KWswP8xn+988lO
+Lef0PCXcnewa0laA0lrZmZAdqbOMJUvo2oN7xGDvhiRYnY0roATSOzOnFxQW8ouF
+gkKI6q3zCtVjAArVujR5A8D2z812KLHP7/+RF+5J0M6ub/9+ZKFhWeTsrtFNWjpH
+ap9dJyDBoK/nWwKje52XsJDe7ZD+tvMFzcJLt6dQmYgX2BILj0m6Tce07pRPnfvV
+aB+Cx59rhFL9N/cTEK65JdZhMbsveD9BTrUg93y9rnaSghvgOzywWuoi/Fv/FGRo
+z00Ue2s6NNsKizBzJmdcByq7r/KX0YAFsFYyxdesXWR6cBtSdpvU6N0IPJ7XXUDJ
+JdKAKP4yO0+qYG00m6FXpG6zwPIPFLo+lrVp3nMGGVNOJWgM620AVzFI91/MJzjB
+8D9/mzMgsPgoD+s7prgZM7mSlFhF/pvhLcoJRoDYFFcpzzebFDuOHgVvZAIWZjgA
+LzggaaTaZvbTvpgpx6hIMZGF/ykXn5IhE/2x2Q+X6Edhmnt2zgeYh71YW+dEwlQA
+q4g2OYpUJsupIwYBBgSeINIRXLKM5cSE3Zpb3XNNffOquqLacnpuc8svWqk86ZW1
+GoQYyHGAvC0HIU2qqorNaP4srDu57kfe5AoEmDL1Z32P8FfesuFrUmcO21F1zmeS
+89YcolAEz0cSBLt0enuLHBtmoVHWqIBkungGkkhVMz+VSeGsp7EXrw7t8rOGRVGt
+dV0BlOdWKrflFRWas1mZnJAD8mR18aJ71ugIuVn5yHl/usEt8XpmU1Hp9v3aKwNQ
+Mt+FIFSu2gA8GIq7wLk3PDS3aVo7QCNblO//jjNDSaJ4PCpYDvWGdIQKemypJavC
+xoVYxDDyjuUJ8R5duTJ8GIxIda8tSiWf3Z8q8nvSY/ooVSoc5w5V3O31b/FdVdlt
+oaAPcgaq3fmO4/BiKnoh5S16VGPR8L+I8xkO2JDh4v87w/lTh9d8RHmhsuFcy71d
+0SqHWvHB8i7GLt+K8OIu07xUVxZ1E7mke3GkRezShPKauIQjU/8LzLt67i4NVchD
+7qj1Jgngjxu5CFQiTIbDSLtwd+2K9um/HgD5lilpyTEO9Eh25usMU9Ws8VxyzN8G
+CkfsPjepRyDdHdHeV4NUvYeHoZQKOTTgtmVb2v/KGqO3Bso4bzz7b6G+H3Tjc3rl
+F/mceuzQhFBHSgl1Dow94CyQkX0GBFeJrn6fCK3r5VPGoVJ/vCJXgckH91KHbkT0
+FW0DaRvYRqP3FS1BvU7XG3VngR7mvCzKVilOSu43twGYqjEwIafBiQJKT55E75xL
+FJF6Ry5MQgGHRpeEBXjCIctD1RB0gLxF0NWSpJ7+hcBbl6FaKwB/jd9mVsQBhAWj
+RJ0hwhsVzf3n0y1vXsGmIkkaFzydPzREjXzaNvk34FL6rin8lsVlsg9lyNNrAFQa
+-----END RSA PRIVATE KEY-----
+"""
+            installer.genconf(
+                expect_errors=True,
+                zk_host=zk_host,
+                master_list=master_list,
+                agent_list=agent_list,
+                public_agent_list=public_agent_list,
+                ip_detect_script=ip_detect_script,
+                ssh_user=ssh_user,
+                ssh_key=enc_key,
+                add_config_path=options.add_config_path)
+
+        log.info("Running Preflight...")
+        installer.preflight()
 
         log.info("Running Deploy...")
         installer.deploy()
