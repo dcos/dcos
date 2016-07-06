@@ -1,7 +1,7 @@
 #!/bin/bash
 set -o nounset -o pipefail
 
-pushd /pkg/src/mesos-overlay/
+pushd /pkg/src/mesos-overlay-modules/
 ./bootstrap
 popd
 
@@ -9,7 +9,7 @@ export LD_LIBRARY_PATH=/opt/mesosphere/lib
 
 mkdir -p build
 pushd build
-/pkg/src/mesos-overlay/configure \
+/pkg/src/mesos-overlay-modules/configure \
      --with-mesos=/opt/mesosphere/active/mesos \
      --prefix="$PKG_PATH"
 make -j8
