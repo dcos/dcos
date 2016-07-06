@@ -149,7 +149,9 @@
                     "ec2:CopySnapshot",
                     "ec2:DeleteSnapshot",
                     "ec2:DescribeSnapshots",
-                    "ec2:DescribeSnapshotAttribute"
+                    "ec2:DescribeSnapshotAttribute",
+                    "autoscaling:DescribeAutoScalingGroups",
+                    "cloudwatch:PutMetricData"
                   ],
                   "Effect": "Allow"
                 }
@@ -186,8 +188,8 @@
     },
     "PrivateAgentInstanceType": {
       "Type": "String",
-      "Default": "m3.xlarge",
-      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+      "Default": "m4.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
     },
     "CustomAMI": {
       "Default": "default",

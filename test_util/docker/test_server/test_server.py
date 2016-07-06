@@ -4,6 +4,7 @@ import logging
 import os
 import signal
 import socket
+import subprocess
 import sys
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -228,6 +229,17 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                 "my_ip": reflector_data['request_ip']}
         self._send_reply(data)
 
+    def _handle_path_run_cmd(self):
+        """Runs an arbitrary command, and returns the output along with the return code
+
+        Sometimes there isn't enough time to write code
+        """
+        length = int(self.headers['Content-Length'])
+        cmd = self.rfile.read(length).decode('utf-8')
+        (status, output) = subprocess.getstatusoutput(cmd)
+        data = {"status": status, "output": output}
+        self._send_reply(data)
+
     def do_GET(self):
         """Mini service router handling GET requests"""
         # TODO(cmaloney): Alphabetize these.
@@ -256,6 +268,8 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_error(e.code, e.reason, e.explanation)
         elif self.path == '/signal_test_cache':
             self._handle_path_signal_test_cache(True)
+        elif self.path == '/run_cmd':
+            self._handle_path_run_cmd()
         else:
             self.send_error(404, 'Not found', 'Endpoint is not supported')
 
