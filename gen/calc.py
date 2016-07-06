@@ -95,6 +95,10 @@ def validate_dcos_overlay_enable(dcos_overlay_enable):
     assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
 
 
+def validate_dcos_overlay_mtu(dcos_overlay_mtu):
+    assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     assert isinstance(dcos_overlay_network, str)
     try:
@@ -298,7 +302,8 @@ entry = {
         validate_master_dns_bindall,
         validate_os_type,
         validate_dcos_overlay_network,
-        validate_dcos_overlay_enable],
+        validate_dcos_overlay_enable,
+        validate_dcos_overlay_mtu],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -329,6 +334,7 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': '{                      \
             "vtep_subnet": "198.18.0.0/20",             \
