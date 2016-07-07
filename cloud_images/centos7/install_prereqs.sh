@@ -30,9 +30,9 @@ Description=Initial setup of volume mounts
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos
-### ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0
+ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos >> /home/centos/vol.log 2>&1' 
+### ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker >> /home/centos/vol.log 2>&1'
+ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0 >> /home/centos/vol.log 2>&1'
 
 [Install]
 WantedBy=local-fs.target

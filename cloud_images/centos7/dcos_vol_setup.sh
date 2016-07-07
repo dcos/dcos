@@ -61,7 +61,7 @@ EOF
 }
 
 function partition_device {
-  echo "Partition $partition not detected, creating partitions..."
+  echo "Partition $device not detected, creating partitions..."
   parted -s -a optimal "$device" -- \
     mklabel gpt \
     mkpart primary ext4 1 -1
@@ -75,8 +75,7 @@ function main {
     exit 1
   fi
 
-  partition=${device}1
-  if [[ ! -b "$partition" ]]
+  if [[ ! -b "$device" ]]
   then
     if [[ $mount_location == "/var/lib/docker" ]]; then
       systemctl stop docker
@@ -84,18 +83,18 @@ function main {
     else
       partition_device
     fi 
-    echo "Formatting $partition to ext4 filesystem..."
-    mkfs.ext4 "$partition" >/dev/null
+    echo "Formatting $device to ext4 filesystem..."
+    mkfs.ext4 "$device" >/dev/null
     echo "Setting up partition mount"
     mkdir -p "$mount_location"
-    fstab="$partition $mount_location ext4 defaults,nofail 0 2" 
+    fstab="$device $mount_location ext4 defaults,nofail 0 2" 
     echo "Adding entry to fstab: $fstab"
     echo "$fstab" >> /etc/fstab
-    echo "Mounting: $partition to $mount_location"
+    echo "Mounting: $device to $mount_location"
     mount -a
     systemctl start docker
   else
-    echo "Partition $partition detected: no action taken"
+    echo "Partition $device detected: no action taken"
     exit
   fi
 }
