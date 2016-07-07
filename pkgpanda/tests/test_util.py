@@ -42,3 +42,11 @@ def test_validate_username():
     bad('dcos_foo:bar')
     bad('3dcos_foobar')
     bad('dcos3_foobar')
+
+
+def test_validate_group():
+    # assuming linux distributions have `root` group.
+    UserManagement.validate_group('root')
+
+    with pytest.raises(ValidationError):
+        UserManagement.validate_group('group-should-not-exist')
