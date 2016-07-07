@@ -88,8 +88,7 @@ setup(
             'docker/py.test/Dockerfile',
             'docker/test_server/Dockerfile',
             'docker/test_server/test_server.py',
-            'integration_test.py',
-            'certs/*'],
+            'integration_test.py'],
     },
     zip_safe=False
 )

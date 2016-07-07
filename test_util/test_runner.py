@@ -21,43 +21,6 @@ def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
 
 
-def distribute_registry_certs(tunnel, agent_list, test_dir):
-    """Copies certs to all agents in tests so that they
-    may pull test server apppication from test_registy
-    """
-    client_certs = pkg_filename('certs')
-    remote_tar_path = join(test_dir, 'certs.tgz')
-    with tempfile.TemporaryDirectory() as d:
-        log.info('Bundling and transferring certs')
-        local_tar_path = join(d, 'certs.tgz')
-        check_call(['tar', 'czf', local_tar_path, '-C', client_certs, '.'])
-        tunnel.write_to_remote(local_tar_path, remote_tar_path)
-    # setup for file transfer daisy chain
-    remote_key_path = join(test_dir, 'test_ssh_key')
-    tunnel.write_to_remote(tunnel.ssh_key_path, remote_key_path)
-    tunnel.remote_cmd(['chmod', '600', remote_key_path])
-
-    certs_dir = '/etc/docker/certs.d/123.1.1.1:5000'
-    docker_conf_chain = (
-        ['sudo', 'mkdir', '-p', certs_dir],
-        ['sudo', 'tar', '-xzf', remote_tar_path, '-C', certs_dir])
-    log.info('Reconfiguring dockerd on test host')
-    for cmd in docker_conf_chain:
-        tunnel.remote_cmd(cmd)
-    for agent in agent_list:
-        target = "{}@{}".format(tunnel.ssh_user, agent)
-        target_scp = "{}:{}".format(target, remote_tar_path)
-        ssh_opts = ['-oStrictHostKeyChecking=no', '-oUserKnownHostsFile=/dev/null']
-        scp_cmd = ['/usr/bin/scp', '-i', remote_key_path] + ssh_opts
-        remote_scp = scp_cmd + [remote_tar_path, target_scp]
-        log.info('Transfering certs to host: ' + agent)
-        tunnel.remote_cmd(remote_scp)
-        chain_prefix = ['/usr/bin/ssh', '-tt', '-i', remote_key_path] + ssh_opts + [target]
-        for cmd in docker_conf_chain:
-            log.info('Unpacking certs on agent: '+agent)
-            tunnel.remote_cmd(chain_prefix+cmd)
-
-
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,

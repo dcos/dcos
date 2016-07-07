@@ -78,7 +78,7 @@ def registry_cluster(cluster, request):
         return cluster
     registry_app = {
             "id": "/registry",
-            "cmd": "docker run -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/123.1.1.1\:5000/client.cert -e REGISTRY_HTTP_TLS_KEY=/certs/123.1.1.1\:5000/client.key -v /etc/docker/certs.d:/certs:ro -p $PORT0:5000 registry:2",  # noqa
+            "cmd": "docker run -p $PORT0:5000 mesosphere/test_registry:latest",
             "cpus": 0.1,
             "mem": 128,
             "disk": 0,
@@ -86,17 +86,17 @@ def registry_cluster(cluster, request):
             "healthChecks": [{
                 "protocol": "COMMAND",
                 "command": {
-                    "value": "CURL_CA_BUNDLE=/etc/docker/certs.d/123.1.1.1\:5000/123.1.1.1\:5000.crt curl -sSfv https://123.1.1.1:5000/v2/_catalog"},  # noqa
+                    "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"},
                 "gracePeriodSeconds": 300,
                 "intervalSeconds": 60,
                 "timeoutSeconds": 20,
                 "maxConsecutiveFailures": 3,
                 "ignoreHttp1xx": True}],
-            "portDefinitions": [{
-                "port": 0,
-                "protocol": "tcp",
-                "labels": {"VIP_0": "123.1.1.1:5000"}}]
+            "ports": [0],
+            "requirePorts": True
             }
+    endpoints = cluster.deploy_marathon_app(registry_app)
+    cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
     with open('/test_server.py', 'r') as fh:
         test_server = fh.read()
     with open('/test_server_Dockerfile', 'r') as fh:
@@ -110,31 +110,25 @@ EOF
 cat <<EOF > tmp/Dockerfile
 {dockerfile}
 EOF
-docker build -t 123.1.1.1:5000/test_server tmp/
-docker push 123.1.1.1:5000/test_server
+docker build -t {registry}/test_server tmp/
+docker push {registry}/test_server
 sleep 36000
-""".format(test_server=test_server, dockerfile=dockerfile)
+""".format(registry=cluster.registry, test_server=test_server, dockerfile=dockerfile)
     docker_build_and_push_app = {
             'id': '/build-and-push',
             'cmd': docker_cmds,
             'cpus': 0.1,
             'mem': 64,
             'instances': 1,
-            'healthChecks':
-            [
-                {
-                    'protocol': 'COMMAND',
-                    'command': {'value': 'CURL_CA_BUNDLE=/etc/docker/certs.d/123.1.1.1\:5000/123.1.1.1\:5000.crt curl -fsSlv https://123.1.1.1:5000/v2/test_server/manifests/latest'},  # noqa
-                    'gracePeriodSeconds': 20,
-                    'intervalSeconds': 20,
-                    'timeoutSeconds': 10,
-                    'maxConsecutiveFailures': 3
-                }
-            ],
+            'healthChecks': [{
+                'protocol': 'COMMAND',
+                'command': {'value': 'curl -fsSlv https://{}/v2/test_server/manifests/latest'.format(cluster.registry)},
+                'gracePeriodSeconds': 20,
+                'intervalSeconds': 20,
+                'timeoutSeconds': 10,
+                'maxConsecutiveFailures': 3}],
             }
-    cluster.deploy_marathon_app(registry_app)
     cluster.deploy_marathon_app(docker_build_and_push_app)
-    cluster.registry = '123.1.1.1:5000'
 
     def kill_registry():
         cluster.destroy_marathon_app(docker_build_and_push_app['id'])
