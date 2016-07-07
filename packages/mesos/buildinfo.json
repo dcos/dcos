@@ -1,11 +1,11 @@
 {
-  "requires": ["mesos-buildenv", "openssl", "libevent", "curl"],
+  "requires": ["exhibitor", "openssl", "libevent", "curl"],
   "docker": "dcos-builder",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "76c87d55a78e8cbb380fc0c71388ccec53ed1dc8",
-    "ref_origin" : "dcos-1.7"
+    "ref": "ec1fdd0a8a10ff2d144e09d5c8ae9c2118371344",
+    "ref_origin" : "dcos-mesos-1.0.0-master-0a0ed2d"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
