@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import os
 import socket
@@ -76,14 +77,6 @@ def calculate_gen_resolvconf_search(dns_search):
         return ""
 
 
-def calculate_mesos_slave_modules_json(mesos_slave_modules):
-    # Ensure that this file is readable by humans by including newlines in the output.
-    json_multiline = json.dumps({"libraries": mesos_slave_modules}, indent=2)
-    # Preserve indentation in dcos-config.yaml's template by adding indentation to this content
-    injected_indent = 6 * ' '
-    return json_multiline.replace('\n', '\n' + injected_indent)
-
-
 def validate_telemetry_enabled(telemetry_enabled):
     can_be = ['true', 'false']
     assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
@@ -95,6 +88,52 @@ def validate_oauth_enabled(oauth_enabled):
         return
     can_be = ['true', 'false']
     assert oauth_enabled in can_be, 'Must be one of {}. Got {}'.format(can_be, oauth_enabled)
+
+
+def validate_dcos_overlay_enable(dcos_overlay_enable):
+    can_be = ['true', 'false']
+    assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
+
+
+def validate_dcos_overlay_mtu(dcos_overlay_mtu):
+    assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
+
+
+def validate_dcos_overlay_network(dcos_overlay_network):
+    assert isinstance(dcos_overlay_network, str)
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except json.JSONDecodeError as ex:
+        assert False, "Must be a valid JSON . Errors while parsing at position {}: {}".format(ex.pos, ex.msg)
+    # Check the VTEP IP, VTEP MAC keys are present in the overlay
+    # configuration
+    assert 'vtep_subnet' in overlay_network.keys(), (
+        'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
+
+    try:
+        ipaddress.ip_network(overlay_network['vtep_subnet'])
+    except ValueError as ex:
+        assert False, (
+            "Incorrect value for vtep_subnet. Only IPv4 "
+            "values are allowed: {}".format(ex))
+
+    assert 'vtep_mac_oui' in overlay_network.keys(), (
+        'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
+
+    assert 'overlays' in overlay_network.keys(), (
+        'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+    assert len(overlay_network['overlays']) > 0, (
+        'We need at least one overlay network configuration {}'.format(overlay_network))
+
+    for overlay in overlay_network['overlays']:
+        if (len(overlay['name']) > 13):
+            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        try:
+            ipaddress.ip_network(overlay['subnet'])
+        except ValueError as ex:
+            assert False, (
+                "Incorrect value for vtep_subnet. Only IPv4 "
+                "values are allowed: {}".format(ex))
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -244,23 +283,6 @@ def validate_os_type(os_type):
 
 
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
-__logrotate_slave_module = {
-    'file': '/opt/mesosphere/lib/liblogrotate_container_logger.so',
-    'modules': [{
-        'name': __logrotate_slave_module_name,
-        'parameters': [
-            {'key': 'launcher_dir', 'value': '/opt/mesosphere/active/mesos/libexec/mesos/'},
-            {'key': 'max_stdout_size', 'value': '2MB'},
-            {'key': 'logrotate_stdout_options', 'value': 'rotate 9'},
-            {'key': 'max_stderr_size', 'value': '2MB'},
-            {'key': 'logrotate_stderr_options', 'value': 'rotate 9'},
-        ]
-    }]
-}
-
-default_mesos_slave_modules = [
-    __logrotate_slave_module,
-]
 
 
 entry = {
@@ -278,7 +300,10 @@ entry = {
         validate_mesos_dns_ip_sources,
         validate_telemetry_enabled,
         validate_master_dns_bindall,
-        validate_os_type],
+        validate_os_type,
+        validate_dcos_overlay_network,
+        validate_dcos_overlay_enable,
+        validate_dcos_overlay_mtu],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -308,7 +333,19 @@ entry = {
         'ui_banner_header_content': 'null',
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
-        'ui_banner_dismissible': 'null'
+        'ui_banner_dismissible': 'null',
+        'dcos_overlay_mtu': '1420',
+        'dcos_overlay_enable': "true",
+        'dcos_overlay_network': '{                      \
+            "vtep_subnet": "198.18.0.0/20",             \
+            "vtep_mac_oui": "70:B3:D5:00:00:00",        \
+            "overlays": [                               \
+              {                                         \
+                "name": "dcos",                         \
+                "subnet": "44.128.0.0/16",              \
+                "prefix": 26                            \
+              }                                         \
+            ]}'
     },
     'must': {
         'custom_auth': 'false',
@@ -326,8 +363,6 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
-        'mesos_slave_modules_json': calculate_mesos_slave_modules_json(
-            default_mesos_slave_modules),
         'minuteman_forward_metrics': 'false',
     },
     'conditional': {

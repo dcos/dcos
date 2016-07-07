@@ -90,9 +90,113 @@ package:
           ]
         }
       ].
+  - path: /etc/overlay/config/master.json
+    content: |
+      {
+        "zk":
+        {
+          "url": "zk://127.0.0.1:2181/mesos",
+          "quorum": {{ master_quorum }}
+        },
+        "replicated_log_dir":"/var/lib/dcos/mesos/master/",
+        "network": {{ dcos_overlay_network }}
+       }
+  - path: /etc/dcos/network/cni/dummy.cni
+    content: |
+      {
+        "name": "dummy",
+        "type": "bridge"
+      }
+  - path: /etc/overlay/config/agent.json
+    content: |
+      {
+        "master": "zk://leader.mesos:2181/mesos",
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "network_config":
+        {
+          "allocate_subnet": true,
+          "mesos_bridge": true,
+          "docker_bridge": true,
+          "overlay_mtu": {{ dcos_overlay_mtu }}
+        }
+       }
+  - path: /etc/overlay/config/agent-master.json
+    content: |
+      {
+        "master": "zk://127.0.0.1:2181/mesos",
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "network_config" :
+        {
+          "allocate_subnet": true,
+          "mesos_bridge": false,
+          "docker_bridge": true,
+          "overlay_mtu": {{ dcos_overlay_mtu }}
+        }
+      }
+  {% switch dcos_overlay_enable %}
+  {% case "true" %}
+  - path: /etc/mesos-master-modules/overlay_master_modules.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_OverlayMasterManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "master_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/master.json"
+                      }
+                    ]
+                },
+                {
+                  "name": "com_mesosphere_mesos_OverlayAgentManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "agent_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/agent-master.json"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  - path: /etc/mesos-slave-modules/overlay_slave_modules.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_OverlayAgentManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "agent_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/agent.json"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  {% case "false" %}
+  {% endswitch %}
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/lib/dcos/mesos/log
+      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
@@ -109,17 +213,17 @@ package:
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
-  - path: /etc/mesos-slave-modules.json
-    content: |
-      {{ mesos_slave_modules_json }}
   - path: /etc/mesos-slave-common
     content: |
       MESOS_MASTER=zk://leader.mesos:2181/mesos
       MESOS_CONTAINERIZERS=docker,mesos
       MESOS_LOG_DIR=/var/log/mesos
-      MESOS_MODULES=file:///opt/mesosphere/etc/mesos-slave-modules.json
+      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
-      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem,posix/disk,network/cni,filesystem/linux,docker/runtime
+      MESOS_IMAGE_PROVIDERS=docker
+      MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
@@ -128,6 +232,7 @@ package:
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
       MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
+      MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
