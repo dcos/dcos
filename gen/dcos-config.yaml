@@ -111,12 +111,12 @@ package:
     content: |
       {
         "master": "zk://leader.mesos:2181/mesos",
-        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni"
+        "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
         "network_config":
         {
           "allocate_subnet": true,
           "mesos_bridge": true,
-          "docker_bridge": true
+          "docker_bridge": true,
           "overlay_mtu": {{ dcos_overlay_mtu }}
         }
        }
@@ -129,7 +129,8 @@ package:
         {
           "allocate_subnet": true,
           "mesos_bridge": false,
-          "docker_bridge": true
+          "docker_bridge": true,
+          "overlay_mtu": {{ dcos_overlay_mtu }}
         }
       }
   {% switch dcos_overlay_enable %}
