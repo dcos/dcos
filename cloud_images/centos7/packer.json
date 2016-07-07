@@ -4,7 +4,8 @@
     "cloud_builder_version": "0.1",
     "deploy_regions": "{{env `DEPLOY_REGIONS`}}",
     "source_ami": "{{env `SOURCE_AMI`}}",
-    "source_ami_region": "{{env `SOURCE_AMI_REGION`}}"
+    "source_ami_region": "{{env `SOURCE_AMI_REGION`}}",
+    "s3_bucket": "{{ env `S3_BUCKET`}}"
   },
   "builders": [{
     "type": "amazon-ebs",

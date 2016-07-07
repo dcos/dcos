@@ -29,43 +29,57 @@ do
 done
 
 function configure_lvm {
-  # init a physical vol for the LVM
+  echo "Stopping docker daemon and removing /var/lib/docker"
+  systemctl daemon-reload
+  systemctl stop docker
+
+  rm -rf /var/lib/docker
+  echo "Creating physcial device for logical volume..."
   pvcreate -yf "$device" 
 
-  # create the docker volume group
   echo "Creating volume group \"docker\""
   vgcreate docker "$device"
 
-  # Create thinpool named thinpool
-  echo "Creating the thinpool named \"thinpool\""
+  echo "Creating the pool named \"thinpool\""
   lvcreate --wipesignatures y -n thinpool docker -l 95%VG
   lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
 
-  # convert the pool to thinpool
   echo "Converting the pool to thinpool"
   lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
 
   echo "Creating /etc/lvm/profile/docker-thinpool.profile"
   cat << EOF > /etc/lvm/profile/docker-thinpool.profile
-  activation {
-      thin_pool_autoextend_threshold=80
-      thin_pool_autoextend_percent=20
-  }
+activation {
+    thin_pool_autoextend_threshold=80
+    thin_pool_autoextend_percent=20
+}
 EOF
 
-  # Apply the profile created above
-  echo "Applying LVM changes to the system."
-  lvchange --metadataprofile docker-thinpool docker/thinpool
+  echo "Applying logical volume changes to the system."
+  lvchange -ff --metadataprofile docker-thinpool docker/thinpool
 
-  echo "Done creating logical volume"
+  systemctl start docker 
 }
 
 function partition_device {
-  echo "Partition $device not detected, creating partitions..."
+  echo "Creating partition on $device from entire volume..."
   parted -s -a optimal "$device" -- \
     mklabel gpt \
     mkpart primary ext4 1 -1
   partprobe "$device"
+
+  echo "Formatting $device to ext4 filesystem..."
+  mkfs.ext4 "$device" 
+
+  echo "Making $mount_location..."
+  mkdir -p "$mount_location"
+  fstab="$device $mount_location ext4 defaults,nofail 0 2" 
+  
+  echo "Adding entry to fstab: $fstab"
+  echo "$fstab" >> /etc/fstab
+  
+  echo "Mounting $device to $mount_location..."
+  mount -a
 }
 
 function main {
@@ -75,27 +89,16 @@ function main {
     exit 1
   fi
 
-  if [[ ! -b "$device" ]]
+  if [[ $(/sbin/sfdisk -d $device 2>&1) == "" ]]
   then
     if [[ $mount_location == "/var/lib/docker" ]]; then
-      systemctl stop docker
       configure_lvm
     else
       partition_device
     fi 
-    echo "Formatting $device to ext4 filesystem..."
-    mkfs.ext4 "$device" >/dev/null
-    echo "Setting up partition mount"
-    mkdir -p "$mount_location"
-    fstab="$device $mount_location ext4 defaults,nofail 0 2" 
-    echo "Adding entry to fstab: $fstab"
-    echo "$fstab" >> /etc/fstab
-    echo "Mounting: $device to $mount_location"
-    mount -a
-    systemctl start docker
   else
     echo "Partition $device detected: no action taken"
-    exit
+    return
   fi
 }
 

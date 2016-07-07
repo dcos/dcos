@@ -30,9 +30,9 @@ Description=Initial setup of volume mounts
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos >> /home/centos/vol.log 2>&1' 
-### ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker >> /home/centos/vol.log 2>&1'
-ExecStart=/bin/sh -c '/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0 >> /home/centos/vol.log 2>&1'
+ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos 
+ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker 
+ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0 
 
 [Install]
 WantedBy=local-fs.target
@@ -56,7 +56,7 @@ mkdir -p "$docker_service_d"
 cat << 'EOF' > "${docker_service_d}/execstart.conf"
 [Service]
 ExecStart=
-ExecStart=/usr/bin/docker daemon -H fd:// --graph=/var/lib/docker --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt dm.use_deferred_removal=true 
+ExecStart=/usr/bin/docker daemon -H fd:// --graph=/var/lib/docker --storage-driver=devicemapper --storage-opt=dm.thinpooldev=docker-thinpool --storage-opt dm.use_deferred_removal=true 
 EOF
 
 echo ">>> Adding group [nogroup]"
