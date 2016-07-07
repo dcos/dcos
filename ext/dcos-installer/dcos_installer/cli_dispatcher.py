@@ -105,7 +105,7 @@ def validate_ssh_config_or_exit():
 
 def do_version(args):
     print("version: ", gen.calc.entry['must']['dcos_version'])
-    print("variant: ", os.environ['BOOTSTRAP_VARIANT']})
+    print("variant: ", "open" if os.environ['BOOTSTRAP_VARIANT'] is None else os.environ['BOOTSTRAP_VARIANT'])
     return 0
 
 
