@@ -407,7 +407,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
         pkg_id = filename[:-len(".tar.xz")]
 
         def local_fetcher(id, target):
-            shutil.unpack_archive(pkg_path, target, "gztar")
+            shutil.unpack_archive(pkg_path, target, "xztar")
         repository.add(local_fetcher, pkg_id, False)
 
     # Activate the packages inside the repository.
