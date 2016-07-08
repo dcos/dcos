@@ -28,7 +28,7 @@ def validate_ssh_key_path(ssh_key_path):
         # We expect the fingerprint to fail if this is not a public SSH key.
         pass
     else:
-        raise AssertionError('Public SSH key detected. Must use a private key.')
+        assert False, 'Public SSH key detected. Must use a private key.'
 
 
 def validate_ssh_port(ssh_port):
