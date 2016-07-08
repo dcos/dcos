@@ -300,9 +300,10 @@ def main():
         log.info("Running Postflight")
         installer.postflight()
 
+    with closing(SSHTunnel(ssh_user, ssh_key_path, host_list[1])) as master_tunnel:
         # Runs dcos-image/integration_test.py inside the cluster
         result = test_util.test_runner.integration_test(
-                tunnel=test_host_tunnel,
+                tunnel=master_tunnel,
                 test_dir=remote_dir,
                 region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
                 dcos_dns=master_list[0],
@@ -321,11 +322,12 @@ def main():
     # on every host to see if they are working.
 
     if result:
-        log.info("Test successsful!")
-        # Delete the cluster if all was successful to minimize potential costs.
-        # Failed clusters the hosts will continue running
+        log.info('Test successsful; deleting provisioned cluster...')
         if vpc is not None:
             vpc.delete()
+    else:
+        log.info('Test failed; hosts will remain available for debugging for 1 hour after provisioning')
+        sys.exit(1)
 
 
 if __name__ == "__main__":

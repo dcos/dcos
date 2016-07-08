@@ -3,12 +3,8 @@
 Note: ssh_user must be able to use docker without sudo priveleges
 """
 import logging
-import tempfile
-import time
 from os.path import join
-from subprocess import CalledProcessError, TimeoutExpired, check_call
-
-import pkg_resources
+from subprocess import CalledProcessError, TimeoutExpired
 
 from pkgpanda.util import write_string
 
@@ -17,8 +13,9 @@ logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def pkg_filename(relative_path):
-    return pkg_resources.resource_filename(__name__, relative_path)
+def dump_logs(byte_str):
+    with open('integration_test.log', 'wb') as fh:
+        fh.write(byte_str)
 
 
 def integration_test(
@@ -29,7 +26,7 @@ def integration_test(
     """Runs integration test on host
 
     Args:
-        test_dir: string representing host where integration_test.py exists on test_host
+        test_dir: directory to leave test_wrapper.sh
         dcos_dns: string representing IP of DCOS DNS host
         master_list: string of comma separated master addresses
         agent_list: string of comma separated agent addresses
@@ -43,11 +40,6 @@ def integration_test(
         add_env: a python dict with any number of key=value assignments to be passed to
             the test environment
     """
-    test_script = pkg_filename('integration_test.py')
-    pytest_docker = pkg_filename('docker/py.test/Dockerfile')
-    test_server = pkg_filename('docker/test_server/test_server.py')
-    test_server_docker = pkg_filename('docker/test_server/Dockerfile')
-
     dns_search = 'true' if test_dns_search else 'false'
     test_env = [
         'DCOS_DNS_ADDRESS=http://'+dcos_dns,
@@ -64,55 +56,29 @@ def integration_test(
         for key, value in add_env.items():
             extra_env = key + '=' + value
             test_env.append(extra_env)
-    test_env = ['export '+e+'\n' for e in test_env]
-    test_env = ''.join(test_env)
-    test_cmd = 'py.test -vv ' + ci_flags + ' /integration_test.py'
 
-    log.info('Building py.test image')
-    # Make a clean docker context
-    temp_dir = tempfile.mkdtemp()
-    cmd_script = """
-#!/bin/bash
-set -euo pipefail; set -x
-{test_env}
-{test_cmd}
-""".format(test_env=test_env, test_cmd=test_cmd)
-    write_string(join(temp_dir, 'test_wrapper.sh'), cmd_script)
-    check_call(['cp', test_script, join(temp_dir, 'integration_test.py')])
-    check_call(['cp', pytest_docker, join(temp_dir, 'Dockerfile')])
-    check_call(['cp', test_server, join(temp_dir, 'test_server.py')])
-    check_call(['cp', test_server_docker, join(temp_dir, 'test_server_Dockerfile')])
-    check_call(['docker', 'build', '-t', 'py.test', temp_dir])
+    test_wrapper = """#!/bin/bash
+{env}
+cd /opt/mesosphere/active/dcos-integration-test
+py.test -vv {ci_flags}
+"""
+    test_env_str = ''.join(['export '+e+'\n' for e in test_env])
+    write_string('test_wrapper.sh', test_wrapper.format(env=test_env_str, ci_flags=ci_flags))
 
-    log.info('Exporting py.test image')
-    pytest_image_tar = 'DCOS_integration_test.tar'
-    check_call(['docker', 'save', '-o', join(temp_dir, pytest_image_tar), 'py.test'])
-
-    log.info('Transferring py.test image')
-    tunnel.write_to_remote(join(temp_dir, pytest_image_tar), join(test_dir, pytest_image_tar))
-    log.info('Loading py.test image on remote host')
-    tunnel.remote_cmd(['docker', 'load', '-i', join(test_dir, pytest_image_tar)])
-
-    test_container_name = 'int_test_' + str(int(time.time()))
-    docker_cmd = ['docker', 'run', '--net=host', '--name='+test_container_name, 'py.test']
     try:
+        wrapper_path = join(test_dir, 'test_wrapper.sh')
         log.info('Running integration test...')
-        tunnel.remote_cmd(docker_cmd, timeout=timeout)
+        tunnel.write_to_remote('test_wrapper.sh', wrapper_path)
+        dump_logs(tunnel.remote_cmd(['bash', wrapper_path], timeout=timeout))
         log.info('Successful test run!')
-    except CalledProcessError:
+    except CalledProcessError as e:
         log.exception('Test failed!')
+        dump_logs(e.output)
         if ci_flags:
             return False
         raise
     except TimeoutExpired:
         log.error('Test failed due to timing out after {} seconds'.format(timeout))
         raise
-    finally:
-        get_logs_cmd = ['docker', 'logs', test_container_name]
-        test_log = tunnel.remote_cmd(get_logs_cmd)
-        log_file = 'integration_test.log'
-        with open(log_file, 'wb') as fh:
-            fh.write(test_log)
-        log.info('Logs from test container can be found in '+log_file)
 
     return True
