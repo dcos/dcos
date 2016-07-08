@@ -15,6 +15,7 @@ be active at a given time.
 
 * [For Packagers](for_packagers.md)
 * [Package Concepts](package_concepts.md)
+* [HTTP API](http.md)
 
 # Internals
 
