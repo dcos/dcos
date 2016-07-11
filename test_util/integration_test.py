@@ -1011,6 +1011,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
 
     service_points = cluster.deploy_marathon_app(proxy_definition)
 
+    @retrying.retry(wait_fixed=2000,
+                    stop_max_delay=timeout*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
     def _ensure_routable():
         r = requests.get('http://{}:{}'.format(service_points[0].host,
                                                service_points[0].port))
