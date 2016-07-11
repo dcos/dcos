@@ -104,10 +104,16 @@ def validate_ssh_config_or_exit():
 
 
 def do_version(args):
+    if os.environ['BOOTSTRAP_VARIANT'] == '':
+        distro = 'open'
+    elif os.environ['BOOTSTRAP_VARIANT'] == 'ee':
+        distro = 'enterprise'
+    else:
+        distro = 'unknown'
     print(json.dumps(
         {
             'version': gen.calc.entry['must']['dcos_version'],
-            'variant': os.environ['BOOTSTRAP_VARIANT']},
+            'distro': distro},
         indent=2, sort_keys=True))
     return 0
 
