@@ -3,8 +3,7 @@ import shutil
 from datetime import datetime
 from subprocess import check_output
 
-import pkgpanda
-from pkgpanda.util import load_json, write_json, write_string
+from pkgpanda.util import write_json, write_string
 
 dcos_image_commit = os.getenv('DCOS_IMAGE_COMMIT', None)
 
@@ -32,18 +31,6 @@ def copy_makedirs(src, dest):
     try_makedirs(os.path.dirname(dest))
     shutil.copy(src, dest)
 
-fetch_pkg_template = """
-mkdir -p $(dirname {package_path})
-curl -fLsSv --retry 20 -Y 100000 -y 60 -o {package_path} {bootstrap_url}/{package_path}
-"""
-
-fetch_all_pkgs = """#!/bin/bash
-set -euo pipefail
-set -x
-
-{package_fetches}
-"""
-
 
 def do_bundle_onprem(extra_files, gen_out, output_dir):
     # We are only being called via dcos_generate_config.sh with an output_dir
@@ -65,14 +52,6 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
 
     # Write the bootstrap id
     write_string(output_dir + 'bootstrap.latest', gen_out.arguments['bootstrap_id'])
-
-    # Make a package fetch script
-    package_fetches = "\n".join(
-        fetch_pkg_template.format(
-            package_path='packages/{name}/{id}.tar.xz'.format(name=pkgpanda.PackageId(package).name, id=package),
-            bootstrap_url='https://downloads.dcos.io/dcos/stable'
-            ) for package in load_json("/artifacts/{}.active.json".format(gen_out.arguments['bootstrap_id'])))
-    write_string(output_dir + 'fetch_packages.sh', fetch_all_pkgs.format(package_fetches=package_fetches))
 
 
 def variant_str(variant):
