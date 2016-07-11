@@ -367,3 +367,8 @@ package:
 {% endswitch %}
 {% endswitch %}
       "tracking":{"enabled":{{ telemetry_enabled }}}}}}
+  - path: /etc_master/metronome
+    content: |
+      METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
+      METRONOME_MESOS_MASTER_URL=zk://@127.0.0.1:2181/mesos
+      METRONOME_PLAY_SERVER_HTTP_PORT=9000

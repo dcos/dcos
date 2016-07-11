@@ -1,0 +1,9 @@
+{
+  "docker": "dcos-builder",
+  "requires": ["java", "exhibitor"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.5-SNAPSHOT/metronome-0.1.5-SNAPSHOT.tgz",
+    "sha1": "819ce34796229bfe4a3718b3f4c4ab621ea50114"
+  }
+}
