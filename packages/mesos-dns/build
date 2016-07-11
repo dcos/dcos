@@ -1,19 +1,12 @@
-#!/bin/bash -xe
-
-export GOPATH=/pkg:$GOPATH
-export PATH=/pkg/bin:$PATH
-
-go get github.com/tools/godep
-
-mkdir -p /pkg/src/github.com/mesosphere
-mv /pkg/src/mesos-dns /pkg/src/github.com/mesosphere/
-cd /pkg/src/github.com/mesosphere/mesos-dns
-godep go install -v ./...
+#!/bin/bash
+set -x
 
 mkdir -p $PKG_PATH/bin
-cp -v /pkg/bin/mesos-dns $PKG_PATH/bin
+cp /pkg/src/mesos-dns/mesos-dns-*-amd64 $PKG_PATH/bin/mesos-dns
+chmod 755 $PKG_PATH/bin/mesos-dns
 
 # Create the service file
 service="$PKG_PATH/dcos.target.wants_master/dcos-mesos-dns.service"
 mkdir -p "$(dirname "$service")"
 cp /pkg/extra/dcos-mesos-dns.service "$service"
+
