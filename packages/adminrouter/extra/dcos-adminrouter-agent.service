@@ -1,0 +1,25 @@
+[Unit]
+Description=Admin Router Agent: A high performance web server and a reverse proxy server
+After=dcos-gen-resolvconf.service
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+EnvironmentFile=/opt/mesosphere/environment
+Type=forking
+PIDFile=$PKG_PATH/nginx/logs/nginx.pid
+PrivateDevices=yes
+StandardOutput=journal
+StandardError=journal
+Environment=SECRET_KEY_FILE_PATH=/run/dcos/etc/jwks.pub
+Environment=JWT_ALG=RS256
+Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
+EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
+EnvironmentFile=-/run/dcos/etc/adminrouter.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-adminrouter-agent
+ExecStartPre=/usr/bin/test -f /run/dcos/pki/tls/certs/adminrouter-agent.crt -a -f /run/dcos/pki/tls/private/adminrouter-agent.key
+ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.agent.conf
+ExecReload=/usr/bin/kill -HUP \$MAINPID
+KillSignal=SIGQUIT
+KillMode=mixed
