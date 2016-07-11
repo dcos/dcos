@@ -1544,31 +1544,31 @@ def test_mesos_agent_role_assignment(cluster):
         assert r.json()['flags']['default_role'] == '*'
 
 
-def _get_snapshot_list(cluster):
-    list_url = '/system/health/v1/report/snapshot/list/all'
+def _get_bundle_list(cluster):
+    list_url = '/system/health/v1/report/diagnostics/list/all'
     response = cluster.get(path=list_url).json()
     logging.info('GET {}, response: {}'.format(list_url, response))
 
-    snapshots = []
-    for _, snapshot_list in response.items():
-        if snapshot_list is not None and isinstance(snapshot_list, list) and len(snapshot_list) > 0:
-            # append snapshots and get just the filename.
-            snapshots += map(lambda s: os.path.basename(s['file_name']), snapshot_list)
-    return snapshots
+    bundles = []
+    for _, bundle_list in response.items():
+        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
+            # append bundles and get just the filename.
+            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
+    return bundles
 
 
-def test_3dt_snapshot_create(cluster):
+def test_3dt_bundle_create(cluster):
     """
-    test snapshot create functionality
+    test bundle create functionality
     """
 
-    # start the snapshot job
-    create_url = '/system/health/v1/report/snapshot/create'
+    # start the diagnostics bundle job
+    create_url = '/system/health/v1/report/diagnostics/create'
     response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
     logging.info('POST {}, response: {}'.format(create_url, response))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
-    status_url = '/system/health/v1/report/snapshot/status/all'
+    status_url = '/system/health/v1/report/diagnostics/status/all'
 
     @retrying.retry(stop_max_delay=5000, wait_fixed=1000)
     def wait_for_job():
@@ -1583,18 +1583,18 @@ def test_3dt_snapshot_create(cluster):
 
     # the job should be complete at this point.
     # check the listing for a zip file
-    snapshots = _get_snapshot_list(cluster)
-    assert len(snapshots) == 1, 'snapshot file not found'
-    assert snapshots[0] == response['extra']['snapshot_name']
+    bundles = _get_bundle_list(cluster)
+    assert len(bundles) == 1, 'bundle file not found'
+    assert bundles[0] == response['extra']['bundle_name']
 
 
-def test_3dt_snapshot_download_and_extract(cluster):
+def test_3dt_bundle_download_and_extract(cluster):
     """
-    test snapshot download and validate zip file
+    test bundle download and validate zip file
     """
 
-    snapshots = _get_snapshot_list(cluster)
-    assert snapshots
+    bundles = _get_bundle_list(cluster)
+    assert bundles
 
     expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz', '3dt-health.json']
 
@@ -1608,17 +1608,17 @@ def test_3dt_snapshot_download_and_extract(cluster):
     expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        download_base_url = '/system/health/v1/report/snapshot/serve'
-        for snapshot in snapshots:
-            snapshot_full_location = os.path.join(tmp_dir, snapshot)
-            with open(snapshot_full_location, 'wb') as f:
-                r = cluster.get(path=os.path.join(download_base_url, snapshot), stream=True)
+        download_base_url = '/system/health/v1/report/diagnostics/serve'
+        for bundle in bundles:
+            bundle_full_location = os.path.join(tmp_dir, bundle)
+            with open(bundle_full_location, 'wb') as f:
+                r = cluster.get(path=os.path.join(download_base_url, bundle), stream=True)
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
 
-            # validate snapshot zip file.
-            assert zipfile.is_zipfile(snapshot_full_location)
-            z = zipfile.ZipFile(snapshot_full_location)
+            # validate bundle zip file.
+            assert zipfile.is_zipfile(bundle_full_location)
+            z = zipfile.ZipFile(bundle_full_location)
 
             # get a list of all files in a zip archive.
             archived_items = z.namelist()
@@ -1663,26 +1663,26 @@ def test_3dt_snapshot_download_and_extract(cluster):
                     assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
 
 
-def test_snapshot_delete(cluster):
-    snapshots = _get_snapshot_list(cluster)
-    assert snapshots, 'no snapshots found'
-    delete_base_url = '/system/health/v1/report/snapshot/delete'
-    for snapshot in snapshots:
-        cluster.post(os.path.join(delete_base_url, snapshot))
+def test_bundle_delete(cluster):
+    bundles = _get_bundle_list(cluster)
+    assert bundles, 'no bundles found'
+    delete_base_url = '/system/health/v1/report/diagnostics/delete'
+    for bundle in bundles:
+        cluster.post(os.path.join(delete_base_url, bundle))
 
-    snapshots = _get_snapshot_list(cluster)
-    assert len(snapshots) == 0, 'Could not remove snapshots {}'.format(snapshots)
+    bundles = _get_bundle_list(cluster)
+    assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 
-def test_snapshot_status(cluster):
-    # validate snapshot status response
-    snapshot_status = cluster.get(path='/system/health/v1/report/snapshot/status/all').json()
-    required_status_fields = ['is_running', 'status', 'errors', 'last_snapshot_dir', 'job_started', 'job_ended',
-                              'job_duration', 'snapshot_dir', 'snapshot_job_timeout_min', 'journald_logs_since_hours',
-                              'snapshot_job_get_since_url_timeout_min', 'command_exec_timeout_sec',
-                              'snapshot_partition_disk_usage_percent']
+def test_diagnostics_bundle_status(cluster):
+    # validate diagnostics job status response
+    diagnostics_bundle_status = cluster.get(path='/system/health/v1/report/diagnostics/status/all').json()
+    required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
+                              'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
+                              'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',
+                              'command_exec_timeout_sec', 'diagnostics_partition_disk_usage_percent']
 
-    for _, properties in snapshot_status.items():
+    for _, properties in diagnostics_bundle_status.items():
         assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
             required_status_fields
         )
