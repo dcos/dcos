@@ -11,6 +11,6 @@ StartLimitInterval=0
 RestartSec=60
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave
-EnvironmentFile=-/var/lib/dcos/mesos-slave-common
+EnvironmentFile=/var/lib/dcos/mesos-slave-common
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos
 ExecStart=/opt/mesosphere/bin/make_disk_resources.py /var/lib/dcos/mesos-resources
