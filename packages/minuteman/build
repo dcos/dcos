@@ -30,6 +30,6 @@ ExecStartPre=-/sbin/sysctl -w net.netfilter.ip_conntrack_tcp_be_liberal=1
 ExecStartPre=-/sbin/sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_be_liberal=1
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/mnesia
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/lashup
-ExecStart=${PKG_PATH}/minuteman/bin/env foreground
+ExecStart=${PKG_PATH}/minuteman/bin/minuteman-env foreground
 Environment=HOME=/opt/mesosphere
 EOF
