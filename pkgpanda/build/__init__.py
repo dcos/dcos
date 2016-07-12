@@ -100,6 +100,118 @@ def get_src_fetcher(src_info, cache_dir, working_directory):
         raise BuildError("Validation error when fetching sources for package: {}".format(ex))
 
 
+class TreeInfo:
+
+    ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list', 'bootstrap_package_list'}
+
+    def __init__(self, treeinfo_dict):
+        if treeinfo_dict.keys() > self.ALLOWED_TREEINFO_KEYS:
+            raise BuildError(
+                "treeinfo can only include the keys {}. Found {}".format(
+                    self.ALLOWED_TREEINFO_KEYS, treeinfo_dict.keys()))
+
+        self.excludes = set(self._get_package_list(treeinfo_dict, 'exclude'))
+        self.core_package_list = set(self._get_package_list(treeinfo_dict, 'core_package_list', self.excludes))
+        self.bootstrap_package_list = set(self._get_package_list(
+            treeinfo_dict,
+            'bootstrap_package_list',
+            self.excludes))
+
+        # List of mandatory package variants to include in the buildinfo.
+        self.variants = treeinfo_dict.get('variants', dict())
+        if not isinstance(self.variants, dict):
+            raise BuildError("treeinfo variants must be a dictionary of package name to variant name")
+
+    @staticmethod
+    def _get_package_list(treeinfo_dict, key, excludes=None):
+        """Return a list of package name strings from treeinfo_dict by key.
+
+        If key isn't present in treeinfo_dict, an empty list is returned.
+
+        """
+        excludes = excludes or list()
+        package_list = treeinfo_dict.get(key, list())
+
+        # Validate package list.
+        if not isinstance(package_list, list):
+            raise BuildError("{} must be either null (meaning don't use) or a list of package names.".format(key))
+        for package_name in package_list:
+            if not isinstance(package_name, str):
+                raise BuildError("{} must be a list of strings. Found a {} with the value: {}".format(
+                    key, type(package_name), package_name))
+
+            try:
+                PackageId.validate_name(package_name)
+            except ValidationError as ex:
+                raise BuildError("Invalid package name in {}: {}".format(key, package_name)) from ex
+
+            if package_name in excludes:
+                raise BuildError("Package found in both exclude and {}: {}".format(key, package_name))
+
+        return package_list
+
+
+class PackageSet:
+
+    def __init__(self, variant, treeinfo, package_store):
+        self.variant = variant
+
+        self.all_packages = self.package_tuples_with_dependencies(
+            # If core_package_list is empty, default to all non-excluded packages.
+            treeinfo.core_package_list or (package_store.packages_by_name.keys() - treeinfo.excludes),
+            treeinfo,
+            package_store
+        )
+        self.validate_package_tuples(self.all_packages, treeinfo, package_store)
+
+        if treeinfo.bootstrap_package_list:
+            self.bootstrap_packages = self.package_tuples_with_dependencies(
+                treeinfo.bootstrap_package_list,
+                treeinfo,
+                package_store
+            )
+            self.validate_package_tuples(self.bootstrap_packages, treeinfo, package_store)
+        else:
+            self.bootstrap_packages = self.all_packages
+
+        # Validate bootstrap packages are a subset of all packages.
+        for package_name, variant in self.bootstrap_packages:
+            if (package_name, variant) not in self.all_packages:
+                raise BuildError("Bootstrap package {} (variant {}) not found in set of all packages".format(
+                    package_name, pkgpanda.util.variant_name(variant)))
+
+    @staticmethod
+    def package_tuples_with_dependencies(package_names, treeinfo, package_store):
+        package_tuples = set((name, treeinfo.variants.get(name)) for name in set(package_names))
+        to_visit = list(package_tuples)
+        while to_visit:
+            package_tuple = to_visit.pop()
+            for require in package_store.get_buildinfo(*package_tuple)['requires']:
+                require_tuple = expand_require(require)
+                if require_tuple not in package_tuples:
+                    to_visit.append(require_tuple)
+                    package_tuples.add(require_tuple)
+        return package_tuples
+
+    @staticmethod
+    def validate_package_tuples(package_tuples, treeinfo, package_store):
+        # Validate that all package variants listed in treeinfo are included.
+        for package_name, variant in treeinfo.variants.keys():
+            if (package_name, variant) not in package_tuples:
+                raise BuildError("package {} is supposed to have variant {} included in "
+                                 "the tree according to the treeinfo.json, but the no such package "
+                                 "(let alone variant) was found".format(package_name, variant))
+
+        # Validate that all needed packages are built and not excluded by treeinfo.
+        for package_name, variant in package_tuples:
+            if (package_name, variant) not in package_store.packages:
+                raise BuildError("package {} variant {} is needed (explicitly requested or as a requires) "
+                                 "but is not in the set of built packages.".format(package_name, variant))
+            if package_name in treeinfo.excludes:
+                raise BuildError("package {} is needed (explicitly requested or as a requires) "
+                                 "but is excluded according to the treeinfo.json.".format(package_name))
+
+
 class PackageStore:
 
     def __init__(self, packages_dir, repository_url):
@@ -201,10 +313,16 @@ class PackageStore:
         return directory
 
     def get_treeinfo(self, variant):
-        return load_config_variant(self._packages_dir, variant, 'treeinfo.json')
+        return TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json'))
 
     def list_trees(self):
         return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
+
+    def get_package_set(self, variant):
+        return PackageSet(variant, TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json')), self)
+
+    def get_all_package_sets(self):
+        return [self.get_package_set(variant) for variant in sorted(self.list_trees(), key=pkgpanda.util.variant_str)]
 
     @property
     def packages(self):
@@ -446,133 +564,14 @@ def make_bootstrap_tarball(package_store, packages, variant):
     return mark_latest()
 
 
-ALLOWED_TREEINFO_KEYS = {'exclude', 'variants', 'core_package_list'}
-
-
-def get_tree_package_tuples(package_store, tree_variant):
-    treeinfo = package_store.get_treeinfo(tree_variant)
-
-    if treeinfo.keys() > ALLOWED_TREEINFO_KEYS:
-        raise BuildError(
-            "treeinfo can only include the keys {}. Found {}".format(ALLOWED_TREEINFO_KEYS, treeinfo.keys()))
-
-    core_package_list = treeinfo.get('core_package_list', None)
-    if core_package_list is not None and not isinstance(core_package_list, list):
-        raise BuildError(
-            "core_package_list must either be null meaning don't use or a list of the core "
-            "packages to include (dependencies are automatically picked up).")
-
-    excludes = treeinfo.get('exclude', list())
-    if not isinstance(excludes, list):
-        raise BuildError("treeinfo exclude must be a list of packages to exclude.")
-
-    for exclude in excludes:
-        if not isinstance(exclude, str):
-            raise BuildError("Excludes should be a list of strings of package names. Found a {} "
-                             "with the value: {}".format(type(exclude), exclude))
-
-    # Validate core_package_lists is formatted as expected, doesn't contain
-    # any of exclude.
-    if core_package_list is not None:
-        for name in core_package_list:
-            if not isinstance(name, str):
-                raise BuildError("core_package_list should be a list of package name strings, found "
-                                 "a {} with the value: {}".format(type(name), name))
-
-            if name in excludes:
-                raise BuildError("Package found in both exclude and core_package_list: {}".format(name))
-
-    # List of mandatory package variants to include in the buildinfo.
-    variants = treeinfo.get('variants', dict())
-
-    if not isinstance(variants, dict):
-        raise BuildError("treeinfo variants must be a dictionary of package name to variant name")
-
-    # Generate the list of package paths of all packages variants which were
-    # included and excluding those removed.
-    package_names = set()
-    package_tuples = set()
-
-    def include_package(name, variant):
-        if name in excludes:
-            raise BuildError("package {} is in excludes but was needed as a dependency of an "
-                             "included package".format(name))
-
-        if (name, variant) not in package_store.packages:
-            raise BuildError("package {} variant {} is needed but is not in the set of built "
-                             "packages but is needed (explicitly requested or as a requires)".format(name, variant))
-
-        # Allow adding duplicates. There is a check that we don't have a repeat
-        # of the same package name with different variants, so we can ignore the
-        # variant name.
-        if name in package_names:
-            pass
-        package_names.add(name)
-        package_tuples.add((name, variant))
-
-    for name in package_store.packages_by_name.keys():
-        if core_package_list is not None:
-            assert isinstance(core_package_list, list)
-
-            # Skip over packages not in the core package list. We'll add requires
-            # later when resolving / validating the requires graph.
-            if name not in core_package_list:
-                continue
-
-        if name in excludes:
-            continue
-
-        # Sanity check
-        assert name not in package_names
-
-        include_package(name, variants.get(name))
-
-    # Validate that all mandatory package variants are included
-    for name, variant in variants.items():
-        if (name, variant) not in package_tuples:
-            raise BuildError("package {} is supposed to have variant {} included in "
-                             "the tree according to the treeinfo.json, but the no such package "
-                             "(let alone variant) was found".format(name, variant))
-
-    # Validate that all required packages are included. This implicitly
-    # validates that no two packages include conflicting variants. If they
-    # included different variants, only one of the variant could be included
-    # because we iterate over the list of packages once so only one variant
-    # could get included. If another variant is asked for in the requires,
-    # then that variant won't be included and we'll error.
-    to_visit = list(package_tuples)
-    while len(to_visit) > 0:
-        name, variant = to_visit.pop()
-        requires = package_store.get_buildinfo(name, variant)['requires']
-        for require in requires:
-            require_tuple = expand_require(require)
-            if require_tuple not in package_tuples:
-                if core_package_list is not None:
-                    # TODO(cmaloney): Include the context information of the
-                    # else case when printing out the info.
-                    include_package(require_tuple[0], require_tuple[1])
-                    to_visit.append(require_tuple)
-                else:
-                    raise BuildError("Package {} requires {} variant {} but that is not in the set "
-                                     "of packages listed for the tree {}: {}".format(
-                                        name,
-                                        require_tuple[0],
-                                        require_tuple[1],
-                                        tree_variant,
-                                        package_tuples))
-
-    # Integrity / programming check excludes were all excluded.
-    for exclude in excludes:
-        assert exclude not in package_names
-    return package_tuples
-
-
 def build_tree(package_store, mkbootstrap, tree_variant):
-    # Check the requires and figure out a feasible build order
-    # depth-first traverse the dependency tree, yielding when we reach a
-    # leaf or all the dependencies of package have been built. If we get
-    # back to a node without all it's dependencies built, error (likely
-    # circular).
+    """Build packages and bootstrap tarballs for one or all tree variants.
+
+    Returns a dict mapping tree variants to bootstrap IDs.
+
+    If tree_variant is None, builds all available tree variants.
+
+    """
     # TODO(cmaloney): Add support for circular dependencies. They are doable
     # long as there is a pre-built version of enough of the packages.
 
@@ -583,19 +582,29 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     built = set()
 
     def visit(pkg_tuple):
-        # Visit the node for the first (and only time). Finding a node again
-        # means a cycle and should be detected at caller.
+        """Add a package and its requires to the build order.
 
+        Raises AssertionError if pkg_tuple is in the set of visited packages.
+
+        If the package has any requires, they're recursively visited and added
+        to the build order depth-first. Then the package itself is added.
+
+        """
         assert isinstance(pkg_tuple, tuple)
 
+        # Visit the node for the first (and only) time.
         assert pkg_tuple not in visited
         visited.add(pkg_tuple)
 
         # Ensure all dependencies are built. Sorted for stability
         for require in sorted(package_store.packages[pkg_tuple]['requires']):
             require_tuple = expand_require(require)
+
+            # If the dependency has already been built, we can move on.
             if require_tuple in built:
                 continue
+            # If the dependency has not been built but has been visited, then
+            # there's a cycle in the dependency graph.
             if require_tuple in visited:
                 raise BuildError("Circular dependency. Circular link {0} -> {1}".format(pkg_tuple, require_tuple))
 
@@ -606,6 +615,8 @@ def build_tree(package_store, mkbootstrap, tree_variant):
             if require_tuple not in package_store.packages:
                 raise BuildError("Package {0} require {1} not buildable from tree.".format(pkg_tuple, require_tuple))
 
+            # Add the dependency (after its dependencies, if any) to the build
+            # order.
             visit(require_tuple)
 
         build_order.append(pkg_tuple)
@@ -616,20 +627,20 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     def key_func(elem):
         return elem[0], elem[1] is None, elem[1] or ""
 
-    def visit_packages_in_tree(variant):
-        all_tuples = get_tree_package_tuples(package_store, variant)
-        for pkg_tuple in sorted(all_tuples, key=key_func):
+    def visit_packages(package_tuples):
+        for pkg_tuple in sorted(package_tuples, key=key_func):
             if pkg_tuple in visited:
                 continue
             visit(pkg_tuple)
 
-    if tree_variant is None:
-        tree_visit_list = list(sorted(package_store.list_trees(), key=pkgpanda.util.variant_str))
+    if tree_variant:
+        package_sets = [package_store.get_package_set(tree_variant)]
     else:
-        tree_visit_list = [tree_variant]
+        package_sets = package_store.get_all_package_sets()
 
-    for tree in tree_visit_list:
-        visit_packages_in_tree(tree)
+    # Build all required packages for all tree variants.
+    for package_set in package_sets:
+        visit_packages(package_set.all_packages)
 
     built_packages = dict()
     for (name, variant) in build_order:
@@ -644,24 +655,25 @@ def build_tree(package_store, mkbootstrap, tree_variant):
             variant,
             True)
 
-    def make_bootstrap(variant):
-        print("Making bootstrap variant:", variant or "<default>")
+    # Build bootstrap tarballs for all tree variants.
+    def make_bootstrap(package_set):
+        print("Making bootstrap variant:", pkgpanda.util.variant_name(package_set.variant))
         package_paths = list()
-        for name, pkg_variant in get_tree_package_tuples(package_store, variant):
+        for name, pkg_variant in package_set.bootstrap_packages:
             package_paths.append(built_packages[name][pkg_variant])
 
         if mkbootstrap:
             return make_bootstrap_tarball(
                 package_store,
                 list(sorted(package_paths)),
-                variant)
+                package_set.variant)
 
     # Make sure all treeinfos are satisfied and generate their bootstrap
     # tarballs if requested.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     results = {}
-    for variant in tree_visit_list:
-        results[variant] = make_bootstrap(variant)
+    for package_set in package_sets:
+        results[package_set.variant] = make_bootstrap(package_set)
 
     return results
 

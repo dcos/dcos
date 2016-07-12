@@ -357,7 +357,7 @@ sudo yum install -y ipset
 sudo getent group nogroup || sudo groupadd nogroup
 """
     # Run a first command to get json file generated.
-    chain.add_execute(['echo', 'INSTALL', 'PREREQUISITES'], stage="Prepare install prerequisites")
+    chain.add_execute(['echo', 'INSTALL', 'PREREQUISITES'], stage="Installing prerequisites")
     chain.add_execute([inline_script], stage='Installing preflight prerequisites')
 
 

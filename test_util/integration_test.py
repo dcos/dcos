@@ -57,7 +57,7 @@ def cluster():
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-                   registry=os.environ['REGISTRY_HOST'],
+                   registry=os.getenv('REGISTRY_HOST'),
                    dns_search_set=os.environ['DNS_SEARCH'],
                    provider=os.environ['DCOS_PROVIDER'])
 
@@ -66,6 +66,74 @@ def cluster():
 def auth_cluster(cluster):
     if not AUTH_ENABLED:
         pytest.skip("Skipped because not running against cluster with auth.")
+    return cluster
+
+
+@pytest.fixture(scope='module')
+def registry_cluster(cluster, request):
+    """Provides a cluster that has a registry deployed via marathon.
+    Note: cluster nodes must have hard-coded certs from dcos.git installed
+    """
+    if cluster.registry:
+        return cluster
+    registry_app = {
+            "id": "/registry",
+            "cmd": "docker run -p $PORT0:5000 mesosphere/test_registry:latest",
+            "cpus": 0.1,
+            "mem": 128,
+            "disk": 0,
+            "instances": 1,
+            "healthChecks": [{
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"},
+                "gracePeriodSeconds": 300,
+                "intervalSeconds": 60,
+                "timeoutSeconds": 20,
+                "maxConsecutiveFailures": 3,
+                "ignoreHttp1xx": True}],
+            "ports": [0],
+            "requirePorts": True
+            }
+    endpoints = cluster.deploy_marathon_app(registry_app)
+    cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
+    with open('/test_server.py', 'r') as fh:
+        test_server = fh.read()
+    with open('/test_server_Dockerfile', 'r') as fh:
+        dockerfile = fh.read()
+    docker_cmds = """
+#!/bin/bash
+mkdir tmp
+cat <<EOF > tmp/test_server.py
+{test_server}
+EOF
+cat <<EOF > tmp/Dockerfile
+{dockerfile}
+EOF
+docker build -t {registry}/test_server tmp/
+docker push {registry}/test_server
+sleep 36000
+""".format(registry=cluster.registry, test_server=test_server, dockerfile=dockerfile)
+    docker_build_and_push_app = {
+            'id': '/build-and-push',
+            'cmd': docker_cmds,
+            'cpus': 0.1,
+            'mem': 64,
+            'instances': 1,
+            'healthChecks': [{
+                'protocol': 'COMMAND',
+                'command': {'value': 'curl -fsSlv https://{}/v2/test_server/manifests/latest'.format(cluster.registry)},
+                'gracePeriodSeconds': 20,
+                'intervalSeconds': 20,
+                'timeoutSeconds': 10,
+                'maxConsecutiveFailures': 3}],
+            }
+    cluster.deploy_marathon_app(docker_build_and_push_app)
+
+    def kill_registry():
+        cluster.destroy_marathon_app(docker_build_and_push_app['id'])
+        cluster.destroy_marathon_app(registry_app['id'])
+    request.addfinalizer(kill_registry)
     return cluster
 
 
@@ -306,7 +374,7 @@ class Cluster:
             'container': {
                 'type': 'DOCKER',
                 'docker': {
-                    'image': '{}:5000/test_server'.format(self.registry),
+                    'image': '{}/test_server'.format(self.registry),
                     'forcePullImage': True,
                 },
             },
@@ -666,7 +734,7 @@ def test_if_PkgPanda_metadata_is_available(cluster):
     assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
 
 
-def test_if_Marathon_app_can_be_deployed(cluster):
+def test_if_Marathon_app_can_be_deployed(registry_cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -680,6 +748,7 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
+    cluster = registry_cluster
     app_definition, test_uuid = cluster.get_base_testapp_definition()
 
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -802,15 +871,15 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(registry_cluster):
+    return _service_discovery_test(registry_cluster, docker_network_bridge=False)
 
 
-def test_if_search_is_working(cluster):
+def test_if_search_is_working(registry_cluster):
     """Test if custom set search is working.
 
     Verifies that a marathon app running on the cluster can resolve names using
@@ -821,6 +890,7 @@ def test_if_search_is_working(cluster):
     The application being deployed is a simple http server written in python.
     Please check test/dockers/test_server for more details.
     """
+    cluster = registry_cluster
     # Launch the app
     app_definition, test_uuid = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -879,6 +949,85 @@ def test_if_we_have_capabilities(cluster):
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
 
 
+def test_octarine_http(cluster, timeout=30):
+    """
+    Test if we are able to send traffic through octarine.
+    """
+
+    test_uuid = uuid.uuid4().hex
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
+
+    app_definition = {
+        'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
+        'cpus': 0.1,
+        'mem': 128,
+        'ports': [10001],
+        'cmd': '/opt/mesosphere/bin/octarine marathon',
+        'disk': 0,
+        'instances': 1,
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
+def test_octarine_srv(cluster, timeout=30):
+    """
+    Test resolving SRV records through octarine.
+    """
+
+    # Limit string length so we don't go past the max SRV record length
+    test_uuid = uuid.uuid4().hex[:16]
+    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
+             '--client --port marathon)"')
+    port_name = 'pinger'
+    cmd = ('/opt/mesosphere/bin/octarine marathon & ' +
+           '/opt/mesosphere/bin/python -m http.server ${PORT0}')
+    raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
+    check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')
+    check_command = check_command.format(proxy, port_name, raw_app_id)
+
+    app_definition = {
+        'id': '/{}'.format(raw_app_id),
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': cmd,
+        'disk': 0,
+        'instances': 1,
+        'portDefinitions': [
+          {
+            'port': 10002,
+            'protocol': 'tcp',
+            'name': port_name,
+            'labels': {}
+          }
+        ],
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': check_command
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+
 # By default telemetry-net sends the metrics about once a minute
 # Therefore, we wait up till 2 minutes and a bit before we give up
 def test_if_minuteman_routes_to_vip(cluster, timeout=125):
@@ -932,6 +1081,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
 
     service_points = cluster.deploy_marathon_app(proxy_definition)
 
+    @retrying.retry(wait_fixed=2000,
+                    stop_max_delay=timeout*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
     def _ensure_routable():
         r = requests.get('http://{}:{}'.format(service_points[0].host,
                                                service_points[0].port))
@@ -1293,11 +1446,12 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
-def test_signal_service(cluster):
+def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
+    cluster = registry_cluster
     test_server_app_definition, _ = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(test_server_app_definition)
 
@@ -1403,6 +1557,7 @@ sleep 3600
         'marathon-service',
         'mesos-dns-service',
         'mesos-master-service',
+        'metronome-service',
         'signal-service']
     all_node_units = [
         '3dt-service',
@@ -1461,31 +1616,31 @@ def test_mesos_agent_role_assignment(cluster):
         assert r.json()['flags']['default_role'] == '*'
 
 
-def _get_snapshot_list(cluster):
-    list_url = '/system/health/v1/report/snapshot/list/all'
+def _get_bundle_list(cluster):
+    list_url = '/system/health/v1/report/diagnostics/list/all'
     response = cluster.get(path=list_url).json()
     logging.info('GET {}, response: {}'.format(list_url, response))
 
-    snapshots = []
-    for _, snapshot_list in response.items():
-        if snapshot_list is not None and isinstance(snapshot_list, list) and len(snapshot_list) > 0:
-            # append snapshots and get just the filename.
-            snapshots += map(lambda s: os.path.basename(s['file_name']), snapshot_list)
-    return snapshots
+    bundles = []
+    for _, bundle_list in response.items():
+        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
+            # append bundles and get just the filename.
+            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
+    return bundles
 
 
-def test_3dt_snapshot_create(cluster):
+def test_3dt_bundle_create(cluster):
     """
-    test snapshot create functionality
+    test bundle create functionality
     """
 
-    # start the snapshot job
-    create_url = '/system/health/v1/report/snapshot/create'
+    # start the diagnostics bundle job
+    create_url = '/system/health/v1/report/diagnostics/create'
     response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
     logging.info('POST {}, response: {}'.format(create_url, response))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
-    status_url = '/system/health/v1/report/snapshot/status/all'
+    status_url = '/system/health/v1/report/diagnostics/status/all'
 
     @retrying.retry(stop_max_delay=5000, wait_fixed=1000)
     def wait_for_job():
@@ -1500,18 +1655,18 @@ def test_3dt_snapshot_create(cluster):
 
     # the job should be complete at this point.
     # check the listing for a zip file
-    snapshots = _get_snapshot_list(cluster)
-    assert len(snapshots) == 1, 'snapshot file not found'
-    assert snapshots[0] == response['extra']['snapshot_name']
+    bundles = _get_bundle_list(cluster)
+    assert len(bundles) == 1, 'bundle file not found'
+    assert bundles[0] == response['extra']['bundle_name']
 
 
-def test_3dt_snapshot_download_and_extract(cluster):
+def test_3dt_bundle_download_and_extract(cluster):
     """
-    test snapshot download and validate zip file
+    test bundle download and validate zip file
     """
 
-    snapshots = _get_snapshot_list(cluster)
-    assert snapshots
+    bundles = _get_bundle_list(cluster)
+    assert bundles
 
     expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz', '3dt-health.json']
 
@@ -1525,17 +1680,17 @@ def test_3dt_snapshot_download_and_extract(cluster):
     expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        download_base_url = '/system/health/v1/report/snapshot/serve'
-        for snapshot in snapshots:
-            snapshot_full_location = os.path.join(tmp_dir, snapshot)
-            with open(snapshot_full_location, 'wb') as f:
-                r = cluster.get(path=os.path.join(download_base_url, snapshot), stream=True)
+        download_base_url = '/system/health/v1/report/diagnostics/serve'
+        for bundle in bundles:
+            bundle_full_location = os.path.join(tmp_dir, bundle)
+            with open(bundle_full_location, 'wb') as f:
+                r = cluster.get(path=os.path.join(download_base_url, bundle), stream=True)
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
 
-            # validate snapshot zip file.
-            assert zipfile.is_zipfile(snapshot_full_location)
-            z = zipfile.ZipFile(snapshot_full_location)
+            # validate bundle zip file.
+            assert zipfile.is_zipfile(bundle_full_location)
+            z = zipfile.ZipFile(bundle_full_location)
 
             # get a list of all files in a zip archive.
             archived_items = z.namelist()
@@ -1580,26 +1735,26 @@ def test_3dt_snapshot_download_and_extract(cluster):
                     assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
 
 
-def test_snapshot_delete(cluster):
-    snapshots = _get_snapshot_list(cluster)
-    assert snapshots, 'no snapshots found'
-    delete_base_url = '/system/health/v1/report/snapshot/delete'
-    for snapshot in snapshots:
-        cluster.post(os.path.join(delete_base_url, snapshot))
+def test_bundle_delete(cluster):
+    bundles = _get_bundle_list(cluster)
+    assert bundles, 'no bundles found'
+    delete_base_url = '/system/health/v1/report/diagnostics/delete'
+    for bundle in bundles:
+        cluster.post(os.path.join(delete_base_url, bundle))
 
-    snapshots = _get_snapshot_list(cluster)
-    assert len(snapshots) == 0, 'Could not remove snapshots {}'.format(snapshots)
+    bundles = _get_bundle_list(cluster)
+    assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 
-def test_snapshot_status(cluster):
-    # validate snapshot status response
-    snapshot_status = cluster.get(path='/system/health/v1/report/snapshot/status/all').json()
-    required_status_fields = ['is_running', 'status', 'errors', 'last_snapshot_dir', 'job_started', 'job_ended',
-                              'job_duration', 'snapshot_dir', 'snapshot_job_timeout_min', 'journald_logs_since_hours',
-                              'snapshot_job_get_since_url_timeout_min', 'command_exec_timeout_sec',
-                              'snapshot_partition_disk_usage_percent']
+def test_diagnostics_bundle_status(cluster):
+    # validate diagnostics job status response
+    diagnostics_bundle_status = cluster.get(path='/system/health/v1/report/diagnostics/status/all').json()
+    required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
+                              'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
+                              'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',
+                              'command_exec_timeout_sec', 'diagnostics_partition_disk_usage_percent']
 
-    for _, properties in snapshot_status.items():
+    for _, properties in diagnostics_bundle_status.items():
         assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
             required_status_fields
         )

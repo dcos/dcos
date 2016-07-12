@@ -547,7 +547,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
             'bootstrap_active_filename': bootstrap_active_filename})
 
         fill_template('installer_internal_wrapper', {
-            'variant': variant,
+            'variant': pkgpanda.util.variant_str(variant),
             'bootstrap_id': bootstrap_id,
             'dcos_image_commit': util.dcos_image_commit})
 

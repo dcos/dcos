@@ -9,8 +9,8 @@
     },
     "zookeeper": {
       "kind": "url_extract",
-      "url": "https://s3.amazonaws.com/downloads.mesosphere.io/zookeeper/zookeeper-3.4.6.tar.gz",
-      "sha1": "2a9e53f5990dfe0965834a525fbcad226bf93474"
+      "url": "https://s3.amazonaws.com/downloads.mesosphere.io/zookeeper/zookeeper-3.4.8.tar.gz",
+      "sha1": "51b61611a329294f75aed82f3a4517a4b6ff116f"
     },
     "log4j": {
         "kind": "url",
