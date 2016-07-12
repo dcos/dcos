@@ -27,7 +27,7 @@ class InstallerAnalytics():
             "install_id": self.uuid,
             "bootstrap_id": os.environ["BOOTSTRAP_ID"],
             "install_method": install_method,
-            "stage": action,
+            "action_name": action,
             "errors": num_errors,
             "customerKey": customer_key,
         })
