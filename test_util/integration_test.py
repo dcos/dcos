@@ -447,12 +447,8 @@ class Cluster:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
         r = self.post('/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
-<<<<<<< HEAD
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
-=======
-        assert r.ok, r.text
->>>>>>> pr264
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
                         retry_on_result=lambda ret: ret is None,
