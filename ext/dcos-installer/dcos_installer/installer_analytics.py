@@ -23,7 +23,7 @@ class InstallerAnalytics():
         analytics.track(user_id=customer_key, anonymous_id=self.uuid, event=action, properties={
             "provider": "onprem",
             "source": "installer",
-            "variant": os.environ["BOOTSTRAP_VARIANT"],
+            "variant": 'open' if os.environ["BOOTSTRAP_VARIANT"] == '' else 'enterprise',
             "install_id": self.uuid,
             "bootstrap_id": os.environ["BOOTSTRAP_ID"],
             "install_method": install_method,
