@@ -20,10 +20,10 @@ class InstallerAnalytics():
         # We set customer key from config to avoid loading the config during class init
         customer_key = backend.get_config().get("customer_key", None)
 
-        analytics.track(user_id=customer_key, anonymous_id=self.uuid, event=action, properties={
+        analytics.track(user_id=customer_key, anonymous_id=self.uuid, event="installer", properties={
             "provider": "onprem",
             "source": "installer",
-            "variant": 'open' if os.environ["BOOTSTRAP_VARIANT"] == '' else 'enterprise',
+            "variant": os.environ["BOOTSTRAP_VARIANT"],
             "install_id": self.uuid,
             "bootstrap_id": os.environ["BOOTSTRAP_ID"],
             "install_method": install_method,
