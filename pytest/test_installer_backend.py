@@ -24,6 +24,7 @@ def test_version(monkeypatch):
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
         'version': '1.8-dev',
+        'distro': 'unknown',
         'variant': 'some-variant'
     }
 
