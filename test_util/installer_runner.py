@@ -2,20 +2,29 @@
 """
 import abc
 import json
+import logging
 import os
+import passlib.hash
+import pkg_resources
+from contextlib import closing
 from subprocess import CalledProcessError
 
 import requests
 import yaml
 from retrying import retry
 
+import test_util.test_runner
 from ssh.ssh_tunnel import SSHTunnel, run_scp_cmd, run_ssh_cmd
+
+LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
+logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
     def __init__(self):
-        self.offline_mode = False
+        pass
 
     def setup_remote(
             self, tunnel, installer_path, download_url,
@@ -90,6 +99,10 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
 
 class DcosApiInstaller(AbstractDcosInstaller):
+
+    def __init__(self, offline_mode):
+        super().__init__(self)
+        self.offline_mode = offline_mode
 
     def start_web_server(self):
         cmd = ['DCOS_INSTALLER_DAEMONIZE=true', 'bash', self.installer_path, '--web']
@@ -316,3 +329,122 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def postflight(self, expect_errors=False):
         self.run_cli_cmd('--postflight', expect_errors=expect_errors)
+
+
+class Host:
+    def __init__(self, private_ip, public_ip):
+        self.private_ip = private_ip
+        self.public_ip = public_ip
+
+
+def do_install(installer_url,
+               ssh_user,
+               ssh_key_path,
+               test_host,
+               master_list,
+               agent_list,
+               public_agent_list,
+               method,
+               install_prereqs,
+               do_setup,
+               remote_dir,
+               add_config_path,
+               stop_after_prereqs,
+               run_test,
+               aws_region,
+               dcos_variant,
+               provider,
+               ci_flags,
+               aws_access_key_id,
+               aws_secret_access_key,
+               add_env):
+    log.info('Test host public/private IP: ' + test_host.public_ip + '/' + test_host.private_ip)
+
+    if method == 'web_api':
+        installer = DcosApiInstaller(not install_prereqs)
+    else:
+        assert method == 'ssh'
+        installer = DcosCliInstaller()
+
+    with closing(SSHTunnel(ssh_user, ssh_key_path, test_host.public_ip)) as test_host_tunnel:
+        log.info('Setting up installer on test host')
+
+        installer.setup_remote(
+            tunnel=test_host_tunnel,
+            installer_path=remote_dir + '/dcos_generate_config.sh',
+            download_url=installer_url)
+        if do_setup:
+            # only do on setup so you can rerun this test against a living installer
+            log.info('Verifying installer password hashing')
+            test_pass = 'testpassword'
+            hash_passwd = installer.get_hashed_password(test_pass)
+            assert passlib.hash.sha512_crypt.verify(test_pass, hash_passwd), 'Hash does not match password'
+
+        if method == 'web_api':
+            installer.start_web_server()
+
+        # TODO(cmaloney): Make a option which implicitly does this inside gen.
+        ip_detect_script = pkg_resources.resource_string("gen", "ip-detect/aws.sh")
+        with open('ssh_key', 'r') as key_fh:
+            ssh_key = key_fh.read()
+        # Using static exhibitor is the only option in the GUI installer
+        if method == 'web_api':
+            log.info('Installer API is selected, so configure for static backend')
+            zk_host = None  # causes genconf to use static exhibitor backend
+        else:
+            log.info('Installer CLI is selected, so configure for ZK backend')
+            zk_host = test_host.private_ip + ':2181'
+            zk_cmd = [
+                'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
+                '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
+            test_host_tunnel.remote_cmd(zk_cmd)
+
+        log.info("Configuring install...")
+        installer.genconf(
+            zk_host=zk_host.private_ip,
+            master_list=[host.private_ip for host in master_list],
+            agent_list=agent_list,
+            public_agent_list=[host.private_ip for host in master_list],
+            ip_detect_script=ip_detect_script,
+            ssh_user=ssh_user,
+            ssh_key=ssh_key,
+            add_config_path=add_config_path)
+
+        log.info("Running Preflight...")
+        if install_prereqs:
+            # Runs preflight in --web or --install-prereqs for CLI
+            # This may take up 15 minutes...
+            installer.install_prereqs()
+            if stop_after_prereqs:
+                return True
+        else:
+            # Will not fix errors detected in preflight
+            installer.preflight()
+
+        log.info("Running Deploy...")
+        installer.deploy()
+
+        log.info("Running Postflight")
+        installer.postflight()
+
+        if run_test:
+            # Runs dcos-image/integration_test.py inside the cluster
+            test_util.test_runner.prepare_test_registry(
+                tunnel=test_host_tunnel,
+                test_dir=remote_dir)
+            test_util.test_runner.integration_test(
+                tunnel=test_host_tunnel,
+                test_dir=remote_dir,
+                region=aws_region,
+                dcos_dns=master_list[0],
+                master_list=master_list,
+                agent_list=agent_list,
+                public_agent_list=public_agent_list,
+                # Setting dns_search: mesos not currently supported in API
+                test_dns_search=method != 'web_api',
+                provider=provider,
+                ci_flags=ci_flags,
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                add_env=add_env)
+        log.info("Test successsful!")

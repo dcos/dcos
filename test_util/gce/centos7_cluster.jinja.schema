@@ -1,0 +1,14 @@
+info:
+  title: CentOS 7 installed in a isolated network with public and private IPs
+  author: Cody Maloney
+  version: 0.1
+imports:
+ - path: centos7_cluster.jinja
+required:
+  - instanceCount
+properties:
+  instanceCount:
+    type: integer
+    default: 5
+    description: Number of machines to launch
+    minimum: 1
