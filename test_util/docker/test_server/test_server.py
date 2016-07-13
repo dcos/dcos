@@ -13,7 +13,7 @@ import requests
 
 LOG_LEVEL = logging.DEBUG
 TEST_UUID_VARNAME = "DCOS_TEST_UUID"
-TEST_DATA_CACHE = ""
+TEST_DATA_CACHE = "ayy lmao"
 
 
 class RequestProcessingException(Exception):
