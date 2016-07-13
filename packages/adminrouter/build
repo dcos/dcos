@@ -23,34 +23,20 @@ pushd "/pkg/src/nginx"
 
 make -j8
 make install
-
 popd
 
+
+pushd "$PKG_PATH/nginx/conf"
 # Incorporate adminrouter components.
-# TODO(jp): Currently, we need to support multiple build variants
-# from the same build script which seems unclean. Also, shouldn't
-# we just copy the entire AR repo content instead of cherry-picking?
-pushd "/pkg/src/adminrouter"
-
-nginx_config_path="$PKG_PATH/nginx/conf"
-mkdir -p $nginx_config_path
-cp nginx.conf $nginx_config_path/
-cp snakeoil.crt $nginx_config_path/
-cp snakeoil.key $nginx_config_path/
-cp *.lua $nginx_config_path/
-if [ -d errorpages ]; then
-    cp -r errorpages $nginx_config_path/
-fi
-# Copy OpenResty Lua modules.
-if [ -d resty ]; then
-    cp -r resty $nginx_config_path/
-fi
-
+cp -r /pkg/src/adminrouter/* .
+# Remove unecessary files, such as nginx' default configs.
+rm -f win-utf uwsgi* scgi* nginx.conf* mime.types.default* koi-* fastcgi* README* *.png
 popd
 
-# Copy  in needed libraries
+# Copy in needed libraries.
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
+
 
 # From: https://projects.archlinux.org/svntogit/packages.git/tree/trunk/service?h=packages/nginx
 systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter.service
@@ -75,7 +61,7 @@ ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 marathon.mesos
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-adminrouter
-ExecStart=$PKG_PATH/nginx/sbin/nginx
+ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.master.conf
 ExecReload=/usr/bin/kill -HUP \$MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
