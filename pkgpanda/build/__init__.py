@@ -312,9 +312,6 @@ class PackageStore:
         check_call(['mkdir', '-p', directory])
         return directory
 
-    def get_treeinfo(self, variant):
-        return TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json'))
-
     def list_trees(self):
         return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
 
