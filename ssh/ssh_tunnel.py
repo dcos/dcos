@@ -9,7 +9,7 @@ with contextlib.closing(SSHTunnel(*args, **kwargs)) as tunnel:
 import logging
 import tempfile
 from contextlib import closing
-from subprocess import TimeoutExpired, check_call, check_output
+from subprocess import PIPE, Popen, TimeoutExpired, check_call, check_output
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,13 @@ class SSHTunnel():
         check_call(start_tunnel)
         logger.debug('SSH Tunnel established!')
 
-    def remote_cmd(self, cmd, timeout=None):
+    def remote_cmd(self, cmd, timeout=None, return_process=False):
         """
         Args:
             cmd: list of strings that will be interpretted in a subprocess
             timeout: (int) number of seconds until process timesout
+            return_process: (bool) instead of returning output from cmd,
+                return the Popen handler. Consumer must implement timeout
         """
         assert isinstance(cmd, list), 'cmd must be a list'
         if timeout:
@@ -66,8 +68,10 @@ class SSHTunnel():
         run_cmd = self.ssh_cmd + ['-p', str(self.port), self.target] + cmd
         logger.debug('Running socket cmd: ' + ' '.join(run_cmd))
         try:
-            output = check_output(run_cmd, timeout=timeout)
-            return output
+            if return_process:
+                return Popen(run_cmd, stdout=PIPE)
+            else:
+                return check_output(run_cmd, timeout=timeout)
         except TimeoutExpired as e:
             logging.exception('{} timed out after {} seconds'.format(cmd, timeout))
             logging.debug('Timed out process output:\n' + e.output)
