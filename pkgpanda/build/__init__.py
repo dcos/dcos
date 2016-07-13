@@ -196,7 +196,7 @@ class PackageSet:
     @staticmethod
     def validate_package_tuples(package_tuples, treeinfo, package_store):
         # Validate that all package variants listed in treeinfo are included.
-        for package_name, variant in treeinfo.variants.keys():
+        for package_name, variant in treeinfo.variants.items():
             if (package_name, variant) not in package_tuples:
                 raise BuildError("package {} is supposed to have variant {} included in "
                                  "the tree according to the treeinfo.json, but the no such package "
