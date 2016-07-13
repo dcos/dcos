@@ -82,6 +82,7 @@ vagrant up m1 m2 m3 a1 a2 p1 boot
 # CWD will be mounted as /vagrant, so write locally and trigger via vagrant ssh
 cat <<EOF > test_wrapper.sh
 #!/bin/bash
+source /opt/mesosphere/environment.export
 export DCOS_DNS_ADDRESS=$DCOS_DNS_ADDRESS
 export MASTER_HOSTS=$MASTER_HOSTS
 export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
@@ -91,7 +92,8 @@ export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DNS_SEARCH=true
 export DCOS_AUTH_ENABLED=false
 export DCOS_PROVIDER=onprem
-cd /opt/mesosphere/active/dcos-integration-test && py.test -vv -s ${CI_FLAGS:-}
+cd /opt/mesosphere/active/dcos-integration-test
+py.test -vv -s ${CI_FLAGS:-}
 EOF
 chmod +x test_wrapper.sh
 echo "Running integration test"

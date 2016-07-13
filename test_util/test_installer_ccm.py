@@ -318,16 +318,15 @@ def main():
                 aws_secret_access_key=options.aws_secret_access_key,
                 add_env=options.add_env)
 
-    # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
-    # on every host to see if they are working.
-
-    if result:
-        log.info('Test successsful; deleting provisioned cluster...')
+    if result == 0:
+        log.info("Test successsful! Deleting VPC if provided in this run...")
         if vpc is not None:
             vpc.delete()
     else:
-        log.info('Test failed; hosts will remain available for debugging for 1 hour after provisioning')
-        sys.exit(1)
+        log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")
+    if options.ci_flags:
+        result = 0  # Wipe the return code so that tests can be muted in CI
+    sys.exit(result)
 
 
 if __name__ == "__main__":

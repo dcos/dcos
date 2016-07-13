@@ -3,8 +3,9 @@
 Note: ssh_user must be able to use docker without sudo priveleges
 """
 import logging
+import sys
 from os.path import join
-from subprocess import CalledProcessError, TimeoutExpired
+from subprocess import CalledProcessError
 
 from pkgpanda.util import write_string
 
@@ -13,15 +14,10 @@ logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def dump_logs(byte_str):
-    with open('integration_test.log', 'wb') as fh:
-        fh.write(byte_str)
-
-
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        test_dns_search, provider, ci_flags, timeout=None,
+        test_dns_search, provider, ci_flags,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None):
     """Runs integration test on host
 
@@ -58,6 +54,7 @@ def integration_test(
             test_env.append(extra_env)
 
     test_wrapper = """#!/bin/bash
+source /opt/mesosphere/environment.export
 {env}
 cd /opt/mesosphere/active/dcos-integration-test
 py.test -vv {ci_flags}
@@ -65,20 +62,11 @@ py.test -vv {ci_flags}
     test_env_str = ''.join(['export '+e+'\n' for e in test_env])
     write_string('test_wrapper.sh', test_wrapper.format(env=test_env_str, ci_flags=ci_flags))
 
+    wrapper_path = join(test_dir, 'test_wrapper.sh')
+    log.info('Running integration test...')
+    tunnel.write_to_remote('test_wrapper.sh', wrapper_path)
     try:
-        wrapper_path = join(test_dir, 'test_wrapper.sh')
-        log.info('Running integration test...')
-        tunnel.write_to_remote('test_wrapper.sh', wrapper_path)
-        dump_logs(tunnel.remote_cmd(['bash', wrapper_path], timeout=timeout))
-        log.info('Successful test run!')
+        tunnel.remote_cmd(['bash', wrapper_path], stdout=sys.stdout.buffer)
     except CalledProcessError as e:
-        log.exception('Test failed!')
-        dump_logs(e.output)
-        if ci_flags:
-            return False
-        raise
-    except TimeoutExpired:
-        log.error('Test failed due to timing out after {} seconds'.format(timeout))
-        raise
-
-    return True
+        return e.returncode
+    return 0
