@@ -3,10 +3,11 @@
 Note: ssh_user must be able to use docker without sudo priveleges
 """
 import logging
+import sys
 import tempfile
 import time
 from os.path import join
-from subprocess import CalledProcessError, TimeoutExpired, check_call
+from subprocess import check_call
 
 import pkg_resources
 
@@ -24,7 +25,7 @@ def pkg_filename(relative_path):
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        test_dns_search, provider, ci_flags, timeout=None,
+        test_dns_search, provider, ci_flags,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None):
     """Runs integration test on host
 
@@ -95,24 +96,17 @@ set -euo pipefail; set -x
 
     test_container_name = 'int_test_' + str(int(time.time()))
     docker_cmd = ['docker', 'run', '--net=host', '--name='+test_container_name, 'py.test']
-    try:
-        log.info('Running integration test...')
-        tunnel.remote_cmd(docker_cmd, timeout=timeout)
-        log.info('Successful test run!')
-    except CalledProcessError:
-        log.exception('Test failed!')
-        if ci_flags:
-            return False
-        raise
-    except TimeoutExpired:
-        log.error('Test failed due to timing out after {} seconds'.format(timeout))
-        raise
-    finally:
-        get_logs_cmd = ['docker', 'logs', test_container_name]
-        test_log = tunnel.remote_cmd(get_logs_cmd)
-        log_file = 'integration_test.log'
-        with open(log_file, 'wb') as fh:
-            fh.write(test_log)
-        log.info('Logs from test container can be found in '+log_file)
+    log.info('Running integration test...')
+    p = tunnel.remote_cmd(docker_cmd, return_process=True)
+    with open('integration_test.log', 'wb') as fh:
+        def dump(b):
+            sys.stdout.buffer.write(b)
+            fh.write(b)
+            sys.stdout.flush()
 
-    return True
+        for c in iter(lambda: p.stdout.read(1), ''):
+            dump(c)
+            if p.poll():
+                break
+        dump(p.stdout.read())
+    return p.return_code
