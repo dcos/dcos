@@ -511,7 +511,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
 
     print("Creating bootstrap tarball for variant {}".format(variant))
 
-    work_dir = tempfile.mkdtemp(prefix='mkpanda_bootstrap_tmp')
+    work_dir = tempfile.mkdtemp(prefix='mkpanda_bootstrap_tmp', dir="/tmp")
 
     def make_abs(path):
         return os.path.join(work_dir, path)
@@ -744,7 +744,7 @@ class IdBuilder():
 def build(package_store, name, variant, clean_after_build, recursive=False):
     assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
-    tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
+    tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo", dir="/tmp")
     repository = Repository(tmpdir.name)
 
     package_dir = package_store.get_package_folder(name)
@@ -861,7 +861,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
     # install root now, and make the package directories in it as we go.
-    install_dir = tempfile.mkdtemp(prefix="pkgpanda-")
+    install_dir = tempfile.mkdtemp(prefix="pkgpanda-", dir="/tmp")
 
     active_packages = list()
     active_package_ids = set()

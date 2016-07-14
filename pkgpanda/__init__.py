@@ -270,7 +270,7 @@ def requests_fetcher(base_url, id_str, target, work_dir):
     url = base_url + "/packages/{0}/{1}.tar.xz".format(id.name, id_str)
     # TODO(cmaloney): Use a private tmp directory so there is no chance of a user
     # intercepting the tarball + other validation data locally.
-    with tempfile.NamedTemporaryFile(suffix=".tar.xz") as file:
+    with tempfile.NamedTemporaryFile(suffix=".tar.xz", dir="/tmp") as file:
         download(file.name, url, work_dir)
         extract_tarball(file.name, target)
 
