@@ -110,7 +110,7 @@ rm -rf tmp_build_dir_for_pytest
 echo "Running integration test"
 set +e # So we can potentially capture the logs
 # Sets env so pytest skips certain tests
-docker run  --net=host py.test
+docker run -e "TEST_ENV=vagrant" --net=host py.test
 RET=$?
 
 if [ $RET -ne 0 ]; then

@@ -1494,6 +1494,7 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
+@pytest.mark.skipif(os.getenv('TEST_ENV') == 'vagrant', reason="Sometimes vagrant sucks, sometimes.")
 def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
