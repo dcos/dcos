@@ -62,8 +62,8 @@ def main():
 
     for service in opts.services:
         if service not in bootstrappers:
-            log.error('Unknown service: {}'.format(service))
-            sys.exit(1)
+            log.warning('Unknown service, not bootstrapping: {}'.format(service))
+            continue
         log.debug('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
