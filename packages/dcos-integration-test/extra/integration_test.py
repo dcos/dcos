@@ -98,9 +98,9 @@ def registry_cluster(cluster, request):
             }
     endpoints = cluster.deploy_marathon_app(registry_app)
     cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
-    with open('/test_server.py', 'r') as fh:
+    with open('test_server/test_server.py', 'r') as fh:
         test_server = fh.read()
-    with open('/test_server_Dockerfile', 'r') as fh:
+    with open('test_server/Dockerfile', 'r') as fh:
         dockerfile = fh.read()
     docker_cmds = """
 #!/bin/bash
