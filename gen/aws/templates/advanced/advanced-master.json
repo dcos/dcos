@@ -44,8 +44,8 @@
     },
     "MasterInstanceType": {
       "Type": "String",
-      "Default": "m3.xlarge",
-      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+      "Default": "m4.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
     },
     "CustomAMI": {
       "Default": "default",

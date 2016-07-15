@@ -14,7 +14,7 @@ pushd "/pkg/src/nginx"
   --with-file-aio \
   --with-http_gunzip_module \
   --with-http_gzip_static_module \
-  --with-http_spdy_module \
+  --with-http_v2_module \
   --without-mail_pop3_module \
   --without-mail_imap_module \
   --without-mail_smtp_module \
@@ -23,91 +23,35 @@ pushd "/pkg/src/nginx"
 
 make -j8
 make install
-
 popd
 
+pushd "$PKG_PATH/nginx/conf"
 # Incorporate adminrouter components.
-# TODO(jp): Currently, we need to support multiple build variants
-# from the same build script which seems unclean. Also, shouldn't
-# we just copy the entire AR repo content instead of cherry-picking?
-pushd "/pkg/src/adminrouter"
-
-nginx_config_path="$PKG_PATH/nginx/conf"
-mkdir -p $nginx_config_path
-cp nginx.conf $nginx_config_path/
-cp snakeoil.crt $nginx_config_path/
-cp snakeoil.key $nginx_config_path/
-cp *.lua $nginx_config_path/
-if [ -d errorpages ]; then
-    cp -r errorpages $nginx_config_path/
-fi
-# Copy OpenResty Lua modules.
-if [ -d resty ]; then
-    cp -r resty $nginx_config_path/
-fi
-
+cp -r /pkg/src/adminrouter/* .
+# Remove unecessary files, such as nginx' default configs.
+rm -f win-utf uwsgi* scgi* nginx.conf* mime.types.default* koi-* fastcgi* README* *.png
 popd
 
-# Copy  in needed libraries
+# Copy in needed libraries.
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
-# From: https://projects.archlinux.org/svntogit/packages.git/tree/trunk/service?h=packages/nginx
 systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter.service
 mkdir -p "$(dirname "$systemd_master")"
-cat <<EOF > "$systemd_master"
-[Unit]
-Description=Admin Router: A high performance web server and a reverse proxy server
-After=dcos-gen-resolvconf.service
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter.service > "$systemd_master"
 
-[Service]
-Restart=always
-StartLimitInterval=0
-RestartSec=5
-EnvironmentFile=/opt/mesosphere/environment
-Type=forking
-PIDFile=$PKG_PATH/nginx/logs/nginx.pid
-PrivateDevices=yes
-StandardOutput=journal
-StandardError=journal
-PermissionsStartOnly=True
-ExecStartPre=/bin/ping -c1 ready.spartan
-ExecStartPre=/bin/ping -c1 marathon.mesos
-ExecStartPre=/bin/ping -c1 leader.mesos
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-adminrouter
-ExecStart=$PKG_PATH/nginx/sbin/nginx
-ExecReload=/usr/bin/kill -HUP \$MAINPID
-KillSignal=SIGQUIT
-KillMode=mixed
-EOF
+systemd_agent="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent.service
+mkdir -p "$(dirname "$systemd_agent")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent"
 
-cat <<EOF >> "$systemd_master"
-Environment=SECRET_KEY_FILE_PATH=/var/lib/dcos/dcos-oauth/auth-token-secret
-Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
-EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
-EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
-# Wait for auth backend to seed the secret key
-ExecStartPre=/usr/bin/curl --fail -sS -o /dev/null localhost:8101/acs/api/v1/groups
-EOF
+systemd_agent_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent.service
+mkdir -p "$(dirname "$systemd_agent_public")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent_public"
 
-systemd_master_reload="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.service
-mkdir -p "$(dirname "$systemd_master_reload")"
-cat <<EOF > "$systemd_master_reload"
-[Unit]
-Description=Admin Router Reloader: Reload admin router to get new DNS
+systemd_reload="$PKG_PATH"/dcos.target.wants/dcos-adminrouter-reload.service
+mkdir -p "$(dirname "$systemd_reload")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.service > "$systemd_reload"
 
-[Service]
-Type=oneshot
-EnvironmentFile=/opt/mesosphere/environment
-ExecStart=-$PKG_PATH/nginx/sbin/nginx -s reload
-EOF
-
-systemd_master_timer="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.timer
-mkdir -p "$(dirname "$systemd_master_timer")"
-cat <<EOF > "$systemd_master_timer"
-[Unit]
-Description=Admin Router Reloader Timer: Periodically reload admin router nginx config to pickup new dns
-[Timer]
-OnBootSec=5sec
-OnUnitActiveSec=30s
-EOF
+systemd_timer="$PKG_PATH"/dcos.target.wants/dcos-adminrouter-reload.timer
+mkdir -p "$(dirname "$systemd_timer")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"

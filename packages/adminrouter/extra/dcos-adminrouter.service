@@ -1,0 +1,29 @@
+[Unit]
+Description=Admin Router Master: A high performance web server and a reverse proxy server
+After=dcos-gen-resolvconf.service
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+EnvironmentFile=/opt/mesosphere/environment
+Type=forking
+PIDFile=$PKG_PATH/nginx/logs/nginx.pid
+PrivateDevices=yes
+StandardOutput=journal
+StandardError=journal
+PermissionsStartOnly=True
+Environment=SECRET_KEY_FILE_PATH=/var/lib/dcos/dcos-oauth/auth-token-secret
+Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
+EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
+EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
+ExecStartPre=/bin/ping -c1 ready.spartan
+ExecStartPre=/bin/ping -c1 marathon.mesos
+ExecStartPre=/bin/ping -c1 leader.mesos
+ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
+# Wait for auth backend to seed the secret key
+ExecStartPre=/usr/bin/curl --fail -sS -o /dev/null localhost:8101/acs/api/v1/groups
+ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.master.conf
+ExecReload=/usr/bin/kill -HUP \$MAINPID
+KillSignal=SIGQUIT
+KillMode=mixed

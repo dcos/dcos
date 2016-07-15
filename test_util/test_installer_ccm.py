@@ -300,9 +300,10 @@ def main():
         log.info("Running Postflight")
         installer.postflight()
 
+    with closing(SSHTunnel(ssh_user, ssh_key_path, host_list[1])) as master_tunnel:
         # Runs dcos-image/integration_test.py inside the cluster
         result = test_util.test_runner.integration_test(
-                tunnel=test_host_tunnel,
+                tunnel=master_tunnel,
                 test_dir=remote_dir,
                 region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
                 dcos_dns=master_list[0],
@@ -317,15 +318,15 @@ def main():
                 aws_secret_access_key=options.aws_secret_access_key,
                 add_env=options.add_env)
 
-    # TODO(cmaloney): add a `--healthcheck` option which runs dcos-diagnostics
-    # on every host to see if they are working.
-
-    if result:
-        log.info("Test successsful!")
-        # Delete the cluster if all was successful to minimize potential costs.
-        # Failed clusters the hosts will continue running
+    if result == 0:
+        log.info("Test successsful! Deleting VPC if provided in this run...")
         if vpc is not None:
             vpc.delete()
+    else:
+        log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")
+    if options.ci_flags:
+        result = 0  # Wipe the return code so that tests can be muted in CI
+    sys.exit(result)
 
 
 if __name__ == "__main__":

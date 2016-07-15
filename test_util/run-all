@@ -2,6 +2,7 @@
 set -euo pipefail
 set -x
 WORKDIR=$(pwd)
+SKIPME='false'
 
 cleanup_vagrant_leftovers() {
   echo "Cleaning up Vagrant leftovers (if any)"
@@ -79,14 +80,10 @@ echo "Starting Vagrant VMs"
 
 vagrant up m1 m2 m3 a1 a2 p1 boot
 
-# Prep for the integration test after vagrant up so that it happens in parallel
-# with DC/OS assembling itself to save some time.
-# Build a docker container for running py.test inside of.
-echo "Building py.test container"
-mkdir tmp_build_dir_for_pytest
-pushd tmp_build_dir_for_pytest
+# CWD will be mounted as /vagrant, so write locally and trigger via vagrant ssh
 cat <<EOF > test_wrapper.sh
 #!/bin/bash
+source /opt/mesosphere/environment.export
 export DCOS_DNS_ADDRESS=$DCOS_DNS_ADDRESS
 export MASTER_HOSTS=$MASTER_HOSTS
 export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
@@ -96,19 +93,14 @@ export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DNS_SEARCH=true
 export DCOS_AUTH_ENABLED=false
 export DCOS_PROVIDER=onprem
-py.test -vv -s ${CI_FLAGS:-} /integration_test.py
+export TEST_ENV=vagrant
+cd /opt/mesosphere/active/dcos-integration-test
+py.test -vv -s ${CI_FLAGS:-}
 EOF
-cp $PWD/../../integration_test.py .
-cp $PWD/../../docker/py.test/Dockerfile .
-cp $PWD/../../docker/test_server/Dockerfile test_server_Dockerfile
-cp $PWD/../../docker/test_server/test_server.py .
-docker build -t py.test .
-popd
-rm -rf tmp_build_dir_for_pytest
-
+chmod +x test_wrapper.sh
 echo "Running integration test"
 set +e # So we can potentially capture the logs
-docker run --net=host py.test
+vagrant ssh m1 -c /vagrant/test_wrapper.sh
 RET=$?
 
 if [ $RET -ne 0 ]; then
