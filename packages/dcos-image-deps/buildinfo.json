@@ -3,6 +3,7 @@
     "boto",
     "python",
     "python-docopt",
+    "python-isodate",
     "python-jinja2",
     "python-markupsafe",
     "python-passlib",
@@ -101,11 +102,6 @@
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/h/humanfriendly/humanfriendly-1.44.3.tar.gz",
       "sha1": "89c166308420a56cd5d8ee9d7858dd8085078e00"
-    },
-    "isodate": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/f4/5b/fe03d46ced80639b7be9285492dc8ce069b841c0cebe5baacdd9b090b164/isodate-0.5.4.tar.gz",
-      "sha1": "40ccf07a8e46284a79cfc4d41e151f71ae63f535"
     },
     "keyring": {
       "kind": "url",
