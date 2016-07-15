@@ -14,7 +14,7 @@ pushd "/pkg/src/nginx"
   --with-file-aio \
   --with-http_gunzip_module \
   --with-http_gzip_static_module \
-  --with-http_spdy_module \
+  --with-http_v2_module \
   --without-mail_pop3_module \
   --without-mail_imap_module \
   --without-mail_smtp_module \
@@ -23,17 +23,16 @@ pushd "/pkg/src/nginx"
 
 make -j8
 make install
-
 popd
 
+pushd "$PKG_PATH/nginx/conf"
 # Incorporate adminrouter components.
-nginx_config_path="$PKG_PATH/nginx/conf"
-mkdir -p "$(dirname "$nginx_config_path")"
-pushd /pkg/src/adminrouter
-cp -r . $nginx_config_path
+cp -r /pkg/src/adminrouter/* .
+# Remove unecessary files, such as nginx' default configs.
+rm -f win-utf uwsgi* scgi* nginx.conf* mime.types.default* koi-* fastcgi* README* *.png
 popd
 
-# Copy  in needed libraries
+# Copy in needed libraries.
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
