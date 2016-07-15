@@ -22,6 +22,7 @@ TEST_APP_NAME_FMT = '/integration-test-{}'
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 BASE_ENDPOINT_3DT = '/system/health/v1'
 PORT_3DT = 1050
+PORT_3DT_AGENT = 61001
 
 # If auth is enabled, by default, tests use hard-coded OAuth token
 AUTH_ENABLED = os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true'
@@ -1126,8 +1127,8 @@ def test_ip_per_container(cluster):
 def make_3dt_request(ip, endpoint, cluster, port=80):
     """
     a helper function to get info from 3dt endpoint. Default port is 80 for pulled data from agents.
-    if a destination port in 80, that means all requests should go though adminrouter and we can re-use cluster.get
-    otherwise we can query 3dt agents directly to port 1050.
+    if a destination port in 80, that means all requests should go though master (adminrouter) and we can re-use
+    cluster.get otherwise we can query 3dt agents directly to port 61001 (agent-adminrouter).
     """
     if port == 80:
         assert endpoint.startswith('/'), 'endpoint {} must start with /'.format(endpoint)
@@ -1158,8 +1159,45 @@ def test_3dt_health(cluster):
     required_fields_unit = ['id', 'health', 'output', 'description', 'help', 'name']
     required_system_fields = ['memory', 'load_avarage', 'partitions', 'disk_usage']
 
-    for host in cluster.masters + cluster.slaves:
+    # Check all masters 3DT instances on base port since this is extra-cluster request (outside localhost)
+    for host in cluster.masters:
         response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
+        assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
+            ', '.join(required_fields)
+        )
+
+        # validate units
+        assert 'units' in response, 'units field not found'
+        assert isinstance(response['units'], list), 'units field must be a list'
+        assert len(response['units']) > 0, 'units field cannot be empty'
+        for unit in response['units']:
+            assert len(unit) == len(required_fields_unit), 'unit must have the following fields: {}'.format(
+                ', '.join(required_fields_unit)
+            )
+            for required_field_unit in required_fields_unit:
+                assert required_field_unit in unit, '{} must be in a unit repsonse'
+
+            # id, health and description cannot be empty
+            assert unit['id'], 'id field cannot be empty'
+            assert unit['health'] in [0, 1], 'health field must be 0 or 1'
+            assert unit['description'], 'description field cannot be empty'
+
+        # check all required fields but units
+        for required_field in required_fields[1:]:
+            assert required_field in response, '{} field not found'.format(required_field)
+            assert response[required_field], '{} cannot be empty'.format(required_field)
+
+        # check system metrics
+        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
+            ', '.join(required_system_fields))
+
+        for sys_field in required_system_fields:
+            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
+            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
+
+    # Check all agents running 3DT behind agent-adminrouter on 61001
+    for host in cluster.slaves:
+        response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
@@ -1327,11 +1365,17 @@ def test_3dt_units(cluster):
     """
     # get all unique unit names
     all_units = set()
-    for node in cluster.masters + cluster.all_slaves:
+    for node in cluster.masters:
         node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
         for unit in node_response['units']:
             all_units.add(unit['id'])
-    logging.info('all units: {}'.format(all_units))
+
+    for node in cluster.all_slaves:
+        node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
+        for unit in node_response['units']:
+            all_units.add(unit['id'])
+
+    logging.info('Master units: {}'.format(all_units))
 
     # test agaist masters
     for master in cluster.masters:
@@ -1362,8 +1406,12 @@ def make_nodes_ip_map(cluster):
     a helper function to make a map detected_ip -> external_ip
     """
     node_private_public_ip_map = {}
-    for node in cluster.masters + cluster.slaves:
+    for node in cluster.masters:
         detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)['ip']
+        node_private_public_ip_map[detected_ip] = node
+
+    for node in cluster.slaves:
+        detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)['ip']
         node_private_public_ip_map[detected_ip] = node
 
     logging.info('detected ips: {}'.format(node_private_public_ip_map))
@@ -1446,6 +1494,7 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
+@pytest.mark.skipif(os.getenv('TEST_ENV') == 'vagrant', reason="Sometimes vagrant sucks, sometimes.")
 def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
@@ -1478,6 +1527,7 @@ echo 'test-id' > $ID_PATH
 sleep 3600
 """ % test_cache_url
 
+    print("CMD: {}".format(cmd))
     test_uuid = uuid.uuid4().hex
     signal_app_definition = {
         'id': "/integration-test-signal-service-oneshot-%s" % test_uuid,
@@ -1546,8 +1596,6 @@ sleep 3600
 
     # Insert all the diagnostics data programmatically
     master_units = [
-        'adminrouter-reload-service',
-        'adminrouter-reload-timer',
         'adminrouter-service',
         'cosmos-service',
         'exhibitor-service',
@@ -1560,6 +1608,8 @@ sleep 3600
         'metronome-service',
         'signal-service']
     all_node_units = [
+        'adminrouter-reload-service',
+        'adminrouter-reload-timer',
         '3dt-service',
         'epmd-service',
         'gen-resolvconf-service',
@@ -1577,6 +1627,8 @@ sleep 3600
         'mesos-slave-public-service',
         'vol-discovery-pub-agent-service']
     all_slave_units = [
+        '3dt-socket',
+        'adminrouter-agent-service',
         'logrotate-agent-service',
         'logrotate-agent-timer']
 
