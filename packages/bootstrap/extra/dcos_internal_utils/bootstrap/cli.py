@@ -13,14 +13,26 @@ from dcos_internal_utils import exhibitor
 log = logging.getLogger(__name__)
 
 
+def check_root(fun):
+    def wrapper(b, opts):
+        if os.getuid() != 0:
+            log.error('bootstrap must be run as root')
+            sys.exit(1)
+        fun(b, opts)
+    return wrapper
+
+
+@check_root
 def dcos_adminrouter(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
 
+@check_root
 def dcos_signal(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
 
+@check_root
 def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
@@ -42,10 +54,6 @@ bootstrappers = {
 
 
 def main():
-    if os.getuid() != 0:
-        log.error('bootstrap must be run as root')
-        sys.exit(1)
-
     opts = parse_args()
 
     logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
@@ -61,7 +69,7 @@ def main():
     b = bootstrap.Bootstrapper(opts.zk)
 
     for service in opts.services:
-        if service not in bootstrappers:
+        if (service not in bootstrappers) and opts.ignore_unknown:
             log.warning('Unknown service, not bootstrapping: {}'.format(service))
             continue
         log.debug('bootstrapping {}'.format(service))
@@ -84,4 +92,9 @@ def parse_args():
         type=str,
         default='/opt/mesosphere/etc/master_count',
         help='File with number of master servers')
+    parser.add_argument(
+        '--ignore-unknown',
+        action='store_true',
+        dest='ignore_unknown',
+        help='Ignore unknown services')
     return parser.parse_args()
