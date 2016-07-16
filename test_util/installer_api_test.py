@@ -11,6 +11,8 @@ from retrying import retry
 
 from ssh.ssh_tunnel import SSHTunnel, run_scp_cmd, run_ssh_cmd
 
+MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
+
 
 class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
@@ -38,7 +40,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             self.url = "http://{}:9000".format(tunnel.host)
 
             def ssh(cmd):
-                return tunnel.remote_cmd(cmd)
+                return tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
 
             def scp(src, dst):
                 return tunnel.write_to_remote(src, dst)
@@ -50,7 +52,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             self.url = "http://{}:9000".format(host)
 
             def ssh(cmd):
-                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd)
+                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, timeout=MAX_STAGE_TIME)
 
             def scp(src, dst):
                 return run_scp_cmd(ssh_user, ssh_key_path, host, src, dst)
@@ -168,7 +170,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         self.start_action(action)
         self.wait_for_check_action(
             action=action, expect_errors=expect_errors,
-            wait=30000, stop_max_delay=900*1000)
+            wait=30000, stop_max_delay=MAX_STAGE_TIME*1000)
 
     def wait_for_check_action(self, action, wait, stop_max_delay, expect_errors):
         """Retries method against API until returned data shows that all hosts
@@ -279,7 +281,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'ssh_user': ssh_user,
             'agent_list': agent_list,
             'public_agent_list': public_agent_list,
-            'process_timeout': 900}
+            'process_timeout': MAX_STAGE_TIME}
         if zk_host:
             test_config['exhibitor_storage_backend'] = 'zookeeper'
             test_config['exhibitor_zk_hosts'] = zk_host

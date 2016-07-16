@@ -1102,6 +1102,7 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
 def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
+    cluster = registry_cluster
     # Launch the test_server in ip-per-container mode
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
