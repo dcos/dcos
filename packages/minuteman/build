@@ -25,7 +25,7 @@ WorkingDirectory=${PKG_PATH}/minuteman
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/minuteman.env
 EnvironmentFile=-/run/dcos/etc/minuteman_auth.env
-ExecStartPre=/opt/mesosphere/bin/bootstrap --ignore-unknown dcos-minuteman
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-minuteman
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=-/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1
