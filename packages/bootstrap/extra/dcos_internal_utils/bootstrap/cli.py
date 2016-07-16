@@ -66,12 +66,20 @@ def main():
 
     exhibitor.wait(opts.master_count)
 
-    b = bootstrap.Bootstrapper(opts.zk)
+    # The bootstrapper is lazily initialized because of Spartan
+    # Spartan relies on bootstrap.p
+    b = None
 
     for service in opts.services:
-        if (service not in bootstrappers) and opts.ignore_unknown:
-            log.warning('Unknown service, not bootstrapping: {}'.format(service))
-            continue
+        if service not in bootstrappers:
+            if opts.ignore_unknown:
+                log.warning('Unknown service, not bootstrapping: {}'.format(service))
+                continue
+            else:
+                log.error('Unknown service: {}'.format(service))
+                sys.exit(1)
+        if not b:
+            b = bootstrap.Bootstrapper(opts.zk)
         log.debug('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
@@ -79,6 +87,8 @@ def main():
 def parse_args():
     if os.path.exists('/etc/mesosphere/roles/master'):
         zk_default = '127.0.0.1:2181'
+    else:
+        zk_default = 'mesos.mesos'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('services', nargs='+')
