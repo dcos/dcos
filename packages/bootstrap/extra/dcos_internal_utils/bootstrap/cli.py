@@ -88,7 +88,7 @@ def parse_args():
     if os.path.exists('/etc/mesosphere/roles/master'):
         zk_default = '127.0.0.1:2181'
     else:
-        zk_default = 'mesos.mesos'
+        zk_default = 'master.mesos'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('services', nargs='+')
