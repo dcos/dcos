@@ -37,18 +37,18 @@
         },
         "MasterInstanceType": {
           "Type": "String",
-          "Default": "m4.xlarge",
-          "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
         },
         "PublicAgentInstanceType": {
           "Type": "String",
-          "Default": "m4.xlarge",
-          "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
         },
         "PrivateAgentInstanceType": {
           "Type": "String",
-          "Default": "m4.xlarge",
-          "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
+          "Default": "m3.xlarge",
+          "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
         },
         "CustomAMI": {
           "Default": "default",
