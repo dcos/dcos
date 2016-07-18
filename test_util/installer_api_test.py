@@ -287,8 +287,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
         else:
             test_config['exhibitor_storage_backend'] = 'static'
         if add_config_path:
-            with open(add_config_path, 'r'):
-                add_config = yaml.load(add_config_path)
+            with open(add_config_path, 'r') as fh:
+                add_config = yaml.load(fh)
             test_config.update(add_config)
         with open('config.yaml', 'w') as config_fh:
             config_fh.write(yaml.dump(test_config))
