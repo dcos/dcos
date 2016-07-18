@@ -38,6 +38,7 @@ bootstrappers = {
     'dcos-mesos-master': noop,
     'dcos-cosmos': noop,
     'dcos-metronome': noop,
+    'dcos-history': noop,
 }
 
 

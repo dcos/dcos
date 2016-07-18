@@ -35,17 +35,6 @@ root:
       BindIPv6Only=both
       [Install]
       WantedBy=sockets.target
-  - path: /etc/systemd/system/dcos-config-writer.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Requires=dcos-setup.service
-      After=dcos-setup.service
-      [Service]
-      Type=oneshot
-      EnvironmentFile=/etc/environment
-      EnvironmentFile=/opt/mesosphere/environment
-      ExecStart=/usr/bin/bash -c "echo $(detect_ip) $(hostname) > /etc/hosts"
 runcmd:
     - [ ln, -s, /bin/rm, /usr/bin/rm ]
     - [ ln, -s, /bin/mkdir, /usr/bin/mkdir ]
@@ -70,7 +59,6 @@ runcmd:
     - [ rm, -f, /etc/resolv.conf ]
     - [ cp, -p, /tmp/resolv.conf, /etc/resolv.conf ]
     - [ systemctl, start, dcos-docker-install.service ]
-    - [ systemctl, start, dcos-config-writer.service ]
 bootcmd:
   - bash -c "if [ ! -f /var/lib/sdb-gpt ];then echo DCOS-5890;parted -s /dev/sdb mklabel gpt;touch /var/lib/sdb-gpt;fi"
 disk_setup:

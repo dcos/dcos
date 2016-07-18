@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import json
 import logging
 import os
@@ -29,11 +30,6 @@ AUTH_ENABLED = os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true'
 # Set these to run test against a custom configured user instead
 LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
 LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
-
-# AWS creds for volume control (not used currently)
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = os.getenv('AWS_REGION')
 
 
 @pytest.fixture(scope='module')
@@ -150,6 +146,23 @@ def _setup_logging():
     logging.getLogger("requests").setLevel(logging.WARNING)
 
 
+@contextlib.contextmanager
+def _remove_env_vars(*env_vars):
+    environ = dict(os.environ)
+
+    for env_var in env_vars:
+        try:
+            del os.environ[env_var]
+        except KeyError:
+            pass
+
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(environ)
+
+
 def _delete_ec2_volume(name, timeout=300):
     """Delete an EC2 EBS volume by its "Name" tag
 
@@ -162,11 +175,23 @@ def _delete_ec2_volume(name, timeout=300):
     def _delete_volume(volume):
         volume.delete()  # Raises ClientError if the volume is still attached.
 
-    volumes = list(boto3.session.Session(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION,
-    ).resource('ec2').volumes.filter(Filters=[{'Name': 'tag:Name', 'Values': [name]}]))
+    def _get_current_aws_region():
+        try:
+            return requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text.strip()[:-1]
+        except requests.RequestException as ex:
+            logging.warning("Can't get AWS region from instance metadata: {}".format(ex))
+            return None
+
+    # Remove AWS environment variables to force boto to use IAM credentials.
+    with _remove_env_vars('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'):
+        volumes = list(boto3.session.Session(
+            # We assume we're running these tests from a cluster node, so we
+            # can assume the region for the instance on which we're running is
+            # the same region in which any volumes were created. If we can't
+            # find the current region, we default to reading it from the
+            # environment.
+            region_name=(_get_current_aws_region() or os.getenv('AWS_REGION')),
+        ).resource('ec2').volumes.filter(Filters=[{'Name': 'tag:Name', 'Values': [name]}]))
 
     if len(volumes) == 0:
         raise Exception('no volumes found with name {}'.format(name))
@@ -176,9 +201,8 @@ def _delete_ec2_volume(name, timeout=300):
 
     try:
         _delete_volume(volume)
-    except retrying.RetryError:
-        pytest.fail("Volume destroy failed - operation was not "
-                    "completed in {} seconds.".format(timeout))
+    except retrying.RetryError as ex:
+        raise Exception('Operation was not completed within {} seconds'.format(timeout)) from ex
 
 
 class Cluster:
@@ -369,6 +393,9 @@ class Cluster:
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
+        """The test_server app used here is only guaranteed to exist if
+        the registry_cluster pytest fixture is used
+        """
         test_uuid = uuid.uuid4().hex
         base_app = {
             'id': TEST_APP_NAME_FMT.format(test_uuid),
@@ -1096,9 +1123,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
     _ensure_routable()
 
 
-def test_ip_per_container(cluster):
+def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
+    cluster = registry_cluster
     # Launch the test_server in ip-per-container mode
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
@@ -1122,6 +1150,79 @@ def test_ip_per_container(cluster):
 
     _ensure_works()
     cluster.destroy_marathon_app(app_definition['id'])
+
+
+@pytest.mark.ccm
+def test_move_external_volume_to_new_agent(cluster):
+    """Test that an external volume is successfully attached to a new agent.
+
+    If the cluster has only one agent, the volume will be detached and
+    reattached to the same agent.
+
+    """
+    hosts = cluster.slaves[0], cluster.slaves[-1]
+    test_uuid = uuid.uuid4().hex
+    test_label = 'integration-test-move-external-volume-{}'.format(test_uuid)
+    base_app = {
+        'mem': 32,
+        'cpus': 0.1,
+        'instances': 1,
+        'container': {
+            'type': 'MESOS',
+            'volumes': [{
+                'containerPath': 'volume',
+                'mode': 'RW',
+                'external': {
+                    'name': test_label,
+                    'size': 1,
+                    'provider': 'dvdi',
+                    'options': {'dvdi/driver': 'rexray'}
+                }
+            }]
+        }
+    }
+
+    write_app = base_app.copy()
+    write_app.update({
+        'id': '/{}/write'.format(test_label),
+        'cmd': (
+            # Check that the volume is empty.
+            '[ $(ls -A volume/ | grep -v --line-regexp "lost+found" | wc -l) -eq 0 ] && '
+            # Write the test UUID to a file.
+            'echo "{test_uuid}" >> volume/test && '
+            'while true; do sleep 1000; done'
+        ).format(test_uuid=test_uuid),
+        'constraints': [['hostname', 'LIKE', hosts[0]]],
+    })
+
+    read_app = base_app.copy()
+    read_app.update({
+        'id': '/{}/read'.format(test_label),
+        'cmd': (
+            # Diff the file and the UUID.
+            'echo "{test_uuid}" | diff - volume/test && '
+            'while true; do sleep 1000; done'
+        ).format(test_uuid=test_uuid),
+        'constraints': [['hostname', 'LIKE', hosts[1]]],
+    })
+
+    deploy_kwargs = {
+        'check_health': False,
+        # A volume might fail to attach because EC2. We can tolerate that and retry.
+        'ignore_failed_tasks': True,
+    }
+
+    try:
+        cluster.deploy_marathon_app(write_app, **deploy_kwargs)
+        cluster.destroy_marathon_app(write_app['id'])
+
+        cluster.deploy_marathon_app(read_app, **deploy_kwargs)
+        cluster.destroy_marathon_app(read_app['id'])
+    finally:
+        try:
+            _delete_ec2_volume(test_label)
+        except Exception as ex:
+            raise Exception("Failed to clean up volume {}: {}".format(test_label, ex)) from ex
 
 
 def make_3dt_request(ip, endpoint, cluster, port=80):
@@ -1630,7 +1731,8 @@ sleep 3600
         '3dt-socket',
         'adminrouter-agent-service',
         'logrotate-agent-service',
-        'logrotate-agent-timer']
+        'logrotate-agent-timer',
+        'rexray-service']
 
     master_units.append('oauth-service')
 

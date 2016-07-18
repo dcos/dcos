@@ -11,6 +11,8 @@ from retrying import retry
 
 from ssh.ssh_tunnel import SSHTunnel, run_scp_cmd, run_ssh_cmd
 
+MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
+
 
 class AbstractDcosInstaller(metaclass=abc.ABCMeta):
 
@@ -38,7 +40,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             self.url = "http://{}:9000".format(tunnel.host)
 
             def ssh(cmd):
-                return tunnel.remote_cmd(cmd)
+                return tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
 
             def scp(src, dst):
                 return tunnel.write_to_remote(src, dst)
@@ -50,7 +52,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             self.url = "http://{}:9000".format(host)
 
             def ssh(cmd):
-                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd)
+                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, timeout=MAX_STAGE_TIME)
 
             def scp(src, dst):
                 return run_scp_cmd(ssh_user, ssh_key_path, host, src, dst)
@@ -106,7 +108,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, zk_host=None, expect_errors=False, add_config_path=None):
+            ip_detect_script, rexray_config='', zk_host=None,
+            expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -117,6 +120,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            rexray_config (str): complete contents of REX-Ray config file
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
             add_config_path (optional): string pointing to a file with additional
@@ -133,7 +137,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'public_agent_list': public_agent_list,
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
-            'ip_detect_script': ip_detect_script}
+            'ip_detect_script': ip_detect_script,
+            'rexray_config': rexray_config}
         if zk_host:
             payload['exhibitor_zk_hosts'] = zk_host
         if add_config_path:
@@ -168,7 +173,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         self.start_action(action)
         self.wait_for_check_action(
             action=action, expect_errors=expect_errors,
-            wait=30000, stop_max_delay=900*1000)
+            wait=30000, stop_max_delay=MAX_STAGE_TIME*1000)
 
     def wait_for_check_action(self, action, wait, stop_max_delay, expect_errors):
         """Retries method against API until returned data shows that all hosts
@@ -250,7 +255,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, zk_host=None, expect_errors=False, add_config_path=None):
+            ip_detect_script, rexray_config='', zk_host=None,
+            expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -261,6 +267,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            rexray_config (str): complete contents of REX-Ray config file
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
             add_config_path (optional): string pointing to a file with additional
@@ -279,7 +286,9 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'ssh_user': ssh_user,
             'agent_list': agent_list,
             'public_agent_list': public_agent_list,
-            'process_timeout': 900}
+            'process_timeout': 900,
+            'rexray_config_method': 'file',
+            'rexray_config_filename': 'genconf/rexray.yaml'}
         if zk_host:
             test_config['exhibitor_storage_backend'] = 'zookeeper'
             test_config['exhibitor_zk_hosts'] = zk_host
@@ -296,12 +305,15 @@ class DcosCliInstaller(AbstractDcosInstaller):
             ip_detect_fh.write(ip_detect_script)
         with open('ssh_key', 'w') as key_fh:
             key_fh.write(ssh_key)
+        with open('rexray.yaml', 'w') as rexray_fh:
+            rexray_fh.write(rexray_config)
         remote_dir = os.path.dirname(self.installer_path)
         self.ssh(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
         self.scp('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
         self.scp('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
         self.scp('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
         self.ssh(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
+        self.scp('rexray.yaml', os.path.join(remote_dir, 'genconf/rexray.yaml'))
         self.run_cli_cmd('--genconf', expect_errors=expect_errors)
 
     def preflight(self, expect_errors=False):
