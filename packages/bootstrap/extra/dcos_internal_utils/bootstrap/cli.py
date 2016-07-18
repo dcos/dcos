@@ -36,6 +36,8 @@ bootstrappers = {
     'dcos-3dt': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,
+    'dcos-mesos-slave': noop,
+    'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
     'dcos-metronome': noop,
 }
