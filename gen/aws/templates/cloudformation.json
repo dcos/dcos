@@ -108,10 +108,10 @@
     },
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m3.xlarge"
+        "default": "{{ master_instance_type }}"
       },
       "SlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "{{ slave_instance_type }}"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -123,7 +123,7 @@
         "default": "10.0.0.0/16"
       },
       "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "{{ public_slave_instance_type }}"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -370,7 +370,7 @@
         "SourceDestCheck" : "false",
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m3.medium",
+        "InstanceType" : "{{ nat_instance_type }}",
         "NetworkInterfaces" : [
           {
             "SubnetId" : { "Ref" : "PublicSubnet" },
