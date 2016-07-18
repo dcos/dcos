@@ -9,8 +9,9 @@ mkdir -p build
 pushd build
 # TODO(cmaloney): --with-glog=/usr --with-protobuf=/usr --with-boost=/usr
 # TODO(cmaloney): DESTDIR builds so we don't have to build as root?
-"/pkg/src/mesos/configure" \
+LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
+  --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
@@ -32,6 +33,7 @@ cp /usr/lib/x86_64-linux-gnu/libsvn_delta-1.so.1 "$libdir"
 cp /usr/lib/x86_64-linux-gnu/libsvn_subr-1.so.1 "$libdir"
 cp /usr/lib/x86_64-linux-gnu/libapr-1.so.0 "$libdir"
 cp /usr/lib/x86_64-linux-gnu/libaprutil-1.so.0 "$libdir"
+cp /usr/lib/x86_64-linux-gnu/libdb-5.3.so "$libdir"
 
 export PKG_PATH=$PKG_PATH
 systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-mesos-master.service
@@ -62,7 +64,6 @@ disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
 
-# Copy the json file describing logrotate module.
-module_json="$PKG_PATH/etc/mesos-slave-modules/logrotate.json"
-mkdir -p "$(dirname "$module_json")"
-cp /pkg/extra/logrotate.json "$module_json"
+# Install agent modules.
+mkdir -p "$PKG_PATH/etc/mesos-agent-modules"
+cp /pkg/extra/agent_logrotate_module.json "$PKG_PATH/etc/mesos-agent-modules/"
