@@ -411,14 +411,10 @@ class Cluster:
                 'protocol': 'tcp',
             }]
             if ip_per_container:
-                # TODO(sargun): Marathon HTTP Healthchecks + Overlay = NOGO
-                # https://mesosphere.slack.com/archives/marathon/p1466936625000682
-                del base_app['healthChecks']
                 base_app['container']['docker']['network'] = 'USER'
                 base_app['ipAddress'] = {'networkName': 'dcos'}
             else:
                 base_app['container']['docker']['network'] = 'BRIDGE'
-                # I think this can be removed actually
                 base_app['ports'] = []
         else:
             base_app['cmd'] = '/opt/test_server.py $PORT0'
