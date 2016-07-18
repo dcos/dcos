@@ -393,6 +393,9 @@ class Cluster:
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
+        """The test_server app used here is only guaranteed to exist if
+        the registry_cluster pytest fixture is used
+        """
         test_uuid = uuid.uuid4().hex
         base_app = {
             'id': TEST_APP_NAME_FMT.format(test_uuid),
@@ -1120,9 +1123,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
     _ensure_routable()
 
 
-def test_ip_per_container(cluster):
+def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
+    cluster = registry_cluster
     # Launch the test_server in ip-per-container mode
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)

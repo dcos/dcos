@@ -117,12 +117,12 @@ class TunnelCollection():
             tunnel.close()
 
 
-def run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, port=22):
+def run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, port=22, timeout=None):
     """Convenience function to do a one-off SSH command
     """
     assert isinstance(cmd, list)
     with closing(SSHTunnel(ssh_user, ssh_key_path, host, port=port)) as tunnel:
-        return tunnel.remote_cmd(cmd)
+        return tunnel.remote_cmd(cmd, timeout=timeout)
 
 
 def run_scp_cmd(ssh_user, ssh_key_path, host, src, dst, port=22):
