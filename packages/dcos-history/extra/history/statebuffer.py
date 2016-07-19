@@ -12,9 +12,7 @@ logging.getLogger('requests.packages.urllib3').setLevel(logging.WARN)
 FETCH_PERIOD = 2
 FILE_EXT = '.state-summary.json'
 
-FETCH_URL = "http://leader.mesos:5050/state-summary"
-if 'STATE_SUMMARY_URI' in os.environ:
-    FETCH_URL = os.environ['STATE_SUMMARY_URI']
+STATE_SUMMARY_URI = os.getenv('STATE_SUMMARY_URI', 'http://leader.mesos:5050/state-summary')
 
 TLS_VERIFY = True
 # The verify arg to requests.get() can either
@@ -40,7 +38,7 @@ def fetch_state(headers_cb):
         # state-summary. leader.mesos isn't updated instantly.
         # That requires mesos stop returning hostnames from `/master/redirect`.
         # See: https://github.com/apache/mesos/blob/master/src/master/http.cpp#L746
-        resp = requests.get(FETCH_URL, timeout=FETCH_PERIOD*.9, headers=headers_cb(), verify=TLS_VERIFY)
+        resp = requests.get(STATE_SUMMARY_URI, timeout=FETCH_PERIOD*.9, headers=headers_cb(), verify=TLS_VERIFY)
         resp.raise_for_status()
         state = resp.text
     except Exception as e:
