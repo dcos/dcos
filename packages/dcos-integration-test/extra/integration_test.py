@@ -1663,7 +1663,9 @@ sleep 3600
     # Check the entire hash of diagnostics data
     assert r_data['diagnostics'] == exp_data['diagnostics']
     # Check a subset of things regarding Mesos that we can logically check for
-    assert r_data['mesos']['properties']['frameworks'][0]['name'] == 'marathon'
+    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
+    assert 'marathon' in framework_names
+    assert 'metronome' in framework_names
     # There are no packages installed by default on the integration test, ensure the key exists
     assert len(r_data['cosmos']['properties']['package_list']) == 0
 
