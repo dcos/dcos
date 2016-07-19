@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
+import json
 import logging
 import os
+import random
 import sys
 
 
@@ -73,6 +75,21 @@ def main():
 def parse_args():
     if os.path.exists('/etc/mesosphere/roles/master'):
         zk_default = '127.0.0.1:2181'
+    else:
+        if os.getenv('MASTER_SOURCE') == 'master_list':
+            # Spartan agents with static master list
+            with open('/opt/mesosphere/etc/master_list', 'r') as f:
+                master_list = json.load(f)
+            assert len(master_list) > 0
+            leader = random.choice(master_list)
+        elif os.getenv('EXHIBITOR_ADDRESS'):
+            # Spartan agents on AWS
+            leader = os.getenv('EXHIBITOR_ADDRESS')
+        else:
+            # any other agent service
+            leader = 'leader.mesos'
+
+        zk_default = leader + ':2181'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('services', nargs='+')
