@@ -12,6 +12,7 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 envrionment variables from the package.
 
 """
+import grp
 import json
 import os
 import os.path
@@ -41,6 +42,7 @@ export PATH="{0}/bin:$PATH"\n\n"""
 name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
 version_regex = "^[a-zA-Z0-9@_+:.]+$"
 username_regex = "^dcos_[a-z0-9_]+$"
+linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
 
 
 # Manage starting/stopping all systemd services inside a folder.
@@ -172,6 +174,10 @@ class Package:
     def username(self):
         return self.__pkginfo.get('username', None)
 
+    @property
+    def group(self):
+        return self.__pkginfo.get('group', None)
+
     def __repr__(self):
         return str(self.__id)
 
@@ -211,6 +217,10 @@ def validate_compatible(packages, roles):
             raise ValidationError(
                 "Repeated name {0} in set of packages {1}".format(
                     package.name, ' '.join(map(lambda x: str(x.id), packages))))
+
+        if package.username is None and package.group is not None:
+            raise ValidationError("`group` cannot be used without `username`")
+
         names.add(package.name)
         ids.add(str(package.id))
         tuples.add((package.name, package.variant))
@@ -442,15 +452,54 @@ class UserManagement:
         if not re.match(username_regex, username):
             raise ValidationError("Username must begin with `dcos_` and only have a-z and underscore after that")
 
-    def add_user(self, username):
+    @staticmethod
+    def validate_group(group):
+        # Empty group is allowed.
+        if not group:
+            return
+
+        UserManagement.validate_group_name(group)
+
+        try:
+            grp.getgrnam(group)
+        except KeyError:
+            raise ValidationError("Group {} does not exist on the system".format(group))
+
+    @staticmethod
+    def validate_group_name(group_name):
+        if not group_name:
+            return
+
+        if not re.match(linux_group_regex, group_name):
+            raise ValidationError("Group {} has invalid name, must match the following regex: {}".format(
+                group_name, linux_group_regex))
+
+    @staticmethod
+    def validate_user_group(username, group_name):
+        user = pwd.getpwnam(username)
+        if not group_name:
+            return
+
+        group = grp.getgrnam(group_name)
+        if user.pw_gid != group.gr_gid:
+
+            # check if the user is the right group, but the group is not primary.
+            if username in group.gr_mem:
+                return
+
+            raise ValidationError(
+                "User {} exists with current UID {}, however he should be assigned to group {} with {} UID, please "
+                "check `buildinfo.json`".format(username, user.pw_gid, group_name, group.gr_gid))
+
+    def add_user(self, username, group):
         UserManagement.validate_username(username)
 
         if not self._manage_users:
             return
 
-        # Check if hte user already exists and exit.
+        # Check if the user already exists and exit.
         try:
-            pwd.getpwnam(username)
+            UserManagement.validate_user_group(username, group)
             self._users.add(username)
             return
         except KeyError as ex:
@@ -463,14 +512,24 @@ class UserManagement:
                                   "automatic user addition is disabled".format(username))
 
         # Add the user:
+        add_user_cmd = [
+            'useradd',
+            '--system',
+            '--home-dir', '/opt/mesosphere',
+            '--shell', '/sbin/nologin',
+            '-c', 'DCOS System User',
+        ]
+
+        if group is not None:
+            UserManagement.validate_group(group)
+            add_user_cmd += [
+                '-g', group
+            ]
+
+        add_user_cmd += [username]
+
         try:
-            check_output([
-                'useradd',
-                '--system',
-                '--home-dir', '/opt/mesosphere',
-                '--shell', '/sbin/nologin',
-                '-c', 'DCOS System User',
-                username])
+            check_output(add_user_cmd)
             self._users.add(username)
         except CalledProcessError as ex:
             raise ValidationError("User {} doesn't exist and couldn't be created because of: {}"
@@ -681,7 +740,7 @@ class Install:
             # to something incompatible. We survive the first upgrade because everything goes from
             # root to specific users, and root can access all user files.
             if package.username is not None:
-                sysusers.add_user(package.username)
+                sysusers.add_user(package.username, package.group)
 
             # Ensure the state directory in `/var/lib/dcos` exists
             # TODO(cmaloney): On upgrade take a snapshot?

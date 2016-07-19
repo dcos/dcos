@@ -1,4 +1,5 @@
 import collections
+import gzip
 import json
 import logging
 import os
@@ -1727,6 +1728,16 @@ def test_3dt_bundle_create(cluster):
     assert bundles[0] == response['extra']['bundle_name']
 
 
+def verify_unit_response(zip_ext_file):
+    assert isinstance(zip_ext_file, zipfile.ZipExtFile)
+    unit_output = gzip.decompress(zip_ext_file.read())
+
+    # TODO: This seems like a really fragile string to be searching for. This might need to be changed for
+    # different localizations.
+    assert 'Hint: You are currently not seeing messages from other users and the system' not in str(unit_output), (
+        '3dt does not have permission to run `journalctl`')
+
+
 def test_3dt_bundle_download_and_extract(cluster):
     """
     test bundle download and validate zip file
@@ -1771,6 +1782,10 @@ def test_3dt_bundle_download_and_extract(cluster):
                 assert 'ip' in health_report
                 assert health_report['ip'] == master_ip
 
+                # make sure systemd unit output is correct and does not contain error message
+                gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
+                verify_unit_response(gzipped_unit_output)
+
                 for expected_master_file in expected_master_files:
                     expected_file = master_folder + expected_master_file
                     assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
@@ -1784,6 +1799,10 @@ def test_3dt_bundle_download_and_extract(cluster):
                 assert 'ip' in health_report
                 assert health_report['ip'] == slave_ip
 
+                # make sure systemd unit output is correct and does not contain error message
+                gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
+                verify_unit_response(gzipped_unit_output)
+
                 for expected_agent_file in expected_agent_files:
                     expected_file = agent_folder + expected_agent_file
                     assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
@@ -1796,6 +1815,10 @@ def test_3dt_bundle_download_and_extract(cluster):
                 health_report = json.loads(z.read(agent_public_folder + '3dt-health.json').decode())
                 assert 'ip' in health_report
                 assert health_report['ip'] == public_slave_ip
+
+                # make sure systemd unit output is correct and does not contain error message
+                gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
+                verify_unit_response(gzipped_unit_output)
 
                 for expected_public_agent_file in expected_public_agent_files:
                     expected_file = agent_public_folder + expected_public_agent_file
