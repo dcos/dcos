@@ -1,5 +1,5 @@
 {
-  "requires": ["exhibitor", "openssl", "libevent", "curl"],
+  "requires": ["openssl", "libevent", "curl"],
   "docker": "dcos-builder",
   "single_source" : {
     "kind": "git",
