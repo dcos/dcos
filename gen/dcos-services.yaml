@@ -1,8 +1,5 @@
 - name: systemd-journald.service
   command: restart
-# Restart docker to make it recover from a SIGPIPE it recieves when systemd-journald dies.
-- name: docker.service
-  command: restart
 - name: dcos-link-env.service
   command: start
   content: |
