@@ -19,6 +19,8 @@ StartLimitInterval=0
 RestartSec=15
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=-/opt/mesosphere/etc/marathon
+EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
