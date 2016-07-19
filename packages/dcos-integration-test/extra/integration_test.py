@@ -369,6 +369,9 @@ class Cluster:
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
+        """The test_server app used here is only guaranteed to exist if
+        the registry_cluster pytest fixture is used
+        """
         test_uuid = uuid.uuid4().hex
         base_app = {
             'id': TEST_APP_NAME_FMT.format(test_uuid),
@@ -408,14 +411,10 @@ class Cluster:
                 'protocol': 'tcp',
             }]
             if ip_per_container:
-                # TODO(sargun): Marathon HTTP Healthchecks + Overlay = NOGO
-                # https://mesosphere.slack.com/archives/marathon/p1466936625000682
-                del base_app['healthChecks']
                 base_app['container']['docker']['network'] = 'USER'
                 base_app['ipAddress'] = {'networkName': 'dcos'}
             else:
                 base_app['container']['docker']['network'] = 'BRIDGE'
-                # I think this can be removed actually
                 base_app['ports'] = []
         else:
             base_app['cmd'] = '/opt/test_server.py $PORT0'
@@ -1043,7 +1042,16 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'mem': 128,
         'ports': [10000],
         'cmd': 'touch imok && /opt/mesosphere/bin/python -mhttp.server ${PORT0}',
-        'labels': {'vip_PORT0': 'tcp://1.2.3.4:5000'},
+        'portDefinitions': [
+            {
+                'port': 10000,
+                'protocol': 'tcp',
+                'name': 'test',
+                'labels': {
+                    'VIP_0': '1.2.3.4:5000'
+                }
+            }
+        ],
         'uris': [],
         'instances': 1,
         'healthChecks': [{
@@ -1096,9 +1104,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
     _ensure_routable()
 
 
-def test_ip_per_container(cluster):
+def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
+    cluster = registry_cluster
     # Launch the test_server in ip-per-container mode
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
