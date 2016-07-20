@@ -86,7 +86,7 @@ def calculate_rexray_config_contents(rexray_config_filename):
         with open(rexray_config_filename, encoding='utf-8') as f:
             return yaml.dump(f.read())
     except IOError as err:
-        raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err))
+        raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err)) from err
 
 
 def calculate_gen_resolvconf_search(dns_search):
