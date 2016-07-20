@@ -157,7 +157,7 @@ def run():
                     agent_list=ip_buckets['slavePrivateNic'],
                     public_agent_list=ip_buckets['slavePublicNic'],
                     provider='azure',
-                    test_dns_search=True,
+                    test_dns_search=False,
                     ci_flags=os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
