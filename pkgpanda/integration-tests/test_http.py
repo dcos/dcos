@@ -9,7 +9,6 @@ def _set_test_config(app):
     app.config['TESTING'] = True
     app.config['DCOS_ROOT'] = '../tests/resources/install'
     app.config['DCOS_REPO_DIR'] = '../tests/resources/packages'
-    app.config['DCOS_BOOTSTRAP_URL'] = 'file://{0}/../tests/resources/remote_repo'.format(os.getcwd())
 
 
 def test_list_packages():
@@ -86,12 +85,21 @@ def test_fetch_package(tmpdir):
 
     # Successful package fetch.
     assert json.loads(client.get('/').data.decode('utf-8')) == []
-    assert client.post('/mesos--0.22.0').status_code == 204
+    assert client.post(
+        '/mesos--0.22.0',
+        content_type='application/json',
+        data=json.dumps({
+            'repository_url': 'file://{}/../tests/resources/remote_repo'.format(os.getcwd())
+        }),
+    ).status_code == 204
     assert json.loads(client.get('/').data.decode('utf-8')) == ['mesos--0.22.0']
 
-    # Failed package fetch due to no bootstrap URL configured.
-    app.config['DCOS_BOOTSTRAP_URL'] = None
-    assert client.post('/mesos--0.23.0').status_code == 500
+    # No repository URL provided.
+    assert client.post(
+        '/mesos--0.23.0',
+        content_type='application/json',
+        data=json.dumps({}),
+    ).status_code == 400
 
 
 def test_remove_package(tmpdir):

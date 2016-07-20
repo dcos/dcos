@@ -44,13 +44,17 @@ def get_package(package_id=None):
 
 @app.route('/<package_id>', methods=['POST'])
 def fetch_package(package_id):
-    if not current_app.config.get('DCOS_BOOTSTRAP_URL'):
-        abort(http.client.INTERNAL_SERVER_ERROR)
+    try:
+        repository_url = request.json['repository_url']
+    except Exception:
+        abort(http.client.BAD_REQUEST)
+
     actions.fetch_package(
         current_app.repository,
-        current_app.config['DCOS_BOOTSTRAP_URL'],
+        repository_url,
         package_id,
         current_app.config['WORK_DIR'])
+
     return empty_response
 
 

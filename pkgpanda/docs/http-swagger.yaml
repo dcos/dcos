@@ -58,12 +58,28 @@ paths:
         '404':
           description: The package is not present in this node's pkgpanda repository.
     post:
-      summary: Fetch a package from the bootstrap URL configured at /etc/mesosphere/setup-flags/repository-url on this node.
+      summary: Fetch a package from the repository URL in the request body.
+      description: The package is fetched from `<repository_url>/<package_name>/<package_id>.tar.xz`.
       parameters:
         - '$ref': '#/parameters/PackageId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - repository_url
+            properties:
+              repository_url:
+                type: string
+                description: The URL for a package repository.
+            additionalProperties: false
+            example: {"repository_url": "file:///opt/dcos_install_tmp"}
       responses:
         '204':
           description: The package was successfully fetched.
+        '400':
+          description: The `repository_url` could not be retrieved from the request body.
         '500':
           description: The package fetch failed.
     delete:
