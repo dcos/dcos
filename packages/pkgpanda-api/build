@@ -1,12 +1,10 @@
 #!/bin/bash
 
-export WORK_DIR=/run/dcos/pkgpanda-api/
-export STOP_TIMEOUT=30  # seconds
+mkdir -p $PKG_PATH/etc/
 
-mkdir -p $PKG_PATH/{etc,bin}
-envsubst '$WORK_DIR' < /pkg/extra/pkgpanda-api.conf.py > $PKG_PATH/etc/pkgpanda-api.conf.py
-envsubst '$WORK_DIR $STOP_TIMEOUT' < /pkg/extra/pkgpanda-api > $PKG_PATH/bin/pkgpanda-api
-chmod a+x $PKG_PATH/bin/pkgpanda-api
+cat <<EOF > $PKG_PATH/etc/pkgpanda-api.conf.py
+WORK_DIR = '/run/dcos/pkgpanda-api/'
+EOF
 
 systemd_socket=$PKG_PATH/dcos.target.wants/dcos-pkgpanda-api.socket
 mkdir -p $(dirname $systemd_socket)
@@ -14,4 +12,4 @@ cp /pkg/extra/dcos-pkgpanda-api.socket $systemd_socket
 
 systemd_service=$PKG_PATH/dcos.target.wants/dcos-pkgpanda-api.service
 mkdir -p $(dirname $systemd_service)
-envsubst '$PKG_PATH $STOP_TIMEOUT' < /pkg/extra/dcos-pkgpanda-api.service > $systemd_service
+cp /pkg/extra/dcos-pkgpanda-api.service $systemd_service
