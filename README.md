@@ -25,7 +25,7 @@ To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
 
 DC/OS itself is composed of many individual components precisely configured to work together in concert.
 
-This repo contains the release and package building tools necessary to produce installers for various on-premise and cloud platforms.
+This repo contains the release and package building tools necessary to produce installers for various on-premises and cloud platforms.
 
 | Directory | Contents |
 | --------- | -------- |
@@ -52,7 +52,7 @@ All code in this repository is Python 3
   1. [tox](https://tox.readthedocs.org/en/latest/)
   1. git
   1. Docker
-    - [Install Instructions for varios distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
+    - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
   1. Python 3.4
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
@@ -137,7 +137,7 @@ storage:
 # Status Check
 
 Before a pull request can be merged into master, the following checks are required:
- - teamcity/create-release-pr: in the CI system, [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity) is triggered and developers should use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above)
+ - teamcity/create-release-pr: in [the CI system](https://teamcity.mesosphere.io/project.html?projectId=DcosIo_Dcos&tab=projectOverview), [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity) is triggered and developers should use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above)
  - teamcity/code-quality: simply run `tox` in the top-level dir to run all syntax checks as well as pytest (unit-tests). See [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini) for more details
  - integration-test/*: runs [integration_test.py](https://github.com/dcos/dcos/blob/master/test_util/integration_test.py) in the network of a DC/OS cluster
     - /vagrant-bash: Tests the on-prem bash provider by using [dcos-vagrant](https://github.com/dcos/dcos-vagrant). Invoke this test through [run-all](https://github.com/dcos/dcos/blob/master/test_util/run-all)

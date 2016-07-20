@@ -10,7 +10,7 @@ from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
 from dcos_installer.config import DCOSConfig
-from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
+from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
 
 import ssh.validate as validate_ssh
 
@@ -87,6 +87,11 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
 
     if 'ip_detect_script' in post_data:
         write_external_config(post_data['ip_detect_script'], IP_DETECT_PATH)
+
+    if 'rexray_config' in post_data:
+        post_data['rexray_config_method'] = 'file'
+        post_data['rexray_config_filename'] = REXRAY_CONFIG_PATH
+        write_external_config(post_data['rexray_config'], REXRAY_CONFIG_PATH)
 
     # TODO (malnick) remove when UI updates are complete
     post_data = remap_post_data_keys(post_data)

@@ -1,0 +1,7 @@
+{
+  "single_source": {
+    "kind": "url",
+    "url": "https://downloads.dcos.io/pkgpanda-artifact-cache/dvdcli-Linux-x86_64-0.2.0.tar.gz",
+    "sha1": "ba34f88e7d501a4a452543b9856c978c14463beb"
+  }
+}

@@ -42,6 +42,7 @@ bootstrappers = {
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
     'dcos-metronome': noop,
+    'dcos-history': noop,
 }
 
 
