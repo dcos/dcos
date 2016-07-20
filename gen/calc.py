@@ -384,6 +384,7 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'minuteman_forward_metrics': 'false',
+        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
     },
     'conditional': {
         'master_discovery': {
