@@ -129,7 +129,6 @@ def main():
             default_root=constants.install_root,
             default_repository=constants.repository_base,
         ),
-        version="Pkpganda Package Manager",
     )
     umask(0o022)
 
