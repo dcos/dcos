@@ -20,3 +20,6 @@ root:
     content: |
       [Journal]
       MaxLevelConsole=warning
+  - path: /etc/rexray/config.yml
+    permissions: "0644"
+    content: {{ rexray_config_contents }}
