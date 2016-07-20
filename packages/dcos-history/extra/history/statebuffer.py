@@ -7,9 +7,23 @@ from datetime import datetime, timedelta
 
 import requests
 
-FETCH_URL = "http://leader.mesos:5050/state-summary"
+logging.getLogger('requests.packages.urllib3').setLevel(logging.WARN)
+
 FETCH_PERIOD = 2
 FILE_EXT = '.state-summary.json'
+
+STATE_SUMMARY_URI = os.getenv('STATE_SUMMARY_URI', 'http://leader.mesos:5050/state-summary')
+
+TLS_VERIFY = True
+# The verify arg to requests.get() can either
+# be a boolean or the path to a CA_BUNDLE
+if 'TLS_VERIFY' in os.environ:
+    if os.environ['TLS_VERIFY'] == 'false':
+        TLS_VERIFY = False
+    elif os.environ['TLS_VERIFY'] == 'true':
+        TLS_VERIFY = True
+    else:
+        TLS_VERIFY = os.environ['TLS_VERIFY']
 
 
 def parse_log_time(fname):
@@ -24,7 +38,7 @@ def fetch_state(headers_cb):
         # state-summary. leader.mesos isn't updated instantly.
         # That requires mesos stop returning hostnames from `/master/redirect`.
         # See: https://github.com/apache/mesos/blob/master/src/master/http.cpp#L746
-        resp = requests.get(FETCH_URL, timeout=FETCH_PERIOD*.9, headers=headers_cb())
+        resp = requests.get(STATE_SUMMARY_URI, timeout=FETCH_PERIOD*.9, headers=headers_cb(), verify=TLS_VERIFY)
         resp.raise_for_status()
         state = resp.text
     except Exception as e:
