@@ -8,5 +8,6 @@
     "ref_origin": "master"
   },
   "username": "dcos_3dt",
+  "group": "systemd-journal",
   "state_directory": true
 }

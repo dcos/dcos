@@ -18,7 +18,9 @@ StartLimitInterval=0
 RestartSec=15
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/metronome
+EnvironmentFile=-/run/dcos/etc/metronome/service.env
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome
+ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/metronome'
 ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
 ExecStartPre=-/usr/bin/env rm -f /opt/mesosphere/active/metronome/RUNNING_PID

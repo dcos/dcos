@@ -858,6 +858,18 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
             raise BuildError("username in buildinfo.json didn't meet the validation rules. {}".format(ex))
         pkginfo['username'] = username
 
+    group = None
+    if builder.has('group'):
+        group = builder.take('group')
+        if not isinstance(group, str):
+            raise BuildError("group in buildinfo.json must be either not set (use default group for this user)"
+                             ", or group must be a string")
+        try:
+            pkgpanda.UserManagement.validate_group_name(group)
+        except ValidationError as ex:
+            raise BuildError("group in buildinfo.json didn't meet the validation rules. {}".format(ex))
+        pkginfo['group'] = group
+
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
     # install root now, and make the package directories in it as we go.
