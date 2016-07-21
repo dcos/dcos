@@ -75,12 +75,20 @@ def main():
 
     exhibitor.wait(opts.master_count)
 
-    b = bootstrap.Bootstrapper(opts.zk)
+    # The bootstrapper is lazily initialized because of Spartan
+    # Spartan relies on bootstrap.p
+    b = None
 
     for service in opts.services:
         if service not in bootstrappers:
-            log.error('Unknown service: {}'.format(service))
-            sys.exit(1)
+            if opts.fail_on_unknown:
+                log.error('Unknown service: {}'.format(service))
+                sys.exit(1)
+            else:
+                log.warning('Unknown service, not bootstrapping: {}'.format(service))
+                continue
+        if not b:
+            b = bootstrap.Bootstrapper(opts.zk)
         log.debug('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
@@ -122,4 +130,9 @@ def parse_args():
         type=str,
         default='/opt/mesosphere/etc/master_count',
         help='File with number of master servers')
+    parser.add_argument(
+        '--fail-on-unknown',
+        action='store_true',
+        dest='fail_on_unknown',
+        help='Fail on unknown services')
     return parser.parse_args()
