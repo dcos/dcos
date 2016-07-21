@@ -1,0 +1,17 @@
+#!/bin/bash
+# This file sets the missing environment variables necessary to run the py.test
+# in dcos-integration-test WARNING: this script naively populates the master and
+# agent lists with nodes that have already succesfully joined the cluster. Errors
+# in the configuration and deployment likely to be missed without explicitly
+# setting these variables to expected values
+source /opt/mesosphere/environment.export
+export MASTER_HOSTS=${MASTER_HOSTS:=`dig master.mesos +short | tr '\n' ' '`}
+export PUBLIC_MASTER_HOSTS=${PUBLIC_MASTER_HOSTS:=$MASTER_HOSTS}
+export SLAVE_HOSTS=${SLAVE_HOSTS:=`dig slave.mesos +short | tr '\n' ' '`}
+export PUBLIC_SLAVE_HOSTS=${PUBLIC_SLAVE_HOSTS:=$SLAVE_HOSTS}
+export DCOS_DNS_ADDRESS=${DCOS_DNS_ADDRESS:='http://master.mesos'}
+export DCOS_PROVIDER=${DCOS_PROVIDER:=$PROVIDER}
+export DNS_SEARCH=${DNS_SEARCH:=`(ping -c1 leader &> /dev/null && echo true) || echo false`}
+export DCOS_VARIANT=${DCOS_VARIANT:='open'}
+export DCOS_INTEGRATION_TESTS=true
+export PYTHONDONTWRITEBYTECODE=true
