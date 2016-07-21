@@ -1617,10 +1617,10 @@ def test_signal_service(registry_cluster):
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
-# /opt/mesosphere/bin/dcos-signal \
-#    -test
-    subprocess.run(["/opt/mesosphere/bin/dcos-signal", "-test"], stdout=subprocess.PIPE)
-    r_data = json.loads(stdout)
+    cluster = registry_cluster
+
+    signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
+    r_data = json.loads(signal_results)
 
     exp_data = {
         'diagnostics': {
