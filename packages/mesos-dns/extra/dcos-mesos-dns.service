@@ -7,4 +7,5 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-dns
 ExecStart=/opt/mesosphere/bin/mesos-dns --config=/opt/mesosphere/etc/mesos-dns.json -logtostderr=true
