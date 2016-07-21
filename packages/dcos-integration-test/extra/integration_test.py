@@ -85,34 +85,19 @@ def registry_cluster(cluster, request):
             "healthChecks": [{
                 "protocol": "COMMAND",
                 "command": {
-                    "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"},
-                "gracePeriodSeconds": 300,
-                "intervalSeconds": 60,
-                "timeoutSeconds": 20,
-                "maxConsecutiveFailures": 3,
-                "ignoreHttp1xx": True}],
+                    "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"}
+                }],
             "ports": [0],
             "requirePorts": True
             }
     endpoints = cluster.deploy_marathon_app(registry_app)
     cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
-    with open('test_server/test_server.py', 'r') as fh:
-        test_server = fh.read()
-    with open('test_server/Dockerfile', 'r') as fh:
-        dockerfile = fh.read()
     docker_cmds = """
 #!/bin/bash
-mkdir tmp
-cat <<EOF > tmp/test_server.py
-{test_server}
-EOF
-cat <<EOF > tmp/Dockerfile
-{dockerfile}
-EOF
-docker build -t {registry}/test_server tmp/
+docker build -t {registry}/test_server /opt/mesosphere/active/dcos-integration-test/test_server
 docker push {registry}/test_server
 sleep 36000
-""".format(registry=cluster.registry, test_server=test_server, dockerfile=dockerfile)
+""".format(registry=cluster.registry)
     docker_build_and_push_app = {
             'id': '/build-and-push',
             'cmd': docker_cmds,
@@ -122,12 +107,10 @@ sleep 36000
             'healthChecks': [{
                 'protocol': 'COMMAND',
                 'command': {'value': 'curl -fsSlv https://{}/v2/test_server/manifests/latest'.format(cluster.registry)},
-                'gracePeriodSeconds': 20,
-                'intervalSeconds': 20,
-                'timeoutSeconds': 10,
-                'maxConsecutiveFailures': 3}],
+                'gracePeriodSeconds': 400
+                }]
             }
-    cluster.deploy_marathon_app(docker_build_and_push_app)
+    cluster.deploy_marathon_app(docker_build_and_push_app, timeout=500)
 
     def kill_registry():
         cluster.destroy_marathon_app(docker_build_and_push_app['id'])
