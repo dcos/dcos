@@ -1621,8 +1621,8 @@ def test_signal_service(registry_cluster):
     dcos_version = os.getenv("DCOS_VERSION", "")
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     customer_key = json.loads(signal_config.read())['customer_key']
-    cluster_id_file = open('/var/lib/dcos/cluster-id', 'r')
-    cluster_id = json.loads(cluster_id_file.read())['cluster_id']
+    cluster_id_file = open('/var/lib/dcos/cluster-id')
+    cluster_id = cluster_id_file.read().strip()
 
     print("Version: ", dcos_version)
     print("Customer Key: ", customer_key)
