@@ -17,8 +17,10 @@ log = logging.getLogger(__name__)
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        test_dns_search, provider, ci_flags,
-        aws_access_key_id='', aws_secret_access_key='', region='', add_env=None):
+        test_dns_search, provider,
+        aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
+        pytest_cmd='py.test -vv',
+        pytest_dir='/opt/mesosphere/active/dcos-integration-test'):
     """Runs integration test on host
 
     Args:
@@ -27,14 +29,19 @@ def integration_test(
         master_list: string of comma separated master addresses
         agent_list: string of comma separated agent addresses
         test_dns_search: if set to True, test for deployed mesos DNS app
-        ci_flags: optional additional string to be passed to test
         provider: (str) either onprem, aws, or azure
-        # The following variables correspond to currently disabled tests
+    Optional args:
         aws_access_key_id: needed for REXRAY tests
         aws_secret_access_key: needed for REXRAY tests
         region: string indicating AWS region in which cluster is running
         add_env: a python dict with any number of key=value assignments to be passed to
             the test environment
+        pytest_dir: directory of test package on test host
+        pytest_cmd: string representing command for py.test
+
+    Returns:
+        exit code corresponding to test_cmd run
+
     """
     dns_search = 'true' if test_dns_search else 'false'
     test_env = [
@@ -53,14 +60,26 @@ def integration_test(
             extra_env = key + '=' + value
             test_env.append(extra_env)
 
-    test_wrapper = """#!/bin/bash
+    test_env_str = ''.join(['export '+e+'\n' for e in test_env])
+
+    test_boilerplate = """#!/bin/bash
 source /opt/mesosphere/environment.export
 {env}
-cd /opt/mesosphere/active/dcos-integration-test
-py.test -vv {ci_flags}
+cd {pytest_dir}
+{cmd}
 """
-    test_env_str = ''.join(['export '+e+'\n' for e in test_env])
-    write_string('test_wrapper.sh', test_wrapper.format(env=test_env_str, ci_flags=ci_flags))
+
+    write_string('test_preflight.sh', test_boilerplate.format(
+        env=test_env_str, pytest_dir=pytest_dir,
+        cmd='py.test -vv --collect-only'))
+    write_string('test_wrapper.sh', test_boilerplate.format(
+        env=test_env_str, pytest_dir=pytest_dir,
+        cmd=pytest_cmd))
+
+    pretest_path = join(test_dir, 'test_preflight.sh')
+    log.info('Running integration test setup check...')
+    tunnel.write_to_remote('test_preflight.sh', pretest_path)
+    tunnel.remote_cmd(['bash', pretest_path], stdout=sys.stdout.buffer)
 
     wrapper_path = join(test_dir, 'test_wrapper.sh')
     log.info('Running integration test...')

@@ -188,6 +188,9 @@ def check_environment():
         if k.startswith(prefix):
             add_env[k.replace(prefix, '')] = v
     options.add_env = add_env
+
+    options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv '+options.ci_flags)
     return options
 
 
@@ -324,10 +327,11 @@ def main():
                 provider='onprem',
                 # Setting dns_search: mesos not currently supported in API
                 test_dns_search=not options.use_api,
-                ci_flags=options.ci_flags,
                 aws_access_key_id=options.aws_access_key_id,
                 aws_secret_access_key=options.aws_secret_access_key,
-                add_env=options.add_env)
+                add_env=options.add_env,
+                pytest_dir=options.pytest_dir,
+                pytest_cmd=options.pytest_cmd)
 
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
