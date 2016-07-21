@@ -30,7 +30,7 @@ class SSHTunnel():
         Return:
             established SSHTunnel that can be issued copy/cmd/close
         """
-        self.socket_dir = tempfile.mkdtemp()
+        self.socket_path = tempfile.NamedTemporaryFile(delete=False).name
         self.host = host
         self.ssh_user = ssh_user
         self.ssh_key_path = ssh_key_path
@@ -40,7 +40,7 @@ class SSHTunnel():
             '/usr/bin/ssh',
             '-oConnectTimeout=10',
             '-oControlMaster=auto',
-            '-oControlPath={}/%C'.format(self.socket_dir),
+            '-oControlPath='+self.socket_path,
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
             '-oBatchMode=yes',
@@ -91,7 +91,6 @@ class SSHTunnel():
         close_tunnel = self.ssh_cmd + ['-p', str(self.port), '-O', 'exit', self.target]
         logger.debug('Closing SSH Tunnel: ' + ' '.join(close_tunnel))
         check_call(close_tunnel)
-        check_call(['rm', '-rf', self.socket_dir])
 
 
 class TunnelCollection():

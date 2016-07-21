@@ -2,7 +2,7 @@
     "docker": "golang:1.6",
     "single_source" : {
       "kind": "git",
-      "git": "git@github.com:containernetworking/cni.git",
+      "git": "https://github.com/containernetworking/cni.git",
       "ref" : "b8e92ed030588120f9fda47dd359e17a3234142d",
       "ref_origin": "master"
     }
