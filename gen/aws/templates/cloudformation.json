@@ -519,7 +519,9 @@
                 "ec2:CopySnapshot",
                 "ec2:DeleteSnapshot",
                 "ec2:DescribeSnapshots",
-                "ec2:DescribeSnapshotAttribute"
+                "ec2:DescribeSnapshotAttribute",
+                "autoscaling:DescribeAutoScalingGroups",
+                "cloudwatch:PutMetricData"
               ],
               "Effect": "Allow"
             }
