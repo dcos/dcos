@@ -61,6 +61,14 @@ def run():
     rmc = ResourceManagementClient(credentials, subscription_id)
 
     template_parameters = get_env_params()
+    if template_parameters.get('numberOfPrivateSlaves'):
+        assert template_parameters['numberOfPrivateSlaves']['value'] >= 2, 'Test requires at least 2 private slaves!'
+    else:
+        template_parameters['numberOfPrivateSlaves'] = {'value': 2}
+    if template_parameters.get('numberOfPublicSlaves'):
+        assert template_parameters['numberOfPublicSlaves']['value'] >= 1, 'Test requires at least 1 public slave!'
+    else:
+        template_parameters['numberOfPublicSlaves'] = {'value': 1}
 
     # Output resource group
     print("Resource group name: {}".format(group_name))
@@ -82,8 +90,6 @@ def run():
     test_successful = False
 
     try:
-        template_parameters['numberOfPrivateSlaves'] = {'value': 2}
-        template_parameters['numberOfPublicSlaves'] = {'value': 1}
         deployment_properties = DeploymentProperties(
             template_link=template,
             mode=DeploymentMode.incremental,
@@ -158,7 +164,8 @@ def run():
                     public_agent_list=ip_buckets['slavePublicNic'],
                     provider='azure',
                     test_dns_search=False,
-                    ci_flags=os.getenv('CI_FLAGS', ''))
+                    pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
+                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', 'py.test -vv ')+os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         print("ERROR: exception {}".format(ex))
