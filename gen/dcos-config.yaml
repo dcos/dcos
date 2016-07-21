@@ -295,7 +295,8 @@ package:
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=https://{{ exhibitor_address }}/exhibitor/exhibitor/v1/cluster/status
+      EXHIBITOR_URI=http://{{ exhibitor_address }}:8181/exhibitor/v1/cluster/status
+      EXHIBITOR_ADDRESS={{ exhibitor_address }}
       RESOLVERS={{ resolvers_str }}
 {% case "static" %}
   - path: /etc_master/dns_config_master
