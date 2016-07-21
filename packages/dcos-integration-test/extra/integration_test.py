@@ -1620,7 +1620,8 @@ def test_signal_service(registry_cluster):
     cluster = registry_cluster
     dcos_version = os.getenv("DCOS_VERSION", "")
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
-    customer_key = json.loads(signal_config.read())['customer_key']
+    signal_config_data = json.loads(signal_config.read())
+    customer_key = signal_config_data.get('customer_key', '')
     cluster_id_file = open('/var/lib/dcos/cluster-id')
     cluster_id = cluster_id_file.read().strip()
 
