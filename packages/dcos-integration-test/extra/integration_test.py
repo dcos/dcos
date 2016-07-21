@@ -1618,6 +1618,15 @@ def test_signal_service(registry_cluster):
     and pushes the results to the test_server app for easy retrieval
     """
     cluster = registry_cluster
+    dcos_version = os.getenv("DCOS_VERSION", "")
+    signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
+    customer_key = json.loads(signal_config.read())['customer_key']
+    cluster_id_file = open('/var/lib/dcos/cluster-id', 'r')
+    cluster_id = json.loads(cluster_id_file.read())['cluster_id']
+
+    print("Version: ", dcos_version)
+    print("Customer Key: ", customer_key)
+    print("Cluster ID: ", cluster_id)
 
     signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
     r_data = json.loads(signal_results)
@@ -1644,9 +1653,9 @@ def test_signal_service(registry_cluster):
     generic_properties = {
         'provider': cluster.provider,
         'source': 'cluster',
-        'clusterId': 'test-id',
-        'customerKey': '',
-        'environmentVersion': '',
+        'clusterId': cluster_id,
+        'customerKey': customer_key,
+        'environmentVersion': dcos_version,
         'variant': 'open'
     }
 
