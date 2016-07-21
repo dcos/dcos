@@ -13,5 +13,6 @@ RuntimeDirectory=dcos_exhibitor
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
+EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
 # run in new mount namespace to create custom resolv.conf
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
