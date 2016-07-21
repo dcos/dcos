@@ -133,8 +133,8 @@ package:
           "overlay_mtu": {{ dcos_overlay_mtu }}
         }
       }
-  {% switch dcos_overlay_enable %}
-  {% case "true" %}
+{% switch dcos_overlay_enable %}
+{% case "true" %}
   - path: /etc/mesos-master-modules/overlay_master_modules.json
     content: |
       {
@@ -191,8 +191,8 @@ package:
            }
         ]
       }
-  {% case "false" %}
-  {% endswitch %}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/lib/dcos/mesos/log
@@ -287,15 +287,23 @@ package:
       OAUTH_AUTH_REDIRECTOR={{ oauth_auth_redirector }}
 {% switch master_discovery %}
 {% case "master_http_loadbalancer" %}
+  - path: /etc_master/dns_config_master
+    content: |
+      MASTER_SOURCE=exhibitor_uri
+      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
+      EXHIBITOR_ADDRESS=127.0.0.1
   - path: /etc/dns_config
     content: |
-      MASTER_SOURCE=exhibitor
+      MASTER_SOURCE=exhibitor_uri
+      EXHIBITOR_URI=http://{{ exhibitor_address }}:8181/exhibitor/v1/cluster/status
       EXHIBITOR_ADDRESS={{ exhibitor_address }}
       RESOLVERS={{ resolvers_str }}
 {% case "static" %}
   - path: /etc_master/dns_config_master
     content: |
-      TRY_LOCALHOST=true
+      MASTER_SOURCE=exhibitor_uri
+      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
+      EXHIBITOR_ADDRESS=127.0.0.1
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=master_list
