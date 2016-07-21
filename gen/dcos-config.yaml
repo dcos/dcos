@@ -375,6 +375,9 @@ package:
 {% endswitch %}
 {% endswitch %}
       "tracking":{"enabled":{{ telemetry_enabled }}}}}}
+  - path: /etc_master/marathon
+    content: |
+      MARATHON_ZK=zk://127.0.0.1:2181/marathon
   - path: /etc_master/metronome
     content: |
       METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
