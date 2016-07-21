@@ -1085,7 +1085,7 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'healthChecks': [{
             'protocol': 'COMMAND',
             'command': {
-                'value': 'test "$(curl -o /dev/null --max-time 5 -4 -w \'%{http_code}\' -s http://localhost:${PORT0}/|cut -f1 -d" ")" == 200'  # noqa
+                'value': 'curl -f -X GET http://$HOST:$PORT0/'
             },
             'gracePeriodSeconds': 0,
             'intervalSeconds': 5,
