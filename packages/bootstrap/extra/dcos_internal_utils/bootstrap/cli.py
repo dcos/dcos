@@ -15,26 +15,14 @@ from dcos_internal_utils import exhibitor
 log = logging.getLogger(__name__)
 
 
-def check_root(fun):
-    def wrapper(b, opts):
-        if os.getuid() != 0:
-            log.error('bootstrap must be run as root')
-            sys.exit(1)
-        fun(b, opts)
-    return wrapper
-
-
-@check_root
 def dcos_adminrouter(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
 
-@check_root
 def dcos_signal(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
 
-@check_root
 def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
@@ -55,14 +43,14 @@ bootstrappers = {
     'dcos-cosmos': noop,
     'dcos-metronome': noop,
     'dcos-history': noop,
-    'dcos-mesos-dns': noop,
-    'dcos-minuteman': noop,
-    'dcos-navstar': noop,
-    'dcos-spartan': noop,
 }
 
 
 def main():
+    if os.getuid() != 0:
+        log.error('bootstrap must be run as root')
+        sys.exit(1)
+
     opts = parse_args()
 
     logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
@@ -85,30 +73,24 @@ def main():
         bootstrappers[service](b, opts)
 
 
-def get_zookeeper_address_agent():
-    if os.getenv('MASTER_SOURCE') == 'master_list':
-        # Spartan agents with static master list
-        with open('/opt/mesosphere/etc/master_list', 'r') as f:
-            master_list = json.load(f)
-        assert len(master_list) > 0
-        return random.choice(master_list)
-    elif os.getenv('EXHIBITOR_ADDRESS'):
-        # Spartan agents on AWS
-        return os.getenv('EXHIBITOR_ADDRESS')
-    else:
-        # any other agent service
-        return 'leader.mesos'
-
-
-def get_zookeeper_address():
-    if os.path.exists('/etc/mesosphere/roles/master'):
-        return '127.0.0.1'
-    else:
-        return get_zookeeper_address_agent()
-
-
 def parse_args():
-    zk_default = get_zookeeper_address() + ':2181'
+    if os.path.exists('/etc/mesosphere/roles/master'):
+        zk_default = '127.0.0.1:2181'
+    else:
+        if os.getenv('MASTER_SOURCE') == 'master_list':
+            # Spartan agents with static master list
+            with open('/opt/mesosphere/etc/master_list', 'r') as f:
+                master_list = json.load(f)
+            assert len(master_list) > 0
+            leader = random.choice(master_list)
+        elif os.getenv('EXHIBITOR_ADDRESS'):
+            # Spartan agents on AWS
+            leader = os.getenv('EXHIBITOR_ADDRESS')
+        else:
+            # any other agent service
+            leader = 'leader.mesos'
+
+        zk_default = leader + ':2181'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('services', nargs='+')
