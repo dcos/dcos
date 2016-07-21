@@ -370,7 +370,7 @@ package:
       "tracking":{"enabled":{{ telemetry_enabled }}}}}}
   - path: /etc_master/marathon
     content: |
-      # TODO(adam): Move more command-line flag values to environment variables.
+      MARATHON_ZK=zk://localhost:2181/marathon
   - path: /etc_master/metronome
     content: |
       METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
