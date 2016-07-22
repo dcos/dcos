@@ -1,27 +1,51 @@
 """Pkgpanda HTTP API"""
 
 import http.client
+import logging
 import sys
 
-from flask import Flask, abort, current_app, json, request
+from flask import Flask, current_app, jsonify, request
 
 from pkgpanda import Install, Repository, actions
+from pkgpanda.exceptions import PackageError
+
 
 empty_response = ('', http.client.NO_CONTENT)
 
 
-def package_index(packages, package_id=None):
-    if package_id is None:
-        return json.dumps(sorted(packages))
-    elif package_id in packages:
-        return empty_response
-    else:
-        abort(http.client.NOT_FOUND)
+def package_listing_response(package_ids):
+    return jsonify(sorted(package_ids))
+
+
+def package_response(package_id, repository):
+    try:
+        package = repository.load(package_id)
+    except PackageError:
+        error_message = 'Unable to load package {}.'.format(package_id)
+        logging.exception(error_message)
+        return error_response(error_message), http.client.INTERNAL_SERVER_ERROR
+
+    return jsonify({
+        'id': str(package.id),
+        'name': str(package.name),
+        'version': str(package.version),
+    })
+
+
+def error_response(message):
+    return jsonify({'error': message})
 
 
 app = Flask(__name__)
 app.config.from_object('pkgpanda.http.config')
 app.config.from_envvar('PKGPANDA_HTTP_CONFIG', silent=True)
+
+
+@app.errorhandler(Exception)
+def uncaught_exception_handler(exc):
+    error_message = 'An unexpected error has occurred.'
+    logging.error(error_message, exc_info=exc)
+    return error_response(error_message), http.client.INTERNAL_SERVER_ERROR
 
 
 @app.before_request
@@ -37,9 +61,18 @@ def set_app_attrs_from_config():
 
 
 @app.route('/', methods=['GET'])
+def get_package_list():
+    return package_listing_response(current_app.repository.list())
+
+
 @app.route('/<package_id>', methods=['GET'])
-def get_package(package_id=None):
-    return package_index(current_app.repository.list(), package_id)
+def get_package(package_id):
+    if not current_app.repository.has_package(package_id):
+        return (
+            error_response('Package {} not found.'.format(package_id)),
+            http.client.NOT_FOUND,
+        )
+    return package_response(package_id, current_app.repository)
 
 
 @app.route('/<package_id>', methods=['POST'])
@@ -47,7 +80,13 @@ def fetch_package(package_id):
     try:
         repository_url = request.json['repository_url']
     except Exception:
-        abort(http.client.BAD_REQUEST)
+        return (
+            error_response(
+                'Request body must be a json object with a `repository_url` '
+                'key.'
+            ),
+            http.client.BAD_REQUEST,
+        )
 
     actions.fetch_package(
         current_app.repository,
@@ -60,10 +99,16 @@ def fetch_package(package_id):
 
 @app.route('/<package_id>', methods=['DELETE'])
 def remove_package(package_id):
-    if package_id not in current_app.repository.list():
-        abort(http.client.NOT_FOUND)
+    if not current_app.repository.has_package(package_id):
+        return (
+            error_response('Package {} not found.'.format(package_id)),
+            http.client.NOT_FOUND,
+        )
     if package_id in current_app.install.get_active():
-        abort(http.client.CONFLICT)
+        return (
+            error_response('Package {} is active, so it can\'t be removed.'),
+            http.client.CONFLICT,
+        )
     actions.remove_package(
         current_app.install,
         current_app.repository,
@@ -72,18 +117,35 @@ def remove_package(package_id):
 
 
 @app.route('/active/', methods=['GET'])
+def get_active_package_list():
+    return package_listing_response(current_app.install.get_active())
+
+
 @app.route('/active/<package_id>', methods=['GET'])
-def get_active_package(package_id=None):
-    return package_index(current_app.install.get_active(), package_id)
+def get_active_package(package_id):
+    if package_id not in current_app.install.get_active():
+        return (
+            error_response('Package {} is not active.'.format(package_id)),
+            http.client.NOT_FOUND,
+        )
+
+    return package_response(package_id, current_app.repository)
 
 
 @app.route('/active/', methods=['PUT'])
 def activate_packages():
     if not isinstance(request.json, list):
-        abort(http.client.BAD_REQUEST)
-    # All packages in the request body must be present in the repository.
+        return (
+            error_response(
+                'Request body must be a json array of package IDs.'
+            ),
+            http.client.BAD_REQUEST,
+        )
     if not (set(request.json) <= set(current_app.repository.list())):
-        abort(http.client.CONFLICT)
+        return (
+            error_response('Not all packages in the request are present.'),
+            http.client.CONFLICT,
+        )
 
     # This will stop all DC/OS services, including this app. Use a web server
     # that supports graceful shutdown to ensure that activation is completed

@@ -7,6 +7,20 @@ basePath: /pkgpanda
 
 definitions:
 
+  PackageName:
+    description: A package name.
+    type: string
+    example: 'mesos'
+    # Pattern adapted from pkgpanda/__init__.py.
+    pattern: '/^[a-zA-Z0-9@_+]([a-zA-Z0-9@._+\-]*[a-zA-Z0-9@._+])?$/'
+
+  PackageVersion:
+    description: A package version.
+    type: string
+    example: 'abcdef'
+    # Pattern adapted from pkgpanda/__init__.py.
+    pattern: '/^[a-zA-Z0-9@_+:.]+$/'
+
   PackageId:
     description: A unique pkgpanda package ID. Composed of a name and a version separated by `--`.
     type: string
@@ -20,6 +34,35 @@ definitions:
     uniqueItems: true
     items:
       $ref: '#/definitions/PackageId'
+
+  Package:
+    description: A pkgpanda package.
+    type: object
+    required:
+      - id
+      - name
+      - version
+    properties:
+      id:
+        $ref: '#/definitions/PackageId'
+      name:
+        $ref: '#/definitions/PackageName'
+      version:
+        $ref: '#/definitions/PackageVersion'
+    additionalProperties: false
+    example: {"id": "mesos--abcdef", "name": "mesos", "version": "abcdef"}
+
+  Error:
+    description: An error response body.
+    type: object
+    required:
+      - error
+    properties:
+      error:
+        type: string
+        description: The error message.
+    additionalProperties: false
+    example: {"error": "An error has occurred."}
 
 
 parameters:
@@ -49,14 +92,20 @@ paths:
 
   /{package-id}:
     get:
-      summary: Get a package in the node's pkgpanda repository.
+      summary: Get metadata for a package in the node's pkgpanda repository.
       parameters:
         - '$ref': '#/parameters/PackageId'
+      produces:
+        - application/json
       responses:
-        '204':
-          description: The package is present in this node's pkgpanda repository.
+        '200':
+          description: Package metadata was successfully retrieved.
+          schema:
+            $ref: '#/definitions/Package'
         '404':
           description: The package is not present in this node's pkgpanda repository.
+          schema:
+            $ref: '#/definitions/Error'
     post:
       summary: Fetch a package from the repository URL in the request body.
       description: The package is fetched from `<repository_url>/<package_name>/<package_id>.tar.xz`.
@@ -75,24 +124,36 @@ paths:
                 description: The URL for a package repository.
             additionalProperties: false
             example: {"repository_url": "file:///opt/dcos_install_tmp"}
+      produces:
+        - application/json
       responses:
         '204':
           description: The package was successfully fetched.
         '400':
-          description: The `repository_url` could not be retrieved from the request body.
+          description: The request body could not be parsed.
+          schema:
+            $ref: '#/definitions/Error'
         '500':
           description: The package fetch failed.
+          schema:
+            $ref: '#/definitions/Error'
     delete:
       summary: Remove a package from the node's pkgpanda repository.
       parameters:
         - '$ref': '#/parameters/PackageId'
+      produces:
+        - application/json
       responses:
         '204':
           description: The package was successfully deleted.
         '404':
           description: The package is not present in this node's pkgpanda repository.
+          schema:
+            $ref: '#/definitions/Error'
         '409':
           description: The package is active, so it can't be removed.
+          schema:
+            $ref: '#/definitions/Error'
 
   /active/:
     get:
@@ -114,19 +175,29 @@ paths:
           required: true
           schema:
             '$ref': '#/definitions/PackageIdArray'
+      produces:
+        - application/json
       responses:
         '204':
           description: The packages in the request body have been activated. (This does not necessarily mean that their services started successfully.)
         '409':
           description: One or more packages in the request body are not present in this node's pkgpanda repository.
+          schema:
+            $ref: '#/definitions/Error'
 
   /active/{package-id}:
     get:
-      summary: Get a package that is active on this node.
+      summary: Get metadata for a package that is active on this node.
       parameters:
         - '$ref': '#/parameters/PackageId'
+      produces:
+        - application/json
       responses:
-        '204':
-          description: The package is active on this node.
+        '200':
+          description: The package is active and its metadata was successfully retrieved.
+          schema:
+            $ref: '#/definitions/Package'
         '404':
           description: The package is not active on this node.
+          schema:
+            $ref: '#/definitions/Error'

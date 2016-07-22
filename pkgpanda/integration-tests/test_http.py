@@ -25,8 +25,18 @@ def test_list_packages():
 def test_get_package():
     _set_test_config(app)
     client = app.test_client()
-    assert client.get('/mesos--0.22.0').status_code == 204
-    assert client.get('/nonexistent-package--fakeversion').status_code == 404
+
+    response = client.get('/mesos--0.22.0')
+    assert response.status_code == 200
+    assert json.loads(response.data.decode('utf-8')) == {
+        'id': 'mesos--0.22.0',
+        'name': 'mesos',
+        'version': '0.22.0',
+    }
+
+    response = client.get('/nonexistent-package--fakeversion')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
 
 
 def test_list_active_packages():
@@ -41,8 +51,18 @@ def test_list_active_packages():
 def test_get_active_package():
     _set_test_config(app)
     client = app.test_client()
-    assert client.get('/active/mesos--0.22.0').status_code == 204
-    assert client.get('/active/mesos--0.23.0').status_code == 404
+
+    response = client.get('/active/mesos--0.22.0')
+    assert response.status_code == 200
+    assert json.loads(response.data.decode('utf-8')) == {
+        'id': 'mesos--0.22.0',
+        'name': 'mesos',
+        'version': '0.22.0',
+    }
+
+    response = client.get('/active/mesos--0.23.0')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
 
 
 def test_activate_packages(tmpdir):
@@ -71,11 +91,13 @@ def test_activate_packages(tmpdir):
     assert json.loads(client.get('/active/').data.decode('utf-8')) == new_packages
 
     # Attempt to activate nonexistent package.
-    assert client.put(
+    response = client.put(
         '/active/',
         content_type='application/json',
         data=json.dumps(['nonexistent-package--fakeversion']),
-    ).status_code == 409
+    )
+    assert response.status_code == 409
+    assert 'error' in json.loads(response.data.decode('utf-8'))
 
 
 def test_fetch_package(tmpdir):
@@ -95,11 +117,13 @@ def test_fetch_package(tmpdir):
     assert json.loads(client.get('/').data.decode('utf-8')) == ['mesos--0.22.0']
 
     # No repository URL provided.
-    assert client.post(
+    response = client.post(
         '/mesos--0.23.0',
         content_type='application/json',
         data=json.dumps({}),
-    ).status_code == 400
+    )
+    assert response.status_code == 400
+    assert 'error' in json.loads(response.data.decode('utf-8'))
 
 
 def test_remove_package(tmpdir):
@@ -118,8 +142,12 @@ def test_remove_package(tmpdir):
     # Attempted deletion of active package.
     package_to_delete = 'mesos--0.22.0'
     assert package_to_delete in json.loads(client.get('/active/').data.decode('utf-8'))
-    assert client.delete('/' + package_to_delete).status_code == 409
+    response = client.delete('/' + package_to_delete)
+    assert response.status_code == 409
+    assert 'error' in json.loads(response.data.decode('utf-8'))
     assert package_to_delete in json.loads(client.get('/active/').data.decode('utf-8'))
 
     # Attempted deletion of nonexistent package.
-    assert client.delete('/nonexistent-package--fakeversion').status_code == 404
+    response = client.delete('/nonexistent-package--fakeversion')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
