@@ -1109,6 +1109,79 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
     _ensure_routable()
 
 
+def test_if_minuteman_routes_to_named_vip(cluster, timeout=125):
+    """Test if we are able to connect to a task with a vip using minuteman.
+    """
+    # Launch the app and proxy
+    test_uuid = uuid.uuid4().hex
+
+    app_definition = {
+        'id': "/integration-test-app-with-minuteman-vip-%s" % test_uuid,
+        'cpus': 0.1,
+        'mem': 128,
+        'ports': [10000],
+        'cmd': 'touch imok && /opt/mesosphere/bin/python -mhttp.server ${PORT0}',
+        'portDefinitions': [
+            {
+                'port': 10000,
+                'protocol': 'tcp',
+                'name': 'test',
+                'labels': {
+                    'VIP_0': 'foo:5000'
+                }
+            }
+        ],
+        'uris': [],
+        'instances': 1,
+        'healthChecks': [{
+            'protocol': 'HTTP',
+            'path': '/',
+            'portIndex': 0,
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    cluster.deploy_marathon_app(app_definition)
+
+    proxy_definition = {
+        'id': "/integration-test-proxy-to-minuteman-vip-%s" % test_uuid,
+        'cpus': 0.1,
+        'mem': 128,
+        'ports': [10000],
+        'cmd': 'chmod 755 ncat && ./ncat -v --sh-exec "./ncat foo.marathon.l4lb.thisdcos.directory 5000" -l $PORT0 --keep-open',
+        'uris': ['https://s3.amazonaws.com/sargun-mesosphere/ncat'],
+        'instances': 1,
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {
+                'value': 'test "$(curl -o /dev/null --max-time 5 -4 -w \'%{http_code}\' -s http://localhost:${PORT0}/|cut -f1 -d" ")" == 200'  # noqa
+            },
+            'gracePeriodSeconds': 0,
+            'intervalSeconds': 5,
+            'timeoutSeconds': 20,
+            'maxConsecutiveFailures': 3,
+            'ignoreHttp1xx': False
+        }],
+    }
+
+    service_points = cluster.deploy_marathon_app(proxy_definition)
+
+    @retrying.retry(wait_fixed=2000,
+                    stop_max_delay=timeout*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
+    def _ensure_routable():
+        r = requests.get('http://{}:{}'.format(service_points[0].host,
+                                               service_points[0].port))
+        assert(r.ok)
+        data = r.text
+        assert 'imok' in data
+
+    _ensure_routable()
+
 def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
