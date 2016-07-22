@@ -56,6 +56,12 @@ All code in this repository is Python 3
   1. Python 3.4
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
+    - Ubuntu 16.04 LTS:
+      - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
+      - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev`
+      - Install Python 3.4.4: `pyenv install 3.4.4`
+      - Create DC/OS virtualenv: `pyenv virtualenv 3.4.4 dcos`
+      - Activate environment: `pyenv activate dcos`
   1. Over 10GB of free disk space
   1. _Optional_ pxz (speeds up package and bootstrap compression)
     - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.
