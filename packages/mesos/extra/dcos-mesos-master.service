@@ -5,6 +5,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=15
 LimitNOFILE=infinity
+TasksMax=infinity
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-master
