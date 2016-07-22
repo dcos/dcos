@@ -376,6 +376,18 @@ def test_3dt_units_unit_nodes_node(cluster):
                 assert node_response['help'], 'help field cannot be empty'
 
 
+def test_3dt_selftest(cluster):
+    """
+    test invokes 3dt `self test` functionality
+    """
+    for node in cluster.masters:
+        response = make_3dt_request(node, BASE_ENDPOINT_3DT + '/selftest/info', cluster)
+        for test_name, attrs in response.items():
+            assert 'Success' in attrs, 'Field `Success` does not exist'
+            assert 'ErrorMessage' in attrs, 'Field `ErrorMessage` does not exist'
+            assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
+
+
 def test_3dt_report(cluster):
     """
     test 3dt report endpoint /system/health/v1/report
