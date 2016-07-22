@@ -180,8 +180,12 @@ paths:
       responses:
         '204':
           description: The packages in the request body have been activated. (This does not necessarily mean that their services started successfully.)
+        '400':
+          description: The request body could not be parsed.
+          schema:
+            $ref: '#/definitions/Error'
         '409':
-          description: One or more packages in the request body are not present in this node's pkgpanda repository.
+          description: Packages could not be activated due to a conflict.
           schema:
             $ref: '#/definitions/Error'
 

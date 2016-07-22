@@ -7,7 +7,7 @@ import sys
 from flask import Flask, current_app, jsonify, request
 
 from pkgpanda import Install, Repository, actions
-from pkgpanda.exceptions import PackageError
+from pkgpanda.exceptions import PackageError, ValidationError
 
 
 empty_response = ('', http.client.NO_CONTENT)
@@ -150,12 +150,15 @@ def activate_packages():
     # This will stop all DC/OS services, including this app. Use a web server
     # that supports graceful shutdown to ensure that activation is completed
     # and a response is returned.
-    actions.activate_packages(
-        current_app.install,
-        current_app.repository,
-        request.json,
-        systemd=(not current_app.config.get('TESTING')),
-        block_systemd=False)
+    try:
+        actions.activate_packages(
+            current_app.install,
+            current_app.repository,
+            request.json,
+            systemd=(not current_app.config.get('TESTING')),
+            block_systemd=False)
+    except ValidationError as exc:
+        return error_response(str(exc)), http.client.CONFLICT
 
     return empty_response
 
