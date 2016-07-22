@@ -2,6 +2,9 @@ Documentation of changes which may break some install environments
 
 
 1.8-dev
+ - Marathon will refuse to accept new apps, and will refuse changes to existing
+   apps which have the same servicePort as another app. servicePorts should be
+   unique per app, but previously this wasn't enforced.
  - Most software doesn't run as root. Lots of paths that things use for storage
    or intermediate state changed as a result.
  - Zookeeper, exhibitor storage paths changed. Prior to upgrade, exhibitor
@@ -9,7 +12,7 @@ Documentation of changes which may break some install environments
  - Zookeeper should now log to journald
  - dcos-history-serivce was renamed to dcos-history
  - dcos-ddt.service was renamed to dcos-3dt.service
- - Updated to CoreOS Beta 1068. 
+ - Updated to CoreOS Beta 1068.
  - Make the admin load balancer in all templates do TCP, not HTTP load balancing
  - Switch Ubuntu in Azure to 16.04 LTS final release
  - Teach spartan / DNS to only listen on a local internal address
