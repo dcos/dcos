@@ -88,13 +88,13 @@ paths:
         '200':
           description: A list of the packages on this node.
           schema:
-            '$ref': '#/definitions/PackageIdArray'
+            $ref: '#/definitions/PackageIdArray'
 
   /{package-id}:
     get:
       summary: Get metadata for a package in the node's pkgpanda repository.
       parameters:
-        - '$ref': '#/parameters/PackageId'
+        - $ref: '#/parameters/PackageId'
       produces:
         - application/json
       responses:
@@ -110,7 +110,7 @@ paths:
       summary: Fetch a package from the repository URL in the request body.
       description: The package is fetched from `<repository_url>/<package_name>/<package_id>.tar.xz`.
       parameters:
-        - '$ref': '#/parameters/PackageId'
+        - $ref: '#/parameters/PackageId'
         - name: body
           in: body
           required: true
@@ -140,7 +140,7 @@ paths:
     delete:
       summary: Remove a package from the node's pkgpanda repository.
       parameters:
-        - '$ref': '#/parameters/PackageId'
+        - $ref: '#/parameters/PackageId'
       produces:
         - application/json
       responses:
@@ -164,7 +164,7 @@ paths:
         '200':
           description: A list of the active packages on this node.
           schema:
-            '$ref': '#/definitions/PackageIdArray'
+            $ref: '#/definitions/PackageIdArray'
     put:
       summary: Replace the current list of active packages with the packages in the request body.
       consumes:
@@ -174,7 +174,7 @@ paths:
           in: body
           required: true
           schema:
-            '$ref': '#/definitions/PackageIdArray'
+            $ref: '#/definitions/PackageIdArray'
       produces:
         - application/json
       responses:
@@ -193,7 +193,7 @@ paths:
     get:
       summary: Get metadata for a package that is active on this node.
       parameters:
-        - '$ref': '#/parameters/PackageId'
+        - $ref: '#/parameters/PackageId'
       produces:
         - application/json
       responses:
