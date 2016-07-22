@@ -3,6 +3,7 @@ Description=Mesos DNS: DNS based Service Discovery
 After=dcos-mesos-master.service
 [Service]
 User=dcos_mesos_dns
+PermissionsStartOnly=true
 Restart=always
 StartLimitInterval=0
 RestartSec=5
