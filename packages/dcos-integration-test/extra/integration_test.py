@@ -1635,17 +1635,17 @@ def test_signal_service(registry_cluster):
     exp_data = {
         'diagnostics': {
             'event': 'health',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         },
         'cosmos': {
             'event': 'package_list',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         },
         'mesos': {
             'event': 'mesos_track',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         }
     }
