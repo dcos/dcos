@@ -50,12 +50,18 @@ All code in this repository is Python 3
     - Docker doesn't have all the features needed on OS X or Windows
     - `tar` needs to be GNU tar for the set of flags used
   1. [tox](https://tox.readthedocs.org/en/latest/)
-  1. git
+  1. git 1.8.5+
   1. Docker
     - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
   1. Python 3.4
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
+    - Ubuntu 16.04 LTS:
+      - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
+      - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev`
+      - Install Python 3.4.4: `pyenv install 3.4.4`
+      - Create DC/OS virtualenv: `pyenv virtualenv 3.4.4 dcos`
+      - Activate environment: `pyenv activate dcos`
   1. Over 10GB of free disk space
   1. _Optional_ pxz (speeds up package and bootstrap compression)
     - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.

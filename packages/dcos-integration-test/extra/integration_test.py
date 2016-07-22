@@ -88,7 +88,6 @@ def registry_cluster(cluster, request):
                     "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"}
                 }],
             "ports": [0],
-            "requirePorts": True
             }
     endpoints = cluster.deploy_marathon_app(registry_app)
     cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
@@ -970,7 +969,7 @@ def test_octarine_http(cluster, timeout=30):
         'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
         'cpus': 0.1,
         'mem': 128,
-        'ports': [10001],
+        'ports': [0],
         'cmd': '/opt/mesosphere/bin/octarine marathon',
         'disk': 0,
         'instances': 1,
@@ -1014,7 +1013,7 @@ def test_octarine_srv(cluster, timeout=30):
         'instances': 1,
         'portDefinitions': [
           {
-            'port': 10002,
+            'port': 0,
             'protocol': 'tcp',
             'name': port_name,
             'labels': {}
@@ -1047,11 +1046,10 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'id': "/integration-test-app-with-minuteman-vip-%s" % test_uuid,
         'cpus': 0.1,
         'mem': 128,
-        'ports': [10000],
         'cmd': 'touch imok && /opt/mesosphere/bin/python -mhttp.server ${PORT0}',
         'portDefinitions': [
             {
-                'port': 10000,
+                'port': 0,
                 'protocol': 'tcp',
                 'name': 'test',
                 'labels': {
@@ -1078,7 +1076,7 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'id': "/integration-test-proxy-to-minuteman-vip-%s" % test_uuid,
         'cpus': 0.1,
         'mem': 128,
-        'ports': [10000],
+        'ports': [0],
         'cmd': 'chmod 755 ncat && ./ncat -v --sh-exec "./ncat 1.2.3.4 5000" -l $PORT0 --keep-open',
         'uris': ['https://s3.amazonaws.com/sargun-mesosphere/ncat'],
         'instances': 1,
