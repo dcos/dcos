@@ -58,6 +58,9 @@ package:
         "udp_port": 53,
         "tcp_port": 53
       }
+  - path: /etc/mesos-dns.env
+    content: |
+      MESOS_DNS_CONFIG=/opt/mesosphere/etc/mesos-dns.json
   - path: /etc/mesos-dns.json
     content: |
       {
