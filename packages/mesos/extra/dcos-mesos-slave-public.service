@@ -8,6 +8,7 @@ RestartSec=5
 KillMode=control-group
 Delegate=true
 LimitNOFILE=infinity
+TasksMax=infinity
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave-public
