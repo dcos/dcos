@@ -1,0 +1,31 @@
+#!/bin/bash
+set -x
+set -o errexit -o pipefail
+env
+
+function finish {
+  if [ -d dcos-docker ]; then
+    sudo make -C dcos-docker clean
+  fi
+}
+trap finish EXIT
+
+if [ ! -d dcos-docker ]; then
+  git clone https://github.com/dcos/dcos-docker
+else
+  git -C dcos-docker fetch origin -t +refs/heads/*:refs/remotes/origin/*
+fi
+
+curl -v $INSTALLER_URL > dcos-docker/dcos_generate_config.sh
+
+set +o errexit
+
+finish
+make -C dcos-docker
+make -C dcos-docker test
+
+RET=$?
+if [ -e integration_test.log ]; then
+  cat integration_test.log
+fi
+exit $RET
