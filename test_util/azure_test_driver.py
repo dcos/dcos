@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-
 import os
 import random
 import sys
 import uuid
+from contextlib import closing
 
 import azure.common.credentials
 import requests
+from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources import ResourceManagementClient
 from azure.mgmt.resource.resources.models import (DeploymentMode,
                                                   DeploymentProperties,
@@ -14,6 +15,8 @@ from azure.mgmt.resource.resources.models import (DeploymentMode,
 from retrying import retry
 
 import pkgpanda.util
+from ssh.ssh_tunnel import SSHTunnel
+from test_util.test_runner import integration_test
 
 
 def get_dcos_ui(master_url):
@@ -58,6 +61,14 @@ def run():
     rmc = ResourceManagementClient(credentials, subscription_id)
 
     template_parameters = get_env_params()
+    if template_parameters.get('numberOfPrivateSlaves'):
+        assert template_parameters['numberOfPrivateSlaves']['value'] >= 2, 'Test requires at least 2 private slaves!'
+    else:
+        template_parameters['numberOfPrivateSlaves'] = {'value': 2}
+    if template_parameters.get('numberOfPublicSlaves'):
+        assert template_parameters['numberOfPublicSlaves']['value'] >= 1, 'Test requires at least 1 public slave!'
+    else:
+        template_parameters['numberOfPublicSlaves'] = {'value': 1}
 
     # Output resource group
     print("Resource group name: {}".format(group_name))
@@ -126,6 +137,35 @@ def run():
 
         print("Waiting for DC/OS UI at: {} ...".format(master_url))
         poll_on_dcos_ui_up()
+
+        # Run test now, so grab IPs
+        nmc = NetworkManagementClient(credentials, subscription_id)
+        ip_buckets = {
+            'masterNodeNic': [],
+            'slavePrivateNic': [],
+            'slavePublicNic': []}
+
+        for resource in rmc.resource_groups.list_resources(group_name):
+            for bucket_name, bucket in ip_buckets.items():
+                if resource.name.startswith(bucket_name):
+                    nic = nmc.network_interfaces.get(group_name, resource.name)
+                    all_ips = []
+                    for config in nic.ip_configurations:
+                        all_ips.append(config.private_ip_address)
+                    bucket.extend(all_ips)
+
+        with closing(SSHTunnel('core', 'ssh_key', master_lb, port=2200)) as t:
+            integration_test(
+                    tunnel=t,
+                    test_dir='/home/core',
+                    dcos_dns=master_lb,
+                    master_list=ip_buckets['masterNodeNic'],
+                    agent_list=ip_buckets['slavePrivateNic'],
+                    public_agent_list=ip_buckets['slavePublicNic'],
+                    provider='azure',
+                    test_dns_search=False,
+                    pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
+                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         print("ERROR: exception {}".format(ex))

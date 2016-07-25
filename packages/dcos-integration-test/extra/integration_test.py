@@ -5,6 +5,7 @@ import gzip
 import json
 import logging
 import os
+import subprocess
 import tempfile
 import urllib.parse
 import uuid
@@ -1083,7 +1084,7 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
         'healthChecks': [{
             'protocol': 'COMMAND',
             'command': {
-                'value': 'test "$(curl -o /dev/null --max-time 5 -4 -w \'%{http_code}\' -s http://localhost:${PORT0}/|cut -f1 -d" ")" == 200'  # noqa
+                'value': 'curl -f -X GET http://$HOST:$PORT0/'
             },
             'gracePeriodSeconds': 0,
             'intervalSeconds': 5,
@@ -1591,87 +1592,40 @@ def test_3dt_report(cluster):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.skipif(os.getenv('TEST_ENV') == 'vagrant', reason="Sometimes vagrant sucks, sometimes.")
 def test_signal_service(registry_cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
     cluster = registry_cluster
-    test_server_app_definition, _ = cluster.get_base_testapp_definition()
-    service_points = cluster.deploy_marathon_app(test_server_app_definition)
+    dcos_version = os.getenv("DCOS_VERSION", "")
+    signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
+    signal_config_data = json.loads(signal_config.read())
+    customer_key = signal_config_data.get('customer_key', '')
+    cluster_id_file = open('/var/lib/dcos/cluster-id')
+    cluster_id = cluster_id_file.read().strip()
 
-    @retrying.retry(wait_fixed=1000, stop_max_delay=120*1000)
-    def wait_for_endpoint():
-        """Make sure test server is available before posting to it"""
-        r = requests.get('http://{}:{}/signal_test_cache'.format(
-            service_points[0].host,
-            service_points[0].port))
-        assert r.status_code == 200
+    print("Version: ", dcos_version)
+    print("Customer Key: ", customer_key)
+    print("Cluster ID: ", cluster_id)
 
-    wait_for_endpoint()
-
-    test_host = service_points[0].host
-    test_port = service_points[0].port
-    test_cache_url = "http://{}:{}/signal_test_cache".format(test_host, test_port)
-
-    cmd = """
-ID_PATH="/${PWD}/test-cluster-id"
-echo 'test-id' > $ID_PATH
-/opt/mesosphere/bin/dcos-signal \
-    -cluster-id-path $ID_PATH \
-    -test-url %s
-sleep 3600
-""" % test_cache_url
-
-    print("CMD: {}".format(cmd))
-    test_uuid = uuid.uuid4().hex
-    signal_app_definition = {
-        'id': "/integration-test-signal-service-oneshot-%s" % test_uuid,
-        'cmd': cmd,
-        'cpus': 0.1,
-        'mem': 64,
-        'instances': 1,
-        'healthChecks': [{
-            'protocol': 'COMMAND',
-            'command': {
-                'value': 'curl {} > tmp; test -s tmp'.format(test_cache_url)
-            },
-            'gracePeriodSeconds': 0,
-            'intervalSeconds': 10,
-            'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 1,
-            'ignoreHttp1xx': False}]
-    }
-
-    cluster.deploy_marathon_app(signal_app_definition, ignore_failed_tasks=True)
-
-    r = requests.get(test_cache_url)
-
-    # Handy for diagnosing strange signal service test behavior, not sure if we should
-    # leave these in for master branch, or remove for the final PR.
-    print('TESTING SIGNAL RETURN:\n{}'.format(r.text))
-    print('CACHE SERVER STATUS:\n{}'.format(r.status_code))
-
-    r_data = json.loads(r.json())
-
-    cluster.destroy_marathon_app(signal_app_definition['id'])
-    cluster.destroy_marathon_app(test_server_app_definition['id'])
+    signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
+    r_data = json.loads(signal_results)
 
     exp_data = {
         'diagnostics': {
             'event': 'health',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         },
         'cosmos': {
             'event': 'package_list',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         },
         'mesos': {
             'event': 'mesos_track',
-            'anonymousId': 'test-id',
+            'anonymousId': cluster_id,
             'properties': {}
         }
     }
@@ -1680,9 +1634,9 @@ sleep 3600
     generic_properties = {
         'provider': cluster.provider,
         'source': 'cluster',
-        'clusterId': 'test-id',
-        'customerKey': '',
-        'environmentVersion': '',
+        'clusterId': cluster_id,
+        'customerKey': customer_key,
+        'environmentVersion': dcos_version,
         'variant': 'open'
     }
 

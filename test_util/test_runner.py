@@ -10,7 +10,7 @@ from subprocess import CalledProcessError
 from pkgpanda.util import write_string
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

@@ -93,7 +93,6 @@ export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DNS_SEARCH=true
 export DCOS_AUTH_ENABLED=false
 export DCOS_PROVIDER=onprem
-export TEST_ENV=vagrant
 cd /opt/mesosphere/active/dcos-integration-test
 py.test -vv -s -m "not ccm" ${CI_FLAGS:-}
 EOF
