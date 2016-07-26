@@ -1102,8 +1102,10 @@ def test_ip_per_container(registry_cluster):
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
 
-    app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
-    cmd = 'curl -s -f -m 5 http://{}:{}/ping'.format(service_points[0].ip, app_port)
+    # App instance 1 is the backend
+    # App instance 0 acts as the proxy
+    app_port = app_definition['container']['docker']['portMappings'][1]['containerPort']
+    cmd = 'curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
     ensure_routable(cmd, service_points)()
 
     cluster.destroy_marathon_app(app_definition['id'])
