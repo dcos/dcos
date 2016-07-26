@@ -24,6 +24,14 @@ rexray:
       ignoreusedcount: true
 """
 
+DEFAULT_REXRAY_CONFIG = """
+rexray:
+  loglevel: info
+  modules:
+    default-docker:
+      disabled: true
+"""
+
 
 def calculate_bootstrap_variant():
     variant = os.getenv('BOOTSTRAP_VARIANT')
@@ -411,7 +419,7 @@ entry = {
                 'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
             },
             'empty': {
-                'must': {'rexray_config_contents': yaml.dump('')},
+                'must': {'rexray_config_contents': yaml.dump(DEFAULT_REXRAY_CONFIG)},
             },
         }
     }
