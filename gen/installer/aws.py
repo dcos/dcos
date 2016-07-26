@@ -311,6 +311,12 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
             yield '{}-{}'.format(os_type, template_name), bunch
 
 
+def make_advanced_templates(arguments, serve_dir):
+    # TODO(lingmann): Customizations for genconf derived templates to go here. Leverage code in gen_templates()
+    # or gen_advanced_templates() where possible.
+    gen_templates(arguments)
+
+
 def gen_templates(arguments):
     results = gen.generate(
         arguments=arguments,

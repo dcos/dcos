@@ -18,6 +18,7 @@ import json
 import logging as log
 import os
 import os.path
+import pprint
 from copy import copy, deepcopy
 from subprocess import check_call
 from tempfile import TemporaryDirectory
@@ -616,6 +617,7 @@ def generate(
         cc_package_files=list(),
         validate_only=False):
     log.info("Generating configuration files...")
+    pprint.pprint(arguments)
 
     assert isinstance(extra_templates, list)
 
@@ -687,6 +689,10 @@ def generate(
                 "Can't merge template {} in template_list {}".format(name, templates[key]))
 
     mandatory_parameters = get_parameters(templates)
+
+#    print("TEMPLATES:")
+#    pprint.pprint(templates)
+#    print("Mandatory parameters: {}".format(mandatory_parameters))
 
     validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
 

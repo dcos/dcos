@@ -1,7 +1,9 @@
 import logging
 import os
+import pprint
 import subprocess
 import sys
+from copy import deepcopy
 
 import gen
 import pkgpanda
@@ -35,9 +37,21 @@ def do_aws_cf_configure(gen_config):
     # So we're effectively triple validating currently...
     do_validate_gen_config(gen_config)
 
+    print("gen_config:")
+    pprint.pprint(gen_config)
+
     # TODO(cmaloney): CURPOS
     # TODO(cmaloney): Write this function
-    gen_out = gen.installer.aws.make_advanced_templates(SERVE_DIR, gen_config)
+    args = deepcopy(gen_config)
+    args['exhibitor_address'] = '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }'
+    args['s3_bucket'] = '{ "Ref" : "ExhibitorS3Bucket" }'
+    args['s3_prefix'] = '{ "Ref" : "AWS::StackName" }'
+    args['exhibitor_storage_backend'] = 'aws_s3'
+    args['master_role'] = '{ "Ref" : "MasterRole" }'
+    args['agent_role'] = '{ "Ref" : "SlaveRole" }'
+    args['provider'] = 'aws'
+
+    gen_out = gen.installer.aws.make_advanced_templates(args, SERVE_DIR)
 
     fetch_bootstrap(gen_out.arguments['bootstrap_id'])
 
