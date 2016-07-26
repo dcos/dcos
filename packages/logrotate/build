@@ -43,7 +43,7 @@ nomail
 
 /var/log/mesos/* {
     olddir /var/log/mesos/archive
-    maxsize 2000k
+    maxsize 256M
     daily
     rotate 7
     copytruncate
