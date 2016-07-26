@@ -1095,9 +1095,9 @@ def test_ip_per_container(registry_cluster):
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
 
-    app_definition['constraints'] = [['hostname', 'UNIQUE']]
+    app_definition['instances'] = 2
     if len(cluster.slaves) >= 2:
-        app_definition['instances'] = 2
+        app_definition['constraints'] = [['hostname', 'UNIQUE']]
     else:
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
