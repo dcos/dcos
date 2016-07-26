@@ -356,13 +356,13 @@ entry = {
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': '{                      \
-            "vtep_subnet": "198.18.0.0/20",             \
+            "vtep_subnet": "44.128.0.0/20",             \
             "vtep_mac_oui": "70:B3:D5:00:00:00",        \
             "overlays": [                               \
               {                                         \
                 "name": "dcos",                         \
-                "subnet": "44.128.0.0/16",              \
-                "prefix": 26                            \
+                "subnet": "9.0.0.0/8",                  \
+                "prefix": 24                            \
               }                                         \
             ]}',
         'rexray_config_method': 'empty'
