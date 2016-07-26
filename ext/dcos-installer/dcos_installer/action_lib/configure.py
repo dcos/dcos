@@ -5,6 +5,7 @@ import sys
 
 import gen
 import pkgpanda
+import gen.installer.aws
 import gen.installer.bash
 from dcos_installer.util import SERVE_DIR
 
@@ -25,6 +26,20 @@ def do_configure(gen_config):
     fetch_bootstrap(gen_out.arguments['bootstrap_id'])
     # Write some package metadata
     pkgpanda.write_json('/genconf/cluster_packages.json', gen_out.cluster_packages)
+
+
+def do_aws_cf_configure(gen_config):
+    subprocess.check_output(['mkdir', '-p', SERVE_DIR])
+    # TODO(cmaloney): why are we validating yet again here?
+    # gen will also validate internally, and not output anything if validation fails...
+    # So we're effectively triple validating currently...
+    do_validate_gen_config(gen_config)
+
+    # TODO(cmaloney): CURPOS
+    # TODO(cmaloney): Write this function
+    gen_out = gen.installer.aws.make_advanced_templates(SERVE_DIR, gen_config)
+
+    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
 
 
 def get_gen_extra_args():

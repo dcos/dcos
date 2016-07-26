@@ -36,6 +36,25 @@ def do_configure(config_path=CONFIG_PATH):
         return 0
 
 
+def do_aws_cf_configure():
+    """Tries to generate AWS templates using a custom config.yaml"""
+    # TODO(cmaloney): This probably has invalid validation.
+    # Also, all that validation was supposed to be in gen/...
+    # TODO(cmaloney): Need to pass that we're going to use provider: aws here
+    # rather than provider: onprem
+    validate_gen = do_validate_config()
+    if len(validate_gen) > 0:
+        for key, error in validate_gen.items():
+            log.error('{}: {}'.format(key, error))
+        return 1
+
+    config = DCOSConfig(config_path=CONFIG_PATH)
+    # NOTE: not getting hidden config because it's definitely all wrong. We should
+    # also kill the hidden config in general... It's must or defaults for this stuff.
+    # TODO(cmaloney): stringify_configuration...
+    configure.do_aws_cf_configure(config.stringify_configuration())
+
+
 def hash_password(string):
     """Returns hash of string per passlib SHA512 encryption
 

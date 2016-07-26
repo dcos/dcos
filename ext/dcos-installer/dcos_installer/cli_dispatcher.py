@@ -135,6 +135,9 @@ def do_genconf(args):
         return 1
     return 0
 
+def do_aws_cloudformation(args):
+    print_header("EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION")
+    return backend.do_aws_cf_configure()
 
 def do_preflight(args):
     print_header("EXECUTING PREFLIGHT")
@@ -166,6 +169,7 @@ dispatch_dict_simple = {
     'version': (do_version, 'Print the DC/OS version'),
     'web': (do_web, 'Run the web interface'),
     'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
+    'aws-cloudformation': (do_aws_cloudformation, 'Generate AWS Advanced templates with a custom config'),
     'validate-config': (
         do_validate_config,
         'Validate the configuration for executing --genconf and deploy arguments in config.yaml')
