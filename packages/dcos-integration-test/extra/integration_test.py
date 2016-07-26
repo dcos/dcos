@@ -1104,7 +1104,7 @@ def test_ip_per_container(registry_cluster):
 
     # App instance 1 is the backend
     # App instance 0 acts as the proxy
-    app_port = app_definition['container']['docker']['portMappings'][1]['containerPort']
+    app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
     cmd = 'curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
     ensure_routable(cmd, service_points)()
 
