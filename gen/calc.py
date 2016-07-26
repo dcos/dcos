@@ -373,7 +373,7 @@ entry = {
                 "prefix": 26                            \
               }                                         \
             ]}',
-        'rexray_config_method': 'empty'
+        'rexray_config_method': 'disabled'
     },
     'must': {
         'custom_auth': 'false',
@@ -418,7 +418,7 @@ entry = {
             'aws': {
                 'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
             },
-            'empty': {
+            'disabled': {
                 'must': {'rexray_config_contents': yaml.dump(DEFAULT_REXRAY_CONFIG)},
             },
         }
