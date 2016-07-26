@@ -405,10 +405,10 @@ def make_abs(path):
     return os.getcwd() + '/' + path
 
 
-def do_build_packages(cache_repository_url):
-    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/dcos-builder/Dockerfile')
-    container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
-    print("Attempting to pull dcos-builder docker:", container_name)
+def do_build_docker(name):
+    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/{}/Dockerfile'.format(name))
+    container_name = 'dcos/{}:dockerfile-{}'.format(name, pkgpanda.util.sha1(dockerfile))
+    print("Attempting to pull docker:", container_name)
     pulled = False
     try:
         # TODO(cmaloney): Rather than pushing / pulling from Docker Hub upload as a build artifact.
@@ -446,9 +446,14 @@ def do_build_packages(cache_repository_url):
     docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
     # only use force tag if using docker version 1.9 or earlier
     if LooseVersion(docker_version) < LooseVersion('1.10'):
-        subprocess.check_call(['docker', 'tag', '-f', container_name, 'dcos-builder:latest'])
+        subprocess.check_call(['docker', 'tag', '-f', container_name, name + ':latest'])
     else:
-        subprocess.check_call(['docker', 'tag', container_name, 'dcos-builder:latest'])
+        subprocess.check_call(['docker', 'tag', container_name, name + ':latest'])
+
+
+def do_build_packages(cache_repository_url):
+    for name in pkg_resources.resource_listdir('pkgpanda', 'docker/'):
+        do_build_docker(name)
 
     def get_build():
         # TODO(cmaloney): Stop shelling out
