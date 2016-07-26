@@ -30,7 +30,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
     -jar "$PKG_PATH/usr/marathon.jar" \\
     --zk "\$MARATHON_ZK" \\
-    --master zk://127.0.0.1:2181/mesos \\
+    --master zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos \\
     --hostname "\$MARATHON_HOSTNAME" \\
     --default_accepted_resource_roles "*" \\
     --mesos_role "slave_public" \\
