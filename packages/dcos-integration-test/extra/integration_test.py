@@ -1038,17 +1038,21 @@ def test_octarine_srv(cluster, timeout=30):
 
     cluster.deploy_marathon_app(app_definition)
 
-@retrying.retry(wait_fixed=2000,
-                stop_max_delay=timeout*1000,
-                retry_on_result=lambda ret: ret is False,
-                retry_on_exception=lambda x: False)
-def ensure_routable(cmd, service_points):
-    proxy_uri = 'http://{}:{}/run_cmd'.format(service_points[0].host, service_points[0].port)
-    r = requests.post(proxy_uri, data=cmd)
-    logging.info('Requests Response: %s', repr(r.json()))
-    assert(r.json()['status'] == 0)
 
-def test_if_minuteman_routes_to_vip(registry_cluster, timeout=125):
+def ensure_routable(cmd, service_points, timeout=125):
+    @retrying.retry(wait_fixed=2000,
+                    stop_max_delay=timeout*1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
+    def _ensure_routable():
+        proxy_uri = 'http://{}:{}/run_cmd'.format(service_points[0].host, service_points[0].port)
+        r = requests.post(proxy_uri, data=cmd)
+        logging.info('Requests Response: %s', repr(r.json()))
+        assert(r.json()['status'] == 0)
+    return _ensure_routable
+
+
+def test_if_minuteman_routes_to_vip(registry_cluster):
     """Test if we are able to connect to a task with a vip using minuteman.
     """
 
@@ -1061,13 +1065,13 @@ def test_if_minuteman_routes_to_vip(registry_cluster, timeout=125):
     service_points = cluster.deploy_marathon_app(proxy_app)
 
     cmd = 'curl -s -f http://1.2.3.4:5000/ping'
-    ensure_routable(cmd, service_points)
+    ensure_routable(cmd, service_points)()
 
     cluster.destroy_marathon_app(origin_app['id'])
     cluster.destroy_marathon_app(proxy_app['id'])
 
 
-def test_if_minuteman_routes_to_named_vip(registry_cluster, timeout=125):
+def test_if_minuteman_routes_to_named_vip(registry_cluster):
     """Test if we are able to connect to a task with a named vip using minuteman.
     """
 
@@ -1080,10 +1084,11 @@ def test_if_minuteman_routes_to_named_vip(registry_cluster, timeout=125):
     service_points = cluster.deploy_marathon_app(proxy_app)
 
     cmd = 'curl -s -f http://foo.marathon.l4lb.thisdcos.directory:5000/ping'
-    ensure_routable(cmd, service_points)
+    ensure_routable(cmd, service_points)()
 
     cluster.destroy_marathon_app(origin_app['id'])
     cluster.destroy_marathon_app(proxy_app['id'])
+
 
 def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
@@ -1100,8 +1105,9 @@ def test_ip_per_container(registry_cluster):
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
 
+    app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
     cmd = 'curl -s -f http://{}:{}/ping'.format(service_points[0].ip, app_port)
-    ensure_routable(cmd, service_points)
+    ensure_routable(cmd, service_points)()
 
     cluster.destroy_marathon_app(app_definition['id'])
 
