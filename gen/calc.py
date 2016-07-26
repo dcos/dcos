@@ -24,6 +24,14 @@ rexray:
       ignoreusedcount: true
 """
 
+DEFAULT_REXRAY_CONFIG = """
+rexray:
+  loglevel: info
+  modules:
+    default-docker:
+      disabled: true
+"""
+
 
 def calculate_bootstrap_variant():
     variant = os.getenv('BOOTSTRAP_VARIANT')
@@ -356,16 +364,16 @@ entry = {
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': '{                      \
-            "vtep_subnet": "198.18.0.0/20",             \
+            "vtep_subnet": "44.128.0.0/20",             \
             "vtep_mac_oui": "70:B3:D5:00:00:00",        \
             "overlays": [                               \
               {                                         \
                 "name": "dcos",                         \
-                "subnet": "44.128.0.0/16",              \
-                "prefix": 26                            \
+                "subnet": "9.0.0.0/8",                  \
+                "prefix": 24                            \
               }                                         \
             ]}',
-        'rexray_config_method': 'empty'
+        'rexray_config_method': 'disabled'
     },
     'must': {
         'custom_auth': 'false',
@@ -410,8 +418,8 @@ entry = {
             'aws': {
                 'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
             },
-            'empty': {
-                'must': {'rexray_config_contents': yaml.dump('')},
+            'disabled': {
+                'must': {'rexray_config_contents': yaml.dump(DEFAULT_REXRAY_CONFIG)},
             },
         }
     }
