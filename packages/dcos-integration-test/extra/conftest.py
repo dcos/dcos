@@ -63,7 +63,7 @@ class Cluster:
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
     def _wait_for_Marathon_up(self):
-        r = self.get('/marathon/ui/')
+        r = self.get('/service/marathon/ui/')
         # resp_code >= 500 -> backend is still down probably
         if r.status_code < 500:
             logging.info("Marathon is probably up")
@@ -355,7 +355,7 @@ class Cluster:
             applications. I.E:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
-        r = self.post('/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
+        r = self.post('/service/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
@@ -368,7 +368,7 @@ class Cluster:
             # future versions of Marathon:
             req_params = (('embed', 'apps.lastTaskFailure'),
                           ('embed', 'apps.counts'))
-            req_uri = '/marathon/v2/apps' + app_id
+            req_uri = '/service/marathon/v2/apps' + app_id
 
             r = self.get(req_uri, req_params, headers=self._marathon_req_headers())
             assert r.ok
@@ -411,7 +411,7 @@ class Cluster:
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
-            r = self.get('/marathon/v2/deployments', headers=self._marathon_req_headers())
+            r = self.get('/service/marathon/v2/deployments', headers=self._marathon_req_headers())
             assert r.ok
 
             for deployment in r.json():
@@ -421,7 +421,7 @@ class Cluster:
             logging.info('Application destroyed')
             return True
 
-        r = self.delete('/marathon/v2/apps' + app_name, headers=self._marathon_req_headers())
+        r = self.delete('/service/marathon/v2/apps' + app_name, headers=self._marathon_req_headers())
         assert r.ok
 
         try:
