@@ -1038,9 +1038,16 @@ def test_octarine_srv(cluster, timeout=30):
 
     cluster.deploy_marathon_app(app_definition)
 
+@retrying.retry(wait_fixed=2000,
+                stop_max_delay=timeout*1000,
+                retry_on_result=lambda ret: ret is False,
+                retry_on_exception=lambda x: False)
+def ensure_routable(cmd, service_points):
+    proxy_uri = 'http://{}:{}/run_cmd'.format(service_points[0].host, service_points[0].port)
+    r = requests.post(proxy_uri, data=cmd)
+    logging.info('Requests Response: %s', repr(r.json()))
+    assert(r.json()['status'] == 0)
 
-# By default telemetry-net sends the metrics about once a minute
-# Therefore, we wait up till 2 minutes and a bit before we give up
 def test_if_minuteman_routes_to_vip(registry_cluster, timeout=125):
     """Test if we are able to connect to a task with a vip using minuteman.
     """
@@ -1049,24 +1056,34 @@ def test_if_minuteman_routes_to_vip(registry_cluster, timeout=125):
     origin_app, origin_uuid = cluster.get_base_testapp_definition()
     origin_app['container']['docker']['portMappings'][0]['labels']['VIP_0'] = '1.2.3.4:5000'
     cluster.deploy_marathon_app(origin_app)
-    
+
     proxy_app, proxy_uuid = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(proxy_app)
 
-    @retrying.retry(wait_fixed=2000,
-                    stop_max_delay=timeout*1000,
-                    retry_on_result=lambda ret: ret is False,
-                    retry_on_exception=lambda x: False)
-    def _ensure_routable():
-        cmd = 'curl -s -f http://1.2.3.4:5000/ping'
-        proxy_uri = 'http://{}:{}/run_cmd'.format(
-          service_points[0].host, service_points[0].port)
-        r = requests.post(proxy_uri, data=cmd)
-        logging.info('Curl Response: %s', repr(r.json()))
-        assert(r.json()['status'] == 0)
+    cmd = 'curl -s -f http://1.2.3.4:5000/ping'
+    ensure_routable(cmd, service_points)
 
-    _ensure_routable()
+    cluster.destroy_marathon_app(origin_app['id'])
+    cluster.destroy_marathon_app(proxy_app['id'])
 
+
+def test_if_minuteman_routes_to_named_vip(registry_cluster, timeout=125):
+    """Test if we are able to connect to a task with a named vip using minuteman.
+    """
+
+    cluster = registry_cluster
+    origin_app, origin_uuid = cluster.get_base_testapp_definition()
+    origin_app['container']['docker']['portMappings'][0]['labels']['VIP_0'] = 'foo:5000'
+    cluster.deploy_marathon_app(origin_app)
+
+    proxy_app, proxy_uuid = cluster.get_base_testapp_definition()
+    service_points = cluster.deploy_marathon_app(proxy_app)
+
+    cmd = 'curl -s -f http://foo.marathon.l4lb.thisdcos.directory:5000/ping'
+    ensure_routable(cmd, service_points)
+
+    cluster.destroy_marathon_app(origin_app['id'])
+    cluster.destroy_marathon_app(proxy_app['id'])
 
 def test_ip_per_container(registry_cluster):
     """Test if we are able to connect to a task with ip-per-container mode
@@ -1083,17 +1100,9 @@ def test_ip_per_container(registry_cluster):
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
 
-    @retrying.retry(wait_fixed=5000, stop_max_delay=300*1000,
-                    retry_on_result=lambda ret: ret is False,
-                    retry_on_exception=lambda x: False)
-    def _ensure_works():
-        app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
-        cmd = "curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
-        r = requests.post('http://{}:{}/run_cmd'.format(service_points[1].host, service_points[1].port), data=cmd)
-        logging.info('IP Per Container Curl Response: %s', repr(r.json()))
-        assert(r.json()['status'] == 0)
+    cmd = 'curl -s -f http://{}:{}/ping'.format(service_points[0].ip, app_port)
+    ensure_routable(cmd, service_points)
 
-    _ensure_works()
     cluster.destroy_marathon_app(app_definition['id'])
 
 
