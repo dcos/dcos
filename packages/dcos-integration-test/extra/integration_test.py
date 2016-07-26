@@ -1039,9 +1039,10 @@ def ensure_routable(cmd, service_points, timeout=125):
     @retrying.retry(wait_fixed=2000,
                     stop_max_delay=timeout*1000,
                     retry_on_result=lambda ret: ret is False,
-                    retry_on_exception=lambda x: False)
+                    retry_on_exception=lambda x: True)
     def _ensure_routable():
         proxy_uri = 'http://{}:{}/run_cmd'.format(service_points[0].host, service_points[0].port)
+        logging.info('Sending {} data: {}'.format(proxy_uri, cmd))
         r = requests.post(proxy_uri, data=cmd)
         logging.info('Requests Response: %s', repr(r.json()))
         assert(r.json()['status'] == 0)
