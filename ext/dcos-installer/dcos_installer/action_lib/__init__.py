@@ -7,7 +7,7 @@ import pkgpanda
 from ssh.ssh_runner import Node
 import ssh.utils
 
-from .utils import REMOTE_TEMP_DIR, CLUSTER_PACKAGES_FILE, get_async_runner, add_post_action, add_pre_action
+from .utils import STATE_DIR, REMOTE_TEMP_DIR, CLUSTER_PACKAGES_FILE, get_async_runner, add_post_action, add_pre_action
 
 log = logging.getLogger(__name__)
 
@@ -24,19 +24,26 @@ def nodes_count_by_type(config):
     }
 
 
-def get_full_nodes_list(config):
-    def add_nodes(nodes, tag):
-        return [Node(node, tag) for node in nodes]
+def get_full_nodes_list(config, exclude_nodes=None):
+    if exclude_nodes is None:
+        exclude_nodes = []
+    assert isinstance(exclude_nodes, list)
+    if exclude_nodes:
+        log.debug("excluding nodes {}".format(','.join(exclude_nodes)))
+
+    def add_nodes(nodes, tag, exclude_nodes):
+        return [Node(node, tag) for node in nodes if node not in exclude_nodes]
 
     node_role_map = {
         'master_list': 'master',
         'agent_list': 'agent',
         'public_agent_list': 'public_agent'
     }
+
     full_target_list = []
     for config_field, role in node_role_map.items():
         if config_field in config:
-            full_target_list += add_nodes(config[config_field], {'role': role})
+            full_target_list += add_nodes(config[config_field], {'role': role}, exclude_nodes)
     log.debug("full_target_list: {}".format(full_target_list))
     return full_target_list
 
@@ -162,6 +169,33 @@ def _remove_host(state_file, host):
     return True
 
 
+def _get_failed_nodes_from_preflight():
+    state_file_path = os.path.join(STATE_DIR, 'preflight.json')
+    if not os.path.exists(state_file_path):
+        log.error("{} does not exist".format(state_file_path))
+        return []
+
+    json_state = _read_state_file(state_file_path)
+    if 'hosts' not in json_state:
+        log.error("field `hosts` not found in {}".format(state_file_path))
+        return []
+
+    failed_hosts = []
+    for node, params in json_state['hosts']:
+        if 'host_status' not in params:
+            log.error("field `host_status` not found for node {}, state file {}".format(node, state_file_path))
+            continue
+        if params['host_status'] in ['failed', 'terminated']:
+            # the node format <ip:port>, discard port part
+            ip, _ = node.split(':')
+            failed_hosts.append(ip)
+
+    if failed_hosts:
+        log.debug("found failed hosts {}".format(','.join(failed_hosts)))
+
+    return failed_hosts
+
+
 @asyncio.coroutine
 def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_delegate=None, try_remove_stale_dcos=False,
                  **kwargs):
@@ -188,12 +222,15 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     bootstrap_tarball = _get_bootstrap_tarball()
     log.debug("Local bootstrap found: %s", bootstrap_tarball)
 
+    # get a list of failed nodes from a preflight step
+    exclude_nodes = _get_failed_nodes_from_preflight()
+
     targets = []
     if hosts:
         targets = hosts
     else:
         for role, params in role_params.items():
-            targets += [Node(node, params['tags']) for node in params['hosts']]
+            targets += [Node(node, params['tags']) for node in params['hosts'] if node not in exclude_nodes]
 
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
@@ -247,7 +284,9 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
 @asyncio.coroutine
 def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, async_delegate=None, retry=False,
                    options=None):
-    targets = get_full_nodes_list(config)
+    # get a list of failed nodes from a preflight step
+    exclude_nodes = _get_failed_nodes_from_preflight()
+    targets = get_full_nodes_list(config, exclude_nodes=exclude_nodes)
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     postflight_chain = ssh.utils.CommandChain('postflight')
     add_pre_action(postflight_chain, pf.ssh_user)
@@ -363,7 +402,9 @@ sudo getent group nogroup || sudo groupadd nogroup
 
 @asyncio.coroutine
 def install_prereqs(config, block=False, state_json_dir=None, async_delegate=None, options=None):
-    targets = get_full_nodes_list(config)
+    # get a list of failed nodes from a preflight step
+    exclude_nodes = _get_failed_nodes_from_preflight()
+    targets = get_full_nodes_list(config, exclude_nodes=exclude_nodes)
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     prereqs_chain = ssh.utils.CommandChain('install_prereqs')
     _add_prereqs_script(prereqs_chain)
