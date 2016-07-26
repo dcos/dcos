@@ -112,10 +112,6 @@ sleep 36000
             }
     cluster.deploy_marathon_app(docker_build_and_push_app, timeout=500)
 
-    def kill_registry():
-        cluster.destroy_marathon_app(docker_build_and_push_app['id'])
-        cluster.destroy_marathon_app(registry_app['id'])
-    request.addfinalizer(kill_registry)
     return cluster
 
 
