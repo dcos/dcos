@@ -2,6 +2,7 @@ import collections
 import logging
 import os
 import uuid
+from subprocess import check_call
 
 import dns.exception
 import dns.resolver
@@ -431,16 +432,26 @@ class Cluster:
                         "completed in {} seconds.".format(timeout))
 
 
-@pytest.fixture(scope='module')
-def registry_cluster(cluster, request):
+@pytest.yield_fixture(scope='module')
+def registry_cluster(cluster):
     """Provides a cluster that has a registry deployed via marathon.
     Note: cluster nodes must have hard-coded certs from dcos.git installed
     """
     if cluster.registry:
         return cluster
     registry_app = {
-            "id": "/registry",
-            "cmd": "docker run -p $PORT0:5000 mesosphere/test_registry:latest",
+            'id': '/registry',
+            'container': {
+                'type': 'DOCKER',
+                'docker': {
+                    'image': 'mesosphere/test_registry:latest',
+                    'forcePullImage': True,
+                    'network': 'BRIDGE',
+                    'portMappings': [{
+                        'containerPort': 5000,
+                        'hostPort': 0}]
+                    }
+                },
             "cpus": 0.1,
             "mem": 128,
             "disk": 0,
@@ -454,28 +465,8 @@ def registry_cluster(cluster, request):
             }
     endpoints = cluster.deploy_marathon_app(registry_app)
     cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
-    docker_cmds = """
-#!/bin/bash
-docker build -t {registry}/test_server /opt/mesosphere/active/dcos-integration-test/test_server
-docker push {registry}/test_server
-sleep 36000
-""".format(registry=cluster.registry)
-    docker_build_and_push_app = {
-            'id': '/build-and-push',
-            'cmd': docker_cmds,
-            'cpus': 0.1,
-            'mem': 64,
-            'instances': 1,
-            'healthChecks': [{
-                'protocol': 'COMMAND',
-                'command': {'value': 'curl -fsSlv https://{}/v2/test_server/manifests/latest'.format(cluster.registry)},
-                'gracePeriodSeconds': 400
-                }]
-            }
-    cluster.deploy_marathon_app(docker_build_and_push_app, timeout=500)
-
-    def kill_registry():
-        cluster.destroy_marathon_app(docker_build_and_push_app['id'])
-        cluster.destroy_marathon_app(registry_app['id'])
-    request.addfinalizer(kill_registry)
-    return cluster
+    check_call(['sudo', 'docker', 'build', '-t', '{}/test_server'.format(cluster.registry),
+                '/opt/mesosphere/active/dcos-integration-test/test_server'])
+    check_call(['sudo', 'docker', 'push', '{}/test_server'.format(cluster.registry)])
+    yield cluster
+    cluster.destroy_marathon_app(registry_app['id'])
