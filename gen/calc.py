@@ -2,6 +2,7 @@ import ipaddress
 import json
 import os
 import socket
+import textwrap
 from math import floor
 from subprocess import check_output
 
@@ -296,6 +297,12 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
+def calculate_config_yaml(user_arguments):
+    return textwrap.indent(
+        yaml.dump(json.loads(user_arguments), default_style='|', default_flow_style=False, indent=2),
+        prefix='  ' * 3)
+
+
 def validate_os_type(os_type):
     can_be = ['coreos', 'el7']
     assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
@@ -384,7 +391,8 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'minuteman_forward_metrics': 'false',
-        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
+        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
+        'config_yaml': calculate_config_yaml
     },
     'conditional': {
         'master_discovery': {
