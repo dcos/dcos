@@ -9,6 +9,9 @@ def test_variant_variations():
     assert pkgpanda.util.variant_str(None) == ''
     assert pkgpanda.util.variant_str('test') == 'test'
 
+    assert pkgpanda.util.variant_object('') is None
+    assert pkgpanda.util.variant_object('test') == 'test'
+
     assert pkgpanda.util.variant_name(None) == '<default>'
     assert pkgpanda.util.variant_name('test') == 'test'
 

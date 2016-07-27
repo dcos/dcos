@@ -7,10 +7,20 @@ import webtest_aiohttp
 
 import dcos_installer
 import dcos_installer.backend
+import dcos_installer.config_util
 import gen.calc
 from dcos_installer.async_server import build_app
 from dcos_installer.config import Config, make_default_config_if_needed
 from pkgpanda.util import write_string
+
+
+@pytest.fixture(autouse=True)
+def mock_installer_latest_complete_artifact(monkeypatch):
+    monkeypatch.setattr(
+        dcos_installer.config_util,
+        'installer_latest_complete_artifact',
+        lambda _: {'bootstrap': os.getenv('BOOTSTRAP_ID', '12345'), 'packages': []},
+    )
 
 
 @pytest.fixture

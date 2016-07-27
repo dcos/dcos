@@ -2,6 +2,7 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
+import json
 import logging
 
 import boto3
@@ -184,6 +185,9 @@ aws_advanced_source = gen.internals.Source({
     },
     'must': {
         'provider': 'aws',
+        'package_ids': lambda bootstrap_variant: json.dumps(
+            config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
+        ),
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'cloudformation_s3_url_full': calculate_cloudformation_s3_url_full,
         'bootstrap_url': calculate_base_repository_url,
@@ -215,7 +219,8 @@ def get_aws_advanced_target():
             'provider',
             'bootstrap_url',
             'bootstrap_variant',
-            'reproducible_artifact_path'},
+            'reproducible_artifact_path',
+            'package_ids'},
         sub_scopes={
             'aws_template_upload': gen.internals.Scope(
                 name='aws_template_upload',
@@ -273,6 +278,7 @@ def do_aws_cf_configure():
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
+    gen_config['package_ids'] = full_config['package_ids']
     gen_config['cloudformation_s3_url_full'] = full_config['cloudformation_s3_url_full']
 
     # Convert the bootstrap_Variant string we have back to a bootstrap_id as used internally by all
@@ -286,10 +292,15 @@ def do_aws_cf_configure():
             reproducible_artifact_path=full_config['reproducible_artifact_path'],
             variant_arguments={bootstrap_variant: gen_config},
             commit=full_config['dcos_image_commit'],
-            all_bootstraps=None)):
+            all_completes=None)):
         artifacts += release.built_resource_to_artifacts(built_resource)
 
-    artifacts += list(release.make_bootstrap_artifacts(full_config['bootstrap_id'], bootstrap_variant, 'artifacts'))
+    artifacts += list(release.make_bootstrap_artifacts(
+        full_config['bootstrap_id'],
+        json.loads(full_config['package_ids']),
+        bootstrap_variant,
+        'artifacts',
+    ))
 
     # Upload all the artifacts to the config-id path and then print out what
     # the path that should be used is, as well as saving a local json file for
