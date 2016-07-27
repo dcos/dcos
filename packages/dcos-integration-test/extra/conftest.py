@@ -2,6 +2,7 @@ import collections
 import logging
 import os
 import uuid
+from urllib.parse import urlparse
 
 import dns.exception
 import dns.resolver
@@ -237,6 +238,7 @@ class Cluster:
 
         # URI must include scheme
         assert dcos_uri.startswith('http')
+        self.scheme = urlparse(dcos_uri).scheme
 
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
