@@ -1,4 +1,5 @@
 import copy
+import json
 
 import pkg_resources
 import pytest
@@ -18,6 +19,7 @@ def default_arguments():
     return copy.deepcopy({
         'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
         'bootstrap_id': '123',
+        'package_ids': json.dumps(['package--version']),
         'exhibitor_zk_path': '/dcos',
         'master_discovery': 'static',
         'provider': 'onprem',
