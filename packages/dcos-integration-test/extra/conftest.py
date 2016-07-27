@@ -40,7 +40,6 @@ def cluster():
                    public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-                   registry=os.getenv('REGISTRY_HOST'),
                    dns_search_set=os.environ['DNS_SEARCH'],
                    provider=os.environ['DCOS_PROVIDER'],
                    auth_enabled=AUTH_ENABLED)
@@ -210,7 +209,7 @@ class Cluster:
             'dcos-acs-auth-cookie']
 
     def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
-                 registry, dns_search_set, provider, auth_enabled):
+                 dns_search_set, provider, auth_enabled):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -219,7 +218,6 @@ class Cluster:
             public_masters: list of Mesos master IP addresses routable from
                 the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
-            registry: hostname or IP address of a private Docker registry.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
             provider: onprem, azure, or aws
@@ -231,7 +229,6 @@ class Cluster:
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves+public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
-        self.registry = registry
         self.dns_search_set = dns_search_set == 'true'
         self.provider = provider
         self.auth_enabled = auth_enabled
@@ -278,20 +275,23 @@ class Cluster:
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
-        """The test_server app used here is only guaranteed to exist if
-        the registry_cluster pytest fixture is used
-        """
         test_uuid = uuid.uuid4().hex
+        test_server_cmd = '/opt/mesosphere/bin/python /opt/mesosphere/active/dcos-integration-test/test_server.py'
         base_app = {
             'id': TEST_APP_NAME_FMT.format(test_uuid),
             'container': {
                 'type': 'DOCKER',
                 'docker': {
-                    'image': '{}/test_server'.format(self.registry),
+                    'image': 'python:3.4.3-slim',
                     'forcePullImage': True,
                 },
+                'volumes': [{
+                    'containerPath': '/opt/mesosphere',
+                    'hostPath': '/opt/mesosphere',
+                    'mode': 'RO'
+                }],
             },
-            'cmd': '/opt/test_server.py 9080',
+            'cmd': test_server_cmd+' 9080',
             'cpus': 0.1,
             'mem': 64,
             'instances': 1,
@@ -307,8 +307,9 @@ class Cluster:
                     'maxConsecutiveFailures': 3
                 }
             ],
-            "env": {
-                "DCOS_TEST_UUID": test_uuid
+            'env': {
+                'DCOS_TEST_UUID': test_uuid,
+                'PYTHONPATH': '/opt/mesosphere/lib/python3.4/site-packages'
             },
         }
 
@@ -326,7 +327,7 @@ class Cluster:
                 base_app['container']['docker']['network'] = 'BRIDGE'
                 base_app['ports'] = []
         else:
-            base_app['cmd'] = '/opt/test_server.py $PORT0'
+            base_app['cmd'] = test_server_cmd + ' $PORT0'
             base_app['container']['docker']['network'] = 'HOST'
             base_app['ports'] = [0]
 
@@ -429,53 +430,3 @@ class Cluster:
         except retrying.RetryError:
             pytest.fail("Application destroy failed - operation was not "
                         "completed in {} seconds.".format(timeout))
-
-
-@pytest.fixture(scope='session')
-def registry_cluster(cluster, request):
-    """Provides a cluster that has a registry deployed via marathon.
-    Note: cluster nodes must have hard-coded certs from dcos.git installed
-    """
-    if cluster.registry:
-        return cluster
-    registry_app = {
-            "id": "/registry",
-            "cmd": "docker run -p $PORT0:5000 mesosphere/test_registry:latest",
-            "cpus": 0.1,
-            "mem": 128,
-            "disk": 0,
-            "instances": 1,
-            "healthChecks": [{
-                "protocol": "COMMAND",
-                "command": {
-                    "value": "curl -sSfv https://registry.marathon.mesos.thisdcos.directory:$PORT0/v2/_catalog"}
-                }],
-            "ports": [0],
-            }
-    endpoints = cluster.deploy_marathon_app(registry_app)
-    cluster.registry = 'registry.marathon.mesos.thisdcos.directory:'+str(endpoints[0].port)
-    docker_cmds = """
-#!/bin/bash
-docker build -t {registry}/test_server /opt/mesosphere/active/dcos-integration-test/test_server
-docker push {registry}/test_server
-sleep 36000
-""".format(registry=cluster.registry)
-    docker_build_and_push_app = {
-            'id': '/build-and-push',
-            'cmd': docker_cmds,
-            'cpus': 0.1,
-            'mem': 64,
-            'instances': 1,
-            'healthChecks': [{
-                'protocol': 'COMMAND',
-                'command': {'value': 'curl -fsSlv https://{}/v2/test_server/manifests/latest'.format(cluster.registry)},
-                'gracePeriodSeconds': 400
-                }]
-            }
-    cluster.deploy_marathon_app(docker_build_and_push_app, timeout=500)
-
-    def kill_registry():
-        cluster.destroy_marathon_app(docker_build_and_push_app['id'])
-        cluster.destroy_marathon_app(registry_app['id'])
-    request.addfinalizer(kill_registry)
-    return cluster

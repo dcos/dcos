@@ -46,12 +46,11 @@ def test_mesos_agent_role_assignment(cluster):
         assert r.json()['flags']['default_role'] == '*'
 
 
-def test_signal_service(registry_cluster):
+def test_signal_service(cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
-    cluster = registry_cluster
     dcos_version = os.getenv("DCOS_VERSION", "")
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     signal_config_data = json.loads(signal_config.read())
