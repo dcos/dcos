@@ -205,7 +205,7 @@ def test_ip_per_container(registry_cluster):
     if len(cluster.slaves) >= 2:
         app_definition['instances'] = 2
     else:
-        logging.warning('The IP Per Container tests needs 2 (private) agents to work')
+        pytest.fail('The IP Per Container tests needs 2 (private) agents to work')
     service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
 
     @retrying.retry(wait_fixed=5000, stop_max_delay=300*1000,
