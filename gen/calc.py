@@ -311,14 +311,17 @@ def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
         "sources_id": sources_id})
 
 
-def calculate_cluster_packages(package_names, config_id):
-    def get_package_id(package_name):
-        pkg_id_str = "{}--setup_{}".format(package_name, config_id)
+def calculate_config_package_ids(config_package_names, config_id):
+    def get_config_package_id(config_package_name):
+        pkg_id_str = "{}--setup_{}".format(config_package_name, config_id)
         # validate the pkg_id_str generated is a valid PackageId
         return pkg_id_str
 
-    cluster_package_ids = list(sorted(map(get_package_id, json.loads(package_names))))
-    return json.dumps(cluster_package_ids)
+    return json.dumps(list(sorted(map(get_config_package_id, json.loads(config_package_names)))))
+
+
+def calculate_cluster_packages(config_package_ids, package_ids):
+    return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
 
 
 def validate_cluster_packages(cluster_packages):
@@ -623,6 +626,7 @@ entry = {
         'dcos_version': '1.9-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
+        'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,

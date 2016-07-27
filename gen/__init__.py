@@ -428,7 +428,7 @@ def get_dcosconfig_source_target_and_templates(
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
-    package_names = ['dcos-config', 'dcos-metadata']
+    config_package_names = ['dcos-config', 'dcos-metadata']
     template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
@@ -464,7 +464,7 @@ def get_dcosconfig_source_target_and_templates(
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
-    add_builtin('package_names', list(package_names))
+    add_builtin('config_package_names', list(config_package_names))
     # TODO(cmaloney): user_arguments needs to be a temporary_str since we need to only include used
     # arguments inside of it.
     add_builtin('user_arguments', user_arguments)
@@ -582,6 +582,7 @@ def generate(
     # put the regular files right back
     rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
+
     def make_package_filename(package_id, extension):
         return 'packages/{0}/{1}{2}'.format(
             package_id.name,
@@ -622,18 +623,23 @@ def generate(
                 'bound_values': late_variables
             })})
 
-    # Render the rest of the packages.
+    cluster_package_info = {}
+    # Generate cluster_packages.
+
     for package_id_str in json.loads(argument_dict['cluster_packages']):
         package_id = PackageId(package_id_str)
         package_filename = make_package_filename(package_id, '.tar.xz')
-
-        # Build the package
-        do_gen_package(rendered_templates[package_id.name + '.yaml'], package_filename)
 
         cluster_package_info[package_id.name] = {
             'id': package_id_str,
             'filename': package_filename
         }
+
+    # Render config packages.
+    config_package_ids = json.loads(argument_dict['config_package_ids'])
+    for package_id_str in config_package_ids:
+        package_id = PackageId(package_id_str)
+        do_gen_package(rendered_templates[package_id.name + '.yaml'], cluster_package_info[package_id.name]['filename'])
 
     # Convert cloud-config to just contain write_files rather than root
     cc = rendered_templates['cloud-config.yaml']
@@ -661,6 +667,7 @@ def generate(
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
+        'config_package_ids': config_package_ids,
         'templates': rendered_templates,
         'utils': utils
     })
