@@ -617,7 +617,12 @@ def generate(
         cc_package_files=list(),
         validate_only=False):
     log.info("Generating configuration files...")
+    print("\nARGUMENTS:")
     pprint.pprint(arguments)
+    print("\nEXTRA_TEMPLATES:")
+    pprint.pprint(extra_templates)
+    print("\nCC_PACKAGE_FILES:")
+    pprint.pprint(cc_package_files)
 
     assert isinstance(extra_templates, list)
 
@@ -689,10 +694,6 @@ def generate(
                 "Can't merge template {} in template_list {}".format(name, templates[key]))
 
     mandatory_parameters = get_parameters(templates)
-
-#    print("TEMPLATES:")
-#    pprint.pprint(templates)
-#    print("Mandatory parameters: {}".format(mandatory_parameters))
 
     validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
 

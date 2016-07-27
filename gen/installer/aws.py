@@ -3,6 +3,7 @@
 
 import json
 import logging
+import pprint
 import re
 from copy import deepcopy
 
@@ -139,6 +140,10 @@ def get_test_session(config=None):
 
 
 def get_cloudformation_s3_url():
+    # TODO(lingmann): Remove this hack and figure out how to calculate properly...
+    if release._config is None:
+        return 'https://STUB_CLOUDFORMATION_S3_URL'
+
     assert release._config is not None
     # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
     # is definitely not the right way to do this.
@@ -271,6 +276,11 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
 
 
 def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type):
+    print("gen_advanced_template:")
+    print("arguments: {}".format(arguments))
+    print("variant_prefix: {}".format(variant_prefix))
+    print("channel_commit_path: {}".format(channel_commit_path))
+    print("os_type: {}".format(os_type))
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
@@ -311,11 +321,51 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
             yield '{}-{}'.format(os_type, template_name), bunch
 
 
-def make_advanced_templates(arguments, serve_dir):
-    # TODO(lingmann): Customizations for genconf derived templates to go here. Leverage code in gen_templates()
-    # or gen_advanced_templates() where possible.
-    gen_templates(arguments)
+def make_custom_aws_templates(arguments):
+    # TODO(lingmann): The basic structure of this function already exists in do_create() ... dedupe.
+    extra_packages = list()
+    artifacts = list()
 
+    # Setup base arguments
+    variant_base_args = deepcopy(arguments)
+
+    # TODO(lingmann): Figure out how to properly set: variant_prefix, channel_commit_path
+    variant_prefix = pkgpanda.util.variant_prefix(None)
+    channel_commit_path = 'STUB_channel_commit_path'
+
+    def add_pre_genned(filename, gen_out):
+        nonlocal extra_packages
+        artifacts.append({
+            'channel_path': 'cloudformation/{}{}'.format(variant_prefix, filename),
+            'local_content': gen_out.cloudformation,
+            'content_type': 'application/json; charset=utf-8'
+            })
+        extra_packages += util.cluster_to_extra_packages(gen_out.results.cluster_packages)
+
+    def add(gen_args, filename):
+        gen_out = gen_templates(gen_args)
+        add_pre_genned(filename, gen_out)
+
+    # Advanced templates
+    for os_type in ['coreos', 'el7']:
+        for template_name, advanced_template in gen_advanced_template(variant_base_args,
+                                                                      variant_prefix,
+                                                                      channel_commit_path,
+                                                                      os_type):
+            add_pre_genned(template_name, advanced_template)
+
+    # This renders the infra template only, which has no difference between CE and EE
+    for template_name, advanced_template in gen_supporting_template():
+        artifacts.append({
+            'channel_path': 'cloudformation/{}'.format(template_name),
+            'local_content': advanced_template.cloudformation,
+            'content_type': 'application/json; charset=utf-8',
+        })
+
+    return {
+        'packages': extra_packages,
+        'artifacts': artifacts
+    }
 
 def gen_templates(arguments):
     results = gen.generate(

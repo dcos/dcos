@@ -32,29 +32,20 @@ def do_configure(gen_config):
 
 def do_aws_cf_configure(gen_config):
     subprocess.check_output(['mkdir', '-p', SERVE_DIR])
-    # TODO(cmaloney): why are we validating yet again here?
-    # gen will also validate internally, and not output anything if validation fails...
-    # So we're effectively triple validating currently...
-    do_validate_gen_config(gen_config)
 
     print("gen_config:")
     pprint.pprint(gen_config)
 
     # TODO(cmaloney): CURPOS
-    # TODO(cmaloney): Write this function
-    args = deepcopy(gen_config)
-    args['exhibitor_address'] = '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }'
-    args['s3_bucket'] = '{ "Ref" : "ExhibitorS3Bucket" }'
-    args['s3_prefix'] = '{ "Ref" : "AWS::StackName" }'
-    args['exhibitor_storage_backend'] = 'aws_s3'
-    args['master_role'] = '{ "Ref" : "MasterRole" }'
-    args['agent_role'] = '{ "Ref" : "SlaveRole" }'
-    args['provider'] = 'aws'
+    gen_out = gen.installer.aws.make_custom_aws_templates(gen_config)
 
-    gen_out = gen.installer.aws.make_advanced_templates(args, SERVE_DIR)
+    # TODO(lingmann): At this point, gen_out['artifacts'] is a list of Dicts with the keys 'channel_path',
+    # 'content_type', and 'local_content'. Each entry is a rendered AWS Advanced Template. Write out local_content to
+    # SERVE_DIR here?
+    for artifact in gen_out['artifacts']:
+        print("channel_path: {}".format(artifact['channel_path']))
 
-    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
-
+    fetch_bootstrap(gen_config['bootstrap_id'])
 
 def get_gen_extra_args():
     if 'BOOTSTRAP_ID' not in os.environ:
@@ -67,8 +58,9 @@ def get_gen_extra_args():
     return arguments
 
 
+# TODO: Fix the naming or behavior of this method... currently it mutates `gen_config` which is not great behavior
+# for a method with the name 'validate' in it.
 def do_validate_gen_config(gen_config):
-    # run validate first as this is the only way we have for now to remove "optional" keys
     gen_config.update(get_gen_extra_args())
     return gen.validate(arguments=gen_config)
 

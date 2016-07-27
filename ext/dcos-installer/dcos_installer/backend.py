@@ -40,13 +40,17 @@ def do_configure(config_path=CONFIG_PATH):
 
 def do_aws_cf_configure():
     """Tries to generate AWS templates using a custom config.yaml"""
-    # TODO(cmaloney): Need to pass that we're going to use provider: aws here
-    # rather than provider: onprem
 
     # TODO(lingmann): Exception handling
     config = yaml.load(open(CONFIG_PATH, 'r'))
+
+    config['provider'] = 'aws'
+    config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
+    # TODO(lingmann): Calculate the bootstrap_url ...
+    config['bootstrap_url'] = 'https://downloads.dcos.io/dcos/testing'
     print("CONFIG USED:")
     pprint.pprint(config)
+
     # NOTE: not getting hidden config because it's definitely all wrong. We should
     # also kill the hidden config in general... It's must or defaults for this stuff.
     # TODO(cmaloney): stringify_configuration...
