@@ -18,7 +18,7 @@ LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
 LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def cluster():
     assert 'DCOS_DNS_ADDRESS' in os.environ
     assert 'MASTER_HOSTS' in os.environ
@@ -431,7 +431,7 @@ class Cluster:
                         "completed in {} seconds.".format(timeout))
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def registry_cluster(cluster, request):
     """Provides a cluster that has a registry deployed via marathon.
     Note: cluster nodes must have hard-coded certs from dcos.git installed
