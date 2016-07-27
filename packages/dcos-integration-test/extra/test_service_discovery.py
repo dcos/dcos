@@ -18,7 +18,7 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     being deployed to two different slaves.
 
     The application being deployed is a simple http server written in python.
-    Please check test/dockers/test_server for more details.
+    Please check test_server.py for more details.
 
     Next thing is comparing the service points provided by marathon with those
     reported by mesos-dns. The tricky part here is that may take some time for
@@ -112,15 +112,15 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
-def test_if_service_discovery_works_docker_bridged_network(registry_cluster):
-    return _service_discovery_test(registry_cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(cluster):
+    return _service_discovery_test(cluster, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(registry_cluster):
-    return _service_discovery_test(registry_cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(cluster):
+    return _service_discovery_test(cluster, docker_network_bridge=False)
 
 
-def test_if_search_is_working(registry_cluster):
+def test_if_search_is_working(cluster):
     """Test if custom set search is working.
 
     Verifies that a marathon app running on the cluster can resolve names using
@@ -129,9 +129,8 @@ def test_if_search_is_working(registry_cluster):
     subdomains fails properly.
 
     The application being deployed is a simple http server written in python.
-    Please check test/dockers/test_server for more details.
+    Please check test_server.py for more details.
     """
-    cluster = registry_cluster
     # Launch the app
     app_definition, test_uuid = cluster.get_base_testapp_definition()
     service_points = cluster.deploy_marathon_app(app_definition)
