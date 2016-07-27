@@ -198,7 +198,7 @@ def validate_cf(template_body):
     try:
         session = get_test_session()
     except Exception as ex:
-        logging.warning("Skipping  AWS CloudFormation valdation because couldn't get a test session: {}".format(ex))
+        logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
         return
     client = session.client('cloudformation')
     client.validate_template(TemplateBody=template_body)
