@@ -1,3 +1,4 @@
+import json
 import logging
 
 import gen
@@ -12,7 +13,8 @@ def test_error_during_calc():
     assert gen.validate({
             'ip_detect_filename': 'not-a-existing-file',
             'provider': 'onprem',
-            'bootstrap_variant': ''
+            'bootstrap_variant': '',
+            'package_ids': json.dumps([])
         }) == {
             'status': 'errors',
             'errors': {
@@ -33,7 +35,8 @@ def test_error_during_validate():
     logger.setLevel(logging.DEBUG)
     assert gen.validate({
             'bootstrap_url': '',
-            'bootstrap_variant': ''
+            'bootstrap_variant': '',
+            'package_ids': json.dumps([])
         }) == {
             'status': 'errors',
             'errors': {

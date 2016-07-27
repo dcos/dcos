@@ -217,7 +217,7 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     return dcos_template, artifact
 
 
-def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_completes):
     extra_packages = list()
     artifacts = list()
     for arm_t in ['dcos', 'acs']:

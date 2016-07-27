@@ -592,6 +592,34 @@ def test_make_channel_artifacts(monkeypatch):
             'installer': 'installer_bootstrap_id',
             'ee.installer': 'ee_installer_bootstrap_id'
         },
+        'complete_dict': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'ee': {
+                'bootstrap': 'ee_bootstrap_id',
+                'packages': ['ee-package--version'],
+            },
+        },
+        'all_completes': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'ee': {
+                'bootstrap': 'ee_bootstrap_id',
+                'packages': ['ee-package--version'],
+            },
+            'installer': {
+                'bootstrap': 'installer_bootstrap_id',
+                'packages': ['installer-package--version'],
+            },
+            'ee.installer': {
+                'bootstrap': 'ee_installer_bootstrap_id',
+                'packages': ['ee-installer-package--version'],
+            },
+        },
         'repo_channel_path': 'r_path/channel',
         'channel_commit_path': 'r_path/channel/commit/sha-1',
         'repository_path': 'r_path',

@@ -380,18 +380,19 @@ def make_channel_artifacts(metadata):
 
         variant_arguments = dict()
 
-        for bootstrap_name, bootstrap_id in metadata['bootstrap_dict'].items():
-            variant_arguments[bootstrap_name] = copy.deepcopy({
+        for variant, variant_info in metadata['complete_dict'].items():
+            variant_arguments[variant] = copy.deepcopy({
                 'bootstrap_url': bootstrap_url,
                 'provider': name,
-                'bootstrap_id': bootstrap_id,
-                'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
+                'bootstrap_id': variant_info['bootstrap'],
+                'bootstrap_variant': pkgpanda.util.variant_prefix(variant),
+                'package_ids': json.dumps(variant_info['packages'])
                 })
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
                 mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+                variant_arguments[variant].update(mod.provider_template_defaults)
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
@@ -401,7 +402,7 @@ def make_channel_artifacts(metadata):
             channel_commit_path=metadata['channel_commit_path'],
             commit=metadata['commit'],
             variant_arguments=variant_arguments,
-            all_bootstraps=metadata["all_bootstraps"])
+            all_completes=metadata["all_completes"])
 
         # Translate provider data to artifacts
         assert provider_data.keys() <= {'packages', 'artifacts'}
