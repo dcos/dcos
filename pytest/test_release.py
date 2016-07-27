@@ -488,10 +488,21 @@ def mock_do_build_packages(cache_repository_url):
     write_string("packages/cache/bootstrap/ee.installer.bootstrap.latest", "ee_installer_bootstrap_id")
     write_json("packages/cache/bootstrap/ee_installer_bootstrap_id.active.json", [])
 
+    subprocess.check_call(['mkdir', '-p', 'packages/cache/complete'])
+    write_json(
+        "packages/cache/complete/complete.latest.json",
+        {'bootstrap': 'bootstrap_id', 'packages': ['a--b', 'c--d']})
+    write_json(
+        "packages/cache/complete/installer.complete.latest.json",
+        {'bootstrap': 'installer_bootstrap_id', 'packages': ['c--d', 'e--f']})
+    write_json(
+        "packages/cache/complete/ee.installer.complete.latest.json",
+        {'bootstrap': 'installer_bootstrap_id', 'packages': []})
+
     return {
-        None: "bootstrap_id",
-        "installer": "installer_bootstrap_id",
-        "ee.installer": "ee_installer_bootstrap_id"
+        None: {"bootstrap": "bootstrap_id", "packages": ["a--b", "c--d"]},
+        "installer": {"bootstrap": "installer_bootstrap_id", "packages": ["c--d", "e--f"]},
+        "ee.installer": {"bootstrap": "ee_installer_bootstrap_id", "packages": []}
     }
 
 
@@ -504,6 +515,8 @@ stable_artifacts_metadata = {
             'reproducible_path': 'bootstrap/bootstrap_id.active.json'},
         {'local_path': 'packages/cache/bootstrap/bootstrap.latest',
             'channel_path': 'bootstrap.latest'},
+        {'local_path': 'packages/cache/complete/complete.latest.json',
+         'channel_path': 'complete.latest.json'},
         {'local_path': 'packages/cache/packages/a/a--b.tar.xz',
             'reproducible_path': 'packages/a/a--b.tar.xz'},
         {'local_path': 'packages/cache/packages/c/c--d.tar.xz',
@@ -514,21 +527,42 @@ stable_artifacts_metadata = {
          'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.active.json'},
         {'channel_path': 'ee.installer.bootstrap.latest',
          'local_path': 'packages/cache/bootstrap/ee.installer.bootstrap.latest'},
+        {'local_path': 'packages/cache/complete/ee.installer.complete.latest.json',
+         'channel_path': 'ee.installer.complete.latest.json'},
         {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.bootstrap.tar.xz',
             'reproducible_path': 'bootstrap/installer_bootstrap_id.bootstrap.tar.xz'},
         {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.active.json',
             'reproducible_path': 'bootstrap/installer_bootstrap_id.active.json'},
         {'local_path': 'packages/cache/bootstrap/installer.bootstrap.latest',
             'channel_path': 'installer.bootstrap.latest'},
+        {'local_path': 'packages/cache/complete/installer.complete.latest.json',
+         'channel_path': 'installer.complete.latest.json'},
         {'local_path': 'packages/cache/packages/e/e--f.tar.xz',
-            'reproducible_path': 'packages/e/e--f.tar.xz'}
+            'reproducible_path': 'packages/e/e--f.tar.xz'},
     ],
     'packages': ['a--b', 'c--d', 'e--f'],
     'bootstrap_dict': {None: "bootstrap_id"},
     'all_bootstraps': {
         None: "bootstrap_id",
         "installer": "installer_bootstrap_id",
-        "ee.installer": "ee_installer_bootstrap_id"}}
+        "ee.installer": "ee_installer_bootstrap_id"},
+    'complete_dict': {
+        None: {
+            'bootstrap': 'bootstrap_id',
+            'packages': ['a--b', 'c--d']}
+    },
+    'all_completes': {
+        None: {
+            'bootstrap': 'bootstrap_id',
+            'packages': ['a--b', 'c--d']},
+        'installer': {
+            'bootstrap': 'installer_bootstrap_id',
+            'packages': ['c--d', 'e--f']},
+        'ee.installer': {
+            'bootstrap': 'ee_installer_bootstrap_id',
+            'packages': []}
+    }
+}
 
 
 # TODO(cmaloney): Add test for do_build_packages returning multiple bootstraps
