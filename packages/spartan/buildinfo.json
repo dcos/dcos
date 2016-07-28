@@ -4,8 +4,8 @@
     "spartan": {
       "kind": "git",
       "git": "https://github.com/dcos/spartan.git",
-      "ref": "a615a611b514648a5a1abae93a96f1b7544ec4db",
-      "ref_origin": "master"
+      "ref": "a577b56c6357498d4f913ecaadcdf5b93c749c35",
+      "ref_origin": "fix-bind-ips"
     }
   }
 }
