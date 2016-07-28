@@ -283,22 +283,25 @@ class PackageStore:
     def get_bootstrap_cache_dir(self):
         return self._packages_dir + "/cache/bootstrap"
 
+    def get_complete_cache_dir(self):
+        return self._packages_dir + "/cache/complete"
+
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
-    def get_last_bootstrap_set(self):
-        def get_last_bootstrap(variant):
-            bootstrap_latest = self.get_bootstrap_cache_dir() + '/' + \
-                pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
-            if not os.path.exists(bootstrap_latest):
-                raise BuildError("No last bootstrap found for variant {}. Expected to find {} to match "
-                                 "{}".format(pkgpanda.util.variant_name(variant), bootstrap_latest,
+    def get_last_complete_set(self):
+        def get_last_complete(variant):
+            complete_latest = (
+                self.get_complete_cache_dir() + '/' + pkgpanda.util.variant_prefix(variant) + 'complete.latest.json')
+            if not os.path.exists(complete_latest):
+                raise BuildError("No last complete found for variant {}. Expected to find {} to match "
+                                 "{}".format(pkgpanda.util.variant_name(variant), complete_latest,
                                              pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
-            return load_string(bootstrap_latest)
+            return load_json(complete_latest)
 
         result = {}
         for variant in self.list_trees():
-            result[variant] = get_last_bootstrap(variant)
+            result[variant] = get_last_complete(variant)
         return result
 
     def get_last_build_filename(self, name, variant):
@@ -311,9 +314,6 @@ class PackageStore:
         directory = self._package_cache_dir + '/' + name
         check_call(['mkdir', '-p', directory])
         return directory
-
-    def get_treeinfo(self, variant):
-        return TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json'))
 
     def list_trees(self):
         return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
@@ -668,12 +668,21 @@ def build_tree(package_store, mkbootstrap, tree_variant):
                 list(sorted(package_paths)),
                 package_set.variant)
 
-    # Make sure all treeinfos are satisfied and generate their bootstrap
-    # tarballs if requested.
+    # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
+    complete_cache_dir = package_store.get_complete_cache_dir()
+    check_call(['mkdir', '-p', complete_cache_dir])
     results = {}
     for package_set in package_sets:
-        results[package_set.variant] = make_bootstrap(package_set)
+        info = {
+            'bootstrap': make_bootstrap(package_set),
+            'packages': sorted(
+                load_string(package_store.get_last_build_filename(*pkg_tuple))
+                for pkg_tuple in package_set.all_packages)}
+        write_json(
+            complete_cache_dir + '/' + pkgpanda.util.variant_prefix(package_set.variant) + 'complete.latest.json',
+            info)
+        results[package_set.variant] = info
 
     return results
 

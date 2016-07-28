@@ -5,9 +5,9 @@
 # in the configuration and deployment likely to be missed without explicitly
 # setting these variables to expected values
 source /opt/mesosphere/environment.export
-export MASTER_HOSTS=${MASTER_HOSTS:=`dig master.mesos +short | tr '\n' ' '`}
+export MASTER_HOSTS=${MASTER_HOSTS:=`dig master.mesos +short | tr '\n' ',' | sed 's/.$//'`}
 export PUBLIC_MASTER_HOSTS=${PUBLIC_MASTER_HOSTS:=$MASTER_HOSTS}
-export SLAVE_HOSTS=${SLAVE_HOSTS:=`dig slave.mesos +short | tr '\n' ' '`}
+export SLAVE_HOSTS=${SLAVE_HOSTS:=`dig slave.mesos +short | tr '\n' ',' | sed  's/.$//'`}
 export PUBLIC_SLAVE_HOSTS=${PUBLIC_SLAVE_HOSTS:=$SLAVE_HOSTS}
 export DCOS_DNS_ADDRESS=${DCOS_DNS_ADDRESS:='http://master.mesos'}
 export DCOS_PROVIDER=${DCOS_PROVIDER:=$PROVIDER}

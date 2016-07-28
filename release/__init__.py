@@ -117,10 +117,6 @@ def from_json(json_str):
     return null_to_none(json.loads(json_str))
 
 
-def get_bootstrap_packages(bootstrap_id):
-    return set(pkgpanda.util.load_json('packages/cache/bootstrap/{}.active.json'.format(bootstrap_id)))
-
-
 def load_providers():
     return {name: importlib.import_module("gen.installer." + name)
             for name in provider_names}
@@ -281,22 +277,25 @@ def make_stable_artifacts(cache_repository_url):
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
     try:
-        all_bootstraps = do_build_packages(cache_repository_url)
+        all_completes = do_build_packages(cache_repository_url)
     except pkgpanda.build.BuildError as ex:
         print("ERROR Building packages:", ex, file=sys.stderr)
         raise
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
-    # iteration over the bootstrap_dict to enumerate all variants a whole lot,
+    # iteration over the complete_dict to enumerate all variants a whole lot,
     # so explicity remove installer here so people don't accidentally hit it.
-    bootstrap_dict = dict()
-    for name, info in copy.copy(all_bootstraps).items():
+    complete_dict = dict()
+    for name, info in copy.copy(all_completes).items():
         if name is not None and name.endswith('installer'):
             continue
-        bootstrap_dict[name] = info
+        complete_dict[name] = info
 
-    metadata["bootstrap_dict"] = bootstrap_dict
-    metadata["all_bootstraps"] = all_bootstraps
+    metadata["complete_dict"] = complete_dict
+    metadata["all_completes"] = all_completes
+
+    metadata["bootstrap_dict"] = {k: v['bootstrap'] for k, v in complete_dict.items()}
+    metadata["all_bootstraps"] = {k: v['bootstrap'] for k, v in all_completes.items()}
 
     def add_file(info):
         metadata["core_artifacts"].append(info)
@@ -309,13 +308,13 @@ def make_stable_artifacts(cache_repository_url):
 
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
-    for name, bootstrap_id in sorted(all_bootstraps.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
+        bootstrap_filename = "{}.bootstrap.tar.xz".format(info['bootstrap'])
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
             'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
             })
-        active_filename = "{}.active.json".format(bootstrap_id)
+        active_filename = "{}.active.json".format(info['bootstrap'])
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
             'local_path': 'packages/cache/bootstrap/' + active_filename
@@ -325,9 +324,14 @@ def make_stable_artifacts(cache_repository_url):
             'channel_path': latest_filename,
             'local_path': 'packages/cache/bootstrap/' + latest_filename
             })
+        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
+        add_file({
+            'channel_path': latest_complete_filename,
+            'local_path': 'packages/cache/complete/' + latest_complete_filename
+            })
 
         # Add all the packages which haven't been added yet
-        for package_id in sorted(get_bootstrap_packages(bootstrap_id)):
+        for package_id in sorted(info['packages']):
             add_package(package_id)
 
     # Sets aren't json serializable, so transform to a list for future use.
@@ -405,10 +409,10 @@ def make_abs(path):
     return os.getcwd() + '/' + path
 
 
-def do_build_packages(cache_repository_url):
-    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/dcos-builder/Dockerfile')
-    container_name = 'dcos/dcos-builder:dockerfile-' + pkgpanda.util.sha1(dockerfile)
-    print("Attempting to pull dcos-builder docker:", container_name)
+def do_build_docker(name):
+    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/{}/Dockerfile'.format(name))
+    container_name = 'dcos/{}:dockerfile-{}'.format(name, pkgpanda.util.sha1(dockerfile))
+    print("Attempting to pull docker:", container_name)
     pulled = False
     try:
         # TODO(cmaloney): Rather than pushing / pulling from Docker Hub upload as a build artifact.
@@ -446,17 +450,22 @@ def do_build_packages(cache_repository_url):
     docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
     # only use force tag if using docker version 1.9 or earlier
     if LooseVersion(docker_version) < LooseVersion('1.10'):
-        subprocess.check_call(['docker', 'tag', '-f', container_name, 'dcos-builder:latest'])
+        subprocess.check_call(['docker', 'tag', '-f', container_name, name + ':latest'])
     else:
-        subprocess.check_call(['docker', 'tag', container_name, 'dcos-builder:latest'])
+        subprocess.check_call(['docker', 'tag', container_name, name + ':latest'])
+
+
+def do_build_packages(cache_repository_url):
+    for name in pkg_resources.resource_listdir('pkgpanda', 'docker/'):
+        do_build_docker(name)
 
     def get_build():
         # TODO(cmaloney): Stop shelling out
         package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages', cache_repository_url)
         result = pkgpanda.build.build_tree(package_store, True, None)
-        last_set = package_store.get_last_bootstrap_set()
+        last_set = package_store.get_last_complete_set()
         assert last_set == result, \
-            "Internal error: get_last_bootstrap_set doesn't match the results of build_tree: {} != {}".format(
+            "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
                 last_set,
                 result)
 

@@ -38,20 +38,21 @@ def test_if_all_exhibitors_are_in_sync(cluster):
 
 
 def test_mesos_agent_role_assignment(cluster):
+    state_url = cluster.scheme + '://{}:5051/state.json'
+    headers = cluster._suheader(False)
     for agent in cluster.public_slaves:
-        r = requests.get('http://{}:5051/state.json'.format(agent))
+        r = requests.get(state_url.format(agent), headers=headers)
         assert r.json()['flags']['default_role'] == 'slave_public'
     for agent in cluster.slaves:
-        r = requests.get('http://{}:5051/state.json'.format(agent))
+        r = requests.get(state_url.format(agent), headers=headers)
         assert r.json()['flags']['default_role'] == '*'
 
 
-def test_signal_service(registry_cluster):
+def test_signal_service(cluster):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
-    cluster = registry_cluster
     dcos_version = os.getenv("DCOS_VERSION", "")
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     signal_config_data = json.loads(signal_config.read())

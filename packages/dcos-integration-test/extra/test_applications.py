@@ -6,21 +6,20 @@ import requests
 import retrying
 
 
-def test_if_Marathon_app_can_be_deployed(registry_cluster):
+def test_if_Marathon_app_can_be_deployed(cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
     returned by Marathon indeed point to the app that was deployed.
 
     The application being deployed is a simple http server written in python.
-    Please check test/dockers/test_server for more details.
+    Please test_server.py for more details.
 
     This is done by assigning an unique UUID to each app and passing it to the
     docker container as an env variable. After successfull deployment, the
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
-    cluster = registry_cluster
     app_definition, test_uuid = cluster.get_base_testapp_definition()
 
     service_points = cluster.deploy_marathon_app(app_definition)
@@ -193,10 +192,9 @@ def test_if_minuteman_routes_to_vip(cluster, timeout=125):
     _ensure_routable()
 
 
-def test_ip_per_container(registry_cluster):
+def test_ip_per_container(cluster):
     """Test if we are able to connect to a task with ip-per-container mode
     """
-    cluster = registry_cluster
     # Launch the test_server in ip-per-container mode
 
     app_definition, test_uuid = cluster.get_base_testapp_definition(ip_per_container=True)
@@ -213,7 +211,7 @@ def test_ip_per_container(registry_cluster):
                     retry_on_exception=lambda x: False)
     def _ensure_works():
         app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
-        cmd = "curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
+        cmd = "/opt/mesosphere/bin/curl -s -f http://{}:{}/ping".format(service_points[0].ip, app_port)
         r = requests.post('http://{}:{}/run_cmd'.format(service_points[1].host, service_points[1].port), data=cmd)
         logging.info('IP Per Container Curl Response: %s', repr(r.json()))
         assert(r.json()['status'] == 0)
