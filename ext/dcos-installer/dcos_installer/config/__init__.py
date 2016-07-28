@@ -17,6 +17,39 @@ from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
 log = logging.getLogger(__name__)
 
 
+def stringify_configuration(configuration):
+    """Create a stringified version of the complete installer configuration
+    to send to gen.generate()"""
+    gen_config = {}
+    for key, value in configuration.items():
+        if isinstance(value, list) or isinstance(value, dict):
+            log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
+            value = json.dumps(value)
+
+        elif isinstance(value, bool):
+            if value:
+                value = 'true'
+            else:
+                value = 'false'
+
+        elif isinstance(value, int):
+            log.debug("Caught int for genconf configuration, transforming to string: %s", value)
+            value = str(value)
+
+        elif isinstance(value, str):
+            pass
+
+        else:
+            log.error("Invalid type for value of %s in config. Got %s, only can handle list, dict, "
+                      "int, bool, and str", key, type(value))
+            raise Exception()
+
+        gen_config[key] = value
+
+    log.debug('Stringified configuration: \n{}'.format(gen_config))
+    return gen_config
+
+
 class DCOSConfig(dict):
     """
     Return the site configuration object for dcosgen library
@@ -142,26 +175,7 @@ bootstrap_url: file:///opt/dcos_install_tmp
     def stringify_configuration(self):
         """Create a stringified version of the complete installer configuration
         to send to gen.generate()"""
-        gen_config = {}
-        for key, value in self.items():
-            if isinstance(value, list) or isinstance(value, dict):
-                log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
-                value = json.dumps(value)
-
-            elif isinstance(value, bool):
-                if value:
-                    value = 'true'
-                else:
-                    value = 'false'
-
-            elif isinstance(value, int):
-                log.debug("Caught int for genconf configuration, transforming to string: %s", value)
-                value = str(value)
-
-            gen_config[key] = value
-
-        log.debug('Stringified configuration: \n{}'.format(gen_config))
-        return gen_config
+        return stringify_configuration(self)
 
     def _remove_unrequired_config_keys(self):
         """Remove the configuration we do not want
