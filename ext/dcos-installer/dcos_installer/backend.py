@@ -11,7 +11,7 @@ import yaml
 from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
-from dcos_installer.config import DCOSConfig
+from dcos_installer.config import DCOSConfig, stringify_configuration
 from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
 
 import ssh.validate as validate_ssh
@@ -42,19 +42,16 @@ def do_aws_cf_configure():
     """Tries to generate AWS templates using a custom config.yaml"""
 
     # TODO(lingmann): Exception handling
-    config = yaml.load(open(CONFIG_PATH, 'r'))
+    yaml_config = yaml.load(open(CONFIG_PATH, 'r'))
 
-    config['provider'] = 'aws'
-    config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
+    yaml_config['provider'] = 'aws'
+    yaml_config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
     # TODO(lingmann): Calculate the bootstrap_url ...
-    config['bootstrap_url'] = 'https://downloads.dcos.io/dcos/testing'
+    yaml_config['bootstrap_url'] = 'https://downloads.dcos.io/dcos/testing'
     print("CONFIG USED:")
-    pprint.pprint(config)
+    pprint.pprint(yaml_config)
 
-    # NOTE: not getting hidden config because it's definitely all wrong. We should
-    # also kill the hidden config in general... It's must or defaults for this stuff.
-    # TODO(cmaloney): stringify_configuration...
-    configure.do_aws_cf_configure(config)
+    configure.do_aws_cf_configure(stringify_configuration(yaml_config))
 
 
 def hash_password(string):
