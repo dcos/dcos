@@ -58,9 +58,8 @@ def get_gen_extra_args():
     return arguments
 
 
-# TODO: Fix the naming or behavior of this method... currently it mutates `gen_config` which is not great behavior
-# for a method with the name 'validate' in it.
 def do_validate_gen_config(gen_config):
+    # run validate first as this is the only way we have for now to remove "optional" keys
     gen_config.update(get_gen_extra_args())
     return gen.validate(arguments=gen_config)
 
