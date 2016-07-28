@@ -45,7 +45,7 @@ root:
       Type=oneshot
       EnvironmentFile=/etc/environment
       EnvironmentFile=/opt/mesosphere/environment
-      ExecStart=/usr/bin/bash -c "echo $(detect_ip) $(hostname) > /etc/hosts"
+      ExecStart=/usr/bin/bash -c "echo -e 127.0.0.1 localhost\\\n$(detect_ip) $(hostname) > /etc/hosts"
 runcmd:
     - [ ln, -s, /bin/rm, /usr/bin/rm ]
     - [ ln, -s, /bin/mkdir, /usr/bin/mkdir ]
