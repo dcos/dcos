@@ -8,8 +8,8 @@
   "sources": {
     "python": {
       "kind": "url_extract",
-      "url": "https://www.python.org/ftp/python/3.4.2/Python-3.4.2.tgz",
-      "sha1": "5c756dded3492a9842efa5a10d610820b8f753e7"
+      "url": "https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz",
+      "sha1": "7d192dec3dfc45a2d4a05b8d3512fa6fa2f64a72"
     },
     "setuptools": {
       "kind": "url",
