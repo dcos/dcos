@@ -5,7 +5,7 @@ mkdir -p /pkg/src/github.com/dcos
 mv /pkg/src/3dt /pkg/src/github.com/dcos/
 cd /pkg/src/github.com/dcos/3dt/
 go get
-go install
+make install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
 
