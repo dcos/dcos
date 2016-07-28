@@ -1,5 +1,6 @@
 import pytest
 
+import dcos_installer.config
 from dcos_installer import cli
 
 
@@ -35,3 +36,46 @@ def test_set_arg_parser():
     # Can't do two at once
     with pytest.raises(SystemExit):
         cli.parse_args(['--validate', '--hash-password', 'foo'])
+
+
+def test_stringify_config():
+    stringify = dcos_installer.config.stringify_configuration
+
+    # Basic cases pass right through
+    assert dict() == stringify(dict())
+    assert {"foo": "bar"} == stringify({"foo": "bar"})
+    assert {"a": "b", "c": "d"} == stringify({"a": "b", "c": "d"})
+
+    # booleans are converted to lower case true / false
+    assert {"a": "true"} == stringify({"a": True})
+    assert {"a": "false"} == stringify({"a": False})
+    assert {"a": "b", "c": "false"} == stringify({"a": "b", "c": False})
+
+    # integers are made into strings
+    assert {"a": "1"} == stringify({"a": 1})
+    assert {"a": "4123"} == stringify({"a": 4123})
+    assert {"a": "b", "c": "9999"} == stringify({"a": "b", "c": 9999})
+
+    # Dict and list are converted to JSON
+    assert {"a": '["b"]'} == stringify({"a": ['b']})
+    assert {"a": '["b\\"a"]'} == stringify({"a": ['b"a']})
+    assert {"a": '[1]'} == stringify({"a": [1]})
+    assert {"a": '[1, 2, 3, 4]'} == stringify({"a": [1, 2, 3, 4]})
+    assert {"a": '[true, false]'} == stringify({"a": [True, False]})
+    assert {"a": '{"b": "c"}'} == stringify({"a": {"b": "c"}})
+    assert {"a": '{"b": 1}'} == stringify({"a": {"b": 1}})
+    assert {"a": '{"b": true}'} == stringify({"a": {"b": True}})
+    assert {"a": '{"b": null}'} == stringify({"a": {"b": None}})
+
+    # Random types produce an error.
+    with pytest.raises(Exception):
+        stringify({"a": set()})
+
+    # All the handled types at once
+    assert {
+        "a": "b",
+        "c": "true",
+        "d": "1",
+        "e": "[1]",
+        "f": '{"g": "h"}'
+    } == stringify({"a": "b", "c": True, "d": 1, "e": [1], "f": {"g": "h"}})

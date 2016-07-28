@@ -36,6 +36,14 @@ def stringify_configuration(configuration):
             log.debug("Caught int for genconf configuration, transforming to string: %s", value)
             value = str(value)
 
+        elif isinstance(value, str):
+            pass
+
+        else:
+            log.error("Invalid type for value of %s in config. Got %s, only can handle list, dict, "
+                      "int, bool, and str", key, type(value))
+            raise Exception()
+
         gen_config[key] = value
 
     log.debug('Stringified configuration: \n{}'.format(gen_config))
