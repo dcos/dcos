@@ -31,20 +31,13 @@ def do_configure(gen_config):
 
 
 def do_aws_cf_configure(gen_config):
-    subprocess.check_output(['mkdir', '-p', SERVE_DIR])
-
     print("gen_config:")
     pprint.pprint(gen_config)
 
     # TODO(cmaloney): CURPOS
     gen_out = gen.installer.aws.make_custom_aws_templates(gen_config)
 
-    # TODO(lingmann): At this point, gen_out['artifacts'] is a list of Dicts with the keys 'channel_path',
-    # 'content_type', and 'local_content'. Each entry is a rendered AWS Advanced Template. Write out local_content to
-    # SERVE_DIR here?
-    for artifact in gen_out['artifacts']:
-        print("channel_path: {}".format(artifact['channel_path']))
-
+    fetch_artifacts(gen_out)
     fetch_bootstrap(gen_config['bootstrap_id'])
 
 def get_gen_extra_args():
@@ -62,6 +55,24 @@ def do_validate_gen_config(gen_config):
     # run validate first as this is the only way we have for now to remove "optional" keys
     gen_config.update(get_gen_extra_args())
     return gen.validate(arguments=gen_config)
+
+
+def fetch_artifacts(gen_out):
+    try:
+        subprocess.check_output(['mkdir', '-p', SERVE_DIR])
+        for artifact in gen_out['artifacts']:
+            channel_path = artifact['channel_path']
+            local_content = artifact['local_content']
+            assert channel_path[-1] != '/', "Channel path looks like a directory and must be a file"
+            full_path = SERVE_DIR + '/' + channel_path
+            print("Writing artifact: {}".format(full_path))
+            subprocess.check_output(['mkdir', '-p', os.path.dirname(full_path)])
+            with open(full_path, 'w') as out:
+                out.write(local_content)
+    except subprocess.CalledProcessError as ex:
+        log.error("Error writing artifacts: {}\nOutput: {}".format(ex.cmd, ex.output))
+    except KeyboardInterrupt:
+        log.error("Error writing artifacts. Keyboard interrupt detected.")
 
 
 def fetch_bootstrap(bootstrap_id):
