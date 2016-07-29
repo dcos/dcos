@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 import pprint
 import re
 from copy import deepcopy
@@ -325,9 +326,10 @@ def make_custom_aws_templates(arguments):
     # Setup base arguments
     variant_base_args = deepcopy(arguments)
 
-    # TODO(lingmann): Figure out how to properly set: variant_prefix, channel_commit_path
-    variant_prefix = pkgpanda.util.variant_prefix(None)
-    channel_commit_path = 'STUB_channel_commit_path'
+    variant_prefix = pkgpanda.util.variant_prefix(os.getenv('DCOS_VARIANT'))
+    # TODO(lingmann): Figure out what (if any) equivilant there is for channel_commit_path for self-hosted templates.
+    # For now pull it from an optional env var.
+    channel_commit_path = os.getenv('CHANNEL_COMMIT_PATH') or ''
 
     def add_pre_genned(filename, gen_out):
         nonlocal extra_packages
