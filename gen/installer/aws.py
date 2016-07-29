@@ -327,9 +327,13 @@ def make_custom_aws_templates(arguments):
     variant_base_args = deepcopy(arguments)
 
     variant_prefix = pkgpanda.util.variant_prefix(os.getenv('DCOS_VARIANT'))
-    # TODO(lingmann): Figure out what (if any) equivilant there is for channel_commit_path for self-hosted templates.
-    # For now pull it from an optional env var.
-    channel_commit_path = os.getenv('CHANNEL_COMMIT_PATH') or ''
+
+    # TODO(lingmann): AWS S3 will return a 403 if the URL has '//' in it. For example,
+    # - https://s3-us-west-2.amazonaws.com/foo//bar.html => 403
+    # - https://s3-us-west-2.amazonaws.com/foo/bar.html  => 200
+    # So we need to either update references to /{{ channel_commit_path }}/ in the templates or ask for this as a
+    # required input from end-users. For now set to a static value of 'genconf'.
+    channel_commit_path = 'genconf'
 
     def add_pre_genned(filename, gen_out):
         nonlocal extra_packages
