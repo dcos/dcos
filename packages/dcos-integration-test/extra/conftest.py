@@ -317,21 +317,25 @@ class Cluster:
 
         if docker_network_bridge:
             base_app['container']['docker']['portMappings'] = [{
-                'containerPort':  9080,
-                'hostPort': 0,
-                'servicePort': 0,
-                'protocol': 'tcp',
-            }]
+                                                                    'hostPort': 0,
+                                                                    'containerPort': 9080,
+                                                                    'protocol': 'tcp',
+                                                                    'name': 'test',
+                                                                    'labels': {}
+                                                                }]
             if ip_per_container:
                 base_app['container']['docker']['network'] = 'USER'
                 base_app['ipAddress'] = {'networkName': 'dcos'}
             else:
                 base_app['container']['docker']['network'] = 'BRIDGE'
-                base_app['ports'] = []
         else:
             base_app['cmd'] = test_server_cmd + ' $PORT0'
+            base_app['portDefinitions'] = [{
+                                                "protocol": "tcp",
+                                                "port": 0,
+                                                "name": "test"
+                                            }]
             base_app['container']['docker']['network'] = 'HOST'
-            base_app['ports'] = [0]
 
         return base_app, test_uuid
 
