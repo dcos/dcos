@@ -509,7 +509,6 @@
                 "ec2:CreateTags",
                 "ec2:DescribeInstances",
                 "ec2:CreateVolume",
-                "ec2:DeleteVolume",
                 "ec2:AttachVolume",
                 "ec2:DetachVolume",
                 "ec2:DescribeVolumes",
