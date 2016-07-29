@@ -291,7 +291,11 @@ function check_all() {
             }
         }
         END {
-            if(client_version == server_version) {
+            if(server_version == 0) {
+                version = client_version
+            } else if(client_version == 0) {
+                version = server_version
+            } else if(client_version == server_version) {
                 version = client_version
             } else {
                 split(client_version, cv, ".")
