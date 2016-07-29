@@ -8,6 +8,7 @@ import pprint
 import sys
 import yaml
 
+from copy import deepcopy
 from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
@@ -44,10 +45,10 @@ def do_aws_cf_configure():
     # TODO(lingmann): Exception handling
     yaml_config = yaml.load(open(CONFIG_PATH, 'r'))
 
+    # TODO(lingmann): Validate config params such as 'cloudformation_s3_url' are present and sane
     yaml_config['provider'] = 'aws'
     yaml_config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
-    # TODO(lingmann): Calculate the bootstrap_url ...
-    yaml_config['bootstrap_url'] = 'https://downloads.dcos.io/dcos/testing'
+    yaml_config['bootstrap_url'] = deepcopy(yaml_config['cloudformation_s3_url'])
     print("CONFIG USED:")
     pprint.pprint(yaml_config)
 

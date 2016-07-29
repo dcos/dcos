@@ -140,10 +140,6 @@ def get_test_session(config=None):
 
 
 def get_cloudformation_s3_url():
-    # TODO(lingmann): Remove this hack and figure out how to calculate properly...
-    if release._config is None:
-        return 'https://STUB_CLOUDFORMATION_S3_URL'
-
     assert release._config is not None
     # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
     # is definitely not the right way to do this.
@@ -275,7 +271,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     })
 
 
-def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type):
+def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type, cloudformation_s3_url):
     print("gen_advanced_template:")
     print("arguments: {}".format(arguments))
     print("variant_prefix: {}".format(variant_prefix))
@@ -307,7 +303,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         channel_commit_path=channel_commit_path,
-                        cloudformation_s3_url=get_cloudformation_s3_url(),
+                        cloudformation_s3_url=cloudformation_s3_url,
                         **bunch.results.arguments
                         ),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
@@ -351,7 +347,8 @@ def make_custom_aws_templates(arguments):
         for template_name, advanced_template in gen_advanced_template(variant_base_args,
                                                                       variant_prefix,
                                                                       channel_commit_path,
-                                                                      os_type):
+                                                                      os_type,
+                                                                      arguments['cloudformation_s3_url']):
             add_pre_genned(template_name, advanced_template)
 
     # This renders the infra template only, which has no difference between CE and EE
@@ -508,7 +505,8 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
             for template_name, advanced_template in gen_advanced_template(variant_base_args,
                                                                           variant_prefix,
                                                                           channel_commit_path,
-                                                                          os_type):
+                                                                          os_type,
+                                                                          get_cloudformation_s3_url()):
                 add_pre_genned(template_name, advanced_template)
 
     # Button page linking to the basic templates.
