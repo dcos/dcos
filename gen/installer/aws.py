@@ -278,6 +278,11 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
     print("variant_prefix: {}".format(variant_prefix))
     print("channel_commit_path: {}".format(channel_commit_path))
     print("os_type: {}".format(os_type))
+
+    # Prevent '//' from appearing in URL if channel_commit_path is an empty string
+    cloudformation_full_s3_url = '/'.join(
+            [x for x in [cloudformation_s3_url, channel_commit_path, 'cloudformation'] if x != ''])
+
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
@@ -288,6 +293,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
         params['os_type'] = os_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
+
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
                 master_tk = '{}-{}-{}'.format(os_type, template_key, num_masters)
@@ -303,8 +309,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                     'cloudformation': render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
-                        channel_commit_path=channel_commit_path,
-                        cloudformation_s3_url=cloudformation_s3_url,
+                        cloudformation_full_s3_url=cloudformation_full_s3_url,
                         **bunch.results.arguments
                         ),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
@@ -328,12 +333,8 @@ def make_custom_aws_templates(arguments):
 
     variant_prefix = pkgpanda.util.variant_prefix(os.getenv('DCOS_VARIANT'))
 
-    # TODO(lingmann): AWS S3 will return a 403 if the URL has '//' in it. For example,
-    # - https://s3-us-west-2.amazonaws.com/foo//bar.html => 403
-    # - https://s3-us-west-2.amazonaws.com/foo/bar.html  => 200
-    # So we need to either update references to /{{ channel_commit_path }}/ in the templates or ask for this as a
-    # required input from end-users. For now set to a static value of 'genconf'.
-    channel_commit_path = 'genconf'
+    # channel_commit_path is not used with user-generated templates, set to '' to exclude from constructed URL's
+    channel_commit_path = ''
 
     def add_pre_genned(filename, gen_out):
         nonlocal extra_packages
