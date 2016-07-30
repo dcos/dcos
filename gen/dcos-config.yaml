@@ -390,3 +390,6 @@ package:
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
+  - path: /etc/expanded.config.json
+    content: |
+{{ expanded_config }}
