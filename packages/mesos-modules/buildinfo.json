@@ -1,0 +1,10 @@
+{
+  "requires": ["mesos"],
+    "docker": "dcos-builder",
+    "single_source" : {
+      "kind": "git",
+      "git": "https://github.com/dcos/dcos-mesos-modules.git",
+      "ref": "8d09c2d44f606df23a57254ebcbc5f2722a3b677",
+      "ref_origin": "master"
+    }
+}
