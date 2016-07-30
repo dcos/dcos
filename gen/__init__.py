@@ -18,6 +18,7 @@ import json
 import logging as log
 import os
 import os.path
+import textwrap
 from copy import copy, deepcopy
 from subprocess import check_call
 from tempfile import TemporaryDirectory
@@ -222,7 +223,6 @@ def render_templates(template_dict, arguments):
                 assert len(templates) == 1
                 full_template = rendered_template
                 continue
-
             template_data = yaml.load(rendered_template)
 
             if full_template:
@@ -699,6 +699,11 @@ def generate(
     add_builtin('package_names', list(package_names))
     add_builtin('user_arguments', user_arguments)
 
+    # Add a builtin for expanded_config, so that we won't get unset argument errors. The temporary
+    # value will get replaced with the set of all arguments once calculation is complete
+    temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
+    add_builtin('expanded_config', temporary_str)
+
     # Calculate the remaining arguments.
     arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters)
 
@@ -706,6 +711,14 @@ def generate(
     validate_arguments_strings(arguments)
 
     log.info("Final arguments:" + json.dumps(arguments, **json_prettyprint_args))
+
+    # expanded_config is a special result which contains all other arguments. It has to come after
+    # the calculation of all the other arguments so it can be filled with everything which was
+    # calculated. Can't be calculated because that would have an infinite recursion problem (the set
+    # of all arguments would want to include itself).
+    # Explicitly / manaully setup so that it'll fit where we want it.
+    arguments['expanded_config'] = textwrap.indent(json.dumps(arguments, **json_prettyprint_args),
+                                                   prefix='  ' * 3)
 
     if validate_only:
         return

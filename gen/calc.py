@@ -105,6 +105,20 @@ def calculate_gen_resolvconf_search(dns_search):
         return ""
 
 
+def calculate_mesos_hooks(dcos_remove_dockercfg_enable):
+    if dcos_remove_dockercfg_enable == 'true':
+        return "com_mesosphere_dcos_RemoverHook"
+    else:
+        return ""
+
+
+def calculate_use_mesos_hooks(mesos_hooks):
+    if mesos_hooks == "":
+        return "false"
+    else:
+        return "true"
+
+
 def validate_telemetry_enabled(telemetry_enabled):
     can_be = ['true', 'false']
     assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
@@ -162,6 +176,12 @@ def validate_dcos_overlay_network(dcos_overlay_network):
             assert False, (
                 "Incorrect value for vtep_subnet. Only IPv4 "
                 "values are allowed: {}".format(ex))
+
+
+def validate_dcos_remove_dockercfg_enable(dcos_remove_dockercfg_enable):
+    can_be = ['true', 'false']
+    assert dcos_remove_dockercfg_enable in can_be, (
+       'Must be one of {}. Got {}.'.format(can_be, dcos_remove_dockercfg_enable))
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -337,7 +357,8 @@ entry = {
         validate_os_type,
         validate_dcos_overlay_network,
         validate_dcos_overlay_enable,
-        validate_dcos_overlay_mtu],
+        validate_dcos_overlay_mtu,
+        validate_dcos_remove_dockercfg_enable],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -380,7 +401,8 @@ entry = {
                 "prefix": 24                            \
               }                                         \
             ]}',
-        'rexray_config_method': 'empty'
+        'rexray_config_method': 'empty',
+        'dcos_remove_dockercfg_enable': "false"
     },
     'must': {
         'custom_auth': 'false',
@@ -400,7 +422,9 @@ entry = {
         'ui_organization': 'false',
         'minuteman_forward_metrics': 'false',
         'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
-        'config_yaml': calculate_config_yaml
+        'config_yaml': calculate_config_yaml,
+        'mesos_hooks': calculate_mesos_hooks,
+        'use_mesos_hooks': calculate_use_mesos_hooks
     },
     'conditional': {
         'master_discovery': {
