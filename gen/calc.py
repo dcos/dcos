@@ -410,7 +410,7 @@ entry = {
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
-        'dcos_version': '1.8-dev',
+        'dcos_version': '1.8',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'cluster_packages': calculate_cluster_packages,
