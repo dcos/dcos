@@ -27,7 +27,7 @@ def get_zk_pid():
 def try_shortcut():
     try:
         # pid stat file exists, read the value out of it
-        stashed_pid_stat = load_string(stash_zk_pid_stat_mtime_path)
+        stashed_pid_stat = int(load_string(stash_zk_pid_stat_mtime_path))
     except FileNotFoundError:
         log.info('No zk.pid last mtime found at %s', stash_zk_pid_stat_mtime_path)
         return False
@@ -44,7 +44,7 @@ def try_shortcut():
     try:
         # Custom because the command line is ascii with `\0` as separator.
         with open(cmdline_path, 'rb') as f:
-            cmd_line = f.read().split(b'\0')
+            cmd_line = f.read().split(b'\0')[:-1]
     except FileNotFoundError:
         log.info('Process no longer running (couldn\'t read the cmdline at: %s)', zk_pid)
         return False
@@ -55,8 +55,8 @@ def try_shortcut():
         log.info("Command line too short to be zookeeper started by exhibitor")
         return False
 
-    if cmd_line[-1] != '/var/lib/dcos/exhibitor/conf/zoo.cfg' \
-            or cmd_line[0] != '/opt/mesosphere/active/java/usr/java/bin/java':
+    if cmd_line[-1] != b'/var/lib/dcos/exhibitor/conf/zoo.cfg' \
+            or cmd_line[0] != b'/opt/mesosphere/active/java/usr/java/bin/java':
         log.info("command line doesn't start with java and end with zookeeper.cfg")
         return False
 
