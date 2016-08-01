@@ -16,8 +16,7 @@ from os.path import basename, normpath
 from docopt import docopt
 
 import pkgpanda.build.constants
-from pkgpanda.build import (BuildError, PackageStore, build_package_variants,
-                            build_tree)
+from pkgpanda.build import (BuildError, PackageStore, build_package_variants, build_tree)
 
 
 def main():

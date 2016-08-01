@@ -5,8 +5,8 @@ from pkgpanda.util import expect_fs
 from util import run
 
 
-def tmp_repository(tmpdir, repo_dir="../tests/resources/packages"):
-    repo_path = tmpdir.join("repository")
+def tmp_repository(temp_dir, repo_dir="../tests/resources/packages"):
+    repo_path = temp_dir.join("repository")
     copytree(repo_dir, str(repo_path))
     return repo_path
 
@@ -54,7 +54,7 @@ def test_setup(tmpdir):
         "--config-dir=resources/etc-active"
         ]).decode("utf-8").split())
 
-    assert active == set(["env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"])
+    assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
     tmpdir.join("root", "bootstrap").write("", ensure=True)
     # If we setup the same directory again we should get .old files.
     check_call(["pkgpanda",
@@ -108,7 +108,8 @@ def test_setup(tmpdir):
         "--repository={}".format(repo_path),
         "--config-dir=resources/etc-active"
         ]).decode('utf-8').split())
-    assert active == set(["env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"])
+
+    assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
 
     # Touch some .new files so we can be sure that deactivate cleans those up as well.
     tmpdir.mkdir("root/bin.new")
@@ -164,7 +165,8 @@ def test_activate(tmpdir):
         "--repository={}".format(repo_path),
         "--config-dir=resources/etc-active"
         ]).decode('utf-8').split())
-    assert active == set(["mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"])
+
+    assert active == {"mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
 
     # Swap out one package
     assert run(["pkgpanda",
@@ -185,7 +187,8 @@ def test_activate(tmpdir):
         "--repository={}".format(repo_path),
         "--config-dir=resources/etc-active"
         ]).decode('utf-8').split())
-    assert active == set(["mesos--0.22.0", "mesos-config--justmesos"])
+
+    assert active == {"mesos--0.22.0", "mesos-config--justmesos"}
 
     assert run(["pkgpanda",
                 "activate",
@@ -196,7 +199,7 @@ def test_activate(tmpdir):
                 "--config-dir=resources/etc-active",
                 "--no-systemd"]) == ""
 
-    # Check introspection to active is workign right.
+    # Check introspection to active is working right.
     active = set(check_output([
         "pkgpanda",
         "active",
@@ -206,9 +209,7 @@ def test_activate(tmpdir):
         "--config-dir=resources/etc-active"
         ]).decode('utf-8').split())
 
-    assert active == set(["mesos--0.22.0"])
+    assert active == {"mesos--0.22.0"}
 
     # TODO(cmaloney): expect_fs
-
-
-# TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
+    # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html

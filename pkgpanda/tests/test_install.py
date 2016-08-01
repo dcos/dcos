@@ -42,7 +42,7 @@ def test_recovery_noop(install):
     assert not action
 
 
-def test_recovery_archive(tmpdir, repository):
+def test_recovery_archive(tmpdir):
     # Recover from the "archive" state correctly.
     shutil.copytree("resources/install_recovery_archive", str(tmpdir.join("install")), symlinks=True)
     install = Install(str(tmpdir.join("install")), "resources/systemd", True, False, True)
@@ -68,7 +68,7 @@ def test_recovery_archive(tmpdir, repository):
         })
 
 
-def test_recovery_move_new(tmpdir, repository):
+def test_recovery_move_new(tmpdir):
     # From the "move_new" state correctly.
     shutil.copytree("resources/install_recovery_move", str(tmpdir.join("install")), symlinks=True)
     install = Install(str(tmpdir.join("install")), "resources/systemd", True, False, True)

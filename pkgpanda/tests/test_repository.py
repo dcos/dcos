@@ -14,12 +14,10 @@ def repository():
 def test_list(repository):
     packages = repository.list()
     assert type(packages) is set
-    assert packages == set([
-        'mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8',
-        'mesos--0.22.0',
-        'mesos--0.23.0',
-        'mesos-config--justmesos'
-        ])
+    assert packages == {'mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8',
+                        'mesos--0.22.0',
+                        'mesos--0.23.0',
+                        'mesos-config--justmesos'}
 
 
 def test_load_bad(repository):
