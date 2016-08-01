@@ -139,9 +139,6 @@
                     "ec2:CreateTags",
                     "ec2:DescribeInstances",
                     "ec2:CreateVolume",
-                    "ec2:DeleteVolume",
-                    "ec2:AttachVolume",
-                    "ec2:DetachVolume",
                     "ec2:DescribeVolumes",
                     "ec2:DescribeVolumeStatus",
                     "ec2:DescribeVolumeAttribute",
@@ -152,6 +149,45 @@
                     "ec2:DescribeSnapshotAttribute",
                     "autoscaling:DescribeAutoScalingGroups",
                     "cloudwatch:PutMetricData"
+                  ],
+                  "Effect": "Allow"
+                },
+                {
+                  "Resource": {
+                    "Fn::Join" : [
+                      ":",
+                      [
+                        "arn:aws:ec2",
+                        { "Ref" : "AWS::Region" },
+                        { "Ref" : "AWS::AccountId" },
+                        "volume/*"
+                      ]
+                    ]
+                  },
+                  "Condition": {"StringEquals": {"ec2:ResourceTag/rexraySet": { "Ref" : "AWS::StackId" }}},
+                  "Action": [
+                    "ec2:DeleteVolume",
+                    "ec2:AttachVolume",
+                    "ec2:DetachVolume"
+                  ],
+                  "Effect": "Allow"
+                },
+                {
+                  "Resource": {
+                    "Fn::Join" : [
+                      ":",
+                      [
+                        "arn:aws:ec2",
+                        { "Ref" : "AWS::Region" },
+                        { "Ref" : "AWS::AccountId" },
+                        "instance/*"
+                      ]
+                    ]
+                  },
+                  "Condition": {"StringEquals": {"ec2:ResourceTag/aws:cloudformation:stack-id": { "Ref" : "AWS::StackId" }}},
+                  "Action": [
+                    "ec2:AttachVolume",
+                    "ec2:DetachVolume"
                   ],
                   "Effect": "Allow"
                 }
