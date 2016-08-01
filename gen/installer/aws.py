@@ -235,7 +235,8 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
             '/etc/cfn_signal_metadata',
             '/etc/dns_config',
             '/etc/exhibitor',
-            '/etc/mesos-master-provider'])
+            '/etc/mesos-master-provider',
+            '/etc/aws_dnsnames'])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -325,7 +326,8 @@ def gen_templates(arguments):
             '/etc/ui-config.json',
             '/etc/dns_config',
             '/etc/exhibitor',
-            '/etc/mesos-master-provider'])
+            '/etc/mesos-master-provider',
+            '/etc/aws_dnsnames'])
 
     cloud_config = results.templates['cloud-config.yaml']
 
