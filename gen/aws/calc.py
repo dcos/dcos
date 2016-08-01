@@ -3,6 +3,20 @@ import pkg_resources
 import yaml
 
 
+# Use IAM Instance profile for auth and tag volumes with StackId.
+REXRAY_CONFIG = """
+rexray:
+  loglevel: info
+  storageDrivers:
+    - ec2
+  volume:
+    unmount:
+      ignoreusedcount: true
+aws:
+  rexrayTag: { "Ref" : "AWS::StackId" }
+"""
+
+
 def get_spot(name, spot_price):
     if spot_price:
         return '"SpotPrice": "{}",'.format(spot_price)
@@ -45,7 +59,7 @@ entry = {
         'cloud_config': '{{ cloud_config }}',
         'oauth_available': 'true',
         'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
-        # Use IAM Instance profile for auth
-        'rexray_config_method': 'aws'
+        'rexray_config_method': 'string',
+        'rexray_config_string': REXRAY_CONFIG,
     }
 }

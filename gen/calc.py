@@ -90,12 +90,16 @@ def calculate_ip_detect_public_contents(ip_detect_contents):
     return ip_detect_contents
 
 
-def calculate_rexray_config_contents(rexray_config_filename):
+def calculate_rexray_config_from_file(rexray_config_filename):
     try:
         with open(rexray_config_filename, encoding='utf-8') as f:
             return yaml.dump(f.read())
     except IOError as err:
         raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err)) from err
+
+
+def calculate_rexray_config_from_string(rexray_config_string):
+    return yaml.dump(rexray_config_string)
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -421,7 +425,10 @@ entry = {
         },
         'rexray_config_method': {
             'file': {
-                'must': {'rexray_config_contents': calculate_rexray_config_contents},
+                'must': {'rexray_config_contents': calculate_rexray_config_from_file},
+            },
+            'string': {
+                'must': {'rexray_config_contents': calculate_rexray_config_from_string},
             },
             'aws': {
                 'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
