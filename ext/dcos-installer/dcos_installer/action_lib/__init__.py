@@ -343,7 +343,7 @@ ExecStart=
 ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
 EOF
 
-sudo yum install -y docker-engine
+sudo yum install -y docker-engine-1.11.2
 sudo systemctl start docker
 sudo systemctl enable docker
 

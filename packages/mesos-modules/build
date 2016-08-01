@@ -1,0 +1,15 @@
+#!/bin/bash
+pushd /pkg/src/mesos-modules/
+./bootstrap
+popd
+
+source /opt/mesosphere/environment.export
+
+mkdir -p build
+pushd build
+/pkg/src/mesos-modules/configure \
+     --with-mesos=/opt/mesosphere/active/mesos \
+     --prefix="$PKG_PATH"
+make -j8
+make install
+popd

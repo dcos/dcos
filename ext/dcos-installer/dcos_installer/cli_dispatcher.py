@@ -203,7 +203,7 @@ def dispatch(args):
         validate_ssh_config_or_exit()
         errors = run_loop(dispatch_dict_aio[args.action][0](args), args)
         installer_analytics.send(
-            action="installer_{}".format(args.action),
+            action=args.action,
             install_method="cli",
             num_errors=errors,
         )
