@@ -94,8 +94,7 @@ def find_checks(install, repository):
             continue
         for check_file in sorted(os.listdir(package_check_dir)):
             if not os.access(os.path.join(package_check_dir, check_file), os.X_OK):
-                print('WARNING: `{}` is not executable'.format(check_file),
-                      file=sys.stderr)
+                print('WARNING: `{}` is not executable'.format(check_file), file=sys.stderr)
                 continue
             tmp_checks[active_package].append(check_file)
         if tmp_checks[active_package]:
@@ -124,7 +123,7 @@ def run_checks(checks, install, repository):
 
 
 def main():
-    arguments = docopt(__doc__, version="Pkpganda Package Manager")
+    arguments = docopt(__doc__, version="Pkgpanda Package Manager")
     umask(0o022)
 
     # NOTE: Changing root or repository will likely break actually running packages.
@@ -200,14 +199,14 @@ def main():
                 sys.exit(0)
             # Run all checks
             sys.exit(run_checks(checks, install, repository))
-    except Exception as ex:
-        print("ERROR: {0}".format(ex))
-        sys.exit(1)
     except ValidationError as ex:
         print("Validation Error: {0}".format(ex))
         sys.exit(1)
     except PackageError as ex:
         print("Package Error: {0}".format(ex))
+        sys.exit(1)
+    except Exception as ex:
+        print("ERROR: {0}".format(ex))
         sys.exit(1)
 
     print("unknown command")
