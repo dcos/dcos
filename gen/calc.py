@@ -15,30 +15,6 @@ from pkgpanda import PackageId
 from pkgpanda.build import hash_checkout
 
 
-AWS_REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  modules:
-    default-admin:
-      host: tcp://127.0.0.1:61003
-  storageDrivers:
-    - ec2
-  volume:
-    unmount:
-      ignoreusedcount: true
-"""
-
-DEFAULT_REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  modules:
-    default-admin:
-      host: tcp://127.0.0.1:61003
-    default-docker:
-      disabled: true
-"""
-
-
 def calculate_bootstrap_variant():
     variant = os.getenv('BOOTSTRAP_VARIANT')
     assert variant is not None, "BOOTSTRAP_VARIANT must be set"
@@ -95,12 +71,16 @@ def calculate_ip_detect_public_contents(ip_detect_contents):
     return ip_detect_contents
 
 
-def calculate_rexray_config_contents(rexray_config_filename):
-    try:
-        with open(rexray_config_filename, encoding='utf-8') as f:
-            return yaml.dump(f.read())
-    except IOError as err:
-        raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err)) from err
+def calculate_rexray_config_contents(rexray_config):
+    assert isinstance(rexray_config, str)
+    return yaml.dump(
+        # Assume block style YAML (not flow) for REX-Ray config.
+        yaml.dump(json.loads(rexray_config), default_flow_style=False)
+    )
+
+
+def validate_rexray_config(rexray_config):
+    assert isinstance(json.loads(rexray_config), dict), 'Must be a mapping.'
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -363,7 +343,8 @@ entry = {
         validate_dcos_overlay_network,
         validate_dcos_overlay_enable,
         validate_dcos_overlay_mtu,
-        validate_dcos_remove_dockercfg_enable],
+        validate_dcos_remove_dockercfg_enable,
+        validate_rexray_config],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -406,8 +387,22 @@ entry = {
                 "prefix": 24                            \
               }                                         \
             ]}',
-        'rexray_config_method': 'empty',
-        'dcos_remove_dockercfg_enable': "false"
+        'dcos_remove_dockercfg_enable': "false",
+        'rexray_config_preset': '',
+        'rexray_config': json.dumps({
+            # Disabled. REX-Ray will start but not register as a volume driver.
+            'rexray': {
+                'loglevel': 'info',
+                'modules': {
+                    'default-admin': {
+                        'host': 'tcp://127.0.0.1:61003'
+                    },
+                    'default-docker': {
+                        'disabled': True
+                    }
+                }
+            }
+        })
     },
     'must': {
         'custom_auth': 'false',
@@ -429,7 +424,8 @@ entry = {
         'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
-        'use_mesos_hooks': calculate_use_mesos_hooks
+        'use_mesos_hooks': calculate_use_mesos_hooks,
+        'rexray_config_contents': calculate_rexray_config_contents
     },
     'conditional': {
         'master_discovery': {
@@ -448,16 +444,29 @@ entry = {
             'aws': gen.aws.calc.entry,
             'other': {}
         },
-        'rexray_config_method': {
-            'file': {
-                'must': {'rexray_config_contents': calculate_rexray_config_contents},
-            },
+        'rexray_config_preset': {
+            '': {},
             'aws': {
-                'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
-            },
-            'empty': {
-                'must': {'rexray_config_contents': yaml.dump(DEFAULT_REXRAY_CONFIG)},
-            },
+                'must': {
+                    'rexray_config': json.dumps({
+                        # Use IAM Instance Profile for auth.
+                        'rexray': {
+                            'loglevel': 'info',
+                            'modules': {
+                                'default-admin': {
+                                    'host': 'tcp://127.0.0.1:61003'
+                                }
+                            },
+                            'storageDrivers': ['ec2'],
+                            'volume': {
+                                'unmount': {
+                                    'ignoreusedcount': True
+                                }
+                            }
+                        }
+                    })
+                }
+            }
         }
     }
 }

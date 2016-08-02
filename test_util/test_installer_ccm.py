@@ -67,19 +67,6 @@ log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
 
-REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  modules:
-    default-admin:
-      host: tcp://127.0.0.1:61003
-  storageDrivers:
-    - ec2
-  volume:
-    unmount:
-      ignoreusedcount: true
-"""
-
 
 def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
@@ -296,7 +283,7 @@ def main():
                 ssh_user=ssh_user,
                 ssh_key=ssh_key,
                 add_config_path=options.add_config_path,
-                rexray_config=REXRAY_CONFIG)
+                rexray_config_preset='aws')
 
         log.info("Running Preflight...")
         if options.test_install_prereqs:
