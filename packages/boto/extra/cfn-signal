@@ -25,7 +25,7 @@ whereas <role> is specified by either
     AWS_IAM_SLAVE_ROLE_NAME
 
 depending on whether this instance is a slave or master. It is considered
-master only if a file named 'master' is contained in /etc/mesosphere/roles.
+master only if a file named 'master' is contained in /opt/mesosphere/etc/roles.
 
 (Note: boto3 would query the security-credentials service automatically if
 it does not find credentials in the environment or in one of its config files.
@@ -69,8 +69,8 @@ instance_id = requests.get(instance_id_url).text
 print('cfn-signal: obtained instance ID: %s' % instance_id)
 
 assume_role_name = slave_role_name
-if 'master' in os.listdir('/etc/mesosphere/roles'):
-    print('cfn-signal: master entry found in /etc/mesosphere/roles.')
+if 'master' in os.listdir('/opt/mesosphere/etc/roles'):
+    print('cfn-signal: master entry found in /opt/mesosphere/etc/roles.')
     assume_role_name = master_role_name
 
 credential_url = '%s/iam/security-credentials/%s' % (
