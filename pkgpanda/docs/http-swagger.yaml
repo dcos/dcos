@@ -79,7 +79,7 @@ parameters:
 
 paths:
 
-  /:
+  /repository/:
     get:
       summary: List the packages that are present in the node's pkgpanda repository.
       produces:
@@ -90,7 +90,7 @@ paths:
           schema:
             $ref: '#/definitions/PackageIdArray'
 
-  /{package-id}:
+  /repository/{package-id}:
     get:
       summary: Get metadata for a package in the node's pkgpanda repository.
       parameters:

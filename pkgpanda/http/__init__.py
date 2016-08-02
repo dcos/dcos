@@ -60,12 +60,12 @@ def set_app_attrs_from_config():
         current_app.config['DCOS_REPO_DIR'])
 
 
-@app.route('/', methods=['GET'])
+@app.route('/repository/', methods=['GET'])
 def get_package_list():
     return package_listing_response(current_app.repository.list())
 
 
-@app.route('/<package_id>', methods=['GET'])
+@app.route('/repository/<package_id>', methods=['GET'])
 def get_package(package_id):
     if not current_app.repository.has_package(package_id):
         return (
@@ -75,7 +75,7 @@ def get_package(package_id):
     return package_response(package_id, current_app.repository)
 
 
-@app.route('/<package_id>', methods=['POST'])
+@app.route('/repository/<package_id>', methods=['POST'])
 def fetch_package(package_id):
     try:
         repository_url = request.json['repository_url']
@@ -97,7 +97,7 @@ def fetch_package(package_id):
     return empty_response
 
 
-@app.route('/<package_id>', methods=['DELETE'])
+@app.route('/repository/<package_id>', methods=['DELETE'])
 def remove_package(package_id):
     if not current_app.repository.has_package(package_id):
         return (

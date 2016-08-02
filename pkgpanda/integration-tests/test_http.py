@@ -14,7 +14,7 @@ def _set_test_config(app):
 def test_list_packages():
     _set_test_config(app)
     client = app.test_client()
-    packages = json.loads(client.get('/').data.decode('utf-8'))
+    packages = json.loads(client.get('/repository/').data.decode('utf-8'))
     assert packages == [
         'mesos--0.22.0',
         'mesos--0.23.0',
@@ -26,7 +26,7 @@ def test_get_package():
     _set_test_config(app)
     client = app.test_client()
 
-    response = client.get('/mesos--0.22.0')
+    response = client.get('/repository/mesos--0.22.0')
     assert response.status_code == 200
     assert json.loads(response.data.decode('utf-8')) == {
         'id': 'mesos--0.22.0',
@@ -34,7 +34,7 @@ def test_get_package():
         'version': '0.22.0',
     }
 
-    response = client.get('/nonexistent-package--fakeversion')
+    response = client.get('/repository/nonexistent-package--fakeversion')
     assert response.status_code == 404
     assert 'error' in json.loads(response.data.decode('utf-8'))
 
@@ -106,19 +106,19 @@ def test_fetch_package(tmpdir):
     app.config['DCOS_REPO_DIR'] = str(tmpdir)
 
     # Successful package fetch.
-    assert json.loads(client.get('/').data.decode('utf-8')) == []
+    assert json.loads(client.get('/repository/').data.decode('utf-8')) == []
     assert client.post(
-        '/mesos--0.22.0',
+        '/repository/mesos--0.22.0',
         content_type='application/json',
         data=json.dumps({
             'repository_url': 'file://{}/../tests/resources/remote_repo'.format(os.getcwd())
         }),
     ).status_code == 204
-    assert json.loads(client.get('/').data.decode('utf-8')) == ['mesos--0.22.0']
+    assert json.loads(client.get('/repository/').data.decode('utf-8')) == ['mesos--0.22.0']
 
     # No repository URL provided.
     response = client.post(
-        '/mesos--0.23.0',
+        '/repository/mesos--0.23.0',
         content_type='application/json',
         data=json.dumps({}),
     )
@@ -135,19 +135,19 @@ def test_remove_package(tmpdir):
 
     # Successful deletion.
     package_to_delete = 'mesos--0.23.0'
-    assert package_to_delete in json.loads(client.get('/').data.decode('utf-8'))
-    assert client.delete('/' + package_to_delete).status_code == 204
-    assert package_to_delete not in json.loads(client.get('/').data.decode('utf-8'))
+    assert package_to_delete in json.loads(client.get('/repository/').data.decode('utf-8'))
+    assert client.delete('/repository/' + package_to_delete).status_code == 204
+    assert package_to_delete not in json.loads(client.get('/repository/').data.decode('utf-8'))
 
     # Attempted deletion of active package.
     package_to_delete = 'mesos--0.22.0'
     assert package_to_delete in json.loads(client.get('/active/').data.decode('utf-8'))
-    response = client.delete('/' + package_to_delete)
+    response = client.delete('/repository/' + package_to_delete)
     assert response.status_code == 409
     assert 'error' in json.loads(response.data.decode('utf-8'))
     assert package_to_delete in json.loads(client.get('/active/').data.decode('utf-8'))
 
     # Attempted deletion of nonexistent package.
-    response = client.delete('/nonexistent-package--fakeversion')
+    response = client.delete('/repository/nonexistent-package--fakeversion')
     assert response.status_code == 404
     assert 'error' in json.loads(response.data.decode('utf-8'))
