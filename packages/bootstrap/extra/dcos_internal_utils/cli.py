@@ -101,10 +101,16 @@ def get_zookeeper_address_agent():
 
 
 def get_zookeeper_address():
-    if os.path.exists('/etc/mesosphere/roles/master'):
+    roles = os.listdir('/opt/mesosphere/etc/roles')
+
+    # Masters use a special zk address since spartan and the like aren't up yet.
+    if 'master' in roles:
         return '127.0.0.1:2181'
-    else:
+
+    if 'slave' in roles or 'slave_public' in roles:
         return get_zookeeper_address_agent()
+
+    raise Exception("Can't get zookeeper address. Unknown role: {}".format(roles))
 
 
 def parse_args():
