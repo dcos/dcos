@@ -32,8 +32,9 @@ def package_response(package_id, repository):
     })
 
 
-def error_response(message):
-    return jsonify({'error': message})
+def error_response(message, **kwargs):
+    kwargs['error'] = message
+    return jsonify(kwargs)
 
 
 app = Flask(__name__)
@@ -141,9 +142,14 @@ def activate_packages():
             ),
             http.client.BAD_REQUEST,
         )
-    if not (set(request.json) <= set(current_app.repository.list())):
+
+    missing_packages = set(request.json) - set(current_app.repository.list())
+    if missing_packages:
         return (
-            error_response('Not all packages in the request are present.'),
+            error_response(
+                'Not all packages in the request are present on this node.',
+                missing_packages=sorted(missing_packages)
+            ),
             http.client.CONFLICT,
         )
 

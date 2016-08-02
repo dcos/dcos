@@ -61,7 +61,7 @@ definitions:
       error:
         type: string
         description: The error message.
-    additionalProperties: false
+    additionalProperties: true
     example: {"error": "An error has occurred."}
 
 

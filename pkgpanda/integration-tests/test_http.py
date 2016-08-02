@@ -90,14 +90,20 @@ def test_activate_packages(tmpdir):
     ).status_code == 204
     assert json.loads(client.get('/active/').data.decode('utf-8')) == new_packages
 
-    # Attempt to activate nonexistent package.
+    # Attempt to activate nonexistent packages.
+    nonexistent_packages = [
+        'nonexistent-package--fakeversion1',
+        'nonexistent-package--fakeversion2',
+    ]
     response = client.put(
         '/active/',
         content_type='application/json',
-        data=json.dumps(['nonexistent-package--fakeversion']),
+        data=json.dumps(['mesos--0.23.0'] + nonexistent_packages),
     )
     assert response.status_code == 409
-    assert 'error' in json.loads(response.data.decode('utf-8'))
+    error_body = json.loads(response.data.decode('utf-8'))
+    assert 'error' in error_body
+    assert error_body['missing_packages'] == sorted(nonexistent_packages)
 
 
 def test_fetch_package(tmpdir):
