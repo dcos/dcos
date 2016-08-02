@@ -62,6 +62,10 @@ bootstrappers = {
 }
 
 
+def get_roles():
+    return os.listdir('/opt/mesosphere/etc/roles')
+
+
 def main():
     opts = parse_args()
 
@@ -73,7 +77,8 @@ def main():
         os.environ.pop(name, None)
         os.environ.pop(name.lower(), None)
 
-    exhibitor.wait(opts.master_count)
+    if 'master' in get_roles():
+        exhibitor.wait(opts.master_count)
 
     b = bootstrap.Bootstrapper(opts.zk)
 
@@ -101,9 +106,8 @@ def get_zookeeper_address_agent():
 
 
 def get_zookeeper_address():
-    roles = os.listdir('/opt/mesosphere/etc/roles')
-
     # Masters use a special zk address since spartan and the like aren't up yet.
+    roles = get_roles()
     if 'master' in roles:
         return '127.0.0.1:2181'
 
