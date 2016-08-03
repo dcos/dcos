@@ -10,7 +10,6 @@ Restart=always
 RestartSec=5
 Environment=PKGPANDA_HTTP_CONFIG=${PKG_PATH}/etc/pkgpanda-api.conf.py
 EnvironmentFile=/opt/mesosphere/environment
-WorkingDirectory=/run/dcos/pkgpanda-api/
 ExecStart=/opt/mesosphere/bin/gunicorn --worker-class=sync \
     --workers=1 \
     --threads=10 \
