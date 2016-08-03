@@ -130,7 +130,7 @@ paths:
         '204':
           description: The package was successfully fetched.
         '400':
-          description: The request body could not be parsed.
+          description: The request body could not be parsed or the package ID is invalid.
           schema:
             $ref: '#/definitions/Error'
         '500':

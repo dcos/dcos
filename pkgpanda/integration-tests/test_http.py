@@ -211,6 +211,18 @@ def test_fetch_package(tmpdir):
         400,
     )
 
+    # Invalid package ID.
+    assert_error(
+        client.post(
+            '/repository/invalid---package',
+            content_type='application/json',
+            data=json.dumps({
+                'repository_url': 'file://{}/../tests/resources/remote_repo'.format(os.getcwd())
+            }),
+        ),
+        400,
+    )
+
 
 def test_remove_package(tmpdir):
     _set_test_config(app)

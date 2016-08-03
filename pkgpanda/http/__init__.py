@@ -112,13 +112,21 @@ def fetch_package(package_id):
             http.client.BAD_REQUEST,
         )
 
-    actions.fetch_package(
-        current_app.repository,
-        repository_url,
-        package_id,
-        current_app.config['WORK_DIR'])
+    try:
+        actions.fetch_package(
+            current_app.repository,
+            repository_url,
+            package_id,
+            current_app.config['WORK_DIR'])
+    except ValidationError:
+        response = (
+            error_response("Invalid package ID: {}".format(package_id)),
+            http.client.BAD_REQUEST,
+        )
+    else:
+        response = empty_response
 
-    return empty_response
+    return response
 
 
 @app.route('/repository/<package_id>', methods=['DELETE'])
