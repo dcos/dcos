@@ -413,6 +413,7 @@ package:
       METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
       METRONOME_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
+      METRONOME_MESOS_USER=root
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
