@@ -34,7 +34,17 @@ def test_get_package():
         'version': '0.22.0',
     }
 
+    # Get nonexistent package.
     response = client.get('/repository/nonexistent-package--fakeversion')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/repository/package---version')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/repository/packageversion')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/repository/!@#*')
     assert response.status_code == 404
     assert 'error' in json.loads(response.data.decode('utf-8'))
 
@@ -60,7 +70,17 @@ def test_get_active_package():
         'version': '0.22.0',
     }
 
+    # Get nonexistent package.
     response = client.get('/active/mesos--0.23.0')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/active/package---version')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/active/packageversion')
+    assert response.status_code == 404
+    assert 'error' in json.loads(response.data.decode('utf-8'))
+    response = client.get('/active/!@#*')
     assert response.status_code == 404
     assert 'error' in json.loads(response.data.decode('utf-8'))
 

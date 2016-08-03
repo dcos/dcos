@@ -20,16 +20,35 @@ def package_listing_response(package_ids):
 def package_response(package_id, repository):
     try:
         package = repository.load(package_id)
+    except ValidationError:
+        response = (
+            error_response("Invalid package ID: {}".format(package_id)),
+            http.client.NOT_FOUND,
+        )
     except PackageError:
-        error_message = 'Unable to load package {}.'.format(package_id)
-        logging.exception(error_message)
-        return error_response(error_message), http.client.INTERNAL_SERVER_ERROR
+        if not repository.has_package(package_id):
+            response = (
+                error_response('Package {} not found.'.format(package_id)),
+                http.client.NOT_FOUND,
+            )
+        else:
+            error_message = 'Unable to load package {}.'.format(package_id)
+            logging.exception(error_message)
+            response = (
+                error_response(error_message),
+                http.client.INTERNAL_SERVER_ERROR,
+            )
+    else:
+        response = (
+            jsonify({
+                'id': str(package.id),
+                'name': str(package.name),
+                'version': str(package.version),
+            }),
+            http.client.OK,
+        )
 
-    return jsonify({
-        'id': str(package.id),
-        'name': str(package.name),
-        'version': str(package.version),
-    })
+    return response
 
 
 def error_response(message, **kwargs):
@@ -68,11 +87,6 @@ def get_package_list():
 
 @app.route('/repository/<package_id>', methods=['GET'])
 def get_package(package_id):
-    if not current_app.repository.has_package(package_id):
-        return (
-            error_response('Package {} not found.'.format(package_id)),
-            http.client.NOT_FOUND,
-        )
     return package_response(package_id, current_app.repository)
 
 
@@ -124,13 +138,20 @@ def get_active_package_list():
 
 @app.route('/active/<package_id>', methods=['GET'])
 def get_active_package(package_id):
+    response = package_response(package_id, current_app.repository)
+
+    # Return early if there was an error loading the package.
+    if response[1] != http.client.OK:
+        return response
+
+    # Error if the package is not active.
     if package_id not in current_app.install.get_active():
         return (
             error_response('Package {} is not active.'.format(package_id)),
             http.client.NOT_FOUND,
         )
 
-    return package_response(package_id, current_app.repository)
+    return response
 
 
 @app.route('/active/', methods=['PUT'])
