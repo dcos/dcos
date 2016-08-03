@@ -5,7 +5,7 @@ from functools import partial
 from subprocess import check_call
 
 from pkgpanda import PackageId, requests_fetcher
-from pkgpanda.exceptions import FetchError, ValidationError
+from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (extract_tarball, if_exists, load_json, load_string,
                            write_string)
 
@@ -126,7 +126,7 @@ def remove_package(install, repository, package_id):
 
     """
     if package_id in install.get_active():
-        raise ValidationError("Refusing to remove active package {0}".format(package_id))
+        raise PackageConflict("Refusing to remove active package {0}".format(package_id))
 
     sys.stdout.write("\rRemoving: {0}".format(package_id))
     sys.stdout.flush()

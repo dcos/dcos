@@ -7,7 +7,8 @@ import sys
 from flask import Flask, current_app, jsonify, request
 
 from pkgpanda import Install, Repository, actions
-from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
+from pkgpanda.exceptions import (PackageConflict, PackageError,
+                                 PackageNotFound, ValidationError)
 
 
 empty_response = ('', http.client.NO_CONTENT)
@@ -122,12 +123,6 @@ def fetch_package(package_id):
 
 @app.route('/repository/<package_id>', methods=['DELETE'])
 def remove_package(package_id):
-    if package_id in current_app.install.get_active():
-        return (
-            error_response('Package {} is active, so it can\'t be removed.'),
-            http.client.CONFLICT,
-        )
-
     try:
         actions.remove_package(
             current_app.install,
@@ -137,6 +132,11 @@ def remove_package(package_id):
         response = (
             error_response('Package {} not found.'.format(package_id)),
             http.client.NOT_FOUND,
+        )
+    except PackageConflict:
+        response = (
+            error_response('Package {} is active, so it can\'t be removed.'),
+            http.client.CONFLICT,
         )
     else:
         response = empty_response

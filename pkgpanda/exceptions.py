@@ -30,3 +30,7 @@ class PackageNotFound(PackageError):
 
 class ValidationError(Exception):
     pass
+
+
+class PackageConflict(ValidationError):
+    pass
