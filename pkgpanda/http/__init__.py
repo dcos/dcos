@@ -2,6 +2,7 @@
 
 import http.client
 import logging
+import os
 import sys
 
 from flask import Flask, current_app, jsonify, request
@@ -87,6 +88,11 @@ def set_app_attrs_from_config():
         block_systemd=False)
     current_app.repository = Repository(
         current_app.config['DCOS_REPO_DIR'])
+
+
+@app.before_request
+def create_work_dir():
+    os.makedirs(current_app.config['WORK_DIR'], exist_ok=True)
 
 
 @app.route('/repository/', methods=['GET'])
