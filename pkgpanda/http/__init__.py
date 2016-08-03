@@ -146,6 +146,11 @@ def remove_package(package_id):
             error_response('Package {} is active, so it can\'t be removed.'),
             http.client.CONFLICT,
         )
+    except ValidationError:
+        response = (
+            error_response("Invalid package ID: {}".format(package_id)),
+            http.client.NOT_FOUND,
+        )
     else:
         response = empty_response
 

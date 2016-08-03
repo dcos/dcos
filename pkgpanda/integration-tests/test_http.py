@@ -265,3 +265,4 @@ def test_remove_package(tmpdir):
 
     # Attempted deletion of nonexistent package.
     assert_error(client.delete('/repository/nonexistent-package--fakeversion'), 404)
+    assert_error(client.delete('/repository/invalid---package'), 404)
