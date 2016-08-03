@@ -215,6 +215,7 @@ class PackageSet:
 class PackageStore:
 
     def __init__(self, packages_dir, repository_url):
+        self._builders = {}
         self._repository_url = repository_url.rstrip('/') if repository_url is not None else None
         self._packages_dir = packages_dir.rstrip('/')
 
@@ -262,6 +263,10 @@ class PackageStore:
                 # those and ignore everything in the upstreams.
                 if name in self._packages_by_name:
                     continue
+
+                builder_folder = os.path.join(directory, name, 'docker')
+                if os.path.exists(builder_folder):
+                    self._builders["dcos-builder-" + name] = builder_folder
 
                 # Search the directory for buildinfo.json files, record the variants
                 for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
@@ -327,6 +332,10 @@ class PackageStore:
     @property
     def packages(self):
         return self._packages
+
+    @property
+    def builders(self):
+        return self._builders.copy()
 
     @property
     def packages_by_name(self):

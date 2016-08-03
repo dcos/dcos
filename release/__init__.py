@@ -409,9 +409,10 @@ def make_abs(path):
     return os.getcwd() + '/' + path
 
 
-def do_build_docker(name):
-    dockerfile = pkg_resources.resource_filename('pkgpanda', 'docker/{}/Dockerfile'.format(name))
-    container_name = 'dcos/{}:dockerfile-{}'.format(name, pkgpanda.util.sha1(dockerfile))
+def do_build_docker(name, path):
+    path_sha = pkgpanda.build.hash_folder(path)
+    container_name = 'dcos/{}:dockerdir-{}'.format(name, path_sha)
+
     print("Attempting to pull docker:", container_name)
     pulled = False
     try:
@@ -426,9 +427,7 @@ def do_build_docker(name):
     if not pulled:
         print("Pull failed, building instead:", container_name)
         # Pull failed, build it
-        subprocess.check_call(
-            ['docker', 'build', '-t', container_name, '-'],
-            stdin=open(dockerfile))
+        subprocess.check_call(['docker', 'build', '-t', container_name, path])
 
         # TODO(cmaloney): Push the built docker image on successful package build to both
         # 1) commit-<commit_id>
@@ -455,23 +454,50 @@ def do_build_docker(name):
         subprocess.check_call(['docker', 'tag', container_name, name + ':latest'])
 
 
-def do_build_packages(cache_repository_url):
+def _get_global_builders():
+    """Find builders defined globally
+    """
+    res = {}
+
     for name in pkg_resources.resource_listdir('pkgpanda', 'docker/'):
-        do_build_docker(name)
+        res[name] = pkg_resources.resource_filename('pkgpanda',
+                                                    'docker/' + name)
+    return res
 
-    def get_build():
-        # TODO(cmaloney): Stop shelling out
-        package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages', cache_repository_url)
-        result = pkgpanda.build.build_tree(package_store, True, None)
-        last_set = package_store.get_last_complete_set()
-        assert last_set == result, \
-            "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
-                last_set,
-                result)
 
-        return result
+def _build_builders(package_store):
+    """Build all builder containers required to build packages
+    """
+    global_builders = _get_global_builders()
+    pkg_builders = package_store.builders
 
-    return get_build()
+    overlap = set(global_builders) & set(pkg_builders)
+    if overlap:
+        msg_fmt = "Package-defined builders overlap with global: `{}`"
+        raise pkgpanda.build.BuildError(msg_fmt.format(overlap))
+
+    # FIXME: with python3.5 it is going to be: union_d12 = {**d1, **d2}
+    all_builders = global_builders.copy()
+    all_builders.update(pkg_builders)
+    for name, path in all_builders.items():
+        do_build_docker(name, path)
+
+
+def do_build_packages(cache_repository_url):
+    package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages',
+                                                cache_repository_url)
+
+    _build_builders(package_store)
+
+    result = pkgpanda.build.build_tree(package_store, True, None)
+
+    last_set = package_store.get_last_complete_set()
+    assert last_set == result, \
+        "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
+            last_set,
+            result)
+
+    return result
 
 
 def set_repository_metadata(repository, metadata, storage_providers, preferred_provider):
