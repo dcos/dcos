@@ -7,7 +7,7 @@ import sys
 from flask import Flask, current_app, jsonify, request
 
 from pkgpanda import Install, Repository, actions
-from pkgpanda.exceptions import PackageError, ValidationError
+from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
 
 
 empty_response = ('', http.client.NO_CONTENT)
@@ -25,19 +25,18 @@ def package_response(package_id, repository):
             error_response("Invalid package ID: {}".format(package_id)),
             http.client.NOT_FOUND,
         )
+    except PackageNotFound:
+        response = (
+            error_response('Package {} not found.'.format(package_id)),
+            http.client.NOT_FOUND,
+        )
     except PackageError:
-        if not repository.has_package(package_id):
-            response = (
-                error_response('Package {} not found.'.format(package_id)),
-                http.client.NOT_FOUND,
-            )
-        else:
-            error_message = 'Unable to load package {}.'.format(package_id)
-            logging.exception(error_message)
-            response = (
-                error_response(error_message),
-                http.client.INTERNAL_SERVER_ERROR,
-            )
+        error_message = 'Unable to load package {}.'.format(package_id)
+        logging.exception(error_message)
+        response = (
+            error_response(error_message),
+            http.client.INTERNAL_SERVER_ERROR,
+        )
     else:
         response = (
             jsonify({
@@ -123,21 +122,26 @@ def fetch_package(package_id):
 
 @app.route('/repository/<package_id>', methods=['DELETE'])
 def remove_package(package_id):
-    if not current_app.repository.has_package(package_id):
-        return (
-            error_response('Package {} not found.'.format(package_id)),
-            http.client.NOT_FOUND,
-        )
     if package_id in current_app.install.get_active():
         return (
             error_response('Package {} is active, so it can\'t be removed.'),
             http.client.CONFLICT,
         )
-    actions.remove_package(
-        current_app.install,
-        current_app.repository,
-        package_id)
-    return empty_response
+
+    try:
+        actions.remove_package(
+            current_app.install,
+            current_app.repository,
+            package_id)
+    except PackageNotFound:
+        response = (
+            error_response('Package {} not found.'.format(package_id)),
+            http.client.NOT_FOUND,
+        )
+    else:
+        response = empty_response
+
+    return response
 
 
 @app.route('/active/', methods=['GET'])

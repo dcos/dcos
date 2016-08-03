@@ -24,5 +24,9 @@ class PackageError(Exception):
     pass
 
 
+class PackageNotFound(PackageError):
+    pass
+
+
 class ValidationError(Exception):
     pass

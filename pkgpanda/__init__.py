@@ -24,7 +24,8 @@ from itertools import chain
 from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.constants import RESERVED_UNIT_NAMES
-from pkgpanda.exceptions import InstallError, PackageError, ValidationError
+from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
+                                 ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
@@ -329,6 +330,9 @@ class Repository:
         PackageId(id)
 
         path = self.package_path(id)
+        if not os.path.exists(path):
+            raise PackageNotFound(id)
+
         filename = os.path.join(path, "pkginfo.json")
         try:
             pkginfo = load_json(filename)
@@ -384,7 +388,7 @@ class Repository:
     def remove(self, id):
         path = self.package_path(id)
         if not os.path.exists(path):
-            return
+            raise PackageNotFound(id)
         shutil.rmtree(path)
 
 

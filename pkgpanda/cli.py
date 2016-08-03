@@ -33,7 +33,7 @@ from subprocess import CalledProcessError, check_call
 from docopt import docopt
 
 from pkgpanda import Install, PackageId, Repository, actions, constants
-from pkgpanda.exceptions import PackageError, ValidationError
+from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
 
 
 def print_repo_list(packages):
@@ -191,7 +191,10 @@ def main():
 
         if arguments['remove']:
             for package_id in arguments['<id>']:
-                actions.remove_package(install, repository, package_id)
+                try:
+                    actions.remove_package(install, repository, package_id)
+                except PackageNotFound:
+                    pass
             sys.exit(0)
 
         if arguments['uninstall']:
