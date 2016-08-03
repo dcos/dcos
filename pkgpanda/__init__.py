@@ -359,6 +359,9 @@ class Repository:
     # If the package is already in the repository does a no-op and returns false.
     # Returns true otherwise.
     def add(self, fetcher, id, warn_added=True):
+        # Validate the package id.
+        PackageId(id)
+
         # If the package already exists, return true
         package_path = self.package_path(id)
         if os.path.exists(package_path):
