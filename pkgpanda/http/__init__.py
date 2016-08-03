@@ -56,16 +56,25 @@ def error_response(message, **kwargs):
     return jsonify(kwargs)
 
 
+def exception_response(message, exc):
+    logging.error(message, exc_info=exc)
+    return error_response(message), http.client.INTERNAL_SERVER_ERROR
+
+
 app = Flask(__name__)
 app.config.from_object('pkgpanda.http.config')
 app.config.from_envvar('PKGPANDA_HTTP_CONFIG', silent=True)
 
 
 @app.errorhandler(Exception)
+def unexpected_exception_handler(exc):
+    return exception_response('An unexpected error has occurred.', exc)
+
+
+@app.errorhandler(PackageError)
+@app.errorhandler(ValidationError)
 def uncaught_exception_handler(exc):
-    error_message = 'An unexpected error has occurred.'
-    logging.error(error_message, exc_info=exc)
-    return error_response(error_message), http.client.INTERNAL_SERVER_ERROR
+    return exception_response(str(exc), exc)
 
 
 @app.before_request
