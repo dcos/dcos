@@ -1,11 +1,10 @@
 from shutil import copytree
 from subprocess import check_call, check_output
 
-from pkgpanda.util import expect_fs
-from util import run
+from pkgpanda.util import expect_fs, run
 
 
-def tmp_repository(temp_dir, repo_dir="../tests/resources/packages"):
+def tmp_repository(temp_dir, repo_dir="../resources/packages"):
     repo_path = temp_dir.join("repository")
     copytree(repo_dir, str(repo_path))
     return repo_path
@@ -20,7 +19,7 @@ def test_setup(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"
                 ])
     # TODO(cmaloney): Validate things got placed correctly.
@@ -51,7 +50,7 @@ def test_setup(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=resources/etc-active"
+        "--config-dir=../resources/etc-active"
         ]).decode("utf-8").split())
 
     assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
@@ -62,7 +61,7 @@ def test_setup(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"
                 ])
     # TODO(cmaloney): Validate things got placed correctly.
@@ -106,7 +105,7 @@ def test_setup(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=resources/etc-active"
+        "--config-dir=../resources/etc-active"
         ]).decode('utf-8').split())
 
     assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
@@ -126,7 +125,7 @@ def test_setup(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"
                 ])
 
@@ -142,7 +141,7 @@ def test_activate(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"
                 ])
 
@@ -153,7 +152,7 @@ def test_activate(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"]) == ""
 
     # Check introspection to active is working right.
@@ -163,7 +162,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=resources/etc-active"
+        "--config-dir=../resources/etc-active"
         ]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
@@ -175,7 +174,7 @@ def test_activate(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"]) == ""
 
     # Check introspection to active is working right.
@@ -185,7 +184,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=resources/etc-active"
+        "--config-dir=../resources/etc-active"
         ]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0", "mesos-config--justmesos"}
@@ -196,7 +195,7 @@ def test_activate(tmpdir):
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
-                "--config-dir=resources/etc-active",
+                "--config-dir=../resources/etc-active",
                 "--no-systemd"]) == ""
 
     # Check introspection to active is working right.
@@ -206,7 +205,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=resources/etc-active"
+        "--config-dir=../resources/etc-active"
         ]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0"}

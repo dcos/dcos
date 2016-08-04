@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from itertools import chain
 from shutil import rmtree, which
 from subprocess import check_call
@@ -218,3 +219,16 @@ def check_forbidden_services(path, services):
     if found_units:
         msg = "Reverved unit names found: " + ','.join(found_units)
         raise ValidationError(msg)
+
+
+def run(cmd, *args, **kwargs):
+    proc = subprocess.Popen(cmd, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    stdout, stderr = proc.communicate()
+    print("STDOUT: ", stdout.decode('utf-8'))
+    print("STDERR: ", stderr.decode('utf-8'))
+
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+    assert len(stderr) == 0
+    return stdout.decode('utf-8')
