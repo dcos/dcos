@@ -142,7 +142,14 @@ def if_exists(fn, *args, **kwargs):
 
 def sha1(filename):
     hasher = hashlib.sha1()
-    hasher.update(open(filename, 'rb').read())
+
+    with open(filename, 'rb') as fh:
+        while 1:
+            buf = fh.read(4096)
+            if not buf:
+                break
+            hasher.update(buf)
+
     return hasher.hexdigest()
 
 

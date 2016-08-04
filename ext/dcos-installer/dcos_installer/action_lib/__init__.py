@@ -274,6 +274,7 @@ exit $RETCODE"""
     # Setup the cleanup chain
     cleanup_chain = ssh.utils.CommandChain('postflight_cleanup')
     add_post_action(cleanup_chain)
+    cleanup_chain.add_execute(['sudo', 'rm', '-f', '/opt/dcos-prereqs.installed'], stage='Removing prerequisites flag')
     result = yield from pf.run_commands_chain_async([postflight_chain, cleanup_chain], block=block,
                                                     state_json_dir=state_json_dir,
                                                     delegate_extra_params=nodes_count_by_type(config))
@@ -322,6 +323,11 @@ if [ $version -lt 7 ]; then
   exit 0
 fi
 
+if [ -f /opt/dcos-prereqs.installed ]; then
+  echo "install_prereqs has been already executed on this host, exiting..."
+  exit 0
+fi
+
 sudo setenforce 0 && \
 sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
@@ -355,6 +361,7 @@ sudo yum install -y xz
 sudo yum install -y ipset
 
 sudo getent group nogroup || sudo groupadd nogroup
+sudo touch /opt/dcos-prereqs.installed
 """
     # Run a first command to get json file generated.
     chain.add_execute(['echo', 'INSTALL', 'PREREQUISITES'], stage="Installing prerequisites")
