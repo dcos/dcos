@@ -272,23 +272,35 @@ def get_gen_package_artifact(package_id_str):
         'local_path': package_filename}
 
 
-def make_bootstrap_artifacts(bootstrap_id, variant_name, artifact_prefix):
+def make_bootstrap_artifacts(bootstrap_id, package_ids, variant_name, artifact_prefix):
     bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    active_filename = "{}.active.json".format(bootstrap_id)
+    active_local_path = artifact_prefix + '/bootstrap/' + active_filename
+    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
+    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
+
+    # Assert that the bootstrap active packages are in the package list.
+    with open(active_local_path) as f:
+        missing_packages = set(json.load(f)) - set(package_ids)
+    assert len(missing_packages) == 0, (
+        'variant {} has bootstrap packages missing from the package list: {}'.format(
+            pkgpanda.util.variant_name(variant_name),
+            missing_packages,
+        )
+    )
+
     yield {
         'reproducible_path': 'bootstrap/' + bootstrap_filename,
         'local_path': artifact_prefix + '/bootstrap/' + bootstrap_filename
     }
-    active_filename = "{}.active.json".format(bootstrap_id)
     yield {
         'reproducible_path': 'bootstrap/' + active_filename,
-        'local_path': artifact_prefix + '/bootstrap/' + active_filename
+        'local_path': active_local_path
     }
-    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
     yield {
         'channel_path': latest_filename,
         'local_path': artifact_prefix + '/bootstrap/' + latest_filename
     }
-    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
     yield {
         'channel_path': latest_complete_filename,
         'local_path': artifact_prefix + '/complete/' + latest_complete_filename
@@ -338,7 +350,7 @@ def make_stable_artifacts(cache_repository_url):
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        for file in make_bootstrap_artifacts(info['bootstrap'], name, 'packages/cache'):
+        for file in make_bootstrap_artifacts(info['bootstrap'], info['packages'], name, 'packages/cache'):
             add_file(file)
 
         # Add all the packages which haven't been added yet
