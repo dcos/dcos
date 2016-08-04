@@ -228,15 +228,19 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     else:
         raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
 
-    results = gen.generate(
-        arguments=variant_args,
-        extra_templates=extra_templates,
-        cc_package_files=[
+    cc_package_files = [
             '/etc/cfn_signal_metadata',
             '/etc/dns_config',
             '/etc/exhibitor',
-            '/etc/mesos-master-provider',
-            '/etc/aws_dnsnames'])
+            '/etc/mesos-master-provider']
+
+    if cc_params['node_type'] == 'master':
+        cc_package_files.append('/etc/aws_dnsnames')
+
+    results = gen.generate(
+        arguments=variant_args,
+        extra_templates=extra_templates,
+        cc_package_files=cc_package_files)
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -280,6 +284,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
         params = deepcopy(cf_instance_groups[node_template_id])
         params['report_name'] = node_args.pop('report_name')
         params['os_type'] = os_type
+        params['node_type'] = node_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
         if node_type == 'master':
