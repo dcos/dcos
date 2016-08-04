@@ -3,7 +3,7 @@
   "requires": ["java", "exhibitor"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.6-SNAPSHOT/metronome-0.1.6-SNAPSHOT.tgz",
-    "sha1": "0307cc57db368f2fc269542a3b043bc6d3215c45"
+    "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.8/metronome-0.1.8.tgz",
+    "sha1": "fd54079a94add7bcfbf2624799208ab3b055a8e7"
   }
 }
