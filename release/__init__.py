@@ -310,21 +310,33 @@ def make_stable_artifacts(cache_repository_url):
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
         bootstrap_filename = "{}.bootstrap.tar.xz".format(info['bootstrap'])
+        active_filename = "{}.active.json".format(info['bootstrap'])
+        active_local_path = 'packages/cache/bootstrap/' + active_filename
+        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
+        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
+
+        # Assert that the bootstrap active packages are in the package list.
+        with open(active_local_path) as f:
+            missing_packages = set(json.loads(f.read())) - set(info['packages'])
+        assert len(missing_packages) == 0, (
+            'variant {} has bootstrap packages missing from the package list: {}'.format(
+                pkgpanda.util.variant_name(name),
+                missing_packages,
+            )
+        )
+
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
             'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
             })
-        active_filename = "{}.active.json".format(info['bootstrap'])
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/cache/bootstrap/' + active_filename
+            'local_path': active_local_path
             })
-        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_filename,
             'local_path': 'packages/cache/bootstrap/' + latest_filename
             })
-        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_complete_filename,
             'local_path': 'packages/cache/complete/' + latest_complete_filename
