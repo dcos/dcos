@@ -174,11 +174,9 @@ def get_active_package(package_id):
         package_response(package_id, current_app.repository)
     )
 
-    # Return early if there was an error loading the package.
     if response.status_code != http.client.OK:
         return response
 
-    # Error if the package is not active.
     if package_id not in current_app.install.get_active():
         return (
             error_response('Package {} is not active.'.format(package_id)),
