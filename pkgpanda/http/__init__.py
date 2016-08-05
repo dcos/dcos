@@ -19,17 +19,35 @@ def package_listing_response(package_ids):
     return jsonify(sorted(package_ids))
 
 
+def error_response(message, **kwargs):
+    kwargs['error'] = message
+    return jsonify(kwargs)
+
+
+def exception_response(message, exc):
+    logging.error(message, exc_info=exc)
+    return error_response(message), http.client.INTERNAL_SERVER_ERROR
+
+
+def invalid_package_id_response(package_id):
+    return error_response("Invalid package ID: {}".format(package_id))
+
+
+def package_not_found_response(package_id):
+    return error_response('Package {} not found.'.format(package_id))
+
+
 def package_response(package_id, repository):
     try:
         package = repository.load(package_id)
     except ValidationError:
         response = (
-            error_response("Invalid package ID: {}".format(package_id)),
+            invalid_package_id_response(package_id),
             http.client.NOT_FOUND,
         )
     except PackageNotFound:
         response = (
-            error_response('Package {} not found.'.format(package_id)),
+            package_not_found_response(package_id),
             http.client.NOT_FOUND,
         )
     except PackageError:
@@ -50,16 +68,6 @@ def package_response(package_id, repository):
         )
 
     return response
-
-
-def error_response(message, **kwargs):
-    kwargs['error'] = message
-    return jsonify(kwargs)
-
-
-def exception_response(message, exc):
-    logging.error(message, exc_info=exc)
-    return error_response(message), http.client.INTERNAL_SERVER_ERROR
 
 
 app = Flask(__name__)
@@ -126,7 +134,7 @@ def fetch_package(package_id):
             current_app.config['WORK_DIR'])
     except ValidationError:
         response = (
-            error_response("Invalid package ID: {}".format(package_id)),
+            invalid_package_id_response(package_id),
             http.client.BAD_REQUEST,
         )
     else:
@@ -144,7 +152,7 @@ def remove_package(package_id):
             package_id)
     except PackageNotFound:
         response = (
-            error_response('Package {} not found.'.format(package_id)),
+            package_not_found_response(package_id),
             http.client.NOT_FOUND,
         )
     except PackageConflict:
@@ -154,7 +162,7 @@ def remove_package(package_id):
         )
     except ValidationError:
         response = (
-            error_response("Invalid package ID: {}".format(package_id)),
+            invalid_package_id_response(package_id),
             http.client.NOT_FOUND,
         )
     else:
