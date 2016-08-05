@@ -1,5 +1,4 @@
 {
-  "docker": "dcos-builder",
   "requires": ["java", "exhibitor"],
   "single_source": {
     "kind": "url_extract",

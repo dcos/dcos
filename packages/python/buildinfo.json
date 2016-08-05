@@ -1,5 +1,4 @@
 {
-  "docker": "dcos-builder",
   "requires": ["openssl"],
   "environment": {
     "PYTHONPATH": "/opt/mesosphere/lib/python3.4/site-packages",

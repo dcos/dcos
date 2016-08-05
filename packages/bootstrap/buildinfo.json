@@ -4,6 +4,5 @@
     "python-kazoo",
     "python-requests"
   ],
-  "docker": "dcos-builder",
   "state_directory": true
 }
