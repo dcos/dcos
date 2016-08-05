@@ -411,7 +411,7 @@ def make_abs(path):
 
 def do_build_docker(name, path):
     path_sha = pkgpanda.build.hash_folder(path)
-    container_name = 'dcos/{}:dockerdir-{}'.format(name, path_sha)
+    container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
     print("Attempting to pull docker:", container_name)
     pulled = False
@@ -448,10 +448,12 @@ def do_build_docker(name, path):
     # extract the docker client version string
     docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
     # only use force tag if using docker version 1.9 or earlier
+    container_name_t = 'dcos/dcos-builder:{}_dockerdir-latest'.format(name)
     if LooseVersion(docker_version) < LooseVersion('1.10'):
-        subprocess.check_call(['docker', 'tag', '-f', container_name, name + ':latest'])
+        args = ['docker', 'tag', '-f', container_name, container_name_t]
     else:
-        subprocess.check_call(['docker', 'tag', container_name, name + ':latest'])
+        args = ['docker', 'tag', container_name, container_name_t]
+    subprocess.check_call(args)
 
 
 def _get_global_builders():
