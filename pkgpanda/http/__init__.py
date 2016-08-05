@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from flask import Flask, current_app, jsonify, request
+from flask import Flask, current_app, jsonify, make_response, request
 
 from pkgpanda import Install, Repository, actions
 from pkgpanda.exceptions import (PackageConflict, PackageError,
@@ -170,10 +170,12 @@ def get_active_package_list():
 
 @app.route('/active/<package_id>', methods=['GET'])
 def get_active_package(package_id):
-    response = package_response(package_id, current_app.repository)
+    response = make_response(
+        package_response(package_id, current_app.repository)
+    )
 
     # Return early if there was an error loading the package.
-    if response[1] != http.client.OK:
+    if response.status_code != http.client.OK:
         return response
 
     # Error if the package is not active.
