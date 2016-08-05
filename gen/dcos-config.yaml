@@ -245,7 +245,7 @@ package:
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
       MESOS_ISOLATION={{ mesos_isolation }}
       MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
-      MESOS_IMAGE_PROVIDERS=docker
+      MESOS_IMAGE_PROVIDERS=appc,docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/
       MESOS_WORK_DIR=/var/lib/mesos/slave
