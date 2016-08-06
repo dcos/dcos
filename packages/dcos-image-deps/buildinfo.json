@@ -1,6 +1,7 @@
 {
   "requires": [
     "boto",
+    "flask",
     "python",
     "python-docopt",
     "python-isodate",
