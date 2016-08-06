@@ -13,6 +13,15 @@ storage:
     account_key: $AZURE_STORAGE_ACCESS_KEY
     container: dcos
     download_url: https://dcosio.azureedge.net/dcos/
+testing:
+  aws:
+    kind: aws_s3
+    bucket: testing.dcos.io
+    object_prefix: dcos
+    download_url: https://s3-us-west-2.amazonaws.com/testing.dcos.io/dcos/
+    access_key_id: $AWS_TESTING_ACCESS_KEY_ID
+    secret_access_key: $AWS_TESTING_SECRET_ACCESS_KEY
+    region_name: us-west-2
 options:
   preferred: aws
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos
