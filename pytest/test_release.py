@@ -104,7 +104,7 @@ def test_strip_locals():
 
 
 def exercise_storage_provider(tmpdir, name, config):
-    store = release.call_matching_arguments(release.get_storage_provider_factory(name), config)
+    store = release.call_matching_arguments(release.get_storage_provider_factory(name), config, True)
 
     # Make a uniquely named test storage location, and try to upload / copy files
     # inside that location.
@@ -219,31 +219,18 @@ def exercise_storage_provider(tmpdir, name, config):
 def test_storage_provider_azure(config_azure, tmpdir):
     exercise_storage_provider(tmpdir, 'azure_block_blob', config_azure)
 
-s3_test_bucket_all_read_policy = """{
-    "Version": "2008-10-17",
-    "Statement": [
-        {
-            "Sid": "AddPerm",
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "*"
-            },
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::dcos-image-unit-tests/*"
-        }
-    ]
-}"""
-
 
 # TODO(cmaloney): Add skipping when not run under CI with the environment variables
 # So devs without the variables don't see expected failures https://pytest.org/latest/skipping.html
 def test_storage_provider_aws(config_aws, tmpdir):
     session = gen.installer.aws.get_test_session(config_aws)
-    s3_bucket = session.resource('s3').Bucket('dcos-image-unit-tests')
 
-    # Make the bucket if it doesn't exist / was cleaned up. S3 doesn't error on repeated creation.
-    s3_bucket.create()
-    s3_bucket.Policy().put(Policy=s3_test_bucket_all_read_policy)
+    s3 = session.resource('s3')
+    bucket = config_aws['bucket']
+    s3_bucket = s3.Bucket(bucket)
+    assert s3_bucket in s3.buckets.all(), (
+            "Bucket '{}' must exist with full write access to AWS testing account and created objects must be globally "
+            "downloadable from: {}").format(bucket, config_aws['download_url'])
 
     exercise_storage_provider(tmpdir, 'aws_s3', config_aws)
 
