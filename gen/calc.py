@@ -34,6 +34,19 @@ rexray:
 """
 
 
+def enum_validator(enums):
+
+    def validator(enum):
+        assert enum in enums, 'Must be one of {}. Got {}.'.format(enums, enum)
+    return validator
+
+true_false_enum_validator = enum_validator(['true', 'false'])
+
+
+def validate_legacy_agent_resources_mode(legacy_agent_resources_mode):
+    true_false_enum_validator(legacy_agent_resources_mode)
+
+
 def calculate_bootstrap_variant():
     variant = os.getenv('BOOTSTRAP_VARIANT')
     assert variant is not None, "BOOTSTRAP_VARIANT must be set"
@@ -120,21 +133,18 @@ def calculate_use_mesos_hooks(mesos_hooks):
 
 
 def validate_telemetry_enabled(telemetry_enabled):
-    can_be = ['true', 'false']
-    assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
+    true_false_enum_validator(telemetry_enabled)
 
 
 def validate_oauth_enabled(oauth_enabled):
     # Should correspond with oauth_enabled in gen/azure/calc.py
     if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
         return
-    can_be = ['true', 'false']
-    assert oauth_enabled in can_be, 'Must be one of {}. Got {}'.format(can_be, oauth_enabled)
+    true_false_enum_validator(oauth_enabled)
 
 
 def validate_dcos_overlay_enable(dcos_overlay_enable):
-    can_be = ['true', 'false']
-    assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
+    true_false_enum_validator(dcos_overlay_enable)
 
 
 def validate_dcos_overlay_mtu(dcos_overlay_mtu):
@@ -179,9 +189,7 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 
 def validate_dcos_remove_dockercfg_enable(dcos_remove_dockercfg_enable):
-    can_be = ['true', 'false']
-    assert dcos_remove_dockercfg_enable in can_be, (
-       'Must be one of {}. Got {}.'.format(can_be, dcos_remove_dockercfg_enable))
+    true_false_enum_validator(dcos_remove_dockercfg_enable)
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -189,7 +197,7 @@ def calculate_oauth_available(oauth_enabled):
 
 
 def validate_num_masters(num_masters):
-    assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
+    enum_validator([1, 3, 5, 7, 9])
 
 
 def validate_bootstrap_url(bootstrap_url):
@@ -260,20 +268,19 @@ def validate_duplicates(input_list):
 
 
 def validate_master_list(master_list):
-    return validate_host_list(master_list)
+    validate_host_list(master_list)
 
 
 def validate_resolvers(resolvers):
-    return validate_host_list(resolvers)
+    validate_host_list(resolvers)
 
 
 def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
-    return validate_json_list(mesos_dns_ip_sources)
+    validate_json_list(mesos_dns_ip_sources)
 
 
 def validate_master_dns_bindall(master_dns_bindall):
-    can_be = ['true', 'false']
-    assert master_dns_bindall in can_be, 'Must be one of {}. Got {}.'.format(can_be, master_dns_bindall)
+    true_false_enum_validator(master_dns_bindall)
 
 
 def calc_num_masters(master_list):
@@ -332,8 +339,7 @@ def calculate_config_yaml(user_arguments):
 
 
 def validate_os_type(os_type):
-    can_be = ['coreos', 'el7']
-    assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
+    enum_validator(['coreos', 'el7'])(os_type)
 
 
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
@@ -358,7 +364,8 @@ entry = {
         validate_dcos_overlay_network,
         validate_dcos_overlay_enable,
         validate_dcos_overlay_mtu,
-        validate_dcos_remove_dockercfg_enable],
+        validate_dcos_remove_dockercfg_enable,
+        validate_legacy_agent_resources_mode],
     'default': {
         'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
@@ -391,6 +398,7 @@ entry = {
         'ui_banner_dismissible': 'null',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
+        'legacy_agent_resources_mode': 'false',
         'dcos_overlay_network': '{                      \
             "vtep_subnet": "44.128.0.0/20",             \
             "vtep_mac_oui": "70:B3:D5:00:00:00",        \

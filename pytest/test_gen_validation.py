@@ -5,6 +5,8 @@ import pytest
 
 import gen
 
+GOT_FOO = "Must be one of ['true', 'false']. Got foo."
+
 
 def validate_helper(arguments):
     return gen.validate(arguments=arguments)
@@ -48,11 +50,10 @@ def validate_error(new_arguments, key, message):
 
 
 def test_invalid_telemetry_enabled(default_arguments):
-    err_msg = "Must be one of ['true', 'false']. Got foo."
     validate_error(
         {'telemetry_enabled': 'foo'},
         'telemetry_enabled',
-        err_msg)
+        GOT_FOO)
 
 
 def test_invalid_ipv4(default_arguments):
@@ -101,4 +102,11 @@ def test_invalid_oauth_enabled(default_arguments):
     validate_error(
         {'oauth_enabled': 'foo'},
         'oauth_enabled',
-        "Must be one of ['true', 'false']. Got foo")
+        GOT_FOO)
+
+
+def test_legacy_agent_resources_mode(default_arguments):
+    validate_error(
+        {'legacy_agent_resources_mode': 'foo'},
+        'legacy_agent_resources_mode',
+        GOT_FOO)
