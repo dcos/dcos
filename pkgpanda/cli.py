@@ -14,12 +14,12 @@ Usage:
 
 Options:
     --config-dir=<conf-dir>     Use an alternate directory for finding machine
-                                configuration (roles, setup flags). [default: /etc/mesosphere/]
+                                configuration (roles, setup flags). [default: {default_config_dir}]
     --no-systemd                Don't try starting/stopping systemd services
     --no-block-systemd          Don't block waiting for systemd services to come up.
-    --root=<root>               Testing only: Use an alternate root [default: /opt/mesosphere]
+    --root=<root>               Testing only: Use an alternate root [default: {default_root}]
     --repository=<repository>   Testing only: Use an alternate local package
-                                repository directory [default: /opt/mesosphere/packages]
+                                repository directory [default: {default_repository}]
     --rooted-systemd            Use $ROOT/dcos.target.wants for systemd management
                                 rather than /etc/systemd/system/dcos.target.wants
 """
@@ -32,8 +32,8 @@ from subprocess import CalledProcessError, check_call
 
 from docopt import docopt
 
-from pkgpanda import Install, PackageId, Repository, actions
-from pkgpanda.exceptions import PackageError, ValidationError
+from pkgpanda import Install, PackageId, Repository, actions, constants
+from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
 
 
 def print_repo_list(packages):
@@ -123,7 +123,13 @@ def run_checks(checks, install, repository):
 
 
 def main():
-    arguments = docopt(__doc__, version="Pkgpanda Package Manager")
+    arguments = docopt(
+        __doc__.format(
+            default_config_dir=constants.config_dir,
+            default_root=constants.install_root,
+            default_repository=constants.repository_base,
+        ),
+    )
     umask(0o022)
 
     # NOTE: Changing root or repository will likely break actually running packages.
@@ -185,7 +191,10 @@ def main():
 
         if arguments['remove']:
             for package_id in arguments['<id>']:
-                actions.remove_package(install, repository, package_id)
+                try:
+                    actions.remove_package(install, repository, package_id)
+                except PackageNotFound:
+                    pass
             sys.exit(0)
 
         if arguments['uninstall']:
