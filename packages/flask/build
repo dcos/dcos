@@ -4,6 +4,6 @@ export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.4/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
 # Build all the packages. We'd use pip to install them but that fails badly.
-for package in Flask flask-compress itsdangerous Werkzeug; do
+for package in Flask click flask-compress itsdangerous Werkzeug; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ "/pkg/src/$package"
 done
