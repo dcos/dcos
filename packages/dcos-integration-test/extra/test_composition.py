@@ -1,6 +1,8 @@
 import json
 import os
 import subprocess
+import logging
+import time
 
 import kazoo.client
 import requests
@@ -53,6 +55,9 @@ def test_signal_service(cluster):
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
+    # This is due to caching done by 3DT / Signal service
+    # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
+    time.sleep(61)
     dcos_version = os.getenv("DCOS_VERSION", "")
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     signal_config_data = json.loads(signal_config.read())
@@ -60,12 +65,15 @@ def test_signal_service(cluster):
     cluster_id_file = open('/var/lib/dcos/cluster-id')
     cluster_id = cluster_id_file.read().strip()
 
+    subprocess.call(["/usr/bin/logger", "3dt-testing-starting-now"])
     print("Version: ", dcos_version)
     print("Customer Key: ", customer_key)
     print("Cluster ID: ", cluster_id)
 
+    raw_data = cluster.get('/system/health/v1/report')
     signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
     r_data = json.loads(signal_results)
+    subprocess.call(["/usr/bin/logger", "3dt-testing-ending-now"])
 
     exp_data = {
         'diagnostics': {
@@ -122,6 +130,8 @@ def test_signal_service(cluster):
         'gen-resolvconf-timer',
         'minuteman-service',
         'navstar-service',
+        'pkgpanda-api-service',
+        'pkgpanda-api-socket',
         'signal-timer',
         'spartan-service',
         'spartan-watchdog-service',
@@ -158,11 +168,18 @@ def test_signal_service(cluster):
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
-    # Check the entire hash of diagnostics data
-    assert r_data['diagnostics'] == exp_data['diagnostics']
-    # Check a subset of things regarding Mesos that we can logically check for
-    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
-    assert 'marathon' in framework_names
-    assert 'metronome' in framework_names
-    # There are no packages installed by default on the integration test, ensure the key exists
-    assert len(r_data['cosmos']['properties']['package_list']) == 0
+    def check_signal_data():
+        # Check the entire hash of diagnostics data
+        assert r_data['diagnostics'] == exp_data['diagnostics']
+        # Check a subset of things regarding Mesos that we can logically check for
+        framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
+        assert 'marathon' in framework_names
+        assert 'metronome' in framework_names
+        # There are no packages installed by default on the integration test, ensure the key exists
+        assert len(r_data['cosmos']['properties']['package_list']) == 0
+
+    try:
+        check_signal_data()
+    except AssertionError as err:
+        logging.info('System report: {}'.format(raw_data.json()))
+        raise err

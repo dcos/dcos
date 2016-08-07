@@ -9,3 +9,6 @@ RESERVED_UNIT_NAMES = [
     "dcos-download.service",
     "dcos-setup.service"
 ]
+
+config_dir = '/etc/mesosphere'
+install_root = '/opt/mesosphere'

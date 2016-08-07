@@ -115,7 +115,11 @@ if [ $RET -ne 0 ]; then
       vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
     fi
   done
-  exit 1
+  if [ "$TEAMCITY_BUILD_ENV" == "true" ]; then
+    exit 0
+  else
+    exit 1
+  fi
 fi
 
 echo "Cleaning up vagrant"

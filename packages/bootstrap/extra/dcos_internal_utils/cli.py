@@ -91,24 +91,30 @@ def get_zookeeper_address_agent():
         with open('/opt/mesosphere/etc/master_list', 'r') as f:
             master_list = json.load(f)
         assert len(master_list) > 0
-        return random.choice(master_list)
+        return random.choice(master_list) + ':2181'
     elif os.getenv('EXHIBITOR_ADDRESS'):
         # Spartan agents on AWS
-        return os.getenv('EXHIBITOR_ADDRESS')
+        return os.getenv('EXHIBITOR_ADDRESS') + ':2181'
     else:
         # any other agent service
-        return 'leader.mesos'
+        return 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'
 
 
 def get_zookeeper_address():
-    if os.path.exists('/etc/mesosphere/roles/master'):
-        return '127.0.0.1'
-    else:
+    roles = os.listdir('/opt/mesosphere/etc/roles')
+
+    # Masters use a special zk address since spartan and the like aren't up yet.
+    if 'master' in roles:
+        return '127.0.0.1:2181'
+
+    if 'slave' in roles or 'slave_public' in roles:
         return get_zookeeper_address_agent()
+
+    raise Exception("Can't get zookeeper address. Unknown role: {}".format(roles))
 
 
 def parse_args():
-    zk_default = get_zookeeper_address() + ':2181'
+    zk_default = get_zookeeper_address()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('services', nargs='+')

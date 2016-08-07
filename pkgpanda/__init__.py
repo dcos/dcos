@@ -9,7 +9,7 @@ Packages have ids. Ids are composed of a name + blob. The blob is never
 introspected by the packaging stuff.
 
 Each package contains a pkginfo.json. That contains a list of requires as well as
-envrionment variables from the package.
+environment variables from the package.
 
 """
 import grp
@@ -24,9 +24,9 @@ from itertools import chain
 from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.constants import RESERVED_UNIT_NAMES
-from pkgpanda.exceptions import InstallError, PackageError, ValidationError
-from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
-                           write_json, write_string)
+from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
+                                 ValidationError)
+from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -49,9 +49,9 @@ linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/sha
 class Systemd:
 
     def __init__(self, unit_directory, active, block):
+        self.__unit_directory = unit_directory
         self.__active = active
         self.__block = block
-        self.__unit_directory = unit_directory
 
     def stop_all(self):
         if not self.__active:
@@ -119,6 +119,7 @@ class PackageId:
                 "Invalid package version {0}. Must match the regex {1}".format(version, version_regex))
 
     def __init__(self, id):
+        assert isinstance(id, str)
         self.name, self.version = PackageId.parse(id)
 
     def __repr__(self):
@@ -249,11 +250,11 @@ def validate_compatible(packages, roles):
                         ', '.join(str(x.id) for x in packages)))
 
         # No repeated/conflicting environment variables with other packages as
-        # well as magic system enviornment variables.
+        # well as magic system environment variables.
         for k, v in package.environment.items():
             if k in reserved_env_vars:
                 raise ValidationError(
-                    "{0} are reserved enviornment vars and cannot be specified in packages. Present in package {1}"
+                    "{0} are reserved environment vars and cannot be specified in packages. Present in package {1}"
                     .format(", ".join(reserved_env_vars), package))
             if k in environment:
                 raise ValidationError(
@@ -329,8 +330,10 @@ class Repository:
         PackageId(id)
 
         path = self.package_path(id)
+        if not os.path.exists(path):
+            raise PackageNotFound(id)
+
         filename = os.path.join(path, "pkginfo.json")
-        pkginfo = None
         try:
             pkginfo = load_json(filename)
         except FileNotFoundError as ex:
@@ -356,6 +359,9 @@ class Repository:
     # If the package is already in the repository does a no-op and returns false.
     # Returns true otherwise.
     def add(self, fetcher, id, warn_added=True):
+        # Validate the package id.
+        PackageId(id)
+
         # If the package already exists, return true
         package_path = self.package_path(id)
         if os.path.exists(package_path):
@@ -385,7 +391,7 @@ class Repository:
     def remove(self, id):
         path = self.package_path(id)
         if not os.path.exists(path):
-            return
+            raise PackageNotFound(id)
         shutil.rmtree(path)
 
 
@@ -419,7 +425,7 @@ def symlink_tree(src, dest):
             else:
                 os.makedirs(dest_path)
 
-            # Recuse into the directory symlinking everything so long as the directory isn't
+            # Recurse into the directory symlinking everything so long as the directory isn't
             symlink_tree(src_path, dest_path)
         else:
             try:
@@ -543,12 +549,13 @@ class UserManagement:
         return pwd.getpwnam(username).pw_uid
 
 
-# A rooted instal lgtree.
+# A rooted install tree.
 # Inside the install tree there will be all the well known folders and files as
 # described in `docs/package_concepts.md`
+
 class Install:
 
-    # TODO(cmaloney) This is way too many options for thee call points... Most
+    # TODO(cmaloney) This is way too many options for these call points. Most
     # of these should be made so they can be removed (most are just for testing)
 
     def __init__(
@@ -614,7 +621,7 @@ class Install:
         for name in os.listdir(active_dir):
             package_path = os.path.realpath(os.path.join(active_dir, name))
             # NOTE: We don't validate the id here because we want to be able to
-            # cope if there is somethign invalid in the current active dir.
+            # cope if there is something invalid in the current active dir.
             ids.add(os.path.basename(package_path))
 
         return ids
@@ -638,8 +645,7 @@ class Install:
                 "active.buildinfo.full.json"
             ]))
 
-    # Builds new working directories for the new active set, then swaps it into
-    # place as atomically as possible.
+    # Builds new working directories for the new active set, then swaps it into place as atomically as possible.
     def activate(self, packages):
         # Ensure the new set is reasonable.
         validate_compatible(packages, self.__roles)
@@ -656,7 +662,7 @@ class Install:
 
         # Remove all pre-existing new and old directories
         for name in chain(new_names, old_names):
-            if (os.path.exists(name)):
+            if os.path.exists(name):
                 if os.path.isdir(name):
                     shutil.rmtree(name)
                 else:
@@ -693,6 +699,7 @@ class Install:
             for new, dir_name in zip(new_dirs, self.__well_known_dirs):
                 dir_name = os.path.basename(dir_name)
                 pkg_dir = os.path.join(package.path, dir_name)
+
                 assert os.path.isabs(new)
                 assert os.path.isabs(pkg_dir)
 
@@ -703,6 +710,7 @@ class Install:
                     for role in self.__roles:
                         role_dir = os.path.join(package.path, "{0}_{1}".format(dir_name, role))
                         symlink_all(role_dir, new)
+
                 except ConflictingFile as ex:
                     raise ValidationError("Two packages are trying to install the same file {0} or "
                                           "two roles in the set of roles {1} are causing a package "
@@ -715,16 +723,16 @@ class Install:
             # Add to the active folder
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
 
-            # Add to the environment contents
+            # Add to the environment and environment.export contents
+
             env_contents += "# package: {0}\n".format(package.id)
+            env_export_contents += "# package: {0}\n".format(package.id)
+
             for k, v in package.environment.items():
                 env_contents += "{0}={1}\n".format(k, v)
-            env_contents += "\n"
-
-            # Add to the environment.export contents
-            env_export_contents += "# package: {0}\n".format(package.id)
-            for k, v in package.environment.items():
                 env_export_contents += "export {0}={1}\n".format(k, v)
+
+            env_contents += "\n"
             env_export_contents += "\n"
 
             # Add to the buildinfo

@@ -22,6 +22,7 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
+ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
@@ -30,7 +31,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
     -jar "$PKG_PATH/usr/marathon.jar" \\
     --zk "\$MARATHON_ZK" \\
-    --master zk://127.0.0.1:2181/mesos \\
+    --master zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos \\
     --hostname "\$MARATHON_HOSTNAME" \\
     --default_accepted_resource_roles "*" \\
     --mesos_role "slave_public" \\
@@ -41,5 +42,6 @@ ExecStart=/opt/mesosphere/bin/java \\
     --zk_compression \\
     --mesos_leader_ui_url "/mesos" \\
     --enable_features "vips,task_killing,external_volumes" \\
-    --mesos_authentication_principal "dcos_marathon"
+    --mesos_authentication_principal "dcos_marathon" \\
+    --mesos_user "root"
 EOF

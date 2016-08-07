@@ -1,0 +1,7 @@
+{
+  "requires": [
+      "dcos-image",
+      "python",
+      "python-gunicorn"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "requires": ["python"],
+  "docker": "dcos-builder",
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/84/ce/7ea5396efad1cef682bbc4068e72a0276341d9d9d0f501da609fab9fcb80/gunicorn-19.6.0.tar.gz",
+    "sha1": "ec049362953567e1acdc16e74c0c337301bc4867"
+  }
+}
