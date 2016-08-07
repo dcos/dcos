@@ -4,7 +4,6 @@
 import json
 import logging
 import os
-import pprint
 import re
 from copy import deepcopy
 
@@ -376,6 +375,7 @@ def make_custom_aws_templates(arguments):
         'packages': extra_packages,
         'artifacts': artifacts
     }
+
 
 def gen_templates(arguments):
     results = gen.generate(

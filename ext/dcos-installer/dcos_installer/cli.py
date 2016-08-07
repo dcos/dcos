@@ -49,8 +49,15 @@ def parse_args(args):
         return """
 Install Mesosophere's Data Center Operating System
 
-dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v]
-[--web | --genconf | --aws-cloudformation | --preflight | --deploy | --postflight | --uninstall | --validate-config | --version]
+dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v] [--web |
+                                                                        --genconf |
+                                                                        --aws-cloudformation |
+                                                                        --preflight |
+                                                                        --deploy |
+                                                                        --postflight |
+                                                                        --uninstall |
+                                                                        --validate-config |
+                                                                        --version]
 
 Environment Settings:
 

@@ -3,7 +3,6 @@ import os
 import pprint
 import subprocess
 import sys
-from copy import deepcopy
 from os.path import dirname
 
 import gen
@@ -40,6 +39,7 @@ def do_aws_cf_configure(gen_config):
 
     fetch_artifacts(gen_out)
     fetch_bootstrap(gen_config['bootstrap_id'])
+
 
 def get_gen_extra_args():
     if 'BOOTSTRAP_ID' not in os.environ:

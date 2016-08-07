@@ -135,9 +135,11 @@ def do_genconf(args):
         return 1
     return 0
 
+
 def do_aws_cloudformation(args):
     print_header("EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION")
     return backend.do_aws_cf_configure()
+
 
 def do_preflight(args):
     print_header("EXECUTING PREFLIGHT")
