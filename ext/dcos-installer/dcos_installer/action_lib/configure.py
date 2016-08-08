@@ -7,7 +7,7 @@ import sys
 import gen
 import pkgpanda
 import gen.installer.bash
-from dcos_installer.util import ARTIFACT_DIR, SERVE_DIR
+from dcos_installer.util import ARTIFACT_DIR, GENCONF_DIR, SERVE_DIR
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def do_configure(gen_config):
     # Get packages from artifacts
     fetch_packages(ARTIFACT_DIR, SERVE_DIR)
     # Write some package metadata
-    pkgpanda.util.write_json('/genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json(os.path.join(GENCONF_DIR, 'cluster_packages.json'), gen_out.cluster_packages)
 
 
 def get_gen_extra_args():
