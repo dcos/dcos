@@ -41,30 +41,70 @@ def test_if_Marathon_app_can_be_deployed_with_Mesos_containerizer(cluster):
     This test verifies that a Marathon app using the Mesos containerizer with
     a Docker image can be deployed.
 
-    The application being deployed is a simple sleep task. A more elaborate test
-    like the one above should be implemented when port mapping is usable
-    (MESOS-4777).
+    This is done by assigning an unique UUID to each app and passing it to the
+    docker container as an env variable. After successfull deployment, the
+    "GET /test_uuid" request is issued to the app. If the returned UUID matches
+    the one assigned to test - test succeds.
+
+    When port mapping is available (MESOS-4777), this test should be updated to
+    reflect that.
     """
 
     test_uuid = uuid.uuid4().hex
+    test_server_cmd = '/opt/mesosphere/bin/python /opt/mesosphere/active/dcos-integration-test/test_server.py'
 
     app_definition = {
         'id': '/integration-test-app-{}'.format(test_uuid),
         'cpus': 0.1,
-        'mem': 32,
-        'cmd': 'sleep 100',
+        'mem': 64,
+        'cmd': test_server_cmd+' $PORT0',
         'disk': 0,
         'instances': 1,
+        'healthChecks': [{
+            'protocol': 'HTTP',
+            'path': '/ping',
+            'portIndex': 0,
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }],
+        'env': {
+            'DCOS_TEST_UUID': test_uuid,
+            'PYTHONPATH': '/opt/mesosphere/lib/python3.4/site-packages'
+        },
         'container': {
             'type': 'MESOS',
             'docker': {
-                'image': 'alpine',
+                'image': 'python:3.4.3-slim',
                 'forcePullImage': True
-            }
-        }
+            },
+            'volumes': [{
+                'containerPath': '/opt/mesosphere',
+                'hostPath': '/opt/mesosphere',
+                'mode': 'RO'
+            }]
+        },
+        'portDefinitions': [{
+            'port': 0,
+            'protocol': 'tcp',
+            'name': 'test'
+        }]
     }
 
-    cluster.deploy_marathon_app(app_definition, check_health=False)
+    service_points = cluster.deploy_marathon_app(app_definition)
+
+    r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
+                                                     service_points[0].port))
+    if r.status_code != 200:
+        msg = "Test server replied with non-200 reply: '{0} {1}. "
+        msg += "Detailed explanation of the problem: {2}"
+        pytest.fail(msg.format(r.status_code, r.reason, r.text))
+
+    r_data = r.json()
+    assert r_data['test_uuid'] == test_uuid
+
+    cluster.destroy_marathon_app(app_definition['id'])
 
 
 def test_octarine_http(cluster, timeout=30):
