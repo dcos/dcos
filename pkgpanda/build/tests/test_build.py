@@ -129,55 +129,41 @@ def test_bootstrap(tmpdir):
             package_files[package_name] = file_set
 
         # Check that the root has exactly the right set of files.
-        assert merged_files == set([
-            './',
-            './active.buildinfo.full.json',
-            './bootstrap',
-            './environment',
-            './environment.export',
-            './active/',
-            './active/base',
-            './active/url_extract-tar',
-            './active/url_extract-zip',
-            './active/variant',
-            './active/single_source',
-            './active/single_source_extra',
-            # './active/no_buildinfo',
-            './bin/',
-            './bin/mesos-master',
-            # './bin/no_buildinfo',
-            './etc/',
-            './lib/',
-            './lib/libmesos.so',
-            # './lib/no_buildinfo.so',
-            './include/',
-        ])
-        # Check that each package has just the right set of files. All the right packages are present.
+        assert merged_files == {
+                './',
+                './active.buildinfo.full.json',
+                './bootstrap',
+                './environment',
+                './environment.export',
+                './active/',
+                './active/base',
+                './active/url_extract-tar',
+                './active/url_extract-zip',
+                './active/variant',
+                './active/single_source',
+                './active/single_source_extra',
+                './bin/',
+                './bin/mesos-master',
+                './etc/',
+                './lib/',
+                './lib/libmesos.so',
+                './include/'}
+
         assert package_files == {
-            # 'no_buildinfo': set([
-            #     'no_buildinfo',
-            #     'version',
-            #     'bin/ ',
-            #     'buildinfo.full.json',
-            #     'pkginfo.json',
-            #     'lib/',
-            #     'bin/',
-            #     'lib/no_buildinfo.so']),
-            'url_extract-zip': set(['pkginfo.json', 'buildinfo.full.json']),
-            'url_extract-tar': set(['pkginfo.json', 'buildinfo.full.json']),
-            'single_source': set(['pkginfo.json', 'buildinfo.full.json']),
-            'single_source_extra': {'pkginfo.json', 'buildinfo.full.json'},
-            'variant': {'pkginfo.json', 'buildinfo.full.json'},
-            'base': set([
-                'base',
-                'bin/',
-                'dcos.target.wants/',
-                'dcos.target.wants/dcos-foo.service',
-                'version',
-                'buildinfo.full.json',
-                'bin/mesos-master',
-                'pkginfo.json',
-                'lib/',
-                'lib/libmesos.so',
-                ])
-            }
+                'url_extract-zip': {'pkginfo.json', 'buildinfo.full.json'},
+                'url_extract-tar': {'pkginfo.json', 'buildinfo.full.json'},
+                'single_source': {'pkginfo.json', 'buildinfo.full.json'},
+                'single_source_extra': {'pkginfo.json', 'buildinfo.full.json'},
+                'variant': {'pkginfo.json', 'buildinfo.full.json'},
+                'base': {
+                        'base',
+                        'bin/',
+                        'dcos.target.wants/',
+                        'dcos.target.wants/dcos-foo.service',
+                        'version',
+                        'buildinfo.full.json',
+                        'bin/mesos-master',
+                        'pkginfo.json',
+                        'lib/',
+                        'lib/libmesos.so'}
+                 }
