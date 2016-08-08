@@ -13,20 +13,16 @@ log = logging.getLogger(__name__)
 
 
 def do_configure(gen_config):
+    # Generate complete config.
     gen_config.update(get_gen_extra_args())
-
-    subprocess.check_output(['mkdir', '-p', SERVE_DIR])
-
     do_validate_gen_config(gen_config)
-
     gen_out = gen.generate(arguments=gen_config)
-    gen.installer.bash.generate(gen_out, SERVE_DIR)
 
-    # Get bootstrap from artifacts
+    # Generate install/upgrade prereqs.
+    subprocess.check_output(['mkdir', '-p', SERVE_DIR])
+    gen.installer.bash.generate(gen_out, SERVE_DIR)
     fetch_bootstrap(ARTIFACT_DIR, SERVE_DIR, gen_out.arguments['bootstrap_id'])
-    # Get packages from artifacts
     fetch_packages(ARTIFACT_DIR, SERVE_DIR)
-    # Write some package metadata
     pkgpanda.util.write_json(os.path.join(GENCONF_DIR, 'cluster_packages.json'), gen_out.cluster_packages)
 
 
