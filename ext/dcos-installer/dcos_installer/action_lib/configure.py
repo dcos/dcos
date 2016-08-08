@@ -27,7 +27,7 @@ def do_configure(gen_config):
     # Get packages from artifacts
     fetch_packages(ARTIFACT_DIR, SERVE_DIR)
     # Write some package metadata
-    pkgpanda.write_json('/genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json('/genconf/cluster_packages.json', gen_out.cluster_packages)
 
 
 def get_gen_extra_args():
