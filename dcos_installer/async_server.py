@@ -290,8 +290,8 @@ def logs_handler(request):
     :type request: request | None
     """
     log.info("Request for logs endpoint made.")
-    complete_log_path = 'genconf/state/complete.log'
-    json_files = glob.glob('genconf/state/*.json')
+    complete_log_path = STATE_DIR + '/complete.log'
+    json_files = glob.glob(STATE_DIR + '/*.json')
     complete_log = []
     for f in json_files:
         log.debug('Adding {} to complete log file.'.format(f))
@@ -340,7 +340,7 @@ def build_app(loop):
     # TODO(cmaloney): These should probably actually hard fail.
     try:
         app.router.add_static('/assets', assets_path)
-        app.router.add_static('/download/log', 'genconf/state/')
+        app.router.add_static('/download/log', STATE_DIR)
     except ValueError as err:
         log.warning(err)
 
@@ -357,7 +357,7 @@ def start(cli_options):
     options = cli_options
 
     log.debug('DC/OS Installer')
-    make_default_config_if_needed('genconf/config.yaml')
+    make_default_config_if_needed(CONFIG_PATH)
     loop = asyncio.get_event_loop()
     app = build_app(loop)
     handler = app.make_handler()
@@ -380,7 +380,7 @@ def start(cli_options):
         os.makedirs(STATE_DIR)
 
     assert os.path.isdir(assets_path)
-    assert os.path.isdir('genconf/state/')
+    assert os.path.isdir(STATE_DIR)
 
     try:
         loop.run_forever()

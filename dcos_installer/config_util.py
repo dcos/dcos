@@ -6,7 +6,7 @@ import sys
 import gen
 import gen.build_deploy.bash
 import pkgpanda
-from dcos_installer.constants import SERVE_DIR
+from dcos_installer.constants import BOOTSTRAP_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def do_configure(config):
     # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
     fetch_bootstrap(gen_out.arguments['bootstrap_id'])
     # Write some package metadata
-    pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):
@@ -29,7 +29,7 @@ def do_move_atomic(src_dir, dest_dir, filenames):
 
     def rollback():
         for filename in filenames:
-            filename = dest_dir + filename
+            filename = dest_dir + '/' + filename
             try:
                 os.remove(filename)
             except OSError as ex:
@@ -40,7 +40,7 @@ def do_move_atomic(src_dir, dest_dir, filenames):
     try:
         # Copy across
         for filename in filenames:
-            subprocess.check_output(['cp', src_dir + filename, dest_dir + filename])
+            subprocess.check_output(['cp', src_dir + '/' + filename, dest_dir + '/' + filename])
     except subprocess.CalledProcessError as ex:
         log.error("Copy failed: %s\nOutput:\n%s", ex.cmd, ex.output)
         log.error("Removing partial artifacts")
@@ -54,20 +54,19 @@ def fetch_bootstrap(bootstrap_id):
     filenames = [
         "{}.bootstrap.tar.xz".format(bootstrap_id),
         "{}.active.json".format(bootstrap_id)]
-    dest_dir = "genconf/serve/bootstrap/"
-    container_cache_dir = "artifacts/bootstrap/"
+    container_cache_dir = "artifacts/bootstrap"
 
     # If all the targets already exist, no-op
-    dest_files = [dest_dir + filename for filename in filenames]
+    dest_files = [BOOTSTRAP_DIR + '/' + filename for filename in filenames]
     if all(map(os.path.exists, dest_files)):
         return
 
     # Make sure the internal cache files exist
-    src_files = [container_cache_dir + filename for filename in filenames]
+    src_files = [container_cache_dir + '/' + filename for filename in filenames]
     for filename in src_files:
         if not os.path.exists(filename):
             log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
             raise FileNotFoundError(filename)
 
-    subprocess.check_call(['mkdir', '-p', 'genconf/serve/bootstrap/'])
-    do_move_atomic(container_cache_dir, dest_dir, filenames)
+    subprocess.check_call(['mkdir', '-p', BOOTSTRAP_DIR])
+    do_move_atomic(container_cache_dir, BOOTSTRAP_DIR, filenames)
