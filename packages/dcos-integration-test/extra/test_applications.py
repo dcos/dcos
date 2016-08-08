@@ -35,6 +35,38 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
+def test_if_Marathon_app_can_be_deployed_with_Mesos_containerizer(cluster):
+    """Marathon app deployment integration test using the Mesos Containerizer
+
+    This test verifies that a Marathon app using the Mesos containerizer with
+    a Docker image can be deployed.
+
+    The application being deployed is a simple sleep task. A more elaborate test
+    like the one above should be implemented when port mapping is usable
+    (MESOS-4777).
+    """
+
+    test_uuid = uuid.uuid4().hex
+
+    app_definition = {
+        'id': '/integration-test-app-{}'.format(test_uuid),
+        'cpus': 0.1,
+        'mem': 32,
+        'cmd': 'sleep 100',
+        'disk': 0,
+        'instances': 1,
+        'container': {
+            'type': 'MESOS',
+            'docker': {
+                'image': 'alpine',
+                'forcePullImage': True
+            }
+        }
+    }
+
+    cluster.deploy_marathon_app(app_definition, check_health=False)
+
+
 def test_octarine_http(cluster, timeout=30):
     """
     Test if we are able to send traffic through octarine.
