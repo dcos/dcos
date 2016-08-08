@@ -7,7 +7,7 @@ import gen
 import gen.installer.aws
 import gen.installer.bash
 import pkgpanda
-from dcos_installer.constants import ARTIFACT_DIR, SERVE_DIR
+from dcos_installer.constants import ARTIFACT_DIR, GENCONF_DIR, SERVE_DIR
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def do_configure(config):
     # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
     fetch_artifacts(gen_out.arguments['bootstrap_id'], gen_out.cluster_packages, gen_out.config_package_ids)
     # Write some package metadata
-    pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json(GENCONF_DIR + '/cluster_packages.json', gen_out.cluster_packages)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):
