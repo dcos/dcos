@@ -2,7 +2,7 @@ import collections
 import logging
 import os
 import uuid
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import dns.exception
 import dns.resolver
@@ -59,6 +59,10 @@ def _setup_logging():
 
 
 class Cluster:
+
+    adminrouter_master_port = {'http': 80, 'https': 443}
+    adminrouter_agent_port = {'http': 61001, 'https': 61002}
+
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
@@ -275,6 +279,20 @@ class Cluster:
     def head(self, path="", disable_suauth=False):
         hdrs = self._suheader(disable_suauth)
         return requests.head(self.dcos_uri + path, headers=hdrs)
+
+    def node_get(self, node, path="", params=None, disable_suauth=False, **kwargs):
+        """Execute a GET request against the adminrouter on node."""
+        hdrs = self._suheader(disable_suauth)
+        hdrs.update(kwargs.pop('headers', {}))
+
+        if node in self.masters:
+            port = self.adminrouter_master_port[self.scheme]
+        elif node in self.all_slaves:
+            port = self.adminrouter_agent_port[self.scheme]
+        else:
+            raise Exception('Node {} is not in the cluster.'.format(node))
+        url = urlunparse([self.scheme, ':'.join([node, str(port)]), path, None, None, None])
+        return requests.get(url, params=params, headers=hdrs, **kwargs)
 
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
         test_uuid = uuid.uuid4().hex

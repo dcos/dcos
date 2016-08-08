@@ -3,8 +3,13 @@
   "sources": {
     "Flask": {
       "kind": "url_extract",
-      "url": "https://github.com/mitsuhiko/flask/archive/0.10.1.tar.gz",
-      "sha1": "232f15e4f95f299e79b1e7f44304527f60234b2a"
+      "url": "https://github.com/pallets/flask/archive/0.11.1.tar.gz",
+      "sha1": "6350522686e0463e01e453d2a7c0d04203083d0f"
+    },
+    "click": {
+      "kind": "url_extract",
+      "url": "https://github.com/pallets/click/archive/6.6.tar.gz",
+      "sha1": "766c6595cc7a1ed12051306094d010e7d85c027f"
     },
     "flask-compress": {
       "kind": "url_extract",

@@ -112,3 +112,42 @@ def test_octarine_srv(cluster, timeout=30):
     }
 
     cluster.deploy_marathon_app(app_definition)
+
+
+def test_pkgpanda_api(cluster):
+
+    def get_and_validate_package_ids(node, uri):
+        r = cluster.node_get(node, uri)
+        assert r.status_code == 200
+        package_ids = r.json()
+        assert isinstance(package_ids, list)
+        for package_id in package_ids:
+            r = cluster.node_get(node, uri + package_id)
+            assert r.status_code == 200
+            name, version = package_id.split('--')
+            assert r.json() == {'id': package_id, 'name': name, 'version': version}
+        return package_ids
+
+    active_buildinfo = cluster.get('/pkgpanda/active.buildinfo.full.json').json()
+    active_buildinfo_packages = sorted(
+        # Setup packages don't have a buildinfo.
+        (package_name, info['package_version'] if info else None)
+        for package_name, info in active_buildinfo.items()
+    )
+
+    def assert_packages_match_active_buildinfo(package_ids):
+        packages = sorted(map(lambda id_: tuple(id_.split('--')), package_ids))
+        assert len(packages) == len(active_buildinfo_packages)
+        for package, buildinfo_package in zip(packages, active_buildinfo_packages):
+            if buildinfo_package[1] is None:
+                # No buildinfo for this package, so we can only compare names.
+                assert package[0] == buildinfo_package[0]
+            else:
+                assert package == buildinfo_package
+
+    for node in cluster.masters + cluster.all_slaves:
+        package_ids = get_and_validate_package_ids(node, '/pkgpanda/repository/')
+        active_package_ids = get_and_validate_package_ids(node, '/pkgpanda/active/')
+
+        assert set(active_package_ids) <= set(package_ids)
+        assert_packages_match_active_buildinfo(active_package_ids)
