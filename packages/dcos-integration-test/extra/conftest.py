@@ -454,3 +454,33 @@ class Cluster:
         except retrying.RetryError:
             pytest.fail("Application destroy failed - operation was not "
                         "completed in {} seconds.".format(timeout))
+
+    def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
+        """Run a job on metronome and block until it returns success
+        """
+        job_id = job_definition['id']
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout*1000,
+                        retry_on_result=lambda ret: not ret,
+                        retry_on_exception=lambda x: False)
+        def wait_for_completion():
+            r = self.get('/service/metronome/v1/jobs/'+job_id, {'embed': 'history'})
+            assert r.ok
+            out = r.json()
+            if not ignore_failures and (out['history']['failureCount'] != 0):
+                raise Exception('Metronome job failed!: '+repr(out))
+            if out['history']['successCount'] != 1:
+                logging.info('Waiting for one-off to finish. Status: '+repr(out))
+                return False
+            logging.info('Metronome one-off successful')
+            return True
+        logging.info('Creating metronome job: '+repr(job_definition))
+        r = self.post('/service/metronome/v1/jobs', job_definition)
+        assert r.ok, r.json()
+        logging.info('Starting metronome job')
+        r = self.post('/service/metronome/v1/jobs/{}/runs'.format(job_id))
+        assert r.ok, r.json()
+        wait_for_completion()
+        logging.info('Deleting metronome one-off')
+        r = self.delete('/service/metronome/v1/jobs/'+job_id)
+        assert r.ok
