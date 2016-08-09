@@ -6,3 +6,4 @@ RESERVED_UNIT_NAMES = [
 
 config_dir = '/etc/mesosphere'
 install_root = '/opt/mesosphere'
+repository_base = '/opt/mesosphere/packages'
