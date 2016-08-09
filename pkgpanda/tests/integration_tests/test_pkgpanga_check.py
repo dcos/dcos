@@ -20,15 +20,15 @@ run_output_stderr = """WARNING: `not_executable.py` is not executable
 
 
 def test_check_target_list():
-    output = check_output('pkgpanda check --list --root ./resources/opt/mesosphere'
-                          ' --repository ./resources/opt/mesosphere/packages',
+    output = check_output('pkgpanda check --list --root ../resources/opt/mesosphere'
+                          ' --repository ../resources/opt/mesosphere/packages',
                           stderr=STDOUT, shell=True)
     assert output.decode('UTF-8') == list_output
 
 
 def test_check_target_run():
-    cmd = Popen('pkgpanda check --root ./resources/opt/mesosphere'
-                ' --repository ./resources/opt/mesosphere/packages',
+    cmd = Popen('pkgpanda check --root ../resources/opt/mesosphere'
+                ' --repository ../resources/opt/mesosphere/packages',
                 stdout=PIPE, stderr=PIPE, shell=True)
     stdout, stderr = cmd.communicate()
     assert stdout.decode('UTF-8') == run_output_stdout

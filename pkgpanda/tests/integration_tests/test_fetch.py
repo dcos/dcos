@@ -1,7 +1,6 @@
 import os
 
-from pkgpanda.util import expect_fs
-from util import run
+from pkgpanda.util import expect_fs, run
 
 fetch_output = """\rFetching: mesos--0.22.0\rFetched: mesos--0.22.0\n"""
 
@@ -16,7 +15,7 @@ def test_fetch(tmpdir):
                "fetch",
                "mesos--0.22.0",
                "--repository={0}".format(tmpdir),
-               "--repository-url=file://{0}/../tests/resources/remote_repo/".format(os.getcwd())
+               "--repository-url=file://{0}/../resources/remote_repo/".format(os.getcwd())
                ]) == fetch_output
 
     # Ensure that the package at least somewhat extracted correctly.
@@ -33,7 +32,7 @@ def test_add(tmpdir):
     assert run([
                "pkgpanda",
                "add",
-               "{0}/../tests/resources/remote_repo/packages/mesos/mesos--0.22.0.tar.xz".format(os.getcwd()),
+               "{0}/../resources/remote_repo/packages/mesos/mesos--0.22.0.tar.xz".format(os.getcwd()),
                "--repository={0}".format(tmpdir),
                ]) == ""
 
