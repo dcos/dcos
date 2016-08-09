@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/7d/8c/58d0e478afe366fc1c5ca5994558adf9375d7e60ac866d8fdb6046e0e776/tox-2.3.1-py2.py3-none-any.whl",
+    "sha1": "c8742b73d3a16174a06d36fb73166b424e9f342a"
+  }
+}
