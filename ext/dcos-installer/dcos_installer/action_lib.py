@@ -43,27 +43,73 @@ class ExecuteException(Exception):
     """Raised when execution fails"""
 
 
-def nodes_count_by_type(config):
-    total_agents_count = len(config.get('agent_list', [])) + len(config.get('public_agent_list', []))
+def get_successful_nodes_from(step: str, state_json_dir: str) -> list:
+    assert step in ['preflight', 'deploy', 'postflight']
+    step += '.json'
+
+    step_path = os.path.join(state_json_dir, step)
+    step_json = _read_state_file(step_path)
+    if not step_json:
+        # TODO: Fix exception here
+        raise Exception("Could not get hosts from {}".format(step_path))
+
+    assert 'hosts' in step_json, "Field `hosts` not found, location {}".format(step_path)
+
+    nodes = []
+    for node_ip, node_params in step_json['hosts'].items():
+        assert 'host_status' in node_params, "Field `host_status` not found for node {}".format(node_ip)
+        assert 'tags' in node_params, 'Field `tags` not found for node {}'.format(node_ip)
+        if node_params['host_status'] == 'success':
+            nodes.append(Node(node_ip, tags=node_params['tags']))
+        else:
+            assert 'role' in node_params['tags'], 'tags must contain parameter role. Got {}'.format(node_params['tags'])
+            if node_params['tags']['role'] == 'master':
+                raise Exception("Master node {} has failed. Uable to continue".format(node_ip))
+            log.debug("node {} unhealthy {}".format(node_ip, node_params['host_status']))
+
+    assert nodes, "No healthy nodes found"
+    return nodes
+
+
+def nodes_count_by_type(targets):
+    assert isinstance(targets, list)
+    total_masters = 0
+    total_agents = 0
+    for target in targets:
+        assert isinstance(target, Node)
+        assert 'role' in target.tags
+        if target.tags['role'] == 'master':
+            total_masters += 1
+        else:
+            total_agents += 1
+
     return {
-        'total_masters': len(config['master_list']),
-        'total_agents': total_agents_count
+        'total_masters': total_masters,
+        'total_agents': total_agents
     }
 
 
 def get_full_nodes_list(config):
-    def add_nodes(nodes, tag):
-        return [Node(node, tag) for node in nodes]
-
-    node_role_map = {
-        'master_list': 'master',
-        'agent_list': 'agent',
-        'public_agent_list': 'public_agent'
+    role_params = {
+        'master': {
+            'tags': {'role': 'master', 'dcos_install_param': 'master'},
+            'hosts': config['master_list']
+        },
+        'agent': {
+            'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
+            'hosts': config.get('agent_list', [])
+        },
+        'public_agent': {
+            'tags': {'role': 'public_agent', 'dcos_install_param': 'slave_public'},
+            'hosts': config.get('public_agent_list', [])
+        }
     }
+    ssh_port = config.get('ssh_port', 22)
+
     full_target_list = []
-    for config_field, role in node_role_map.items():
-        if config_field in config:
-            full_target_list += add_nodes(config[config_field], {'role': role})
+    for role, params in role_params.items():
+        full_target_list += [Node('{}:{}'.format(node, ssh_port), params['tags']) for node in params['hosts']]
+
     log.debug("full_target_list: {}".format(full_target_list))
     return full_target_list
 
@@ -98,8 +144,8 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Copying preflight script')
 
     preflight_chain.add_execute(
-        'sudo bash {} --preflight-only master'.format(
-            os.path.join(REMOTE_TEMP_DIR, os.path.basename(pf_script_path))).split(),
+        lambda node: 'sudo bash {} --preflight-only {}'.format(
+            os.path.join(REMOTE_TEMP_DIR, os.path.basename(pf_script_path)), node.tags['dcos_install_param']).split(),
         stage='Executing preflight check')
     chains.append(preflight_chain)
 
@@ -108,7 +154,7 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     add_post_action(cleanup_chain)
     chains.append(cleanup_chain)
     result = yield from pf.run_commands_chain_async(chains, block=block, state_json_dir=state_json_dir,
-                                                    delegate_extra_params=nodes_count_by_type(config))
+                                                    delegate_extra_params=nodes_count_by_type(targets))
     return result
 
 
@@ -196,22 +242,6 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
         hosts = []
     assert isinstance(hosts, list)
 
-    # Role specific parameters
-    role_params = {
-        'master': {
-            'tags': {'role': 'master', 'dcos_install_param': 'master'},
-            'hosts': config['master_list']
-        },
-        'agent': {
-            'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
-            'hosts': config.get('agent_list', [])
-        },
-        'public_agent': {
-            'tags': {'role': 'public_agent', 'dcos_install_param': 'slave_public'},
-            'hosts': config.get('public_agent_list', [])
-        }
-    }
-
     bootstrap_tarball = _get_bootstrap_tarball()
     log.debug("Local bootstrap found: %s", bootstrap_tarball)
 
@@ -219,8 +249,13 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     if hosts:
         targets = hosts
     else:
-        for role, params in role_params.items():
-            targets += [Node(node, params['tags']) for node in params['hosts']]
+        # state_json_dir contains a path to installer states. If it is not empty, it means we have executed
+        # preflight state already and we want to take only the hosts which passed the preflight. Otherwise get a list
+        # of hosts from a config file (used in CLI where the stages do not have to be in order).
+        if state_json_dir is None:
+            targets = get_full_nodes_list(config)
+        else:
+            targets = get_successful_nodes_from('preflight', state_json_dir)
 
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
@@ -250,7 +285,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     )
 
     # UI expects total_masters, total_agents to be top level keys in deploy.json
-    delegate_extra_params = nodes_count_by_type(config)
+    delegate_extra_params = nodes_count_by_type(targets)
     if kwargs.get('retry') and state_json_dir:
         state_file_path = os.path.join(state_json_dir, 'deploy.json')
         log.debug('retry executed for a state file deploy.json')
@@ -274,7 +309,11 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
 @asyncio.coroutine
 def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, async_delegate=None, retry=False,
                    options=None):
-    targets = get_full_nodes_list(config)
+    targets = []
+    if state_json_dir is None:
+        targets = get_full_nodes_list(config)
+    else:
+        targets = get_successful_nodes_from('deploy', state_json_dir)
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     postflight_chain = ssh.utils.CommandChain('postflight')
     add_pre_action(postflight_chain, pf.ssh_user)
@@ -304,7 +343,7 @@ exit $RETCODE"""
     cleanup_chain.add_execute(['sudo', 'rm', '-f', '/opt/dcos-prereqs.installed'], stage='Removing prerequisites flag')
     result = yield from pf.run_commands_chain_async([postflight_chain, cleanup_chain], block=block,
                                                     state_json_dir=state_json_dir,
-                                                    delegate_extra_params=nodes_count_by_type(config))
+                                                    delegate_extra_params=nodes_count_by_type(targets))
     return result
 
 
@@ -402,7 +441,12 @@ sudo touch /opt/dcos-prereqs.installed
 
 @asyncio.coroutine
 def install_prereqs(config, block=False, state_json_dir=None, async_delegate=None, options=None):
-    targets = get_full_nodes_list(config)
+    targets = []
+    if state_json_dir is None:
+        targets = get_full_nodes_list(config)
+    else:
+        targets = get_successful_nodes_from('preflight', state_json_dir)
+
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     prereqs_chain = ssh.utils.CommandChain('install_prereqs')
     _add_prereqs_script(prereqs_chain)
