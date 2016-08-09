@@ -5,7 +5,6 @@ import uuid
 
 import pytest
 
-import gen.installer.aws
 import release
 import release.storage.aws
 from pkgpanda.util import variant_prefix, write_json, write_string
@@ -37,6 +36,12 @@ def config_azure(config_testing):
     if 'azure' not in config_testing:
         pytest.skip("Skipped because there is no `testing.azure` configuration in dcos-release.config.yaml")
     return config_testing['azure']
+
+
+@pytest.fixture(scope='module')
+def aws_test_session(config_aws):
+    # TODO(cmaloney): get_session shouldn't live in release.storage
+    return release.call_matching_arguments(release.storage.aws.get_session, config_aws, True)
 
 
 def roundtrip_to_json(data, mid_state, new_end_state=None):
@@ -222,10 +227,8 @@ def test_storage_provider_azure(config_azure, tmpdir):
 
 # TODO(cmaloney): Add skipping when not run under CI with the environment variables
 # So devs without the variables don't see expected failures https://pytest.org/latest/skipping.html
-def test_storage_provider_aws(config_aws, tmpdir):
-    session = gen.installer.aws.get_test_session(config_aws)
-
-    s3 = session.resource('s3')
+def test_storage_provider_aws(config_aws, aws_test_session, tmpdir):
+    s3 = aws_test_session.resource('s3')
     bucket = config_aws['bucket']
     s3_bucket = s3.Bucket(bucket)
     assert s3_bucket in s3.buckets.all(), (

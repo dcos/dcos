@@ -122,6 +122,16 @@ def load_providers():
             for name in provider_names}
 
 
+def validate_cloudformation(template_url):
+    global _config
+    try:
+        session = call_matching_arguments(release.storage.aws.get_session, _config['storage']['aws'], True)
+    except Exception as ex:
+        print("Skipping AWS CloudFormation validation because couldn't get a session: {}".format(ex))
+        return
+    session.client('cloudformation').validate_template(TemplateURL=template_url)
+
+
 # Transforms artifact definitions from the Release Manager into sets of commands
 # the storage providers understand, adding in the full path prefixes as needed
 # so storage provides just have to know how to operate on paths rather than
@@ -643,6 +653,35 @@ class ReleaseManager():
         for artifact in metadata['core_artifacts']:
             fetch_artifact(artifact)
 
+    @staticmethod
+    def validate_cloudformation_templates(metadata, url_prefix):
+        """Validate AWS CloudFormation templates in metadata.
+
+        url_prefix: The prefix to which channel paths are appended to form
+                    complete artifact URLs.
+
+        In order to bypass CloudFormation's limit on template body size,
+        templates are validated by URL and are assumed to be hosted in S3. See
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html.
+
+        """
+        cf_paths = [
+            artifact['channel_path'] for artifact in metadata['channel_artifacts']
+            if (
+                'channel_path' in artifact and
+                artifact['channel_path'].startswith('cloudformation') and
+                artifact['channel_path'].endswith('.json')
+            )
+        ]
+        if not cf_paths:
+            print("No CloudFormation templates found in metadata. Skipping validation.")
+            return
+
+        for path in cf_paths:
+            template_url = url_prefix + '/' + path
+            print("Validating CloudFormation template: {}".format(template_url))
+            validate_cloudformation(template_url)
+
     def promote(self, src_channel, destination_repository, destination_channel):
         metadata = self.get_metadata(src_channel)
 
@@ -681,10 +720,11 @@ class ReleaseManager():
             ('cloudformation_s3_url' not in self.__config['options']), \
             "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
             " templates."
+        cloudformation_s3_repo_url = self.__config['options']['cloudformation_s3_url'] + '/' + repository_path
 
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
+        metadata = make_stable_artifacts(cloudformation_s3_repo_url)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
@@ -699,6 +739,8 @@ class ReleaseManager():
 
         storage_commands = repository.make_commands(metadata)
         self.apply_storage_commands(storage_commands)
+
+        self.validate_cloudformation_templates(metadata, cloudformation_s3_repo_url + '/' + channel)
 
         return metadata
 
