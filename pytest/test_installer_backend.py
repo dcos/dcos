@@ -1,12 +1,30 @@
 import json
 import os
 import subprocess
+from unittest import mock
 
 import passlib.hash
+import pytest
 
 from dcos_installer import backend
 
 os.environ["BOOTSTRAP_ID"] = "12345"
+
+
+@pytest.fixture
+def mock_get_gen_extra_args():
+    mock_obj = mock.patch('dcos_installer.action_lib.configure.get_gen_extra_args')
+    mock_obj.return_value = {
+        'bootstrap_id': os.environ['BOOTSTRAP_ID'],
+        'package_ids': json.dumps(['package--version']),
+        'provider': 'onprem',
+    }
+
+    def fin():
+        mock_obj.stop()
+
+    mock_obj.start()
+    return mock_obj
 
 
 def test_password_hash():
@@ -28,7 +46,7 @@ def test_version(monkeypatch):
     }
 
 
-def test_good_create_config_from_post(tmpdir):
+def test_good_create_config_from_post(tmpdir, mock_get_gen_extra_args):
     """
     Test that it creates the config
     """
@@ -56,7 +74,7 @@ def test_good_create_config_from_post(tmpdir):
     assert msg == expected_good_messages
 
 
-def test_bad_create_config_from_post(tmpdir):
+def test_bad_create_config_from_post(tmpdir, mock_get_gen_extra_args):
     # Create a temp config
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
@@ -76,7 +94,7 @@ def test_bad_create_config_from_post(tmpdir):
     assert msg == expected_bad_messages
 
 
-def test_do_validate_config(tmpdir):
+def test_do_validate_config(tmpdir, mock_get_gen_extra_args):
     # Create a temp config
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
@@ -151,7 +169,7 @@ def test_success():
     assert bad_code == 400
 
 
-def test_accept_overrides_for_undefined_config_params(tmpdir):
+def test_accept_overrides_for_undefined_config_params(tmpdir, mock_get_gen_extra_args):
     temp_config_path = tmpdir.strpath + '/config.yaml'
     param = ('fake_test_param_name', 'fake_test_param_value')
     backend.create_config_from_post(
