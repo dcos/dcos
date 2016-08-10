@@ -2,7 +2,7 @@ import collections
 import logging
 import os
 import uuid
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import dns.exception
 import dns.resolver
@@ -59,6 +59,10 @@ def _setup_logging():
 
 
 class Cluster:
+
+    adminrouter_master_port = {'http': 80, 'https': 443}
+    adminrouter_agent_port = {'http': 61001, 'https': 61002}
+
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
@@ -276,6 +280,20 @@ class Cluster:
         hdrs = self._suheader(disable_suauth)
         return requests.head(self.dcos_uri + path, headers=hdrs)
 
+    def node_get(self, node, path="", params=None, disable_suauth=False, **kwargs):
+        """Execute a GET request against the adminrouter on node."""
+        hdrs = self._suheader(disable_suauth)
+        hdrs.update(kwargs.pop('headers', {}))
+
+        if node in self.masters:
+            port = self.adminrouter_master_port[self.scheme]
+        elif node in self.all_slaves:
+            port = self.adminrouter_agent_port[self.scheme]
+        else:
+            raise Exception('Node {} is not in the cluster.'.format(node))
+        url = urlunparse([self.scheme, ':'.join([node, str(port)]), path, None, None, None])
+        return requests.get(url, params=params, headers=hdrs, **kwargs)
+
     def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
         test_uuid = uuid.uuid4().hex
         test_server_cmd = '/opt/mesosphere/bin/python /opt/mesosphere/active/dcos-integration-test/test_server.py'
@@ -436,3 +454,33 @@ class Cluster:
         except retrying.RetryError:
             pytest.fail("Application destroy failed - operation was not "
                         "completed in {} seconds.".format(timeout))
+
+    def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
+        """Run a job on metronome and block until it returns success
+        """
+        job_id = job_definition['id']
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout*1000,
+                        retry_on_result=lambda ret: not ret,
+                        retry_on_exception=lambda x: False)
+        def wait_for_completion():
+            r = self.get('/service/metronome/v1/jobs/'+job_id, {'embed': 'history'})
+            assert r.ok
+            out = r.json()
+            if not ignore_failures and (out['history']['failureCount'] != 0):
+                raise Exception('Metronome job failed!: '+repr(out))
+            if out['history']['successCount'] != 1:
+                logging.info('Waiting for one-off to finish. Status: '+repr(out))
+                return False
+            logging.info('Metronome one-off successful')
+            return True
+        logging.info('Creating metronome job: '+repr(job_definition))
+        r = self.post('/service/metronome/v1/jobs', job_definition)
+        assert r.ok, r.json()
+        logging.info('Starting metronome job')
+        r = self.post('/service/metronome/v1/jobs/{}/runs'.format(job_id))
+        assert r.ok, r.json()
+        wait_for_completion()
+        logging.info('Deleting metronome one-off')
+        r = self.delete('/service/metronome/v1/jobs/'+job_id)
+        assert r.ok

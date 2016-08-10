@@ -8,7 +8,7 @@ from pkgpanda import Repository
 
 @pytest.fixture
 def repository():
-    return Repository("resources/packages")
+    return Repository("../resources/packages")
 
 
 def test_list(repository):

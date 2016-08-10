@@ -78,8 +78,8 @@ def assert_error(response, status_code, headers=None, **kwargs):
 
 def _set_test_config(app):
     app.config['TESTING'] = True
-    app.config['DCOS_ROOT'] = '../tests/resources/install'
-    app.config['DCOS_REPO_DIR'] = '../tests/resources/packages'
+    app.config['DCOS_ROOT'] = '../resources/install'
+    app.config['DCOS_REPO_DIR'] = '../resources/packages'
 
 
 def test_list_packages():
@@ -139,7 +139,7 @@ def test_get_active_package():
 def test_activate_packages(tmpdir):
     _set_test_config(app)
     install_dir = str(tmpdir.join('install'))
-    copytree('../tests/resources/install', install_dir, symlinks=True)
+    copytree('../resources/install', install_dir, symlinks=True)
     app.config['DCOS_ROOT'] = install_dir
     app.config['DCOS_ROOTED_SYSTEMD'] = True
     client = app.test_client()
@@ -193,7 +193,7 @@ def test_fetch_package(tmpdir):
             '/repository/mesos--0.22.0',
             content_type='application/json',
             data=json.dumps({
-                'repository_url': 'file://{}/../tests/resources/remote_repo'.format(os.getcwd())
+                'repository_url': 'file://{}/../resources/remote_repo'.format(os.getcwd())
             }),
         ),
         204,
@@ -217,7 +217,7 @@ def test_fetch_package(tmpdir):
             '/repository/invalid---package',
             content_type='application/json',
             data=json.dumps({
-                'repository_url': 'file://{}/../tests/resources/remote_repo'.format(os.getcwd())
+                'repository_url': 'file://{}/../resources/remote_repo'.format(os.getcwd())
             }),
         ),
         400,
@@ -227,7 +227,7 @@ def test_fetch_package(tmpdir):
 def test_remove_package(tmpdir):
     _set_test_config(app)
     repo_dir = str(tmpdir.join('repo'))
-    copytree('../tests/resources/packages', repo_dir)
+    copytree('../resources/packages', repo_dir)
     app.config['DCOS_REPO_DIR'] = repo_dir
     client = app.test_client()
 
