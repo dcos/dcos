@@ -247,31 +247,31 @@
     "RegionToAmi": {
       "ap-northeast-1": {
         "coreos": "ami-bebc4ddf",
-        "el7": "ami-b8d831d9"
+        "el7": "ami-abf535ca"
       },
       "ap-southeast-1": {
         "coreos": "ami-3602d055",
-        "el7": "ami-133eee70"
+        "el7": "ami-c47ba5a7"
       },
       "ap-southeast-2": {
         "coreos": "ami-07be9664",
-        "el7": "ami-f57d5496"
+        "el7": "ami-bc2f1bdf"
       },
       "eu-central-1": {
         "coreos": "ami-8d8d66e2",
-        "el7": "ami-2e6f8141"
+        "el7": "ami-d934c2b6"
       },
       "eu-west-1": {
         "coreos": "ami-0d68f37e",
-        "el7": "ami-20af3253"
+        "el7": "ami-dabdd6a9"
       },
       "sa-east-1": {
         "coreos": "ami-18a23774",
-        "el7": "ami-89179ce5"
+        "el7": "ami-ac980ec0"
       },
       "us-east-1": {
         "coreos": "ami-153af578",
-        "el7": "ami-7848b115"
+        "el7": "ami-44f66853"
       },
       "us-gov-west-1": {
         "coreos": "ami-96b50bf7",
@@ -279,11 +279,11 @@
       },
       "us-west-1": {
         "coreos": "ami-8befabeb",
-        "el7": "ami-a891ebc8"
+        "el7": "ami-a883c0c8"
       },
       "us-west-2": {
         "coreos": "ami-02bf7962",
-        "el7": "ami-1e22d97e"
+        "el7": "ami-a4dd16c4"
       }
     }
   },
