@@ -1,0 +1,9 @@
+{
+  "requires": ["python", "libffi"],
+  "docker": "dcos-builder",
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/04/da/35f9a1d34dab5d777f65fb87731288f338ab0ae46a525ffdf0405b573dd0/cryptography-1.3.2.tar.gz",
+    "sha1": "e087cd7bc8ec31759fadd82f8a5d51b4f8b507b0"
+  }
+}
