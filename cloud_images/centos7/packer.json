@@ -1,0 +1,70 @@
+{
+  "min_packer_version": "0.10.1",
+  "variables": {
+    "cloud_builder_version": "0.1",
+    "deploy_regions": "{{env `DEPLOY_REGIONS`}}",
+    "source_ami": "{{env `SOURCE_AMI`}}",
+    "source_ami_region": "{{env `SOURCE_AMI_REGION`}}",
+    "s3_bucket": "{{ env `S3_BUCKET`}}"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "communicator": "ssh",
+    "ssh_pty": true,
+    "region": "{{user `source_ami_region`}}",
+    "source_ami": "{{user `source_ami`}}",
+    "instance_type": "m3.xlarge",
+    "ssh_username": "centos",
+    "ami_name": "dcos-centos7-{{isotime \"200601021504\"}}",
+    "ami_description": "DC/OS Cloud Image for CentOS 7",
+    "ami_regions": "{{user `deploy_regions`}}",
+    "ebs_optimized": true,
+    "ami_block_device_mappings": [
+      {
+        "device_name": "/dev/sde",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdf",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      }
+    ],
+    "tags": {
+      "cloud_builder_version": "{{user `cloud_builder_version`}}"
+    },
+    "ami_groups": [
+      "all"
+    ]
+  }],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "dcos_vol_setup.sh",
+      "destination": "/tmp/dcos_vol_setup.sh"
+    },
+    {
+      "type": "file",
+      "source": "install_prereqs.sh",
+      "destination": "/tmp/install_prereqs.sh"
+    },
+    {
+      "type": "shell",
+      "inline_shebang": "/bin/bash -e",
+      "inline": [
+        "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
+        "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_prereqs.sh",
+        "sudo /tmp/install_prereqs.sh"
+      ]
+    }
+  ]
+}
