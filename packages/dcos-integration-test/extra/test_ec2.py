@@ -1,71 +1,8 @@
-import contextlib
 import copy
 import logging
-import os
 import uuid
 
-import boto3
-import botocore
 import pytest
-import requests
-import retrying
-
-
-@contextlib.contextmanager
-def _remove_env_vars(*env_vars):
-    environ = dict(os.environ)
-
-    for env_var in env_vars:
-        try:
-            del os.environ[env_var]
-        except KeyError:
-            pass
-
-    try:
-        yield
-    finally:
-        os.environ.clear()
-        os.environ.update(environ)
-
-
-def _delete_ec2_volume(name, timeout=300):
-    """Delete an EC2 EBS volume by its "Name" tag
-
-    Args:
-        timeout: seconds to wait for volume to become available for deletion
-
-    """
-    @retrying.retry(wait_fixed=30 * 1000, stop_max_delay=timeout * 1000,
-                    retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError))
-    def _delete_volume(volume):
-        volume.delete()  # Raises ClientError if the volume is still attached.
-
-    def _get_current_aws_region():
-        try:
-            return requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text.strip()[:-1]
-        except requests.RequestException as ex:
-            logging.warning("Can't get AWS region from instance metadata: {}".format(ex))
-            return None
-
-    # Remove AWS environment variables to force boto to use IAM credentials.
-    with _remove_env_vars('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'):
-        volumes = list(boto3.session.Session(
-            # We assume we're running these tests from a cluster node, so we
-            # can assume the region for the instance on which we're running is
-            # the same region in which any volumes were created.
-            region_name=_get_current_aws_region(),
-        ).resource('ec2').volumes.filter(Filters=[{'Name': 'tag:Name', 'Values': [name]}]))
-
-    if len(volumes) == 0:
-        raise Exception('no volumes found with name {}'.format(name))
-    elif len(volumes) > 1:
-        raise Exception('multiple volumes found with name {}'.format(name))
-    volume = volumes[0]
-
-    try:
-        _delete_volume(volume)
-    except retrying.RetryError as ex:
-        raise Exception('Operation was not completed within {} seconds'.format(timeout)) from ex
 
 
 @pytest.mark.ccm
@@ -145,7 +82,20 @@ def test_move_external_volume_to_new_agent(cluster):
         cluster.deploy_marathon_app(read_app, **deploy_kwargs)
         cluster.destroy_marathon_app(read_app['id'])
     finally:
+        logging.info('Deleting volume: '+test_label)
+        delete_cmd = """#!/bin/bash
+source /opt/mesosphere/environment.export
+python /opt/mesosphere/active/dcos-integration-test/delete_ec2_volume.py {}
+""".format(test_label)
+        delete_job = {
+                'id': 'delete-volume-'+test_uuid,
+                'run': {
+                    'cpus': .1,
+                    'mem': 128,
+                    'disk': 0,
+                    'cmd': delete_cmd}
+                }
         try:
-            _delete_ec2_volume(test_label)
+            cluster.metronome_one_off(delete_job)
         except Exception as ex:
-            raise Exception("Failed to clean up volume {}: {}".format(test_label, ex)) from ex
+            raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
