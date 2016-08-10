@@ -132,7 +132,7 @@ def get_test_session(config=None):
         if 'aws' not in release._config['testing']:
             raise RuntimeError("No testing.aws section in configuration")
 
-        config = release._config
+        config = release._config['testing']['aws']
 
     # TODO(cmaloney): get_session shouldn't live in release.storage
     return release.call_matching_arguments(release.storage.aws.get_session, config, True)

@@ -535,7 +535,7 @@ def call_matching_arguments(function, arguments, allow_unused=False):
         raise ConfigError("Need a value for {}".format(name))
 
     if not allow_unused and len(arguments) > 0:
-        raise ConfigError("Unused confugration parameters {}".format(arguments.keys()))
+        raise ConfigError("Unused configuration parameters {}".format(arguments.keys()))
 
     return function(**kwargs)
 

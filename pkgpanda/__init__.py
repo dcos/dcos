@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 """
-
 See `docs/package_concepts.md` for the package layout.
 
 
@@ -24,7 +23,8 @@ from itertools import chain
 from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.constants import RESERVED_UNIT_NAMES
-from pkgpanda.exceptions import InstallError, PackageError, ValidationError
+from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
+                                 ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
@@ -329,6 +329,9 @@ class Repository:
         PackageId(id)
 
         path = self.package_path(id)
+        if not os.path.exists(path):
+            raise PackageNotFound(id)
+
         filename = os.path.join(path, "pkginfo.json")
         try:
             pkginfo = load_json(filename)
@@ -355,6 +358,9 @@ class Repository:
     # If the package is already in the repository does a no-op and returns false.
     # Returns true otherwise.
     def add(self, fetcher, id, warn_added=True):
+        # Validate the package id.
+        PackageId(id)
+
         # If the package already exists, return true
         package_path = self.package_path(id)
         if os.path.exists(package_path):
@@ -384,7 +390,7 @@ class Repository:
     def remove(self, id):
         path = self.package_path(id)
         if not os.path.exists(path):
-            return
+            raise PackageNotFound(id)
         shutil.rmtree(path)
 
 

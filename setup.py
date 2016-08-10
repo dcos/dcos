@@ -29,11 +29,13 @@ setup(
         'gen.installer',
         'pkgpanda',
         'pkgpanda.build',
+        'pkgpanda.http',
         'release',
         'release.storage',
         'ssh',
         'test_util'],
     install_requires=[
+        'Flask',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',
