@@ -716,8 +716,8 @@ class ReleaseManager():
     def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
-        assert ('options' in self.__config) or \
-            ('cloudformation_s3_url' not in self.__config['options']), \
+        assert ('options' in self.__config) and \
+            ('cloudformation_s3_url' in self.__config['options']), \
             "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
             " templates."
         cloudformation_s3_repo_url = self.__config['options']['cloudformation_s3_url'] + '/' + repository_path
