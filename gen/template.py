@@ -336,7 +336,8 @@ class Template():
                 if isinstance(chunk, Switch):
                     choice = get_argument(chunk.identifier)
                     if choice not in chunk.cases:
-                        raise ValueError("")
+                        raise ValueError("switch %s: value `%s` is not in the set of handled cases" % (
+                            chunk.identifier, choice))
                     rendered += render_ast(chunk.cases[choice])
                 elif isinstance(chunk, Replacement):
                     value = get_argument(chunk.identifier)
