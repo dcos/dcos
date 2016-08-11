@@ -172,6 +172,7 @@ dispatch_dict_simple = {
     'web': (do_web, 'Run the web interface'),
     'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
     'aws-cloudformation': (do_aws_cloudformation, 'Generate AWS Advanced templates with a custom config'),
+    'upload-templates': (do_upload_templates, 'Upload Cloud Formation templates to AWS S3'),
     'validate-config': (
         do_validate_config,
         'Validate the configuration for executing --genconf and deploy arguments in config.yaml')
