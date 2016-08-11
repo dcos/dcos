@@ -266,7 +266,7 @@ class PackageStore:
 
                 builder_folder = os.path.join(directory, name, 'docker')
                 if os.path.exists(builder_folder):
-                    self._builders["dcos-builder-" + name] = builder_folder
+                    self._builders[name] = builder_folder
 
                 # Search the directory for buildinfo.json files, record the variants
                 for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
@@ -465,7 +465,7 @@ def load_buildinfo(path, variant):
 
     # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
     buildinfo.setdefault('build_script', 'build')
-    buildinfo.setdefault('docker', 'dcos-builder:latest')
+    buildinfo.setdefault('docker', 'dcos/dcos-builder:dcos-builder_dockerdir-latest')
     buildinfo.setdefault('environment', dict())
     buildinfo.setdefault('requires', list())
     buildinfo.setdefault('state_directory', False)
