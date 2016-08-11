@@ -48,7 +48,7 @@ setup(
         'docopt',
         'passlib',
         'pyyaml',
-        'requests',
+        'requests==2.10.0',
         'retrying',
         'keyring==9.1'],  # FIXME: pin keyring to prevent dbus dep
     entry_points={
