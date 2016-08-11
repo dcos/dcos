@@ -141,6 +141,11 @@ def do_aws_cloudformation(args):
     return backend.do_aws_cf_configure()
 
 
+def do_upload_templates(args):
+    print_header("UPLOADING TEMPLATES TO AWS S3")
+    return backend.do_upload_to_s3()
+
+
 def do_preflight(args):
     print_header("EXECUTING PREFLIGHT")
     return action_lib.run_preflight
@@ -172,6 +177,7 @@ dispatch_dict_simple = {
     'web': (do_web, 'Run the web interface'),
     'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
     'aws-cloudformation': (do_aws_cloudformation, 'Generate AWS Advanced templates with a custom config'),
+    'upload-templates': (do_upload_templates, 'Upload Cloud Formation templates to AWS S3'),
     'validate-config': (
         do_validate_config,
         'Validate the configuration for executing --genconf and deploy arguments in config.yaml')

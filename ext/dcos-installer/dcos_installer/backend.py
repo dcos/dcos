@@ -2,6 +2,9 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
+import botocore
+import boto3
+import glob
 import logging
 import os
 import pprint
@@ -53,6 +56,55 @@ def do_aws_cf_configure():
     pprint.pprint(yaml_config)
 
     configure.do_aws_cf_configure(stringify_configuration(yaml_config))
+
+
+def do_upload_to_s3(config_path=CONFIG_PATH):
+    """Best effort to upload generated CF templates to S3"""
+    config = DCOSConfig(config_path=config_path)
+    must_contain_keys = [
+        'cloudformation_s3_url',
+        'cloudformation_s3_bucket',
+        'cloudformation_s3_key',
+        'cloudformation_s3_region']
+
+    for key in must_contain_keys:
+        if key not in config:
+            log.error("You must set the key for {} in the config.yaml to upload the templates.".format(key))
+            return 1
+
+    s3_bucket = config['cloudformation_s3_bucket']
+    s3_key = config['cloudformation_s3_key']
+    s3_region = config['cloudformation_s3_region']
+
+    credential_env = ['AWS_SECRET_ACCESS_KEY', 'AWS_ACCESS_KEY_ID']
+    for e in credential_env:
+        if e not in os.environ:
+            log.error("Must set {} to upload templates to S3".format(e))
+            return 1
+
+    cf_template_dir = '/genconf/serve/cloudformation'
+    if not os.path.exists(cf_template_dir):
+        log.error("genconf/serve/cloudformation does not exist. Try --aws-cloudformation.")
+        return 1
+
+    cf_files = glob.glob('{}/*'.format(cf_template_dir))
+    if cf_files is None or not cf_files:
+        log.error("genconf/serve/cloudformation appears to be empty. Try --aws-cloudformation.")
+        return 1
+
+    s3 = boto3.resource('s3', s3_region)
+
+#    try:
+#        s3.meta.client.head_bucket(Bucket=s3_bucket)
+#    except botocore.exceptions.ClientError as e:
+#        error_code = int(e.response['Error']['Code'])
+#        log.error("Error accessing S3 bucket: {}".format(error_code))
+#        return 1
+
+    for f in cf_files:
+        print("Uploading {}: https://s3-{}.amazonaws.com/{}/{}/{}".format(s3_region, s3_bucket, s3_key, f))
+        s3.upload_file(f, s3_bucket, s3_key)
+    return 0
 
 
 def hash_password(string):
