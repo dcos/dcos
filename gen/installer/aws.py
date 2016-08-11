@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 import re
 from copy import deepcopy
 
@@ -275,7 +276,17 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     })
 
 
-def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type):
+def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type, cloudformation_s3_url):
+    print("gen_advanced_template:")
+    print("arguments: {}".format(arguments))
+    print("variant_prefix: {}".format(variant_prefix))
+    print("channel_commit_path: {}".format(channel_commit_path))
+    print("os_type: {}".format(os_type))
+
+    # Prevent '//' from appearing in URL if channel_commit_path is an empty string
+    cloudformation_full_s3_url = '/'.join(
+            [x for x in [cloudformation_s3_url, channel_commit_path, 'cloudformation'] if x != ''])
+
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
@@ -287,6 +298,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
         params['node_type'] = node_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
+
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
                 master_tk = '{}-{}-{}'.format(os_type, template_key, num_masters)
@@ -302,8 +314,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                     'cloudformation': render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
-                        channel_commit_path=channel_commit_path,
-                        cloudformation_s3_url=get_cloudformation_s3_url(),
+                        cloudformation_full_s3_url=cloudformation_full_s3_url,
                         **bunch.results.arguments
                         ),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
@@ -315,6 +326,55 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                                         template_name,
                                         params)
             yield '{}-{}'.format(os_type, template_name), bunch
+
+
+def make_custom_aws_templates(arguments):
+    # TODO(lingmann): The basic structure of this function already exists in do_create() ... dedupe.
+    extra_packages = list()
+    artifacts = list()
+
+    # Setup base arguments
+    variant_base_args = deepcopy(arguments)
+
+    variant_prefix = pkgpanda.util.variant_prefix(os.getenv('DCOS_VARIANT'))
+
+    # channel_commit_path is not used with user-generated templates, set to '' to exclude from constructed URL's
+    channel_commit_path = ''
+
+    def add_pre_genned(filename, gen_out):
+        nonlocal extra_packages
+        artifacts.append({
+            'channel_path': 'cloudformation/{}{}'.format(variant_prefix, filename),
+            'local_content': gen_out.cloudformation,
+            'content_type': 'application/json; charset=utf-8'
+            })
+        extra_packages += util.cluster_to_extra_packages(gen_out.results.cluster_packages)
+
+    def add(gen_args, filename):
+        gen_out = gen_templates(gen_args)
+        add_pre_genned(filename, gen_out)
+
+    # Advanced templates
+    for os_type in ['coreos', 'el7']:
+        for template_name, advanced_template in gen_advanced_template(variant_base_args,
+                                                                      variant_prefix,
+                                                                      channel_commit_path,
+                                                                      os_type,
+                                                                      arguments['cloudformation_s3_url']):
+            add_pre_genned(template_name, advanced_template)
+
+    # This renders the infra template only, which has no difference between CE and EE
+    for template_name, advanced_template in gen_supporting_template():
+        artifacts.append({
+            'channel_path': 'cloudformation/{}'.format(template_name),
+            'local_content': advanced_template.cloudformation,
+            'content_type': 'application/json; charset=utf-8',
+        })
+
+    return {
+        'packages': extra_packages,
+        'artifacts': artifacts
+    }
 
 
 def gen_templates(arguments):
@@ -459,7 +519,8 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
             for template_name, advanced_template in gen_advanced_template(variant_base_args,
                                                                           variant_prefix,
                                                                           channel_commit_path,
-                                                                          os_type):
+                                                                          os_type,
+                                                                          get_cloudformation_s3_url()):
                 add_pre_genned(template_name, advanced_template)
 
     # Button page linking to the basic templates.

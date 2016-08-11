@@ -2,14 +2,20 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
+import botocore
+import boto3
+import glob
 import logging
 import os
+import pprint
 import sys
+import yaml
 
+from copy import deepcopy
 from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
-from dcos_installer.config import DCOSConfig
+from dcos_installer.config import DCOSConfig, stringify_configuration
 from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
 
 import ssh.validate as validate_ssh
@@ -34,6 +40,55 @@ def do_configure(config_path=CONFIG_PATH):
         config.update(config.hidden_config)
         configure.do_configure(config.stringify_configuration())
         return 0
+
+
+def do_aws_cf_configure():
+    """Tries to generate AWS templates using a custom config.yaml"""
+
+    # TODO(lingmann): Exception handling
+    yaml_config = yaml.load(open(CONFIG_PATH, 'r'))
+
+    # TODO(lingmann): Validate config params such as 'cloudformation_s3_url' are present and sane
+    yaml_config['provider'] = 'aws'
+    yaml_config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
+    yaml_config['bootstrap_url'] = deepcopy(yaml_config['cloudformation_s3_url'])
+    print("CONFIG USED:")
+    pprint.pprint(yaml_config)
+
+    configure.do_aws_cf_configure(stringify_configuration(yaml_config))
+
+
+def do_upload_to_s3(config_path=CONFIG_PATH):
+    """Best effort to upload generated CF templates to S3"""
+    config = DCOSConfig(config_path=config_path)
+    if not config['cloudformation_s3_url']:
+        log.error("You must set the key for 'cloudformation_s3_url' in the config.yaml to upload the templates.")
+        return 1
+
+    bucket_path = config['cloudformation_s3_url']
+
+    cf_template_dir = '/genconf/serve/cloudformation'
+    if not os.path.exists(cf_template_dir):
+        log.error("genconf/serve/cloudformation does not exist. Try --aws-cloudformation.")
+        return 1
+
+    cf_files = glob.glob('{}/*'.format(cf_template_dir))
+    if cf_files is None or not cf_files:
+        log.error("genconf/serve/cloudformation appears to be empty. Try --aws-cloudformation.")
+        return 1
+
+    s3 = boto3.resource('s3')
+    try:
+        s3.meta.client.head_bucket(Bucket=bucket_path)
+    except botocore.exceptions.ClientError as e:
+        error_code = int(e.response['Error']['Code'])
+        log.error("Error accessing S3 bucket: {}".format(error_code))
+        return 1
+
+    for f in cf_files:
+        data = open(f, 'rb')
+        s3.Bucket(bucket_path).put_object(Key=f, Body=data)
+    return 0
 
 
 def hash_password(string):
