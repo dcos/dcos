@@ -8,6 +8,7 @@ REXRAY_CONFIG_PATH = '/genconf/rexray.yaml'
 SERVE_DIR = '/genconf/serve'
 STATE_DIR = '/genconf/state'
 GENCONF_DIR = '/genconf'
+ARTIFACT_DIR = '/artifacts'
 
 log = logging.getLogger(__name__)
 

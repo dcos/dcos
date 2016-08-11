@@ -122,6 +122,16 @@ def load_providers():
             for name in provider_names}
 
 
+def validate_cloudformation(template_url):
+    global _config
+    try:
+        session = call_matching_arguments(release.storage.aws.get_session, _config['storage']['aws'], True)
+    except Exception as ex:
+        print("Skipping AWS CloudFormation validation because couldn't get a session: {}".format(ex))
+        return
+    session.client('cloudformation').validate_template(TemplateURL=template_url)
+
+
 # Transforms artifact definitions from the Release Manager into sets of commands
 # the storage providers understand, adding in the full path prefixes as needed
 # so storage provides just have to know how to operate on paths rather than
@@ -310,21 +320,33 @@ def make_stable_artifacts(cache_repository_url):
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
         bootstrap_filename = "{}.bootstrap.tar.xz".format(info['bootstrap'])
+        active_filename = "{}.active.json".format(info['bootstrap'])
+        active_local_path = 'packages/cache/bootstrap/' + active_filename
+        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
+        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
+
+        # Assert that the bootstrap active packages are in the package list.
+        with open(active_local_path) as f:
+            missing_packages = set(json.loads(f.read())) - set(info['packages'])
+        assert len(missing_packages) == 0, (
+            'variant {} has bootstrap packages missing from the package list: {}'.format(
+                pkgpanda.util.variant_name(name),
+                missing_packages,
+            )
+        )
+
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
             'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
             })
-        active_filename = "{}.active.json".format(info['bootstrap'])
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/cache/bootstrap/' + active_filename
+            'local_path': active_local_path
             })
-        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_filename,
             'local_path': 'packages/cache/bootstrap/' + latest_filename
             })
-        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_complete_filename,
             'local_path': 'packages/cache/complete/' + latest_complete_filename
@@ -368,18 +390,19 @@ def make_channel_artifacts(metadata):
 
         variant_arguments = dict()
 
-        for bootstrap_name, bootstrap_id in metadata['bootstrap_dict'].items():
-            variant_arguments[bootstrap_name] = copy.deepcopy({
+        for variant, variant_info in metadata['complete_dict'].items():
+            variant_arguments[variant] = copy.deepcopy({
                 'bootstrap_url': bootstrap_url,
                 'provider': name,
-                'bootstrap_id': bootstrap_id,
-                'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
+                'bootstrap_id': variant_info['bootstrap'],
+                'bootstrap_variant': pkgpanda.util.variant_prefix(variant),
+                'package_ids': json.dumps(variant_info['packages'])
                 })
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
                 mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+                variant_arguments[variant].update(mod.provider_template_defaults)
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
@@ -389,7 +412,7 @@ def make_channel_artifacts(metadata):
             channel_commit_path=metadata['channel_commit_path'],
             commit=metadata['commit'],
             variant_arguments=variant_arguments,
-            all_bootstraps=metadata["all_bootstraps"])
+            all_completes=metadata["all_completes"])
 
         # Translate provider data to artifacts
         assert provider_data.keys() <= {'packages', 'artifacts'}
@@ -630,6 +653,35 @@ class ReleaseManager():
         for artifact in metadata['core_artifacts']:
             fetch_artifact(artifact)
 
+    @staticmethod
+    def validate_cloudformation_templates(metadata, url_prefix):
+        """Validate AWS CloudFormation templates in metadata.
+
+        url_prefix: The prefix to which channel paths are appended to form
+                    complete artifact URLs.
+
+        In order to bypass CloudFormation's limit on template body size,
+        templates are validated by URL and are assumed to be hosted in S3. See
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html.
+
+        """
+        cf_paths = [
+            artifact['channel_path'] for artifact in metadata['channel_artifacts']
+            if (
+                'channel_path' in artifact and
+                artifact['channel_path'].startswith('cloudformation') and
+                artifact['channel_path'].endswith('.json')
+            )
+        ]
+        if not cf_paths:
+            print("No CloudFormation templates found in metadata. Skipping validation.")
+            return
+
+        for path in cf_paths:
+            template_url = url_prefix + '/' + path
+            print("Validating CloudFormation template: {}".format(template_url))
+            validate_cloudformation(template_url)
+
     def promote(self, src_channel, destination_repository, destination_channel):
         metadata = self.get_metadata(src_channel)
 
@@ -664,14 +716,15 @@ class ReleaseManager():
     def create(self, repository_path, channel, tag):
         assert len(channel) > 0  # channel must be a non-empty string.
 
-        assert ('options' in self.__config) or \
-            ('cloudformation_s3_url' not in self.__config['options']), \
+        assert ('options' in self.__config) and \
+            ('cloudformation_s3_url' in self.__config['options']), \
             "Must configure a cloudformation_s3_url which gets embedded in the AWS CloudFormation" \
             " templates."
+        cloudformation_s3_repo_url = self.__config['options']['cloudformation_s3_url'] + '/' + repository_path
 
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
+        metadata = make_stable_artifacts(cloudformation_s3_repo_url)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
@@ -686,6 +739,8 @@ class ReleaseManager():
 
         storage_commands = repository.make_commands(metadata)
         self.apply_storage_commands(storage_commands)
+
+        self.validate_cloudformation_templates(metadata, cloudformation_s3_repo_url + '/' + channel)
 
         return metadata
 

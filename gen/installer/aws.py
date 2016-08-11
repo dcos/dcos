@@ -2,13 +2,11 @@
 """AWS Image Creation, Management, Testing"""
 
 import json
-import logging
 import re
 from copy import deepcopy
 
 import yaml
 from pkg_resources import resource_string
-from retrying import retry
 
 import gen
 import gen.installer.util as util
@@ -120,24 +118,6 @@ groups = {
 AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
 
 
-def get_test_session(config=None):
-    if config is None:
-        assert release._config is not None
-        # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-        # is definitely not the right way to do this.
-
-        if 'testing' not in release._config:
-            raise RuntimeError("No testing section in configuration")
-
-        if 'aws' not in release._config['testing']:
-            raise RuntimeError("No testing.aws section in configuration")
-
-        config = release._config['testing']['aws']
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release.call_matching_arguments(release.storage.aws.get_session, config, True)
-
-
 def get_cloudformation_s3_url():
     assert release._config is not None
     # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
@@ -193,25 +173,10 @@ def render_cloudformation(cf_template, **kwds):
     return render_cloudformation_transform(cf_template, transform_func=transform_lines, **kwds)
 
 
-@retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000)
-def validate_cf(template_body):
-    try:
-        session = get_test_session()
-    except Exception as ex:
-        logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
-        return
-    client = session.client('cloudformation')
-    client.validate_template(TemplateBody=template_body)
-
-
 def gen_supporting_template():
     for template_key in ['infra.json']:
         cf_template = 'aws/templates/advanced/{}'.format(template_key)
         cloudformation = render_cloudformation(resource_string("gen", cf_template).decode())
-
-        print("Validating CloudFormation: {}".format(cf_template))
-        validate_cf(cloudformation)
-
         yield template_key, gen.Bunch({
             'cloudformation': cloudformation,
             'results': '',
@@ -266,8 +231,6 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         results.templates[template_name],
         cloud_config=variant_cloudconfig,
         )
-    print("Validating CloudFormation: {}".format(template_name))
-    validate_cf(cloudformation)
 
     return gen.Bunch({
         'cloudformation': cloudformation,
@@ -365,9 +328,6 @@ def gen_templates(arguments):
         slave_public_cloud_config=variant_cloudconfig['slave_public']
         )
 
-    print("Validating CloudFormation")
-    validate_cf(cloudformation)
-
     return gen.Bunch({
         'cloudformation': cloudformation,
         'results': results
@@ -413,7 +373,7 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arg
         })
 
 
-def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_completes):
     # Generate the single-master and multi-master templates.
 
     extra_packages = list()

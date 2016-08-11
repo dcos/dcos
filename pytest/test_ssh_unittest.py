@@ -50,7 +50,7 @@ def test_agent_list_ipv4(default_config):
         default_config['ssh_key_path'] = tmp.name
         default_config['agent_list'] = ['127.0.0.1', '127.0.0.2', 'foo']
         assert ssh.validate.validate_config(default_config) == {
-            'agent_list': 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: [\'foo\']'
+            'agent_list': 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: foo'
         }
 
 

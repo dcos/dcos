@@ -67,7 +67,7 @@ def check_ipv4_addrs(ips):
         except OSError:
             invalid_ips.append(ip)
     assert not invalid_ips, ('Only IPv4 values are allowed. The following are invalid IPv4 addresses: '
-                             '{}'.format(invalid_ips))
+                             '{}'.format(', '.join(invalid_ips)))
 
 
 def validate_optional_agent(agent_list, public_agent_list):
