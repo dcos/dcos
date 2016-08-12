@@ -5,8 +5,8 @@
   ],
   "single_source": {
     "kind": "url",
-    "url": "https://downloads.dcos.io/cosmos/0.2.0-SNAPSHOT-89-refs_heads_master-7ed8c0c226/cosmos-server-0.2.0-SNAPSHOT-89-refs_heads_master-7ed8c0c226-one-jar.jar",
-    "sha1": "6afabc3721ad4c5eecff7bcbf74b1798afa92056"
+    "url": "https://downloads.dcos.io/cosmos/0.2.0-SNAPSHOT-93-refs_heads_master-c6e5c87ba2/cosmos-server-0.2.0-SNAPSHOT-93-refs_heads_master-c6e5c87ba2-one-jar.jar",
+    "sha1": "910203a0961af1c721d1f95ce04d4c293153b0cd"
   },
   "username": "dcos_cosmos",
   "state_directory": true
