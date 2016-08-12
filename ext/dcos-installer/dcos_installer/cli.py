@@ -51,7 +51,7 @@ Install Mesosophere's Data Center Operating System
 
 dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v] [--web |
                                                                         --genconf |
-                                                                        --aws-cloudformation |
+                                                                        --aws-cloudformation [--upload-s3] |
                                                                         --preflight |
                                                                         --deploy |
                                                                         --postflight |
