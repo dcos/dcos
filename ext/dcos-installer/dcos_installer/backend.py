@@ -92,17 +92,16 @@ def do_upload_to_s3(config_path=CONFIG_PATH):
         log.error("genconf/serve/cloudformation appears to be empty. Try --aws-cloudformation.")
         return 1
 
-    s3 = boto3.resource('s3', s3_region)
-
-#    try:
-#        s3.meta.client.head_bucket(Bucket=s3_bucket)
-#    except botocore.exceptions.ClientError as e:
-#        error_code = int(e.response['Error']['Code'])
-#        log.error("Error accessing S3 bucket: {}".format(error_code))
-#        return 1
+    s3 = boto3.client('s3', s3_region)
 
     for f in cf_files:
-        print("Uploading {}: https://s3-{}.amazonaws.com/{}/{}/{}".format(s3_region, s3_bucket, s3_key, f))
+        filename = f.split('/')[-1]
+        print("Uploading {}: https://s3-{}.amazonaws.com/{}/{}/{}".format(
+            filename,
+            s3_region,
+            s3_bucket,
+            s3_key,
+            filename))
         s3.upload_file(f, s3_bucket, s3_key)
     return 0
 
