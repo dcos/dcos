@@ -315,7 +315,7 @@ def main():
         installer.postflight()
 
     with closing(SSHTunnel(ssh_user, ssh_key_path, host_list[1])) as master_tunnel:
-        # Runs dcos-image/integration_test.py inside the cluster
+        # Runs dcos-image integration tests inside the cluster
         result = test_util.test_runner.integration_test(
                 tunnel=master_tunnel,
                 test_dir=remote_dir,
