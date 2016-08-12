@@ -2,8 +2,6 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
-import botocore
-import boto3
 import glob
 import logging
 import os
@@ -19,6 +17,7 @@ from dcos_installer.config import DCOSConfig, stringify_configuration
 from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
 
 import ssh.validate as validate_ssh
+from release.storage.aws import S3StorageProvider
 
 log = logging.getLogger()
 
@@ -92,7 +91,13 @@ def do_upload_to_s3(config_path=CONFIG_PATH):
         log.error("genconf/serve/cloudformation appears to be empty. Try --aws-cloudformation.")
         return 1
 
-    s3 = boto3.client('s3', s3_region)
+    s3 = S3StorageProvider(
+        bucket=s3_bucket,
+        object_prefix=s3_key,
+        download_url=None,
+        region_name=s3_region,
+        access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
 
     for f in cf_files:
         filename = f.split('/')[-1]
@@ -102,7 +107,9 @@ def do_upload_to_s3(config_path=CONFIG_PATH):
             s3_bucket,
             s3_key,
             filename))
-        s3.upload_file(f, s3_bucket, s3_key)
+        s3.upload(
+            destination_path="{}/{}".format(s3_bucket, s3_key),
+            local_path=f)
     return 0
 
 
