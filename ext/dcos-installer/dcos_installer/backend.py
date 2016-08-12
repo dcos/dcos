@@ -2,17 +2,22 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
+import glob
 import logging
 import os
+import pprint
 import sys
+import yaml
 
+from copy import deepcopy
 from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
-from dcos_installer.config import DCOSConfig
+from dcos_installer.config import DCOSConfig, stringify_configuration
 from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
 
 import ssh.validate as validate_ssh
+from release.storage.aws import S3StorageProvider
 
 log = logging.getLogger()
 
@@ -34,6 +39,78 @@ def do_configure(config_path=CONFIG_PATH):
         config.update(config.hidden_config)
         configure.do_configure(config.stringify_configuration())
         return 0
+
+
+def do_aws_cf_configure():
+    """Tries to generate AWS templates using a custom config.yaml"""
+
+    # TODO(lingmann): Exception handling
+    yaml_config = yaml.load(open(CONFIG_PATH, 'r'))
+
+    # TODO(lingmann): Validate config params such as 'cloudformation_s3_url' are present and sane
+    yaml_config['provider'] = 'aws'
+    yaml_config['bootstrap_id'] = os.environ['BOOTSTRAP_ID']
+    yaml_config['bootstrap_url'] = deepcopy(yaml_config['cloudformation_s3_url'])
+    print("CONFIG USED:")
+    pprint.pprint(yaml_config)
+
+    configure.do_aws_cf_configure(stringify_configuration(yaml_config))
+
+
+def do_upload_to_s3(config_path=CONFIG_PATH):
+    """Best effort to upload generated CF templates to S3"""
+    config = DCOSConfig(config_path=config_path)
+    must_contain_keys = [
+        'cloudformation_s3_url',
+        'cloudformation_s3_bucket',
+        'cloudformation_s3_key',
+        'cloudformation_s3_region']
+
+    for key in must_contain_keys:
+        if key not in config:
+            log.error("You must set the key for {} in the config.yaml to upload the templates.".format(key))
+            return 1
+
+    s3_bucket = config['cloudformation_s3_bucket']
+    s3_key = config['cloudformation_s3_key']
+    s3_region = config['cloudformation_s3_region']
+
+    credential_env = ['AWS_SECRET_ACCESS_KEY', 'AWS_ACCESS_KEY_ID']
+    for e in credential_env:
+        if e not in os.environ:
+            log.error("Must set {} to upload templates to S3".format(e))
+            return 1
+
+    cf_template_dir = '/genconf/serve/cloudformation'
+    if not os.path.exists(cf_template_dir):
+        log.error("genconf/serve/cloudformation does not exist. Try --aws-cloudformation.")
+        return 1
+
+    cf_files = glob.glob('{}/*'.format(cf_template_dir))
+    if cf_files is None or not cf_files:
+        log.error("genconf/serve/cloudformation appears to be empty. Try --aws-cloudformation.")
+        return 1
+
+    s3 = S3StorageProvider(
+        bucket=s3_bucket,
+        object_prefix=s3_key,
+        download_url=None,
+        region_name=s3_region,
+        access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+
+    for f in cf_files:
+        filename = f.split('/')[-1]
+        print("Uploading {}: https://s3-{}.amazonaws.com/{}/{}/{}".format(
+            filename,
+            s3_region,
+            s3_bucket,
+            s3_key,
+            filename))
+        s3.upload(
+            destination_path="{}/{}".format(s3_bucket, s3_key),
+            local_path=f)
+    return 0
 
 
 def hash_password(string):

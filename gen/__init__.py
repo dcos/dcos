@@ -18,6 +18,7 @@ import json
 import logging as log
 import os
 import os.path
+import pprint
 import textwrap
 from copy import copy, deepcopy
 from subprocess import check_call
@@ -616,6 +617,12 @@ def generate(
         cc_package_files=list(),
         validate_only=False):
     log.info("Generating configuration files...")
+    print("\nARGUMENTS:")
+    pprint.pprint(arguments)
+    print("\nEXTRA_TEMPLATES:")
+    pprint.pprint(extra_templates)
+    print("\nCC_PACKAGE_FILES:")
+    pprint.pprint(cc_package_files)
 
     assert isinstance(extra_templates, list)
 
