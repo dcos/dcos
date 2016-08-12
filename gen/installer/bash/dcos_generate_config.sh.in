@@ -16,7 +16,7 @@ trap 'backout' INT
 if [ ! -f "{genconf_tar}" ]
 then
     echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
-    sed '0,/^#EOF#$/d' $0 | tar xv
+    sed '1,/^#EOF#$/d' $0 | tar xv
     docker load -i {genconf_tar}
 fi
 trap - INT
