@@ -198,11 +198,12 @@ def dispatch(args):
     if args.action in dispatch_dict_aio:
         validate_ssh_config_or_exit()
         errors = run_loop(dispatch_dict_aio[args.action][0](args), args)
-        installer_analytics.send(
-            action=args.action,
-            install_method="cli",
-            num_errors=errors,
-        )
+        if not args.cli_telemetry_disabled:
+            installer_analytics.send(
+                action=args.action,
+                install_method="cli",
+                num_errors=errors,
+            )
         sys.exit(1 if errors > 0 else 0)
 
     print("Internal Error: No known way to dispatch {}".format(args.action))

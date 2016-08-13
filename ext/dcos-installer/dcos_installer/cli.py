@@ -49,8 +49,15 @@ def parse_args(args):
         return """
 Install Mesosophere's Data Center Operating System
 
-dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [-v]
-[--web | --genconf | --preflight | --deploy | --postflight | --uninstall | --validate-config | --version]
+dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [--cli-telemetry-disabled] [-v]
+--web [--offline]
+--genconf
+--preflight
+--deploy
+--postflight
+--uninstall
+--validate-config
+--version
 
 Environment Settings:
 
@@ -91,6 +98,11 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         action='store_true',
         help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
     )
+
+    parser.add_argument(
+        '--cli-telemetry-disabled',
+        action='store_true',
+        help='Disable the CLI telemetry gathering for SegmentIO')
 
     def add_mode(name, help):
         mutual_exc.add_argument(
