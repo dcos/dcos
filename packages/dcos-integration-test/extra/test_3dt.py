@@ -283,6 +283,37 @@ def test_3dt_units(cluster):
         )
 
 
+def test_systemd_units_health(cluster):
+    """
+    test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
+    meaning it focuses on making sure the cluster is healthy, rather then testing 3dt itself.
+    """
+    unhealthy_output = []
+    assert cluster.masters, "Must have at least 1 master node"
+    report_response = make_3dt_request(cluster.masters[0], BASE_ENDPOINT_3DT + '/report?cache=0', cluster,
+                                       port=PORT_3DT)
+    assert 'Units' in report_response, "Missing `Units` field in response"
+    for unit_name, unit_props in report_response['Units'].items():
+        assert 'Health' in unit_props, "Unit {} missing `Health` field".format(unit_name)
+        if unit_props['Health'] != 0:
+            assert 'Nodes' in unit_props, "Unit {} missing `Nodes` field".format(unit_name)
+            assert isinstance(unit_props['Nodes'], list), 'Field `Node` must be a list'
+            for node in unit_props['Nodes']:
+                assert 'Health' in node, 'Field `Health` is expected to be in nodes properties, got {}'.format(node)
+                if node['Health'] != 0:
+                    assert 'Output' in node, 'Field `Output` is expected to be in nodes properties, got {}'.format(node)
+                    assert isinstance(node['Output'], dict), 'Field `Output` must be a dict'
+                    assert unit_name in node['Output'], 'unit {} must be in node Output, got {}'.format(unit_name,
+                                                                                                        node['Output'])
+                    assert 'IP' in node, 'Field `IP` is expected to be in nodes properties, got {}'.format(node)
+                    unhealthy_output.append(
+                        'Unhealthy unit {} has been found on node {}, health status {}. journalctl output {}'.format(
+                            unit_name, node['IP'], unit_props['Health'], node['Output'][unit_name]))
+
+    if unhealthy_output:
+        raise AssertionError('\n'.join(unhealthy_output))
+
+
 def test_3dt_units_unit(cluster):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
