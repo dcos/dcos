@@ -294,8 +294,22 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     })
 
 
+def get_s3_url_prefix(arguments, reproducible_artifact_path):
+    assert reproducible_artifact_path, "reproducible_artifact_path must not be empty"
+    if 'cloudformation_s3_url' in arguments:
+        url = arguments['cloudformation_s3_url']
+    else:
+        url = get_cloudformation_s3_url()
+
+    url += '/' + reproducible_artifact_path + '/cloudformation'
+
+
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
+    cloudformation_full_s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
+
     for node_type in ['master', 'priv-agent', 'pub-agent']:
+        # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
+        # without noticing (such as exhibitor_storage_backend)
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
         node_args.update(arguments)
@@ -321,16 +335,14 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 yield from _as_artifact('{}.json'.format(master_tk), bunch)
 
                 # Zen template corresponding to this number of masters
-                yield from _as_artifact('{}-zen-{}.json'.format(os_type, num_masters), gen.Bunch({
-                    'cloudformation': render_cloudformation_transform(
+                yield _as_cf_artifact(
+                    '{}{}-zen-{}.json'.format(variant_prefix, os_type, num_masters),
+                    render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         reproducible_artifact_path=reproducible_artifact_path,
-                        cloudformation_s3_url=get_cloudformation_s3_url(),
-                        **bunch.results.arguments),
-                    # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
-                    # extra info that there are no cluster_packages
-                    'results': gen.Bunch({'cluster_packages': {}})}))
+                        cloudformation_full_s3_url=cloudformation_full_s3_url,
+                        **bunch.results.arguments))
         else:
             node_args['num_masters'] = "1"
             bunch = make_advanced_bunch(node_args,
@@ -395,7 +407,7 @@ def gen_templates(arguments):
     })
 
 
-button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_s3_url}/{reproducible_artifact_path}/cloudformation/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
+button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_full_s3_url}/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
 region_line_template = "<tr><td>{region_name}</td><td>{region_id}</td><td>{single_master_button}</td><td>{multi_master_button}</td></tr>"  # noqa
 
 
@@ -406,20 +418,22 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arg
     regular_buttons = list()
 
     for region in aws_region_names:
-        def get_button(template_name):
+        def get_button(template_name, s3_url):
             return button_template.format(
                 region_id=region['id'],
                 reproducible_artifact_path=reproducible_artifact_path,
                 template_name=template_name,
-                cloudformation_s3_url=get_cloudformation_s3_url())
+                cloudformation_full_s3_url=s3_url)
 
         button_line = ""
-        for variant in variant_list:
+        for variant, arguments in variant_arguments.items():
+            variant_prefix = pkgpanda.util.variant_prefix(variant)
+            s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
             button_line += region_line_template.format(
                 region_name=region['name'],
                 region_id=region['id'],
-                single_master_button=get_button(variant + 'single-master'),
-                multi_master_button=get_button(variant + 'multi-master'))
+                single_master_button=get_button(variant_prefix + 'single-master', s3_url=s3_url),
+                multi_master_button=get_button(variant_prefix + 'multi-master', s3_url=s3_url))
 
         regular_buttons.append(button_line)
 

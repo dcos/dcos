@@ -19,6 +19,7 @@ import os
 import os.path
 import textwrap
 from copy import copy, deepcopy
+from functools import partialmethod
 from subprocess import check_call
 from tempfile import TemporaryDirectory
 
@@ -310,9 +311,9 @@ class DFSArgumentCalculator():
 
         # Filtier out all optional setters if there is more than one way to set.
         if len(feasible) > 1:
-            feasible = list(filter(lambda setter: not setter.is_optional, feasible))
-
-        assert len(feasible) > 0, "Had multiple optionals. Template internal error."
+            final_feasible = list(filter(lambda setter: not setter.is_optional, feasible))
+            assert final_feasible, "Had multiple optionals and no musts. Template internal error: {!r}".format(feasible)
+            feasible = final_feasible
 
         # Must be calculated but user tried to provide.
         if len(feasible) == 2 and (feasible[0].is_user or feasible[1].is_user):
@@ -380,10 +381,13 @@ class DFSArgumentCalculator():
             except CalculatorError as ex:
                 log.debug("Error calculating %s: %s. Chain: %s", name, ex.message, ex.chain)
 
+        assert scope.keys() <= {'sub_scopes', 'variables'}, \
+            "scope should only have variables and sub_scopes. Found: {}".format(scope)
+
         for name in scope.get('variables', set()):
             evaluate_var(name)
 
-        for name, sub_scope in scope.get('sub_scopes', 'dict').items():
+        for name, sub_scope in scope.get('sub_scopes', dict()).items():
             if name not in self._arguments:
                 evaluate_var(name)
 
@@ -614,13 +618,12 @@ class ConfigTarget():
         self.setters = dict()
         self.mandatory_parameters = mandatory_parameters
 
-    def add_setter(self, name, value, is_optional, conditions, is_user, replace_existing):
-        if replace_existing:
-            if name in self.setters:
-                del self.setters[name]
+    def add_setter(self, name, value, is_optional, conditions, is_user):
         self.setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, is_user))
 
-    def add_conditional_scope(self, scope, conditions, replace_existing):
+    add_must = partialmethod(add_setter, is_optional=False, conditions=[], is_user=False)
+
+    def add_conditional_scope(self, scope, conditions):
         # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
         # that one takes functions and one takes strings. Simplify to just 'can', 'must'.
         assert scope.keys() <= {'validate', 'default', 'must', 'conditional'}
@@ -628,20 +631,35 @@ class ConfigTarget():
         self.validate += scope.get('validate', list())
 
         for name, fn in scope.get('must', dict()).items():
-            self.add_setter(name, fn, False, conditions, False, replace_existing)
+            self.add_setter(name, fn, False, conditions, False)
 
         for name, fn in scope.get('default', dict()).items():
-            self.add_setter(name, fn, True, conditions, False, replace_existing)
+            self.add_setter(name, fn, True, conditions, False)
 
         for name, cond_options in scope.get('conditional', dict()).items():
             for value, sub_scope in cond_options.items():
-                self.add_conditional_scope(sub_scope, conditions + [(name, value)], replace_existing=replace_existing)
+                self.add_conditional_scope(sub_scope, conditions + [(name, value)])
+
+    def remove_setters(self, scope):
+        def del_setter(name):
+            if name in self.setters:
+                del self.setters[name]
+
+        for name in scope.get('must', dict()).keys():
+            del_setter(name)
+
+        for name in scope.get('default', dict()).keys():
+            del_setter(name)
+
+        for name, cond_options in scope.get('conditional', dict()).items():
+            if name in self.setters:
+                raise NotImplementedError("Should conditional setters overwrite all setters?")
 
     def add_entry(self, entry, replace_existing):
-        # TODO(cmaloney): replace_existing should only apply once for the whole set of new entries,
-        # not every time we add from it so that a new config can add multiple conditional setters
-        # for a value.
-        self.add_conditional_scope(entry, [], replace_existing=False)
+        if replace_existing:
+            self.remove_setters(entry)
+
+        self.add_conditional_scope(entry, [])
 
 
 def calculate_config_for_targets(config_targets, user_arguments):
@@ -667,6 +685,10 @@ def calculate_config_for_targets(config_targets, user_arguments):
         # TODO(cmaloney): The building of mandatory_parameters is identical to how we build it up in
         # get_parameters()
         mandatory_parameters = merge_dictionaries(mandatory_parameters, target.mandatory_parameters)
+
+    # TODO(cmaloney): Validate recursively that mandatory_parameters has the right keys and only the
+    # right keys.
+    assert mandatory_parameters.keys() == {'variables', 'sub_scopes'}
 
     # TODO(cmaloney): Re-enable this after sorting out how to have "optional" config targets which
     # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)
@@ -768,7 +790,7 @@ def get_dcosconfig_target_and_templates(user_arguments, extra_templates: list):
         config_target.add_entry(mod.entry, replace_existing=True)
 
     def add_builtin(name, value):
-        config_target.add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False, False)
+        config_target.add_must(name, json.dumps(value, **json_prettyprint_args))
 
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
@@ -796,6 +818,7 @@ def generate(
 
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
     arguments = calculate_config_for_targets([config_target], user_arguments)
+    log.debug("Final arguments:" + json.dumps(arguments, **json_prettyprint_args))
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was

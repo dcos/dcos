@@ -191,8 +191,35 @@ def test_do_configure(tmpdir):
     config_path = genconf_dir.join('config.yaml')
     config_path.write(simple_full_config)
     genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
-    tmpdir.join('artifacts/12345.bootstrap.tar.xz').write('contents_of_bootstrap', ensure=True)
-    tmpdir.join('artifacts/12345.active.json').write('{"active": "contents"}', ensure=True)
+    tmpdir.join('artifacts/bootstrap/12345.bootstrap.tar.xz').write('contents_of_bootstrap', ensure=True)
+    tmpdir.join('artifacts/bootstrap/12345.active.json').write('{"active": "contents"}', ensure=True)
 
     with tmpdir.as_cwd():
         assert backend.do_configure(config_path=str(config_path)) == 0
+
+
+aws_base_config = """---
+# NOTE: Taking advantage of what isn't talked about not being validated so we don't need valid AWS /
+# s3 credentials in this configuration.
+aws_template_storage_bucket: psychic
+aws_template_storage_bucket_path: mofo-the-gorilla
+aws_template_storage_region_name: us-west-2
+aws_template_upload: false
+"""
+
+
+def test_do_aws_configure(tmpdir, monkeypatch):
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    config_path = genconf_dir.join('config.yaml')
+    config_path.write(aws_base_config)
+    artifact_dir = tmpdir.join('artifacts/bootstrap')
+    artifact_dir.ensure(dir=True)
+    artifact_dir.join('12345.bootstrap.tar.xz').write("compressed_bootstrap_contents")
+    artifact_dir.join('12345.active.json').write("['a-package']")
+    artifact_dir.join('test_variant.bootstrap.latest').write("12345")
+    tmpdir.join('artifacts/complete/test_variant.complete.latest.json').write('{"complete": "contents"}', ensure=True)
+
+    with tmpdir.as_cwd():
+        assert backend.do_aws_cf_configure() == 0
