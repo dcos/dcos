@@ -71,7 +71,8 @@ package:
         "port": 61053,
         {{ mesos_dns_resolvers_str }},
         "timeout": 5,
-        "listener": "0.0.0.0",
+        "listener": "127.0.0.1",
+        "HTTPListener": "127.0.0.1",
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }}
       }
