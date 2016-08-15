@@ -145,8 +145,8 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     assert isinstance(dcos_overlay_network, str)
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except json.JSONDecodeError as ex:
-        assert False, "Must be a valid JSON . Errors while parsing at position {}: {}".format(ex.pos, ex.msg)
+    except ValueError:
+        assert False, "Must be valid JSON"
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -217,8 +217,8 @@ def validate_json_list(json_list):
         list_data = json.loads(json_list)
 
         assert type(list_data) is list, "Must be a JSON list. Got a {}".format(type(list_data))
-    except json.JSONDecodeError as ex:
-        assert False, "Must be a valid JSON list. Errors while parsing at position {}: {}".format(ex.pos, ex.msg)
+    except ValueError:
+        assert False, "Must be valid JSON"
 
     return list_data
 
