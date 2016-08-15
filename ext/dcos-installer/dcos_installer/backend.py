@@ -81,9 +81,9 @@ def do_upload_to_s3(config_path=CONFIG_PATH):
             log.error("Must set {} to upload templates to S3".format(e))
             return 1
 
-    cf_template_dir = '/genconf/serve/cloudformation'
+    cf_template_dir = '/genconf/serve/'
     if not os.path.exists(cf_template_dir):
-        log.error("genconf/serve/cloudformation does not exist. Try --aws-cloudformation.")
+        log.error("genconf/serve/ does not exist. Try --aws-cloudformation to generate artifacts.")
         return 1
 
     cf_files = glob.glob('{}/*'.format(cf_template_dir))
