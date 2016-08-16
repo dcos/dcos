@@ -2,11 +2,13 @@
   "min_packer_version": "0.10.1",
   "variables": {
     "cloud_builder_version": "0.1",
+    "nvidia_version": "{{env `NVIDIA_VERSION`}}",
     "deploy_regions": "{{env `DEPLOY_REGIONS`}}",
     "source_ami": "{{env `SOURCE_AMI`}}",
     "source_ami_region": "{{env `SOURCE_AMI_REGION`}}"
   },
   "builders": [{
+    "name": "builder-generic",
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": true,
@@ -44,6 +46,46 @@
     "ami_groups": [
       "all"
     ]
+  }, {
+    "name": "builder-gpu",
+    "type": "amazon-ebs",
+    "communicator": "ssh",
+    "ssh_pty": true,
+    "region": "{{user `source_ami_region`}}",
+    "source_ami": "{{user `source_ami`}}",
+    "instance_type": "g2.2xlarge",
+    "ssh_username": "centos",
+    "ami_name": "dcos-centos7-gpu-nvidia-{{user `nvidia_version`}}-{{isotime \"200601021504\"}}",
+    "ami_description": "DC/OS Cloud Image for CentOS 7, with nVidia {{user `nvidia_version`}} GPU Drivers",
+    "ami_regions": "{{user `deploy_regions`}}",
+    "ebs_optimized": true,
+    "ami_block_device_mappings": [
+      {
+        "device_name": "/dev/sde",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdf",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      }
+    ],
+    "tags": {
+      "cloud_builder_version": "{{user `cloud_builder_version`}}",
+      "nvidia_version": "{{user `nvidia_version`}}"
+    },
+    "ami_groups": [
+      "all"
+    ]
   }],
   "provisioners": [
     {
@@ -57,12 +99,39 @@
       "destination": "/tmp/install_prereqs.sh"
     },
     {
+      "type": "file",
+      "source": "install_nvidia.sh",
+      "destination": "/tmp/install_nvidia.sh",
+      "only": [ "builder-gpu" ]
+    },
+    {
       "type": "shell",
       "inline_shebang": "/bin/bash -e",
+      "override": {
+        "builder-generic": {
+          "inline": [
+            "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
+            "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_prereqs.sh",
+            "sudo /tmp/install_prereqs.sh"
+          ]
+        },
+        "builder-gpu": {
+          "inline": [
+            "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
+            "sudo mv /tmp/install_nvidia.sh /usr/local/sbin/",
+            "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /usr/local/sbin/install_nvidia.sh /tmp/install_prereqs.sh",
+            "sudo /tmp/install_prereqs.sh no-cleanup",
+            "sudo /usr/local/sbin/install_nvidia.sh prepare"
+          ]
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "inline_shebang": "/bin/bash -e",
+      "only": [ "builder-gpu" ],
       "inline": [
-        "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
-        "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_prereqs.sh",
-        "sudo /tmp/install_prereqs.sh"
+        "sudo /usr/local/sbin/install_nvidia.sh '{{user `nvidia_version`}}'"
       ]
     }
   ]
