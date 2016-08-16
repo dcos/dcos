@@ -65,7 +65,7 @@ LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-DEFAULT_AWS_REGION = 'us-west-2'
+DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
 
 REXRAY_CONFIG = """
 rexray:
