@@ -33,8 +33,7 @@ def get_gen_extra_args():
         raise KeyError
 
     arguments = {
-        'bootstrap_id': os.environ['BOOTSTRAP_ID'],
-        'provider': 'onprem'}
+        'bootstrap_id': os.environ['BOOTSTRAP_ID']}
     return arguments
 
 
@@ -42,6 +41,12 @@ def do_validate_gen_config(gen_config):
     # run validate first as this is the only way we have for now to remove "optional" keys
     gen_config.update(get_gen_extra_args())
     return gen.validate(arguments=gen_config)
+
+
+def do_adv_validate_gen_config(gen_config):
+    # run validate first as this is the only way we have for now to remove "optional" keys
+    gen_config.update(get_gen_extra_args())
+    return gen.advanced_validate(arguments=gen_config)
 
 
 def fetch_bootstrap(bootstrap_id):
