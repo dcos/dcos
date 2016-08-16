@@ -41,7 +41,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     --revive_offers_for_new_apps \\
     --zk_compression \\
     --mesos_leader_ui_url "/mesos" \\
-    --enable_features "vips,task_killing,external_volumes" \\
+    --enable_features "vips,task_killing,external_volumes,gpu_resources" \\
     --mesos_authentication_principal "dcos_marathon" \\
     --mesos_user "root"
 EOF
