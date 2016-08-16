@@ -64,6 +64,22 @@ disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
 
+# setup additional isolator detection service that is responsible for identifying additional isolators,
+# (such as GPU) and creates an EnvironmentFile that contains a MESOS_ISOLATION env variable, with
+# additional isolators APPENDED to the current environment.
+
+public_isolators_service="$PKG_PATH"/dcos.target.wants_slave_public/dcos-isolators-discovery-pub-agent.service
+mkdir -p "$(dirname ${public_isolators_service})"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-isolators-discovery-pub-agent.service > "$public_isolators_service"
+
+private_isolators_service="$PKG_PATH"/dcos.target.wants_slave/dcos-isolators-discovery-priv-agent.service
+mkdir -p "$(dirname ${private_isolators_service})"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-isolators-discovery-priv-agent.service > "$private_isolators_service"
+
+isolators_script="$PKG_PATH/bin/make_isolators.py"
+cp /pkg/extra/make_isolators.py "$isolators_script"
+chmod +x "$isolators_script"
+
 # Install slave modules.
 mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
 cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"

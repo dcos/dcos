@@ -1,0 +1,16 @@
+[Unit]
+Description=Mesos Isolator Discovery: Discovers isolators and generate mesos-isolators
+ConditionPathExists=!/var/lib/dcos/mesos-isolators
+
+[Service]
+Type=simple
+StandardOutput=journal+console
+StandardError=journal+console
+Restart=always
+StartLimitInterval=0
+RestartSec=60
+EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
+EnvironmentFile=/opt/mesosphere/etc/mesos-slave-public
+EnvironmentFile=-/var/lib/dcos/mesos-slave-common
+ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos
+ExecStart=/opt/mesosphere/bin/make_isolators.py /var/lib/dcos/mesos-isolators
