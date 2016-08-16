@@ -91,6 +91,29 @@ def configure(request):
     return resp
 
 
+def adv_configure(request):
+    """Return /api/v2/configure
+
+    :param request: a web requeest object.
+    :type request: request | None
+    """
+    if request.method == 'POST':
+        new_config = yield from request.json()
+        log.info('POST to configure: {}'.format(new_config))
+        messages = backend.create_adv_config_from_post(new_config)
+
+        resp = web.json_response(messages, status=200)
+
+        return resp
+
+    elif request.method == 'GET':
+        config = backend.get_ui_config()
+        resp = web.json_response(config)
+
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
+
 def configure_status(request):
     """Return /configure/status
 
@@ -269,6 +292,8 @@ app.router.add_route('GET', '/', root)
 app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
 app.router.add_route('GET', '/api/v{}/configure'.format(VERSION), configure)
 app.router.add_route('POST', '/api/v{}/configure'.format(VERSION), configure)
+app.router.add_route('GET', '/api/v2/configure', adv_configure)
+app.router.add_route('POST', '/api/v2/configure', adv_configure)
 app.router.add_route('GET', '/api/v{}/configure/status'.format(VERSION), configure_status)
 app.router.add_route('GET', '/api/v{}/configure/type'.format(VERSION), configure_type)
 app.router.add_route('GET', '/api/v{}/success'.format(VERSION), success)

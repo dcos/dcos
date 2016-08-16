@@ -610,11 +610,75 @@ def validate(
         }
 
 
+def advanced_validate(
+        arguments,
+        extra_templates=list(),
+        cc_package_files=list()):
+    try:
+        params = generate(
+                arguments=arguments,
+                extra_templates=extra_templates,
+                cc_package_files=cc_package_files,
+                validate_only=True,
+                output_params=True)
+        generate(
+                arguments=arguments,
+                extra_templates=extra_templates,
+                cc_package_files=cc_package_files,
+                validate_only=True)
+        return {'status': 'ok'}
+    except ValidationError as ex:
+        black_list = [
+                'bootstrap_id',
+                'expanded_config',
+                'user_arguments',
+                'template_filenames',
+                'package_names'
+                ]
+        messages = {}
+        for key, msg in ex.errors.items():
+            messages[key] = {'error': msg, 'value': params[1][key]}
+        for u in ex.unset:
+            messages[u] = {'error': 'value unset', 'value': None}
+        for p, v in params[1].items():
+            if p in gen.calc.entry['must'].keys():
+                continue
+            if p not in list(messages.keys()):
+                messages[p] = {"value": v}
+            if p in gen.calc.entry['conditional']:
+                messages[p]['options'] = list(gen.calc.entry['conditional'][p].keys())
+        for s in messages.keys():
+            if s in params[0]['sub_scopes'].keys():
+                messages[s]['options'] = list(params[0]['sub_scopes'][s].keys())
+
+        for m in list(messages.keys()):
+            if m in black_list or m.startswith('ui'):
+                del messages[m]
+                continue
+            if 'value' not in messages[m].keys():
+                continue
+            elif 'options' in messages[m].keys():
+                if 'true' in messages[m]['options'] and 'false' in messages[m]['options']:
+                    messages[m]['type'] = 'boolean'
+                    del messages[m]['options']
+                messages[m]['type'] = 'choice'
+            elif not messages[m]['value']:
+                messages[m]['value'] = None
+                messages[m]['type'] = 'text'
+            elif messages[m]['value'] in ['true', 'false']:
+                messages[m]['type'] = 'boolean'
+            else:
+                messages[m]['type'] = 'text'
+        messages['ui_groups'] = ui_groups
+        return messages
+
+
 def generate(
         arguments,
         extra_templates=list(),
         cc_package_files=list(),
-        validate_only=False):
+        validate_only=False,
+        output_params=False):
     log.info("Generating configuration files...")
 
     assert isinstance(extra_templates, list)
@@ -705,7 +769,10 @@ def generate(
     add_builtin('expanded_config', temporary_str)
 
     # Calculate the remaining arguments.
-    arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters)
+    arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters, throw_on_error=not output_params)  # noqa
+
+    if output_params:
+        return mandatory_parameters, arguments
 
     # Validate all new / calculated arguments are strings.
     validate_arguments_strings(arguments)
@@ -809,3 +876,109 @@ def generate(
         'templates': rendered_templates,
         'utils': utils
     })
+
+
+ui_groups = {
+    "onprem": [
+        {
+            "title": "Deployment Settings",
+            "rows": [
+                {
+                    "height": 2.0,
+                    "cols": [
+                        {
+                            "validation_param": "master_list",
+                            "title": "Master Private IP List",
+                            "help": "The private IP addresses of the master; should be 1, 3, 5",
+                            "uploadable": True,
+                            "hidden": False,
+                            "width-factor": 1.0,
+                            "place-holder": "Specify a comma-separated list"
+                        }
+                    ]
+                },
+                {
+                    "height": 2.0,
+                    "cols": [
+                        {
+                            "validation_param": "agent_list",
+                            "title": "Agent Private IP List",
+                            "uploadable": True,
+                            "help": "Private IP addresses of the agents",
+                            "place-holder": "Specify a comma-separated list of 1 to n IPv4 private addresses"
+                        },
+                        {
+                            "validation_param": "public_agent_list",
+                            "title": "Agent Public IP List",
+                            "help": "",
+                            "uploadable": True,
+                            "place-holder": "Specify a comma-separated list of 1 to n IPv4 public addresses"
+                        }
+                    ]
+                },
+                {
+                    "height": 1.0,
+                    "cols": [
+                        {
+                            "validation_param": "master_public_ip",
+                            "title": "Master Public IP",
+                            "place-holder": "Specify one IPv4 address."
+                        },
+                        {
+                            "validation_param": "ssh_user",
+                            "title": "SSH Usernname",
+                            "place-holder": "e.g. root, admiin, core"
+                        },
+                        {
+                            "validation_param": "ssh_port",
+                            "title": "SSH Listening Port"
+                        }
+                    ]
+                },
+                {
+                    "height": 2.0,
+                    "cols": [
+                        {
+                            "validation_param": "ssh_key",
+                            "title": "Private SSH Key",
+                            "help": "Enter the private SSH Key"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "DC/OS Environment Settings",
+            "rows": [
+                {
+                    "height": 2.0,
+                    "cols": [
+                        {
+                            "validation_param": "upstream_dns",
+                            "title": "Upstream DNS Servers"
+                        },
+                        {
+                            "validation_param": "ip_detect",
+                            "title": "IP Detect Script"
+                        }
+                    ]
+                },
+                {
+                    "height": 1.0,
+                    "cols": [
+                        {
+                            "validation_param": "telemtry_enabled",
+                            "title": "Sent Anonymous Telemetry"
+                        },
+                        {
+                            "validation_param": "auth_enabled",
+                            "title": "Enable Authentication"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "aws": [],
+    "azure": []
+}
