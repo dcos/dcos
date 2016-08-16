@@ -44,6 +44,12 @@ def do_validate_gen_config(gen_config):
     return gen.validate(arguments=gen_config)
 
 
+def do_adv_validate_gen_config(gen_config):
+    # run validate first as this is the only way we have for now to remove "optional" keys
+    gen_config.update(get_gen_extra_args())
+    return gen.advanced_validate(arguments=gen_config)
+
+
 def fetch_bootstrap(bootstrap_id):
     copy_set = [
         "{}.bootstrap.tar.xz".format(bootstrap_id),

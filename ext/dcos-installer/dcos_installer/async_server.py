@@ -20,7 +20,7 @@ log = logging.getLogger()
 
 options = None
 
-VERSION = '1'
+VERSION = '2'
 
 
 """Define the aiohttp web application framework and setup
@@ -57,7 +57,7 @@ def root(request):
 
 
 def redirect_to_root(request):
-    """Return the redirect from /api/v1 to /
+    """Return the redirect from /api/v2 to /
 
     :param request: a web requeest object.
     :type request: request | None
@@ -67,7 +67,7 @@ def redirect_to_root(request):
 
 
 def configure(request):
-    """Return /api/v1/configure
+    """Return /api/v2/configure
 
     :param request: a web requeest object.
     :type request: request | None
@@ -80,6 +80,29 @@ def configure(request):
         resp = web.json_response({}, status=200)
         if validation_err:
             resp = web.json_response(messages, status=400)
+
+        return resp
+
+    elif request.method == 'GET':
+        config = backend.get_ui_config()
+        resp = web.json_response(config)
+
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
+
+def adv_configure(request):
+    """Return /api/v2/configure
+
+    :param request: a web requeest object.
+    :type request: request | None
+    """
+    if request.method == 'POST':
+        new_config = yield from request.json()
+        log.info('POST to configure: {}'.format(new_config))
+        messages = backend.create_adv_config_from_post(new_config)
+
+        resp = web.json_response(messages, status=200)
 
         return resp
 
@@ -267,15 +290,16 @@ def no_caching(request, response):
 
 app.router.add_route('GET', '/', root)
 app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
-app.router.add_route('GET', '/api/v{}/configure'.format(VERSION), configure)
-app.router.add_route('POST', '/api/v{}/configure'.format(VERSION), configure)
+app.router.add_route('GET', '/api/v2/configure', adv_configure)
+app.router.add_route('POST', '/api/v2/configure', adv_configure)
+#app.router.add_route('POST', '/api/v2/configure/new', adv_configure)
 app.router.add_route('GET', '/api/v{}/configure/status'.format(VERSION), configure_status)
 app.router.add_route('GET', '/api/v{}/configure/type'.format(VERSION), configure_type)
 app.router.add_route('GET', '/api/v{}/success'.format(VERSION), success)
 # TODO(malnick) The regex handling in the variable routes blows up if we insert another variable to be
 # filled in by .format. Had to hardcode the VERSION into the URL for now. Fix suggestions please!
-app.router.add_route('GET', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
-app.router.add_route('POST', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
+app.router.add_route('GET', '/api/v2/action/{action_name:preflight|postflight|deploy}', action_action_name)
+app.router.add_route('POST', '/api/v2/action/{action_name:preflight|postflight|deploy}', action_action_name)
 app.router.add_route('GET', '/api/v{}/action/current'.format(VERSION), action_current)
 app.router.add_route('GET', '/api/v{}/logs'.format(VERSION), logs_handler)
 
