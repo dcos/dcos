@@ -630,6 +630,7 @@ def advanced_validate(
     except ValidationError as ex:
         black_list = [
                 'bootstrap_id',
+                'expanded_config',
                 'user_arguments',
                 'template_filenames',
                 'package_names'
@@ -639,9 +640,6 @@ def advanced_validate(
             messages[key] = {'error': msg, 'value': params[1][key]}
         for u in ex.unset:
             messages[u] = {'error': 'value unset', 'value': None}
-        for s in params[0]['sub_scopes'].keys():
-            #print(params[0]['sub_scopes'][s])
-            print(s)
         for p, v in params[1].items():
             if p in gen.calc.entry['must'].keys():
                 continue
@@ -892,8 +890,8 @@ ui_groups = {
                             "validation_param": "master_list",
                             "title": "Master Private IP List",
                             "help": "The private IP addresses of the master; should be 1, 3, 5",
-                            "uploadable": true,
-                            "hidden": false,
+                            "uploadable": True,
+                            "hidden": False,
                             "width-factor": 1.0,
                             "place-holder": "Specify a comma-separated list"
                         }
@@ -905,7 +903,7 @@ ui_groups = {
                         {
                             "validation_param": "agent_list",
                             "title": "Agent Private IP List",
-                            "uploadable": true,
+                            "uploadable": True,
                             "help": "Private IP addresses of the agents",
                             "place-holder": "Specify a comma-separated list of 1 to n IPv4 private addresses"
                         },
@@ -913,7 +911,7 @@ ui_groups = {
                             "validation_param": "public_agent_list",
                             "title": "Agent Public IP List",
                             "help": "",
-                            "uploadable": true,
+                            "uploadable": True,
                             "place-holder": "Specify a comma-separated list of 1 to n IPv4 public addresses"
                         }
                     ]
