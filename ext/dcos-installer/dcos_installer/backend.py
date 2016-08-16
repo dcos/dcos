@@ -135,6 +135,71 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     return validation_err, post_data_validation
 
 
+def create_adv_config_from_post(post_data={}, config_path=CONFIG_PATH):
+    """Returns error code and validation messages for only keys POSTed
+    to the UI.
+
+    :param config_path: path to config.yaml
+    :type config_path: string | CONFIG_PATH (/genconf/config.yaml)
+
+    :param post_data: data from POST to UI
+    :type post_data: dict | {}
+    """
+    log.info("Creating new DCOSConfig object from POST data.")
+
+    if 'ssh_key' in post_data:
+        write_external_config(post_data['ssh_key'], SSH_KEY_PATH, mode=0o600)
+
+    if 'ip_detect_script' in post_data:
+        write_external_config(post_data['ip_detect_script'], IP_DETECT_PATH)
+
+    if 'rexray_config' in post_data:
+        post_data['rexray_config_method'] = 'file'
+        post_data['rexray_config_filename'] = REXRAY_CONFIG_PATH
+        write_external_config(post_data['rexray_config'], REXRAY_CONFIG_PATH)
+
+    # TODO (malnick) remove when UI updates are complete
+    post_data = remap_post_data_keys(post_data)
+    # Create a new configuration object, pass it the config.yaml path and POSTed dictionary.
+    # Add in "hidden config" we don't present in the config.yaml, and then create a meta
+    # validation dictionary from gen and ssh validation libs.
+    # We do not use the already built methods for this since those are used to read the
+    # coniguration off disk, here we need to validate the configuration overridees, and
+    # return the key and message for the POSTed parameter.
+    config = DCOSConfig(config_path=config_path, overrides=post_data)
+    config.get_hidden_config()
+    config.update(config.hidden_config)
+    #validation_messages = {}
+    #ssh_messages = validate_ssh.validate_config(config)
+    gen_messages = configure.do_adv_validate_gen_config(config.stringify_configuration())
+    #validation_messages.update(ssh_messages)
+    #validation_messages.update(gen_messages)
+    #validation_messages = remap_validation_keys(validation_messages)
+
+    # Return only keys sent in POST, do not write if validation
+    # of config fails.
+    #validation_err = False
+
+    # Create a dictionary of validation that only includes
+    # the messages from keys POSTed for validation.
+    #post_data_validation = {key: validation_messages[key] for key in validation_messages if key in post_data}
+
+    # If validation is successful, write the data to disk, otherwise, if
+    # they keys POSTed failed, do not write to disk.
+    #if post_data_validation is not None and len(post_data_validation) > 0:
+    #    log.error("POSTed configuration has errors, not writing to disk.")
+    #    for key, value in post_data_validation.items():
+    #3        log.error('{}: {}'.format(key, value))
+    #    validation_err = True
+
+    #else:
+    log.debug("Success! POSTed configuration looks good, writing to disk.")
+    config.config_path = config_path
+    config.write()
+
+    return gen_messages
+
+
 def do_validate_config(config_path=CONFIG_PATH):
     """Returns complete validation messages from both
     SSH and Gen libraries.
