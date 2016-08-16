@@ -1,0 +1,9 @@
+{
+  "requires": ["python"],
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-cli.git",
+    "ref": "89d39d4a0ce56f023460bb8cfa7d2ea9d7f5caa4",
+    "ref_origin": "0.4.10"
+  }
+}

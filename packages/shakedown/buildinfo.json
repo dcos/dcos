@@ -1,0 +1,9 @@
+{
+  "requires": ["python", "libffi", "python-crpytography", "dcos-cli"],
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/shakedown.git",
+    "ref": "84d45bb043774df2c0f6cbead5d8017e746efc77",
+    "ref_origin": "master"
+  }
+}
