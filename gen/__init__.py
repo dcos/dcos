@@ -968,11 +968,11 @@ ui_groups = {
                     "cols": [
                         {
                             "validation_param": "telemtry_enabled",
-                            "title": "Sent Anonymous Telemetry"
+                            "title": "Enable/Disable Sending Anonymous Telemetry"
                         },
                         {
                             "validation_param": "auth_enabled",
-                            "title": "Enable Authentication"
+                            "title": "Enable/Disable Authentication"
                         }
                     ]
                 }
