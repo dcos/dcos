@@ -49,6 +49,10 @@ def main(output_env_file):
         if isolators:
             isolators += ','
 
+        # Make sure we have a cgroups/devices before nvidia
+        if not 'cgroups/devices' in isolators:
+          isolators += 'cgroups/devices,'
+
         # Append gpu/nvidia
         isolators += 'gpu/nvidia'
 
