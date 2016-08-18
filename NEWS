@@ -12,7 +12,7 @@ Documentation of changes which may break some install environments
  - Zookeeper should now log to journald
  - dcos-history-serivce was renamed to dcos-history
  - dcos-ddt.service was renamed to dcos-3dt.service
- - Updated to CoreOS Beta 1068.
+ - Updated to CoreOS Stable 1068.9.0
  - Make the admin load balancer in all templates do TCP, not HTTP load balancing
  - Switch Ubuntu in Azure to 16.04 LTS final release
  - Teach spartan / DNS to only listen on a local internal address
