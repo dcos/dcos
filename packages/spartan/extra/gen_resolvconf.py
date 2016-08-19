@@ -76,8 +76,17 @@ else:
 
 # Generate the resolv.conf config
 print('Updating {}'.format(resolvconf_path))
-with open(resolvconf_path, 'w') as f:
+with open(resolvconf_path + ".tmp", 'w') as f:
     print(contents, file=sys.stderr)
     f.write(contents)
+
+# Move the temp file into place. This also takes care of
+# making the file at resolvconf_path not a symlink if it
+# was one (writing directly we would just update the
+# target of the symlink). systemd-resolved updates the
+# target of the symlink itself though, which results in fun
+# conflicting things like https://dcosjira.atlassian.net/browse/DCOS-305
+
+os.rename(resolvconf_path + ".tmp", resolvconf_path)
 
 sys.exit(0)
