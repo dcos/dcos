@@ -1,4 +1,5 @@
 import collections
+import copy
 import logging
 import os
 import uuid
@@ -307,29 +308,21 @@ class Cluster:
         url = urlunparse([self.scheme, ':'.join([node, str(port)]), path, None, None, None])
         return requests.get(url, params=params, headers=hdrs, **kwargs)
 
-    def get_base_testapp_definition(self, docker_network_bridge=True, ip_per_container=False):
+    def get_test_app(self, custom_port=False):
         test_uuid = uuid.uuid4().hex
-        test_server_cmd = '/opt/mesosphere/bin/python /opt/mesosphere/active/dcos-integration-test/test_server.py'
-        base_app = {
+        app = copy.deepcopy({
             'id': TEST_APP_NAME_FMT.format(test_uuid),
-            'container': {
-                'type': 'DOCKER',
-                'docker': {
-                    'image': 'python:3.4.3-slim',
-                    'forcePullImage': True,
-                },
-                'volumes': [{
-                    'containerPath': '/opt/mesosphere',
-                    'hostPath': '/opt/mesosphere',
-                    'mode': 'RO'
-                }],
-            },
-            'cmd': test_server_cmd+' 9080',
             'cpus': 0.1,
-            'mem': 64,
+            'mem': 32,
             'instances': 1,
-            'healthChecks':
-            [
+            # NOTE: uses '.' rather than `source`, since `source` only exists in bash and this is
+            # run by sh
+            'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
+                   '/opt/mesosphere/active/dcos-integration-test/test_server.py ',
+            'env': {
+                'DCOS_TEST_UUID': test_uuid
+            },
+            'healthChecks': [
                 {
                     'protocol': 'HTTP',
                     'path': '/ping',
@@ -340,35 +333,65 @@ class Cluster:
                     'maxConsecutiveFailures': 3
                 }
             ],
-            'env': {
-                'DCOS_TEST_UUID': test_uuid,
-                'PYTHONPATH': '/opt/mesosphere/lib/python3.4/site-packages'
+        })
+
+        if not custom_port:
+            app['cmd'] += '$PORT0'
+            app['portDefinitions'] = [{
+                "protocol": "tcp",
+                "port": 0,
+                "name": "test"
+            }]
+
+        return app, test_uuid
+
+    def get_test_app_in_docker(self, ip_per_container):
+        app, test_uuid = self.get_test_app(custom_port=True)
+        assert 'portDefinitions' not in app
+        app['cmd'] += '9080'  # Fixed port for inside bridge networking or IP per container
+        app['container'] = {
+            'type': 'DOCKER',
+            'docker': {
+                # TODO(cmaloney): Switch to alpine with glibc
+                'image': 'debian:jessie',
+                'portMappings': [{
+                    'hostPort': 0,
+                    'containerPort': 9080,
+                    'protocol': 'tcp',
+                    'name': 'test',
+                    'labels': {}
+                }],
+
             },
+            'volumes': [{
+                'containerPath': '/opt/mesosphere',
+                'hostPath': '/opt/mesosphere',
+                'mode': 'RO'
+            }]
         }
 
-        if docker_network_bridge:
-            base_app['container']['docker']['portMappings'] = [{
-                                                                    'hostPort': 0,
-                                                                    'containerPort': 9080,
-                                                                    'protocol': 'tcp',
-                                                                    'name': 'test',
-                                                                    'labels': {}
-                                                                }]
-            if ip_per_container:
-                base_app['container']['docker']['network'] = 'USER'
-                base_app['ipAddress'] = {'networkName': 'dcos'}
-            else:
-                base_app['container']['docker']['network'] = 'BRIDGE'
+        if ip_per_container:
+            app['container']['docker']['network'] = 'USER'
+            app['ipAddress'] = {'networkName': 'dcos'}
         else:
-            base_app['cmd'] = test_server_cmd + ' $PORT0'
-            base_app['portDefinitions'] = [{
-                                                "protocol": "tcp",
-                                                "port": 0,
-                                                "name": "test"
-                                            }]
-            base_app['container']['docker']['network'] = 'HOST'
+            app['container']['docker']['network'] = 'BRIDGE'
 
-        return base_app, test_uuid
+        return app, test_uuid
+
+    def deploy_test_app_and_check(self, app, test_uuid):
+        service_points = self.deploy_marathon_app(app)
+        r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
+                                                         service_points[0].port))
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            pytest.fail(msg.format(r.status_code, r.reason, r.text))
+
+        r_data = r.json()
+
+        assert r_data['test_uuid'] == test_uuid
+
+        self.destroy_marathon_app(app['id'])
 
     def deploy_marathon_app(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
