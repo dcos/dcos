@@ -96,11 +96,6 @@ package:
   - path: /etc/overlay/config/master.json
     content: |
       {
-        "zk":
-        {
-          "url": "zk://127.0.0.1:2181/mesos",
-          "quorum": {{ master_quorum }}
-        },
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
         "network": {{ dcos_overlay_network }}
        }
@@ -113,7 +108,6 @@ package:
   - path: /etc/overlay/config/agent.json
     content: |
       {
-        "master": "zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos",
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
         "network_config":
         {
@@ -126,7 +120,6 @@ package:
   - path: /etc/overlay/config/agent-master.json
     content: |
       {
-        "master": "zk://127.0.0.1:2181/mesos",
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
         "network_config" :
         {
