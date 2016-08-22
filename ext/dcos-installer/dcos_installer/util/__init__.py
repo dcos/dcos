@@ -8,6 +8,8 @@ REXRAY_CONFIG_PATH = '/genconf/rexray.yaml'
 SERVE_DIR = '/genconf/serve'
 STATE_DIR = '/genconf/state'
 GENCONF_DIR = '/genconf'
+CA_CERTIFICATE_PATH = '/genconf/ca_certificate'
+CA_KEY_PATH = '/genconf/ca_key'
 
 log = logging.getLogger(__name__)
 
