@@ -48,10 +48,26 @@ systemd_agent_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter
 mkdir -p "$(dirname "$systemd_agent_public")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent_public"
 
-systemd_reload="$PKG_PATH"/dcos.target.wants/dcos-adminrouter-reload.service
+systemd_reload="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.service
 mkdir -p "$(dirname "$systemd_reload")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.service > "$systemd_reload"
 
-systemd_timer="$PKG_PATH"/dcos.target.wants/dcos-adminrouter-reload.timer
+systemd_timer="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.timer
+mkdir -p "$(dirname "$systemd_timer")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
+
+systemd_reload="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent-reload.service
+mkdir -p "$(dirname "$systemd_reload")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent-reload.service > "$systemd_reload"
+
+systemd_reload="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent-reload.service
+mkdir -p "$(dirname "$systemd_reload")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent-reload.service > "$systemd_reload"
+
+systemd_timer="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent-reload.timer
+mkdir -p "$(dirname "$systemd_timer")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
+
+systemd_timer="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent-reload.timer
 mkdir -p "$(dirname "$systemd_timer")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
