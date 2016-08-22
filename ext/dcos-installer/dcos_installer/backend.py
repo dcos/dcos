@@ -10,7 +10,13 @@ from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
 from dcos_installer.config import DCOSConfig
-from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
+from dcos_installer.util import (
+    CONFIG_PATH,
+    SSH_KEY_PATH,
+    IP_DETECT_PATH,
+    REXRAY_CONFIG_PATH,
+    CA_CERTIFICATE_PATH,
+    CA_KEY_PATH)
 
 import ssh.validate as validate_ssh
 
@@ -87,6 +93,12 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
 
     if 'ip_detect_script' in post_data:
         write_external_config(post_data['ip_detect_script'], IP_DETECT_PATH)
+
+    if 'ca_certificate' in post_data:
+        write_external_config(post_data['ca_certificate'], CA_CERTIFICATE_PATH)
+
+    if 'ca_key' in post_data:
+        write_external_config(post_data['ca_key'], CA_KEY_PATH)
 
     if 'rexray_config' in post_data:
         post_data['rexray_config_method'] = 'file'
