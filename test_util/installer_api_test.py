@@ -146,12 +146,14 @@ class DcosApiInstaller(AbstractDcosInstaller):
                 add_config = yaml.load(fh)
             payload.update(add_config)
         response = requests.post(self.url + '/api/v1/configure', headers=headers, data=json.dumps(payload))
-        assert response.status_code == 200
-        response_json_keys = list(response.json().keys())
         if expect_errors:
-            assert "error" in response_json_keys
+            print("expect errors")
+            print(response.json())
+            print(json.dumps(payload))
+            print(response.status_code)
+            assert response.status_code != 200, response.json()
         else:
-            assert "error" not in response_json_keys
+            assert response.status_code == 200, response.json()
 
     def install_prereqs(self, expect_errors=False):
         assert not self.offline_mode, "Install prereqs can only be run without --offline mode"

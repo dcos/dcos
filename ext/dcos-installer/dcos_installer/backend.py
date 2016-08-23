@@ -122,13 +122,13 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     # If validation is successful, write the data to disk, otherwise, if
     # they keys POSTed failed, do not write to disk.
     if post_data_validation is not None and len(post_data_validation) > 0:
-        log.error("POSTed configuration has errors, not writing to disk.")
+        log.error("Configuration has errors.")
         for key, value in post_data_validation.items():
             log.error('{}: {}'.format(key, value))
         validation_err = True
 
     else:
-        log.debug("Success! POSTed configuration looks good, writing to disk.")
+        log.debug("Success! Configuration looks good.")
         config.config_path = config_path
         config.write()
 

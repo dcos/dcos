@@ -206,5 +206,5 @@ def dispatch(args):
             )
         sys.exit(1 if errors > 0 else 0)
 
-    print("Internal Error: No known way to dispatch {}".format(args.action))
+    log.error("Internal Error: No known way to dispatch {}".format(args.action))
     sys.exit(1)

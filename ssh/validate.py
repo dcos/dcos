@@ -2,6 +2,8 @@ import os
 import socket
 import stat
 
+from subprocess import DEVNULL, STDOUT, CalledProcessError, check_call
+
 
 def validate_ssh_user(ssh_user):
     assert ssh_user, 'ssh_user must be set'
@@ -19,6 +21,14 @@ def validate_ssh_key_path(ssh_key_path):
     with open(ssh_key_path) as fh:
         assert 'ENCRYPTED' not in fh.read(), ('Encrypted SSH keys (which contain passphrases) '
                                               'are not allowed. Use a key without a passphrase.')
+    # Validate this is not a public SSH key by attempting to get the public key fingerprint
+    try:
+        check_call(['ssh-keygen', '-l', '-f', ssh_key_path], stdout=DEVNULL, stderr=STDOUT)
+    except CalledProcessError:
+        # We expect the fingerprint to fail if this is not a public SSH key.
+        pass
+    else:
+        assert False, 'Public SSH key detected. Must use a private key.'
 
 
 def validate_ssh_port(ssh_port):
