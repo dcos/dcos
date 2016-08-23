@@ -66,7 +66,7 @@ def test_ip_per_container(cluster):
         app_definition['constraints'] = [['hostname', 'UNIQUE']]
     else:
         logging.warning('The IP Per Container tests needs 2 (private) agents to work')
-    service_points = cluster.deploy_marathon_app(app_definition, check_health=False)
+    service_points = cluster.deploy_marathon_app(app_definition, check_health=True)
     app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
     cmd = '/opt/mesosphere/bin/curl -s -f http://{}:{}/ping'.format(service_points[1].ip, app_port)
     ensure_routable(cmd, service_points)()
