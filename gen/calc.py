@@ -18,6 +18,9 @@ from pkgpanda.build import hash_checkout
 AWS_REXRAY_CONFIG = """
 rexray:
   loglevel: info
+  modules:
+    default-admin:
+      host: tcp://127.0.0.1:61003
   storageDrivers:
     - ec2
   volume:
@@ -29,6 +32,8 @@ DEFAULT_REXRAY_CONFIG = """
 rexray:
   loglevel: info
   modules:
+    default-admin:
+      host: tcp://127.0.0.1:61003
     default-docker:
       disabled: true
 """
