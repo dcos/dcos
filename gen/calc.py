@@ -36,14 +36,12 @@ def calulate_dcos_image_commit():
 def calculate_resolvers_str(resolvers):
     # Validation because accidentally slicing a string instead of indexing a
     # list of resolvers then finding out at cluster launch is painful.
-    assert isinstance(resolvers, str)
     resolvers = json.loads(resolvers)
     assert isinstance(resolvers, list)
     return ",".join(resolvers)
 
 
 def calculate_mesos_dns_resolvers_str(resolvers):
-    assert isinstance(resolvers, str)
     resolver_list = json.loads(resolvers)
 
     # Mesos-DNS unfortunately requires completley different config parameters
@@ -72,7 +70,6 @@ def calculate_ip_detect_public_contents(ip_detect_contents):
 
 
 def calculate_rexray_config_contents(rexray_config):
-    assert isinstance(rexray_config, str)
     return yaml.dump(
         # Assume block style YAML (not flow) for REX-Ray config.
         yaml.dump(json.loads(rexray_config), default_flow_style=False)
@@ -127,7 +124,6 @@ def validate_dcos_overlay_mtu(dcos_overlay_mtu):
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
-    assert isinstance(dcos_overlay_network, str)
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError:
