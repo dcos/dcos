@@ -20,6 +20,8 @@ root:
     content: |
       [Journal]
       MaxLevelConsole=warning
+      RateLimitInterval=1s
+      RateLimitBurst=20000
   - path: /etc/rexray/config.yml
     permissions: "0644"
     content: {{ rexray_config_contents }}
