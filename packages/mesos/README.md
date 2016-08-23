@@ -6,3 +6,4 @@
 <H2>Patches to cherry-pick from mesosphere/mesos on top of open source Apache Mesos 1.0:</h2>
 <li>[377bb78a1ca109447201f9d0909afcd91fdc8fda] Removed `O_SYNC` from StatusUpdateManager. (landing in 1.1.0)
 <li>[e8c81c1c5684079890dae24e0dce2806aff507a7] Added flag in logrotate module to control number of libprocess threads. (landing in 1.1.0)
+<li>[e444edd6e7d45eb842fe223ac484a4bc4c1a327a] Allowed all flags load methods to specify a prefix. (landing in 1.1.0)
