@@ -115,7 +115,8 @@ package:
           "mesos_bridge": true,
           "docker_bridge": true,
           "overlay_mtu": {{ dcos_overlay_mtu }}
-        }
+        },
+        "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
        }
   - path: /etc/overlay/config/agent-master.json
     content: |
@@ -127,7 +128,8 @@ package:
           "mesos_bridge": false,
           "docker_bridge": true,
           "overlay_mtu": {{ dcos_overlay_mtu }}
-        }
+        },
+        "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
 {% switch dcos_overlay_enable %}
 {% case "true" %}
