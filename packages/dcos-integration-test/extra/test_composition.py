@@ -137,11 +137,9 @@ def test_signal_service(cluster):
         'spartan-watchdog-service',
         'spartan-watchdog-timer']
     slave_units = [
-        'mesos-slave-service',
-        'vol-discovery-priv-agent-service']
+        'mesos-slave-service']
     public_slave_units = [
-        'mesos-slave-public-service',
-        'vol-discovery-pub-agent-service']
+        'mesos-slave-public-service']
     all_slave_units = [
         '3dt-socket',
         'adminrouter-agent-service',
