@@ -73,7 +73,7 @@ class SSHTunnel():
                 return check_output(run_cmd, timeout=timeout)
         except TimeoutExpired as e:
             logging.exception('{} timed out after {} seconds'.format(cmd, timeout))
-            logging.debug('Timed out process output:\n' + e.output)
+            logging.debug('Timed out process output:\n' + e.output.decode())
             raise
 
     def write_to_remote(self, src, dst):
