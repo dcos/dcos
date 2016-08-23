@@ -1,4 +1,5 @@
 import aiohttp
+import gen.calc
 from dcos_installer.async_server import app
 from webtest_aiohttp import TestApp
 
@@ -32,6 +33,14 @@ def test_redirect_to_root(monkeypatch):
             assert res.location == expected[2], '{}: {}'.format(
                 method,
                 expected)
+
+
+def test_get_version(monkeypatch):
+    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
+    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+    route = '/api/v{}/version'.format(version)
+    res = client.request(route, method='GET')
+    assert res.json == {'version': gen.calc.entry['must']['dcos_version']}
 
 
 def test_configure(monkeypatch, mocker):

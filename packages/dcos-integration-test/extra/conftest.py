@@ -177,6 +177,18 @@ class Cluster:
             assert "id" in data
             assert data["id"] == slave_id
 
+    @retrying.retry(wait_fixed=2000,
+                    retry_on_result=lambda r: r is False,
+                    retry_on_exception=lambda _: False)
+    def _wait_for_metronome(self):
+        r = self.get('/service/metronome/v1/jobs')
+        # 500 and 504 are the expected behavior of a service
+        # backend that is not up and running.
+        if r.status_code == 500 or r.status_code == 504:
+            logging.info("Metronome gateway timeout, continue waiting for backend...")
+            return False
+        assert r.status_code == 200
+
     def _wait_for_DCOS(self):
         self._wait_for_leader_election()
         self._wait_for_adminrouter_up()
@@ -185,6 +197,7 @@ class Cluster:
         self._wait_for_slaves_to_join()
         self._wait_for_DCOS_history_up()
         self._wait_for_srouter_slaves_endpoints()
+        self._wait_for_metronome()
 
     def _authenticate(self):
         if self.auth_enabled:

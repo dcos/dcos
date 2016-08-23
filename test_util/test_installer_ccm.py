@@ -70,6 +70,9 @@ DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
 REXRAY_CONFIG = """
 rexray:
   loglevel: info
+  modules:
+    default-admin:
+      host: tcp://127.0.0.1:61003
   storageDrivers:
     - ec2
   volume:

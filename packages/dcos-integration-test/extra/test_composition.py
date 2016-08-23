@@ -111,6 +111,8 @@ def test_signal_service(cluster):
     # Insert all the diagnostics data programmatically
     master_units = [
         'adminrouter-service',
+        'adminrouter-reload-service',
+        'adminrouter-reload-timer',
         'cosmos-service',
         'exhibitor-service',
         'history-service',
@@ -122,8 +124,6 @@ def test_signal_service(cluster):
         'metronome-service',
         'signal-service']
     all_node_units = [
-        'adminrouter-reload-service',
-        'adminrouter-reload-timer',
         '3dt-service',
         'epmd-service',
         'gen-resolvconf-service',
@@ -137,14 +137,14 @@ def test_signal_service(cluster):
         'spartan-watchdog-service',
         'spartan-watchdog-timer']
     slave_units = [
-        'mesos-slave-service',
-        'vol-discovery-priv-agent-service']
+        'mesos-slave-service']
     public_slave_units = [
-        'mesos-slave-public-service',
-        'vol-discovery-pub-agent-service']
+        'mesos-slave-public-service']
     all_slave_units = [
         '3dt-socket',
         'adminrouter-agent-service',
+        'adminrouter-agent-reload-service',
+        'adminrouter-agent-reload-timer',
         'logrotate-agent-service',
         'logrotate-agent-timer',
         'rexray-service']

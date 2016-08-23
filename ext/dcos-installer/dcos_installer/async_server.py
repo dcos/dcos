@@ -9,6 +9,7 @@ import pkg_resources
 from aiohttp import web
 
 import dcos_installer
+import gen.calc
 from dcos_installer import backend
 from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer.util import STATE_DIR
@@ -64,6 +65,12 @@ def redirect_to_root(request):
     """
     log.warning("/api/v{} -> redirecting -> /".format(VERSION))
     return web.HTTPFound('/'.format(VERSION))
+
+
+def get_version(args):
+    resp = web.json_response({'version': gen.calc.entry['must']['dcos_version']})
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
 
 
 def configure(request):
@@ -267,6 +274,7 @@ def no_caching(request, response):
 
 app.router.add_route('GET', '/', root)
 app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
+app.router.add_route('GET', '/api/v{}/version'.format(VERSION), get_version)
 app.router.add_route('GET', '/api/v{}/configure'.format(VERSION), configure)
 app.router.add_route('POST', '/api/v{}/configure'.format(VERSION), configure)
 app.router.add_route('GET', '/api/v{}/configure/status'.format(VERSION), configure_status)
