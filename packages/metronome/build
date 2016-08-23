@@ -10,12 +10,13 @@ mkdir -p $(dirname "$metronome_service")
 cat <<EOF > "$metronome_service"
 [Unit]
 Description=Jobs Service: DC/OS Metronome
-After=dcos-mesos-master.service
 
 [Service]
+User=dcos_metronome
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/metronome
 EnvironmentFile=-/run/dcos/etc/metronome/service.env
