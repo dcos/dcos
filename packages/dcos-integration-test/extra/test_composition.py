@@ -8,7 +8,7 @@ import kazoo.client
 import requests
 
 
-def test_if_all_Mesos_masters_have_registered(cluster):
+def test_if_all_mesos_masters_have_registered(cluster):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
     zk = kazoo.client.KazooClient(hosts=cluster.zk_hostports, read_only=True)

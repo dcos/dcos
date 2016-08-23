@@ -66,7 +66,7 @@ class Cluster:
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
-    def _wait_for_Marathon_up(self):
+    def _wait_for_marathon_up(self):
         r = self.get('/marathon/ui/')
         # resp_code >= 500 -> backend is still down probably
         if r.status_code < 500:
@@ -103,7 +103,7 @@ class Cluster:
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
-    def _wait_for_DCOS_history_up(self):
+    def _wait_for_dcos_history_up(self):
         r = self.get('/dcos-history-service/ping')
         # resp_code >= 500 -> backend is still down probably
         if r.status_code <= 500:
@@ -189,13 +189,13 @@ class Cluster:
             return False
         assert r.status_code == 200
 
-    def _wait_for_DCOS(self):
+    def _wait_for_dcos(self):
         self._wait_for_leader_election()
         self._wait_for_adminrouter_up()
         self._authenticate()
-        self._wait_for_Marathon_up()
+        self._wait_for_marathon_up()
         self._wait_for_slaves_to_join()
-        self._wait_for_DCOS_history_up()
+        self._wait_for_dcos_history_up()
         self._wait_for_srouter_slaves_endpoints()
         self._wait_for_metronome()
 
@@ -260,7 +260,7 @@ class Cluster:
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
-        self._wait_for_DCOS()
+        self._wait_for_dcos()
 
     @staticmethod
     def _marathon_req_headers():
