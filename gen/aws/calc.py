@@ -41,7 +41,6 @@ entry = {
         'cloud_config': '{{ cloud_config }}',
         'oauth_available': 'true',
         'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
-        # Use IAM Instance profile for auth
-        'rexray_config_method': 'aws'
+        'rexray_config_preset': 'aws'
     }
 }

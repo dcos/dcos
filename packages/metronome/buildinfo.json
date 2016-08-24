@@ -4,5 +4,7 @@
     "kind": "url_extract",
     "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.8/metronome-0.1.8.tgz",
     "sha1": "fd54079a94add7bcfbf2624799208ab3b055a8e7"
-  }
+  },
+  "username": "dcos_metronome",
+  "state_directory": true
 }

@@ -4,7 +4,7 @@ import pytest
 import requests
 
 
-def test_if_Marathon_app_can_be_deployed(cluster):
+def test_if_marathon_app_can_be_deployed(cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -35,7 +35,7 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     cluster.destroy_marathon_app(app_definition['id'])
 
 
-def test_if_Marathon_app_can_be_deployed_with_Mesos_containerizer(cluster):
+def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     """Marathon app deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon app using the Mesos containerizer with
