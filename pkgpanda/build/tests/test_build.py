@@ -145,6 +145,8 @@ def test_bootstrap(tmpdir):
                 './bin/',
                 './bin/mesos-master',
                 './etc/',
+                './etc/dcos-service-configuration.json',
+                './lib/',
                 './lib/',
                 './lib/libmesos.so',
                 './include/'}

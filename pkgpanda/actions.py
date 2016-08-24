@@ -1,18 +1,22 @@
 import collections
+import logging
 import os
 import sys
 from functools import partial
-from subprocess import check_call
+from subprocess import CalledProcessError, check_call
 
 from pkgpanda import PackageId, requests_fetcher
+from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
+                                SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (extract_tarball, if_exists, load_json, load_string,
                            write_string)
 
-
 DCOS_TARGET_CONTENTS = """[Install]
 WantedBy=multi-user.target
 """
+
+log = logging.getLogger(__name__)
 
 
 def activate_packages(install, repository, package_ids, systemd, block_systemd):
@@ -274,3 +278,24 @@ def _do_bootstrap(install, repository):
 def _copy_fetcher(setup_pkg_dir, id_, target):
     src_pkg_path = os.path.join(setup_pkg_dir, id_) + "/"
     check_call(["cp", "-rp", src_pkg_path, target])
+
+
+def _apply_sysctl(setting, service):
+    try:
+        check_call(["sysctl", "-q", "-w", setting])
+    except CalledProcessError:
+        log.warning("sysctl {setting} not set for {service}".format(setting=setting, service=service))
+
+
+def _apply_sysctl_settings(sysctl_settings, service):
+    for setting, value in sysctl_settings.get(service, {}).items():
+        _apply_sysctl("{setting}={value}".format(setting=setting, value=value), service)
+
+
+def apply_service_configuration(service):
+    if not os.path.exists(DCOS_SERVICE_CONFIGURATION_PATH):
+        return
+
+    dcos_service_properties = load_json(DCOS_SERVICE_CONFIGURATION_PATH)
+    if SYSCTL_SETTING_KEY in dcos_service_properties:
+        _apply_sysctl_settings(dcos_service_properties[SYSCTL_SETTING_KEY], service)
