@@ -310,7 +310,12 @@ def _add_prereqs_script(chain):
 # setenforce is in this path
 PATH=$PATH:/sbin
 
-dist=$(cat /etc/*-release | sed -n 's@^ID="\(.*\)"$@\\1@p')
+dist=$(cat /etc/os-release | sed -n 's@^ID="\(.*\)"$@\\1@p')
+
+if ([ x$dist == 'xcoreos' ]); then
+  echo "Detected CoreOS. All prerequisites already installed" >&2
+  exit 0
+fi
 
 if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ]); then
   echo "$dist is not supported. Only RHEL and CentOS are supported" >&2
