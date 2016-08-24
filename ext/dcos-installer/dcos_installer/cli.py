@@ -30,20 +30,6 @@ def setup_logger(options):
     log.debug("Logger set to DEBUG")
 
 
-def start_installer(args):
-    """
-    The web based installer leverages Flask to present end-users of
-    dcos_installer with a clean web interface to configure their
-    site-based installation of DC/OS.
-    """
-    # If no args are passed to the class, then we're calling this
-    # class from another library or code so we shouldn't execute
-    # parser or anything else
-    options = parse_args(args)
-    setup_logger(options)
-    dcos_installer.cli_dispatcher.dispatch(options)
-
-
 def parse_args(args):
     """
     Parse CLI arguments and return a map of options.
@@ -98,15 +84,19 @@ def parse_args(args):
     for name, value in dcos_installer.cli_dispatcher.dispatch_dict_aio.items():
         add_mode(name, value[1])
 
-    options = parser.parse_args(args)
-    return options
+    return parser.parse_args(args)
 
 
 def main():
     if len(sys.argv) == 1:
-        start_installer(["--genconf"])
+        args = ["--genconf"]
     else:
-        start_installer(sys.argv[1:])
+        args = sys.argv[1:]
+
+    options = parse_args(args)
+    setup_logger(options)
+    dcos_installer.cli_dispatcher.dispatch(options)
+
 
 if __name__ == '__main__':
     main()
