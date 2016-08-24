@@ -777,7 +777,10 @@ class IdBuilder():
         return self._buildinfo
 
 
-def build(package_store, name, variant, clean_after_build, recursive=False):
+def build(package_store, name, variant, clean_after_build, recursive=False):  # noqa: C901
+    # C901: Ignoring because is is a very long very linear thing. Should definitely work on
+    # factoring into more testable chunks over time but it's to big a job for blocking keeping out
+    # new overly complex stuff.
     assert isinstance(package_store, PackageStore)
     print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
