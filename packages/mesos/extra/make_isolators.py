@@ -4,8 +4,10 @@ import os
 import subprocess
 import sys
 
+
 class IsolatorDiscoveryException(Exception):
         pass
+
 
 def has_nvidia():
     """
@@ -20,7 +22,7 @@ def has_nvidia():
         return False
 
     # Try to run it
-    proc = subprocess.Popen([ nvidia_smi_binary, '-L' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen([nvidia_smi_binary, '-L'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Wait for stdout/err
     (stdout, stderr) = proc.communicate()
@@ -32,6 +34,7 @@ def has_nvidia():
 
     # Everything looks good
     return True
+
 
 def main(output_env_file):
     """
@@ -50,8 +53,8 @@ def main(output_env_file):
             isolators += ','
 
         # Make sure we have a cgroups/devices before nvidia
-        if not 'cgroups/devices' in isolators:
-          isolators += 'cgroups/devices,'
+        if 'cgroups/devices' not in isolators:
+            isolators += 'cgroups/devices,'
 
         # Append gpu/nvidia
         isolators += 'gpu/nvidia'
@@ -59,6 +62,7 @@ def main(output_env_file):
     # Create environment script
     with open(output_env_file, 'w') as f:
         f.write('MESOS_ISOLATION=%s\n' % isolators)
+
 
 if __name__ == '__main__':
         try:
