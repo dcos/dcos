@@ -7,10 +7,10 @@ import os
 import random
 import sys
 
-
 from dcos_internal_utils import bootstrap
 from dcos_internal_utils import exhibitor
 
+from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ def main():
         if service not in bootstrappers:
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
+        apply_service_configuration(service)
         log.debug('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 

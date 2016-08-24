@@ -22,6 +22,7 @@ EnvironmentFile=/opt/mesosphere/config/mesos-slave-config
     - No conflicting `systemd` names
     - No conflicting executable names
     - No conflicting environment variables
+    - No conflicting `sysctl` settings
 2. Archive old packages
     - `mv active.json active.json.old`
     - `rm -rf INSTALL_ROOT/bin INSTALL_ROOT/systemd INSTALL_ROOT/environment INSTALL_ROOT/config`

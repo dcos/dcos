@@ -448,7 +448,6 @@ def load_optional_json(filename):
             if text:
                 return json.loads(text)
             return {}
-        return load_json(filename)
     except FileNotFoundError:
         raise BuildError("Didn't find expected JSON file: {}".format(filename))
     except ValueError as ex:
@@ -901,6 +900,9 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Final package has the same requires as the build.
     requires = builder.take('requires')
     pkginfo['requires'] = requires
+
+    if builder.has("sysctl"):
+        pkginfo["sysctl"] = builder.take("sysctl")
 
     # TODO(cmaloney): Pull generating the full set of requires a function.
     to_check = copy.deepcopy(requires)
