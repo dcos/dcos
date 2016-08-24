@@ -108,8 +108,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, rexray_config='', zk_host=None,
-            expect_errors=False, add_config_path=None):
+            ip_detect_script, rexray_config=None, rexray_config_preset=None,
+            zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -120,7 +120,9 @@ class DcosApiInstaller(AbstractDcosInstaller):
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
-            rexray_config (str): complete contents of REX-Ray config file
+            rexray_config: complete contents of REX-Ray config file. Must be a
+                JSON-serializable object.
+            rexray_config_preset (str): name of preset REX-Ray config
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
             add_config_path (optional): string pointing to a file with additional
@@ -137,8 +139,11 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'public_agent_list': public_agent_list,
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
-            'ip_detect_script': ip_detect_script,
-            'rexray_config': rexray_config}
+            'ip_detect_script': ip_detect_script}
+        if rexray_config:
+            payload['rexray_config'] = rexray_config
+        if rexray_config_preset:
+            payload['rexray_config_preset'] = rexray_config_preset
         if zk_host:
             payload['exhibitor_zk_hosts'] = zk_host
         if add_config_path:
@@ -255,8 +260,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, rexray_config='', zk_host=None,
-            expect_errors=False, add_config_path=None):
+            ip_detect_script, rexray_config=None, rexray_config_preset=None,
+            zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
         Args:
@@ -267,7 +272,9 @@ class DcosCliInstaller(AbstractDcosInstaller):
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
-            rexray_config (str): complete contents of REX-Ray config file
+            rexray_config: complete contents of REX-Ray config file. Must be a
+                JSON-serializable object.
+            rexray_config_preset (str): name of preset REX-Ray config
             zk_host (optional): if provided, zk is used for exhibitor backend
             expect_errors (optional): raises error if result is unexpected
             add_config_path (optional): string pointing to a file with additional
@@ -286,9 +293,11 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'ssh_user': ssh_user,
             'agent_list': agent_list,
             'public_agent_list': public_agent_list,
-            'process_timeout': MAX_STAGE_TIME,
-            'rexray_config_method': 'file',
-            'rexray_config_filename': 'genconf/rexray.yaml'}
+            'process_timeout': MAX_STAGE_TIME}
+        if rexray_config:
+            test_config['rexray_config'] = rexray_config
+        if rexray_config_preset:
+            test_config['rexray_config_preset'] = rexray_config_preset
         if zk_host:
             test_config['exhibitor_storage_backend'] = 'zookeeper'
             test_config['exhibitor_zk_hosts'] = zk_host
@@ -305,15 +314,12 @@ class DcosCliInstaller(AbstractDcosInstaller):
             ip_detect_fh.write(ip_detect_script)
         with open('ssh_key', 'w') as key_fh:
             key_fh.write(ssh_key)
-        with open('rexray.yaml', 'w') as rexray_fh:
-            rexray_fh.write(rexray_config)
         remote_dir = os.path.dirname(self.installer_path)
         self.ssh(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
         self.scp('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
         self.scp('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
         self.scp('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
         self.ssh(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
-        self.scp('rexray.yaml', os.path.join(remote_dir, 'genconf/rexray.yaml'))
         self.run_cli_cmd('--genconf', expect_errors=expect_errors)
 
     def preflight(self, expect_errors=False):
