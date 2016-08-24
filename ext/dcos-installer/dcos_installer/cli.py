@@ -45,32 +45,11 @@ def start_installer(args):
 
 
 def parse_args(args):
-    def print_usage():
-        return """
-Install Mesosophere's Data Center Operating System
-
-dcos_installer [-h] [-f LOG_FILE] [--hash-password HASH_PASSWORD] [--cli-telemetry-disabled] [-v]
---web [--offline]
---genconf
---preflight
---deploy
---postflight
---uninstall
---validate-config
---version
-
-Environment Settings:
-
-PORT                  Set the :port to run the web UI
-CHANNEL_NAME          ADVANCED - Set build channel name
-BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
-
-"""
-
     """
     Parse CLI arguments and return a map of options.
     """
-    parser = argparse.ArgumentParser(usage=print_usage())
+    parser = argparse.ArgumentParser(
+        description="DC/OS Install and Configuration Utility")
     mutual_exc = parser.add_mutually_exclusive_group()
 
     mutual_exc.add_argument(
@@ -104,12 +83,13 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         action='store_true',
         help='Disable the CLI telemetry gathering for SegmentIO')
 
-    def add_mode(name, help):
+    def add_mode(name, help_msg):
         mutual_exc.add_argument(
             '--{}'.format(name),
             action='store_const',
             const=name,
-            dest='action')
+            dest='action',
+            help=help_msg)
 
     # Add all arg modes
     for name, value in dcos_installer.cli_dispatcher.dispatch_dict_simple.items():
