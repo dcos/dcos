@@ -3,7 +3,7 @@ import urllib.parse
 import bs4
 
 
-def test_if_DCOS_UI_is_up(cluster):
+def test_if_dcos_ui_is_up(cluster):
     r = cluster.get('/')
 
     assert r.status_code == 200
@@ -22,7 +22,7 @@ def test_if_DCOS_UI_is_up(cluster):
         assert link_response.status_code == 200
 
 
-def test_if_Mesos_is_up(cluster):
+def test_if_mesos_is_up(cluster):
     r = cluster.get('/mesos')
 
     assert r.status_code == 200
@@ -30,7 +30,7 @@ def test_if_Mesos_is_up(cluster):
     assert '<title>Mesos</title>' in r.text
 
 
-def test_if_all_Mesos_slaves_have_registered(cluster):
+def test_if_all_mesos_slaves_have_registered(cluster):
     r = cluster.get('/mesos/master/slaves')
     assert r.status_code == 200
 
@@ -40,7 +40,7 @@ def test_if_all_Mesos_slaves_have_registered(cluster):
     assert slaves_ips == cluster.all_slaves
 
 
-def test_if_Exhibitor_API_is_up(cluster):
+def test_if_exhibitor_api_is_up(cluster):
     r = cluster.get('/exhibitor/exhibitor/v1/cluster/list')
     assert r.status_code == 200
 
@@ -48,13 +48,13 @@ def test_if_Exhibitor_API_is_up(cluster):
     assert data["port"] > 0
 
 
-def test_if_Exhibitor_UI_is_up(cluster):
+def test_if_exhibitor_ui_is_up(cluster):
     r = cluster.get('/exhibitor')
     assert r.status_code == 200
     assert 'Exhibitor for ZooKeeper' in r.text
 
 
-def test_if_ZooKeeper_cluster_is_up(cluster):
+def test_if_zookeeper_cluster_is_up(cluster):
     r = cluster.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
 
@@ -75,14 +75,14 @@ def test_if_uiconfig_is_available(cluster):
     assert 'uiConfiguration' in r.json()
 
 
-def test_if_DCOSHistoryService_is_up(cluster):
+def test_if_dcos_history_service_is_up(cluster):
     r = cluster.get('/dcos-history-service/ping')
 
     assert r.status_code == 200
     assert 'pong' == r.text
 
 
-def test_if_Marathon_UI_is_up(cluster):
+def test_if_marathon_ui_is_up(cluster):
     r = cluster.get('/marathon/ui/')
 
     assert r.status_code == 200
@@ -98,7 +98,7 @@ def test_if_srouter_service_endpoint_works(cluster):
     assert '<title>Marathon</title>' in r.text
 
 
-def test_if_Mesos_API_is_up(cluster):
+def test_if_mesos_api_is_up(cluster):
     r = cluster.get('/mesos_dns/v1/version')
     assert r.status_code == 200
 
@@ -106,7 +106,7 @@ def test_if_Mesos_API_is_up(cluster):
     assert data["Service"] == 'Mesos-DNS'
 
 
-def test_if_PkgPanda_metadata_is_available(cluster):
+def test_if_pkgpanda_metadata_is_available(cluster):
     r = cluster.get('/pkgpanda/active.buildinfo.full.json')
     assert r.status_code == 200
 
@@ -115,7 +115,7 @@ def test_if_PkgPanda_metadata_is_available(cluster):
     assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
 
 
-def test_if_DCOSHistoryService_is_getting_data(cluster):
+def test_if_dcos_history_service_is_getting_data(cluster):
     r = cluster.get('/dcos-history-service/history/last')
     assert r.status_code == 200
     # Make sure some basic fields are present from state-summary which the DC/OS
