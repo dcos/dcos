@@ -3,9 +3,9 @@
   "sources": {
     "navstar": {
       "kind": "git",
-      "git": "https://github.com/dcos/navstar.git",
-      "ref": "aaa2e6609ec2511743ab1bf58876893eb4f4a654",
-      "ref_origin": "master"
+      "git": "https://github.com/drewkerrigan/navstar.git",
+      "ref": "a9dd741437d210729d4c2b77c305c8d24dbaa3a5",
+      "ref_origin": "ack-listen-localhost"
     }
   }
 }
