@@ -71,8 +71,8 @@ def wait(master_count_filename):
     log.info('Shortcut failed, waiting for exhibitor to bring up zookeeper and stabilize')
 
     if not os.path.exists(master_count_filename):
-        log.info("master_count file doesn't exist, not waiting")
-        return
+        log.info("master_count file doesn't exist when it should. Hard failing.")
+        sys.exit(1)
 
     cluster_size = int(utils.read_file_line(master_count_filename))
     log.info('Expected cluster size: {}'.format(cluster_size))
