@@ -10,7 +10,7 @@ from passlib.hash import sha512_crypt
 
 from dcos_installer.action_lib import configure
 from dcos_installer.config import DCOSConfig
-from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
+from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
 
 import ssh.validate as validate_ssh
 

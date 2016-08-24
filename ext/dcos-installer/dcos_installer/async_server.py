@@ -12,7 +12,7 @@ import dcos_installer
 import gen.calc
 from dcos_installer import backend
 from dcos_installer.action_lib.prettyprint import print_header
-from dcos_installer.util import STATE_DIR
+from dcos_installer.constants import STATE_DIR
 
 from ssh.ssh_runner import Node
 
