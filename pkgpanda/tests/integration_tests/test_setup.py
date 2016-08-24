@@ -1,7 +1,7 @@
 from shutil import copytree
 from subprocess import check_call, check_output
 
-from pkgpanda.util import expect_fs, run
+from pkgpanda.util import expect_fs, load_json, run
 
 
 def tmp_repository(temp_dir, repo_dir="../resources/packages"):
@@ -22,8 +22,10 @@ def test_setup(tmpdir):
                 "--config-dir=../resources/etc-active",
                 "--no-systemd"
                 ])
-    # TODO(cmaloney): Validate things got placed correctly.
 
+    expect_fs("{0}".format(tmpdir), ["repository", "root"])
+
+    # TODO(cmaloney): Validate things got placed correctly.
     expect_fs(
         "{0}/root".format(tmpdir),
         {
@@ -35,13 +37,29 @@ def test_setup(tmpdir):
                 "mesos-master",
                 "mesos-slave"],
             "lib": ["libmesos.so"],
-            "etc": ["foobar", "some.json"],
+            "etc": ["dcos-service-configuration.json", "foobar", "some.json"],
             "include": [],
-            "dcos.target.wants": [],
+            "dcos.target.wants": ["dcos-mesos-master.service"],
             "dcos.target": None,
             "environment": None,
-            "environment.export": None
+            "environment.export": None,
+            "dcos-mesos-master.service": None           # rooted_systemd
         })
+
+    expected_dcos_service_configuration = {
+        "sysctl": {
+            "dcos-mesos-master": {
+                "kernel.watchdog_thresh": "11",
+                "net.netfilter.nf_conntrack_udp_timeout": "30"
+            },
+            "dcos-mesos-slave": {
+                "kperf.debug_level": "1"
+            }
+        }
+    }
+
+    assert expected_dcos_service_configuration == load_json(
+            "{tmpdir}/root/etc/dcos-service-configuration.json".format(tmpdir=tmpdir))
 
     # Introspection should work right
     active = set(check_output([
@@ -78,10 +96,10 @@ def test_setup(tmpdir):
                 "mesos-master",
                 "mesos-slave"],
             "lib": ["libmesos.so"],
-            "etc": ["foobar", "some.json"],
+            "etc": ["dcos-service-configuration.json", "foobar", "some.json"],
             "include": [],
             "dcos.target": None,
-            "dcos.target.wants": [],
+            "dcos.target.wants": ["dcos-mesos-master.service"],
             "environment": None,
             "environment.export": None,
             "active.old": ["env", "mesos", "mesos-config"],
@@ -91,11 +109,12 @@ def test_setup(tmpdir):
                 "mesos-master",
                 "mesos-slave"],
             "lib.old": ["libmesos.so"],
-            "etc.old": ["foobar", "some.json"],
+            "etc.old": ["dcos-service-configuration.json", "foobar", "some.json"],
             "include.old": [],
-            "dcos.target.wants.old": [],
+            "dcos.target.wants.old": ["dcos-mesos-master.service"],
             "environment.old": None,
-            "environment.export.old": None
+            "environment.export.old": None,
+            "dcos-mesos-master.service": None       # rooted systemd
         })
 
     # Should only pickup the packages once / one active set.
@@ -135,6 +154,7 @@ def test_setup(tmpdir):
 def test_activate(tmpdir):
     repo_path = tmp_repository(tmpdir)
     tmpdir.join("root", "bootstrap").write("", ensure=True)
+
     # TODO(cmaloney): Depending on setup here is less than ideal, but meh.
     check_call(["pkgpanda",
                 "setup",

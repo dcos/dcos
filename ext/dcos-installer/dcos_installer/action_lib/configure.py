@@ -6,7 +6,7 @@ import sys
 import gen
 import pkgpanda
 import gen.installer.bash
-from dcos_installer.util import SERVE_DIR
+from dcos_installer.constants import SERVE_DIR
 
 log = logging.getLogger(__name__)
 

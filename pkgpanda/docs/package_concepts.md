@@ -17,6 +17,28 @@ contain '-' or '--'. Once a package-id is utilized, it should never be re-used w
 Metadata file containing the requirements of the package (either package names or package ids), as well as the
 environment variables provided by the package.
 
+pkginfo.json also stores all the sysctl requirements that are collected from buildinfo.json
+
+For e.g. `minuteman`'s pkginfo will have this information which is collected the packages buildinfo.json
+
+```bash
+{
+  "sysctl": {
+      "minuteman": {
+          "net.netfilter.nf_conntrack_tcp_be_liberal": "1",
+          "net.netfilter.ip_conntrack_tcp_be_liberal": "1",
+          "net.ipv4.netfilter.ip_conntrack_tcp_be_liberal": "1"
+      }
+  }
+}
+```
+
+* It denotes the `sysctl` required for the **service-name** `minuteman`
+
+These configuration settings are accumulated for all packages in a file
+`/opt/mesosphere/etc/dcos-service-configuration.json`, and the dcos bootstrap process will apply these settings before
+starting the service.
+
 **Well-known directories**
 
 Every pkgpanda package may put items in several well-known directories to have them available to other packages.
