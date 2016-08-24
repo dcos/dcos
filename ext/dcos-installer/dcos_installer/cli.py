@@ -71,7 +71,12 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
     Parse CLI arguments and return a map of options.
     """
     parser = argparse.ArgumentParser(usage=print_usage())
-    mutual_exc = parser.add_mutually_exclusive_group()
+    onprem_subparser = parser.add_subparsers(
+        title='On-Premises Actions',
+        description='Valid on-premises installer actions.',
+        help='Initiate on-premises installer actions.')
+    # On premises actions are mutally exclusive
+    onprem_action = onprem_subparser.add_mutually_exclusive_group()
 
     mutual_exc.add_argument(
         '--hash-password',
@@ -105,7 +110,7 @@ BOOTSTRAP_ID          ADVANCED - Set bootstrap ID for build
         help='Disable the CLI telemetry gathering for SegmentIO')
 
     def add_mode(name, help):
-        mutual_exc.add_argument(
+        onprem_action.add_argument(
             '--{}'.format(name),
             action='store_const',
             const=name,
