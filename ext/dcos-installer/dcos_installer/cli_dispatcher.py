@@ -6,7 +6,7 @@ import os
 import sys
 
 import gen.calc
-from dcos_installer import async_server, action_lib, backend
+from dcos_installer import action_lib, backend
 from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
 from dcos_installer.installer_analytics import InstallerAnalytics
 
@@ -114,7 +114,8 @@ def do_version(args):
 
 def do_web(args):
     print_header("Starting DC/OS installer in web mode")
-    async_server.start(args)
+    import dcos_installer.async_server
+    dcos_installer.async_server.start(args)
     return 0
 
 
