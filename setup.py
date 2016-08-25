@@ -35,6 +35,7 @@ setup(
         'ssh',
         'test_util'],
     install_requires=[
+        'cryptography',
         'Flask',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
