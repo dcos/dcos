@@ -23,12 +23,6 @@ options = None
 
 VERSION = '1'
 
-
-"""Define the aiohttp web application framework and setup
-# the routes to be used in the API"""
-loop = asyncio.get_event_loop()
-app = web.Application(loop=loop)
-app['current_action'] = ''
 ui_dist_path = os.getenv('INSTALLER_UI_PATH', pkg_resources.resource_filename(__name__, 'templates/'))
 index_path = '{}index.html'.format(ui_dist_path)
 assets_path = '{}assets/'.format(ui_dist_path)
@@ -41,6 +35,9 @@ action_map = {
 }
 
 remove_on_done = ['preflight', 'postflight']
+
+# TODO(cmaloney): Kill this. Should store somewhere proper
+current_action = ""
 
 
 def root(request):
@@ -159,11 +156,12 @@ def action_action_name(request):
     :param request: a web requeest object.
     :type request: request | None
     """
+    global current_action
     action_name = request.match_info['action_name']
 
     # Update the global action
     json_state = read_json_state(action_name)
-    app['current_action'] = action_name
+    current_action = action_name
 
     if request.method == 'GET':
         log.info('GET {}'.format(action_name))
@@ -235,9 +233,7 @@ def action_current(request):
     :param request: a web requeest object.
     :type request: request | None
     """
-    action = app['current_action']
-    return_json = {'current_action': action}
-    return web.json_response(return_json)
+    return web.json_response({'current_action': current_action})
 
 
 def logs_handler(request):
@@ -261,38 +257,48 @@ def logs_handler(request):
     return web.HTTPFound('/download/log/complete.log'.format(VERSION))
 
 
-try:
-    app.router.add_static('/assets', assets_path)
-    app.router.add_static('/download/log', '/genconf/state/')
-except ValueError as err:
-    log.warning(err)
-
-
 def no_caching(request, response):
     response.headers['Cache-Control'] = 'no-cache'
 
 
-app.router.add_route('GET', '/', root)
-app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
-app.router.add_route('GET', '/api/v{}/version'.format(VERSION), get_version)
-app.router.add_route('GET', '/api/v{}/configure'.format(VERSION), configure)
-app.router.add_route('POST', '/api/v{}/configure'.format(VERSION), configure)
-app.router.add_route('GET', '/api/v{}/configure/status'.format(VERSION), configure_status)
-app.router.add_route('GET', '/api/v{}/configure/type'.format(VERSION), configure_type)
-app.router.add_route('GET', '/api/v{}/success'.format(VERSION), success)
-# TODO(malnick) The regex handling in the variable routes blows up if we insert another variable to be
-# filled in by .format. Had to hardcode the VERSION into the URL for now. Fix suggestions please!
-app.router.add_route('GET', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
-app.router.add_route('POST', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
-app.router.add_route('GET', '/api/v{}/action/current'.format(VERSION), action_current)
-app.router.add_route('GET', '/api/v{}/logs'.format(VERSION), logs_handler)
+def build_app(loop):
+    """Define the aiohttp web application framework and setup the routes to be used in the API"""
+    global current_action
 
-# Allow overriding calculators with a `gen_extra/async_server.py` if it exists
-if os.path.exists('gen_extra/async_server.py'):
-    mod = importlib.machinery.SourceFileLoader('gen_extra.async_server', 'gen_extra/async_server.py').load_module()
-    mod.extend_app(app)
+    app = web.Application(loop=loop)
 
-app.on_response_prepare.append(no_caching)
+    current_action = ''
+
+    app.router.add_route('GET', '/', root)
+    app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
+    app.router.add_route('GET', '/api/v{}/version'.format(VERSION), get_version)
+    app.router.add_route('GET', '/api/v{}/configure'.format(VERSION), configure)
+    app.router.add_route('POST', '/api/v{}/configure'.format(VERSION), configure)
+    app.router.add_route('GET', '/api/v{}/configure/status'.format(VERSION), configure_status)
+    app.router.add_route('GET', '/api/v{}/configure/type'.format(VERSION), configure_type)
+    app.router.add_route('GET', '/api/v{}/success'.format(VERSION), success)
+    # TODO(malnick) The regex handling in the variable routes blows up if we insert another variable to be
+    # filled in by .format. Had to hardcode the VERSION into the URL for now. Fix suggestions please!
+    app.router.add_route('GET', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
+    app.router.add_route('POST', '/api/v1/action/{action_name:preflight|postflight|deploy}', action_action_name)
+    app.router.add_route('GET', '/api/v{}/action/current'.format(VERSION), action_current)
+    app.router.add_route('GET', '/api/v{}/logs'.format(VERSION), logs_handler)
+
+    # TODO(cmaloney): These should probably actually hard fail.
+    try:
+        app.router.add_static('/assets', assets_path)
+        app.router.add_static('/download/log', '/genconf/state/')
+    except ValueError as err:
+        log.warning(err)
+
+    # Allow overriding calculators with a `gen_extra/async_server.py` if it exists
+    if os.path.exists('gen_extra/async_server.py'):
+        mod = importlib.machinery.SourceFileLoader('gen_extra.async_server', 'gen_extra/async_server.py').load_module()
+        mod.extend_app(app)
+
+    app.on_response_prepare.append(no_caching)
+
+    return app
 
 
 def start(cli_options):
@@ -300,6 +306,8 @@ def start(cli_options):
     options = cli_options
 
     log.debug('DC/OS Installer')
+    loop = asyncio.get_event_loop()
+    app = build_app(loop)
     handler = app.make_handler()
     f = loop.create_server(
         handler,

@@ -123,6 +123,13 @@ def validate_dcos_overlay_mtu(dcos_overlay_mtu):
     assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
 
 
+def validate_dcos_overlay_config_attempts(dcos_overlay_config_attempts):
+    assert dcos_overlay_config_attempts.isdigit(), (
+        'dcos_overlay_config_attempts needs to be a positive integer between 0 and 10')
+    assert int(dcos_overlay_config_attempts) >= 0 and int(dcos_overlay_config_attempts) < 10, (
+        'The acceptable range of values for dcos_overlay_config_attempts is between 0 and 10')
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -339,6 +346,7 @@ entry = {
         validate_dcos_overlay_network,
         validate_dcos_overlay_enable,
         validate_dcos_overlay_mtu,
+        validate_dcos_overlay_config_attempts,
         validate_dcos_remove_dockercfg_enable,
         validate_rexray_config],
     'default': {
@@ -371,6 +379,7 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': '{                      \
