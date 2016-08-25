@@ -60,9 +60,17 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.ssh = ssh
         self.scp = scp
 
-        if download_url:
+        @retry(wait_fixed=3000, stop_max_delay=300*1000)
+        def download_dcos():
+            """Response status 403 is fatal for curl's retry. Additionally, S3 buckets
+            have been returning 403 for valid uploads for 10-15 minutes after CI finished build
+            Therefore, give a five minute buffer to help stabilize CI
+            """
             self.ssh(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
                       '--create-dirs', '-o', self.installer_path, download_url])
+
+        if download_url:
+            download_dcos()
 
     def get_hashed_password(self, password):
         p = self.ssh(["bash", self.installer_path, "--hash-password", password])

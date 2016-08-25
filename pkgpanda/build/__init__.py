@@ -395,28 +395,33 @@ def get_docker_id(docker_name):
     return check_output(["docker", "inspect", "-f", "{{ .Id }}", docker_name]).decode('utf-8').strip()
 
 
+def hash_str(s):
+    hasher = hashlib.sha1()
+    hasher.update(s.encode('utf-8'))
+    return hasher.hexdigest()
+
+
+def hash_int(i):
+    return hash_str(str(i))
+
+
+def hash_dict(d):
+    item_hashes = []
+    for k in sorted(d.keys()):
+        assert isinstance(k, str)
+        item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_list(l):
+    item_hashes = []
+    for item in sorted(l):
+        assert isinstance(item, str)
+        item_hashes.append(hash_checkout(item))
+    return hash_str(",".join(item_hashes))
+
+
 def hash_checkout(item):
-    def hash_str(s):
-        hasher = hashlib.sha1()
-        hasher.update(s.encode('utf-8'))
-        return hasher.hexdigest()
-
-    def hash_int(i):
-        return hash_str(str(i))
-
-    def hash_dict(d):
-        item_hashes = []
-        for k in sorted(d.keys()):
-            assert isinstance(k, str)
-            item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
-        return hash_str(",".join(item_hashes))
-
-    def hash_list(l):
-        item_hashes = []
-        for item in sorted(l):
-            assert isinstance(item, str)
-            item_hashes.append(hash_checkout(item))
-        return hash_str(",".join(item_hashes))
 
     if isinstance(item, str) or isinstance(item, bytes):
         return hash_str(item)
