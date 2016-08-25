@@ -1,16 +1,29 @@
+import asyncio
+
+import pytest
+
 import aiohttp
 import gen.calc
-from dcos_installer.async_server import app
-from webtest_aiohttp import TestApp
+import webtest_aiohttp
+from dcos_installer.async_server import build_app
 
 version = 1
-client = TestApp(app)
-client.expect_errors = False
 
 
-def test_redirect_to_root(monkeypatch):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+@pytest.fixture(scope='session')
+def client():
+    loop = asyncio.get_event_loop()
+    app = build_app(loop)
+    client = webtest_aiohttp.TestApp(app)
+    client.expect_errors = False
+
+    aiohttp.parsers.StreamWriter.set_tcp_cork = lambda s, v: True
+    aiohttp.parsers.StreamWriter.set_tcp_nodelay = lambda s, v: True
+
+    return client
+
+
+def test_redirect_to_root(client):
     route = '/api/v{}'.format(version)
     featured_methods = {
         'GET': [302, 'text/plain', '/'],
@@ -35,17 +48,13 @@ def test_redirect_to_root(monkeypatch):
                 expected)
 
 
-def test_get_version(monkeypatch):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_get_version(client):
     route = '/api/v{}/version'.format(version)
     res = client.request(route, method='GET')
     assert res.json == {'version': gen.calc.entry['must']['dcos_version']}
 
 
-def test_configure(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_configure(client, mocker):
     route = '/api/v{}/configure'.format(version)
     featured_methods = {
         'GET': [200, 'application/json'],
@@ -79,9 +88,7 @@ def test_configure(monkeypatch, mocker):
             assert res.json == {'test': 'config'}
 
 
-def test_configure_status(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_configure_status(client, mocker):
     route = '/api/v{}/configure/status'.format(version)
     featured_methods = {
         # Defaults shouldn't pass validation, expect 400
@@ -108,9 +115,7 @@ def test_configure_status(monkeypatch, mocker):
         assert res.content_type == expected[1], '{}: {}'.format(method, expected)
 
 
-def test_success(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_success(client, mocker):
     route = '/api/v{}/success'.format(version)
     featured_methods = {
         'GET': [200, 'application/json'],
@@ -163,9 +168,7 @@ def action_side_effect_return_config(arg):
     }
 
 
-def test_action_preflight(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_preflight(client, mocker):
     route = '/api/v{}/action/preflight'.format(version)
 
     mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
@@ -185,9 +188,7 @@ def test_action_preflight(monkeypatch, mocker):
     assert res.json == {}
 
 
-def test_action_postflight(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_postflight(client, mocker):
     route = '/api/v{}/action/postflight'.format(version)
 
     mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
@@ -207,9 +208,7 @@ def test_action_postflight(monkeypatch, mocker):
     assert res.json == {}
 
 
-def test_action_deploy(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_deploy(client, mocker):
     route = '/api/v{}/action/deploy'.format(version)
 
     mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
@@ -229,9 +228,7 @@ def test_action_deploy(monkeypatch, mocker):
     assert res.json == {}
 
 
-def test_action_current(monkeypatch):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_current(client):
     route = '/api/v{}/action/current'.format(version)
     featured_methods = {
         'GET': [200, 'application/json'],
@@ -252,9 +249,7 @@ def test_action_current(monkeypatch):
             expected)
 
 
-def test_configure_type(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_configure_type(client, mocker):
     route = '/api/v{}/configure/type'.format(version)
     featured_methods = {
         'GET': [200, 'application/json'],
@@ -279,9 +274,7 @@ def test_configure_type(monkeypatch, mocker):
             expected)
 
 
-def test_action_deploy_post(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_deploy_post(client, mocker):
     route = '/api/v{}/action/deploy'.format(version)
 
     mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
@@ -320,9 +313,7 @@ def test_action_deploy_post(monkeypatch, mocker):
     assert mocked_add_copy_packages.call_count == 1
 
 
-def test_action_deploy_retry(monkeypatch, mocker):
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_cork', lambda s, v: True)
-    monkeypatch.setattr(aiohttp.parsers.StreamWriter, 'set_tcp_nodelay', lambda s, v: True)
+def test_action_deploy_retry(client, mocker):
     route = '/api/v{}/action/deploy'.format(version)
 
     mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
