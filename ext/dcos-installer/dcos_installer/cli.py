@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 
+import dcos_installer.async_server
 import gen.calc
 from dcos_installer import action_lib, backend
 from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
@@ -53,8 +54,7 @@ class CliDelegate(AbstractSSHLibDelegate):
 
 def run_loop(action, options):
     assert callable(action)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop = asyncio.get_event_loop()
 
     print_header('START {}'.format(action.__name__))
     try:
@@ -136,7 +136,6 @@ def do_version(args):
 
 def do_web(args):
     print_header("Starting DC/OS installer in web mode")
-    import dcos_installer.async_server
     dcos_installer.async_server.start(args)
     return 0
 
