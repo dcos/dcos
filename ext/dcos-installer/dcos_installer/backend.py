@@ -254,15 +254,6 @@ def get_ui_config(config_path=CONFIG_PATH):
     return config
 
 
-def return_configure_status(config_path=CONFIG_PATH):
-    """Returns validation messages for /configure/status/ endpoint.
-
-    :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
-    """
-    return configure.do_validate_config()
-
-
 def determine_config_type(config_path=CONFIG_PATH):
     """Returns the configuration type to the UI. One of either 'minimal' or
     'advanced'. 'advanced' blocks UI usage.
