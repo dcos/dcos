@@ -16,8 +16,8 @@
   "sources": {
     "aiohttp": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/a/aiohttp/aiohttp-0.20.0.tar.gz",
-      "sha1": "4ab710f2e03a2d8414382d98b9832a6f0022a780"
+      "url": "https://pypi.python.org/packages/55/9d/38fb3cb174f4723b50a3f0593e18a51418c9a73a7857fdcaee46b83ff1c4/aiohttp-0.22.5.tar.gz",
+      "sha1": "d391ae04d2aa97be14ef7de13e7ee2b9939ce8b4"
     },
     "aiohttp_jinja2": {
       "kind": "url",
@@ -108,6 +108,11 @@
       "kind": "url",
       "url": "https://pypi.python.org/packages/9a/1e/8b0290dc98de928b04c6fc73c301faebf52b9479a3c772edc77b92b4d6f6/keyring-9.1-py2.py3-none-any.whl",
       "sha1": "9c1d41e9e9e30c02cb49f4d6c7f377311c0f347d"
+    },
+    "multidict": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/fd/5b/3dd32b8e53703ff7a27a72e9a118e7f78c14a171554ec8c99dd4759c4018/multidict-1.2.2.tar.gz",
+      "sha1": "cf2a93c62b2813a07d113d9bfef057a06feedf27"
     },
     "oauthlib": {
       "kind": "url_extract",

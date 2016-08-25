@@ -12,18 +12,12 @@ setup(
         'License :: OSI Approved :: Apache Software License',
     ],
     install_requires=[
-        'aiohttp==0.20.0',
+        'aiohttp==0.22.5',
         'aiohttp_jinja2',
         'coloredlogs',
         'passlib',
         'analytics-python',
         'pyyaml'],
-    tests_require=[
-        'pytest==2.9.0',
-        'pytest-mock==0.11.0',
-        'webtest==2.0.20',
-        'webtest-aiohttp==1.0.0'],
-    test_suite='pytest',
     entry_points={
         'console_scripts': [
             'dcos_installer = dcos_installer.cli:main']
