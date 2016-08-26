@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/octarine.git",
-    "ref": "c792e3d7f4729de7d4532b9f347f3690513d2d5e",
+    "ref": "2fe29e69e636157b481a4c2cfb6b0a55920e7644",
     "ref_origin": "master"
   }
 }
