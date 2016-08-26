@@ -237,7 +237,7 @@ package:
       /var/lib/dcos/mesos/log/* {
           olddir /var/lib/dcos/mesos/log/archive
           maxsize 256M
-          rotate 7
+          rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
               find /var/lib/dcos/mesos/log/ /var/lib/dcos/mesos/log/archive -mtime +14 -delete
@@ -253,7 +253,7 @@ package:
       /var/log/mesos/* {
           olddir /var/log/mesos/archive
           maxsize 256M
-          rotate 7
+          rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
               find /var/log/mesos/ /var/log/mesos/archive -mtime +14 -delete
