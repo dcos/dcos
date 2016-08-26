@@ -1,0 +1,7 @@
+[Unit]
+Description=Logrotate Mesos Agent: Rotate Mesos agent logs
+[Service]
+Type=simple
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/usr/bin/mkdir -p /var/log/mesos/archive
+ExecStart=$PKG_PATH/bin/logrotate /opt/mesosphere/etc/logrotate_agent.config -s /var/lib/dcos/mesos/logrotate_agent.status

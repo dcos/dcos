@@ -227,6 +227,38 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
+  - path: /etc_master/logrotate_master.config
+    content: |
+      compress
+      delaycompress
+      notifempty
+      missingok
+      nomail
+      /var/lib/dcos/mesos/log/* {
+          olddir /var/lib/dcos/mesos/log/archive
+          maxsize 256M
+          rotate 7
+          copytruncate
+          postrotate
+              find /var/lib/dcos/mesos/log/ /var/lib/dcos/mesos/log/archive -mtime +14 -delete
+          endscript
+      }
+  - path: /etc/logrotate_agent.config
+    content: |
+      compress
+      delaycompress
+      notifempty
+      missingok
+      nomail
+      /var/log/mesos/* {
+          olddir /var/log/mesos/archive
+          maxsize 256M
+          rotate 7
+          copytruncate
+          postrotate
+              find /var/log/mesos/ /var/log/mesos/archive -mtime +14 -delete
+          endscript
+      }
   - path: /etc/mesos-master
     content: |
       MESOS_LOG_DIR=/var/lib/dcos/mesos/log
