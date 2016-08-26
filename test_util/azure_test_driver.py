@@ -182,22 +182,26 @@ def run():
         print("ERROR: exception {}".format(ex))
         raise
     finally:
-        # Send a delete request
-        # TODO(cmaloney): The old code had a retry around this:
-        # @retry(wait_exponential_multiplier=1000, wait_exponential_max=60*1000, stop_max_delay=(30*60*1000))
-        poller = rmc.resource_groups.delete(group_name)
+        if os.getenv('AZURE_CLEANUP') == 'false':
+            print("Cluster must be cleaned up manually")
+            print("Cluster details: {}".format(azure_cluster))
+        else:
+            # Send a delete request
+            # TODO(cmaloney): The old code had a retry around this:
+            # @retry(wait_exponential_multiplier=1000, wait_exponential_max=60*1000, stop_max_delay=(30*60*1000))
+            poller = rmc.resource_groups.delete(group_name)
 
-        # poll for the delete to complete
-        print("Deleting resource group: {} ...".format(group_name))
+            # poll for the delete to complete
+            print("Deleting resource group: {} ...".format(group_name))
 
-        @retry(wait_fixed=(5 * 1000), stop_max_delay=(60 * 60 * 1000))
-        def wait_for_delete():
-            assert poller.done(), "Timed out waiting for delete"
+            @retry(wait_fixed=(5 * 1000), stop_max_delay=(60 * 60 * 1000))
+            def wait_for_delete():
+                assert poller.done(), "Timed out waiting for delete"
 
-        print("Waiting for delete ...")
-        wait_for_delete()
+            print("Waiting for delete ...")
+            wait_for_delete()
 
-        print("Clean up successful")
+            print("Clean up successful")
 
     if test_successful:
         print("Azure test deployment succeeded")
