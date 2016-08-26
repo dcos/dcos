@@ -378,10 +378,15 @@ sudo mkdir -p /etc/systemd/system/docker.service.d
 sudo tee /etc/systemd/system/docker.service.d/override.conf <<- EOF
 [Service]
 ExecStart=
-ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
+ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H unix:///var/run/docker.sock
 EOF
 
-sudo yum install -y docker-engine-1.11.2
+sudo systemctl daemon-reload
+# try to stop the older docker version, but do not hard fail if it does not
+# exist.
+sudo systemctl stop docker || true
+
+sudo yum install -y docker-engine
 sudo systemctl start docker
 sudo systemctl enable docker
 
