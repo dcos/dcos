@@ -261,7 +261,7 @@ package:
       }
   - path: /etc/mesos-master
     content: |
-      MESOS_LOG_DIR=/var/lib/dcos/mesos/log
+      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
@@ -283,7 +283,7 @@ package:
     content: |
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_CONTAINERIZERS=docker,mesos
-      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
       MESOS_ISOLATION={{ mesos_isolation }}
