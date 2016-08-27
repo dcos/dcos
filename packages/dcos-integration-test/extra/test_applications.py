@@ -113,8 +113,9 @@ def test_octarine_http(cluster, timeout=30):
     """
 
     test_uuid = uuid.uuid4().hex
+    octarine_id = uuid.uuid4().hex
     proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port marathon)"')
+             '--client --port {})"'.format(octarine_id))
     check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
 
     app_definition = {
@@ -122,7 +123,7 @@ def test_octarine_http(cluster, timeout=30):
         'cpus': 0.1,
         'mem': 128,
         'ports': [0],
-        'cmd': '/opt/mesosphere/bin/octarine marathon',
+        'cmd': '/opt/mesosphere/bin/octarine {}'.format(octarine_id),
         'disk': 0,
         'instances': 1,
         'healthChecks': [{
@@ -147,10 +148,11 @@ def test_octarine_srv(cluster, timeout=30):
 
     # Limit string length so we don't go past the max SRV record length
     test_uuid = uuid.uuid4().hex[:16]
+    octarine_id = uuid.uuid4().hex
     proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port marathon)"')
+             '--client --port {})"'.format(octarine_id))
     port_name = 'pinger'
-    cmd = ('/opt/mesosphere/bin/octarine marathon & ' +
+    cmd = ('/opt/mesosphere/bin/octarine {} & '.format(octarine_id) +
            '/opt/mesosphere/bin/python -m http.server ${PORT0}')
     raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
     check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')
