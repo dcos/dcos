@@ -416,9 +416,6 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arg
 def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
     # Generate the single-master and multi-master templates.
 
-    extra_packages = list()
-    artifacts = list()
-
     for bootstrap_variant, variant_base_args in variant_arguments.items():
         # Setup base arguments
         args = deepcopy(variant_base_args)
@@ -431,28 +428,27 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
 
-        def add_pre_genned(filename, gen_out):
-            nonlocal extra_packages
-            artifacts.append({
+        def make_pre_genned(filename, gen_out):
+            yield {
                 'channel_path': 'cloudformation/{}{}'.format(variant_prefix, filename),
                 'local_content': gen_out.cloudformation,
                 'content_type': 'application/json; charset=utf-8'
-                })
-            extra_packages += util.cluster_to_extra_packages(gen_out.results.cluster_packages)
+            }
+            yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
 
-        def add(gen_args, filename):
+        def make(gen_args, filename):
             gen_out = gen_templates(gen_args)
-            add_pre_genned(filename, gen_out)
+            yield from make_pre_genned(filename, gen_out)
 
         # Single master templates
         single_args = deepcopy(args)
         single_args['num_masters'] = "1"
-        add(single_args, 'single-master.cloudformation.json')
+        yield from make(single_args, 'single-master.cloudformation.json')
 
         # Multi master templates
         multi_args = deepcopy(args)
         multi_args['num_masters'] = "3"
-        add(multi_args, 'multi-master.cloudformation.json')
+        yield from make(multi_args, 'multi-master.cloudformation.json')
 
         # Advanced templates
         for os_type in ['coreos', 'el7']:
@@ -460,24 +456,19 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
                                                                           variant_prefix,
                                                                           channel_commit_path,
                                                                           os_type):
-                add_pre_genned(template_name, advanced_template)
+                yield from make_pre_genned(template_name, advanced_template)
 
     # Button page linking to the basic templates.
     button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments)
-    artifacts.append({
+    yield {
         'channel_path': 'aws.html',
         'local_content': button_page,
-        'content_type': 'text/html; charset=utf-8'})
+        'content_type': 'text/html; charset=utf-8'}
 
     # This renders the infra template only, which has no difference between CE and EE
     for template_name, advanced_template in gen_supporting_template():
-        artifacts.append({
+        yield {
             'channel_path': 'cloudformation/{}'.format(template_name),
             'local_content': advanced_template.cloudformation,
             'content_type': 'application/json; charset=utf-8',
-        })
-
-    return {
-        'packages': extra_packages,
-        'artifacts': artifacts
-    }
+        }

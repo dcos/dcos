@@ -383,19 +383,20 @@ def make_channel_artifacts(metadata):
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
-        provider_data = module.do_create(
-            tag=metadata['tag'],
-            repo_channel_path=metadata['repo_channel_path'],
-            channel_commit_path=metadata['channel_commit_path'],
-            commit=metadata['commit'],
-            variant_arguments=variant_arguments,
-            all_bootstraps=metadata["all_bootstraps"])
-
-        # Translate provider data to artifacts
-        assert provider_data.keys() <= {'packages', 'artifacts'}
-
-        for package in provider_data.get('packages', set()):
-            artifacts.append(get_gen_package_artifact(package))
+        for built_resource in module.do_create(
+                tag=metadata['tag'],
+                repo_channel_path=metadata['repo_channel_path'],
+                channel_commit_path=metadata['channel_commit_path'],
+                commit=metadata['commit'],
+                variant_arguments=variant_arguments,
+                all_bootstraps=metadata["all_bootstraps"]):
+            # Type switch
+            if 'packages' in built_resource:
+                for package in built_resource['packages']:
+                    artifacts.append(get_gen_package_artifact(package))
+            else:
+                assert 'packages' not in built_resource
+                artifacts.append(built_resource)
 
         # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
         artifacts += provider_data.get('artifacts', list())
