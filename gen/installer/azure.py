@@ -218,8 +218,6 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
 
 
 def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
-    extra_packages = list()
-    artifacts = list()
     for arm_t in ['dcos', 'acs']:
         for num_masters in [1, 3, 5]:
             for bootstrap_name, gen_arguments in variant_arguments.items():
@@ -231,18 +229,13 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
                                                         gen_args,
                                                         arm_t,
                                                         pkgpanda.util.variant_prefix(bootstrap_name))
-                extra_packages += util.cluster_to_extra_packages(dcos_template.results.cluster_packages)
-                artifacts.append(artifact)
+                yield {'packages': util.cluster_to_extra_packages(dcos_template.results.cluster_packages)}
+                yield artifact
 
-    artifacts.append({
+    yield {
         'channel_path': 'azure.html',
         'local_content': gen_buttons(repo_channel_path, channel_commit_path, tag, commit),
         'content_type': 'text/html; charset=utf-8'
-    })
-
-    return {
-        'packages': extra_packages,
-        'artifacts': artifacts
     }
 
 
