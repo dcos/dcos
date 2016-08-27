@@ -48,7 +48,7 @@ def validate_error(new_arguments, key, message):
 
 
 def test_invalid_telemetry_enabled(default_arguments):
-    err_msg = "Must be one of ['true', 'false']. Got foo."
+    err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(
         {'telemetry_enabled': 'foo'},
         'telemetry_enabled',
@@ -101,4 +101,4 @@ def test_invalid_oauth_enabled(default_arguments):
     validate_error(
         {'oauth_enabled': 'foo'},
         'oauth_enabled',
-        "Must be one of ['true', 'false']. Got foo")
+        "Must be one of 'true', 'false'. Got 'foo'.")
