@@ -640,7 +640,6 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
     Outputs the generated dcos_generate_config.sh as it's artifacts.
     """
-    artifacts = []
 
     # TODO(cmaloney): Build installers in parallel.
     # Variants are sorted for stable ordering.
@@ -651,12 +650,7 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
         installer_filename = make_installer_docker(variant, bootstrap_info['bootstrap_id'], bootstrap_installer_id)
 
-        artifacts.append({
+        yield {
             'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
             'local_path': installer_filename
-            })
-
-    return {
-        'packages': [],
-        'artifacts': artifacts
-    }
+        }
