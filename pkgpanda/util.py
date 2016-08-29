@@ -6,6 +6,7 @@ import re
 import shutil
 import socketserver
 import subprocess
+import sys
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
@@ -190,7 +191,8 @@ def expect_fs(folder, contents):
 
 
 def make_tar(result_filename, change_folder):
-    tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
+    tar = "gtar" if sys.platform == "darwin" else "tar"
+    tar_cmd = [tar, "--numeric-owner", "--owner=0", "--group=0"]
     if which("pxz"):
         tar_cmd += ["--use-compress-program=pxz", "-cf"]
     else:
