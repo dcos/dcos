@@ -377,6 +377,10 @@ sudo yum -y update --exclude="docker-engine*"
 sudo mkdir -p /etc/systemd/system/docker.service.d
 sudo tee /etc/systemd/system/docker.service.d/override.conf <<- EOF
 [Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=15
+ExecStartPre=-/sbin/ip link del docker0
 ExecStart=
 ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
 EOF
