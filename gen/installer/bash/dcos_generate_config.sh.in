@@ -21,7 +21,6 @@ then
 fi
 trap - INT
 
-echo "Running mesosphere/dcos-genconf docker with BUILD_DIR set to $PWD/genconf"
 if [ ! -d genconf/state ]; then
     mkdir -p genconf/state
 fi
