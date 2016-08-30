@@ -9,6 +9,7 @@ import pkg_resources
 from aiohttp import web
 
 import dcos_installer
+import dcos_installer.action_lib
 import gen.calc
 from dcos_installer import backend
 from dcos_installer.constants import STATE_DIR
