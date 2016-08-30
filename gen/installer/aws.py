@@ -241,10 +241,10 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
 
     cc_package_files = [
-            '/etc/cfn_signal_metadata',
-            '/etc/dns_config',
-            '/etc/exhibitor',
-            '/etc/mesos-master-provider']
+        '/etc/cfn_signal_metadata',
+        '/etc/dns_config',
+        '/etc/exhibitor',
+        '/etc/mesos-master-provider']
 
     if cc_params['node_type'] == 'master':
         cc_package_files.append('/etc/aws_dnsnames')
@@ -276,8 +276,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     # Render the cloudformation
     cloudformation = render_cloudformation(
         results.templates[template_name],
-        cloud_config=variant_cloudconfig,
-        )
+        cloud_config=variant_cloudconfig)
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
