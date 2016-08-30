@@ -13,7 +13,6 @@ setup(
     ],
     install_requires=[
         'aiohttp==0.22.5',
-        'aiohttp_jinja2',
         'coloredlogs',
         'passlib',
         'analytics-python',

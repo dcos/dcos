@@ -19,11 +19,6 @@
       "url": "https://pypi.python.org/packages/55/9d/38fb3cb174f4723b50a3f0593e18a51418c9a73a7857fdcaee46b83ff1c4/aiohttp-0.22.5.tar.gz",
       "sha1": "d391ae04d2aa97be14ef7de13e7ee2b9939ce8b4"
     },
-    "aiohttp_jinja2": {
-      "kind": "url",
-      "url": "https://pypi.python.org/packages/py3/a/aiohttp_jinja2/aiohttp_jinja2-0.7.0-py3-none-any.whl",
-      "sha1": "e5710a2a89210b3b0a804a18f00aa4023498dc38"
-    },
     "analytics-python": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/39/db/ba6ce2c3f13dd046eec3a7767a7d10607c15dc8b23d68bc125ad577f924f/analytics_python-1.2.3-py2.py3-none-any.whl",
