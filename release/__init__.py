@@ -390,6 +390,9 @@ def make_channel_artifacts(metadata):
                 commit=metadata['commit'],
                 variant_arguments=variant_arguments,
                 all_bootstraps=metadata["all_bootstraps"]):
+
+            assert isinstance(built_resource, dict), built_resource
+
             # Type switch
             if 'packages' in built_resource:
                 for package in built_resource['packages']:

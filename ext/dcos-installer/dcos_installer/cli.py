@@ -9,7 +9,7 @@ import sys
 import dcos_installer.async_server
 import gen.calc
 from dcos_installer import action_lib, backend
-from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
+from dcos_installer.prettyprint import print_header, PrettyPrint
 from dcos_installer.installer_analytics import InstallerAnalytics
 
 from ssh.utils import AbstractSSHLibDelegate
@@ -134,14 +134,7 @@ def do_version(args):
     return 0
 
 
-def do_web(args):
-    print_header("Starting DC/OS installer in web mode")
-    dcos_installer.async_server.start(args)
-    return 0
-
-
 def do_validate_config(args):
-    print_header('VALIDATING CONFIGURATION')
     log_warn_only()
     validation_errors = backend.do_validate_gen_config()
     if validation_errors:
@@ -150,55 +143,48 @@ def do_validate_config(args):
     return 0
 
 
-def do_genconf(args):
-    print_header("EXECUTING CONFIGURATION GENERATION")
-    code = backend.do_configure()
-    if code != 0:
-        return 1
-    return 0
-
-
-def do_preflight(args):
-    print_header("EXECUTING PREFLIGHT")
-    return action_lib.run_preflight
-
-
-def do_install_prereqs(args):
-    print_header("EXECUTING INSTALL PREREQUISITES")
-    return action_lib.install_prereqs
-
-
-def do_deploy(args):
-    print_header("EXECUTING DC/OS INSTALLATION")
-    return action_lib.install_dcos
-
-
-def do_postflight(args):
-    print_header("EXECUTING POSTFLIGHT")
-    return action_lib.run_postflight
-
-
-def do_uninstall(args):
-    print_header("EXECUTING UNINSTALL")
+def do_uninstall(*args, **kwargs):
     tall_enough_to_ride()
-    return action_lib.uninstall_dcos
+    return action_lib.uninstall_dcos(*args, **kwargs)
 
 
 dispatch_dict_simple = {
-    'version': (do_version, 'Print the DC/OS version'),
-    'web': (do_web, 'Run the web interface'),
-    'genconf': (do_genconf, 'Execute the configuration generation (genconf).'),
+    'version': (do_version, None, 'Print the DC/OS version'),
+    'web': (
+        dcos_installer.async_server.start,
+        'Starting DC/OS installer in web mode',
+        'Run the web interface'),
+    'genconf': (
+        lambda args: backend.do_configure(),
+        'EXECUTING CONFIGURATION GENERATION'
+        'Execute the configuration generation (genconf).'),
     'validate-config': (
         do_validate_config,
+        'VALIDATING CONFIGURATION',
         'Validate the configuration for executing --genconf and deploy arguments in config.yaml')
 }
 
 dispatch_dict_aio = {
-    'preflight': (do_preflight, 'Execute the preflight checks on a series of nodes.'),
-    'install-prereqs': (do_install_prereqs, 'Execute the preflight checks on a series of nodes.'),
-    'deploy': (do_deploy, 'Execute a deploy.'),
-    'postflight': (do_postflight, 'Execute postflight checks on a series of nodes.'),
-    'uninstall': (do_uninstall, 'Execute uninstall on target hosts.')
+    'preflight': (
+        action_lib.run_preflight,
+        'EXECUTING_PREFLIGHT',
+        'Execute the preflight checks on a series of nodes.'),
+    'install-prereqs': (
+        action_lib.install_prereqs,
+        'EXECUTING INSTALL PREREQUISITES',
+        'Execute the preflight checks on a series of nodes.'),
+    'deploy': (
+        action_lib.install_dcos,
+        'EXECUTING DC/OS INSTALLATION',
+        'Execute a deploy.'),
+    'postflight': (
+        action_lib.run_postflight,
+        'EXECUTING POSTFLIGHT',
+        'Execute postflight checks on a series of nodes.'),
+    'uninstall': (
+        do_uninstall,
+        'EXECUTING UNINSTALL',
+        'Execute uninstall on target hosts.')
 }
 
 
@@ -214,12 +200,18 @@ def dispatch(args):
         sys.exit(hash_password(args))
 
     if args.action in dispatch_dict_simple:
-        sys.exit(dispatch_dict_simple[args.action][0](args))
+        action = dispatch_dict_simple[args.action]
+        if action[1] is not None:
+            print_header(action[1])
+        sys.exit(action[0](args))
 
     # Dispatches CLI options which are installer actions ran through AIO event loop
     if args.action in dispatch_dict_aio:
+        action = dispatch_dict_aio[args.action]
         validate_ssh_config_or_exit()
-        errors = run_loop(dispatch_dict_aio[args.action][0](args), args)
+        if action[1] is not None:
+            print_header(action[1])
+        errors = run_loop(action[0], args)
         if not args.cli_telemetry_disabled:
             installer_analytics.send(
                 action=args.action,

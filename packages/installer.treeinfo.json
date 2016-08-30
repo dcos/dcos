@@ -1,7 +1,6 @@
 {
   "core_package_list": [
     "dcos-image",
-    "dcos-installer",
     "dcos-installer-ui"
   ]
 }

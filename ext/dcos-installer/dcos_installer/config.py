@@ -80,7 +80,6 @@ bootstrap_url: file:///opt/dcos_install_tmp
 
     def get_hidden_config(self):
         self.hidden_config = {
-            'ip_detect_filename':  IP_DETECT_PATH,
             'ssh_key_path': SSH_KEY_PATH,
         }
 
