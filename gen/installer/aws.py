@@ -204,6 +204,19 @@ def validate_cf(template_body):
     client.validate_template(TemplateBody=template_body)
 
 
+def _as_cf_artifact(filename, cloudformation):
+    return {
+        'channel_path': 'cloudformation/{}'.format(filename),
+        'local_content': cloudformation,
+        'content_type': 'application/json; charset=utf-8'
+    }
+
+
+def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
+    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), gen_out.cloudformation)
+    yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
+
+
 def gen_supporting_template():
     for template_key in ['infra.json']:
         cf_template = 'aws/templates/advanced/{}'.format(template_key)
@@ -212,10 +225,9 @@ def gen_supporting_template():
         print("Validating CloudFormation: {}".format(cf_template))
         validate_cf(cloudformation)
 
-        yield template_key, gen.Bunch({
-            'cloudformation': cloudformation,
-            'results': '',
-        })
+        yield _as_cf_artifact(
+            template_key,
+            cloudformation)
 
 
 def make_advanced_bunch(variant_args, template_name, cc_params):
@@ -229,10 +241,10 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
 
     cc_package_files = [
-            '/etc/cfn_signal_metadata',
-            '/etc/dns_config',
-            '/etc/exhibitor',
-            '/etc/mesos-master-provider']
+        '/etc/cfn_signal_metadata',
+        '/etc/dns_config',
+        '/etc/exhibitor',
+        '/etc/mesos-master-provider']
 
     if cc_params['node_type'] == 'master':
         cc_package_files.append('/etc/aws_dnsnames')
@@ -264,8 +276,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     # Render the cloudformation
     cloudformation = render_cloudformation(
         results.templates[template_name],
-        cloud_config=variant_cloudconfig,
-        )
+        cloud_config=variant_cloudconfig)
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
@@ -287,6 +298,10 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
         params['node_type'] = node_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
+
+        def _as_artifact(filename, gen_out):
+            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
+
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
                 master_tk = '{}-{}-{}'.format(os_type, template_key, num_masters)
@@ -295,26 +310,25 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                 bunch = make_advanced_bunch(node_args,
                                             template_name,
                                             params)
-                yield '{}.json'.format(master_tk), bunch
+                yield from _as_artifact('{}.json'.format(master_tk), bunch)
 
                 # Zen template corresponding to this number of masters
-                yield '{}-zen-{}.json'.format(os_type, num_masters), gen.Bunch({
+                yield from _as_artifact('{}-zen-{}.json'.format(os_type, num_masters), gen.Bunch({
                     'cloudformation': render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         channel_commit_path=channel_commit_path,
                         cloudformation_s3_url=get_cloudformation_s3_url(),
-                        **bunch.results.arguments
-                        ),
+                        **bunch.results.arguments),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
                     # extra info that there are no cluster_packages
-                    'results': gen.Bunch({'cluster_packages': {}})})
+                    'results': gen.Bunch({'cluster_packages': {}})}))
         else:
             node_args['num_masters'] = "1"
             bunch = make_advanced_bunch(node_args,
                                         template_name,
                                         params)
-            yield '{}-{}'.format(os_type, template_name), bunch
+            yield from _as_artifact('{}-{}'.format(os_type, template_name), bunch)
 
 
 def gen_templates(arguments):
@@ -428,17 +442,9 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
 
-        def make_pre_genned(filename, gen_out):
-            yield {
-                'channel_path': 'cloudformation/{}{}'.format(variant_prefix, filename),
-                'local_content': gen_out.cloudformation,
-                'content_type': 'application/json; charset=utf-8'
-            }
-            yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
-
         def make(gen_args, filename):
             gen_out = gen_templates(gen_args)
-            yield from make_pre_genned(filename, gen_out)
+            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
 
         # Single master templates
         single_args = deepcopy(args)
@@ -452,11 +458,11 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
         # Advanced templates
         for os_type in ['coreos', 'el7']:
-            for template_name, advanced_template in gen_advanced_template(variant_base_args,
-                                                                          variant_prefix,
-                                                                          channel_commit_path,
-                                                                          os_type):
-                yield from make_pre_genned(template_name, advanced_template)
+            yield from gen_advanced_template(
+                variant_base_args,
+                variant_prefix,
+                channel_commit_path,
+                os_type)
 
     # Button page linking to the basic templates.
     button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments)
@@ -466,9 +472,4 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
         'content_type': 'text/html; charset=utf-8'}
 
     # This renders the infra template only, which has no difference between CE and EE
-    for template_name, advanced_template in gen_supporting_template():
-        yield {
-            'channel_path': 'cloudformation/{}'.format(template_name),
-            'local_content': advanced_template.cloudformation,
-            'content_type': 'application/json; charset=utf-8',
-        }
+    yield from gen_supporting_template()
