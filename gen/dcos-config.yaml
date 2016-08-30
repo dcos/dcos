@@ -290,7 +290,7 @@ package:
       {
         "gen_provider": "{{ provider }}",
         "diagnostics_urls": [
-          "http://leader.mesos:1050/system/health/v1/report"
+          "http://leader.mesos:1050/system/health/v1/report?cache=0"
         ],
         "cosmos_urls": [
           "http://leader.mesos:7070/package/list"
