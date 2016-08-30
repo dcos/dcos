@@ -39,12 +39,12 @@ CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_s
 PACKAGE_KEYS = {'package', 'root'}
 
 
-def add_roles(cloudconfig, roles):
-    for role in roles:
-        cloudconfig['write_files'].append({
-            "path": role_template.format(role),
-            "content": ""
-            })
+def add_role(cloudconfig, role):
+    assert isinstance(role, str)
+    assert role in role_names
+    cloudconfig['write_files'].append({
+        "path": role_template.format(role),
+        "content": ""})
 
     return cloudconfig
 
@@ -109,7 +109,7 @@ def render_cloudconfig(data):
 
 utils = Bunch({
     "role_template": role_template,
-    "add_roles": add_roles,
+    "add_role": add_role,
     "role_names": role_names,
     "add_services": None,
     "add_units": add_units,

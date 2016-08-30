@@ -610,6 +610,8 @@ class Install:
             self.__roles = if_exists(os.listdir, os.path.join(self.__config_dir, "roles"))
             if self.__roles is None:
                 self.__roles = []
+        if len(self.__roles) > 1:
+            raise InstallError("Only 0 or 1 roles are allowed for a host. Got: {}.".format(self.__roles))
 
         self.__well_known_dirs = ["bin", "etc", "include", "lib"]
         if not skip_systemd_dirs:

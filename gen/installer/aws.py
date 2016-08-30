@@ -76,15 +76,15 @@ late_services = """- name: dcos-cfn-signal.service
 cf_instance_groups = {
     'master': {
         'report_name': 'MasterServerGroup',
-        'roles': ['master', 'aws_master']
+        'role': 'master'
     },
     'slave': {
         'report_name': 'SlaveServerGroup',
-        'roles': ['slave']
+        'role': 'slave'
     },
     'slave_public': {
         'report_name': 'PublicSlaveServerGroup',
-        'roles': ['slave_public']
+        'role': 'slave_public'
     }
 }
 
@@ -266,7 +266,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         cloud_init_implementation)
 
     # Add roles
-    cc_variant = results.utils.add_roles(cc_variant, cc_params['roles'] + ['aws'])
+    cc_variant = results.utils.add_role(cc_variant, cc_params['role'])
 
     # NOTE: If this gets printed in string stylerather than '|' the AWS
     # parameters which need to be split out for the cloudformation to
@@ -364,7 +364,7 @@ def gen_templates(arguments):
             yaml.load(gen.template.parse_str(late_services).render(params)))
 
         # Add roles
-        cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])
+        cc_variant = results.utils.add_role(cc_variant, params['role'])
 
         # NOTE: If this gets printed in string stylerather than '|' the AWS
         # parameters which need to be split out for the cloudformation to
