@@ -208,13 +208,12 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     else:
         raise ValueError("Unknown Azure varietal specified")
 
-    artifact = {
+    yield {'packages': util.cluster_to_extra_packages(dcos_template.results.cluster_packages)}
+    yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
         'local_content': dcos_template.arm,
         'content_type': 'application/json; charset=utf-8'
     }
-
-    return dcos_template, artifact
 
 
 def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
@@ -225,12 +224,11 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
                 if arm_t == 'acs':
                     gen_args['ui_tracking'] = 'false'
                     gen_args['telemetry_enabled'] = 'false'
-                dcos_template, artifact = make_template(num_masters,
-                                                        gen_args,
-                                                        arm_t,
-                                                        pkgpanda.util.variant_prefix(bootstrap_name))
-                yield {'packages': util.cluster_to_extra_packages(dcos_template.results.cluster_packages)}
-                yield artifact
+                yield from make_template(
+                    num_masters,
+                    gen_args,
+                    arm_t,
+                    pkgpanda.util.variant_prefix(bootstrap_name))
 
     yield {
         'channel_path': 'azure.html',
