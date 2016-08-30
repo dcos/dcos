@@ -276,16 +276,15 @@ class DFSArgumentCalculator():
         # Re-arrange the validation functions so we can more easily access them by
         # argument name.
         self._validate_by_arg = dict()
+        self._multi_arg_validate = dict()
+
         for fn in validate_fns:
             parameters = get_function_parameters(fn)
-            assert len(parameters) == 1, "Validate functions must take exactly one parameter currently."
-            # Get out the one and only parameter's name. This will break really badly
-            # if functions have more than one parameter (We'll call for
-            # each parameter with only one parameter)
-            for parameter in parameters:
-                assert parameter not in self._validate_by_arg, \
-                    "Only one validation function per parameter is currently allowed."
-                self._validate_by_arg[parameter] = fn
+            if len(parameters) == 1:
+                self._validate_by_arg[parameters.pop()] = fn
+                assert not parameters
+            else:
+                self._multi_arg_validate[frozenset(parameters)] = fn
 
     def _calculate_argument(self, name):
         # Filter out any setters which have predicates / conditions which are
@@ -400,6 +399,27 @@ class DFSArgumentCalculator():
                 continue
 
             self.calculate(sub_scope[choice], throw_on_error=False)
+
+        # Perform all multi-argument validations
+        for parameter_set, validate_fn in self._multi_arg_validate:
+            # Build up argument map for validate function. If any arguments are
+            # unset then skip this validate function.
+            kwargs = dict()
+            skip = False
+            for parameter in parameter_set:
+                if parameter not in self._arguments:
+                    skip = True
+                    break
+                kwargs[parameter] = self._arguments[parameter]
+            if skip:
+                continue
+
+            # Call the validatoin function, catching AssertionErrors and turning them into errors in
+            # the error dictionary.
+            try:
+                validate_fn(**kwargs)
+            except AssertionError as ex:
+                self._errors[parameter_set] = ex.args[0]
 
         if throw_on_error and (len(self._errors) or len(self._unset)):
             raise ValidationError(self._errors, self._unset)
