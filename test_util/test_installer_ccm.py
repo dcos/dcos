@@ -180,7 +180,7 @@ def check_environment():
     options.add_env = add_env
 
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv '+options.ci_flags)
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -rs -vv ' + options.ci_flags)
     return options
 
 

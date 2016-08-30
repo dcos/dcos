@@ -1,8 +1,8 @@
 import json
 import os
+import pytest
 import subprocess
 import logging
-import time
 
 import kazoo.client
 import requests
@@ -57,23 +57,24 @@ def test_signal_service(cluster):
     """
     # This is due to caching done by 3DT / Signal service
     # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
-    time.sleep(61)
-    dcos_version = os.getenv("DCOS_VERSION", "")
+    dcos_version = os.environ["DCOS_VERSION"]
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     signal_config_data = json.loads(signal_config.read())
     customer_key = signal_config_data.get('customer_key', '')
+    enabled = signal_config_data.get('enabled', 'false')
     cluster_id_file = open('/var/lib/dcos/cluster-id')
     cluster_id = cluster_id_file.read().strip()
 
-    subprocess.call(["/usr/bin/logger", "3dt-testing-starting-now"])
+    if enabled == 'false':
+        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
+
     print("Version: ", dcos_version)
     print("Customer Key: ", customer_key)
     print("Cluster ID: ", cluster_id)
 
-    raw_data = cluster.get('/system/health/v1/report')
+    direct_report = cluster.get('/system/health/v1/report?cache=0')
     signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
     r_data = json.loads(signal_results)
-    subprocess.call(["/usr/bin/logger", "3dt-testing-ending-now"])
 
     exp_data = {
         'diagnostics': {
@@ -156,7 +157,7 @@ def test_signal_service(cluster):
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_node_units:
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(
-            cluster.all_slaves+cluster.masters)
+            cluster.all_slaves + cluster.masters)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
@@ -181,5 +182,5 @@ def test_signal_service(cluster):
     try:
         check_signal_data()
     except AssertionError as err:
-        logging.info('System report: {}'.format(raw_data.json()))
+        logging.info('System report: {}'.format(direct_report.json()))
         raise err

@@ -8,7 +8,7 @@ import sys
 
 from passlib.hash import sha512_crypt
 
-from dcos_installer.action_lib import configure
+from dcos_installer import config_util
 from dcos_installer.config import DCOSConfig
 from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
 
@@ -32,7 +32,7 @@ def do_configure(config_path=CONFIG_PATH):
         config = DCOSConfig(config_path=config_path)
         config.get_hidden_config()
         config.update(config.hidden_config)
-        configure.do_configure(config.stringify_configuration())
+        config_util.do_configure(config.stringify_configuration())
         return 0
 
 
@@ -101,7 +101,7 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     config.update(config.hidden_config)
     validation_messages = {}
     ssh_messages = validate_ssh.validate_config(config)
-    gen_messages = normalize_config_validation(configure.do_validate_gen_config(config.stringify_configuration()))
+    gen_messages = normalize_config_validation(config_util.do_validate_gen_config(config.stringify_configuration()))
     validation_messages.update(ssh_messages)
     validation_messages.update(gen_messages)
     validation_messages = remap_validation_keys(validation_messages)
@@ -169,7 +169,7 @@ def do_validate_gen_config(config_path=CONFIG_PATH):
     config = DCOSConfig(config_path=config_path)
     config.get_hidden_config()
     config.update(config.hidden_config)
-    messages = configure.do_validate_gen_config(config.stringify_configuration())
+    messages = config_util.do_validate_gen_config(config.stringify_configuration())
     validation = normalize_config_validation(messages)
     return validation
 
