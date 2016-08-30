@@ -9,7 +9,7 @@ import sys
 import dcos_installer.async_server
 import gen.calc
 from dcos_installer import action_lib, backend
-from dcos_installer.action_lib.prettyprint import print_header, PrettyPrint
+from dcos_installer.prettyprint import print_header, PrettyPrint
 from dcos_installer.installer_analytics import InstallerAnalytics
 
 from ssh.utils import AbstractSSHLibDelegate
