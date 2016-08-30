@@ -1,7 +1,0 @@
-{
-  "requires": ["python", "dcos-image-deps"],
-  "single_source": {
-    "kind": "git_local",
-    "rel_path": "../../"
-  }
-}
