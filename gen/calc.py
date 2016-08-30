@@ -44,8 +44,7 @@ def calulate_dcos_image_commit():
     if dcos_image_commit is None:
         dcos_image_commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
-    if dcos_image_commit is None:
-        raise "Unable to set dcos_image_commit from teamcity or git."
+    assert dcos_image_commit is not None, "Unable to set dcos_image_commit from teamcity or git."
 
     return dcos_image_commit
 
