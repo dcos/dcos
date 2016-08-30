@@ -19,7 +19,7 @@ from pkgpanda.build import hash_checkout
 # TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
 def validate_one_of(val: str, valid_values) -> None:
     """Test if object `val` is a member of container `valid_values`.
-    Raise a ValueError if it is not a member. The exception message contains
+    Raise a AssertionError if it is not a member. The exception message contains
     both, the representation (__repr__) of `val` as well as the representation
     of all items in `valid_values`.
     """
