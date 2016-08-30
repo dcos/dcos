@@ -436,7 +436,8 @@ entry = {
         'provider': {
             'onprem': {
                 'default': {
-                    'resolvers': '["8.8.8.8", "8.8.4.4"]'
+                    'resolvers': '["8.8.8.8", "8.8.4.4"]',
+                    'ip_detect_filename': 'genconf/ip-detect'
                 },
             },
             'azure': gen.azure.calc.entry,
