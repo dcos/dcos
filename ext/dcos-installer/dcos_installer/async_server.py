@@ -11,7 +11,6 @@ from aiohttp import web
 import dcos_installer
 import gen.calc
 from dcos_installer import backend
-from dcos_installer.action_lib.prettyprint import print_header
 from dcos_installer.constants import STATE_DIR
 
 from ssh.ssh_runner import Node
@@ -178,7 +177,7 @@ def action_action_name(request):
         # for the end-user
         if action_name == 'preflight':
             try:
-                print_header("GENERATING CONFIGURATION")
+                log.warning("GENERATING CONFIGURATION")
                 backend.do_configure()
             except:
                 genconf_failure = {
