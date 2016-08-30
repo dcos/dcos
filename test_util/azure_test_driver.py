@@ -165,7 +165,7 @@ def run():
                     provider='azure',
                     test_dns_search=False,
                     pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
-                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
+                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         print("ERROR: exception {}".format(ex))

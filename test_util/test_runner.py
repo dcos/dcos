@@ -19,7 +19,7 @@ def integration_test(
         dcos_dns, master_list, agent_list, public_agent_list,
         test_dns_search, provider,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
-        pytest_cmd='py.test -vv',
+        pytest_cmd='py.test -rs -vv',
         pytest_dir='/opt/mesosphere/active/dcos-integration-test'):
     """Runs integration test on host
 
@@ -71,7 +71,7 @@ cd {pytest_dir}
 
     write_string('test_preflight.sh', test_boilerplate.format(
         env=test_env_str, pytest_dir=pytest_dir,
-        cmd='py.test -vv --collect-only'))
+        cmd='py.test -rs -vv --collect-only'))
     write_string('test_wrapper.sh', test_boilerplate.format(
         env=test_env_str, pytest_dir=pytest_dir,
         cmd=pytest_cmd))
