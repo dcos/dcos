@@ -235,8 +235,17 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         Sometimes there isn't enough time to write code
         """
         length = int(self.headers['Content-Length'])
-        cmd = self.rfile.read(length).decode('utf-8')
-        (status, output) = subprocess.getstatusoutput(cmd)
+        data = self.rfile.read(length).decode('utf-8')
+        if self.headers['Content-Type'] == 'application/json':
+            decoded_data = json.loads(data)
+            cmd = decoded_data['cmd']
+            environ = decoded_data.get('environ', {})
+            environ.update(os.environ)
+            proc = subprocess.Popen(cmd, shell=True, env=environ, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = proc.communicate()[0].decode('utf-8')
+            status = proc.wait()
+        else:
+            (status, output) = subprocess.getstatusoutput(data)
         data = {"status": status, "output": output}
         self._send_reply(data)
 
