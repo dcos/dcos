@@ -4,9 +4,7 @@ libraries to support the dcos installer.
 """
 import logging
 import os
-import sys
 
-from passlib.hash import sha512_crypt
 
 from dcos_installer import config_util
 from dcos_installer.config import DCOSConfig
@@ -34,18 +32,6 @@ def do_configure(config_path=CONFIG_PATH):
         config.update(config.hidden_config)
         config_util.do_configure(config.stringify_configuration())
         return 0
-
-
-def hash_password(string):
-    """Returns hash of string per passlib SHA512 encryption
-
-    :param string: password to hash
-    :type string: str | None
-    """
-    new_hash = sha512_crypt.encrypt(string)
-    byte_str = new_hash.encode('ascii')
-    sys.stdout.buffer.write(byte_str+b'\n')
-    return new_hash
 
 
 def write_external_config(data, path, mode=0o644):
