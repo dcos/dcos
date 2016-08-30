@@ -5,7 +5,9 @@ import pytest
 import aiohttp
 import gen.calc
 import webtest_aiohttp
+from dcos_installer import action_lib
 from dcos_installer.async_server import build_app
+from ssh.ssh_runner import Node
 
 version = 1
 
@@ -308,6 +310,11 @@ def test_action_deploy_post(client, mocker):
 
     # Test start deploy
     mocked_read_json_state.side_effect = lambda arg: False
+    mocked_get_successful_nodes_from = mocker.patch('dcos_installer.action_lib.get_successful_nodes_from')
+    mocked_get_successful_nodes_from.side_effect = lambda step, state_json_dir: [
+        Node('127.0.0.1:22', tags={'role': 'master'})
+    ]
+
     res = client.request(route, method='POST')
     assert res.json == {'status': 'deploy started'}
     assert mocked_add_copy_packages.call_count == 1
@@ -359,3 +366,94 @@ def test_action_deploy_retry(client, mocker):
     mocked_remove_host.assert_any_call('/genconf/state/deploy.json', '127.0.0.1:22')
     assert mocked_remove_host.call_count == 2
     mocked_read_state_file.assert_called_with('/genconf/state/deploy.json')
+
+
+def test_get_successful_nodes_from_fail(mocker):
+    mocked_read_state_file = mocker.patch('dcos_installer.action_lib._read_state_file')
+    mocked_read_state_file.return_value = {
+        'hosts': {
+            '10.10.0.1:22': {
+                'host_status': 'success',
+                'tags': {
+                    'role': 'master'
+                }
+            },
+            '10.10.0.2:22': {
+                'host_status': 'failed',
+                'tags': {
+                    'role': 'master'
+                }
+            },
+            '10.10.0.3:22': {
+                'host_status': 'unstarted',
+                'tags': {
+                    'role': 'agent'
+                }
+            }
+        }
+    }
+
+    with pytest.raises(Exception):
+        action_lib.get_successful_nodes_from('preflight', '/genconf/states')
+
+
+def test_get_successful_nodes_from(mocker):
+    mocked_read_state_file = mocker.patch('dcos_installer.action_lib._read_state_file')
+    mocked_read_state_file.return_value = {
+        'hosts': {
+            '10.10.0.1:22': {
+                'host_status': 'success',
+                'tags': {
+                    'role': 'master'
+                }
+            },
+            '10.10.0.2:22': {
+                'host_status': 'failed',
+                'tags': {
+                    'role': 'agent'
+                }
+            },
+            '10.10.0.3:22': {
+                'host_status': 'unstarted',
+                'tags': {
+                    'role': 'agent'
+                }
+            }
+        }
+    }
+
+    nodes = action_lib.get_successful_nodes_from('preflight', '/genconf/states')
+    assert len(nodes) == 1
+    assert nodes[0].ip == '10.10.0.1'
+
+
+def test_get_full_nodes_list():
+    config = {
+        'master_list': ['10.10.0.1'],
+        'ssh_port': 22022
+    }
+    nodes = action_lib.get_full_nodes_list(config)
+    assert len(nodes) == 1
+    assert nodes[0].ip == '10.10.0.1'
+    assert nodes[0].port == 22022
+
+    config = {
+        'master_list': ['10.10.0.1', '10.10.0.2', '10.10.0.3']
+    }
+    nodes = action_lib.get_full_nodes_list(config)
+    assert len(nodes) == 3
+    assert nodes[0].port == 22
+
+
+def test_nodes_count_by_type():
+    targets = [
+        Node('127.0.0.1', tags={'role': 'master'}),
+        Node('127.0.0.2', tags={'role': 'master'}),
+        Node('127.0.0.3', tags={'role': 'master'}),
+        Node('127.0.0.4', tags={'role': 'agent'})
+    ]
+
+    assert action_lib.nodes_count_by_type(targets) == {
+        'total_masters': 3,
+        'total_agents': 1
+    }
