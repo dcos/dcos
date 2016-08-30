@@ -32,10 +32,10 @@ def validate_true_false(val) -> None:
     validate_one_of(val, ['true', 'false'])
 
 
-def calculate_bootstrap_variant():
-    variant = os.getenv('BOOTSTRAP_VARIANT')
-    assert variant is not None, "BOOTSTRAP_VARIANT must be set"
-    return variant
+def calculate_environment_variable(name):
+    value = os.getenv(name)
+    assert value is not None, "{} must be a set environment variable".format(name)
+    return value
 
 
 def calulate_dcos_image_commit():
@@ -44,8 +44,7 @@ def calulate_dcos_image_commit():
     if dcos_image_commit is None:
         dcos_image_commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
-    if dcos_image_commit is None:
-        raise "Unable to set dcos_image_commit from teamcity or git."
+    assert dcos_image_commit is not None, "Unable to set dcos_image_commit from teamcity or git."
 
     return dcos_image_commit
 
@@ -344,7 +343,7 @@ entry = {
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config],
     'default': {
-        'bootstrap_variant': calculate_bootstrap_variant,
+        'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
@@ -436,7 +435,9 @@ entry = {
         'provider': {
             'onprem': {
                 'default': {
-                    'resolvers': '["8.8.8.8", "8.8.4.4"]'
+                    'resolvers': '["8.8.8.8", "8.8.4.4"]',
+                    'ip_detect_filename': 'genconf/ip-detect',
+                    'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID')
                 },
             },
             'azure': gen.azure.calc.entry,

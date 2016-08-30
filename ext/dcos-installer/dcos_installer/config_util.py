@@ -28,14 +28,7 @@ def do_configure(gen_config):
 
 
 def get_gen_extra_args():
-    if 'BOOTSTRAP_ID' not in os.environ:
-        log.error("BOOTSTRAP_ID must be set in environment to run.")
-        raise KeyError
-
-    arguments = {
-        'bootstrap_id': os.environ['BOOTSTRAP_ID'],
-        'provider': 'onprem'}
-    return arguments
+    return {'provider': 'onprem'}
 
 
 def do_validate_gen_config(gen_config):
