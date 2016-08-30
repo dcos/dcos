@@ -1,5 +1,6 @@
 import json
 import os
+import pytest
 import subprocess
 import logging
 
@@ -60,8 +61,12 @@ def test_signal_service(cluster):
     signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
     signal_config_data = json.loads(signal_config.read())
     customer_key = signal_config_data.get('customer_key', '')
+    enabled = signal_config_data.get('enabled', 'false')
     cluster_id_file = open('/var/lib/dcos/cluster-id')
     cluster_id = cluster_id_file.read().strip()
+
+    if enabled == 'false':
+        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
 
     print("Version: ", dcos_version)
     print("Customer Key: ", customer_key)

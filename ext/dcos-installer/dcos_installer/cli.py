@@ -6,6 +6,8 @@ import logging
 import os
 import sys
 
+from passlib.hash import sha512_crypt
+
 import dcos_installer.async_server
 import gen.calc
 from dcos_installer import action_lib, backend
@@ -190,14 +192,18 @@ dispatch_dict_aio = {
 
 def dispatch(args):
     """ Dispatches the selected mode based on command line args. """
-    def hash_password(args):
-        if len(args.hash_password) > 0:
-            print_header("HASHING PASSWORD TO SHA512")
-            backend.hash_password(args.hash_password)
-            return 0
 
     if getattr(args, 'hash_password'):
-        sys.exit(hash_password(args))
+        if len(args.hash_password) == 0:
+            log.error("No password given")
+            sys.exit(1)
+        # TODO(cmaloney): Import a function from the auth stuff to do the hashing and guarantee it
+        # always matches
+        print_header("HASHING PASSWORD TO SHA512")
+        new_hash = sha512_crypt.encrypt(args.hash_password)
+        byte_str = new_hash.encode('ascii')
+        sys.stdout.buffer.write(byte_str + b'\n')
+        sys.exit(0)
 
     if args.action in dispatch_dict_simple:
         action = dispatch_dict_simple[args.action]
