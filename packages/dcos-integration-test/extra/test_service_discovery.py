@@ -7,7 +7,7 @@ import retrying
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
-def _service_discovery_test(cluster, docker_network_bridge=True):
+def _service_discovery_test(cluster, docker_network_bridge):
     """Service discovery integration test
 
     This test verifies if service discovery works, by comparing marathon data
@@ -51,11 +51,26 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     itself match and the IP of the test server matches the service point of that
     container as reported by Marathon.
     """
-    app_definition, test_uuid = cluster.get_base_testapp_definition(docker_network_bridge=docker_network_bridge)
+
+    # TODO(cmaloney): For non docker network bridge we should just do a mesos container.
+    app_definition, test_uuid = cluster.get_test_app_in_docker(ip_per_container=False)
+
+    if not docker_network_bridge:
+        # TODO(cmaloney): This is very hacky to make PORT0 on the end instead of 9080...
+        app_definition['cmd'] = app_definition['cmd'][:-4] + '$PORT0'
+        app_definition['container']['docker']['network'] = 'HOST'
+        del app_definition['container']['docker']['portMappings']
+        app_definition['portDefinitions'] = [{
+            "protocol": "tcp",
+            "port": 0,
+            "name": "test"
+        }]
+
     app_definition['instances'] = 2
 
-    if len(cluster.slaves) >= 2:
-        app_definition["constraints"] = [["hostname", "UNIQUE"], ]
+    assert len(cluster.slaves) >= 2, "Test requires a minimum of two agents"
+
+    app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 
     service_points = cluster.deploy_marathon_app(app_definition)
 
@@ -132,7 +147,7 @@ def test_if_search_is_working(cluster):
     Please check test_server.py for more details.
     """
     # Launch the app
-    app_definition, test_uuid = cluster.get_base_testapp_definition()
+    app_definition, test_uuid = cluster.get_test_app()
     service_points = cluster.deploy_marathon_app(app_definition)
 
     # Get the status
