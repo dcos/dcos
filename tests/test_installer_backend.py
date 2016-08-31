@@ -82,8 +82,9 @@ def test_bad_create_config_from_post(tmpdir):
         "master_list": ["foo"],
     }
     expected_bad_messages = {
-        "agent_list": 'agent_list must be a list',
-        "master_list": 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: foo',
+        "agent_list": "Must be a JSON formatted list, but couldn't be parsed the given value `foo` as "
+                      "one because of: Expecting value: line 1 column 1 (char 0)",
+        "master_list": 'Invalid IPv4 addresses in list: foo',
     }
     err, msg = backend.create_config_from_post(
         post_data=bad_post_data,
@@ -98,8 +99,8 @@ def test_do_validate_config(tmpdir):
     temp_config_path = workspace + '/config.yaml'
 
     expected_output = {
-        'ssh_user': 'required parameter ssh_user was not provided',
-        'master_list': 'required parameter master_list was not provided',
+        'ssh_user': 'Must set ssh_user, no way to calculate value.',
+        'master_list': 'Must set master_list, no way to calculate value.',
     }
     # remove num_masters and masters_quorum since they can change between runs
     messages = backend.do_validate_config(temp_config_path)
@@ -170,8 +171,28 @@ def test_success():
 def test_accept_overrides_for_undefined_config_params(tmpdir):
     temp_config_path = tmpdir.strpath + '/config.yaml'
     param = ('fake_test_param_name', 'fake_test_param_value')
-    backend.create_config_from_post(
+    validation_err, data = backend.create_config_from_post(
         post_data=dict([param]),
         config_path=temp_config_path)
 
+    assert not validation_err, "unexpected validation error: {}".format(data)
     assert backend.get_config(config_path=temp_config_path)[param[0]] == param[1]
+
+
+simple_full_config = """---
+master_list:
+ - 127.0.0.1
+"""
+
+
+def test_do_configure(tmpdir):
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    config_path = genconf_dir.join('config.yaml')
+    config_path.write(simple_full_config)
+    genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
+    tmpdir.join('artifacts/12345.bootstrap.tar.xz').write('contents_of_bootstrap', ensure=True)
+    tmpdir.join('artifacts/12345.active.json').write('{"active": "contents"}', ensure=True)
+
+    with tmpdir.as_cwd():
+        assert backend.do_configure(config_path=str(config_path)) == 0

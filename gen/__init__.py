@@ -274,16 +274,18 @@ class DFSArgumentCalculator():
         # Re-arrange the validation functions so we can more easily access them by
         # argument name.
         self._validate_by_arg = dict()
+        self._multi_arg_validate = dict()
+
         for fn in validate_fns:
             parameters = get_function_parameters(fn)
-            assert len(parameters) == 1, "Validate functions must take exactly one parameter currently."
-            # Get out the one and only parameter's name. This will break really badly
-            # if functions have more than one parameter (We'll call for
-            # each parameter with only one parameter)
-            for parameter in parameters:
-                assert parameter not in self._validate_by_arg, \
-                    "Only one validation function per parameter is currently allowed."
-                self._validate_by_arg[parameter] = fn
+            # Could build up the single and multi parameter validation function maps in the same
+            # thing but the timing / handling of when and how we run single vs. multi-parameter
+            # validation functions is fairly different, the extra bit here simplifies the later code.
+            if len(parameters) == 1:
+                self._validate_by_arg[parameters.pop()] = fn
+                assert not parameters
+            else:
+                self._multi_arg_validate[frozenset(parameters)] = fn
 
     def _calculate_argument(self, name):
         # Filter out any setters which have predicates / conditions which are
@@ -399,6 +401,27 @@ class DFSArgumentCalculator():
 
             self.calculate(sub_scope[choice], throw_on_error=False)
 
+        # Perform all multi-argument validations
+        for parameter_set, validate_fn in self._multi_arg_validate.items():
+            # Build up argument map for validate function. If any arguments are
+            # unset then skip this validate function.
+            kwargs = dict()
+            skip = False
+            for parameter in parameter_set:
+                if parameter not in self._arguments or self._arguments[parameter] is None:
+                    skip = True
+                    break
+                kwargs[parameter] = self._arguments[parameter]
+            if skip:
+                continue
+
+            # Call the validation function, catching AssertionErrors and turning them into errors in
+            # the error dictionary.
+            try:
+                validate_fn(**kwargs)
+            except AssertionError as ex:
+                self._errors[parameter_set] = ex.args[0]
+
         if throw_on_error and (len(self._errors) or len(self._unset)):
             raise ValidationError(self._errors, self._unset)
 
@@ -477,7 +500,7 @@ def do_gen_package(config, package_filename):
     log.info("Package filename: %s", package_filename)
 
 
-def validate_arguments_strings(arguments):
+def validate_arguments_strings(arguments: dict):
     errors = dict()
     # Validate that all keys and vlaues of arguments are strings
     for k, v in arguments.items():
@@ -585,21 +608,116 @@ def validate_all_arguments_match_parameters(parameters, setters, arguments):
         raise ValidationError(errors, set())
 
 
-def validate(
-        arguments,
-        extra_templates=list(),
-        cc_package_files=list()):
+class ConfigTarget():
+    def __init__(self, mandatory_parameters):
+        self.validate = list()
+        self.setters = dict()
+        self.mandatory_parameters = mandatory_parameters
+
+    def add_setter(self, name, value, is_optional, conditions, is_user, replace_existing):
+        if replace_existing:
+            if name in self.setters:
+                del self.setters[name]
+        self.setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, is_user))
+
+    def add_conditional_scope(self, scope, conditions, replace_existing):
+        # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
+        # that one takes functions and one takes strings. Simplify to just 'can', 'must'.
+        assert scope.keys() <= {'validate', 'default', 'must', 'conditional'}
+
+        self.validate += scope.get('validate', list())
+
+        for name, fn in scope.get('must', dict()).items():
+            self.add_setter(name, fn, False, conditions, False, replace_existing)
+
+        for name, fn in scope.get('default', dict()).items():
+            self.add_setter(name, fn, True, conditions, False, replace_existing)
+
+        for name, cond_options in scope.get('conditional', dict()).items():
+            for value, sub_scope in cond_options.items():
+                self.add_conditional_scope(sub_scope, conditions + [(name, value)], replace_existing=replace_existing)
+
+    def add_entry(self, entry, replace_existing):
+        # TODO(cmaloney): replace_existing should only apply once for the whole set of new entries,
+        # not every time we add from it so that a new config can add multiple conditional setters
+        # for a value.
+        self.add_conditional_scope(entry, [], replace_existing=False)
+
+
+def calculate_config_for_targets(config_targets, user_arguments):
+    assert isinstance(config_targets, list)
+
+    # Make sure all user provided arguments are strings.
+    validate_arguments_strings(user_arguments)
+
+    validate = list()
+    setters = dict()
+    mandatory_parameters = {'variables': set(), 'sub_scopes': dict()}
+
+    # Merge all the config targets into one big group of setters for providing
+    # to the calculator
+    # TODO(cmaloney): The setter management / set code is very similar to that in ConfigTarget, they
+    # could probably be joined.
+    for target in config_targets:
+        for name, setter_list in target.setters.items():
+            setters.setdefault(name, list())
+            setters[name] = setters[name] + setter_list
+        validate = validate + target.validate
+
+        # TODO(cmaloney): The building of mandatory_parameters is identical to how we build it up in
+        # get_parameters()
+        mandatory_parameters = merge_dictionaries(mandatory_parameters, target.mandatory_parameters)
+
+    # TODO(cmaloney): Re-enable this after sorting out how to have "optional" config targets which
+    # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)
+    # validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
+
+    # Add in all user arguments as setters.
+    # Happens last so that they are never overwritten with replace_existing=True
+    for name, value in user_arguments.items():
+        setters.setdefault(name, list()).append(Setter(name, value, False, [], True))
+
+    # Use setters to caluclate every required parameter
+    arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters)
+
+    # Validate all new / calculated arguments are strings.
+    validate_arguments_strings(arguments)
+
+    log.info("Final arguments:" + json.dumps(arguments, **json_prettyprint_args))
+
+    # TODO(cmaloney) Give each config target the values for all it's parameters that were hit as
+    # well as any parameters that led to those parameters.
+    return arguments
+
+
+def validate_config_for_targets(config_targets, user_arguments):
     try:
-        generate(
-            arguments=arguments,
-            extra_templates=extra_templates,
-            cc_package_files=cc_package_files,
-            validate_only=True)
+        calculate_config_for_targets(config_targets, user_arguments)
         return {'status': 'ok'}
     except ValidationError as ex:
         messages = {}
+
+        # Defer multi-key validation errors and noramlize them to be single-key
+        # ones. The multi-key is always less important than the single-key
+        # messages which is why single-key messages we never overwrite.
+        # TODO(cmaloney): Teach the whole stack to be able to handle multi-key
+        # validation errors.
+        to_do = dict()
         for key, msg in ex.errors.items():
+            if isinstance(key, frozenset):
+                to_do[key] = msg
+                continue
+
+            assert isinstance(key, str)
             messages[key] = {'message': msg}
+
+        for keys, msg in to_do.items():
+            for name in keys:
+                # Skip ones we already have one message for.
+                if name in messages:
+                    continue
+
+                messages[name] = {'message': msg}
 
         return {
             'status': 'errors',
@@ -608,24 +726,16 @@ def validate(
         }
 
 
-def generate(
+def validate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list(),
-        validate_only=False):
+        cc_package_files=list()):
+    config_target, _ = get_dcosconfig_target_and_templates(arguments, extra_templates)
+    return validate_config_for_targets([config_target], arguments)
+
+
+def get_dcosconfig_target_and_templates(user_arguments, extra_templates: list):
     log.info("Generating configuration files...")
-
-    assert isinstance(extra_templates, list)
-
-    # To maintain the old API where we passed arguments rather than the new name.
-    user_arguments = arguments
-    arguments = None
-
-    setters = dict()
-    validate = list()
-
-    # Make sure all user provided arguments are strings.
-    validate_arguments_strings(user_arguments)
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
     package_names = ['dcos-config', 'dcos-metadata']
@@ -633,43 +743,6 @@ def generate(
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
-
-    def add_setter(name, value, is_optional, conditions, is_user, replace_existing):
-        if replace_existing:
-            if name in setters:
-                del setters[name]
-        setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, is_user))
-
-    def add_conditional_scope(scope, conditions, replace_existing):
-        nonlocal validate
-
-        # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
-        # that one takes functions and one takes strings. Simplify to just 'can', 'must'.
-        assert scope.keys() <= {'validate', 'default', 'must', 'conditional'}
-
-        validate += scope.get('validate', list())
-
-        for name, fn in scope.get('must', dict()).items():
-            add_setter(name, fn, False, conditions, False, replace_existing)
-
-        for name, fn in scope.get('default', dict()).items():
-            add_setter(name, fn, True, conditions, False, replace_existing)
-
-        for name, cond_options in scope.get('conditional', dict()).items():
-            for value, sub_scope in cond_options.items():
-                add_conditional_scope(sub_scope, conditions + [(name, value)], replace_existing=replace_existing)
-
-    add_conditional_scope(gen.calc.entry, [], replace_existing=False)
-
-    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
-    if os.path.exists('gen_extra/calc.py'):
-        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-        add_conditional_scope(mod.entry, [], replace_existing=True)
-
-    # Add in all user arguments as setters.
-    # Happens last so that they are never overwritten with replace_existing=True
-    for name, value in user_arguments.items():
-        add_setter(name, value, False, [], True, False)
 
     # Re-arrange templates to be indexed by common name. Only allow multiple for one key if the key
     # is yaml (ends in .yaml).
@@ -682,16 +755,22 @@ def generate(
         if len(templates[key]) > 1 and not key.endswith('.yaml'):
             raise Exception(
                 "Internal Error: Only know how to merge YAML templates at this point in time. "
-                "Can't merge template {} in template_list {}".format(name, templates[key]))
+                "Can't merge template {} in template_list {}".format(filename, templates[key]))
 
     mandatory_parameters = get_parameters(templates)
+    config_target = ConfigTarget(mandatory_parameters)
 
-    validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
+    config_target.add_entry(gen.calc.entry, replace_existing=False)
+
+    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
+    if os.path.exists('gen_extra/calc.py'):
+        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+        config_target.add_entry(mod.entry, replace_existing=True)
 
     def add_builtin(name, value):
-        add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False, False)
+        config_target.add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False, False)
 
-    # TODO(cmaloney): Hash the contents of all teh templates rather than using the list of filenames
+    # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
     add_builtin('package_names', list(package_names))
@@ -702,13 +781,21 @@ def generate(
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
     add_builtin('expanded_config', temporary_str)
 
-    # Calculate the remaining arguments.
-    arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters)
+    return config_target, templates
 
-    # Validate all new / calculated arguments are strings.
-    validate_arguments_strings(arguments)
 
-    log.info("Final arguments:" + json.dumps(arguments, **json_prettyprint_args))
+def generate(
+        arguments,
+        extra_templates=list(),
+        cc_package_files=list()):
+    # To maintain the old API where we passed arguments rather than the new name.
+    user_arguments = arguments
+    arguments = None
+
+    config_target, templates = get_dcosconfig_target_and_templates(user_arguments, extra_templates)
+
+    # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
+    arguments = calculate_config_for_targets([config_target], user_arguments)
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
@@ -717,9 +804,6 @@ def generate(
     # Explicitly / manaully setup so that it'll fit where we want it.
     arguments['expanded_config'] = textwrap.indent(json.dumps(arguments, **json_prettyprint_args),
                                                    prefix='  ' * 3)
-
-    if validate_only:
-        return
 
     # Fill in the template parameters
     rendered_templates = render_templates(templates, arguments)

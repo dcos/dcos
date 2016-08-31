@@ -78,11 +78,6 @@ bootstrap_url: file:///opt/dcos_install_tmp
         for k, v in self.items():
             log.debug("%s: %s", k, v)
 
-    def get_hidden_config(self):
-        self.hidden_config = {
-            'ssh_key_path': SSH_KEY_PATH,
-        }
-
     def get_external_config(self):
         self.external_config = {
             'ssh_key': self._try_loading_from_disk(SSH_KEY_PATH),

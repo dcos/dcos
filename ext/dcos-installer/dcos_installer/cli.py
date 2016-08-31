@@ -120,13 +120,6 @@ def print_validation_errors(messages):
         log.error('{}: {}'.format(key, message))
 
 
-def validate_ssh_config_or_exit():
-    validation_errors = backend.do_validate_ssh_config()
-    if validation_errors:
-        print_validation_errors(validation_errors)
-        sys.exit(1)
-
-
 def do_version(args):
     print(json.dumps(
         {
@@ -138,7 +131,7 @@ def do_version(args):
 
 def do_validate_config(args):
     log_warn_only()
-    validation_errors = backend.do_validate_gen_config()
+    validation_errors = backend.do_validate_config()
     if validation_errors:
         print_validation_errors(validation_errors)
         return 1
@@ -234,7 +227,8 @@ def dispatch(args):
     # Dispatches CLI options which are installer actions ran through AIO event loop
     if args.action in dispatch_dict_aio:
         action = dispatch_dict_aio[args.action]
-        validate_ssh_config_or_exit()
+        if do_validate_config(args) != 0:
+            sys.exit(1)
         if action[1] is not None:
             print_header(action[1])
         errors = run_loop(action[0], args)
