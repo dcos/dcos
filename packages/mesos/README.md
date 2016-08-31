@@ -10,3 +10,6 @@
 <li>[3dd498d797a44593d376b4d50a33e2b8214c0dd4] Split src/openssl.hpp adding include/process/ssl/flags.hpp. (landing in 1.1.0)
 <li>[f6581f2e8fcb07074fca9e72b3134476f6fc74ab] Updated includes to follow the SSL flag split. (landing in 1.1.0)
 <li>[a22b5dd552168a8dd925682f3b349059e10fc3d3] Modified network file setup in `network/cni` isolator. (landing in 1.1.0)
+<li>[3e703af02bc309a9d6653392d02627bf3d3ce930] Updated logrotation module to use `os::pagesize()`. (landing in 1.1.0)
+<li>[1d45ba9f4f7f943d24282e0a91fb01c68815d6c3] Fixed sign comparisons in logrotate module. (landing in 1.1.0)
+<li>[b546e7544c04a6d3e0da87cd6207ae8f4d827add] Added a way to set logrotate settings per executor. (landing in 1.1.0)
