@@ -318,7 +318,7 @@ class Cluster:
             # NOTE: uses '.' rather than `source`, since `source` only exists in bash and this is
             # run by sh
             'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
-                   '/opt/mesosphere/active/dcos-integration-test/test_server.py ',
+                   '/opt/mesosphere/active/dcos-integration-test/python_test_server.py ',
             'env': {
                 'DCOS_TEST_UUID': test_uuid
             },
