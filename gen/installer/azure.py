@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Azure Image Creation, Management, Testing"""
 
 import json

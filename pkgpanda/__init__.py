@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 See `docs/package_concepts.md` for the package layout.
 

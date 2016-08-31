@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Helps build config packages for installer-specific templates.
 
 Takes in a bunch of configuration files, as well as functions to calculate the values/strings which
