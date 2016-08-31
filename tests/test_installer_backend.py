@@ -19,6 +19,22 @@ def test_password_hash():
     assert passlib.hash.sha512_crypt.verify(password, hash_pw), 'Hash does not match password'
 
 
+def test_set_superuser_password(tmpdir):
+    """Test that --set-superuser-hash works"""
+
+    with tmpdir.as_cwd():
+        tmpdir.join('genconf').ensure(dir=True)
+        # check config.yaml doesn't have the password
+        assert 'superuser_password_hash' not in backend.get_config('genconf/config.yaml')
+
+        # Set the password
+        subprocess.check_call(['dcos_installer', '--set-superuser-password', 'foo'], cwd=str(tmpdir))
+
+        # Check that config.yaml has the password set
+        config = backend.get_config('genconf/config.yaml')
+        assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
+
+
 def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()

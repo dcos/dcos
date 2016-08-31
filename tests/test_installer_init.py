@@ -33,6 +33,10 @@ def test_set_arg_parser():
     assert parser.hash_password == 'foo'
     assert parser.action is None
 
+    parser = cli.parse_args(['--set-superuser-password', 'foo'])
+    assert parser.set_superuser_password == 'foo'
+    assert parser.action is None
+
     # Can't do two at once
     with pytest.raises(SystemExit):
         cli.parse_args(['--validate', '--hash-password', 'foo'])
