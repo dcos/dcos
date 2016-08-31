@@ -391,6 +391,18 @@ class Cluster:
 
         assert r_data['test_uuid'] == test_uuid
 
+        # Test the app is running as root
+        r = requests.get('http://{}:{}/operating_environment'.format(
+            service_points[0].host,
+            service_points[0].port))
+
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            pytest.fail(msg.format(r.status_code, r.reason, r.text))
+
+        assert r.json() == {'username': 'root'}
+
         self.destroy_marathon_app(app['id'])
 
     def deploy_marathon_app(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
