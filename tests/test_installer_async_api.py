@@ -355,7 +355,7 @@ def test_action_deploy_retry(client, mocker):
     res = client.post(route, params={'retry': 'true'}, content_type='application/x-www-form-urlencoded')
     assert res.json == {'details': ['127.0.0.1:22', '127.0.0.3:22022'], 'status': 'retried'}
     assert mocked_add_copy_packages.call_count == 1
-    mocked_remove_host.assert_any_call('/genconf/state/deploy.json', '127.0.0.3:22022')
-    mocked_remove_host.assert_any_call('/genconf/state/deploy.json', '127.0.0.1:22')
+    mocked_remove_host.assert_any_call('genconf/state/deploy.json', '127.0.0.3:22022')
+    mocked_remove_host.assert_any_call('genconf/state/deploy.json', '127.0.0.1:22')
     assert mocked_remove_host.call_count == 2
-    mocked_read_state_file.assert_called_with('/genconf/state/deploy.json')
+    mocked_read_state_file.assert_called_with('genconf/state/deploy.json')

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Helps build config packages for installer-specific templates.
 
 Takes in a bunch of configuration files, as well as functions to calculate the values/strings which
@@ -147,7 +146,7 @@ def merge_dictionaries(base, additions):
                 base_copy[k] |= v
                 continue
 
-            # Unknwon types
+            # Unknown types
             raise ValueError("Can't merge type {} into type {}".format(type(v), type(base_copy[k])))
         except ValueError as ex:
             raise ValueError("{} inside key {}".format(ex, k)) from ex
@@ -185,7 +184,7 @@ def merge_replace_append_dictionaries(base, additions):
                 base_copy[k] = v
                 continue
 
-            # Unknwon types
+            # Unknown types
             raise ValueError("Can't merge type {} into type {}".format(type(v), type(base_copy[k])))
         except ValueError as ex:
             raise ValueError("{} inside key {}".format(ex, k)) from ex

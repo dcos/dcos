@@ -190,18 +190,38 @@ dispatch_dict_aio = {
 }
 
 
+# TODO(cmaloney): This should only be in enterprise / isn't useful in open currently.
+def do_hash_password(password):
+    if password is None:
+        password = ''
+        while True:
+            password = input('Password: ')
+            if password:
+                break
+            else:
+                log.error('Must provide a non-empty password')
+
+    print_header("HASHING PASSWORD TO SHA512")
+    hashed_password = sha512_crypt.encrypt(password)
+    return hashed_password
+
+
 def dispatch(args):
     """ Dispatches the selected mode based on command line args. """
+    if getattr(args, 'set_superuser_password'):
+        assert len(args.set_superuser_password) == 1
+        password_hash = do_hash_password(args.set_superuser_password[0])
+        err, messages = backend.create_config_from_post({'superuser_password_hash': password_hash})
+        if err:
+            log.error("Unable to save password: {}".format(messages))
+            sys.exit(1)
+        sys.exit(0)
 
     if getattr(args, 'hash_password'):
-        if len(args.hash_password) == 0:
-            log.error("No password given")
-            sys.exit(1)
+        assert len(args.hash_password) == 1
         # TODO(cmaloney): Import a function from the auth stuff to do the hashing and guarantee it
         # always matches
-        print_header("HASHING PASSWORD TO SHA512")
-        new_hash = sha512_crypt.encrypt(args.hash_password)
-        byte_str = new_hash.encode('ascii')
+        byte_str = do_hash_password(args.hash_password[0]).encode('ascii')
         sys.stdout.buffer.write(byte_str + b'\n')
         sys.exit(0)
 
@@ -240,9 +260,16 @@ def parse_args(args):
 
     mutual_exc.add_argument(
         '--hash-password',
-        default='',
-        type=str,
-        help='Hash a password on the CLI for use in the config.yaml.'
+        action='append',
+        nargs='?',
+        help='Hash a password and print the results to copy into a config.yaml.'
+    )
+
+    mutual_exc.add_argument(
+        '--set-superuser-password',
+        action='append',
+        nargs='?',
+        help='Hash the given password and store it as the superuser password in config.yaml'
     )
 
     parser.add_argument(

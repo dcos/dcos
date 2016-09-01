@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Simple python templating system. Works on yaml files which are also jinja-style templates.
 # Scans the jinja for the structure, and outputs an AST of the possible option combinations.
 # That graph could be fed into something like an argument prompter to get

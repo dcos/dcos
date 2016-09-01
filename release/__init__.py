@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """DC/OS release management
 
 1. Build and upload a DC/OS release to a release URL

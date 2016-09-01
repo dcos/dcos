@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generates a bash script for installing by hand or light config management integration"""
 
 import os
