@@ -1,10 +1,7 @@
 import uuid
 
-import pytest
-import requests
 
-
-def test_if_Marathon_app_can_be_deployed(cluster):
+def test_if_marathon_app_can_be_deployed(cluster):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -18,24 +15,21 @@ def test_if_Marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
-    app_definition, test_uuid = cluster.get_base_testapp_definition()
-
-    service_points = cluster.deploy_marathon_app(app_definition)
-
-    r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
-                                                     service_points[0].port))
-    if r.status_code != 200:
-        msg = "Test server replied with non-200 reply: '{0} {1}. "
-        msg += "Detailed explanation of the problem: {2}"
-        pytest.fail(msg.format(r.status_code, r.reason, r.text))
-
-    r_data = r.json()
-    assert r_data['test_uuid'] == test_uuid
-
-    cluster.destroy_marathon_app(app_definition['id'])
+    app, test_uuid = cluster.get_test_app()
+    cluster.deploy_test_app_and_check(app, test_uuid)
 
 
-def test_if_Marathon_app_can_be_deployed_with_Mesos_containerizer(cluster):
+def test_if_docker_app_can_be_deployed(cluster):
+    """Marathon app inside docker deployment integration test.
+
+    Verifies that a marathon app inside of a docker daemon container can be
+    deployed and accessed as expected.
+    """
+    app, test_uuid = cluster.get_test_app_in_docker(ip_per_container=False)
+    cluster.deploy_test_app_and_check(app, test_uuid)
+
+
+def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     """Marathon app deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon app using the Mesos containerizer with
@@ -49,62 +43,20 @@ def test_if_Marathon_app_can_be_deployed_with_Mesos_containerizer(cluster):
     When port mapping is available (MESOS-4777), this test should be updated to
     reflect that.
     """
-
-    test_uuid = uuid.uuid4().hex
-    test_server_cmd = '/opt/mesosphere/bin/python /opt/mesosphere/active/dcos-integration-test/test_server.py'
-
-    app_definition = {
-        'id': '/integration-test-app-{}'.format(test_uuid),
-        'cpus': 0.1,
-        'mem': 64,
-        'cmd': test_server_cmd+' $PORT0',
-        'disk': 0,
-        'instances': 1,
-        'healthChecks': [{
-            'protocol': 'HTTP',
-            'path': '/ping',
-            'portIndex': 0,
-            'gracePeriodSeconds': 5,
-            'intervalSeconds': 10,
-            'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }],
-        'env': {
-            'DCOS_TEST_UUID': test_uuid,
-            'PYTHONPATH': '/opt/mesosphere/lib/python3.4/site-packages'
+    app, test_uuid = cluster.get_test_app()
+    app['container'] = {
+        'type': 'MESOS',
+        'docker': {
+            # TODO(cmaloney): Switch to an alpine image with glibc inside.
+            'image': 'debian:jessie'
         },
-        'container': {
-            'type': 'MESOS',
-            'docker': {
-                'image': 'python:3.4.3-slim',
-                'forcePullImage': True
-            },
-            'volumes': [{
-                'containerPath': '/opt/mesosphere',
-                'hostPath': '/opt/mesosphere',
-                'mode': 'RO'
-            }]
-        },
-        'portDefinitions': [{
-            'port': 0,
-            'protocol': 'tcp',
-            'name': 'test'
+        'volumes': [{
+            'containerPath': '/opt/mesosphere',
+            'hostPath': '/opt/mesosphere',
+            'mode': 'RO'
         }]
     }
-
-    service_points = cluster.deploy_marathon_app(app_definition)
-
-    r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
-                                                     service_points[0].port))
-    if r.status_code != 200:
-        msg = "Test server replied with non-200 reply: '{0} {1}. "
-        msg += "Detailed explanation of the problem: {2}"
-        pytest.fail(msg.format(r.status_code, r.reason, r.text))
-
-    r_data = r.json()
-    assert r_data['test_uuid'] == test_uuid
-
-    cluster.destroy_marathon_app(app_definition['id'])
+    cluster.deploy_test_app_and_check(app, test_uuid)
 
 
 def test_octarine_http(cluster, timeout=30):
@@ -113,8 +65,9 @@ def test_octarine_http(cluster, timeout=30):
     """
 
     test_uuid = uuid.uuid4().hex
+    octarine_id = uuid.uuid4().hex
     proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port marathon)"')
+             '--client --port {})"'.format(octarine_id))
     check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
 
     app_definition = {
@@ -122,7 +75,7 @@ def test_octarine_http(cluster, timeout=30):
         'cpus': 0.1,
         'mem': 128,
         'ports': [0],
-        'cmd': '/opt/mesosphere/bin/octarine marathon',
+        'cmd': '/opt/mesosphere/bin/octarine {}'.format(octarine_id),
         'disk': 0,
         'instances': 1,
         'healthChecks': [{
@@ -147,10 +100,11 @@ def test_octarine_srv(cluster, timeout=30):
 
     # Limit string length so we don't go past the max SRV record length
     test_uuid = uuid.uuid4().hex[:16]
+    octarine_id = uuid.uuid4().hex
     proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port marathon)"')
+             '--client --port {})"'.format(octarine_id))
     port_name = 'pinger'
-    cmd = ('/opt/mesosphere/bin/octarine marathon & ' +
+    cmd = ('/opt/mesosphere/bin/octarine {} & '.format(octarine_id) +
            '/opt/mesosphere/bin/python -m http.server ${PORT0}')
     raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
     check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')

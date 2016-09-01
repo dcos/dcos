@@ -4,13 +4,11 @@ libraries to support the dcos installer.
 """
 import logging
 import os
-import sys
 
-from passlib.hash import sha512_crypt
 
-from dcos_installer.action_lib import configure
+from dcos_installer import config_util
 from dcos_installer.config import DCOSConfig
-from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH, REXRAY_CONFIG_PATH
+from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
 
 import ssh.validate as validate_ssh
 
@@ -32,20 +30,8 @@ def do_configure(config_path=CONFIG_PATH):
         config = DCOSConfig(config_path=config_path)
         config.get_hidden_config()
         config.update(config.hidden_config)
-        configure.do_configure(config.stringify_configuration())
+        config_util.do_configure(config.stringify_configuration())
         return 0
-
-
-def hash_password(string):
-    """Returns hash of string per passlib SHA512 encryption
-
-    :param string: password to hash
-    :type string: str | None
-    """
-    new_hash = sha512_crypt.encrypt(string)
-    byte_str = new_hash.encode('ascii')
-    sys.stdout.buffer.write(byte_str+b'\n')
-    return new_hash
 
 
 def write_external_config(data, path, mode=0o644):
@@ -88,11 +74,6 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     if 'ip_detect_script' in post_data:
         write_external_config(post_data['ip_detect_script'], IP_DETECT_PATH)
 
-    if 'rexray_config' in post_data:
-        post_data['rexray_config_method'] = 'file'
-        post_data['rexray_config_filename'] = REXRAY_CONFIG_PATH
-        write_external_config(post_data['rexray_config'], REXRAY_CONFIG_PATH)
-
     # TODO (malnick) remove when UI updates are complete
     post_data = remap_post_data_keys(post_data)
     # Create a new configuration object, pass it the config.yaml path and POSTed dictionary.
@@ -106,7 +87,7 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     config.update(config.hidden_config)
     validation_messages = {}
     ssh_messages = validate_ssh.validate_config(config)
-    gen_messages = normalize_config_validation(configure.do_validate_gen_config(config.stringify_configuration()))
+    gen_messages = normalize_config_validation(config_util.do_validate_gen_config(config.stringify_configuration()))
     validation_messages.update(ssh_messages)
     validation_messages.update(gen_messages)
     validation_messages = remap_validation_keys(validation_messages)
@@ -174,7 +155,7 @@ def do_validate_gen_config(config_path=CONFIG_PATH):
     config = DCOSConfig(config_path=config_path)
     config.get_hidden_config()
     config.update(config.hidden_config)
-    messages = configure.do_validate_gen_config(config.stringify_configuration())
+    messages = config_util.do_validate_gen_config(config.stringify_configuration())
     validation = normalize_config_validation(messages)
     return validation
 
@@ -257,15 +238,6 @@ def get_ui_config(config_path=CONFIG_PATH):
     config.get_hidden_config()
     config.update(config.external_config)
     return config
-
-
-def return_configure_status(config_path=CONFIG_PATH):
-    """Returns validation messages for /configure/status/ endpoint.
-
-    :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
-    """
-    return configure.do_validate_config()
 
 
 def determine_config_type(config_path=CONFIG_PATH):

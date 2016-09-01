@@ -13,7 +13,7 @@ import logging
 import os
 import yaml
 
-from dcos_installer.util import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
+from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
 log = logging.getLogger(__name__)
 
 
@@ -80,7 +80,6 @@ bootstrap_url: file:///opt/dcos_install_tmp
 
     def get_hidden_config(self):
         self.hidden_config = {
-            'ip_detect_filename':  IP_DETECT_PATH,
             'ssh_key_path': SSH_KEY_PATH,
         }
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generates a bash script for installing by hand or light config management integration"""
 
 import os
@@ -261,6 +260,13 @@ function check_all() {
     # error exit codes
     set +e
     echo -e "${BOLD}Running preflight checks${NORMAL}"
+    AGENT_ONLY=0
+    for ROLE in $ROLES; do
+        if [[ $ROLE = "slave" || $ROLE = "slave_public" ]]; then
+            AGENT_ONLY=1
+            break
+        fi
+    done
 
     check_preexisting_dcos
     check_selinux
@@ -336,19 +342,56 @@ function check_all() {
     print_status $RC
     (( OVERALL_RC += $RC ))
 
-    for service in \
-      "80 mesos-ui" \
-      "53 mesos-dns" \
-      "15055 dcos-history" \
-      "5050 mesos-master" \
-      "2181 zookeeper" \
-      "8080 marathon" \
-      "3888 zookeeper" \
-      "8181 exhibitor" \
-      "8123 mesos-dns"
-    do
-      check_service $service
-    done
+    # Run service check on master node only
+    if [[ $AGENT_ONLY -eq 0 ]]; then
+        # master node service checks
+        for service in \
+            "53 spartan" \
+            "80 adminrouter" \
+            "443 adminrouter" \
+            "1050 3dt" \
+            "2181 zookeeper" \
+            "5050 mesos-master" \
+            "7070 cosmos" \
+            "8080 marathon" \
+            "8101 dcos-oauth" \
+            "8123 mesos-dns" \
+            "8181 exhibitor" \
+            "9000 metronome" \
+            "9942 metronome" \
+            "9990 cosmos" \
+            "15055 dcos-history" \
+            "33107 navstar" \
+            "36771 marathon" \
+            "41281 zookeeper" \
+            "42819 spartan" \
+            "43911 minuteman" \
+            "46839 metronome" \
+            "61053 mesos-dns" \
+            "61420 epmd" \
+            "61421 minuteman" \
+            "62053 spartan" \
+            "62080 navstar"
+        do
+            check_service $service
+        done
+    else
+        # agent / public agent node service checks
+        for service in \
+            "53 spartan" \
+            "5051 mesos-agent" \
+            "34451 navstar" \
+            "39851 spartan" \
+            "43995 minuteman" \
+            "61001 agent-adminrouter" \
+            "61420 epmd" \
+            "61421 minuteman" \
+            "62053 spartan" \
+            "62080 navstar"
+        do
+            check_service $service
+        done
+    fi
 
     # Check we're not in docker on devicemapper loopback as storage driver.
     check_docker_device_mapper_loopback
@@ -596,7 +639,6 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
     Outputs the generated dcos_generate_config.sh as it's artifacts.
     """
-    artifacts = []
 
     # TODO(cmaloney): Build installers in parallel.
     # Variants are sorted for stable ordering.
@@ -607,12 +649,7 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
         installer_filename = make_installer_docker(variant, bootstrap_info['bootstrap_id'], bootstrap_installer_id)
 
-        artifacts.append({
+        yield {
             'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
             'local_path': installer_filename
-            })
-
-    return {
-        'packages': [],
-        'artifacts': artifacts
-    }
+        }

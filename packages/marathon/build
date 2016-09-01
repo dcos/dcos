@@ -12,8 +12,9 @@ mkdir -p $(dirname "$marathon_service")
 cat <<EOF > "$marathon_service"
 [Unit]
 Description=Marathon: DC/OS Init System
-After=dcos-mesos-master.service
+
 [Service]
+User=dcos_marathon
 Restart=always
 StartLimitInterval=0
 RestartSec=15

@@ -36,6 +36,7 @@ setup(
         'test_util'],
     install_requires=[
         'Flask',
+        'flask-compress',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',

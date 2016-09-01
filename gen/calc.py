@@ -1,3 +1,4 @@
+
 import ipaddress
 import json
 import os
@@ -15,29 +16,26 @@ from pkgpanda import PackageId
 from pkgpanda.build import hash_checkout
 
 
-AWS_REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  storageDrivers:
-    - ec2
-  volume:
-    unmount:
-      ignoreusedcount: true
-"""
-
-DEFAULT_REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  modules:
-    default-docker:
-      disabled: true
-"""
+# TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
+def validate_one_of(val: str, valid_values) -> None:
+    """Test if object `val` is a member of container `valid_values`.
+    Raise a AssertionError if it is not a member. The exception message contains
+    both, the representation (__repr__) of `val` as well as the representation
+    of all items in `valid_values`.
+    """
+    if val not in valid_values:
+        options_string = ', '.join("'{}'".format(v) for v in valid_values)
+        raise AssertionError("Must be one of {}. Got '{}'.".format(options_string, val))
 
 
-def calculate_bootstrap_variant():
-    variant = os.getenv('BOOTSTRAP_VARIANT')
-    assert variant is not None, "BOOTSTRAP_VARIANT must be set"
-    return variant
+def validate_true_false(val) -> None:
+    validate_one_of(val, ['true', 'false'])
+
+
+def calculate_environment_variable(name):
+    value = os.getenv(name)
+    assert value is not None, "{} must be a set environment variable".format(name)
+    return value
 
 
 def calulate_dcos_image_commit():
@@ -46,8 +44,7 @@ def calulate_dcos_image_commit():
     if dcos_image_commit is None:
         dcos_image_commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
-    if dcos_image_commit is None:
-        raise "Unable to set dcos_image_commit from teamcity or git."
+    assert dcos_image_commit is not None, "Unable to set dcos_image_commit from teamcity or git."
 
     return dcos_image_commit
 
@@ -55,14 +52,12 @@ def calulate_dcos_image_commit():
 def calculate_resolvers_str(resolvers):
     # Validation because accidentally slicing a string instead of indexing a
     # list of resolvers then finding out at cluster launch is painful.
-    assert isinstance(resolvers, str)
     resolvers = json.loads(resolvers)
     assert isinstance(resolvers, list)
     return ",".join(resolvers)
 
 
 def calculate_mesos_dns_resolvers_str(resolvers):
-    assert isinstance(resolvers, str)
     resolver_list = json.loads(resolvers)
 
     # Mesos-DNS unfortunately requires completley different config parameters
@@ -90,12 +85,15 @@ def calculate_ip_detect_public_contents(ip_detect_contents):
     return ip_detect_contents
 
 
-def calculate_rexray_config_contents(rexray_config_filename):
-    try:
-        with open(rexray_config_filename, encoding='utf-8') as f:
-            return yaml.dump(f.read())
-    except IOError as err:
-        raise Exception('REX-Ray config file {}: {}'.format(rexray_config_filename, err)) from err
+def calculate_rexray_config_contents(rexray_config):
+    return yaml.dump(
+        # Assume block style YAML (not flow) for REX-Ray config.
+        yaml.dump(json.loads(rexray_config), default_flow_style=False)
+    )
+
+
+def validate_rexray_config(rexray_config):
+    assert isinstance(json.loads(rexray_config), dict), 'Must be a mapping.'
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -119,30 +117,25 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_telemetry_enabled(telemetry_enabled):
-    can_be = ['true', 'false']
-    assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
-
-
 def validate_oauth_enabled(oauth_enabled):
     # Should correspond with oauth_enabled in gen/azure/calc.py
     if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
         return
-    can_be = ['true', 'false']
-    assert oauth_enabled in can_be, 'Must be one of {}. Got {}'.format(can_be, oauth_enabled)
-
-
-def validate_dcos_overlay_enable(dcos_overlay_enable):
-    can_be = ['true', 'false']
-    assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
+    validate_true_false(oauth_enabled)
 
 
 def validate_dcos_overlay_mtu(dcos_overlay_mtu):
     assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
 
 
+def validate_dcos_overlay_config_attempts(dcos_overlay_config_attempts):
+    assert dcos_overlay_config_attempts.isdigit(), (
+        'dcos_overlay_config_attempts needs to be a positive integer between 0 and 10')
+    assert int(dcos_overlay_config_attempts) >= 0 and int(dcos_overlay_config_attempts) < 10, (
+        'The acceptable range of values for dcos_overlay_config_attempts is between 0 and 10')
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
-    assert isinstance(dcos_overlay_network, str)
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError:
@@ -176,12 +169,6 @@ def validate_dcos_overlay_network(dcos_overlay_network):
             assert False, (
                 "Incorrect value for vtep_subnet. Only IPv4 "
                 "values are allowed: {}".format(ex))
-
-
-def validate_dcos_remove_dockercfg_enable(dcos_remove_dockercfg_enable):
-    can_be = ['true', 'false']
-    assert dcos_remove_dockercfg_enable in can_be, (
-       'Must be one of {}. Got {}.'.format(can_be, dcos_remove_dockercfg_enable))
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -271,11 +258,6 @@ def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
     return validate_json_list(mesos_dns_ip_sources)
 
 
-def validate_master_dns_bindall(master_dns_bindall):
-    can_be = ['true', 'false']
-    assert master_dns_bindall in can_be, 'Must be one of {}. Got {}.'.format(can_be, master_dns_bindall)
-
-
 def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
 
@@ -332,8 +314,7 @@ def calculate_config_yaml(user_arguments):
 
 
 def validate_os_type(os_type):
-    can_be = ['coreos', 'el7']
-    assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
+    validate_one_of(os_type, ['coreos', 'el7'])
 
 
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
@@ -356,13 +337,15 @@ entry = {
         validate_cluster_packages,
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
-        validate_telemetry_enabled,
-        validate_master_dns_bindall,
+        lambda telemetry_enabled: validate_true_false(telemetry_enabled),
+        lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
-        validate_dcos_overlay_enable,
+        lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
         validate_dcos_overlay_mtu,
-        validate_dcos_remove_dockercfg_enable],
+        validate_dcos_overlay_config_attempts,
+        lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
+        validate_rexray_config],
     'default': {
         'deployment_platform': provider,
         'bootstrap_variant': calculate_bootstrap_variant,
@@ -394,6 +377,7 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': '{                      \
@@ -406,8 +390,22 @@ entry = {
                 "prefix": 24                            \
               }                                         \
             ]}',
-        'rexray_config_method': 'empty',
-        'dcos_remove_dockercfg_enable': "false"
+        'dcos_remove_dockercfg_enable': "false",
+        'rexray_config_preset': '',
+        'rexray_config': json.dumps({
+            # Disabled. REX-Ray will start but not register as a volume driver.
+            'rexray': {
+                'loglevel': 'info',
+                'modules': {
+                    'default-admin': {
+                        'host': 'tcp://127.0.0.1:61003'
+                    },
+                    'default-docker': {
+                        'disabled': True
+                    }
+                }
+            }
+        })
     },
     'must': {
         'deployment_platform': calculate_deployment_platform,
@@ -430,7 +428,8 @@ entry = {
         'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
-        'use_mesos_hooks': calculate_use_mesos_hooks
+        'use_mesos_hooks': calculate_use_mesos_hooks,
+        'rexray_config_contents': calculate_rexray_config_contents
     },
     'conditional': {
         'master_discovery': {
@@ -442,23 +441,38 @@ entry = {
         'provider': {
             'onprem': {
                 'default': {
-                    'resolvers': '["8.8.8.8", "8.8.4.4"]'
+                    'resolvers': '["8.8.8.8", "8.8.4.4"]',
+                    'ip_detect_filename': 'genconf/ip-detect',
+                    'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID')
                 },
             },
             'azure': gen.azure.calc.entry,
             'aws': gen.aws.calc.entry,
             'other': {}
         },
-        'rexray_config_method': {
-            'file': {
-                'must': {'rexray_config_contents': calculate_rexray_config_contents},
-            },
+        'rexray_config_preset': {
+            '': {},
             'aws': {
-                'must': {'rexray_config_contents': yaml.dump(AWS_REXRAY_CONFIG)},
-            },
-            'empty': {
-                'must': {'rexray_config_contents': yaml.dump(DEFAULT_REXRAY_CONFIG)},
-            },
+                'must': {
+                    'rexray_config': json.dumps({
+                        # Use IAM Instance Profile for auth.
+                        'rexray': {
+                            'loglevel': 'info',
+                            'modules': {
+                                'default-admin': {
+                                    'host': 'tcp://127.0.0.1:61003'
+                                }
+                            },
+                            'storageDrivers': ['ec2'],
+                            'volume': {
+                                'unmount': {
+                                    'ignoreusedcount': True
+                                }
+                            }
+                        }
+                    })
+                }
+            }
         }
     }
 }

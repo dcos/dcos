@@ -1,5 +1,6 @@
 #!/opt/mesosphere/bin/python
 
+import errno
 import os
 import socket
 import sys
@@ -87,6 +88,16 @@ with open(resolvconf_path + ".tmp", 'w') as f:
 # target of the symlink itself though, which results in fun
 # conflicting things like https://dcosjira.atlassian.net/browse/DCOS-305
 
-os.rename(resolvconf_path + ".tmp", resolvconf_path)
+try:
+    os.rename(resolvconf_path + ".tmp", resolvconf_path)
+except OSError as e:
+    # fall back to old behavior because resolv.conf in dcos-docker
+    # is a mount point that doesn't like getting renamed
+    if e.errno == errno.EBUSY:
+        print('Falling back to writing directly due to EBUSY on rename')
+        with open(resolvconf_path, 'w') as f:
+            f.write(contents)
+    else:
+        raise
 
 sys.exit(0)

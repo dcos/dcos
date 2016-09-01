@@ -67,16 +67,6 @@ log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
 
-REXRAY_CONFIG = """
-rexray:
-  loglevel: info
-  storageDrivers:
-    - ec2
-  volume:
-    unmount:
-      ignoreusedcount: true
-"""
-
 
 def pkg_filename(relative_path):
     return pkg_resources.resource_filename(__name__, relative_path)
@@ -190,7 +180,7 @@ def check_environment():
     options.add_env = add_env
 
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv '+options.ci_flags)
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -rs -vv ' + options.ci_flags)
     return options
 
 
@@ -293,7 +283,7 @@ def main():
                 ssh_user=ssh_user,
                 ssh_key=ssh_key,
                 add_config_path=options.add_config_path,
-                rexray_config=REXRAY_CONFIG)
+                rexray_config_preset='aws')
 
         log.info("Running Preflight...")
         if options.test_install_prereqs:

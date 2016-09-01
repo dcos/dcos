@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Simple python templating system. Works on yaml files which are also jinja-style templates.
 # Scans the jinja for the structure, and outputs an AST of the possible option combinations.
 # That graph could be fed into something like an argument prompter to get
@@ -58,12 +56,12 @@ class Tokenizer():
             if kind == "eof":
                 break
 
-    def Peek(self):
+    def peek(self):
         if self.__token_pos == len(self.tokens):
             raise RuntimeError("Walked past end of token list")
         return self.tokens[self.__token_pos]
 
-    def Advance(self):
+    def advance(self):
         if self.__token_pos >= len(self.tokens):
             raise RuntimeError("Walked past end of token list")
         self.__token_pos += 1
@@ -438,48 +436,48 @@ class Template():
 
 
 def _parse_for(tokenizer):
-    token_type, value = tokenizer.Peek()
+    token_type, value = tokenizer.peek()
     assert token_type == 'for'
 
     new_var, iterable = value
 
-    tokenizer.Advance()
+    tokenizer.advance()
 
     # Read out the body
     body = _parse_chunks(tokenizer)
 
     # Should stop reading the body at the endfor
-    token_type, value = tokenizer.Peek()
+    token_type, value = tokenizer.peek()
     if token_type != 'endfor':
         raise ValueError("Expecting end of for, but found {}.".format(token_type))
 
-    tokenizer.Advance()
+    tokenizer.advance()
     return For(new_var, iterable, body)
 
 
 def _parse_switch(tokenizer):
-    token_type, identifier = tokenizer.Peek()
+    token_type, identifier = tokenizer.peek()
     assert(token_type == 'switch')
 
     cases = dict()
     is_first = True
 
     # Immediately inside should be a case, followed by lots more of those
-    tokenizer.Advance()
+    tokenizer.advance()
     while(True):
-        token_type, value = tokenizer.Peek()
+        token_type, value = tokenizer.peek()
         if token_type == 'case':
-            tokenizer.Advance()
+            tokenizer.advance()
             cases[value] = _parse_chunks(tokenizer)
         elif token_type == 'endswitch':
-            tokenizer.Advance()
+            tokenizer.advance()
             return Switch(identifier, cases)
         elif token_type == 'blob':
             # Should be unreachable if not before the first as it should be picked up inside a case.
             assert is_first
             if not value.isspace():
                 raise ValueError("Unexpected blob of text outside of switch case statements. Whitespace is all that is allowed.")  # noqa
-            tokenizer.Advance()
+            tokenizer.advance()
         else:
             raise ValueError(
                 "Unexpected token of type {} inside switch. Expected a case or endswitch.".format(token_type))
@@ -491,13 +489,13 @@ def _parse_chunks(tokenizer):
     # Read Chunks
     chunks = []
     while True:
-        token_type, value = tokenizer.Peek()
+        token_type, value = tokenizer.peek()
         if token_type == 'blob':
             chunks.append(value)
-            tokenizer.Advance()
+            tokenizer.advance()
         elif token_type == 'replacement':
             chunks.append(Replacement(value))
-            tokenizer.Advance()
+            tokenizer.advance()
         elif token_type == 'switch':
             chunks.append(_parse_switch(tokenizer))
         elif token_type == 'for':
@@ -509,7 +507,7 @@ def _parse_chunks(tokenizer):
 def parse_str(text):
     tokenizer = Tokenizer(text)
     ast = _parse_chunks(tokenizer)
-    token_type, _ = tokenizer.Peek()
+    token_type, _ = tokenizer.peek()
     if token_type != "eof":
         raise ValueError(
             "Unexpected token of type {} at end of text, expecting EOF".format(token_type))

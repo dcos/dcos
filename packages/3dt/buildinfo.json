@@ -4,7 +4,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/3dt.git",
-    "ref": "1081f24cc1774405c09693b1e9b79b0c580afcca",
+    "ref": "272d0148dde975297377ac6f7427cffa0870f804",
     "ref_origin": "master"
   },
   "username": "dcos_3dt",

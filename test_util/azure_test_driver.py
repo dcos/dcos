@@ -2,11 +2,11 @@
 import os
 import random
 import sys
+import traceback
 import uuid
 from contextlib import closing
 
 import azure.common.credentials
-import requests
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources import ResourceManagementClient
 from azure.mgmt.resource.resources.models import (DeploymentMode,
@@ -19,11 +19,22 @@ from ssh.ssh_tunnel import SSHTunnel
 from test_util.test_runner import integration_test
 
 
-def get_dcos_ui(master_url):
-    try:
-        return requests.get(master_url)
-    except requests.exceptions.ConnectionError:
-        pass
+def validate_env():
+    '''
+    The following environment variables must be set to ensure the template can be deployed successfully and that
+    parameters we rely on from a testing perspective are explicitly set and not relying on defaults which may change.
+    '''
+    required = ['AZURE_PARAM_linuxAdminUsername', 'AZURE_PARAM_oauthEnabled',
+                'AZURE_PARAM_masterEndpointDNSNamePrefix', 'AZURE_PARAM_agentEndpointDNSNamePrefix',
+                'AZURE_TEMPLATE_URL', 'AZURE_PARAM_sshRSAPublicKey']
+    values = {}
+    for k in required:
+        assert os.getenv(k), "Environment variable {} must be set".format(k)
+        values[k] = os.getenv(k)
+
+    assert values['AZURE_PARAM_oauthEnabled'] in ['true', 'false']
+    assert values['AZURE_PARAM_masterEndpointDNSNamePrefix'] != values['AZURE_PARAM_agentEndpointDNSNamePrefix'], \
+        "Master and agent prefix must be unique"
 
 
 def get_env_params():
@@ -44,7 +55,12 @@ def get_env_params():
     return(template_params)
 
 
+def get_value(template_parameter):
+    return(get_env_params()[template_parameter]['value'])
+
+
 def run():
+    validate_env()
     location = os.getenv('AZURE_LOCATION', 'East US')
     credentials = azure.common.credentials.ServicePrincipalCredentials(
         client_id=os.environ['AZURE_CLIENT_ID'],
@@ -55,20 +71,12 @@ def run():
     # tenant_id = os.environ.get('AZURE_TENANT_ID')
     # client_id = os.environ.get('AZURE_CLIENT_ID')
     # client_secret = os.environ.get('AZURE_CLIENT_SECRET')
-    group_name = 'tesing' + ''.join(random.choice('01234567890abcdef') for n in range(10))
+    group_name = 'testing' + ''.join(random.choice('01234567890abcdef') for n in range(10))
     deployment_name = 'deployment{}'.format(uuid.uuid4().hex)
 
     rmc = ResourceManagementClient(credentials, subscription_id)
 
     template_parameters = get_env_params()
-    if template_parameters.get('numberOfPrivateSlaves'):
-        assert template_parameters['numberOfPrivateSlaves']['value'] >= 2, 'Test requires at least 2 private slaves!'
-    else:
-        template_parameters['numberOfPrivateSlaves'] = {'value': 2}
-    if template_parameters.get('numberOfPublicSlaves'):
-        assert template_parameters['numberOfPublicSlaves']['value'] >= 1, 'Test requires at least 1 public slave!'
-    else:
-        template_parameters['numberOfPublicSlaves'] = {'value': 1}
 
     # Output resource group
     print("Resource group name: {}".format(group_name))
@@ -123,70 +131,77 @@ def run():
         assert deploy_poller.done(), "Deployment failed / polling didn't reach deployment done."
         deployment_result = deploy_poller.result()
         print(deployment_result.properties.outputs)
-        master_lb = deployment_result.properties.outputs['dnsAddress']['value']
-        master_url = "http://{}".format(master_lb)
+        master_lb = deployment_result.properties.outputs['masterFQDN']['value']
 
         print("Template deployed using SSH private key: https://mesosphere.onelogin.com/notes/18444")
-        print("For troubleshooting, master0 can be reached using: ssh -p 2200 core@{}".format(master_lb))
-
-        @retry(wait_fixed=(5 * 1000), stop_max_delay=(15 * 60 * 1000))
-        def poll_on_dcos_ui_up():
-            r = get_dcos_ui(master_url)
-            assert r is not None and r.status_code == requests.codes.ok, \
-                "Unable to reach DC/OS UI: {}".format(master_url)
-
-        print("Waiting for DC/OS UI at: {} ...".format(master_url))
-        poll_on_dcos_ui_up()
+        print("For troubleshooting, master0 can be reached using: ssh -p 2200 {}@{}".format(
+            get_value('linuxAdminUsername'), master_lb))
 
         # Run test now, so grab IPs
         nmc = NetworkManagementClient(credentials, subscription_id)
         ip_buckets = {
-            'masterNodeNic': [],
-            'slavePrivateNic': [],
-            'slavePublicNic': []}
+            'master': [],
+            'private': [],
+            'public': []}
 
-        for resource in rmc.resource_groups.list_resources(group_name):
-            for bucket_name, bucket in ip_buckets.items():
-                if resource.name.startswith(bucket_name):
-                    nic = nmc.network_interfaces.get(group_name, resource.name)
-                    all_ips = []
-                    for config in nic.ip_configurations:
-                        all_ips.append(config.private_ip_address)
-                    bucket.extend(all_ips)
+        for resource in rmc.resource_groups.list_resources(
+                group_name, filter=("resourceType eq 'Microsoft.Network/networkInterfaces' or "
+                                    "resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'")):
+            if resource.type == 'Microsoft.Network/networkInterfaces':
+                nics = [nmc.network_interfaces.get(group_name, resource.name)]
+            elif resource.type == 'Microsoft.Compute/virtualMachineScaleSets':
+                nics = list(nmc.network_interfaces.list_virtual_machine_scale_set_network_interfaces(
+                            virtual_machine_scale_set_name=resource.name, resource_group_name=group_name))
+            else:
+                raise('Unexpected resourceType: {}'.format(resource.type))
 
-        with closing(SSHTunnel('core', 'ssh_key', master_lb, port=2200)) as t:
+            for bucket_name in ip_buckets.keys():
+                if bucket_name in resource.name:
+                    for n in nics:
+                        for config in n.ip_configurations:
+                            ip_buckets[bucket_name].append(config.private_ip_address)
+
+        print('Detected IP configuration: {}'.format(ip_buckets))
+
+        with closing(SSHTunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200)) as t:
             integration_test(
                     tunnel=t,
-                    test_dir='/home/core',
-                    dcos_dns=master_lb,
-                    master_list=ip_buckets['masterNodeNic'],
-                    agent_list=ip_buckets['slavePrivateNic'],
-                    public_agent_list=ip_buckets['slavePublicNic'],
+                    test_dir='/home/{}'.format(get_value('linuxAdminUsername')),
+                    dcos_dns=ip_buckets['master'][0],
+                    master_list=ip_buckets['master'],
+                    agent_list=ip_buckets['private'],
+                    public_agent_list=ip_buckets['public'],
                     provider='azure',
                     test_dns_search=False,
+                    add_env={'DCOS_AUTH_ENABLED': get_value('oauthEnabled')},
                     pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
-                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
+                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
+        traceback.print_exc()
         print("ERROR: exception {}".format(ex))
         raise
     finally:
-        # Send a delete request
-        # TODO(cmaloney): The old code had a retry around this:
-        # @retry(wait_exponential_multiplier=1000, wait_exponential_max=60*1000, stop_max_delay=(30*60*1000))
-        poller = rmc.resource_groups.delete(group_name)
+        if os.getenv('AZURE_CLEANUP') == 'false':
+            print("Cluster must be cleaned up manually")
+            print("Cluster details: {}".format(azure_cluster))
+        else:
+            # Send a delete request
+            # TODO(cmaloney): The old code had a retry around this:
+            # @retry(wait_exponential_multiplier=1000, wait_exponential_max=60*1000, stop_max_delay=(30*60*1000))
+            poller = rmc.resource_groups.delete(group_name)
 
-        # poll for the delete to complete
-        print("Deleting resource group: {} ...".format(group_name))
+            # poll for the delete to complete
+            print("Deleting resource group: {} ...".format(group_name))
 
-        @retry(wait_fixed=(5 * 1000), stop_max_delay=(60 * 60 * 1000))
-        def wait_for_delete():
-            assert poller.done(), "Timed out waiting for delete"
+            @retry(wait_fixed=(5 * 1000), stop_max_delay=(60 * 60 * 1000))
+            def wait_for_delete():
+                assert poller.done(), "Timed out waiting for delete"
 
-        print("Waiting for delete ...")
-        wait_for_delete()
+            print("Waiting for delete ...")
+            wait_for_delete()
 
-        print("Clean up successful")
+            print("Clean up successful")
 
     if test_successful:
         print("Azure test deployment succeeded")

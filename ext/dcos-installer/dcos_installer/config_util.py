@@ -6,7 +6,7 @@ import sys
 import gen
 import pkgpanda
 import gen.installer.bash
-from dcos_installer.util import SERVE_DIR
+from dcos_installer.constants import SERVE_DIR
 
 log = logging.getLogger(__name__)
 
@@ -28,14 +28,7 @@ def do_configure(gen_config):
 
 
 def get_gen_extra_args():
-    if 'BOOTSTRAP_ID' not in os.environ:
-        log.error("BOOTSTRAP_ID must be set in environment to run.")
-        raise KeyError
-
-    arguments = {
-        'bootstrap_id': os.environ['BOOTSTRAP_ID'],
-        'provider': 'onprem'}
-    return arguments
+    return {'provider': 'onprem'}
 
 
 def do_validate_gen_config(gen_config):
@@ -44,27 +37,13 @@ def do_validate_gen_config(gen_config):
     return gen.validate(arguments=gen_config)
 
 
-def fetch_bootstrap(bootstrap_id):
-    copy_set = [
-        "{}.bootstrap.tar.xz".format(bootstrap_id),
-        "{}.active.json".format(bootstrap_id)]
-    dest_dir = "/genconf/serve/bootstrap/"
-    container_cache_dir = "/artifacts/"
+def do_move_atomic(src_dir, dest_dir, filenames):
+    assert os.path.exists(src_dir)
+    assert os.path.exists(dest_dir)
 
-    # If all the targets already exist, no-op
-    dest_files = [dest_dir + filename for filename in copy_set]
-    if all(map(os.path.exists, dest_files)):
-        return
-
-    # Make sure the internal cache files exist
-    src_files = [container_cache_dir + filename for filename in copy_set]
-    for filename in src_files:
-        if not os.path.exists(filename):
-            log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
-            raise FileNotFoundError()
-
-    def cleanup_and_exit():
-        for filename in dest_files:
+    def rollback():
+        for filename in filenames:
+            filename = dest_dir + filename
             try:
                 os.remove(filename)
             except OSError as ex:
@@ -72,17 +51,37 @@ def fetch_bootstrap(bootstrap_id):
                           filename, ex.strerror)
         sys.exit(1)
 
-    # Copy out the files, rolling back if it fails
     try:
-        subprocess.check_output(['mkdir', '-p', '/genconf/serve/bootstrap/'])
-
         # Copy across
-        for filename in copy_set:
-            subprocess.check_output(['cp', container_cache_dir + filename, dest_dir + filename])
+        for filename in filenames:
+            subprocess.check_output(['cp', src_dir + filename, dest_dir + filename])
     except subprocess.CalledProcessError as ex:
         log.error("Copy failed: %s\nOutput:\n%s", ex.cmd, ex.output)
         log.error("Removing partial artifacts")
-        cleanup_and_exit()
+        rollback()
     except KeyboardInterrupt:
         log.error("Copy out of installer interrupted. Removing partial files.")
-        cleanup_and_exit()
+        rollback()
+
+
+def fetch_bootstrap(bootstrap_id):
+    filenames = [
+        "{}.bootstrap.tar.xz".format(bootstrap_id),
+        "{}.active.json".format(bootstrap_id)]
+    dest_dir = "/genconf/serve/bootstrap/"
+    container_cache_dir = "/artifacts/"
+
+    # If all the targets already exist, no-op
+    dest_files = [dest_dir + filename for filename in filenames]
+    if all(map(os.path.exists, dest_files)):
+        return
+
+    # Make sure the internal cache files exist
+    src_files = [container_cache_dir + filename for filename in filenames]
+    for filename in src_files:
+        if not os.path.exists(filename):
+            log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
+            raise FileNotFoundError()
+
+    subprocess.check_call(['mkdir', '-p', '/genconf/serve/bootstrap/'])
+    do_move_atomic(container_cache_dir, dest_dir, filenames)

@@ -104,7 +104,7 @@ class Ccm():
             print("Error: Could not extract ID; VPC creation failed!")
             print("Response data: {}".format(response))
             sys.exit(1)
-        return self.VpcCluster(cluster_id, instance_count)
+        return self.vpc_cluster(cluster_id, instance_count)
 
     def get_cluster_info(self, pk):
         response = self.get("/api/cluster/{}/".format(pk))
@@ -133,7 +133,7 @@ class Ccm():
     def delete_cluster(self, pk):
         return self.delete("/api/cluster/{}/".format(pk)).text
 
-    def VpcCluster(self, pk, instance_count):
+    def vpc_cluster(self, pk, instance_count):
         return VpcCluster(self, pk, node_count=instance_count)
 
 

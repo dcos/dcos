@@ -52,14 +52,6 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_sl
 # EnvironmentFile that contains a MESOS_RESOURCES env variable. This MESOS_RESOURCES adds
 # Mount resources to another existing MESOS_RESOURCES variable, which means the EnvironmentFile
 # created by this service has to be the last
-public_volume_service="$PKG_PATH"/dcos.target.wants_slave_public/dcos-vol-discovery-pub-agent.service
-mkdir -p "$(dirname ${public_volume_service})"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-vol-discovery-pub-agent.service > "$public_volume_service"
-
-private_volume_service="$PKG_PATH"/dcos.target.wants_slave/dcos-vol-discovery-priv-agent.service
-mkdir -p "$(dirname ${private_volume_service})"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-vol-discovery-priv-agent.service > "$private_volume_service"
-
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"

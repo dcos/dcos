@@ -3,7 +3,7 @@
     "single_source" : {
       "kind": "git",
       "git": "https://github.com/dcos/mesos-overlay-modules.git",
-      "ref": "80cdf2544961e130b875c32138791017041103e2",
+      "ref": "931e174fe3d104bb70bbcbcf701577db92048693",
       "ref_origin": "master"
     }
 }

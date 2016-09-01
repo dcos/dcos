@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import getpass
 import json
 import logging
 import os
@@ -117,7 +118,7 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             TEST_DATA_CACHE = self.rfile.read(int(self.headers['Content-Length'])).decode()
         self._send_reply(TEST_DATA_CACHE)
 
-    def parse_POST_headers(self):
+    def parse_POST_headers(self):  # noqa: ignore=N802
         """Parse request's POST headers in utf8 aware way
 
         Returns:
@@ -240,7 +241,13 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         data = {"status": status, "output": output}
         self._send_reply(data)
 
-    def do_GET(self):
+    def _handle_operating_environment(self):
+        """Gets basic operating environment info (such as running user)"""
+        self._send_reply({
+            'username': getpass.getuser()
+        })
+
+    def do_GET(self):  # noqa: ignore=N802
         """Mini service router handling GET requests"""
         # TODO(cmaloney): Alphabetize these.
         if self.path == '/ping':
@@ -253,10 +260,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             self._handle_path_dns_search()
         elif self.path == '/signal_test_cache':
             self._handle_path_signal_test_cache(False)
+        elif self.path == '/operating_environment':
+            self._handle_operating_environment()
         else:
             self.send_error(404, 'Not found', 'Endpoint is not supported')
 
-    def do_POST(self):
+    def do_POST(self):  # noqa: ignore=N802
         """Mini service router handling POST requests"""
         if self.path == '/your_ip':
             try:
