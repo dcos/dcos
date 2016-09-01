@@ -52,10 +52,10 @@ import sys
 from contextlib import closing
 from os.path import join
 
-import passlib.hash
 import pkg_resources
 from retrying import retry
 
+import passlib.hash
 import test_util.ccm
 import test_util.installer_api_test
 import test_util.test_runner

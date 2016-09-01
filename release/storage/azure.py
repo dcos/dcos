@@ -1,7 +1,7 @@
-import azure.storage.blob
 import requests
 from retrying import retry
 
+import azure.storage.blob
 from release.storage import AbstractStorageProvider
 
 
