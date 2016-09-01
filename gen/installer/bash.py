@@ -509,8 +509,7 @@ def make_bash(gen_out):
             content=file_dict['content'],
             mode=file_dict.get('permissions', "0644"),
             owner=file_dict.get('owner', 'root'),
-            group=file_dict.get('group', 'root')
-            )
+            group=file_dict.get('group', 'root'))
 
     # Reformat the DC/OS systemd units to be bash written and started.
     # Write out the units as files
@@ -524,8 +523,7 @@ def make_bash(gen_out):
             content=service['content'],
             mode='0644',
             owner='root',
-            group='root'
-            )
+            group='root')
 
     setup_services += "\n"
 
@@ -615,8 +613,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
             pkg_resources.resource_string(__name__, 'bash/dcos_generate_config.sh.in').decode().format(
                 genconf_tar=genconf_tar,
                 docker_image_name=docker_image_name,
-                variant=variant) + '\n#EOF#\n',
-            )
+                variant=variant) + '\n#EOF#\n')
         subprocess.check_call(
             ['docker', 'save', docker_image_name],
             stdout=open(genconf_tar, 'w'))

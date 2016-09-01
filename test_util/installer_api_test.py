@@ -60,7 +60,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.ssh = ssh
         self.scp = scp
 
-        @retry(wait_fixed=3000, stop_max_delay=300*1000)
+        @retry(wait_fixed=3000, stop_max_delay=300 * 1000)
         def download_dcos():
             """Response status 403 is fatal for curl's retry. Additionally, S3 buckets
             have been returning 403 for valid uploads for 10-15 minutes after CI finished build
@@ -186,7 +186,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         self.start_action(action)
         self.wait_for_check_action(
             action=action, expect_errors=expect_errors,
-            wait=30000, stop_max_delay=MAX_STAGE_TIME*1000)
+            wait=30000, stop_max_delay=MAX_STAGE_TIME * 1000)
 
     def wait_for_check_action(self, action, wait, stop_max_delay, expect_errors):
         """Retries method against API until returned data shows that all hosts

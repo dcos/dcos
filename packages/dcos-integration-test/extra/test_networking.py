@@ -6,7 +6,7 @@ import retrying
 
 def ensure_routable(cmd, service_points, timeout=300):
     @retrying.retry(wait_fixed=2000,
-                    stop_max_delay=timeout*1000,
+                    stop_max_delay=timeout * 1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: True)
     def _ensure_routable():

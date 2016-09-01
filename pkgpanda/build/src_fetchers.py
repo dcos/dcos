@@ -280,8 +280,8 @@ class UrlSrcFetcher(SourceFetcher):
 
         if src_info.keys() != {'kind', 'sha1', 'url'}:
                 raise ValidationError(
-                        "url and url_extract sources must have exactly 'sha1' (sha1 of the artifact"
-                        " which will be downloaded), and 'url' (url to download artifact) as options")
+                    "url and url_extract sources must have exactly 'sha1' (sha1 of the artifact"
+                    " which will be downloaded), and 'url' (url to download artifact) as options")
 
         self.url = src_info['url']
         self.extract = (self.kind == 'url_extract')

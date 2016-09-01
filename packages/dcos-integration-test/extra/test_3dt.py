@@ -42,7 +42,7 @@ def make_3dt_request(ip, endpoint, cluster, port=80):
     return json_response
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY*1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_3dt_health(cluster):
     """
     test health endpoint /system/health/v1
@@ -143,7 +143,7 @@ def validate_node(nodes):
         assert node['role'], 'role cannot be empty'
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY*1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_3dt_nodes(cluster):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
@@ -252,7 +252,7 @@ def test_3dt_nodes_node_units_unit(cluster):
                     make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}/units/{}'.format(node, unit_id), cluster))
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY*1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_3dt_units(cluster):
     """
     test a list of collected units, endpoint /system/health/v1/units
@@ -343,7 +343,7 @@ def make_nodes_ip_map(cluster):
     return node_private_public_ip_map
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY*1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_3dt_units_unit_nodes(cluster):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
@@ -498,7 +498,7 @@ def verify_unit_response(zip_ext_file):
         '3dt does not have permission to run `journalctl`')
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY*1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_3dt_bundle_download_and_extract(cluster):
     """
     test bundle download and validate zip file

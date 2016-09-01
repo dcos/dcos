@@ -58,10 +58,10 @@ def test_lex():
             ])
 
     assert(get_tokens("{% for foo in bar %}{{ foo }}{% endfor %}") == [
-            ('for', ('foo', 'bar')),
-            ('replacement', ('foo', None)),
-            ('endfor', None),
-            ('eof', None)])
+        ('for', ('foo', 'bar')),
+        ('replacement', ('foo', None)),
+        ('endfor', None),
+        ('eof', None)])
 
     with pytest.raises(gen.template.SyntaxError):
         get_tokens("{{ test |}}")

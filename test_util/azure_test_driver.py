@@ -165,17 +165,17 @@ def run():
 
         with closing(SSHTunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200)) as t:
             integration_test(
-                    tunnel=t,
-                    test_dir='/home/{}'.format(get_value('linuxAdminUsername')),
-                    dcos_dns=ip_buckets['master'][0],
-                    master_list=ip_buckets['master'],
-                    agent_list=ip_buckets['private'],
-                    public_agent_list=ip_buckets['public'],
-                    provider='azure',
-                    test_dns_search=False,
-                    add_env={'DCOS_AUTH_ENABLED': get_value('oauthEnabled')},
-                    pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
-                    pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ")+os.getenv('CI_FLAGS', ''))
+                tunnel=t,
+                test_dir='/home/{}'.format(get_value('linuxAdminUsername')),
+                dcos_dns=ip_buckets['master'][0],
+                master_list=ip_buckets['master'],
+                agent_list=ip_buckets['private'],
+                public_agent_list=ip_buckets['public'],
+                provider='azure',
+                test_dns_search=False,
+                add_env={'DCOS_AUTH_ENABLED': get_value('oauthEnabled')},
+                pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
+                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         traceback.print_exc()

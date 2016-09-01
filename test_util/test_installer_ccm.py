@@ -110,7 +110,7 @@ def make_vpc(use_bare_os=False):
         instance_os=os_name,
         region=DEFAULT_AWS_REGION,
         key_pair_name=unique_cluster_id
-        )
+    )
 
     ssh_key, ssh_key_url = vpc.get_ssh_key()
     log.info("Download cluster SSH key: {}".format(ssh_key_url))
@@ -214,7 +214,7 @@ def main():
     else:
         installer = test_util.installer_api_test.DcosCliInstaller()
 
-    host_list_w_port = [i+':22' for i in host_list]
+    host_list_w_port = [i + ':22' for i in host_list]
 
     @retry(stop_max_delay=120000)
     def establish_host_connectivity():
@@ -245,9 +245,9 @@ def main():
         log.info('Setting up installer on test host')
 
         installer.setup_remote(
-                tunnel=test_host_tunnel,
-                installer_path=remote_dir+'/dcos_generate_config.sh',
-                download_url=options.installer_url)
+            tunnel=test_host_tunnel,
+            installer_path=remote_dir + '/dcos_generate_config.sh',
+            download_url=options.installer_url)
         if options.do_setup:
             # only do on setup so you can rerun this test against a living installer
             log.info('Verifying installer password hashing')
@@ -269,21 +269,21 @@ def main():
             log.info('Installer CLI is selected, so configure for ZK backend')
             zk_host = test_host_local + ':2181'
             zk_cmd = [
-                    'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
-                    '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
+                'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
+                '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
             test_host_tunnel.remote_cmd(zk_cmd)
 
         log.info("Configuring install...")
         installer.genconf(
-                zk_host=zk_host,
-                master_list=master_list,
-                agent_list=agent_list,
-                public_agent_list=public_agent_list,
-                ip_detect_script=ip_detect_script,
-                ssh_user=ssh_user,
-                ssh_key=ssh_key,
-                add_config_path=options.add_config_path,
-                rexray_config_preset='aws')
+            zk_host=zk_host,
+            master_list=master_list,
+            agent_list=agent_list,
+            public_agent_list=public_agent_list,
+            ip_detect_script=ip_detect_script,
+            ssh_user=ssh_user,
+            ssh_key=ssh_key,
+            add_config_path=options.add_config_path,
+            rexray_config_preset='aws')
 
         log.info("Running Preflight...")
         if options.test_install_prereqs:
@@ -307,21 +307,21 @@ def main():
     with closing(SSHTunnel(ssh_user, ssh_key_path, host_list[1])) as master_tunnel:
         # Runs dcos-image integration tests inside the cluster
         result = test_util.test_runner.integration_test(
-                tunnel=master_tunnel,
-                test_dir=remote_dir,
-                region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
-                dcos_dns=master_list[0],
-                master_list=master_list,
-                agent_list=agent_list,
-                public_agent_list=public_agent_list,
-                provider='onprem',
-                # Setting dns_search: mesos not currently supported in API
-                test_dns_search=not options.use_api,
-                aws_access_key_id=options.aws_access_key_id,
-                aws_secret_access_key=options.aws_secret_access_key,
-                add_env=options.add_env,
-                pytest_dir=options.pytest_dir,
-                pytest_cmd=options.pytest_cmd)
+            tunnel=master_tunnel,
+            test_dir=remote_dir,
+            region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
+            dcos_dns=master_list[0],
+            master_list=master_list,
+            agent_list=agent_list,
+            public_agent_list=public_agent_list,
+            provider='onprem',
+            # Setting dns_search: mesos not currently supported in API
+            test_dns_search=not options.use_api,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key,
+            add_env=options.add_env,
+            pytest_dir=options.pytest_dir,
+            pytest_cmd=options.pytest_cmd)
 
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")

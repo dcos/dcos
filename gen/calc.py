@@ -139,7 +139,7 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError:
-        assert False, "Provided input was not valid JSON: "+dcos_overlay_network
+        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -205,7 +205,7 @@ def validate_json_list(json_list):
 
         assert type(list_data) is list, "Must be a JSON list. Got a {}".format(type(list_data))
     except ValueError:
-        assert False, "Provided input was not valid JSON: "+json_list
+        assert False, "Provided input was not valid JSON: " + json_list
 
     return list_data
 
@@ -300,7 +300,7 @@ def validate_zk_path(exhibitor_zk_path):
 def calculate_exhibitor_static_ensemble(master_list):
     masters = json.loads(master_list)
     masters.sort()
-    return ','.join(['%d:%s' % (i+1, m) for i, m in enumerate(masters)])
+    return ','.join(['%d:%s' % (i + 1, m) for i, m in enumerate(masters)])
 
 
 def calculate_adminrouter_auth_enabled(oauth_enabled):
