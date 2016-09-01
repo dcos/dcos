@@ -201,9 +201,9 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
         dcos_template = gen_templates(args, 'azuredeploy')
     elif varietal == 'acs':
         args['exhibitor_azure_prefix'] = "[[[variables('masterPublicIPAddressName')]]]"
-        args['exhibitor_azure_account_name'] = "[[[variables('masterStorageAccountName')]]]"
+        args['exhibitor_azure_account_name'] = "[[[variables('masterStorageAccountExhibitorName')]]]"
         args['exhibitor_azure_account_key'] = ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                               "variables('masterStorageAccountName')), '2015-06-15').key1]]]")
+                                               "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]")
         args['cluster_name'] = "[[[variables('masterPublicIPAddressName')]]]"
         dcos_template = gen_templates(args, 'acs')
     else:
