@@ -30,11 +30,15 @@ def test_set_arg_parser():
     parser = cli.parse_args(['--uninstall'])
     assert parser.action == 'uninstall'
     parser = cli.parse_args(['--hash-password', 'foo'])
-    assert parser.hash_password == 'foo'
+    assert parser.hash_password == ['foo']
     assert parser.action is None
 
     parser = cli.parse_args(['--set-superuser-password', 'foo'])
-    assert parser.set_superuser_password == 'foo'
+    assert parser.set_superuser_password == ['foo']
+    assert parser.action is None
+
+    parser = cli.parse_args(['--set-superuser-password'])
+    assert parser.set_superuser_password == [None]
     assert parser.action is None
 
     # Can't do two at once
