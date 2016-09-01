@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import getpass
 import json
 import logging
 import os
@@ -240,6 +241,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         data = {"status": status, "output": output}
         self._send_reply(data)
 
+    def _handle_operating_environment(self):
+        """Gets basic operating environment info (such as running user)"""
+        self._send_reply({
+            'username': getpass.getuser()
+        })
+
     def do_GET(self):  # noqa: ignore=N802
         """Mini service router handling GET requests"""
         # TODO(cmaloney): Alphabetize these.
@@ -253,6 +260,8 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             self._handle_path_dns_search()
         elif self.path == '/signal_test_cache':
             self._handle_path_signal_test_cache(False)
+        elif self.path == '/operating_environment':
+            self._handle_operating_environment()
         else:
             self.send_error(404, 'Not found', 'Endpoint is not supported')
 
