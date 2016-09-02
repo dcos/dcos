@@ -19,6 +19,7 @@ root:
       Restart=always
       StartLimitInterval=0
       RestartSec=15
+      ExecStartPre=-/sbin/ip link del docker0
       ExecStart=
       ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay
   - path: /etc/systemd/system/docker.socket
@@ -56,11 +57,8 @@ runcmd:
     - [ ln, -s, /bin/mount, /usr/bin/mount ]
     - [ ln, -s, /bin/bash, /usr/bin/bash ]
     - [ ln, -s, /usr/sbin/useradd, /usr/bin/useradd ]
-    - [ systemctl, stop, resolvconf.service ]
-    - [ systemctl, disable, resolvconf.service ]
-    - [ systemctl, stop, lxc-net.service ]
-    - [ systemctl, disable, lxc-net.service ]
-    - [ systemctl, mask, lxc-net.service ]
+    - [ systemctl, disable, --now, resolvconf.service ]
+    - [ systemctl, mask, --now, lxc-net.service ]
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/1.deb https://az837203.vo.msecnd.net/dcos-deps/libipset3_6.29-1_amd64.deb
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/2.deb https://az837203.vo.msecnd.net/dcos-deps/ipset_6.29-1_amd64.deb
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/3.deb https://az837203.vo.msecnd.net/dcos-deps/unzip_6.0-20ubuntu1_amd64.deb

@@ -458,7 +458,15 @@ def test_3dt_bundle_create(cluster):
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
     status_url = '/system/health/v1/report/diagnostics/status/all'
 
-    @retrying.retry(stop_max_delay=8000, wait_fixed=1000)
+    # the job executing takes about 1 seconds per node. A static timeout does not work very well for every context
+    # this test can be run in. Let's calculate a timeout based on how many nodes in a cluster + 15% tolerance.
+    # the timeout would looks like: (len(all_nodes) + 15%) * 1000
+    timeout = len(cluster.masters + cluster.all_slaves) * 1000
+    tolerance = int(15 * timeout / 100.0)
+    job_timeout = timeout + tolerance
+    logging.info("Using timeout {}".format(job_timeout))
+
+    @retrying.retry(stop_max_delay=job_timeout, wait_fixed=1000)
     def wait_for_job():
         response = cluster.get(path=status_url).json()
         logging.info('GET {}, response: {}'.format(status_url, response))

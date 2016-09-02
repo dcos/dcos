@@ -573,11 +573,16 @@ def mock_get_cf_s3_url():
     return "http://mock_cf_s3_url"
 
 
+def mock_get_azure_download_url():
+    return "http://mock_azure_download_url"
+
+
 # Test that the do_create functions for each provider output data in the right
 # shape.
 def test_make_channel_artifacts(monkeypatch):
     monkeypatch.setattr('gen.installer.bash.make_installer_docker', mock_make_installer_docker)
     monkeypatch.setattr('gen.installer.aws.get_cloudformation_s3_url', mock_get_cf_s3_url)
+    monkeypatch.setattr('gen.installer.azure.get_download_url', mock_get_azure_download_url)
 
     metadata = {
         'commit': 'sha-1',
