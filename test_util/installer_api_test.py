@@ -9,7 +9,7 @@ import requests
 import yaml
 from retrying import retry
 
-from ssh.ssh_tunnel import SSHTunnel, run_scp_cmd, run_ssh_cmd
+from ssh.ssh_tunnel import run_scp_cmd, run_ssh_cmd, SSHTunnel
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
 

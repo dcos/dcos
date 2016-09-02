@@ -4,8 +4,8 @@ import subprocess
 import sys
 
 import gen
-import pkgpanda
 import gen.installer.bash
+import pkgpanda
 from dcos_installer.constants import SERVE_DIR
 
 log = logging.getLogger(__name__)

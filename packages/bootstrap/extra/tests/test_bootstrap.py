@@ -1,11 +1,11 @@
 import getpass
 import logging
 import pwd
-import pytest
 import random
 import string
 import subprocess
 
+import pytest
 from kazoo.client import KazooClient, KazooRetry
 
 from dcos_internal_utils import bootstrap

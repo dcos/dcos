@@ -9,7 +9,7 @@ with contextlib.closing(SSHTunnel(*args, **kwargs)) as tunnel:
 import logging
 import tempfile
 from contextlib import closing
-from subprocess import TimeoutExpired, check_call, check_output
+from subprocess import check_call, check_output, TimeoutExpired
 
 logger = logging.getLogger(__name__)
 
