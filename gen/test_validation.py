@@ -17,6 +17,7 @@ def make_arguments(new_arguments):
         'bootstrap_id': '123',
         'exhibitor_zk_path': '/dcos',
         'master_discovery': 'static',
+        'platform': 'aws',
         'provider': 'onprem',
         'exhibitor_zk_hosts': '52.37.205.237:2181',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',

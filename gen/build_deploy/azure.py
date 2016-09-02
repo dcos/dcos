@@ -42,9 +42,11 @@ INSTANCE_GROUPS = {
 
 azure_base_source = Source(entry={
     'default': {
+        'platform': 'azure',
         'enable_docker_gc': 'true'
     },
     'must': {
+        'provider': 'azure',
         'resolvers': '["168.63.129.16"]',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
         'master_discovery': 'static',

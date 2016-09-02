@@ -114,6 +114,7 @@ def test_signal_service(dcos_api_session):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
+        'platform': dcos_config['platform'],
         'provider': dcos_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
