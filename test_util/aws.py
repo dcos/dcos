@@ -9,6 +9,7 @@ logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 Host = namedtuple('Host', ['private_ip', 'public_ip'])
+SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
 
 VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'
 VPC_EBS_ONLY_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-ebs-only-cluster-template.json'
@@ -87,7 +88,7 @@ class DcosCfSimple(CfStack):
             'PublicSlaveInstanceCount': str(public_agents),
             'SlaveInstanceCount': str(private_agents)}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper)
+        return cls(stack.stack.stack_id, boto_wrapper), SSH_INFO['coreos']
 
     def delete(self):
         logger.info('Starting deletion of CF stack')
@@ -179,7 +180,7 @@ class DcosCfAdvanced(CfStack):
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper)
+        return cls(stack.stack.stack_id, boto_wrapper), SSH_INFO['coreos']
 
     def delete(self, delete_vpc=False):
         logger.info('Starting deletion of CF Advanced stack')
@@ -255,7 +256,7 @@ class VpcCfStack(CfStack):
             'InstanceType': str(instance_type),
             'AmiCode': ami_code}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper)
+        return cls(stack.stack.stack_id, boto_wrapper), OS_SSH_INFO[instance_os]
 
     def delete(self):
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
@@ -268,6 +269,40 @@ class VpcCfStack(CfStack):
         logging.debug('Reservations for {}: {}'.format(self.stack.stack_id, reservations))
         instances = reservations[0]['Instances']
         return instances_to_hosts(instances)
+
+
+SSH_INFO = {
+    'centos': SshInfo(
+        user='centos',
+        home_dir='/home/centos',
+    ),
+    'coreos': SshInfo(
+        user='core',
+        home_dir='/home/core',
+    ),
+    'debian': SshInfo(
+        user='admin',
+        home_dir='/home/admin',
+    ),
+    'rhel': SshInfo(
+        user='ec2-user',
+        home_dir='/home/ec2-user',
+    ),
+    'ubuntu': SshInfo(
+        user='ubuntu',
+        home_dir='/home/ubuntu',
+    ),
+}
+
+
+OS_SSH_INFO = {
+    'cent-os-7': SSH_INFO['centos'],
+    'cent-os-7-dcos-prereqs': SSH_INFO['centos'],
+    'coreos': SSH_INFO['coreos'],
+    'debian-8': SSH_INFO['debian'],
+    'rhel-7': SSH_INFO['rhel'],
+    'ubuntu-16-04': SSH_INFO['ubuntu'],
+}
 
 
 OS_AMIS = {

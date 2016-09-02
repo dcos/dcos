@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        test_dns_search, provider,
+        provider,
+        test_dns_search=True,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
         pytest_cmd='py.test -rs -vv',
         pytest_dir='/opt/mesosphere/active/dcos-integration-test'):

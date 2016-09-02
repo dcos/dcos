@@ -3,6 +3,12 @@
 
 The following environment variables control test procedure:
 
+AGENTS: integer (default=2)
+    The number of agents to create in a new cluster.
+
+PUBLIC_AGENTS: integer (default=1)
+    The number of public agents to create in a new cluster.
+
 DCOS_TEMPLATE_URL: string
     The template to be used for deployment testing
 
@@ -28,16 +34,12 @@ TEST_ADD_ENV_*: string (default=None)
 import logging
 import os
 import random
-import stat
 import string
 import sys
 
-import retrying
-
 import test_util.aws
-import test_util.test_runner
+import test_util.cluster
 from gen.calc import calculate_environment_variable
-from ssh.ssh_tunnel import SSHTunnel
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -66,6 +68,8 @@ def check_environment():
     options.private_subnet = os.getenv('DCOS_ADVANCED_PRIVATE_SUBNET', None)
     options.public_subnet = os.getenv('DCOS_ADVANCED_PUBLIC_SUBNET', None)
     options.ssh_user = os.getenv('DCOS_SSH_USER', 'core')
+    options.agents = int(os.environ.get('AGENTS', '2'))
+    options.public_agents = int(os.environ.get('PUBLIC_AGENTS', '1'))
 
     # Mandatory
     options.stack_name = os.getenv('DCOS_STACK_NAME', None)
@@ -97,8 +101,19 @@ def check_environment():
 
 def main():
     options = check_environment()
-    cf = provide_cluster(options)
-    result = run_test(options, cf)
+    cf, ssh_info = provide_cluster(options)
+    cluster = test_util.cluster.Cluster.from_cloudformation(cf, ssh_info, options.ssh_key_path)
+
+    result = test_util.cluster.run_integration_tests(
+        cluster,
+        region=options.aws_region,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key,
+        test_dns_search=False,
+        add_env=options.add_env,
+        pytest_dir=options.pytest_dir,
+        pytest_cmd=options.pytest_cmd,
+    )
     if result == 0:
         log.info('Test successsful! Deleting CloudFormation...')
         cf.delete()
@@ -120,12 +135,12 @@ def provide_cluster(options):
         log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
         # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
         if options.advanced:
-            cf = test_util.aws.DcosCfAdvanced.create(
+            cf, ssh_info = test_util.aws.DcosCfAdvanced.create(
                 stack_name=stack_name,
                 boto_wrapper=bw,
                 template_url=options.template_url,
-                private_agents=2,
-                public_agents=1,
+                private_agents=options.agents,
+                public_agents=options.public_agents,
                 key_pair_name='default',
                 private_agent_type='m3.xlarge',
                 public_agent_type='m3.xlarge',
@@ -135,65 +150,19 @@ def provide_cluster(options):
                 private_subnet=options.private_subnet,
                 public_subnet=options.public_subnet)
         else:
-            cf = test_util.aws.DcosCfSimple.create(
+            cf, ssh_info = test_util.aws.DcosCfSimple.create(
                 stack_name=stack_name,
                 template_url=options.template_url,
-                private_agents=2,
-                public_agents=1,
+                private_agents=options.agents,
+                public_agents=options.public_agents,
                 admin_location='0.0.0.0/0',
                 key_pair_name='default',
                 boto_wrapper=bw)
         cf.wait_for_stack_creation()
     else:
         cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
-    return cf
-
-
-def run_test(options, cf):
-    # key must be chmod 600 for test_runner to use
-    os.chmod(options.ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
-
-    # Create custom SSH Runnner to help orchestrate the test
-    remote_dir = '/home/{}'.format(options.ssh_user)
-
-    master_ips = cf.get_master_ips()
-    public_agent_ips = cf.get_public_agent_ips()
-    private_agent_ips = cf.get_private_agent_ips()
-    test_host = master_ips[0].public_ip
-    log.info('Running integration test from: ' + test_host)
-    master_list = [i.private_ip for i in master_ips]
-    log.info('Master private IPs: ' + repr(master_list))
-    agent_list = [i.private_ip for i in private_agent_ips]
-    log.info('Private agent private IPs: ' + repr(agent_list))
-    public_agent_list = [i.private_ip for i in public_agent_ips]
-    log.info('Public agent private IPs: ' + repr(public_agent_list))
-
-    log.info('To access this cluster, use the Mesosphere default shared AWS key '
-             '(https://mesosphere.onelogin.com/notes/16670) and SSH with:\n'
-             'ssh -i default_ssh_key {}@{}'.format(options.ssh_user, test_host))
-
-    @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
-    def establish_host_connectivity():
-        """CF SSH-agent might not be ready, so give it a few tries
-        """
-        return SSHTunnel(options.ssh_user, options.ssh_key_path, test_host)
-
-    with establish_host_connectivity() as test_host_tunnel:
-        return test_util.test_runner.integration_test(
-            tunnel=test_host_tunnel,
-            test_dir=remote_dir,
-            region=options.aws_region,
-            dcos_dns=master_list[0],
-            master_list=master_list,
-            agent_list=agent_list,
-            public_agent_list=public_agent_list,
-            provider='aws',
-            test_dns_search=False,
-            aws_access_key_id=options.aws_access_key_id,
-            aws_secret_access_key=options.aws_secret_access_key,
-            add_env=options.add_env,
-            pytest_dir=options.pytest_dir,
-            pytest_cmd=options.pytest_cmd)
+        ssh_info = test_util.aws.SSH_INFO['coreos']
+    return cf, ssh_info
 
 
 if __name__ == '__main__':
