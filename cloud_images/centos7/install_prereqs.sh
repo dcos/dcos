@@ -55,6 +55,10 @@ docker_service_d=/etc/systemd/system/docker.service.d
 mkdir -p "$docker_service_d"
 cat << 'EOF' > "${docker_service_d}/execstart.conf"
 [Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=15
+ExecStartPre=-/sbin/ip link del docker0
 ExecStart=
 ExecStart=/usr/bin/docker daemon -H fd:// --graph=/var/lib/docker --storage-driver=overlay
 EOF

@@ -1,5 +1,9 @@
 ## Changelog
 
+### 2016-08-30
+
+* Fix intermittent issue with Docker 1.11.2 startup where a small percentage of agents (~5%) fail to start.
+
 ### 2016-08-09
 
 Move AMI builds to dcos.io CI: https://teamcity.mesosphere.io/project.html?projectId=DcosIo_Dcos_BuildCloudBaseImages&tab=projectOverview

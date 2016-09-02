@@ -12,6 +12,8 @@ import gen
 import gen.installer.util as util
 import gen.template
 import pkgpanda.build
+import release
+import release.storage
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
@@ -20,7 +22,7 @@ ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
 
 TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
-UPLOAD_URL = ("https://az837203.vo.msecnd.net/dcos/{channel_commit_path}/azure/{arm_template_name}")
+DOWNLOAD_URL_TEMPLATE = ("{download_url}{channel_commit_path}/azure/{arm_template_name}")
 
 INSTANCE_GROUPS = {
     'master': {
@@ -199,9 +201,9 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
         dcos_template = gen_templates(args, 'azuredeploy')
     elif varietal == 'acs':
         args['exhibitor_azure_prefix'] = "[[[variables('masterPublicIPAddressName')]]]"
-        args['exhibitor_azure_account_name'] = "[[[variables('masterStorageAccountName')]]]"
+        args['exhibitor_azure_account_name'] = "[[[variables('masterStorageAccountExhibitorName')]]]"
         args['exhibitor_azure_account_key'] = ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                               "variables('masterStorageAccountName')), '2015-06-15').key1]]]")
+                                               "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]")
         args['cluster_name'] = "[[[variables('masterPublicIPAddressName')]]]"
         dcos_template = gen_templates(args, 'acs')
     else:
@@ -241,12 +243,14 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
     Generate the button page, that is, "Deploy a cluster to Azure" page
     '''
     dcos_urls = [
-        encode_url_as_param(UPLOAD_URL.format(
+        encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
+            download_url=get_download_url(),
             channel_commit_path=channel_commit_path,
             arm_template_name='dcos-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
     acs_urls = [
-        encode_url_as_param(UPLOAD_URL.format(
+        encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
+            download_url=get_download_url(),
             channel_commit_path=channel_commit_path,
             arm_template_name='acs-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
@@ -266,3 +270,26 @@ def encode_url_as_param(s):
     s = s.encode('utf8')
     s = urllib.parse.quote_plus(s)
     return s
+
+
+def get_download_url():
+    assert release._config is not None
+    # TODO: HACK. Stashing and pulling the config from release/__init__.py
+    # is definitely not the right way to do this.
+    # See also gen/installer/aws.py#get_cloudformation_s3_url
+
+    if 'storage' not in release._config:
+        raise RuntimeError("No storage section in configuration")
+
+    if 'azure' not in release._config['storage']:
+        raise RuntimeError("No azure section in storage configuration")
+
+    if 'download_url' not in release._config['storage']['azure']:
+        raise RuntimeError("No download_url section in azure configuration")
+
+    download_url = release._config['storage']['azure']['download_url']
+
+    if not download_url.endswith('/'):
+        raise RuntimeError("Azure download_url must end with a '/'")
+
+    return download_url
