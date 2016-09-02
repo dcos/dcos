@@ -193,7 +193,7 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                 # Rewrite old_prefix to new_prefix if present.
                 target = os.readlink(full_path)
                 if target.startswith(old_prefix):
-                    new_target = os.path.join(new_prefix, target[len(old_prefix)+1:].lstrip('/'))
+                    new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
                     # Remove the old link and write a new one.
                     os.remove(full_path)
                     os.symlink(new_target, full_path)

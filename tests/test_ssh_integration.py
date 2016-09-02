@@ -339,10 +339,10 @@ def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
 def test_ssh_tunnel(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
         tunnel_args = {
-                'ssh_user': getpass.getuser(),
-                'ssh_key_path': sshd_manager.key_path,
-                'host': '127.0.0.1',
-                'port': sshd_ports[0]}
+            'ssh_user': getpass.getuser(),
+            'ssh_key_path': sshd_manager.key_path,
+            'host': '127.0.0.1',
+            'port': sshd_ports[0]}
         with closing(SSHTunnel(**tunnel_args)) as tunnel:
             tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
 
@@ -350,9 +350,9 @@ def test_ssh_tunnel(sshd_manager):
 def test_ssh_tunnel_collection(sshd_manager):
     with sshd_manager.run(10) as sshd_ports:
         tunnel_args = {
-                'ssh_user': getpass.getuser(),
-                'ssh_key_path': sshd_manager.key_path,
-                'host_names': ['127.0.0.1:'+str(i) for i in sshd_ports]}
+            'ssh_user': getpass.getuser(),
+            'ssh_key_path': sshd_manager.key_path,
+            'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
         with closing(TunnelCollection(**tunnel_args)) as tunnels:
             for tunnel in tunnels.tunnels:
                 tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
@@ -361,10 +361,10 @@ def test_ssh_tunnel_collection(sshd_manager):
 def test_ssh_one_offs(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
         ssh_args = {
-                'ssh_user': getpass.getuser(),
-                'ssh_key_path': sshd_manager.key_path,
-                'host': '127.0.0.1',
-                'port': sshd_ports[0]}
+            'ssh_user': getpass.getuser(),
+            'ssh_key_path': sshd_manager.key_path,
+            'host': '127.0.0.1',
+            'port': sshd_ports[0]}
         scp = partial(run_scp_cmd, **ssh_args)
         ssh = partial(run_ssh_cmd, **ssh_args)
         tunnel_write_and_run(scp, ssh)

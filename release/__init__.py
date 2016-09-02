@@ -242,7 +242,7 @@ class Repository():
             'channel_path': 'metadata.json',
             'content_type': 'application/json; charset=utf-8',
             'local_content': to_json(strip_locals(metadata))
-            }, False)
+        }, False)
 
         return {
             'stage1': stage1,
@@ -312,22 +312,22 @@ def make_stable_artifacts(cache_repository_url):
         add_file({
             'reproducible_path': 'bootstrap/' + bootstrap_filename,
             'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
-            })
+        })
         active_filename = "{}.active.json".format(info['bootstrap'])
         add_file({
             'reproducible_path': 'bootstrap/' + active_filename,
             'local_path': 'packages/cache/bootstrap/' + active_filename
-            })
+        })
         latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_filename,
             'local_path': 'packages/cache/bootstrap/' + latest_filename
-            })
+        })
         latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
         add_file({
             'channel_path': latest_complete_filename,
             'local_path': 'packages/cache/complete/' + latest_complete_filename
-            })
+        })
 
         # Add all the packages which haven't been added yet
         for package_id in sorted(info['packages']):
@@ -373,7 +373,7 @@ def make_channel_artifacts(metadata):
                 'provider': name,
                 'bootstrap_id': bootstrap_id,
                 'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
-                })
+            })
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):

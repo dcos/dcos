@@ -59,7 +59,7 @@ def test_setup(tmpdir):
     }
 
     assert expected_dcos_service_configuration == load_json(
-            "{tmpdir}/root/etc/dcos-service-configuration.json".format(tmpdir=tmpdir))
+        "{tmpdir}/root/etc/dcos-service-configuration.json".format(tmpdir=tmpdir))
 
     # Introspection should work right
     active = set(check_output([
@@ -68,8 +68,7 @@ def test_setup(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=../resources/etc-active"
-        ]).decode("utf-8").split())
+        "--config-dir=../resources/etc-active"]).decode("utf-8").split())
 
     assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
     tmpdir.join("root", "bootstrap").write("", ensure=True)
@@ -124,8 +123,7 @@ def test_setup(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=../resources/etc-active"
-        ]).decode('utf-8').split())
+        "--config-dir=../resources/etc-active"]).decode('utf-8').split())
 
     assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
 
@@ -182,8 +180,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=../resources/etc-active"
-        ]).decode('utf-8').split())
+        "--config-dir=../resources/etc-active"]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
 
@@ -204,8 +201,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=../resources/etc-active"
-        ]).decode('utf-8').split())
+        "--config-dir=../resources/etc-active"]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0", "mesos-config--justmesos"}
 
@@ -225,8 +221,7 @@ def test_activate(tmpdir):
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
-        "--config-dir=../resources/etc-active"
-        ]).decode('utf-8').split())
+        "--config-dir=../resources/etc-active"]).decode('utf-8').split())
 
     assert active == {"mesos--0.22.0"}
 

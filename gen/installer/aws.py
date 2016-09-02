@@ -375,8 +375,7 @@ def gen_templates(arguments):
         results.templates['cloudformation.json'],
         master_cloud_config=variant_cloudconfig['master'],
         slave_cloud_config=variant_cloudconfig['slave'],
-        slave_public_cloud_config=variant_cloudconfig['slave_public']
-        )
+        slave_public_cloud_config=variant_cloudconfig['slave_public'])
 
     print("Validating CloudFormation")
     validate_cf(cloudformation)

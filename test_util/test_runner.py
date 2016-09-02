@@ -45,22 +45,22 @@ def integration_test(
     """
     dns_search = 'true' if test_dns_search else 'false'
     test_env = [
-        'DCOS_DNS_ADDRESS=http://'+dcos_dns,
-        'MASTER_HOSTS='+','.join(master_list),
-        'PUBLIC_MASTER_HOSTS='+','.join(master_list),
-        'SLAVE_HOSTS='+','.join(agent_list),
-        'PUBLIC_SLAVE_HOSTS='+','.join(public_agent_list),
-        'DCOS_PROVIDER='+provider,
-        'DNS_SEARCH='+dns_search,
-        'AWS_ACCESS_KEY_ID='+aws_access_key_id,
-        'AWS_SECRET_ACCESS_KEY='+aws_secret_access_key,
-        'AWS_REGION='+region]
+        'DCOS_DNS_ADDRESS=http://' + dcos_dns,
+        'MASTER_HOSTS=' + ','.join(master_list),
+        'PUBLIC_MASTER_HOSTS=' + ','.join(master_list),
+        'SLAVE_HOSTS=' + ','.join(agent_list),
+        'PUBLIC_SLAVE_HOSTS=' + ','.join(public_agent_list),
+        'DCOS_PROVIDER=' + provider,
+        'DNS_SEARCH=' + dns_search,
+        'AWS_ACCESS_KEY_ID=' + aws_access_key_id,
+        'AWS_SECRET_ACCESS_KEY=' + aws_secret_access_key,
+        'AWS_REGION=' + region]
     if add_env:
         for key, value in add_env.items():
             extra_env = key + '=' + value
             test_env.append(extra_env)
 
-    test_env_str = ''.join(['export '+e+'\n' for e in test_env])
+    test_env_str = ''.join(['export ' + e + '\n' for e in test_env])
 
     test_boilerplate = """#!/bin/bash
 source /opt/mesosphere/environment.export

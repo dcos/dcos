@@ -82,19 +82,18 @@ def test_move_external_volume_to_new_agent(cluster):
         cluster.deploy_marathon_app(read_app, **deploy_kwargs)
         cluster.destroy_marathon_app(read_app['id'])
     finally:
-        logging.info('Deleting volume: '+test_label)
+        logging.info('Deleting volume: ' + test_label)
         delete_cmd = """#!/bin/bash
 source /opt/mesosphere/environment.export
 python /opt/mesosphere/active/dcos-integration-test/delete_ec2_volume.py {}
 """.format(test_label)
         delete_job = {
-                'id': 'delete-volume-'+test_uuid,
-                'run': {
-                    'cpus': .1,
-                    'mem': 128,
-                    'disk': 0,
-                    'cmd': delete_cmd}
-                }
+            'id': 'delete-volume-' + test_uuid,
+            'run': {
+                'cpus': .1,
+                'mem': 128,
+                'disk': 0,
+                'cmd': delete_cmd}}
         try:
             cluster.metronome_one_off(delete_job)
         except Exception as ex:

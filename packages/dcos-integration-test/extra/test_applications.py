@@ -117,14 +117,12 @@ def test_octarine_srv(cluster, timeout=30):
         'cmd': cmd,
         'disk': 0,
         'instances': 1,
-        'portDefinitions': [
-          {
+        'portDefinitions': [{
             'port': 0,
             'protocol': 'tcp',
             'name': port_name,
             'labels': {}
-          }
-        ],
+        }],
         'healthChecks': [{
             'protocol': 'COMMAND',
             'command': {

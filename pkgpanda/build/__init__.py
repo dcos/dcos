@@ -927,11 +927,11 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
                 # dependencies which contain the conflicting packages.
                 # a -> b -> c -> d {foo}
                 # e {bar} -> d {baz}
-                raise BuildError("Dependncy on multiple variants of the same package {}. "
-                                 "variants: {} {}".format(
-                                    requires_name,
-                                    requires_variant,
-                                    active_package_variants[requires_name]))
+                raise BuildError(
+                    "Dependncy on multiple variants of the same package {}. variants: {} {}".format(
+                        requires_name,
+                        requires_variant,
+                        active_package_variants[requires_name]))
 
             # The variant has package {requires_name, variant} already is a
             # dependency, don't process it again / move on to the next.
@@ -958,11 +958,12 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
             pkg_path = repository.package_path(pkg_id_str)
             pkg_tar = pkg_id_str + '.tar.xz'
             if not os.path.exists(package_store.get_package_cache_folder(requires_name) + '/' + pkg_tar):
-                raise BuildError("The build tarball {} refered to by the last_build file of the "
-                                 "dependency {} variant {} doesn't exist. Rebuild the dependency.".format(
-                                    pkg_tar,
-                                    requires_name,
-                                    requires_variant))
+                raise BuildError(
+                    "The build tarball {} refered to by the last_build file of the dependency {} "
+                    "variant {} doesn't exist. Rebuild the dependency.".format(
+                        pkg_tar,
+                        requires_name,
+                        requires_variant))
 
             active_package_ids.add(pkg_id_str)
 

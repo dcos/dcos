@@ -274,9 +274,9 @@ def validate_compatible(packages, roles):
                     raise ValueError(
                         "Conflicting sysctl setting {sysctl_var}={sysctl_value}"
                         " present in the service {service}".format(
-                                sysctl_var=sysctl_var,
-                                sysctl_value=sysctl_value,
-                                service=service_name))
+                            sysctl_var=sysctl_var,
+                            sysctl_value=sysctl_value,
+                            service=service_name))
 
                 sysctl_map[sysctl_var] = sysctl_value
 
@@ -754,10 +754,9 @@ class Install:
                     raise ValidationError("Two packages are trying to install the same file {0} or "
                                           "two roles in the set of roles {1} are causing a package "
                                           "to try activating multiple versions of the same file. "
-                                          "One of the package files is {2}.".format(
-                                            ex.dest,
-                                            self.__roles,
-                                            ex.src))
+                                          "One of the package files is {2}.".format(ex.dest,
+                                                                                    self.__roles,
+                                                                                    ex.src))
 
             # Add to the active folder
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
@@ -805,7 +804,7 @@ class Install:
 
                 if not service_names:
                     raise ValueError("service name required for sysctl could not be determined for {package}".format(
-                            package=package.id))
+                        package=package.id))
 
                 for service in service_names:
                     if service in package.sysctl:

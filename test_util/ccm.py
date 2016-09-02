@@ -33,7 +33,7 @@ class VpcCluster():
         # If we know the node count, we will assert against it when we call hosts()
         self.node_count = node_count
 
-    @retry(wait_fixed=5*1000, stop_max_delay=1000*900)
+    @retry(wait_fixed=5 * 1000, stop_max_delay=1000 * 900)
     def hosts(self):
         host_list = json.loads(self.ccm.get_cluster_info(self.pk)["cluster_info"])["NodesIpAddresses"]
         if self.node_count:
@@ -96,7 +96,7 @@ class Ccm():
             "instance_os": instance_os,
             "operating_system": instance_os,
             "key_pair_name": key_pair_name
-            }
+        }
         response = self.post("/api/vpc/", data=parameters).json()
         try:
             cluster_id = response["id"]
@@ -150,7 +150,7 @@ def main():
             instance_count=arguments['--count'],
             instance_type=arguments['--type'],
             instance_os=arguments['--os']
-            )
+        )
         print("VPC ID: {}".format(vpc.pk))
     if arguments['cluster']:
         cluster_id = arguments['<id>']
