@@ -40,7 +40,7 @@ class SSHTunnel():
             '/usr/bin/ssh',
             '-oConnectTimeout=10',
             '-oControlMaster=auto',
-            '-oControlPath='+self.socket_path,
+            '-oControlPath=' + self.socket_path,
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
             '-oBatchMode=yes',
@@ -48,7 +48,7 @@ class SSHTunnel():
 
         start_tunnel = self.ssh_cmd + [
             '-fnN',
-            '-i',  ssh_key_path,
+            '-i', ssh_key_path,
             '-p', str(port), self.target]
         logger.debug('Starting SSH tunnel: ' + ' '.join(start_tunnel))
         check_call(start_tunnel)
@@ -82,7 +82,7 @@ class SSHTunnel():
             src: (str) local path representing source data
             dst: (str) destination for path
         """
-        cmd = self.ssh_cmd + ['-C', '-p', str(self.port), self.target, 'cat>'+dst]
+        cmd = self.ssh_cmd + ['-C', '-p', str(self.port), self.target, 'cat>' + dst]
         logger.debug('Running socket write: ' + ' '.join(cmd))
         with open(src, 'r') as fh:
             check_call(cmd, stdin=fh)

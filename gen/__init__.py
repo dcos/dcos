@@ -42,8 +42,7 @@ def add_roles(cloudconfig, roles):
     for role in roles:
         cloudconfig['write_files'].append({
             "path": role_template.format(role),
-            "content": ""
-            })
+            "content": ""})
 
     return cloudconfig
 
@@ -592,10 +591,10 @@ def validate(
         cc_package_files=list()):
     try:
         generate(
-                arguments=arguments,
-                extra_templates=extra_templates,
-                cc_package_files=cc_package_files,
-                validate_only=True)
+            arguments=arguments,
+            extra_templates=extra_templates,
+            cc_package_files=cc_package_files,
+            validate_only=True)
         return {'status': 'ok'}
     except ValidationError as ex:
         messages = {}

@@ -38,7 +38,7 @@ def fetch_state(headers_cb):
         # state-summary. leader.mesos isn't updated instantly.
         # That requires mesos stop returning hostnames from `/master/redirect`.
         # See: https://github.com/apache/mesos/blob/master/src/master/http.cpp#L746
-        resp = requests.get(STATE_SUMMARY_URI, timeout=FETCH_PERIOD*.9, headers=headers_cb(), verify=TLS_VERIFY)
+        resp = requests.get(STATE_SUMMARY_URI, timeout=FETCH_PERIOD * .9, headers=headers_cb(), verify=TLS_VERIFY)
         resp.raise_for_status()
         state = resp.text
     except Exception as e:
@@ -55,7 +55,7 @@ class HistoryBuffer():
         :param update_period: the number of seconds between updates for this buffer
         :param path: (str) path for the dir to write to disk in
         """
-        updates_per_window = int(time_window/update_period)
+        updates_per_window = int(time_window / update_period)
         if time_window % update_period != 0:
             raise ValueError(
                 'Invalid updates per window: {} '
@@ -74,7 +74,7 @@ class HistoryBuffer():
             old_files = [os.path.join(self.path, f) for f in os.listdir(self.path)]
             filtered_old_files = [f for f in old_files if f.endswith(FILE_EXT)]
             self.disk_files = list(sorted(filtered_old_files))
-            backup_files = self.disk_files[-1*updates_per_window:]
+            backup_files = self.disk_files[-1 * updates_per_window:]
             backup_count = len(backup_files)
 
             def update_and_ff(f_path, ff_end):
@@ -83,7 +83,7 @@ class HistoryBuffer():
                 # Set timestamp to None for memory-only buffer updates
                 with open(f_path, 'r') as fh:
                     self._update_buffer(fh.read())
-                while (ff_end-self.update_period) >= self.next_update:
+                while (ff_end - self.update_period) >= self.next_update:
                     self._update_buffer('{}')
 
             for idx, f in enumerate(backup_files):
@@ -96,7 +96,7 @@ class HistoryBuffer():
                     update_and_ff(f, datetime.now())
                 else:
                     # More backup files, only fastforward to the next one
-                    next_filetime = parse_log_time(backup_files[idx+1].split('/')[-1])
+                    next_filetime = parse_log_time(backup_files[idx + 1].split('/')[-1])
                     update_and_ff(f, next_filetime)
         else:
             self.disk_count = 0
@@ -138,8 +138,8 @@ class BufferCollection():
     """Defines the buffers to be maintained"""
     def __init__(self, buffer_dir):
         self.buffers = {
-            'minute': HistoryBuffer(60, 2, path=buffer_dir+'/minute'),
-            'hour': HistoryBuffer(60*60, 60, path=buffer_dir+'/hour'),
+            'minute': HistoryBuffer(60, 2, path=buffer_dir + '/minute'),
+            'hour': HistoryBuffer(60 * 60, 60, path=buffer_dir + '/hour'),
             'last': HistoryBuffer(FETCH_PERIOD, FETCH_PERIOD)}
 
     def dump(self, name):

@@ -221,11 +221,8 @@ class Cluster:
 
         r = requests.post(self.dcos_uri + '/acs/api/v1/auth/login', json=js)
         assert r.status_code == 200
-        self.superuser_auth_header = {
-            'Authorization': 'token=%s' % r.json()['token']
-            }
-        self.superuser_auth_cookie = r.cookies[
-            'dcos-acs-auth-cookie']
+        self.superuser_auth_header = {'Authorization': 'token=%s' % r.json()['token']}
+        self.superuser_auth_cookie = r.cookies['dcos-acs-auth-cookie']
 
     def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
                  dns_search_set, provider, auth_enabled):
@@ -246,7 +243,7 @@ class Cluster:
         self.public_masters = sorted(public_masters)
         self.slaves = sorted(slaves)
         self.public_slaves = sorted(public_slaves)
-        self.all_slaves = sorted(slaves+public_slaves)
+        self.all_slaves = sorted(slaves + public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.dns_search_set = dns_search_set == 'true'
         self.provider = provider
@@ -432,7 +429,7 @@ class Cluster:
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
+        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _pool_for_marathon_app(app_id):
@@ -480,7 +477,7 @@ class Cluster:
             app_name: name of the applicatoin to remove
             timeout: seconds to wait for destruction before failing test
         """
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
+        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
@@ -508,21 +505,21 @@ class Cluster:
         """
         job_id = job_definition['id']
 
-        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout*1000,
+        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def wait_for_completion():
-            r = self.get('/service/metronome/v1/jobs/'+job_id, {'embed': 'history'})
+            r = self.get('/service/metronome/v1/jobs/' + job_id, {'embed': 'history'})
             assert r.ok
             out = r.json()
             if not ignore_failures and (out['history']['failureCount'] != 0):
-                raise Exception('Metronome job failed!: '+repr(out))
+                raise Exception('Metronome job failed!: ' + repr(out))
             if out['history']['successCount'] != 1:
-                logging.info('Waiting for one-off to finish. Status: '+repr(out))
+                logging.info('Waiting for one-off to finish. Status: ' + repr(out))
                 return False
             logging.info('Metronome one-off successful')
             return True
-        logging.info('Creating metronome job: '+repr(job_definition))
+        logging.info('Creating metronome job: ' + repr(job_definition))
         r = self.post('/service/metronome/v1/jobs', job_definition)
         assert r.ok, r.json()
         logging.info('Starting metronome job')
@@ -530,5 +527,5 @@ class Cluster:
         assert r.ok, r.json()
         wait_for_completion()
         logging.info('Deleting metronome one-off')
-        r = self.delete('/service/metronome/v1/jobs/'+job_id)
+        r = self.delete('/service/metronome/v1/jobs/' + job_id)
         assert r.ok

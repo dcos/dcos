@@ -5,6 +5,7 @@ import logging
 import re
 from copy import deepcopy
 
+import botocore.exceptions
 import yaml
 from pkg_resources import resource_string
 from retrying import retry
@@ -200,7 +201,11 @@ def validate_cf(template_body):
         logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
         return
     client = session.client('cloudformation')
-    client.validate_template(TemplateBody=template_body)
+    try:
+        client.validate_template(TemplateBody=template_body)
+    except botocore.exceptions.ClientError as ex:
+        print(json.dumps(json.loads(template_body), indent=4))
+        raise ex
 
 
 def _as_cf_artifact(filename, cloudformation):
@@ -230,7 +235,10 @@ def gen_supporting_template():
 
 
 def make_advanced_bunch(variant_args, template_name, cc_params):
-    extra_templates = ['aws/dcos-config.yaml', 'aws/templates/advanced/{}'.format(template_name)]
+    extra_templates = [
+        'aws/dcos-config.yaml',
+        'aws/templates/advanced/{}'.format(template_name)
+    ]
     if cc_params['os_type'] == 'coreos':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
@@ -241,6 +249,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
 
     cc_package_files = [
         '/etc/cfn_signal_metadata',
+        '/etc/adminrouter.env',
         '/etc/dns_config',
         '/etc/exhibitor',
         '/etc/mesos-master-provider']
@@ -375,8 +384,7 @@ def gen_templates(arguments):
         results.templates['cloudformation.json'],
         master_cloud_config=variant_cloudconfig['master'],
         slave_cloud_config=variant_cloudconfig['slave'],
-        slave_public_cloud_config=variant_cloudconfig['slave_public']
-        )
+        slave_public_cloud_config=variant_cloudconfig['slave_public'])
 
     print("Validating CloudFormation")
     validate_cf(cloudformation)

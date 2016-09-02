@@ -121,8 +121,7 @@ def gen_templates(user_args, arm_template):
             '/etc/adminrouter.env',
             '/etc/ui-config.json',
             '/etc/mesos-master-provider',
-            '/etc/master_list']
-        )
+            '/etc/master_list'])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -152,8 +151,7 @@ def gen_templates(user_args, arm_template):
         results.templates[arm_template + '.json'],
         variant_cloudconfig['master'],
         variant_cloudconfig['slave'],
-        variant_cloudconfig['slave_public']
-        )
+        variant_cloudconfig['slave_public'])
 
     return gen.Bunch({
         'arm': arm,

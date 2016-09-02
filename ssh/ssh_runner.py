@@ -97,8 +97,7 @@ class MultiRunner():
             '-oBatchMode=yes',
             '-oPasswordAuthentication=no',
             '{}{}'.format(port_option, host.port),
-            '-i', self.ssh_key_path
-            ]
+            '-i', self.ssh_key_path]
         shared_opts.extend(add_opts)
         return shared_opts
 

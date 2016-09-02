@@ -229,8 +229,8 @@ def test_storage_provider_aws(config_aws, tmpdir):
     bucket = config_aws['bucket']
     s3_bucket = s3.Bucket(bucket)
     assert s3_bucket in s3.buckets.all(), (
-            "Bucket '{}' must exist with full write access to AWS testing account and created objects must be globally "
-            "downloadable from: {}").format(bucket, config_aws['download_url'])
+        "Bucket '{}' must exist with full write access to AWS testing account and created objects must be globally "
+        "downloadable from: {}").format(bucket, config_aws['download_url'])
 
     exercise_storage_provider(tmpdir, 'aws_s3', config_aws)
 

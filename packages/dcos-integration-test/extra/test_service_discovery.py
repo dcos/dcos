@@ -76,7 +76,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
 
     # Verify if Mesos-DNS agrees with Marathon:
     @retrying.retry(wait_fixed=1000,
-                    stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT*1000,
+                    stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                     retry_on_result=lambda ret: ret is None,
                     retry_on_exception=lambda x: False)
     def _pool_for_mesos_dns():

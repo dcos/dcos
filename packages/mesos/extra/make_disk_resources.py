@@ -146,9 +146,7 @@ def main(output_env_file):
     # write contents to a temporary file
     tmp_file = '{}.tmp'.format(output_env_file)
     with open(tmp_file, 'w') as env_file:
-        env_file.write(RESOURCES_TEMPLATE_HEADER.format(
-                prog=PROG, dt=datetime.now()
-            ))
+        env_file.write(RESOURCES_TEMPLATE_HEADER.format(prog=PROG, dt=datetime.now()))
         if disk_resources:
             msg = 'Creating updated environment artifact file : {}'
             env_resources = os.environ.get('MESOS_RESOURCES', '[]')
