@@ -197,6 +197,17 @@
       "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
       "AllowedPattern": "(default|ami-[a-f0-9]{8})"
     }
+{% switch oauth_available %}
+{% case "true" %}
+    ,
+    "OAuthEnabled": {
+      "Description": "\nEnable OAuth authentication",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["true", "false"]
+    }
+{% case "false" %}
+{% endswitch %}
   },
   "Conditions": {
     "UseCustomAMI": {
