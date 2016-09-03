@@ -449,7 +449,13 @@ def do_build_docker(name, path):
 
     # mark as latest so it will be used when building packages
     # extract the docker client version string
-    docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
+    try:
+        docker_version = subprocess.check_output(['docker', 'version', '-f', '{{.Client.Version}}']).decode()
+    except subprocess.CalledProcessError:
+        # If the above command fails then we know we have an older version of docker
+        # Older versions of docker spit out an entirely different format
+        docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[0].split()[2]
+
     # only use force tag if using docker version 1.9 or earlier
     container_name_t = 'dcos/dcos-builder:{}_dockerdir-latest'.format(name)
     if LooseVersion(docker_version) < LooseVersion('1.10'):
