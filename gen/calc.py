@@ -320,6 +320,10 @@ def validate_os_type(os_type):
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
+def calculate_deployment_platform(deployment_platform):
+    return deployment_platform
+
+
 entry = {
     'validate': [
         validate_num_masters,
@@ -343,7 +347,8 @@ entry = {
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config],
     'default': {
-        'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'deployment_platform': provider,
+        'bootstrap_variant': calculate_bootstrap_variant,
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
@@ -403,6 +408,7 @@ entry = {
         })
     },
     'must': {
+        'deployment_platform': calculate_deployment_platform,
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,

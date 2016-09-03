@@ -288,7 +288,7 @@ package:
   - path: /etc/dcos-signal-config.json
     content: |
       {
-        "gen_provider": "{{ provider }}",
+        "gen_provider": "{{ deployment_platform }}",
         "diagnostics_urls": [
           "http://leader.mesos:1050/system/health/v1/report?cache=0"
         ],
