@@ -8,7 +8,7 @@ import ssh.utils
 from ssh.ssh_runner import Node
 
 REMOTE_TEMP_DIR = '/opt/dcos_install_tmp'
-CLUSTER_PACKAGES_FILE = '/genconf/cluster_packages.json'
+CLUSTER_PACKAGES_FILE = 'genconf/cluster_packages.json'
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 def get_async_runner(config, hosts, async_delegate=None):
     process_timeout = config.get('process_timeout', 120)
     extra_ssh_options = config.get('extra_ssh_options', '')
-    ssh_key_path = config.get('ssh_key_path', '/genconf/ssh_key')
+    ssh_key_path = config.get('ssh_key_path', 'genconf/ssh_key')
 
     # if ssh_parallelism is not set, use 20 concurrent ssh sessions by default.
     parallelism = config.get('ssh_parallelism', 20)
@@ -69,12 +69,12 @@ def get_full_nodes_list(config):
 
 
 @asyncio.coroutine
-def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block=False, state_json_dir=None,
+def run_preflight(config, pf_script_path='genconf/serve/dcos_install.sh', block=False, state_json_dir=None,
                   async_delegate=None, retry=False, options=None):
     '''
     Copies preflight.sh to target hosts and executes the script. Gathers
     stdout, sterr and return codes and logs them to disk via SSH library.
-    :param config: Dict, loaded config file from /genconf/config.yaml
+    :param config: Dict, loaded config file from genconf/config.yaml
     :param pf_script_path: preflight.sh script location on a local host
     :param preflight_remote_path: destination location
     '''
@@ -112,14 +112,14 @@ def run_preflight(config, pf_script_path='/genconf/serve/dcos_install.sh', block
     return result
 
 
-def _add_copy_dcos_install(chain, local_install_path='/genconf/serve'):
+def _add_copy_dcos_install(chain, local_install_path='genconf/serve'):
     dcos_install_script = 'dcos_install.sh'
     local_install_path = os.path.join(local_install_path, dcos_install_script)
     remote_install_path = os.path.join(REMOTE_TEMP_DIR, dcos_install_script)
     chain.add_copy(local_install_path, remote_install_path, stage='Copying dcos_install.sh')
 
 
-def _add_copy_packages(chain, local_pkg_base_path='/genconf/serve'):
+def _add_copy_packages(chain, local_pkg_base_path='genconf/serve'):
     if not os.path.isfile(CLUSTER_PACKAGES_FILE):
         err_msg = '{} not found'.format(CLUSTER_PACKAGES_FILE)
         log.error(err_msg)
@@ -142,7 +142,7 @@ def _add_copy_bootstap(chain, local_bs_path):
                    stage='Copying bootstrap')
 
 
-def _get_bootstrap_tarball(tarball_base_dir='/genconf/serve/bootstrap'):
+def _get_bootstrap_tarball(tarball_base_dir='genconf/serve/bootstrap'):
     '''
     Get a bootstrap tarball from a local filesystem
     :return: String, location of a tarball
@@ -156,9 +156,9 @@ def _get_bootstrap_tarball(tarball_base_dir='/genconf/serve/bootstrap'):
     if not os.path.isfile(tarball):
         log.error('Ensure environment variable BOOTSTRAP_ID is set correctly')
         log.error('Ensure that the bootstrap tarball exists in '
-                  '/genconf/serve/bootstrap/[BOOTSTRAP_ID].bootstrap.tar.xz')
+                  'genconf/serve/bootstrap/[BOOTSTRAP_ID].bootstrap.tar.xz')
         log.error('You must run genconf.py before attempting Deploy.')
-        raise ExecuteException('bootstrap tarball not found /genconf/serve/bootstrap')
+        raise ExecuteException('bootstrap tarball not found genconf/serve/bootstrap')
     return tarball
 
 

@@ -17,7 +17,7 @@ def do_configure(config_path=CONFIG_PATH):
     """Returns error code
 
     :param config_path: path to config.yaml
-    :type config_path: string | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: string | CONFIG_PATH (genconf/config.yaml)
     """
     validate_gen = do_validate_gen_config()
     if len(validate_gen) > 0:
@@ -59,7 +59,7 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     to the UI.
 
     :param config_path: path to config.yaml
-    :type config_path: string | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: string | CONFIG_PATH (genconf/config.yaml)
 
     :param post_data: data from POST to UI
     :type post_data: dict | {}
@@ -119,7 +119,7 @@ def do_validate_config(config_path=CONFIG_PATH):
     SSH and Gen libraries.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     ssh = do_validate_ssh_config(config_path)
     gen = do_validate_gen_config(config_path)
@@ -135,7 +135,7 @@ def do_validate_ssh_config(config_path=CONFIG_PATH):
     """Returns SSH validation messages.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     config = DCOSConfig(config_path=config_path)
     config.get_hidden_config()
@@ -148,7 +148,7 @@ def do_validate_gen_config(config_path=CONFIG_PATH):
     """Returns Gen validation messages.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     config = DCOSConfig(config_path=config_path)
     config.get_hidden_config()
@@ -165,8 +165,8 @@ def remap_post_data_keys(post_data):
     TODO (malnick) remove when UI updates are in.
     """
     remap = {
-        'ssh_key': ['ssh_key_path', '/genconf/ssh_key'],
-        'ip_detect_script': ['ip_detect_path', '/genconf/ip-detect'],
+        'ssh_key': ['ssh_key_path', 'genconf/ssh_key'],
+        'ip_detect_script': ['ip_detect_path', 'genconf/ip-detect'],
     }
     for key, value in remap.items():
         if key in post_data:
@@ -219,7 +219,7 @@ def get_config(config_path=CONFIG_PATH):
     """Returns config.yaml on disk as dict.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     return DCOSConfig(config_path=config_path)
 
@@ -229,7 +229,7 @@ def get_ui_config(config_path=CONFIG_PATH):
     includes ssh_key and ip-detect, to the UI.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     config = DCOSConfig(config_path=config_path)
     config.get_external_config()
@@ -243,7 +243,7 @@ def determine_config_type(config_path=CONFIG_PATH):
     'advanced'. 'advanced' blocks UI usage.
 
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     config = get_config(config_path=config_path)
     ctype = 'minimal'
@@ -280,7 +280,7 @@ def determine_config_type(config_path=CONFIG_PATH):
 def success(config={}):
     """Returns the data for /success/ endpoint.
     :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (/genconf/config.yaml)
+    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     code = 200
     msgs = {

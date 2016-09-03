@@ -242,8 +242,8 @@ def logs_handler(request):
     :type request: request | None
     """
     log.info("Request for logs endpoint made.")
-    complete_log_path = '/genconf/state/complete.log'
-    json_files = glob.glob('/genconf/state/*.json')
+    complete_log_path = 'genconf/state/complete.log'
+    json_files = glob.glob('genconf/state/*.json')
     complete_log = []
     for f in json_files:
         log.debug('Adding {} to complete log file.'.format(f))
@@ -286,7 +286,7 @@ def build_app(loop):
     # TODO(cmaloney): These should probably actually hard fail.
     try:
         app.router.add_static('/assets', assets_path)
-        app.router.add_static('/download/log', '/genconf/state/')
+        app.router.add_static('/download/log', 'genconf/state/')
     except ValueError as err:
         log.warning(err)
 
@@ -327,7 +327,7 @@ def start(cli_options):
         os.makedirs(STATE_DIR)
 
     assert os.path.isdir(assets_path)
-    assert os.path.isdir('/genconf/state/')
+    assert os.path.isdir('genconf/state/')
 
     try:
         loop.run_forever()
