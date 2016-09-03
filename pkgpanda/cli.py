@@ -32,7 +32,7 @@ from subprocess import CalledProcessError, check_call
 
 from docopt import docopt
 
-from pkgpanda import Install, PackageId, Repository, actions, constants
+from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
 
 

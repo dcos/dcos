@@ -13,7 +13,7 @@ import logging
 import os
 import yaml
 
-from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
+from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH
 log = logging.getLogger(__name__)
 
 

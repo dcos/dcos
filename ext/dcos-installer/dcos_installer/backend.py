@@ -5,12 +5,10 @@ libraries to support the dcos installer.
 import logging
 import os
 
-
+import ssh.validate as validate_ssh
 from dcos_installer import config_util
 from dcos_installer.config import DCOSConfig
-from dcos_installer.constants import CONFIG_PATH, SSH_KEY_PATH, IP_DETECT_PATH
-
-import ssh.validate as validate_ssh
+from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH
 
 log = logging.getLogger()
 

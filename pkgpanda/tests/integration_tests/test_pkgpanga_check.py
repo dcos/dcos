@@ -1,4 +1,4 @@
-from subprocess import PIPE, STDOUT, Popen, check_output
+from subprocess import check_output, PIPE, Popen, STDOUT
 
 
 list_output = """WARNING: `not_executable.py` is not executable

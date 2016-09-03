@@ -13,7 +13,6 @@ import dcos_installer.action_lib
 import gen.calc
 from dcos_installer import backend
 from dcos_installer.constants import STATE_DIR
-
 from ssh.ssh_runner import Node
 
 

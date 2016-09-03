@@ -1,8 +1,8 @@
 #!/opt/mesosphere/bin/python
 import os
+import socket
 import sys
-from socket import inet_aton, error as socket_error
-from subprocess import check_call, check_output, CalledProcessError
+from subprocess import CalledProcessError, check_call, check_output
 
 
 def get_var_assert_set(name):
@@ -28,9 +28,9 @@ def invoke_detect_ip():
         print("check_output exited with {}".format(e))
         sys.exit(1)
     try:
-        inet_aton(ip)
+        socket.inet_aton(ip)
         return ip
-    except socket_error as e:
+    except socket.error as e:
         print(
             "inet_aton exited with {}. {} is not a valid IPv4 address".format(e, ip))
         sys.exit(1)

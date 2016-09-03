@@ -1,10 +1,10 @@
 import json
-import os
-import pytest
-import subprocess
 import logging
+import os
+import subprocess
 
 import kazoo.client
+import pytest
 import requests
 
 

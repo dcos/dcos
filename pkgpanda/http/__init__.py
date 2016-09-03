@@ -5,9 +5,9 @@ import logging
 import os
 import sys
 
-from flask import Flask, current_app, jsonify, make_response, request
+from flask import current_app, Flask, jsonify, make_response, request
 
-from pkgpanda import Install, Repository, actions
+from pkgpanda import actions, Install, Repository
 from pkgpanda.exceptions import (PackageConflict, PackageError,
                                  PackageNotFound, ValidationError)
 

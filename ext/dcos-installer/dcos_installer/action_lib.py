@@ -4,8 +4,8 @@ import logging
 import os
 
 import pkgpanda
-from ssh.ssh_runner import Node
 import ssh.utils
+from ssh.ssh_runner import Node
 
 REMOTE_TEMP_DIR = '/opt/dcos_install_tmp'
 CLUSTER_PACKAGES_FILE = '/genconf/cluster_packages.json'

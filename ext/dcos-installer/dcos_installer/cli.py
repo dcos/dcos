@@ -1,18 +1,18 @@
 import argparse
 import asyncio
-import coloredlogs
 import json
 import logging
 import os
 import sys
 
+import coloredlogs
 from passlib.hash import sha512_crypt
 
 import dcos_installer.async_server
 import gen.calc
 from dcos_installer import action_lib, backend
-from dcos_installer.prettyprint import print_header, PrettyPrint
 from dcos_installer.installer_analytics import InstallerAnalytics
+from dcos_installer.prettyprint import PrettyPrint, print_header
 
 from ssh.utils import AbstractSSHLibDelegate
 

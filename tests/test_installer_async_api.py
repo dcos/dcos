@@ -1,10 +1,10 @@
 import asyncio
 
-import pytest
-
 import aiohttp
-import gen.calc
+import pytest
 import webtest_aiohttp
+
+import gen.calc
 from dcos_installer.async_server import build_app
 
 version = 1
