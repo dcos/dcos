@@ -20,8 +20,8 @@ Return headers are self informed. In example, if the file is foo.js the header t
     "target_hosts": [
       null
     ],
-    "log_directory": "/genconf/logs",
-    "ssh_key_path": "/genconf/ssh_key",
+    "log_directory": "genconf/logs",
+    "ssh_key_path": "genconf/ssh_key",
     "ssh_port": 22
   },
   "cluster_config": {
@@ -32,7 +32,7 @@ Return headers are self informed. In example, if the file is foo.js the header t
     ],
     "roles": "slave_public",
     "exhibitor_storage_backend": "zookeeper",
-    "ip_detect_path": "/genconf/ip-detect",
+    "ip_detect_path": "genconf/ip-detect",
     "exhibitor_zk_hosts": "127.0.0.1:2181",
     "cluster_name": "Mesosphere: The Data Center Operating System",
     "weights": "slave_public=1",
@@ -77,7 +77,7 @@ curl -H 'Content-Type: application/json' -XPOST -d '{"ssh_config":{"ssh_user": "
 { "errors": {
    "ssh_user": "None is not a valid string. Is of type <class 'NoneType'>.",
    "target_hosts": "[None] is not valid IPv4 address.",
-   "ssh_key_path": "File does not exist /genconf/ssh_key",
+   "ssh_key_path": "File does not exist genconf/ssh_key",
    "master_list": "None is not of type list."
   }
 }
@@ -96,7 +96,7 @@ curl -H 'Content-Type: application/json' -XGET localhost:5000/api/v1/configure |
     "docker_remove_delay": "1hrs is a valid string.",
     "resolvers": "['8.8.8.8', '8.8.4.4'] is a valid list of IPv4 addresses.",
     "ssh_port": "22 is a valid integer.",
-    "ip_detect_path": "File exists /genconf/ip-detect",
+    "ip_detect_path": "File exists genconf/ip-detect",
     "exhibitor_storage_backend": "exhibitor_storage_backend is valid.",
     "roles": "slave_public is a valid string.",
     "exhibitor_zk_hosts": "127.0.0.1:2181 is valid exhibitor ZK hosts format.",
@@ -111,7 +111,7 @@ curl -H 'Content-Type: application/json' -XGET localhost:5000/api/v1/configure |
   "warning": {},
   "errors": {
     "target_hosts": "[None] is not valid IPv4 address.",
-    "ssh_key_path": "File does not exist /genconf/ssh_key",
+    "ssh_key_path": "File does not exist genconf/ssh_key",
     "master_list": "None is not of type list."
   }
 }
@@ -173,7 +173,7 @@ curl localhost:5000/api/v1/preflight | json
             "-oPasswordAuthentication=no",
             "-p22",
             "-i",
-            "/genconf/ssh_key",
+            "genconf/ssh_key",
             "-tt",
             "vagrant@10.33.2.21",
             "sudo",
@@ -207,7 +207,7 @@ curl localhost:5000/api/v1/preflight | json
             "-oPasswordAuthentication=no",
             "-p22",
             "-i",
-            "/genconf/ssh_key",
+            "genconf/ssh_key",
             "-tt",
             "vagrant@10.33.2.22",
             "sudo",
