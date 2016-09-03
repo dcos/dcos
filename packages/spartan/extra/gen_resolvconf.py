@@ -2,9 +2,9 @@
 
 import errno
 import os
+import random
 import socket
 import sys
-import random
 
 import dns.query
 

@@ -16,8 +16,7 @@ from retrying import retry
 
 import pkgpanda.util
 from ssh.ssh_runner import MultiRunner, Node
-from ssh.ssh_tunnel import (SSHTunnel, TunnelCollection, run_scp_cmd,
-                            run_ssh_cmd)
+from ssh.ssh_tunnel import run_scp_cmd, run_ssh_cmd, SSHTunnel, TunnelCollection
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 

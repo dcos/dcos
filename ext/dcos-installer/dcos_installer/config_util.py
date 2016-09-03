@@ -4,8 +4,8 @@ import subprocess
 import sys
 
 import gen
-import pkgpanda
 import gen.installer.bash
+import pkgpanda
 from dcos_installer.constants import SERVE_DIR
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def do_configure(gen_config):
     # Get bootstrap from artifacts
     fetch_bootstrap(gen_out.arguments['bootstrap_id'])
     # Write some package metadata
-    pkgpanda.util.write_json('/genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
 
 
 def get_gen_extra_args():
@@ -68,8 +68,8 @@ def fetch_bootstrap(bootstrap_id):
     filenames = [
         "{}.bootstrap.tar.xz".format(bootstrap_id),
         "{}.active.json".format(bootstrap_id)]
-    dest_dir = "/genconf/serve/bootstrap/"
-    container_cache_dir = "/artifacts/"
+    dest_dir = "genconf/serve/bootstrap/"
+    container_cache_dir = "artifacts/"
 
     # If all the targets already exist, no-op
     dest_files = [dest_dir + filename for filename in filenames]
@@ -83,5 +83,5 @@ def fetch_bootstrap(bootstrap_id):
             log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
             raise FileNotFoundError()
 
-    subprocess.check_call(['mkdir', '-p', '/genconf/serve/bootstrap/'])
+    subprocess.check_call(['mkdir', '-p', 'genconf/serve/bootstrap/'])
     do_move_atomic(container_cache_dir, dest_dir, filenames)

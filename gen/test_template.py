@@ -1,8 +1,8 @@
 import pytest
 
 import gen.template
-from gen.template import (For, Replacement, Switch, Tokenizer, UnsetParameter,
-                          parse_str)
+from gen.template import For, parse_str, Replacement, Switch, Tokenizer, UnsetParameter
+
 
 just_text = "foo"
 more_complex_text = "foo {"

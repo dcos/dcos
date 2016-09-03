@@ -1,6 +1,7 @@
-import analytics
 import os
 import uuid
+
+import analytics
 
 from dcos_installer import backend
 
