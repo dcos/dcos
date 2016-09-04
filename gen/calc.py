@@ -1,4 +1,4 @@
-
+import collections
 import ipaddress
 import json
 import os
@@ -16,6 +16,17 @@ from pkgpanda import PackageId
 from pkgpanda.build import hash_checkout
 
 
+def type_str(value):
+    return type(value).__name__
+
+
+def check_duplicates(items: list):
+    counter = collections.Counter(items)
+    duplicates = dict(filter(lambda x: x[1] > 1, counter.items()))
+    assert not duplicates, 'List cannot contain duplicates: {}'.format(
+        ', '.join('{} appears {} times'.format(*item) for item in duplicates.items()))
+
+
 # TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
 def validate_one_of(val: str, valid_values) -> None:
     """Test if object `val` is a member of container `valid_values`.
@@ -30,6 +41,60 @@ def validate_one_of(val: str, valid_values) -> None:
 
 def validate_true_false(val) -> None:
     validate_one_of(val, ['true', 'false'])
+
+
+def validate_int_in_range(value, low, high):
+    try:
+        int_value = int(value)
+    except ValueError as ex:
+        raise AssertionError('Must be an integer but got a {}: {}'.format(type_str(value), value)) from ex
+
+    # Only a lower bound
+    if high is None:
+        assert low <= int_value, 'Must be above {}'.format(low)
+    else:
+        assert low <= int_value <= high, 'Must be between {} and {} inclusive'.format(low, high)
+
+
+def validate_json_list(value):
+    try:
+        items = json.loads(value)
+    except ValueError as ex:
+        raise AssertionError("Must be a JSON formatted list, but couldn't be parsed the given "
+                             "value `{}` as one because of: {}".format(value, ex)) from ex
+    assert isinstance(items, list), "Must be a JSON list. Got a {}".format(type_str(items))
+
+    non_str = list(filter(lambda x: not isinstance(x, str), items))
+    assert not non_str, "Items in list must be strings, got invalid values: {}".format(
+        ", ".join("{} type {}".format(elem, type_str(elem)) for elem in non_str))
+    return items
+
+
+def validate_ipv4_addresses(ips: list):
+    def try_parse_ip(ip):
+        try:
+            return socket.inet_pton(socket.AF_INET, ip)
+        except OSError:
+            return None
+    invalid_ips = list(filter(lambda ip: try_parse_ip(ip) is None, ips))
+    assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
+
+
+def is_azure_addr(addr: str):
+    return addr.startswith('[[[reference(') and addr.endswith(').ipConfigurations[0].properties.privateIPAddress]]]')
+
+
+def validate_ip_list(json_str: str):
+    nodes_list = validate_json_list(json_str)
+    print(list(map(is_azure_addr, nodes_list)))
+    check_duplicates(nodes_list)
+    # Validate azure addresses which are a bit magical late binding stuff independently of just a
+    # list of static IPv4 addresses
+    if any(map(is_azure_addr, nodes_list)):
+        assert all(map(is_azure_addr, nodes_list)), "Azure static master list and IP based static " \
+            "master list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
+        return
+    validate_ipv4_addresses(nodes_list)
 
 
 def calculate_environment_variable(name):
@@ -124,21 +189,11 @@ def validate_oauth_enabled(oauth_enabled):
     validate_true_false(oauth_enabled)
 
 
-def validate_dcos_overlay_mtu(dcos_overlay_mtu):
-    assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
-
-
-def validate_dcos_overlay_config_attempts(dcos_overlay_config_attempts):
-    assert dcos_overlay_config_attempts.isdigit(), (
-        'dcos_overlay_config_attempts needs to be a positive integer between 0 and 10')
-    assert int(dcos_overlay_config_attempts) >= 0 and int(dcos_overlay_config_attempts) < 10, (
-        'The acceptable range of values for dcos_overlay_config_attempts is between 0 and 10')
-
-
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError:
+        # TODO(cmaloney): This is not the right form to do this
         assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
@@ -148,6 +203,7 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         ipaddress.ip_network(overlay_network['vtep_subnet'])
     except ValueError as ex:
+        # TODO(cmaloney): This is incorrect currently.
         assert False, (
             "Incorrect value for vtep_subnet. Only IPv4 "
             "values are allowed: {}".format(ex))
@@ -199,59 +255,12 @@ def validate_dns_search(dns_search):
     assert len(dns_search.split()) <= 6, "Must contain no more than 6 domains"
 
 
-def validate_json_list(json_list):
-    try:
-        list_data = json.loads(json_list)
-
-        assert type(list_data) is list, "Must be a JSON list. Got a {}".format(type(list_data))
-    except ValueError:
-        assert False, "Provided input was not valid JSON: " + json_list
-
-    return list_data
-
-
-def validate_host_list(host_list):
-    host_list = validate_json_list(host_list)
-    azure_format_check = []
-    validate_duplicates(host_list)
-    for host in host_list:
-        assert isinstance(host, str), 'Host must be of type string, got {}'.format(type(host))
-        if host.startswith('[[[reference(') and host.endswith(').ipConfigurations[0].properties.privateIPAddress]]]'):  # noqa
-            azure_format_check.append(True)
-        else:
-            azure_format_check.append(False)
-    if all(azure_format_check):
-        return host_list
-    assert not any(azure_format_check), "Azure static master list and IP based static master list cannot be mixed. Use "
-    "either all Azure IP references or IPv4 addresses."
-    return validate_ipv4_addrs(host_list)
-
-
-def validate_ipv4_addrs(ips):
-    assert isinstance(ips, list)
-    invalid_ips = []
-    for ip in ips:
-        try:
-            socket.inet_pton(socket.AF_INET, str(ip))
-        except OSError:
-            invalid_ips.append(ip)
-    assert not len(invalid_ips), 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: {}'.format(
-                                 ', '.join(invalid_ips))
-    return ips
-
-
-def validate_duplicates(input_list):
-    assert isinstance(input_list, list)
-    dups = list(filter(lambda x: input_list.count(x) > 1, input_list))
-    assert len(dups) == 0, "List cannot contain duplicates: {}".format(", ".join(dups))
-
-
 def validate_master_list(master_list):
-    return validate_host_list(master_list)
+    return validate_ip_list(master_list)
 
 
 def validate_resolvers(resolvers):
-    return validate_host_list(resolvers)
+    return validate_ip_list(resolvers)
 
 
 def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
@@ -338,8 +347,8 @@ entry = {
         validate_os_type,
         validate_dcos_overlay_network,
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
-        validate_dcos_overlay_mtu,
-        validate_dcos_overlay_config_attempts,
+        lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
+        lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config],
     'default': {

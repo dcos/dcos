@@ -5,7 +5,8 @@ libraries to support the dcos installer.
 import logging
 import os
 
-import ssh.validate as validate_ssh
+import gen
+import ssh.validate
 from dcos_installer import config_util
 from dcos_installer.config import DCOSConfig
 from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH
@@ -19,15 +20,13 @@ def do_configure(config_path=CONFIG_PATH):
     :param config_path: path to config.yaml
     :type config_path: string | CONFIG_PATH (genconf/config.yaml)
     """
-    validate_gen = do_validate_gen_config()
+    validate_gen = do_validate_config(config_path, include_ssh=False)
     if len(validate_gen) > 0:
         for key, error in validate_gen.items():
             log.error('{}: {}'.format(key, error))
         return 1
     else:
         config = DCOSConfig(config_path=config_path)
-        config.get_hidden_config()
-        config.update(config.hidden_config)
         config_util.do_configure(config.stringify_configuration())
         return 0
 
@@ -81,14 +80,7 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     # coniguration off disk, here we need to validate the configuration overridees, and
     # return the key and message for the POSTed parameter.
     config = DCOSConfig(config_path=config_path, overrides=post_data)
-    config.get_hidden_config()
-    config.update(config.hidden_config)
-    validation_messages = {}
-    ssh_messages = validate_ssh.validate_config(config)
-    gen_messages = normalize_config_validation(config_util.do_validate_gen_config(config.stringify_configuration()))
-    validation_messages.update(ssh_messages)
-    validation_messages.update(gen_messages)
-    validation_messages = remap_validation_keys(validation_messages)
+    validation_messages = _do_validate_config(config, include_ssh=True)
 
     # Return only keys sent in POST, do not write if validation
     # of config fails.
@@ -114,48 +106,29 @@ def create_config_from_post(post_data={}, config_path=CONFIG_PATH):
     return validation_err, post_data_validation
 
 
-def do_validate_config(config_path=CONFIG_PATH):
-    """Returns complete validation messages from both
-    SSH and Gen libraries.
+def _do_validate_config(config, include_ssh):
+    config.update(config_util.get_gen_extra_args())
+    user_arguments = config.stringify_configuration()
 
-    :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
-    """
-    ssh = do_validate_ssh_config(config_path)
-    gen = do_validate_gen_config(config_path)
-    gen.update(ssh)
+    config_targets = [gen.get_dcosconfig_target_and_templates(user_arguments, [])[0]]
 
-    # TODO REMOVE
-    gen = remap_validation_keys(gen)
+    if include_ssh:
+        config_targets.append(ssh.validate.get_config_target())
 
-    return gen
-
-
-def do_validate_ssh_config(config_path=CONFIG_PATH):
-    """Returns SSH validation messages.
-
-    :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
-    """
-    config = DCOSConfig(config_path=config_path)
-    config.get_hidden_config()
-    config.update(config.hidden_config)
-    messages = validate_ssh.validate_config(config)
-    return messages
-
-
-def do_validate_gen_config(config_path=CONFIG_PATH):
-    """Returns Gen validation messages.
-
-    :param config_path: path to config.yaml
-    :type config_path: str | CONFIG_PATH (genconf/config.yaml)
-    """
-    config = DCOSConfig(config_path=config_path)
-    config.get_hidden_config()
-    config.update(config.hidden_config)
-    messages = config_util.do_validate_gen_config(config.stringify_configuration())
+    messages = gen.validate_config_for_targets(config_targets, user_arguments)
+    # TODO(cmaloney): kill this function and make the API return the structured
+    # results api as was always intended rather than the flattened / lossy other
+    # format. This will be an  API incompatible change. The messages format was
+    # specifically so that there wouldn't be this sort of API incompatibility.
     validation = normalize_config_validation(messages)
-    return validation
+
+    # TODO(cmaloney): Remove the need to remap.
+    return remap_validation_keys(validation)
+
+
+def do_validate_config(config_path=CONFIG_PATH, include_ssh=True):
+    """Returns complete validation messages from both SSH and Gen libraries."""
+    return _do_validate_config(DCOSConfig(config_path=config_path), include_ssh)
 
 
 def remap_post_data_keys(post_data):
@@ -233,7 +206,6 @@ def get_ui_config(config_path=CONFIG_PATH):
     """
     config = DCOSConfig(config_path=config_path)
     config.get_external_config()
-    config.get_hidden_config()
     config.update(config.external_config)
     return config
 
@@ -245,6 +217,8 @@ def determine_config_type(config_path=CONFIG_PATH):
     :param config_path: path to config.yaml
     :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
+    # TODO(cmaloney): If the config has any arguments not in the set of possible parameters then
+    # the config is always advanced.
     config = get_config(config_path=config_path)
     ctype = 'minimal'
     message = ''

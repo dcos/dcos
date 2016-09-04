@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def get_async_runner(config, hosts, async_delegate=None):
+    # TODO(cmaloney): Delete these repeats. Use gen / expanded configuration to get all the values.
     process_timeout = config.get('process_timeout', 120)
     extra_ssh_options = config.get('extra_ssh_options', '')
     ssh_key_path = config.get('ssh_key_path', 'genconf/ssh_key')

@@ -13,7 +13,6 @@ def validate_helper(arguments):
 @pytest.fixture
 def default_arguments():
     return copy.deepcopy({
-        'cluster_id': 'TODO',
         'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
         'bootstrap_id': '123',
         'exhibitor_zk_path': '/dcos',
@@ -57,7 +56,7 @@ def test_invalid_telemetry_enabled(default_arguments):
 
 def test_invalid_ipv4(default_arguments):
     test_ips = '["52.37.192.49", "52.37.181.230", "foo", "52.37.163.105", "bar"]'
-    err_msg = "Only IPv4 values are allowed. The following are invalid IPv4 addresses: foo, bar"
+    err_msg = "Invalid IPv4 addresses in list: foo, bar"
     validate_error(
         {'master_list': test_ips},
         'master_list',
@@ -94,7 +93,7 @@ def test_validate_duplicates(default_arguments):
     validate_error(
         {'master_list': '["10.0.0.1", "10.0.0.2", "10.0.0.1"]'},
         'master_list',
-        'List cannot contain duplicates: 10.0.0.1, 10.0.0.1')
+        'List cannot contain duplicates: 10.0.0.1 appears 2 times')
 
 
 def test_invalid_oauth_enabled(default_arguments):
