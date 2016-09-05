@@ -14,11 +14,8 @@ log = logging.getLogger(__name__)
 def do_configure(gen_config):
     gen_config.update(get_gen_extra_args())
 
-    subprocess.check_output(['mkdir', '-p', SERVE_DIR])
-
-    do_validate_gen_config(gen_config)
-
     gen_out = gen.generate(arguments=gen_config)
+    subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.installer.bash.generate(gen_out, SERVE_DIR)
 
     # Get bootstrap from artifacts
@@ -29,12 +26,6 @@ def do_configure(gen_config):
 
 def get_gen_extra_args():
     return {'provider': 'onprem'}
-
-
-def do_validate_gen_config(gen_config):
-    # run validate first as this is the only way we have for now to remove "optional" keys
-    gen_config.update(get_gen_extra_args())
-    return gen.validate(arguments=gen_config)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):

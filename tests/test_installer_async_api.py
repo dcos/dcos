@@ -101,13 +101,10 @@ def test_configure_status(client, mocker):
         'CONNECT': [405, 'text/plain'],
     }
 
-    mocked_do_validate_ssh_config = mocker.patch('dcos_installer.backend.do_validate_ssh_config')
-    mocked_do_validate_ssh_config.return_value = {
+    mocked_do_validate_config = mocker.patch('dcos_installer.backend.do_validate_config')
+    mocked_do_validate_config.return_value = {
         'ssh_user': 'error'
     }
-
-    mocked_do_validate_gen_config = mocker.patch('dcos_installer.backend.do_validate_gen_config')
-    mocked_do_validate_gen_config.return_value = {}
 
     for method, expected in featured_methods.items():
         res = client.request(route, method=method, expect_errors=True)

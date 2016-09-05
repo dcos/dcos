@@ -50,7 +50,7 @@ def test_agent_list_ipv4(default_config):
         default_config['ssh_key_path'] = tmp.name
         default_config['agent_list'] = ['127.0.0.1', '127.0.0.2', 'foo']
         assert ssh.validate.validate_config(default_config) == {
-            'agent_list': 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: foo'
+            'agent_list': 'Invalid IPv4 addresses in list: foo'
         }
 
 
@@ -59,7 +59,7 @@ def test_agent_list_dups(default_config):
         default_config['ssh_key_path'] = tmp.name
         default_config['agent_list'] = ['127.0.0.1', '127.0.0.2', '127.0.0.1']
         assert ssh.validate.validate_config(default_config) == {
-            'agent_list': 'List cannot contain duplicates: 127.0.0.1'}
+            'agent_list': 'List cannot contain duplicates: 127.0.0.1 appears 2 times'}
 
 
 def test_master_agent_list_dups(default_config):
@@ -67,22 +67,17 @@ def test_master_agent_list_dups(default_config):
         default_config['ssh_key_path'] = tmp.name
         default_config['master_list'] = ['10.10.0.1', '10.10.0.2', '127.0.0.2']
         assert ssh.validate.validate_config(default_config) == {
-            'master_list': 'master_list and agent_list cannot contain duplicates 127.0.0.2'
+            'master_list': 'master_list and agent_list cannot contain duplicates 127.0.0.2',
+            'agent_list': 'master_list and agent_list cannot contain duplicates 127.0.0.2'
         }
-
-
-def test_ssh_user(default_config):
-    with tempfile.NamedTemporaryFile() as tmp:
-        default_config['ssh_key_path'] = tmp.name
-        default_config['ssh_user'] = 123
-        assert ssh.validate.validate_config(default_config) == {'ssh_user': 'ssh_user must be a string'}
 
 
 def test_ssh_port(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
         default_config['ssh_port'] = 100000
-        assert ssh.validate.validate_config(default_config) == {'ssh_port': 'ssh port should be int between 1 - 32000'}
+        assert ssh.validate.validate_config(default_config) == \
+            {'ssh_port': 'Must be between 1 and 32000 inclusive'}
 
 
 def test_public_agent_list(default_config):
@@ -103,15 +98,16 @@ def test_ssh_parallelism(default_config):
         # test ssh_parallelism range, should be ok within 1.100
         default_config['ssh_parallelism'] = 101
         assert ssh.validate.validate_config(default_config) == {
-            'ssh_parallelism': 'ssh_parallelism must be within the range 1..100'}
+            'ssh_parallelism': 'Must be between 1 and 100 inclusive'}
 
         default_config['ssh_parallelism'] = 0
         assert ssh.validate.validate_config(default_config) == {
-            'ssh_parallelism': 'ssh_parallelism must be within the range 1..100'}
+            'ssh_parallelism': 'Must be between 1 and 100 inclusive'}
 
         default_config['ssh_parallelism'] = 20
         assert ssh.validate.validate_config(default_config) == {}
 
         # ssh_parallelism must be integer
-        default_config['ssh_parallelism'] = '20'
-        assert ssh.validate.validate_config(default_config) == {'ssh_parallelism': 'ssh_parallelism must be integer'}
+        default_config['ssh_parallelism'] = 'foo'
+        assert ssh.validate.validate_config(default_config) == {
+            'ssh_parallelism': 'Must be an integer but got a str: foo'}
