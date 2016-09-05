@@ -6,15 +6,16 @@ import traceback
 import uuid
 from contextlib import closing
 
+from retrying import retry
+
 import azure.common.credentials
+import pkgpanda.util
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources import ResourceManagementClient
 from azure.mgmt.resource.resources.models import (DeploymentMode,
                                                   DeploymentProperties,
                                                   ResourceGroup, TemplateLink)
-from retrying import retry
 
-import pkgpanda.util
 from ssh.ssh_tunnel import SSHTunnel
 from test_util.test_runner import integration_test
 
