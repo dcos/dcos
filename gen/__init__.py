@@ -39,6 +39,39 @@ CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_s
 PACKAGE_KEYS = {'package', 'root'}
 
 
+def stringify_configuration(configuration: dict):
+    """Create a stringified version of the complete installer configuration
+    to send to gen.generate()"""
+    gen_config = {}
+    for key, value in configuration.items():
+        if isinstance(value, list) or isinstance(value, dict):
+            log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
+            value = json.dumps(value)
+
+        elif isinstance(value, bool):
+            if value:
+                value = 'true'
+            else:
+                value = 'false'
+
+        elif isinstance(value, int):
+            log.debug("Caught int for genconf configuration, transforming to string: %s", value)
+            value = str(value)
+
+        elif isinstance(value, str):
+            pass
+
+        else:
+            log.error("Invalid type for value of %s in config. Got %s, only can handle list, dict, "
+                      "int, bool, and str", key, type(value))
+            raise Exception()
+
+        gen_config[key] = value
+
+    log.debug('Stringified configuration: \n{}'.format(gen_config))
+    return gen_config
+
+
 def add_roles(cloudconfig, roles):
     for role in roles:
         cloudconfig['write_files'].append({

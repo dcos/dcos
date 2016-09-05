@@ -141,7 +141,7 @@ def calculate_mesos_dns_resolvers_str(resolvers):
 
 
 def calculate_ip_detect_contents(ip_detect_filename):
-    assert os.path.exists(ip_detect_filename), "ip-detect script: {} must exist".format(ip_detect_filename)
+    assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 

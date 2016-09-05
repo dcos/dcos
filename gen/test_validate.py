@@ -17,7 +17,7 @@ def test_error_during_calc(monkeypatch):
     }) == {
         'status': 'errors',
         'errors': {
-            'ip_detect_contents': {'message': 'ip-detect script: not-a-existing-file must exist'}
+            'ip_detect_contents': {'message': 'ip-detect script `not-a-existing-file` must exist'}
         },
         'unset': {
             'bootstrap_url',

@@ -4,27 +4,37 @@ import aiohttp
 import pytest
 import webtest_aiohttp
 
+import dcos_installer.backend
 import gen.calc
 from dcos_installer.async_server import build_app
+from dcos_installer.config import Config, make_default_config_if_needed
+from pkgpanda.util import write_string
 
-version = 1
 
+@pytest.fixture
+def client(tmpdir):
+    with tmpdir.as_cwd():
+        tmpdir.ensure('genconf', dir=True)
+        make_default_config_if_needed('genconf/config.yaml')
 
-@pytest.fixture(scope='session')
-def client():
-    loop = asyncio.get_event_loop()
-    app = build_app(loop)
-    client = webtest_aiohttp.TestApp(app)
-    client.expect_errors = False
+        # TODO(cmaloney): the app building should probably be per-test-session
+        # fixture.
+        loop = asyncio.get_event_loop()
+        app = build_app(loop)
+        client = webtest_aiohttp.TestApp(app)
+        client.expect_errors = False
 
-    aiohttp.parsers.StreamWriter.set_tcp_cork = lambda s, v: True
-    aiohttp.parsers.StreamWriter.set_tcp_nodelay = lambda s, v: True
+        aiohttp.parsers.StreamWriter.set_tcp_cork = lambda s, v: True
+        aiohttp.parsers.StreamWriter.set_tcp_nodelay = lambda s, v: True
 
-    return client
+        # Yield so that the tmpdir we enter applies to tests this hits.
+        # TODO(cmaloney): changing to a tmpdir in the fixutre is weird / probably
+        # not the best way to do this, but works for now.
+        yield client
 
 
 def test_redirect_to_root(client):
-    route = '/api/v{}'.format(version)
+    route = '/api/v1'
     featured_methods = {
         'GET': [302, 'text/plain', '/'],
         'POST': [405, 'text/plain'],
@@ -49,29 +59,24 @@ def test_redirect_to_root(client):
 
 
 def test_get_version(client):
-    route = '/api/v{}/version'.format(version)
+    route = '/api/v1/version'
     res = client.request(route, method='GET')
     assert res.json == {'version': gen.calc.entry['must']['dcos_version']}
 
 
-def test_configure(client, mocker):
-    route = '/api/v{}/configure'.format(version)
+def test_configure(client):
+    route = '/api/v1/configure'
     featured_methods = {
         'GET': [200, 'application/json'],
         # Should return a 400 if validation has errors,
-        # which this POST will return since the ssh_user
-        # is an integer not a string.
-        'POST': [400, 'application/json', '{"ssh_user": 1}'],
+        # which this POST will return since the ssh_port is not an integer.
+        'POST': [400, 'application/json', '{"ssh_port": "asdf"}'],
         'PUT': [405, 'text/plain'],
         'DELETE': [405, 'text/plain'],
         'HEAD': [405, 'text/plain'],
         'TRACE': [405, 'text/plain'],
         'CONNECT': [405, 'text/plain'],
     }
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_ui_config')
-    mocked_create_config_from_post = mocker.patch('dcos_installer.backend.create_config_from_post')
-    mocked_get_config.return_value = {"test": "config"}
-    mocked_create_config_from_post.return_value = (True, None)
 
     for method, expected in featured_methods.items():
         if method == 'POST':
@@ -85,11 +90,15 @@ def test_configure(client, mocker):
             method,
             expected)
         if expected[0] == 200:
-            assert res.json == {'test': 'config'}
+            expected_config = Config('genconf/config.yaml').config
+            # Add ui config parameters which are always set.
+            # TODO(cmaloney): Make this unnecessary
+            expected_config.update({'ssh_key': None, 'ip_detect_script': None})
+            assert res.json == expected_config
 
 
-def test_configure_status(client, mocker):
-    route = '/api/v{}/configure/status'.format(version)
+def test_configure_status(client):
+    route = '/api/v1/configure/status'
     featured_methods = {
         # Defaults shouldn't pass validation, expect 400
         'GET': [400, 'application/json'],
@@ -101,19 +110,15 @@ def test_configure_status(client, mocker):
         'CONNECT': [405, 'text/plain'],
     }
 
-    mocked_do_validate_config = mocker.patch('dcos_installer.backend.do_validate_config')
-    mocked_do_validate_config.return_value = {
-        'ssh_user': 'error'
-    }
-
     for method, expected in featured_methods.items():
         res = client.request(route, method=method, expect_errors=True)
         assert res.status_code == expected[0], '{}: {}'.format(method, expected)
         assert res.content_type == expected[1], '{}: {}'.format(method, expected)
 
 
-def test_success(client, mocker):
-    route = '/api/v{}/success'.format(version)
+def test_success(client, monkeypatch):
+    monkeypatch.setattr(dcos_installer.backend, 'success', lambda config: ({}, 200))
+    route = '/api/v1/success'
     featured_methods = {
         'GET': [200, 'application/json'],
         'POST': [405, 'text/plain'],
@@ -123,8 +128,6 @@ def test_success(client, mocker):
         'TRACE': [405, 'text/plain'],
         'CONNECT': [405, 'text/plain'],
     }
-    mocked_success = mocker.patch('dcos_installer.backend.success')
-    mocked_success.return_value = {}, 200
 
     for method, expected in featured_methods.items():
         res = client.request(route, method=method, expect_errors=True)
@@ -165,68 +168,55 @@ def action_side_effect_return_config(arg):
     }
 
 
-def test_action_preflight(client, mocker):
-    route = '/api/v{}/action/preflight'.format(version)
+def mock_json_state(monkeypatch, new_fn):
+    monkeypatch.setattr(dcos_installer.async_server, 'read_json_state', new_fn)
 
-    mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
 
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_ui_config')
-    mocked_get_config.return_value = {"test": "config"}
+def mock_action_result(monkeypatch, name):
+    monkeypatch.setattr(dcos_installer.action_lib, name, lambda x: (i for i in range(10)))
 
-    mocked_run_preflight = mocker.patch('dcos_installer.action_lib.run_preflight')
-    mocked_run_preflight.return_value = (i for i in range(10))
 
-    mocked_read_json_state.side_effect = action_side_effect_return_config
+def test_action_preflight(client, monkeypatch):
+    route = '/api/v1/action/preflight'
+    mock_json_state(monkeypatch, action_side_effect_return_config)
+    mock_action_result(monkeypatch, 'run_preflight')
+
     res = client.request(route, method='GET')
     assert res.json == {'preflight': {'mock_config': True}}
 
-    mocked_read_json_state.side_effect = lambda x: {}
+    mock_json_state(monkeypatch, lambda _: {})
     res = client.request(route, method='GET')
     assert res.json == {}
 
 
-def test_action_postflight(client, mocker):
-    route = '/api/v{}/action/postflight'.format(version)
+def test_action_postflight(client, monkeypatch):
+    route = '/api/v1/action/postflight'
+    mock_json_state(monkeypatch, action_side_effect_return_config)
+    mock_action_result(monkeypatch, 'run_postflight')
 
-    mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
-
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_config')
-    mocked_get_config.return_value = {"test": "config"}
-
-    mocked_run_postflight = mocker.patch('dcos_installer.action_lib.run_postflight')
-    mocked_run_postflight.return_value = (i for i in range(10))
-
-    mocked_read_json_state.side_effect = action_side_effect_return_config
     res = client.request(route, method='GET')
     assert res.json == {'postflight': {'mock_config': True}}
 
-    mocked_read_json_state.side_effect = lambda x: {}
+    mock_json_state(monkeypatch, lambda _: {})
     res = client.request(route, method='GET')
     assert res.json == {}
 
 
-def test_action_deploy(client, mocker):
-    route = '/api/v{}/action/deploy'.format(version)
+def test_action_deploy(client, monkeypatch):
+    route = '/api/v1/action/deploy'
+    mock_json_state(monkeypatch, action_side_effect_return_config)
+    mock_action_result(monkeypatch, 'install_dcos')
 
-    mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
-
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_config')
-    mocked_get_config.return_value = {"test": "config"}
-
-    mocked_install_dcos = mocker.patch('dcos_installer.action_lib.install_dcos')
-    mocked_install_dcos.return_value = (i for i in range(10))
-
-    mocked_read_json_state.side_effect = action_side_effect_return_config
     res = client.request(route, method='GET')
     assert res.json == {'deploy': {'mock_config': True}}
 
-    mocked_read_json_state.side_effect = lambda x: {}
+    mock_json_state(monkeypatch, lambda _: {})
     res = client.request(route, method='GET')
     assert res.json == {}
 
 
 def test_action_current(client):
-    route = '/api/v{}/action/current'.format(version)
+    route = '/api/v1/action/current'
     featured_methods = {
         'GET': [200, 'application/json'],
         'POST': [405, 'text/plain'],
@@ -246,8 +236,8 @@ def test_action_current(client):
             expected)
 
 
-def test_configure_type(client, mocker):
-    route = '/api/v{}/configure/type'.format(version)
+def test_configure_type(client):
+    route = '/api/v1/configure/type'
     featured_methods = {
         'GET': [200, 'application/json'],
         'POST': [405, 'text/plain'],
@@ -257,9 +247,6 @@ def test_configure_type(client, mocker):
         'TRACE': [405, 'text/plain'],
         'CONNECT': [405, 'text/plain'],
     }
-
-    mocked_determine_config_type = mocker.patch('dcos_installer.backend.determine_config_type')
-    mocked_determine_config_type.return_value = {}
 
     for method, expected in featured_methods.items():
         res = client.request(route, method=method, expect_errors=True)
@@ -271,64 +258,59 @@ def test_configure_type(client, mocker):
             expected)
 
 
-def test_action_deploy_post(client, mocker):
-    route = '/api/v{}/action/deploy'.format(version)
+ssh_config_yaml = '''
+ssh_user: centos
+master_list:
+ - 127.0.0.1
+agent_list:
+ - 127.0.0.2
+public_agent_list: []
+'''
 
-    mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
 
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_config')
-    mocked_get_config.return_value = {
-        'ssh_user': 'centos',
-        'master_list': ['127.0.0.1'],
-        'agent_list': ['127.0.0.2'],
-        'public_agent_list': []
-    }
+def test_action_deploy_post(client, monkeypatch):
+    route = '/api/v1/action/deploy'
 
-    mocked_get_bootstrap_tarball = mocker.patch('dcos_installer.action_lib._get_bootstrap_tarball')
-    mocked_get_bootstrap_tarball.return_value = '123'
-
-    mocked_add_copy_packages = mocker.patch('dcos_installer.action_lib._add_copy_packages')
+    write_string('genconf/config.yaml', ssh_config_yaml)
+    monkeypatch.setattr(dcos_installer.action_lib, '_get_bootstrap_tarball', lambda: '123')
+    monkeypatch.setattr(dcos_installer.action_lib, '_add_copy_packages', lambda _: None)
 
     # Deploy should be already executed for action 'deploy'
-    mocked_read_json_state.side_effect = lambda arg: {
-        'hosts': {
-            '127.0.0.1': {
-                'host_status': 'success'
-            },
-            '127.0.0.2': {
-                'host_status': 'success'
+    def mocked_json_state(arg):
+        return {
+            'hosts': {
+                '127.0.0.1': {
+                    'host_status': 'success'
+                },
+                '127.0.0.2': {
+                    'host_status': 'success'
+                }
             }
         }
-    }
+    mock_json_state(monkeypatch, mocked_json_state)
     res = client.request(route, method='POST')
     assert res.json == {'status': 'deploy was already executed, skipping'}
 
     # Test start deploy
-    mocked_read_json_state.side_effect = lambda arg: False
+    mock_json_state(monkeypatch, lambda arg: False)
     res = client.request(route, method='POST')
     assert res.json == {'status': 'deploy started'}
-    assert mocked_add_copy_packages.call_count == 1
 
 
-def test_action_deploy_retry(client, mocker):
-    route = '/api/v{}/action/deploy'.format(version)
+def test_action_deploy_retry(client, monkeypatch):
+    route = '/api/v1/action/deploy'
 
-    mocked_read_json_state = mocker.patch('dcos_installer.async_server.read_json_state')
+    write_string('genconf/config.yaml', ssh_config_yaml)
+    monkeypatch.setattr(dcos_installer.action_lib, '_get_bootstrap_tarball', lambda: '123')
+    monkeypatch.setattr(dcos_installer.action_lib, '_add_copy_packages', lambda _: None)
+    monkeypatch.setattr(dcos_installer.action_lib, '_read_state_file', lambda state_file: {'total_hosts': 2})
 
-    mocked_get_config = mocker.patch('dcos_installer.backend.get_config')
-    mocked_get_config.return_value = {
-        'ssh_user': 'centos',
-        'master_list': ['127.0.0.1'],
-        'agent_list': ['127.0.0.2'],
-        'public_agent_list': []
-    }
+    removed_hosts = list()
 
-    mocked_get_bootstrap_tarball = mocker.patch('dcos_installer.action_lib._get_bootstrap_tarball')
-    mocked_get_bootstrap_tarball.return_value = '123'
+    def mocked_remove_host(state_file, host):
+        removed_hosts.append(host)
 
-    mocked_add_copy_packages = mocker.patch('dcos_installer.action_lib._add_copy_packages')
-    mocked_remove_host = mocker.patch('dcos_installer.action_lib._remove_host')
-    mocked_read_state_file = mocker.patch('dcos_installer.action_lib._read_state_file')
+    monkeypatch.setattr(dcos_installer.action_lib, '_remove_host', mocked_remove_host)
 
     # Test retry
     def mocked_json_state(arg):
@@ -348,11 +330,9 @@ def test_action_deploy_retry(client, mocker):
             }
         }
 
-    mocked_read_json_state.side_effect = mocked_json_state
+    mock_json_state(monkeypatch, mocked_json_state)
     res = client.post(route, params={'retry': 'true'}, content_type='application/x-www-form-urlencoded')
     assert res.json == {'details': ['127.0.0.1:22', '127.0.0.3:22022'], 'status': 'retried'}
-    assert mocked_add_copy_packages.call_count == 1
-    mocked_remove_host.assert_any_call('genconf/state/deploy.json', '127.0.0.3:22022')
-    mocked_remove_host.assert_any_call('genconf/state/deploy.json', '127.0.0.1:22')
-    assert mocked_remove_host.call_count == 2
-    mocked_read_state_file.assert_called_with('genconf/state/deploy.json')
+    assert len(set(removed_hosts)) == 2, \
+        "Should have had two hosts removed exactly once, removed_hosts: {}".format(removed_hosts)
+    assert set(removed_hosts) == {'127.0.0.3:22022', '127.0.0.1:22'}
