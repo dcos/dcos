@@ -246,8 +246,6 @@ def determine_config_type(config_path=CONFIG_PATH):
     :type config_path: str | CONFIG_PATH (genconf/config.yaml)
     """
     config = get_config(config_path=config_path)
-    ctype = 'minimal'
-    message = ''
     adv_found = {}
     advanced_cluster_config = {
         "bootstrap_url": 'file:///opt/dcos_install_tmp',
@@ -259,21 +257,30 @@ def determine_config_type(config_path=CONFIG_PATH):
         "weights": None
     }
     for key, value in advanced_cluster_config.items():
-        if value is None and key in config:
-            adv_found[key] = config[key]
+        # Skip if the key isn't in config
+        if key not in config:
+            continue
 
-        if value is not None and key in config and value != config[key]:
+        # None indicates any value means this is advanced config.
+        # A string indicates the value must match.
+        if value is None:
             log.error('Advanced configuration found in config.yaml: {}: value'.format(key, value))
             adv_found[key] = config[key]
+        elif value != config[key]:
+            log.error('Advanced configuration found in config.yaml: {}: value'.format(key, config[key]))
+            adv_found[key] = config[key]
 
-    if len(adv_found) > 0:
-        message = """Advanced configuration detected in genconf/config.yaml ({}).
- Please backup or remove genconf/config.yaml to use the UI installer.""".format(adv_found)
-        ctype = 'advanced'
+    if adv_found:
+        message = "Advanced configuration detected in genconf/config.yaml ({}).\nPlease backup " \
+                  "or remove genconf/config.yaml to use the UI installer.".format(adv_found)
+        config_type = 'advanced'
+    else:
+        message = ''
+        config_type = 'minimal'
 
     return {
         'message': message,
-        'type': ctype
+        'type': config_type
     }
 
 
