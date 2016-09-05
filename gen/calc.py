@@ -86,7 +86,6 @@ def is_azure_addr(addr: str):
 
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
-    print(list(map(is_azure_addr, nodes_list)))
     check_duplicates(nodes_list)
     # Validate azure addresses which are a bit magical late binding stuff independently of just a
     # list of static IPv4 addresses
