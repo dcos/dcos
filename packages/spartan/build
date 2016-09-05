@@ -29,6 +29,10 @@ gen_resolvconf="$PKG_PATH/bin/gen_resolvconf.py"
 cp /pkg/extra/gen_resolvconf.py "$gen_resolvconf"
 chmod +x "$gen_resolvconf"
 
+watchdog_sh="$PKG_PATH/bin/dcos-spartan-watchdog.sh"
+cp /pkg/extra/dcos-spartan-watchdog.sh "$watchdog_sh"
+chmod +x "$watchdog_sh"
+
 ### Spartan watchdog
 watchdog_service="$PKG_PATH/dcos.target.wants/dcos-spartan-watchdog.service"
 mkdir -p "$(dirname "$watchdog_service")"

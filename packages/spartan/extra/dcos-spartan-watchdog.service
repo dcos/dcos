@@ -11,4 +11,4 @@ EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/dns_search_config
 EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
 ExecStartPre=/bin/sleep 60
-ExecStart=/opt/mesosphere/active/toybox/bin/toybox timeout -k 1m 1m /bin/bash -c "/opt/mesosphere/active/toybox/bin/toybox host ready.spartan 198.51.100.1 || /opt/mesosphere/active/toybox/bin/toybox pkill -l 9 -f spartan"
+ExecStart=/opt/mesosphere/bin/dcos-spartan-watchdog.sh
