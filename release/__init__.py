@@ -127,7 +127,7 @@ def load_providers():
 # have all the logic about channels and repositories.
 class Repository():
 
-    def __init__(self, repository_path, channel_name, commit):
+    def __init__(self, repository_path, channel_name, unique_id):
         if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
@@ -137,11 +137,11 @@ class Repository():
             assert len(channel_name) > 0, "For an empty channel name pass None"
             assert not channel_name.startswith('/')
             assert not channel_name.endswith('/')
-        assert '/' not in commit
+        assert not unique_id.startswith('/') and not unique_id.endswith('/')
 
         self.__repository_path = repository_path
         self.__channel_name = channel_name
-        self.__commit = commit
+        self.__unique_id = unique_id
 
     @property
     def path_prefix(self):
@@ -153,7 +153,7 @@ class Repository():
 
     @property
     def path_channel_commit_prefix(self):
-        return self.path_channel_prefix + 'commit/' + self.__commit + '/'
+        return self.path_channel_prefix + self.__unique_id + '/'
 
     @property
     def channel_prefix(self):
@@ -384,8 +384,8 @@ def make_channel_artifacts(metadata):
         # Use keyword args to make not matching ordering a loud error around changes.
         for built_resource in module.do_create(
                 tag=metadata['tag'],
-                repo_channel_path=metadata['repo_channel_path'],
-                channel_commit_path=metadata['channel_commit_path'],
+                build_name=metadata['build_name'],
+                reproducible_artifact_path=metadata['reproducible_artifact_path'],
                 commit=metadata['commit'],
                 variant_arguments=variant_arguments,
                 all_bootstraps=metadata["all_bootstraps"]):
@@ -514,8 +514,8 @@ def do_build_packages(cache_repository_url):
 def set_repository_metadata(repository, metadata, storage_providers, preferred_provider):
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
-    metadata['repo_channel_path'] = repository.path_channel_prefix[:-1]
-    metadata['channel_commit_path'] = repository.path_channel_commit_prefix[:-1]
+    metadata['build_name'] = repository.path_channel_prefix[:-1]
+    metadata['reproducible_artifact_path'] = repository.path_channel_commit_prefix[:-1]
     metadata['storage_urls'] = {}
     for name, store in storage_providers.items():
         metadata['storage_urls'][name] = store.url
@@ -616,14 +616,14 @@ class ReleaseManager():
         return from_json(self.__preferred_provider.fetch(src_channel + '/metadata.json').decode())
 
     def fetch_key_artifacts(self, metadata):
-        assert metadata['channel_commit_path'][-1] != '/'
+        assert metadata['reproducible_artifact_path'][-1] != '/'
         assert metadata['repository_path'][-1] != '/'
 
         def fetch_artifact(artifact):
             print("Fetching core artifact if it doesn't exist: ", artifact)
             if 'channel_path' in artifact:
                 assert artifact['channel_path'][0] != '/'
-                src_path = metadata['channel_commit_path'] + '/' + artifact['channel_path']
+                src_path = metadata['reproducible_artifact_path'] + '/' + artifact['channel_path']
                 self.__preferred_provider.download(src_path, artifact['channel_path'])
                 artifact['local_copy_from'] = src_path
                 artifact['local_path'] = artifact['channel_path']
@@ -651,7 +651,7 @@ class ReleaseManager():
 
         self.fetch_key_artifacts(metadata)
 
-        repository = Repository(destination_repository, destination_channel, metadata['commit'])
+        repository = Repository(destination_repository, destination_channel, 'commit/' + metadata['commit'])
         set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
         assert 'tag' in metadata
         del metadata['channel_artifacts']
@@ -688,7 +688,7 @@ class ReleaseManager():
         assert 'bootstrap_dict' in metadata
         assert 'commit' in metadata
 
-        repository = Repository(repository_path, channel, metadata['commit'])
+        repository = Repository(repository_path, channel, 'commit/' + metadata['commit'])
         set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
         metadata['tag'] = tag
         assert 'channel_artifacts' not in metadata

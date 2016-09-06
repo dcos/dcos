@@ -22,7 +22,7 @@ ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
 
 TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
-DOWNLOAD_URL_TEMPLATE = ("{download_url}{channel_commit_path}/azure/{arm_template_name}")
+DOWNLOAD_URL_TEMPLATE = ("{download_url}{reproducible_artifact_path}/azure/{arm_template_name}")
 
 INSTANCE_GROUPS = {
     'master': {
@@ -215,7 +215,7 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     }
 
 
-def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
     for arm_t in ['dcos', 'acs']:
         for num_masters in [1, 3, 5]:
             for bootstrap_name, gen_arguments in variant_arguments.items():
@@ -231,30 +231,30 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
 
     yield {
         'channel_path': 'azure.html',
-        'local_content': gen_buttons(repo_channel_path, channel_commit_path, tag, commit),
+        'local_content': gen_buttons(build_name, reproducible_artifact_path, tag, commit),
         'content_type': 'text/html; charset=utf-8'
     }
 
 
-def gen_buttons(repo_channel_path, channel_commit_path, tag, commit):
+def gen_buttons(build_name, reproducible_artifact_path, tag, commit):
     '''
     Generate the button page, that is, "Deploy a cluster to Azure" page
     '''
     dcos_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=get_download_url(),
-            channel_commit_path=channel_commit_path,
+            reproducible_artifact_path=reproducible_artifact_path,
             arm_template_name='dcos-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
     acs_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=get_download_url(),
-            channel_commit_path=channel_commit_path,
+            reproducible_artifact_path=reproducible_artifact_path,
             arm_template_name='acs-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
 
     return gen.template.parse_resources('azure/templates/azure.html').render({
-        'repo_channel_path': repo_channel_path,
+        'build_name': build_name,
         'tag': tag,
         'commit': commit,
         'dcos_urls': dcos_urls,

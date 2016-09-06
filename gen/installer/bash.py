@@ -626,7 +626,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     return installer_filename
 
 
-def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
     """Create a installer script for each variant in bootstrap_dict.
 
     Writes a dcos_generate_config.<variant>.sh for each variant in
