@@ -2,8 +2,8 @@
   "sources": {
     "mesos-dns": {
       "kind": "url",
-      "url": "https://790-26509179-gh.circle-artifacts.com/0//tmp/circle-artifacts.azSJMQC/mesos-dns-v0.5.3-rc1-32-gea801fa-linux-amd64",
-      "sha1": "2da6679256a509295e5b809b7d6ac1fab6202be9"
+      "url": "https://github.com/mesosphere/mesos-dns/releases/download/v0.5.3-rc2/mesos-dns-v0.5.3-rc2-linux-amd64",
+      "sha1": "a2b36c98fe8f9f47a87efe996ca9ca5614dd752c"
     }
   },
   "username": "dcos_mesos_dns"
