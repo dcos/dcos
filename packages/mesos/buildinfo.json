@@ -2,9 +2,9 @@
   "requires": ["openssl", "libevent", "curl"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/mesosphere/mesos",
-    "ref": "e444edd6e7d45eb842fe223ac484a4bc4c1a327a",
-    "ref_origin" : "dcos-mesos-1.0.1-rc1"
+    "git": "https://github.com/asridharan/mesos.git",
+    "ref": "332497f9edf2063d78ba3501e3c2315316614637",
+    "ref_origin" : "cni-dcos"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
