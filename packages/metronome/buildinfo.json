@@ -2,8 +2,8 @@
   "requires": ["java", "exhibitor"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.8/metronome-0.1.8.tgz",
-    "sha1": "fd54079a94add7bcfbf2624799208ab3b055a8e7"
+    "url": "https://downloads.mesosphere.com/maven/dcos/metronome/0.1.9/metronome-0.1.9.tgz",
+    "sha1": "fac2154bae9b46c1ae765acbe866e1e293f36ce9"
   },
   "username": "dcos_metronome",
   "state_directory": true
