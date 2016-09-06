@@ -152,7 +152,7 @@ class Repository():
         return self.path_prefix + self.channel_prefix
 
     @property
-    def path_channel_commit_prefix(self):
+    def reproducible_artifact_path(self):
         return self.path_channel_prefix + self.__unique_id + '/'
 
     @property
@@ -217,7 +217,7 @@ class Repository():
                     return action
 
             assert artifact.keys() <= {'reproducible_path', 'channel_path', 'content_type',
-                                       'local_path', 'local_content', 'local_copy_from'}
+                                       'local_path', 'local_content', 'local_copy_from'}, artifact
 
             action_count = 0
             if 'reproducible_path' in artifact:
@@ -227,7 +227,7 @@ class Repository():
             if 'channel_path' in artifact:
                 channel_path = artifact['channel_path']
                 action_count += 2
-                stage1.append(add_dest(self.path_channel_commit_prefix + channel_path, False))
+                stage1.append(add_dest(self.reproducible_artifact_path + channel_path, False))
                 stage2.append(add_dest(self.path_channel_prefix + channel_path, False))
 
             # Must have done at least one thing with the artifact (reproducible_path or channel_path).
@@ -264,6 +264,29 @@ def get_gen_package_artifact(package_id_str):
     return {
         'reproducible_path': package_filename,
         'local_path': package_filename}
+
+
+def make_bootstrap_artifacts(bootstrap_id, variant_name, artifact_prefix):
+    bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    yield {
+        'reproducible_path': 'bootstrap/' + bootstrap_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + bootstrap_filename
+    }
+    active_filename = "{}.active.json".format(bootstrap_id)
+    yield {
+        'reproducible_path': 'bootstrap/' + active_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + active_filename
+    }
+    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
+    yield {
+        'channel_path': latest_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + latest_filename
+    }
+    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
+    yield {
+        'channel_path': latest_complete_filename,
+        'local_path': artifact_prefix + '/complete/' + latest_complete_filename
+    }
 
 
 def make_stable_artifacts(cache_repository_url):
@@ -308,26 +331,8 @@ def make_stable_artifacts(cache_repository_url):
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        bootstrap_filename = "{}.bootstrap.tar.xz".format(info['bootstrap'])
-        add_file({
-            'reproducible_path': 'bootstrap/' + bootstrap_filename,
-            'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
-        })
-        active_filename = "{}.active.json".format(info['bootstrap'])
-        add_file({
-            'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/cache/bootstrap/' + active_filename
-        })
-        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
-        add_file({
-            'channel_path': latest_filename,
-            'local_path': 'packages/cache/bootstrap/' + latest_filename
-        })
-        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
-        add_file({
-            'channel_path': latest_complete_filename,
-            'local_path': 'packages/cache/complete/' + latest_complete_filename
-        })
+        for file in make_bootstrap_artifacts(info['bootstrap'], name, 'packages/cache'):
+            add_file(file)
 
         # Add all the packages which haven't been added yet
         for package_id in sorted(info['packages']):
@@ -337,6 +342,17 @@ def make_stable_artifacts(cache_repository_url):
     metadata['packages'] = list(sorted(metadata['packages']))
 
     return metadata
+
+
+def built_resource_to_artifacts(built_resource: dict):
+    assert isinstance(built_resource, dict), built_resource
+
+    # Type switch
+    if 'packages' in built_resource:
+        return [get_gen_package_artifact(package) for package in built_resource['packages']]
+    else:
+        assert 'packages' not in built_resource
+        return [built_resource]
 
 
 # Generate provider templates against the bootstrap id, capturing the
@@ -515,7 +531,7 @@ def set_repository_metadata(repository, metadata, storage_providers, preferred_p
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
     metadata['build_name'] = repository.path_channel_prefix[:-1]
-    metadata['reproducible_artifact_path'] = repository.path_channel_commit_prefix[:-1]
+    metadata['reproducible_artifact_path'] = repository.reproducible_artifact_path[:-1]
     metadata['storage_urls'] = {}
     for name, store in storage_providers.items():
         metadata['storage_urls'][name] = store.url
@@ -566,6 +582,23 @@ def get_storage_provider_factory(kind):
         raise ConfigError("Storage provider {} has no kind {}".format(provider, name))
 
     return module.factories[name]
+
+
+def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> None:
+    assert storage_commands.keys() == {'stage1', 'stage2'}
+
+    for stage in ['stage1', 'stage2']:
+        commands = storage_commands[stage]
+        for provider_name, provider in storage_providers.items():
+            for artifact in commands:
+                path = artifact['args']['destination_path']
+                # If it is only supposed to be if the artifact does not exist, check for existence
+                # and skip if it exists.
+                if artifact['if_not_exists'] and provider.exists(path):
+                    print("Store to", provider_name, "artifact", path, "skipped because it already exists")
+                    continue
+                print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
+                getattr(provider, artifact['method'])(**artifact['args'])
 
 
 # Two stages of uploading artifacts. First puts all the artifacts into their places / uploads
@@ -651,7 +684,7 @@ class ReleaseManager():
 
         self.fetch_key_artifacts(metadata)
 
-        repository = Repository(destination_repository, destination_channel, 'commit/' + metadata['commit'])
+        repository = Repository(destination_repository, destination_channel, 'commit/{}'.format(metadata['commit']))
         set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
         assert 'tag' in metadata
         del metadata['channel_artifacts']
@@ -688,7 +721,7 @@ class ReleaseManager():
         assert 'bootstrap_dict' in metadata
         assert 'commit' in metadata
 
-        repository = Repository(repository_path, channel, 'commit/' + metadata['commit'])
+        repository = Repository(repository_path, channel, 'commit/{}'.format(metadata['commit']))
         set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
         metadata['tag'] = tag
         assert 'channel_artifacts' not in metadata
@@ -706,19 +739,7 @@ class ReleaseManager():
         if self.__noop:
             return
 
-        # TODO(cmaloney): Use a multiprocessing map to do all storage providers in parallel.
-        for stage in ['stage1', 'stage2']:
-            commands = storage_commands[stage]
-            for provider_name, provider in self.__storage_providers.items():
-                for artifact in commands:
-                    path = artifact['args']['destination_path']
-                    # If it is only supposed to be if the artifact does not exist, check for existence
-                    # and skip if it exists.
-                    if artifact['if_not_exists'] and provider.exists(path):
-                        print("Store to", provider_name, "artifact", path, "skipped because it already exists")
-                        continue
-                    print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
-                    getattr(provider, artifact['method'])(**artifact['args'])
+        apply_storage_commands(self.__storage_providers, storage_commands)
 
 _config = None
 

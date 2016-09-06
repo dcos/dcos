@@ -81,7 +81,7 @@
        "Infrastructure": {
            "Type": "AWS::CloudFormation::Stack",
            "Properties": {
-               "TemplateURL": "{{ cloudformation_s3_url }}/{{ reproducible_artifact_path }}/cloudformation/infra.json",
+               "TemplateURL": "{{ cloudformation_full_s3_url }}/infra.json",
                "TimeoutInMinutes": "60",
                "Parameters": {
                     "KeyName": {
@@ -109,7 +109,7 @@
            "DependsOn": ["Infrastructure"],
            "Type": "AWS::CloudFormation::Stack",
            "Properties": {
-               "TemplateURL": "{{ cloudformation_s3_url }}/{{ reproducible_artifact_path }}/cloudformation/{{ variant_prefix }}{{ os_type }}-advanced-master-{{ num_masters }}.json",
+               "TemplateURL": "{{ cloudformation_full_s3_url }}/{{ variant_prefix }}{{ os_type }}-advanced-master-{{ num_masters }}.json",
                "Parameters": {
                     "KeyName": {
                         "Ref": "KeyName"
@@ -160,7 +160,7 @@
            "DependsOn": ["Infrastructure", "MasterStack"],
            "Type": "AWS::CloudFormation::Stack",
            "Properties": {
-               "TemplateURL": "{{ cloudformation_s3_url }}/{{ reproducible_artifact_path }}/cloudformation/{{ variant_prefix }}{{ os_type }}-advanced-pub-agent.json",
+               "TemplateURL": "{{ cloudformation_full_s3_url }}/{{ variant_prefix }}{{ os_type }}-advanced-pub-agent.json",
                "Parameters": {
                     "KeyName": {
                         "Ref": "KeyName"
@@ -199,7 +199,7 @@
            "DependsOn": ["Infrastructure", "MasterStack"],
            "Type": "AWS::CloudFormation::Stack",
            "Properties": {
-               "TemplateURL": "{{ cloudformation_s3_url }}/{{ reproducible_artifact_path }}/cloudformation/{{ variant_prefix }}{{ os_type }}-advanced-priv-agent.json",
+               "TemplateURL": "{{ cloudformation_full_s3_url }}/{{ variant_prefix }}{{ os_type }}-advanced-priv-agent.json",
                "Parameters": {
                     "KeyName": {
                         "Ref": "KeyName"

@@ -563,6 +563,8 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_bootstrap_id + '.bootstrap.tar.xz'
+    bootstrap_latest_filename = pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
+    latest_complete_filename = pkgpanda.util.variant_prefix(variant) + 'complete.latest.json'
     docker_image_name = 'mesosphere/dcos-genconf:' + image_version
 
     # TODO(cmaloney): All of this should use package_resources
@@ -585,7 +587,9 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
         fill_template('Dockerfile', {
             'installer_bootstrap_filename': installer_bootstrap_filename,
             'bootstrap_filename': bootstrap_filename,
-            'bootstrap_active_filename': bootstrap_active_filename})
+            'bootstrap_active_filename': bootstrap_active_filename,
+            'bootstrap_latest_filename': bootstrap_latest_filename,
+            'latest_complete_filename': latest_complete_filename})
 
         fill_template('installer_internal_wrapper', {
             'variant': pkgpanda.util.variant_str(variant),
@@ -594,9 +598,13 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 
         subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
+        # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
+        # rather than manually keeping everything in sync
         copy_to_build('packages/cache/bootstrap', bootstrap_filename)
         copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
         copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_latest_filename)
+        copy_to_build('packages/cache/complete', latest_complete_filename)
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):

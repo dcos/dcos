@@ -428,16 +428,16 @@ def exercise_make_commands(repository):
 def test_repository():
     # Must specify a repository path
     with pytest.raises(ValueError):
-        release.Repository("", None, "testing_commit")
+        release.Repository("", None, "commit/testing_commit")
 
     # For an empty channel name, use None
     with pytest.raises(AssertionError):
-        release.Repository("foo", "", "testing_commit")
+        release.Repository("foo", "", "commit/testing_commit")
 
     # Repository path with no channel (Like we'd do for a stable or EA release).
     no_channel = release.Repository("stable", None, "commit/testing_commit_2")
     assert no_channel.channel_prefix == ''
-    assert no_channel.path_channel_commit_prefix + 'foo' == 'stable/commit/testing_commit_2/foo'
+    assert no_channel.reproducible_artifact_path + 'foo' == 'stable/commit/testing_commit_2/foo'
     assert no_channel.path_channel_prefix + 'bar' == 'stable/bar'
     assert no_channel.path_prefix + "a/baz--foo.tar.xz" == 'stable/a/baz--foo.tar.xz'
     exercise_make_commands(no_channel)
@@ -445,7 +445,7 @@ def test_repository():
     # Repository path with a channel (Like we do for PRs)
     with_channel = release.Repository("testing", "pull/283", "commit/testing_commit_3")
     assert with_channel.channel_prefix == 'pull/283/'
-    assert with_channel.path_channel_commit_prefix + "foo" == 'testing/pull/283/commit/testing_commit_3/foo'
+    assert with_channel.reproducible_artifact_path + "foo" == 'testing/pull/283/commit/testing_commit_3/foo'
     assert with_channel.path_channel_prefix + "bar" == 'testing/pull/283/bar'
     assert with_channel.path_prefix + "a/baz--foo.tar.xz" == 'testing/a/baz--foo.tar.xz'
     # TODO(cmaloney): Exercise make_commands with a channel.

@@ -156,7 +156,11 @@ dispatch_dict_simple = {
     'validate-config': (
         do_validate_config,
         'VALIDATING CONFIGURATION',
-        'Validate the configuration for executing --genconf and deploy arguments in config.yaml')
+        'Validate the configuration for executing --genconf and deploy arguments in config.yaml'),
+    'aws-cloudformation': (
+        lambda args: backend.do_aws_cf_configure(),
+        'EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION',
+        'Generate AWS Advanced AWS CloudFormation templates using the provided config')
 }
 
 dispatch_dict_aio = {
