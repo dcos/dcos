@@ -127,8 +127,7 @@ def test_get_config(tmpdir):
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
         'ssh_port': 22,
-        'process_timeout': 10000,
-        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+        'process_timeout': 10000
     }
 
     make_default_config_if_needed(temp_config_path)

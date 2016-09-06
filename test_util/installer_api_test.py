@@ -295,7 +295,6 @@ class DcosCliInstaller(AbstractDcosInstaller):
         """
         test_config = {
             'cluster_name': 'SSH Installed DC/OS',
-            'bootstrap_url': 'file:///opt/dcos_install_tmp',
             'dns_search': 'mesos',
             'master_discovery': 'static',
             'master_list': master_list,

@@ -46,7 +46,10 @@ entry = {
         'public_agent_list': '[]',
         'ssh_port': '22',
         'process_timeout': '120',
-        'ssh_parallelism': '20'
+        'ssh_parallelism': '20',
+    },
+    'must': {
+        'bootstrap_url': 'file:///opt/dcos_install_tmp'
     }
 }
 
