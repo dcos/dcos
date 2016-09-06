@@ -44,7 +44,7 @@ entry = {
     'default': {
         'ssh_key_path': 'genconf/ssh_key',
         'agent_list': '[]',
-        'agent_public_list': '[]',
+        'public_agent_list': '[]',
         'ssh_port': '22',
         'process_timeout': '120',
         'ssh_parallelism': '20'
