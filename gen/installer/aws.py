@@ -294,7 +294,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     })
 
 
-def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_type):
+def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         node_template_id, node_args = groups[node_type]
         node_args = deepcopy(node_args)
@@ -325,7 +325,7 @@ def gen_advanced_template(arguments, variant_prefix, channel_commit_path, os_typ
                     'cloudformation': render_cloudformation_transform(
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
-                        channel_commit_path=channel_commit_path,
+                        reproducible_artifact_path=reproducible_artifact_path,
                         cloudformation_s3_url=get_cloudformation_s3_url(),
                         **bunch.results.arguments),
                     # TODO(cmaloney): This is hacky but quickest for now. Should not have to add
@@ -395,11 +395,11 @@ def gen_templates(arguments):
     })
 
 
-button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_s3_url}/{channel_commit_path}/cloudformation/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
+button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_s3_url}/{reproducible_artifact_path}/cloudformation/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
 region_line_template = "<tr><td>{region_name}</td><td>{region_id}</td><td>{single_master_button}</td><td>{multi_master_button}</td></tr>"  # noqa
 
 
-def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments):
+def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arguments):
     # Generate the button page.
     # TODO(cmaloney): Switch to package_resources
     variant_list = list(sorted(pkgpanda.util.variant_prefix(x) for x in variant_arguments.keys()))
@@ -409,7 +409,7 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arg
         def get_button(template_name):
             return button_template.format(
                 region_id=region['id'],
-                channel_commit_path=channel_commit_path,
+                reproducible_artifact_path=reproducible_artifact_path,
                 template_name=template_name,
                 cloudformation_s3_url=get_cloudformation_s3_url())
 
@@ -425,8 +425,8 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arg
 
     return gen.template.parse_resources('aws/templates/aws.html').render(
         {
-            'channel_commit_path': channel_commit_path,
-            'repo_channel_path': repo_channel_path,
+            'build_name': build_name,
+            'reproducible_artifact_path': reproducible_artifact_path,
             'tag': tag,
             'commit': commit,
             'regular_buttons': regular_buttons,
@@ -434,7 +434,7 @@ def gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arg
         })
 
 
-def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
     # Generate the single-master and multi-master templates.
 
     for bootstrap_variant, variant_base_args in variant_arguments.items():
@@ -468,11 +468,11 @@ def do_create(tag, repo_channel_path, channel_commit_path, commit, variant_argum
             yield from gen_advanced_template(
                 variant_base_args,
                 variant_prefix,
-                channel_commit_path,
+                reproducible_artifact_path,
                 os_type)
 
     # Button page linking to the basic templates.
-    button_page = gen_buttons(repo_channel_path, channel_commit_path, tag, commit, variant_arguments)
+    button_page = gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arguments)
     yield {
         'channel_path': 'aws.html',
         'local_content': button_page,

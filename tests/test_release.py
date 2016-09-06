@@ -435,7 +435,7 @@ def test_repository():
         release.Repository("foo", "", "testing_commit")
 
     # Repository path with no channel (Like we'd do for a stable or EA release).
-    no_channel = release.Repository("stable", None, "testing_commit_2")
+    no_channel = release.Repository("stable", None, "commit/testing_commit_2")
     assert no_channel.channel_prefix == ''
     assert no_channel.path_channel_commit_prefix + 'foo' == 'stable/commit/testing_commit_2/foo'
     assert no_channel.path_channel_prefix + 'bar' == 'stable/bar'
@@ -443,7 +443,7 @@ def test_repository():
     exercise_make_commands(no_channel)
 
     # Repository path with a channel (Like we do for PRs)
-    with_channel = release.Repository("testing", "pull/283", "testing_commit_3")
+    with_channel = release.Repository("testing", "pull/283", "commit/testing_commit_3")
     assert with_channel.channel_prefix == 'pull/283/'
     assert with_channel.path_channel_commit_prefix + "foo" == 'testing/pull/283/commit/testing_commit_3/foo'
     assert with_channel.path_channel_prefix + "bar" == 'testing/pull/283/bar'
@@ -597,8 +597,8 @@ def test_make_channel_artifacts(monkeypatch):
             'installer': 'installer_bootstrap_id',
             'ee.installer': 'ee_installer_bootstrap_id'
         },
-        'repo_channel_path': 'r_path/channel',
-        'channel_commit_path': 'r_path/channel/commit/sha-1',
+        'build_name': 'r_path/channel',
+        'reproducible_artifact_path': 'r_path/channel/commit/sha-1',
         'repository_path': 'r_path',
         'storage_urls': {
             'aws': 'https://aws.example.com/',
