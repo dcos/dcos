@@ -2,7 +2,9 @@ import copy
 import hashlib
 import json
 import os.path
+import random
 import shutil
+import string
 import tempfile
 from os import mkdir
 from os.path import exists
@@ -37,8 +39,14 @@ class DockerCmd:
         self.environment = dict()
         self.container = str()
 
-    def run(self, cmd):
-        docker = ["docker", "run"]
+    def run(self, name, cmd):
+        docker = ["docker", "run", "--name={}".format(
+            "{}-{}".format(
+                name, ''.join(
+                    random.choice(string.ascii_lowercase) for _ in range(10)
+                )
+            )
+        )]
         for host_path, container_path in self.volumes.items():
             docker += ["-v", "{0}:{1}".format(host_path, container_path)]
 
@@ -48,6 +56,12 @@ class DockerCmd:
         docker.append(self.container)
         docker += cmd
         check_call(docker)
+        DockerCmd.clean(name)
+
+    @staticmethod
+    def clean(name):
+        """Cleans up the specified container"""
+        check_call(["docker", "rm", "-v", name])
 
 
 def get_variants_from_filesystem(directory, extension):
@@ -1053,7 +1067,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
             package_store.get_package_cache_folder(name): "/pkg/:rw",
         }
         cmd.container = "ubuntu:14.04.4"
-        cmd.run(["rm", "-rf", "/pkg/src", "/pkg/result"])
+        cmd.run("package-cleaner", ["rm", "-rf", "/pkg/src", "/pkg/result"])
 
     clean()
 
@@ -1154,7 +1168,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         # TODO(cmaloney): Run a wrapper which sources
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
-        cmd.run([
+        cmd.run("package-builder", [
             "/bin/bash",
             "-o", "nounset",
             "-o", "pipefail",
