@@ -122,8 +122,8 @@ def calculate_base_repository_url(
 # TODO(cmaloney): Allow using a CDN rather than the raw S3 url, which will allow
 # us to use this same logic for both the internal / do_create version and the
 # user dcos_generate_config.sh option.
-def calculate_cloudformation_s3_url(bootstrap_url, aws_template_storage_bucket_path, config_id):
-    return '{}/{}/config_id/{}'.format(bootstrap_url, aws_template_storage_bucket_path, config_id)
+def calculate_cloudformation_s3_url(bootstrap_url, config_id):
+    return '{}/config_id/{}'.format(bootstrap_url, config_id)
 
 aws_advanced_entry = {
     # TOOD(cmaloney): Add parameter validation for AWS Advanced template output.
