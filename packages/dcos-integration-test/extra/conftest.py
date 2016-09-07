@@ -24,6 +24,7 @@ LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')
+    config.addinivalue_line('markers', 'resiliency: Run tests that cause critical failures')
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -39,6 +40,31 @@ def pytest_collection_modifyitems(session, config, items):
         else:
             new_items.append(item)
     items[:] = new_items + last_items
+
+
+def pytest_addoption(parser):
+    parser.addoption('--resiliency', action='store_true')
+
+
+def pytest_runtest_setup(item):
+    if item.get_marker('resiliency'):
+        if not item.config.getoption('--resiliency'):
+            pytest.skip('Test requires --resiliency option')
+
+
+@pytest.yield_fixture
+def vip_apps(cluster):
+    vip1 = '6.6.6.1:6661'
+    test_app1, _ = cluster.get_test_app()
+    test_app1['portDefinitions'][0]['labels'] = {
+        'VIP_0': vip1}
+    test_app2, _ = cluster.get_test_app()
+    test_app2['portDefinitions'][0]['labels'] = {
+        'VIP_0': 'foobarbaz:5432'}
+    vip2 = 'foobarbaz.marathon.l4lb.thisdcos.directory:5432'
+    with cluster.marathon_deploy_and_cleanup(test_app1):
+        with cluster.marathon_deploy_and_cleanup(test_app2):
+            yield ((test_app1, vip1), (test_app2, vip2))
 
 
 @pytest.fixture(scope='session')
@@ -72,6 +98,7 @@ def _setup_logging():
     """Setup logging for the script"""
     logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=LOG_LEVEL)
     logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("botocore").setLevel(logging.WARNING)
 
 
 class Cluster:
@@ -176,7 +203,10 @@ class Cluster:
         assert r.status_code == 200
 
         data = r.json()
-        slaves_ids = sorted(x['id'] for x in data['slaves'])
+        # only check against the slaves we expect to be in the cluster
+        # so we can check that cluster has returned after a failure
+        # in which case will will have new slaves and dead slaves
+        slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in self.all_slaves)
 
         for slave_id in slaves_ids:
             # AdminRouter's slave endpoint internally uses cached Mesos
@@ -205,7 +235,7 @@ class Cluster:
             return False
         assert r.status_code == 200
 
-    def _wait_for_dcos(self):
+    def wait_for_dcos(self):
         self._wait_for_leader_election()
         self._wait_for_adminrouter_up()
         self._authenticate()
@@ -278,7 +308,7 @@ class Cluster:
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
-        self._wait_for_dcos()
+        self.wait_for_dcos()
 
     @staticmethod
     def _marathon_req_headers():
