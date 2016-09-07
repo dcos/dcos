@@ -14,6 +14,10 @@ DCOS_SSH_KEY_PATH: string
     path for the SSH key to be used with a preexiting cluster.
     Defaults to 'default_ssh_key'
 
+TEST_DCOS_RESILIENCY: true/false
+    Will setup a cluster for resiliency testing and then run the resiliency tests
+    after the standard integration tests
+
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
@@ -56,6 +60,8 @@ def check_environment():
     # Defaults
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_region = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
+    # FIXME: hijacking the regular AWS test for verifying this
+    options.test_resiliency = os.getenv('TEST_DCOS_RESILIENCY', 'false') == 'false'
 
     # Mandatory
     options.stack_name = os.getenv('DCOS_STACK_NAME', None)
@@ -64,6 +70,7 @@ def check_environment():
     if not options.template_url:
         assert options.stack_name is not None, 'if DCOS_TEMPLATE_URL is not provided, '\
             'then DCOS_STACK_NAME must be specified'
+    # Required
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
@@ -74,13 +81,19 @@ def check_environment():
             add_env[k.replace(prefix, '')] = v
     options.add_env = add_env
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
+    # FIXME: hijacking the regular AWS test for verifying this
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs --resiliency ' + options.ci_flags)
     return options
 
 
 def main():
     options = check_environment()
 
+    random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+    unique_cluster_id = 'CF-integration-test-{}'.format(random_identifier)
+    if options.test_resiliency:
+        options.add_env['AWS_STACK_NAME'] = unique_cluster_id
+    log.info('Spinning up AWS CloudFormation with ID: {}'.format(unique_cluster_id))
     bw = test_util.aws.BotoWrapper(
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,

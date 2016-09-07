@@ -21,6 +21,10 @@ LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
 LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
 
 
+def pytest_addoption(parser):
+    parser.addoption('--resiliency', action='store_true')
+
+
 @pytest.fixture(scope='session')
 def cluster():
     assert 'DCOS_DNS_ADDRESS' in os.environ
