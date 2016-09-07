@@ -657,7 +657,16 @@ class ReleaseManager():
             if 'channel_path' in artifact:
                 assert artifact['channel_path'][0] != '/'
                 src_path = metadata['reproducible_artifact_path'] + '/' + artifact['channel_path']
-                self.__preferred_provider.download(src_path, artifact['channel_path'])
+                # TODO(cmaloney): This is very hacky but for now the only ones of these we have
+                # are all bootstrap related... The actual local path needs to be better represented
+                # in the metadata uploaded. The destination upload paths and the temporary local
+                # paths need to be made identical.
+                dest_path = artifact['channel_path']
+                if artifact['channel_path'].endswith('complete.latest.json'):
+                    dest_path = 'packages/cache/complete/' + dest_path
+                else:
+                    dest_path = 'packages/cache/bootstrap/' + dest_path
+                self.__preferred_provider.download(src_path, dest_path)
                 artifact['local_copy_from'] = src_path
                 artifact['local_path'] = artifact['channel_path']
             if 'reproducible_path' in artifact:
