@@ -4,7 +4,7 @@
 #  <output file>: Where to `tee` the stderr of the <program>.
 
 if [ $# -ne 2 ]; then
-    echo "usage: tee_stderr <program> <output file>"
+    echo "usage: $0 <program> <output file>"
     exit 1
 fi
 

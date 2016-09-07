@@ -22,4 +22,4 @@ ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-slave-public
 ExecStartPre=/opt/mesosphere/bin/make_disk_resources.py /var/lib/dcos/mesos-resources
 ExecStartPre=/bin/bash -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 2 > $i; echo -n "$i: "; cat $i; done'
-ExecStart=$PKG_PATH/bin/tee_stderr $PKG_PATH/bin/mesos-agent /var/log/mesos/mesos-agent.log
+ExecStart=$PKG_PATH/bin/wrappers/mesos-agent $PKG_PATH/bin/mesos-agent /var/log/mesos/mesos-agent.log
