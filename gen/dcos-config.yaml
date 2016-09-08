@@ -415,3 +415,6 @@ package:
   - path: /etc/expanded.config.json
     content: |
 {{ expanded_config }}
+  - path: /etc_master/dcos-history.env
+    content: |
+      STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
