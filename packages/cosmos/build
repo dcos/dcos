@@ -12,8 +12,6 @@ mkdir -p $(dirname "$cosmos_service")
 cat <<EOF > "$cosmos_service"
 [Unit]
 Description=Package Service: DC/OS Packaging API
-After=dcos-mesos-master.service
-After=dcos-gen-resolvconf.service
 
 [Service]
 Restart=always

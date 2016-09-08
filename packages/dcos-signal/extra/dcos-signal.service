@@ -1,6 +1,5 @@
 [Unit]
 Description=Signal: DC/OS Telemetry and Tracking Service
-After=dcos-mesos-master.service
 [Service]
 Type=simple
 Restart=on-failure
@@ -9,5 +8,6 @@ PermissionsStartOnly=True
 User=dcos_signal
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/cfn_signal_metadata
+ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-signal
 ExecStart=/opt/mesosphere/bin/dcos-signal -segment-key 51ybGTeFEFU1xo6u10XMDrr6kATFyRyh

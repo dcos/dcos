@@ -1,6 +1,5 @@
 [Unit]
 Description=DNS Dispatcher Watchdog: Make sure spartan is running
-After=dcos-spartan.service
 
 [Service]
 Type=oneshot
