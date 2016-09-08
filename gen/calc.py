@@ -325,6 +325,15 @@ def validate_os_type(os_type):
     validate_one_of(os_type, ['coreos', 'el7'])
 
 
+def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
+    # Must be non_empty
+    assert bootstrap_tmp_dir, "Must not be empty"
+
+    # Should not start or end with `/`
+    assert bootstrap_tmp_dir[0] != '/' and bootstrap_tmp_dir[-1] != 0, \
+        "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -351,6 +360,7 @@ entry = {
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config],
     'default': {
+        'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,

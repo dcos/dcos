@@ -26,10 +26,10 @@
     Type=oneshot
     StandardOutput=journal+console
     StandardError=journal+console
-    ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
+    ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
     ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
-    ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
-    ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
+    ExecStart=/usr/bin/tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
+    ExecStartPost=-/usr/bin/rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
 - name: dcos-setup.service
   command: start
   no_block: true
