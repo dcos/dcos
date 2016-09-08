@@ -1,5 +1,5 @@
 [Unit]
 Description=DNS Dispatcher Watchdog Timer: Periodically check is Spartan is working
 [Timer]
-OnBootSec=5sec
+OnBootSec=65sec
 OnUnitActiveSec=5min
