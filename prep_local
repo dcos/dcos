@@ -10,7 +10,7 @@ set -o errexit -o nounset -o pipefail
 : ${VIRTUAL_ENV?"Must be run in a python virtual environment"}
 
 # Install the latest version of pip
-pip install pip==8.1.2
+pip install -U pip
 
 # Install the packages in editable mode to the virtual environment.
 pip install -e $PWD
