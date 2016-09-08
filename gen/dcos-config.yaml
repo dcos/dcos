@@ -403,6 +403,15 @@ package:
   - path: /etc_master/marathon
     content: |
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
+  - path: /etc/proxy.env
+    content: ""
+{% switch use_proxy %}
+{% case "true" %}
+        http_proxy={{ http_proxy }}
+        https_proxy={{ https_proxy }}
+        no_proxy="{{ no_proxy_final }}"
+{% case "false" %}
+{% endswitch %}
   - path: /etc_master/metronome
     content: |
       METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
