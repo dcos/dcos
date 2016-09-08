@@ -604,7 +604,8 @@ def test_diagnostics_bundle_status(cluster):
     required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
                               'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
                               'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',
-                              'command_exec_timeout_sec', 'diagnostics_partition_disk_usage_percent']
+                              'command_exec_timeout_sec', 'diagnostics_partition_disk_usage_percent',
+                              'job_progress_percentage']
 
     for _, properties in diagnostics_bundle_status.items():
         assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
