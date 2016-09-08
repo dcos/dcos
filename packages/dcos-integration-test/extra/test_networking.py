@@ -4,7 +4,7 @@ import requests
 import retrying
 
 
-def ensure_routable(cmd, service_points, timeout=300):
+def ensure_routable(cmd, service_points, timeout=120):
     @retrying.retry(wait_fixed=2000,
                     stop_max_delay=timeout * 1000,
                     retry_on_result=lambda ret: ret is False,
