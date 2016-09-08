@@ -134,12 +134,11 @@ class VpcCfStack(CfStack):
         ami_code = OS_AMIS[instance_os][boto_wrapper.region]
         template_url = template_by_instance_type(instance_type)
         parameters = {
-                'KeyPair': key_pair_name,
-                'AllowAccessFrom': admin_location,
-                'ClusterSize': str(instance_count),
-                'InstanceType': str(instance_type),
-                'AmiCode': ami_code
-                }
+            'KeyPair': key_pair_name,
+            'AllowAccessFrom': admin_location,
+            'ClusterSize': str(instance_count),
+            'InstanceType': str(instance_type),
+            'AmiCode': ami_code}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
         return cls(stack.stack.stack_id, boto_wrapper)
 
@@ -150,22 +149,13 @@ class VpcCfStack(CfStack):
 
     def get_vpc_host_ips(self):
         reservations = self.boto_wrapper.client('ec2').describe_instances(Filters=[{
-                'Name': 'tag-value', 'Values': [self.stack.stack_name]}])['Reservations']
+            'Name': 'tag-value', 'Values': [self.stack.stack_name]}])['Reservations']
         logging.debug('Reservations for {}: {}'.format(self.stack.stack_id, reservations))
         instances = reservations[0]['Instances']
         return instances_to_hosts(instances)
 
 
 OS_AMIS = {
-    'cent-os-6': {'ap-northeast-1': 'ami-82640282',
-                  'ap-southeast-1': 'ami-44617116',
-                  'ap-southeast-2': 'ami-7b81ca41',
-                  'eu-central-1': 'ami-2a868b37',
-                  'eu-west-1': 'ami-2b7f4c5c',
-                  'sa-east-1': 'ami-fd0f99e0',
-                  'us-east-1': 'ami-57cd8732',
-                  'us-west-1': 'ami-45844401',
-                  'us-west-2': 'ami-1255b321'},
     'cent-os-7': {'ap-northeast-1': 'ami-965345f8',
                   'ap-southeast-1': 'ami-332de750',
                   'ap-southeast-2': 'ami-c80320ab',
@@ -202,15 +192,6 @@ OS_AMIS = {
                  'us-east-1': 'ami-8b9a63e0',
                  'us-west-1': 'ami-a5d621e1',
                  'us-west-2': 'ami-3d56520d'},
-    'rhel-6': {'ap-northeast-1': 'ami-78379d78',
-               'ap-southeast-1': 'ami-faedeea8',
-               'ap-southeast-2': 'ami-7f0d4b45',
-               'eu-central-1': 'ami-8e96ac93',
-               'eu-west-1': 'ami-78d29c0f',
-               'sa-east-1': 'ami-d1d35ccc',
-               'us-east-1': 'ami-0d28fe66',
-               'us-west-1': 'ami-5b8a781f',
-               'us-west-2': 'ami-75f3f145'},
     'rhel-7': {'ap-northeast-1': 'ami-35556534',
                'ap-southeast-1': 'ami-941031c6',
                'ap-southeast-2': 'ami-83e08db9',
@@ -220,22 +201,13 @@ OS_AMIS = {
                'us-east-1': 'ami-a8d369c0',
                'us-west-1': 'ami-33cdd876',
                'us-west-2': 'ami-99bef1a9'},
-    'ubuntu-12-04': {'ap-northeast-1': 'ami-88bca789',
-                     'ap-southeast-1': 'ami-74c6ec26',
-                     'ap-southeast-2': 'ami-33d4a009',
-                     'eu-central-1': 'ami-9cc4f681',
-                     'eu-west-1': 'ami-ff810f88',
-                     'sa-east-1': 'ami-57f14e4a',
-                     'us-east-1': 'ami-427a392a',
-                     'us-west-1': 'ami-82bba3c7',
-                     'us-west-2': 'ami-2b471c1b'},
-    'ubuntu-14-04': {'ap-northeast-1': 'ami-936d9d93',
-                     'ap-southeast-1': 'ami-96f1c1c4',
-                     'ap-southeast-2': 'ami-69631053',
-                     'eu-central-1': 'ami-accff2b1',
-                     'eu-west-1': 'ami-47a23a30',
-                     'sa-east-1': 'ami-4d883350',
-                     'us-east-1': 'ami-d05e75b8',
-                     'us-west-1': 'ami-df6a8b9b',
-                     'us-west-2': 'ami-5189a661'}
+    'ubuntu-16-04': {'ap-northeast-1': 'ami-0919cd68',
+                     'ap-southeast-1': 'ami-42934921',
+                     'ap-southeast-2': 'ami-623c0d01',
+                     'eu-central-1': 'ami-a9a557c6',
+                     'eu-west-1': 'ami-643d4217',
+                     'sa-east-1': 'ami-60bd2d0c',
+                     'us-east-1': 'ami-2ef48339',
+                     'us-west-1': 'ami-a9a8e4c9',
+                     'us-west-2': 'ami-746aba14'}
 }
