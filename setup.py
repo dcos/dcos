@@ -56,6 +56,7 @@ setup(
         'console_scripts': [
             'release=release:main',
             'ccm-deploy-test=test_util.test_installer_ccm:main',
+            'test-aws-cf-deploy=test_util.test_aws_cf:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
         ],

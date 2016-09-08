@@ -283,6 +283,7 @@ def test_3dt_units(cluster):
         )
 
 
+@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(cluster):
     """
     test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
