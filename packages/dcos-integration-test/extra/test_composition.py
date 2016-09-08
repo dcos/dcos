@@ -146,6 +146,8 @@ def test_signal_service(cluster):
     public_slave_units = [
         'mesos-slave-public-service']
     all_slave_units = [
+        'docker-gc-service',
+        'docker-gc-timer',
         '3dt-socket',
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',

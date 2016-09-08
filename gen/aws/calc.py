@@ -17,7 +17,8 @@ entry = {
         'num_private_slaves': '5',
         'num_public_slaves': '1',
         'os_type': '',
-        'aws_masters_have_public_ip': 'true'
+        'aws_masters_have_public_ip': 'true',
+        'enable_docker_gc': 'true'
     },
     'must': {
         'aws_region': '{ "Ref" : "AWS::Region" }',

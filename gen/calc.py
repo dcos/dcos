@@ -582,7 +582,8 @@ entry = {
                 'default': {
                     'resolvers': '["8.8.8.8", "8.8.4.4"]',
                     'ip_detect_filename': 'genconf/ip-detect',
-                    'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID')
+                    'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
+                    'enable_docker_gc': 'false',
                 },
             },
             'azure': gen.azure.calc.entry,
