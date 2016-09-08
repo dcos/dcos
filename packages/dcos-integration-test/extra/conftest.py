@@ -3,6 +3,7 @@ import copy
 import logging
 import os
 import uuid
+from contextlib import contextmanager
 from urllib.parse import urlparse, urlunparse
 
 import dns.exception
@@ -376,31 +377,29 @@ class Cluster:
         return app, test_uuid
 
     def deploy_test_app_and_check(self, app, test_uuid):
-        service_points = self.deploy_marathon_app(app)
-        r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
-                                                         service_points[0].port))
-        if r.status_code != 200:
-            msg = "Test server replied with non-200 reply: '{0} {1}. "
-            msg += "Detailed explanation of the problem: {2}"
-            pytest.fail(msg.format(r.status_code, r.reason, r.text))
+        with self.marathon_deploy_and_cleanup(app) as service_points:
+            r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
+                                                             service_points[0].port))
+            if r.status_code != 200:
+                msg = "Test server replied with non-200 reply: '{0} {1}. "
+                msg += "Detailed explanation of the problem: {2}"
+                pytest.fail(msg.format(r.status_code, r.reason, r.text))
 
-        r_data = r.json()
+            r_data = r.json()
 
-        assert r_data['test_uuid'] == test_uuid
+            assert r_data['test_uuid'] == test_uuid
 
-        # Test the app is running as root
-        r = requests.get('http://{}:{}/operating_environment'.format(
-            service_points[0].host,
-            service_points[0].port))
+            # Test the app is running as root
+            r = requests.get('http://{}:{}/operating_environment'.format(
+                service_points[0].host,
+                service_points[0].port))
 
-        if r.status_code != 200:
-            msg = "Test server replied with non-200 reply: '{0} {1}. "
-            msg += "Detailed explanation of the problem: {2}"
-            pytest.fail(msg.format(r.status_code, r.reason, r.text))
+            if r.status_code != 200:
+                msg = "Test server replied with non-200 reply: '{0} {1}. "
+                msg += "Detailed explanation of the problem: {2}"
+                pytest.fail(msg.format(r.status_code, r.reason, r.text))
 
-        assert r.json() == {'username': 'root'}
-
-        self.destroy_marathon_app(app['id'])
+            assert r.json() == {'username': 'root'}
 
     def deploy_marathon_app(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
@@ -499,6 +498,12 @@ class Cluster:
         except retrying.RetryError:
             pytest.fail("Application destroy failed - operation was not "
                         "completed in {} seconds.".format(timeout))
+
+    @contextmanager
+    def marathon_deploy_and_cleanup(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
+        yield self.deploy_marathon_app(
+            app_definition, timeout, check_health, ignore_failed_tasks)
+        self.destroy_marathon_app(app_definition['id'], timeout)
 
     def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
         """Run a job on metronome and block until it returns success

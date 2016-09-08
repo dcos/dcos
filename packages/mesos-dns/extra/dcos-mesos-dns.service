@@ -10,5 +10,6 @@ RestartSec=5
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-dns.env
 EnvironmentFile=-/opt/mesosphere/etc/mesos-dns-extras.env
+ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-dns
 ExecStart=/opt/mesosphere/bin/mesos-dns --config=${MESOS_DNS_CONFIG} -logtostderr=true

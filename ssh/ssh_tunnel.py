@@ -11,6 +11,8 @@ import tempfile
 from contextlib import closing
 from subprocess import check_call, check_output, TimeoutExpired
 
+LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
+logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
