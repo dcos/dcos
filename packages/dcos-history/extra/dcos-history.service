@@ -8,7 +8,8 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/run/dcos/etc/history-service/history-service.env
+EnvironmentFile=/opt/mesosphere/etc/dcos-history.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-history-extras.env
 Environment=HISTORY_BUFFER_DIR=/var/lib/dcos/dcos-history
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-history
 ExecStart=/opt/mesosphere/bin/dcos-history
