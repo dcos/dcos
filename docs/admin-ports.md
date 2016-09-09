@@ -12,6 +12,9 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 61421: dcos-minuteman
  - 62053: dcos-spartan
  - 62080: dcos-navstar
+ - 62501 - Spartan
+ - 62502 - Navstar
+ - 62503 - Minuteman
 
 ### UDP
 
@@ -34,6 +37,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 8181: dcos-exhibitor
  - 9990: dcos-cosmos
  - 15055: dcos-history-service
+ - 62500: Networking API
 
 ### UDP
 
