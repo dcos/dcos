@@ -401,7 +401,7 @@ class Cluster:
 
             assert r.json() == {'username': 'root'}
 
-    def deploy_marathon_app(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
+    def deploy_marathon_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
 
         This function deploys an an application and then waits for marathon to
@@ -467,7 +467,7 @@ class Cluster:
             pytest.fail("Application deployment failed - operation was not "
                         "completed in {} seconds.".format(timeout))
 
-    def destroy_marathon_app(self, app_name, timeout=300):
+    def destroy_marathon_app(self, app_name, timeout=120):
         """Remove a marathon app
 
         Abort the test if the removal was unsuccesful.
@@ -500,7 +500,7 @@ class Cluster:
                         "completed in {} seconds.".format(timeout))
 
     @contextmanager
-    def marathon_deploy_and_cleanup(self, app_definition, timeout=300, check_health=True, ignore_failed_tasks=False):
+    def marathon_deploy_and_cleanup(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         yield self.deploy_marathon_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
         self.destroy_marathon_app(app_definition['id'], timeout)
