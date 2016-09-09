@@ -40,13 +40,12 @@ class DockerCmd:
         self.container = str()
 
     def run(self, name, cmd):
-        docker = ["docker", "run", "--name={}".format(
-            "{}-{}".format(
-                name, ''.join(
-                    random.choice(string.ascii_lowercase) for _ in range(10)
-                )
+        container_name = "{}-{}".format(
+            name, ''.join(
+                random.choice(string.ascii_lowercase) for _ in range(10)
             )
-        )]
+        )
+        docker = ["docker", "run", "--name={}".format(container_name)]
         for host_path, container_path in self.volumes.items():
             docker += ["-v", "{0}:{1}".format(host_path, container_path)]
 
@@ -56,7 +55,7 @@ class DockerCmd:
         docker.append(self.container)
         docker += cmd
         check_call(docker)
-        DockerCmd.clean(name)
+        DockerCmd.clean(container_name)
 
     @staticmethod
     def clean(name):
