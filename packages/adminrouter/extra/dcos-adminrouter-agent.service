@@ -1,6 +1,5 @@
 [Unit]
 Description=Admin Router Agent: A high performance web server and a reverse proxy server
-After=dcos-gen-resolvconf.service
 
 [Service]
 Restart=always

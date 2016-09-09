@@ -14,8 +14,6 @@ mkdir -p $(dirname $service)
 cat <<EOF > $service
 [Unit]
 Description=Layer 4 Load Balancer: DC/OS Layer 4 Load Balancing Service
-After=dcos-gen-resolvconf.service
-After=dcos-epmd.service
 
 [Service]
 Restart=always

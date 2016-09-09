@@ -21,8 +21,6 @@ mkdir -p $(dirname $service)
 cat <<EOF > $service
 [Unit]
 Description=Navstar: A distributed systems & network overlay orchestration engine
-After=dcos-gen-resolvconf.service
-After=dcos-epmd.service
 
 [Service]
 Restart=always

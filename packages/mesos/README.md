@@ -9,3 +9,4 @@
 <li>[e444edd6e7d45eb842fe223ac484a4bc4c1a327a] Allowed all flags load methods to specify a prefix. (landing in 1.1.0)
 <li>[3dd498d797a44593d376b4d50a33e2b8214c0dd4] Split src/openssl.hpp adding include/process/ssl/flags.hpp. (landing in 1.1.0)
 <li>[f6581f2e8fcb07074fca9e72b3134476f6fc74ab] Updated includes to follow the SSL flag split. (landing in 1.1.0)
+<li>[a22b5dd552168a8dd925682f3b349059e10fc3d3] Modified network file setup in `network/cni` isolator. (landing in 1.1.0)
