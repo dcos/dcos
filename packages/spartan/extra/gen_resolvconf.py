@@ -80,7 +80,7 @@ else:
         if port == "53":
             fallback_servers.append(ip)
             continue
-        print('Skipping DNS server {}: non-default ports are not supported in resolvconf'.format(
+        print('Skipping DNS server {}: non-default ports are not supported in /etc/resolv.conf'.format(
             ns), file=sys.stderr)
 
     random.shuffle(fallback_servers)
