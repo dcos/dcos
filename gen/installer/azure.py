@@ -280,7 +280,10 @@ def get_download_url():
         raise RuntimeError("No storage section in configuration")
 
     if 'azure' not in release._config['storage']:
-        raise RuntimeError("No azure section in storage configuration")
+        # No azure storage, inject a fake url for now so if people want to use
+        # the azure templates they know to come look here.
+        return "https://AZURE NOT CONFIGURED, ADD A storage.azure section to " \
+            "dcos-release.config.yaml to use the Azure templates"
 
     if 'download_url' not in release._config['storage']['azure']:
         raise RuntimeError("No download_url section in azure configuration")
