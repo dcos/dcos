@@ -256,10 +256,6 @@ def logs_handler(request):
     return web.HTTPFound('/download/log/complete.log'.format(VERSION))
 
 
-def no_caching(request, response):
-    response.headers['Cache-Control'] = 'no-cache'
-
-
 def build_app(loop):
     """Define the aiohttp web application framework and setup the routes to be used in the API"""
     global current_action
@@ -267,6 +263,16 @@ def build_app(loop):
     app = web.Application(loop=loop)
 
     current_action = ''
+
+    # Disable all caching for everything, disable once the Web UI gets cache
+    # breaking urls for it's assets (still need to not cache the REST responses, index.html though)
+    # TODO(cmaloney): Python 3.5 switch this to `async def` per:
+    #                 http://aiohttp.readthedocs.io/en/stable/web.html#signals
+    def no_caching(request, response):
+        response.headers['Cache-Control'] = 'no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    app.on_response_prepare.append(no_caching)
 
     app.router.add_route('GET', '/', root)
     app.router.add_route('GET', '/api/v{}'.format(VERSION), redirect_to_root)
@@ -294,8 +300,6 @@ def build_app(loop):
     if os.path.exists('gen_extra/async_server.py'):
         mod = importlib.machinery.SourceFileLoader('gen_extra.async_server', 'gen_extra/async_server.py').load_module()
         mod.extend_app(app)
-
-    app.on_response_prepare.append(no_caching)
 
     return app
 
