@@ -1,6 +1,5 @@
 [Unit]
 Description=Exhibitor: Zookeeper Supervisor Service
-After=network-online.target
 [Service]
 User=dcos_exhibitor
 StandardOutput=journal

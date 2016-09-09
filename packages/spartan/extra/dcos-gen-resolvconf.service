@@ -1,6 +1,5 @@
 [Unit]
 Description=Generate resolv.conf: Update systemd-resolved for MesosDNS
-After=dcos-spartan.service
 
 [Service]
 Type=oneshot
