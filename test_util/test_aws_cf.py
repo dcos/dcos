@@ -6,6 +6,14 @@ The following environment variables control test procedure:
 DCOS_TEMPLATE_URL: string
     The template to be used for deployment testing
 
+DCOS_STACK_NAME: string
+    Instead of providing a template, supply the name (or id) of an already
+    existing cluster
+
+DCOS_SSH_KEY_PATH: string
+    path for the SSH key to be used with a preexiting cluster.
+    Defaults to 'default_ssh_key'
+
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
@@ -49,8 +57,13 @@ def check_environment():
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_region = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
 
-    options.variant = calculate_environment_variable('DCOS_VARIANT')
-    options.template_url = calculate_environment_variable('DCOS_TEMPLATE_URL')
+    # Mandatory
+    options.stack_name = os.getenv('DCOS_STACK_NAME', None)
+    options.ssh_key_path = os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')
+    options.template_url = os.getenv('DCOS_TEMPLATE_URL', None)
+    if not options.template_url:
+        assert options.stack_name is not None, 'if DCOS_TEMPLATE_URL is not provided, '\
+            'then DCOS_STACK_NAME must be specified'
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
@@ -68,27 +81,29 @@ def check_environment():
 def main():
     options = check_environment()
 
-    random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-    unique_cluster_id = 'CF-integration-test-{}'.format(random_identifier)
-    log.info('Spinning up AWS CloudFormation with ID: {}'.format(unique_cluster_id))
     bw = test_util.aws.BotoWrapper(
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key)
-    # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
-    ssh_key_path = 'default_ssh_key'
-    cf = test_util.aws.DcosCfSimple.create(
-        stack_name=unique_cluster_id,
-        template_url=options.template_url,
-        private_agents=2,
-        public_agents=1,
-        admin_location='0.0.0.0/0',
-        key_pair_name='default',
-        boto_wrapper=bw)
-    cf.wait_for_stack_creation()
+    if not options.stack_name:
+        random_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        options.stack_name = 'CF-integration-test-{}'.format(random_id)
+        log.info('Spinning up AWS CloudFormation with ID: {}'.format(options.stack_name))
+        # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
+        cf = test_util.aws.DcosCfSimple.create(
+            stack_name=options.stack_name,
+            template_url=options.template_url,
+            private_agents=2,
+            public_agents=1,
+            admin_location='0.0.0.0/0',
+            key_pair_name='default',
+            boto_wrapper=bw)
+        cf.wait_for_stack_creation()
+    else:
+        cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
 
     # key must be chmod 600 for test_runner to use
-    os.chmod(ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
+    os.chmod(options.ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
 
     # Create custom SSH Runnner to help orchestrate the test
     ssh_user = 'core'
@@ -109,7 +124,7 @@ def main():
     log.info('To access this cluster, use the Mesosphere default shared AWS key '
              '(https://mesosphere.onelogin.com/notes/16670) and SSH with:\n'
              'ssh -i default_ssh_key {}@{}'.format(ssh_user, test_host))
-    with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
+    with closing(SSHTunnel(ssh_user, options.ssh_key_path, test_host)) as test_host_tunnel:
         # Allow docker use w/o sudo
         result = test_util.test_runner.integration_test(
             tunnel=test_host_tunnel,
