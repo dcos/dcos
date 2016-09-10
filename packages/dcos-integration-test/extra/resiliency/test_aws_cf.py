@@ -23,6 +23,14 @@ def provider(cluster):
     return test_util.aws.DcosCfSimple(stack_name, bw)
 
 
+@retrying.retry(wait_fixed=3000, stop_max_delay=300 * 1000)
+def wait_for_persistent_app(url):
+    logging.info('Attempting to ping test application')
+    r = requests.get('http://{}/ping'.format(url))
+    assert r.ok, 'Bad response from test server: ' + str(r.status_code)
+    assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
+
+
 @retrying.retry(wait_fixed=3000, stop_max_delay=600 * 1000,
                 retry_on_result=lambda res: res is False,
                 retry_on_exception=lambda ex: False)
@@ -31,14 +39,6 @@ def wait_for_group_population(provider, group, target):
     logging.info('Waiting for {} to have {} agents. Current count: {}'.format(group, target, count))
     if count < target:
         return False
-
-
-@retrying.retry(wait_fixed=3000, stop_max_delay=300 * 1000)
-def wait_for_persistent_app(url):
-    logging.info('Attempting to ping test application')
-    r = requests.get('http://{}/ping'.format(url))
-    assert r.ok, 'Bad response from test server: ' + str(r.status_code)
-    assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
 
 
 @pytest.mark.resiliency
@@ -64,8 +64,10 @@ def test_agent_failure(provider, cluster, vip_apps):
     wait_for_group_population(provider, ['SlaveServerGroup'], num_private)
 
     # Reset the cluster to have the replacement agents
-    cluster.slaves = sorted([agent.private_ip for agent in provider.get_private_agent_ips()])
-    cluster.public_slaves = sorted([agent.private_ip for agent in provider.get_public_agent_ips()])
+    cluster.slaves = sorted([agent.private_ip for agent in
+                             provider.get_private_agent_ips(state_list=['running'])])
+    cluster.public_slaves = sorted([agent.private_ip for agent in
+                                    provider.get_public_agent_ips(state_list=['running'])])
     cluster.all_slaves = sorted(cluster.slaves + cluster.public_slaves)
 
     # verify that everything else is still working
@@ -92,5 +94,5 @@ def masters_down(provider, cluster):
         master.start()
 
 
-def Dtest_highly_available_apis(masters_down, cluster):
+def dtest_highly_available_apis(masters_down, cluster):
     pass

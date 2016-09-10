@@ -3,6 +3,7 @@ import logging
 from collections import namedtuple
 
 import boto3
+import botocore.exceptions
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -58,14 +59,22 @@ class CfStack():
         self.boto_wrapper = boto_wrapper
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
 
-    def wait_for_stack_creation(self):
-        # Only covers if stack is created, instances might not be running
-        self.boto_wrapper.client('cloudformation').get_waiter('stack_create_complete').\
-            wait(StackName=self.stack.stack_name)
+    def boto_waiter(self, client, waiter, **kwargs):
+        """ Waiter error messages are unhelpful, so pump out stack event infomation
 
-    def wait_for_stack_deletion(self):
-        self.boto_wrapper.client('cloudformation').get_waiter('stack_delete_complete').\
-            wait(StackName=self.stack.stack_name)
+        See http://boto3.readthedocs.io/en/latest/reference/services/index.html
+        under CloudFormation and EC2 client Waiter for common options
+
+        NOTE: Cache stack ID before starting so stacks that failed to create can be examined
+        """
+        stack_id = self.stack.stack_id
+        cf_client = self.boto_wrapper.client(client)
+        try:
+            cf_client.get_waiter(waiter).wait(**kwargs)
+        except botocore.exceptions.WaiterError:
+            stack_info = repr(self.boto_wrapper.client('cloudformation').describe_stack_events(StackName=stack_id))
+            logger.exception('Waiter encountered error. Stack event dump: ' + stack_info)
+            raise
 
     def get_instance_from_private_ip(self, ip):
         "Returns the instance boto object associated with the private-ip given"
@@ -103,7 +112,7 @@ class DcosCfSimple(CfStack):
             'PublicSlaveInstanceCount': str(public_agents),
             'SlaveInstanceCount': str(private_agents)}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper)
+        return cls(stack.stack.stack_name, boto_wrapper)
 
     def delete(self):
         logger.info('Starting deletion of CF stack')
@@ -124,16 +133,16 @@ class DcosCfSimple(CfStack):
         bucket.delete()
         logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
 
-    def get_master_ips(self):
-        instances = self.get_group_instances(['MasterServerGroup'])
+    def get_master_ips(self, state_list=None):
+        instances = self.get_group_instances(['MasterServerGroup'], state_list)
         return instances_to_hosts(instances)
 
-    def get_public_agent_ips(self):
-        instances = self.get_group_instances(['PublicSlaveServerGroup'])
+    def get_public_agent_ips(self, state_list=None):
+        instances = self.get_group_instances(['PublicSlaveServerGroup'], state_list)
         return instances_to_hosts(instances)
 
-    def get_private_agent_ips(self):
-        instances = self.get_group_instances(['SlaveServerGroup'])
+    def get_private_agent_ips(self, state_list=None):
+        instances = self.get_group_instances(['SlaveServerGroup'], state_list)
         return instances_to_hosts(instances)
 
     def get_group_instances(self, group_list, state_list=['running']):
