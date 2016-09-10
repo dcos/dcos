@@ -59,12 +59,38 @@ class CfStack():
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
 
     def wait_for_stack_creation(self):
+        # Only covers if stack is created, instances might not be running
         self.boto_wrapper.client('cloudformation').get_waiter('stack_create_complete').\
             wait(StackName=self.stack.stack_name)
 
     def wait_for_stack_deletion(self):
         self.boto_wrapper.client('cloudformation').get_waiter('stack_delete_complete').\
             wait(StackName=self.stack.stack_name)
+
+    def get_instance_from_private_ip(self, ip):
+        "Returns the instance boto object associated with the private-ip given"
+        instance_info = self.boto_wrapper.client('ec2').describe_instances(
+            Filters=[
+                {'Name': 'private-ip-address', 'Values': [ip]},
+                {'Name': 'tag:aws:cloudformation:stack-name', 'Values': [self.stack.stack_name]},
+                {'Name': 'instance-state-name', 'Values': ['running']}])['Reservations'][0]['Instances']
+        assert len(instance_info) == 1, 'Expected only one instance running with private IP {}, '\
+            'but found multiple: {}'.format(ip, repr(instance_info))
+        return self.boto_wrapper.resource('ec2').Instance(instance_info[0]['InstanceId'])
+
+    def set_autoscaling_group_capacity(self, target, count):
+        asg_client = self.boto_wrapper.client('autoscaling')
+        group_info = asg_client.describe_auto_scaling_groups()
+        asg_name = None
+        for group in group_info['AutoScalingGroups']:
+            for tag in group['Tags']:
+                if tag['Key'] == 'aws:cloudformation:stack-name' and tag['Value'] != self.stack.stack_name:
+                    continue
+                if tag['Key'] == 'aws:cloudformation:logical-id' and tag['Value'] == target:
+                    asg_name = group['AutoScalingGroupName']
+        if not asg_name:
+            raise KeyError('Autoscaling Group {} not found'.format(target))
+        asg_client.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=count)
 
 
 class DcosCfSimple(CfStack):
@@ -98,20 +124,26 @@ class DcosCfSimple(CfStack):
         bucket.delete()
         logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
 
-    def get_tag_instances(self, tag):
-        return self.boto_wrapper.client('ec2').describe_instances(
-            Filters=[
-                {'Name': 'tag-value', 'Values': [self.stack.stack_name]},
-                {'Name': 'tag-value', 'Values': [tag]}])['Reservations'][0]['Instances']
-
     def get_master_ips(self):
-        instances = self.get_tag_instances('MasterServerGroup')
+        instances = self.get_group_instances(['MasterServerGroup'])
         return instances_to_hosts(instances)
 
     def get_public_agent_ips(self):
-        instances = self.get_tag_instances('PublicSlaveServerGroup')
+        instances = self.get_group_instances(['PublicSlaveServerGroup'])
         return instances_to_hosts(instances)
 
     def get_private_agent_ips(self):
-        instances = self.get_tag_instances('SlaveServerGroup')
+        instances = self.get_group_instances(['SlaveServerGroup'])
         return instances_to_hosts(instances)
+
+    def get_group_instances(self, group_list, state_list=['running']):
+        """Returns a list of dictionaries that describe currently running instances of group
+        """
+        filters = [{'Name': 'tag:aws:cloudformation:stack-name', 'Values': [self.stack.stack_name]}]
+        if group_list:
+            filters.append({'Name': 'tag:aws:cloudformation:logical-id', 'Values': group_list})
+        if state_list:
+            filters.append({'Name': 'instance-state-name', 'Values': state_list})
+        reservations = self.boto_wrapper.client('ec2').describe_instances(
+            Filters=filters)['Reservations']
+        return [instance for res in reservations for instance in res['Instances']]

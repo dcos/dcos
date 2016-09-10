@@ -82,38 +82,37 @@ def check_environment():
     options.add_env = add_env
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     # FIXME: hijacking the regular AWS test for verifying this
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs --resiliency ' + options.ci_flags)
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs --resiliency -m resiliency ' + options.ci_flags)
     return options
 
 
 def main():
     options = check_environment()
 
-    random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-    unique_cluster_id = 'CF-integration-test-{}'.format(random_identifier)
-    if options.test_resiliency:
-        options.add_env['AWS_STACK_NAME'] = unique_cluster_id
-    log.info('Spinning up AWS CloudFormation with ID: {}'.format(unique_cluster_id))
     bw = test_util.aws.BotoWrapper(
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key)
     if not options.stack_name:
         random_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        options.stack_name = 'CF-integration-test-{}'.format(random_id)
-        log.info('Spinning up AWS CloudFormation with ID: {}'.format(options.stack_name))
+        stack_name = 'CF-integration-test-{}'.format(random_id)
+        log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
         # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
         cf = test_util.aws.DcosCfSimple.create(
-            stack_name=options.stack_name,
+            stack_name=stack_name,
             template_url=options.template_url,
             private_agents=2,
             public_agents=1,
             admin_location='0.0.0.0/0',
             key_pair_name='default',
             boto_wrapper=bw)
-        cf.wait_for_stack_creation()
+        cf.boto_waiter('cloudformation', 'stack_create_complete', StackName=cf.stack.stack_id)
     else:
         cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
+        stack_name = options.stack_name
+
+    if options.test_resiliency:
+        options.add_env['AWS_STACK_NAME'] = stack_name
 
     # key must be chmod 600 for test_runner to use
     os.chmod(options.ssh_key_path, stat.S_IREAD | stat.S_IWRITE)

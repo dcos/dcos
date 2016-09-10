@@ -25,6 +25,35 @@ def pytest_addoption(parser):
     parser.addoption('--resiliency', action='store_true')
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        'markers', 'resiliency: Run tests that cause failures '
+        'and verify a return to functional state')
+
+
+def pytest_runtest_setup(item):
+    if item.get_marker('resiliency'):
+        if not item.config.getoption('--resiliency'):
+            pytest.skip('Test requires --resiliency option')
+
+
+@pytest.yield_fixture
+def vip_apps(cluster):
+    vip1 = '6.6.6.1:6661'
+    test_app1, _ = cluster.get_test_app()
+    test_app1['portDefinitions'][0]['labels'] = {
+        'VIP_0': vip1}
+    test_app2, _ = cluster.get_test_app()
+    test_app2['portDefinitions'][0]['labels'] = {
+        'VIP_0': 'foobarbaz:5432'}
+    vip2 = 'foobarbaz.marathon.l4lb.thisdcos.directory:5432'
+    cluster.deploy_marathon_app(test_app1)
+    cluster.deploy_marathon_app(test_app2)
+    yield ((test_app1, vip1), (test_app2, vip2))
+    cluster.destroy_marathon_app(test_app1['id'])
+    cluster.destroy_marathon_app(test_app2['id'])
+
+
 @pytest.fixture(scope='session')
 def cluster():
     assert 'DCOS_DNS_ADDRESS' in os.environ
@@ -56,6 +85,7 @@ def _setup_logging():
     """Setup logging for the script"""
     logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=LOG_LEVEL)
     logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("botocore").setLevel(logging.WARNING)
 
 
 class Cluster:
@@ -160,7 +190,7 @@ class Cluster:
         assert r.status_code == 200
 
         data = r.json()
-        slaves_ids = sorted(x['id'] for x in data['slaves'])
+        slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in self.all_slaves)
 
         for slave_id in slaves_ids:
             # AdminRouter's slave endpoint internally uses cached Mesos
