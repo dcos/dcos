@@ -94,19 +94,7 @@ class DcosCfSimple(CfStack):
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
         self.stack.delete()
-        bucket_id = self.stack.Resource('ExhibitorS3Bucket').physical_resource_id
-        s3 = self.boto_wrapper.resource('s3')
-        bucket = s3.Bucket(bucket_id)
-        logger.info('Starting bucket {} deletion'.format(bucket))
-        all_objects = bucket.objects.all()
-        obj_count = len(list(all_objects))
-        if obj_count > 0:
-            assert obj_count == 1, 'Expected one object in Exhibitor S3 bucket but found: ' + str(obj_count)
-            logger.info('Trying to delete object from bucket: {}'.format(repr(all_objects[0])))
-            all_objects[0].delete()
-        logger.info('Trying deleting bucket {} itself'.format(bucket))
-        bucket.delete()
-        logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
+        self.empty_and_delete_s3_bucket_from_stack()
 
     def get_tag_instances(self, tag):
         return self.boto_wrapper.client('ec2').describe_instances(
@@ -124,6 +112,133 @@ class DcosCfSimple(CfStack):
 
     def get_private_agent_ips(self):
         instances = self.get_tag_instances('SlaveServerGroup')
+        return instances_to_hosts(instances)
+
+    def empty_and_delete_s3_bucket_from_stack(self):
+        bucket_id = self.stack.Resource('ExhibitorS3Bucket').physical_resource_id
+        s3 = self.boto_wrapper.resource('s3')
+        bucket = s3.Bucket(bucket_id)
+        logger.info('Starting bucket {} deletion'.format(bucket))
+        all_objects = bucket.objects.all()
+        obj_count = len(list(all_objects))
+        if obj_count > 0:
+            assert obj_count == 1, 'Expected one object in Exhibitor S3 bucket but found: ' + str(obj_count)
+            logger.info('Trying to delete object from bucket: {}'.format(repr(all_objects[0])))
+            all_objects[0].delete()
+        logger.info('Trying deleting bucket {} itself'.format(bucket))
+        bucket.delete()
+        logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
+
+
+class DcosCfAdvanced(CfStack):
+    @classmethod
+    def create(cls, stack_name, boto_wrapper, template_url,
+               public_agents, private_agents, key_pair_name,
+               private_agent_type, public_agent_type, master_type,
+               vpc_cidr='10.0.0.0/16', public_subnet_cidr='10.0.128.0/20',
+               private_subnet_cidr='10.0.0.0/17',
+               gateway=None, vpc=None, private_subnet=None, public_subnet=None):
+        ec2 = boto_wrapper.client('ec2')
+        if not vpc:
+            logging.info('Creating new VPC...')
+            vpc = ec2.create_vpc(CidrBlock=vpc_cidr, InstanceTenancy='default')['Vpc']['VpcId']
+            ec2.get_waiter('vpc_available').wait(VpcIds=[vpc])
+            ec2.create_tags(Resources=[vpc], Tags=[{'Key': 'Name', 'Value': stack_name}])
+        logging.info('Using VPC with ID: ' + vpc)
+
+        if not gateway:
+            logging.info('Creating new InternetGateway...')
+            gateway = ec2.create_internet_gateway()['InternetGateway']['InternetGatewayId']
+            ec2.attach_internet_gateway(InternetGatewayId=gateway, VpcId=vpc)
+            ec2.create_tags(Resources=[gateway], Tags=[{'Key': 'Name', 'Value': stack_name}])
+        logging.info('Using InternetGateway with ID: ' + gateway)
+
+        if not private_subnet:
+            logging.info('Creating new PrivateSubnet...')
+            private_subnet = ec2.create_subnet(VpcId=vpc, CidrBlock=private_subnet_cidr)['Subnet']['SubnetId']
+            ec2.create_tags(Resources=[private_subnet], Tags=[{'Key': 'Name', 'Value': stack_name + '-private'}])
+            ec2.get_waiter('subnet_available').wait(SubnetIds=[private_subnet])
+        logging.info('Using PrivateSubnet with ID: ' + private_subnet)
+
+        if not public_subnet:
+            logging.info('Creating new PublicSubnet...')
+            public_subnet = ec2.create_subnet(VpcId=vpc, CidrBlock=public_subnet_cidr)['Subnet']['SubnetId']
+            ec2.create_tags(Resources=[public_subnet], Tags=[{'Key': 'Name', 'Value': stack_name + '-public'}])
+            ec2.get_waiter('subnet_available').wait(SubnetIds=[public_subnet])
+        logging.info('Using PublicSubnet with ID: ' + public_subnet)
+
+        parameters = {
+            'KeyName': key_pair_name,
+            'Vpc': vpc,
+            'InternetGateway': gateway,
+            'MasterInstanceType': master_type,
+            'PublicAgentInstanceCount': str(public_agents),
+            'PublicAgentInstanceType': public_agent_type,
+            'PublicSubnet': public_subnet,
+            'PrivateAgentInstanceCount': str(private_agents),
+            'PrivateAgentInstanceType': private_agent_type,
+            'PrivateSubnet': private_subnet}
+        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        return cls(stack.stack.stack_id, boto_wrapper)
+
+    def delete(self, delete_vpc=False):
+        logger.info('Starting deletion of CF Advanced stack')
+        # Get VPC id first
+        for p in self.stack.parameters:
+            if p['ParameterKey'] == 'Vpc':
+                vpc_id = p['ParameterValue']
+                break
+        # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
+        self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
+        logging.info('Deleting Infrastructure Stack')
+        infrastack = DcosCfSimple(self.get_resource_stack('Infrastructure').stack.stack_id, self.boto_wrapper)
+        infrastack.delete()
+        logging.info('Deleting Master Stack')
+        self.get_resource_stack('MasterStack').stack.delete()
+        logging.info('Deleting Private Agent Stack')
+        self.get_resource_stack('PrivateAgentStack').stack.delete()
+        logging.info('Deleting Public Agent Stack')
+        self.get_resource_stack('PublicAgentStack').stack.delete()
+        self.stack.delete()
+        if delete_vpc:
+            self.wait_for_stack_deletion()
+            self.boto_wrapper.resource('ec2').Vpc(vpc_id).delete()
+
+    def get_vpc(self):
+        vpc_id = self.boto_wrapper.client('ec2').describe_vpcs(Filters=[
+            {'Name': 'tag:Name', 'Values': [self.stack.stack_name]}])['Vpcs'][0]['VpcId']
+        return self.boto_wrapper.resouce('ec2').Vpc(vpc_id)
+
+    def get_master_ips(self):
+        return self.get_substack_hosts('MasterStack')
+
+    def get_private_agent_ips(self):
+        return self.get_substack_hosts('PrivateAgentStack')
+
+    def get_public_agent_ips(self):
+        return self.get_substack_hosts('PublicAgentStack')
+
+    def get_resource_stack(self, resource_name):
+        """Returns a CfStack for a given resource
+        """
+        resources = self.boto_wrapper.client('cloudformation').describe_stack_resources(StackName=self.stack.stack_name)
+        print(resources)
+        for r in resources['StackResources']:
+            if r['LogicalResourceId'] == resource_name:
+                return CfStack(r['PhysicalResourceId'], self.boto_wrapper)
+
+    def get_substack_instance_ids(self, substack):
+        """returns list of instance ids
+        """
+        asg = self.get_resource_stack(substack).stack.\
+            Resource(substack.replace('Stack', 'ServerGroup')).physical_resource_id
+        return [i['InstanceId'] for i in self.boto_wrapper.client('autoscaling').
+                describe_auto_scaling_groups(
+                AutoScalingGroupNames=[asg])['AutoScalingGroups'][0]['Instances']]
+
+    def get_substack_hosts(self, substack):
+        instances = self.boto_wrapper.client('ec2').describe_instances(
+            InstanceIds=self.get_substack_instance_ids(substack))['Reservations'][0]['Instances']
         return instances_to_hosts(instances)
 
 
