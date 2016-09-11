@@ -7,3 +7,11 @@ pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$
 
 mkdir -p "$LIB_INSTALL_DIR/dcos_installer/"
 ln -s /opt/mesosphere/active/dcos-installer-ui/usr/ "$LIB_INSTALL_DIR/dcos_installer/templates"
+
+mkdir -p "$PKG_PATH/bin/dcos-path"
+cp /pkg/extra/dcos-shell "$PKG_PATH/bin/dcos-path/dcos-shell"
+ln -s "$PKG_PATH/bin/dcos-path/dcos-shell" "$PKG_PATH/bin/dcos-shell"
+
+cat <<'EOF' > "$PKG_PATH/bin/add_dcos_path.sh"
+export PATH="$PATH:/opt/mesosphere/bin/dcos-path"
+EOF
