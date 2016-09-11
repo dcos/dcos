@@ -90,7 +90,7 @@ def test_octarine_http(cluster, timeout=30):
         }]
     }
 
-    cluster.deploy_marathon_app(app_definition)
+    cluster.marathon_deploy_and_cleanup(app_definition)
 
 
 def test_octarine_srv(cluster, timeout=30):
@@ -135,7 +135,7 @@ def test_octarine_srv(cluster, timeout=30):
         }]
     }
 
-    cluster.deploy_marathon_app(app_definition)
+    cluster.marathon_deploy_and_cleanup(app_definition)
 
 
 def test_pkgpanda_api(cluster):

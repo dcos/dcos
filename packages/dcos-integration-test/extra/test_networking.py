@@ -23,18 +23,11 @@ def test_if_minuteman_routes_to_vip(cluster):
     """
     origin_app, origin_uuid = cluster.get_test_app()
     origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '1.2.3.4:5000'}
-
-    # TODO(cmaloney): Add a "with" marathon app deployment
-    cluster.deploy_marathon_app(origin_app)
-
-    proxy_app, proxy_uuid = cluster.get_test_app()
-    service_points = cluster.deploy_marathon_app(proxy_app)
-
-    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://1.2.3.4:5000/ping'
-    ensure_routable(cmd, service_points)()
-
-    cluster.destroy_marathon_app(origin_app['id'])
-    cluster.destroy_marathon_app(proxy_app['id'])
+    with cluster.marathon_deploy_and_cleanup(origin_app):
+        proxy_app, proxy_uuid = cluster.get_test_app()
+        with cluster.marathon_deploy_and_cleanup(proxy_app) as service_points:
+            cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://1.2.3.4:5000/ping'
+            ensure_routable(cmd, service_points)()
 
 
 def test_if_minuteman_routes_to_named_vip(cluster):
@@ -43,16 +36,11 @@ def test_if_minuteman_routes_to_named_vip(cluster):
 
     origin_app, origin_uuid = cluster.get_test_app()
     origin_app['portDefinitions'][0]['labels'] = {'VIP_0': 'foo:5000'}
-    cluster.deploy_marathon_app(origin_app)
-
-    proxy_app, proxy_uuid = cluster.get_test_app()
-    service_points = cluster.deploy_marathon_app(proxy_app)
-
-    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://foo.marathon.l4lb.thisdcos.directory:5000/ping'
-    ensure_routable(cmd, service_points)()
-
-    cluster.destroy_marathon_app(origin_app['id'])
-    cluster.destroy_marathon_app(proxy_app['id'])
+    with cluster.marathon_deploy_and_cleanup(origin_app):
+        proxy_app, proxy_uuid = cluster.get_test_app()
+        with cluster.marathon_deploy_and_cleanup(proxy_app) as service_points:
+            cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://foo.marathon.l4lb.thisdcos.directory:5000/ping'
+            ensure_routable(cmd, service_points)()
 
 
 def test_ip_per_container(cluster):
@@ -67,8 +55,7 @@ def test_ip_per_container(cluster):
     app_definition['instances'] = 2
     app_definition['constraints'] = [['hostname', 'UNIQUE']]
 
-    service_points = cluster.deploy_marathon_app(app_definition, check_health=True)
-    app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
-    cmd = '/opt/mesosphere/bin/curl -s -f http://{}:{}/ping'.format(service_points[1].ip, app_port)
-    ensure_routable(cmd, service_points)()
-    cluster.destroy_marathon_app(app_definition['id'])
+    with cluster.marathon_deploy_and_cleanup(app_definition, check_health=True) as service_points:
+        app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
+        cmd = '/opt/mesosphere/bin/curl -s -f http://{}:{}/ping'.format(service_points[1].ip, app_port)
+        ensure_routable(cmd, service_points)()
