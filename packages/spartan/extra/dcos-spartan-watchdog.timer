@@ -2,4 +2,4 @@
 Description=DNS Dispatcher Watchdog Timer: Periodically check is Spartan is working
 [Timer]
 OnBootSec=65sec
-OnUnitActiveSec=5min
+OnUnitActiveSec=2min
