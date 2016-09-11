@@ -50,13 +50,7 @@ def cluster():
 
 def _setup_logging():
     """Setup logging for the script"""
-    logger = logging.getLogger()
-    logger.setLevel(LOG_LEVEL)
-    fmt = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
-    handler = logging.StreamHandler()
-    handler.setFormatter(fmt)
-    logger.addHandler(handler)
-
+    logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=LOG_LEVEL)
     logging.getLogger("requests").setLevel(logging.WARNING)
 
 

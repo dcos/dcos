@@ -1,3 +1,4 @@
+import datetime
 import gzip
 import json
 import logging
@@ -453,40 +454,63 @@ def test_3dt_bundle_create(cluster):
 
     # start the diagnostics bundle job
     create_url = '/system/health/v1/report/diagnostics/create'
-    response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
-    logging.info('POST {}, response: {}'.format(create_url, response))
+    create_response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
+    logging.info('POST {}, response: {}'.format(create_url, create_response))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
     status_url = '/system/health/v1/report/diagnostics/status/all'
 
-    # the job executing takes about 1 seconds per node. A static timeout does not work very well for every context
-    # this test can be run in. Let's calculate a timeout based on how many nodes in a cluster + 15% tolerance.
-    # the timeout would looks like: (len(all_nodes) + 15%) * 1000
-    timeout = len(cluster.masters + cluster.all_slaves) * 1000
-    tolerance = int(15 * timeout / 100.0)
-    job_timeout = timeout + tolerance
-    logging.info("Using timeout {}".format(job_timeout))
+    class NotCriticalException(Exception):
+        """Exception should be raised to continue retry loop"""
 
-    @retrying.retry(stop_max_delay=job_timeout, wait_fixed=1000)
+    last_datapoint = {
+        'time': None,
+        'value': 0
+    }
+
+    @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
+                    retry_on_exception=lambda e: isinstance(e, NotCriticalException))
     def wait_for_job():
         response = cluster.get(path=status_url).json()
-        logging.info('GET {}, response: {}'.format(status_url, response))
 
-        # check `is_running` attribute for each host. All of them must be False
+        # find if the job is still running
+        job_running = False
+        percent_done = 0
         for _, attributes in response.items():
-            assert not attributes['is_running']
+            assert 'is_running' in attributes, '`is_running` field is missing in response'
+            assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
 
-        # sometimes it may take extra seconds to list bundles after the job is finished.
-        # the job should finish within 5 seconds and listing should be available after 3 seconds.
+            if attributes['is_running']:
+                percent_done = attributes['job_progress_percentage']
+                logging.info("Job is running. Progress: {}".format(percent_done))
+                job_running = True
+                break
+
+        # if we ran this bit previously compare the current datapoint with the one we saved
+        if last_datapoint['time'] and last_datapoint['value']:
+            if percent_done <= last_datapoint['value']:
+                assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
+                    "Job is not progressing"
+                )
+        last_datapoint['value'] = percent_done
+        last_datapoint['time'] = datetime.datetime.now()
+
+        if job_running:
+            raise NotCriticalException('Job is still running')
+
+    # sometimes it may take extra few seconds to list bundles after the job is finished.
+    @retrying.retry(stop_max_delay=5000)
+    def wait_for_list():
         assert _get_bundle_list(cluster), 'get a list of bundles timeout'
 
     wait_for_job()
+    wait_for_list()
 
     # the job should be complete at this point.
     # check the listing for a zip file
     bundles = _get_bundle_list(cluster)
     assert len(bundles) == 1, 'bundle file not found'
-    assert bundles[0] == response['extra']['bundle_name']
+    assert bundles[0] == create_response['extra']['bundle_name']
 
 
 def verify_unit_response(zip_ext_file):
