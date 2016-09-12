@@ -31,7 +31,7 @@ def test_if_mesos_is_up(cluster):
 
 
 def test_if_all_mesos_slaves_have_registered(cluster):
-    r = cluster.get('/mesos/master/slaves')
+    r = cluster.get('/mesos/master/state')
     assert r.status_code == 200
 
     data = r.json()
