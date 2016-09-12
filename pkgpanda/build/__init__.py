@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import multiprocessing
 import os.path
 import random
 import shutil
@@ -1160,7 +1161,8 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
         "PKG_NAME": name,
         "PKG_ID": pkg_id,
         "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
-        "PKG_VARIANT": variant if variant is not None else "<default>"
+        "PKG_VARIANT": variant if variant is not None else "<default>",
+        "NUM_CORES": multiprocessing.cpu_count()
     }
 
     try:
