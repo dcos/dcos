@@ -77,7 +77,7 @@ class Cluster:
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
     def _wait_for_slaves_to_join(self):
-        r = self.get('/mesos/master/slaves')
+        r = self.get('/mesos/master/state')
         if r.status_code != 200:
             msg = "Mesos master returned status code {} != 200 "
             msg += "continuing to wait..."
@@ -152,7 +152,7 @@ class Cluster:
     def _wait_for_srouter_slaves_endpoints(self):
         # Get currently known agents. This request is served straight from
         # Mesos (no AdminRouter-based caching is involved).
-        r = self.get('/mesos/master/slaves')
+        r = self.get('/mesos/master/state')
         assert r.status_code == 200
 
         data = r.json()
