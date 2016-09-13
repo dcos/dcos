@@ -68,7 +68,7 @@ def test_octarine_http(cluster, timeout=30):
     octarine_id = uuid.uuid4().hex
     proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
              '--client --port {})"'.format(octarine_id))
-    check_command = 'curl --fail --proxy {} marathon.mesos'.format(proxy)
+    check_command = 'curl --fail --proxy {} marathon.mesos.mydcos.directory'.format(proxy)
 
     app_definition = {
         'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
@@ -107,8 +107,10 @@ def test_octarine_srv(cluster, timeout=30):
     cmd = ('/opt/mesosphere/bin/octarine {} & '.format(octarine_id) +
            '/opt/mesosphere/bin/python -m http.server ${PORT0}')
     raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
-    check_command = ('curl --fail --proxy {} _{}._{}._tcp.marathon.mesos')
-    check_command = check_command.format(proxy, port_name, raw_app_id)
+    check_command = 'curl --fail --proxy {} _{}._{}._tcp.marathon.mesos.mydcos.directory'.format(
+        proxy,
+        port_name,
+        raw_app_id)
 
     app_definition = {
         'id': '/{}'.format(raw_app_id),

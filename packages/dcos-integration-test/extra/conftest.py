@@ -21,6 +21,26 @@ LOGIN_UNAME = os.getenv('DCOS_LOGIN_UNAME')
 LOGIN_PW = os.getenv('DCOS_LOGIN_PW')
 
 
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'first: run test before all not marked first')
+    config.addinivalue_line('markers', 'last: run test after all not marked last')
+
+
+def pytest_collection_modifyitems(session, config, items):
+    """Reorders test using order mark
+    """
+    new_items = []
+    last_items = []
+    for item in items:
+        if hasattr(item.obj, 'first'):
+            new_items.insert(0, item)
+        elif hasattr(item.obj, 'last'):
+            last_items.append(item)
+        else:
+            new_items.append(item)
+    items[:] = new_items + last_items
+
+
 @pytest.fixture(scope='session')
 def cluster():
     assert 'DCOS_DNS_ADDRESS' in os.environ

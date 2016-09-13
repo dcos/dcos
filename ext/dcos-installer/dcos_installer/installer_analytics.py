@@ -3,7 +3,8 @@ import uuid
 
 import analytics
 
-from dcos_installer import backend
+from dcos_installer.config import Config
+from dcos_installer.constants import CONFIG_PATH
 
 
 class InstallerAnalytics():
@@ -18,8 +19,9 @@ class InstallerAnalytics():
         """
         analytics.write_key = "51ybGTeFEFU1xo6u10XMDrr6kATFyRyh"
 
-        # We set customer key from config to avoid loading the config during class init
-        customer_key = backend.get_config().get("customer_key", None)
+        # Set customer key here rather than __init__ since we want the most up to date config
+        # and config may change between __init__ and here.
+        customer_key = Config(CONFIG_PATH).hacky_default_get('customer_key', None)
 
         analytics.track(user_id=customer_key, anonymous_id=self.uuid, event="installer", properties={
             "provider": "onprem",

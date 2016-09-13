@@ -1,6 +1,6 @@
 import pytest
 
-import dcos_installer.config
+import gen
 from dcos_installer import cli
 
 
@@ -47,7 +47,7 @@ def test_set_arg_parser():
 
 
 def test_stringify_config():
-    stringify = dcos_installer.config.stringify_configuration
+    stringify = gen.stringify_configuration
 
     # Basic cases pass right through
     assert dict() == stringify(dict())

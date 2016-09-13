@@ -28,7 +28,6 @@ import random
 import stat
 import string
 import sys
-from contextlib import closing
 
 import test_util.aws
 import test_util.test_runner
@@ -124,7 +123,7 @@ def main():
     log.info('To access this cluster, use the Mesosphere default shared AWS key '
              '(https://mesosphere.onelogin.com/notes/16670) and SSH with:\n'
              'ssh -i default_ssh_key {}@{}'.format(ssh_user, test_host))
-    with closing(SSHTunnel(ssh_user, options.ssh_key_path, test_host)) as test_host_tunnel:
+    with SSHTunnel(ssh_user, options.ssh_key_path, test_host) as test_host_tunnel:
         # Allow docker use w/o sudo
         result = test_util.test_runner.integration_test(
             tunnel=test_host_tunnel,

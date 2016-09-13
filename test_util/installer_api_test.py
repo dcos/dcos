@@ -110,7 +110,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         @retry(wait_fixed=1000, stop_max_delay=10000)
         def wait_for_up():
             response = requests.get(self.url)
-            assert response.status_code == 200, "{} {}".format(response.status_code, response.body)
+            assert response.status_code == 200, "{} {}".format(response.status_code, response.content)
             print("Webserver started")
 
         wait_for_up()
@@ -160,7 +160,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
                 add_config = yaml.load(fh)
             payload.update(add_config)
         response = requests.post(self.url + '/api/v1/configure', headers=headers, data=json.dumps(payload))
-        assert response.status_code == 200, "{} {}".format(response.status_code, response.body)
+        assert response.status_code == 200, "{} {}".format(response.status_code, response.content)
         response_json_keys = list(response.json().keys())
         if expect_errors:
             assert "error" in response_json_keys

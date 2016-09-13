@@ -1,61 +1,16 @@
-"""
-Configuration loader for dcosgen
-Set all configuration for a given run with a simple map
-my_opts = {
-    'config_dir':  '/tmp'
-}
-
-c = DcosConfig()
-print(c)
-"""
-import json
+import copy
 import logging
-import os
+import os.path
+
 import yaml
 
-from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH
+import gen
+import ssh.validate
+from pkgpanda.util import write_string
+
 log = logging.getLogger(__name__)
 
-
-def stringify_configuration(configuration):
-    """Create a stringified version of the complete installer configuration
-    to send to gen.generate()"""
-    gen_config = {}
-    for key, value in configuration.items():
-        if isinstance(value, list) or isinstance(value, dict):
-            log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
-            value = json.dumps(value)
-
-        elif isinstance(value, bool):
-            if value:
-                value = 'true'
-            else:
-                value = 'false'
-
-        elif isinstance(value, int):
-            log.debug("Caught int for genconf configuration, transforming to string: %s", value)
-            value = str(value)
-
-        elif isinstance(value, str):
-            pass
-
-        else:
-            log.error("Invalid type for value of %s in config. Got %s, only can handle list, dict, "
-                      "int, bool, and str", key, type(value))
-            raise Exception()
-
-        gen_config[key] = value
-
-    log.debug('Stringified configuration: \n{}'.format(gen_config))
-    return gen_config
-
-
-class DCOSConfig(dict):
-    """
-    Return the site configuration object for dcosgen library
-    """
-    def __init__(self, overrides={}, config_path=CONFIG_PATH, write_default_config=True):
-        defaults = """
+config_sample = """
 ---
 # The name of your DC/OS cluster. Visable in the DC/OS user interface.
 cluster_name: 'DC/OS'
@@ -68,122 +23,122 @@ ssh_port: 22
 process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 """
-        self.write_default_config = write_default_config
-        self.defaults = yaml.load(defaults)
+
+
+def normalize_config_validation(messages):
+    """Accepts Gen error message format and returns a flattened dictionary
+    of validation messages.
+
+    :param messages: Gen validation messages
+    :type messages: dict | None
+    """
+    validation = {}
+    if 'errors' in messages:
+        for key, errors in messages['errors'].items():
+            validation[key] = errors['message']
+
+    if 'unset' in messages:
+        for key in messages['unset']:
+            validation[key] = 'Must set {}, no way to calculate value.'.format(key)
+
+    return validation
+
+
+extra_args = {'provider': 'onprem'}
+
+
+def make_default_config_if_needed(config_path):
+    if os.path.exists(config_path):
+        return
+
+    write_string(config_path, config_sample)
+
+
+class NoConfigError(Exception):
+    pass
+
+
+class Config():
+
+    def __init__(self, config_path):
         self.config_path = config_path
-        self.overrides = overrides
-        self._build()
 
-        log.debug("Configuration:")
-        for k, v in self.items():
-            log.debug("%s: %s", k, v)
+        # Create the config file iff allowed and there isn't one provided by the user.
 
-    def get_external_config(self):
-        self.external_config = {
-            'ssh_key': self._try_loading_from_disk(SSH_KEY_PATH),
-            'ip_detect_script': self._try_loading_from_disk(IP_DETECT_PATH)
-        }
+        self._config = self._load_config()
+        if not isinstance(self._config, dict):
+            # FIXME
+            raise NotImplementedError()
 
-    def _try_loading_from_disk(self, path):
-        if os.path.isfile(path):
-            with open(path, 'r') as f:
-                return f.read()
-        else:
-            return None
+    def _load_config(self):
+        if self.config_path is None:
+            return {}
 
-    def _build(self):
-        """Build takes the default configuration, overrides this with
-        the config on disk, and overrides that with configruation POSTed
-        to the backend"""
-        # Create defaults
-        for key, value in self.defaults.items():
-            self[key] = value
+        try:
+            with open(self.config_path) as f:
+                return yaml.load(f)
+        except FileNotFoundError as ex:
+            raise NoConfigError(
+                "No config file found at {}. Please either refer to the DC/OS documentation for the "
+                "DC/OS disribution and deployment method chosen to see available options or use the "
+                "web installer (--web) which will help guide through configuration for simple "
+                "deploymesnts".format(self.config_path)) from ex
 
-        # Add user-land configuration
-        user_config = self.get_config_from_disk()
-        if user_config:
-            for k, v in user_config.items():
-                self[k] = v
+    def update(self, updates):
+        # TODO(cmaloney): check that the updates are all for valid keys, keep
+        # any ones for valid keys and throw out any for invalid keys, returning
+        # errors for the invalid keys.
+        self._config.update(updates)
 
-        # Override with POST data
-        self._add_overrides()
+    # TODO(cmaloney): Figure out a way for the installer being generated (Advanced AWS CF templates vs.
+    # bash) to automatically set this in gen.generate rather than having to merge itself.
+    def as_gen_format(self):
+        config = copy.copy(self._config)
+        config.update({'provider': 'onprem'})
+        return gen.stringify_configuration(config)
 
-    def _add_overrides(self):
-        if self.overrides is not None and len(self.overrides) > 0:
-            for key, value in self.overrides.items():
-                if value is None:
-                    log.warning("Adding new configuration %s: %s", key, value)
-                    self[key] = value
+    def do_validate(self, include_ssh):
+        user_arguments = self.as_gen_format()
+        config_targets = [gen.get_dcosconfig_target_and_templates(user_arguments, [])[0]]
 
-                elif key in self:
-                    log.warning("Overriding %s: %s -> %s", key, self[key], value)
-                    self[key] = value
+        if include_ssh:
+            config_targets.append(ssh.validate.get_config_target())
 
-                else:
-                    log.warning("Adding new value %s: %s", key, value)
-                    self[key] = value
+        messages = gen.validate_config_for_targets(config_targets, user_arguments)
+        # TODO(cmaloney): kill this function and make the API return the structured
+        # results api as was always intended rather than the flattened / lossy other
+        # format. This will be an  API incompatible change. The messages format was
+        # specifically so that there wouldn't be this sort of API incompatibility.
+        return normalize_config_validation(messages)
 
-    def get_config_from_disk(self):
-        if os.path.isfile(self.config_path):
-            log.debug("Loading YAML configuration: %s", self.config_path)
-            with open(self.config_path, 'r') as data:
-                configuration = yaml.load(data)
+    def do_gen_configure(self):
+        return gen.generate(self.as_gen_format())
 
-        else:
-            if self.write_default_config:
-                log.error(
-                    "Configuration file not found, %s. Writing new one with all defaults.",
-                    self.config_path)
-                self.write()
-                configuration = yaml.load(open(self.config_path))
-            else:
-                log.error("Configuration file not found: %s", self.config_path)
-                return {}
+    def get_yaml_str(self):
+        return yaml.dump(self._config, default_flow_style=False, explicit_start=True)
 
-        return configuration
+    def write_config(self):
+        assert self.config_path is not None
 
-    def write(self):
-        """Write the configuration to disk, removing keys that are not permitted to be
-        used by end-users"""
-        if self.config_path:
-            self._remove_unrequired_config_keys()
-            data = open(self.config_path, 'w')
-            data.write(yaml.dump(self._unbind_configuration(), default_flow_style=False, explicit_start=True))
-            data.close()
-        else:
-            log.error("Must pass config_path=/path/to/file to execute .write().")
+        write_string(self.config_path, self.get_yaml_str())
 
-    def print_to_screen(self):
-        print(yaml.dump(self._unbind_configuration(), default_flow_style=False, explicit_start=True))
+    def __getitem__(self, key: str):
+        return self._config[key]
 
-    def _unbind_configuration(self):
-        """Unbinds the methods and class variables from the DCOSConfig
-        object and returns a simple dictionary.
-        """
-        dictionary = {}
-        for k, v in self.items():
-            dictionary[k] = v
+    def __contains__(self, key: str):
+        return key in self._config
 
-        return dictionary
+    # TODO(cmaloney): kill this, should use config target to set defaults. The config targets should
+    # set these defaults.
+    def hacky_default_get(self, *args, **kwargs):
+        return self._config.get(*args, **kwargs)
 
-    def stringify_configuration(self):
-        """Create a stringified version of the complete installer configuration
-        to send to gen.generate()"""
-        return stringify_configuration(self)
+    @property
+    def config(self):
+        return copy.copy(self._config)
 
-    def _remove_unrequired_config_keys(self):
-        """Remove the configuration we do not want
-        in the config file.
 
-        :param config: The config dictionary
-        :type config: dict | {}
-        """
-        do_not_write = [
-            'ssh_key',
-            'ssh_key_path',
-            'ip_detect_path',
-            'ip_detect_script'
-        ]
-        for key in do_not_write:
-            if key in self:
-                del self[key]
+def to_config(config_dict: dict):
+    config = Config(None)
+    config.update(config_dict)
+    return config

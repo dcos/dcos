@@ -4,7 +4,6 @@ import random
 import sys
 import traceback
 import uuid
-from contextlib import closing
 
 import azure.common.credentials
 from azure.mgmt.network import NetworkManagementClient
@@ -163,7 +162,7 @@ def run():
 
         print('Detected IP configuration: {}'.format(ip_buckets))
 
-        with closing(SSHTunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200)) as t:
+        with SSHTunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200) as t:
             integration_test(
                 tunnel=t,
                 test_dir='/home/{}'.format(get_value('linuxAdminUsername')),

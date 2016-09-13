@@ -1,14 +1,13 @@
 """
 Module for creating persistent SSH connections for use with synchronous
-commands. Typically, tunnels should be invoked with a context manager to
+commands. Typically, tunnels should be invoked as a context manager to
 ensure proper cleanup. E.G.:
-with contextlib.closing(SSHTunnel(*args, **kwargs)) as tunnel:
+with SSHTunnel(*args, **kwargs) as tunnel:
     tunnel.write_to_remote('/usr/local/usrpath/testfile.txt', 'test_file.txt')
     tunnel.remote_cmd(['cat', 'test_file.txt'])
 """
 import logging
 import tempfile
-from contextlib import closing
 from subprocess import check_call, check_output, TimeoutExpired
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
@@ -20,8 +19,6 @@ class SSHTunnel():
 
     def __init__(self, ssh_user, ssh_key_path, host, port=22):
         """Persistent SSH tunnel to avoid re-creating the same connection
-        Note: this should always be instantiated with contextlib.closing
-            e.g.: "with closing(SSHTunnel(*args, **kwargs)) as tunnel:"
 
         Args:
             ssh_user: (str) user with access to host
@@ -55,6 +52,12 @@ class SSHTunnel():
         logger.debug('Starting SSH tunnel: ' + ' '.join(start_tunnel))
         check_call(start_tunnel)
         logger.debug('SSH Tunnel established!')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, exc_tb):
+        self.close()
 
     def remote_cmd(self, cmd, timeout=None, stdout=None):
         """
@@ -113,6 +116,12 @@ class TunnelCollection():
             self.tunnels.append(SSHTunnel(ssh_user, ssh_key_path, hostname, port=port))
         logger.debug('Successfully created TunnelCollection')
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, exc_tb):
+        self.close()
+
     def close(self):
         for tunnel in self.tunnels:
             tunnel.close()
@@ -122,12 +131,12 @@ def run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, port=22, timeout=None):
     """Convenience function to do a one-off SSH command
     """
     assert isinstance(cmd, list)
-    with closing(SSHTunnel(ssh_user, ssh_key_path, host, port=port)) as tunnel:
+    with SSHTunnel(ssh_user, ssh_key_path, host, port=port) as tunnel:
         return tunnel.remote_cmd(cmd, timeout=timeout)
 
 
 def run_scp_cmd(ssh_user, ssh_key_path, host, src, dst, port=22):
     """Convenience function to do a one-off SSH copy
     """
-    with closing(SSHTunnel(ssh_user, ssh_key_path, host, port=port)) as tunnel:
+    with SSHTunnel(ssh_user, ssh_key_path, host, port=port) as tunnel:
         tunnel.write_to_remote(src, dst)

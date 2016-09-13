@@ -2,7 +2,6 @@ import os
 import stat
 
 import gen
-from dcos_installer.config import stringify_configuration
 
 
 def validate_ssh_key_path(ssh_key_path):
@@ -74,7 +73,7 @@ def get_config_target():
 # TODO(cmaloney): Work this API, callers until this result remapping is unnecessary
 # and the couple places that need this can just make a trivial call directly.
 def validate_config(user_arguments):
-    user_arguments = stringify_configuration(user_arguments)
+    user_arguments = gen.stringify_configuration(user_arguments)
     messages = gen.validate_config_for_targets([get_config_target()], user_arguments)
     if messages['status'] == 'ok':
         return {}

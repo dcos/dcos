@@ -9,8 +9,11 @@ import coloredlogs
 from passlib.hash import sha512_crypt
 
 import dcos_installer.async_server
+import dcos_installer.config
+import dcos_installer.constants
 import gen.calc
 from dcos_installer import action_lib, backend
+from dcos_installer.config import Config
 from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.prettyprint import PrettyPrint, print_header
 
@@ -60,7 +63,7 @@ def run_loop(action, options):
 
     print_header('START {}'.format(action.__name__))
     try:
-        config = backend.get_config()
+        config = dcos_installer.config.Config(dcos_installer.constants.CONFIG_PATH)
         cli_delegate = CliDelegate()
         result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
         pp = PrettyPrint(result)
@@ -131,7 +134,8 @@ def do_version(args):
 
 def do_validate_config(args):
     log_warn_only()
-    validation_errors = backend.do_validate_config()
+    config = Config(dcos_installer.constants.CONFIG_PATH)
+    validation_errors = config.do_validate(include_ssh=True)
     if validation_errors:
         print_validation_errors(validation_errors)
         return 1
@@ -208,8 +212,10 @@ def dispatch(args):
     if getattr(args, 'set_superuser_password'):
         assert len(args.set_superuser_password) == 1
         password_hash = do_hash_password(args.set_superuser_password[0])
-        err, messages = backend.create_config_from_post({'superuser_password_hash': password_hash})
-        if err:
+        messages = backend.create_config_from_post(
+            {'superuser_password_hash': password_hash},
+            dcos_installer.constants.CONFIG_PATH)
+        if messages:
             log.error("Unable to save password: {}".format(messages))
             sys.exit(1)
         sys.exit(0)
@@ -318,9 +324,14 @@ def main():
     else:
         args = sys.argv[1:]
 
-    options = parse_args(args)
-    setup_logger(options)
-    dispatch(options)
+    try:
+        options = parse_args(args)
+        setup_logger(options)
+        dispatch(options)
+    except dcos_installer.config.NoConfigError as ex:
+        print(ex)
+        sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
