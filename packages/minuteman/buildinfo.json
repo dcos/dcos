@@ -4,7 +4,7 @@
     "minuteman": {
       "kind": "git",
       "git": "https://github.com/dcos/minuteman.git",
-      "ref": "eddc5f66a0d775d695d3fac4870b418e759f696f",
+      "ref": "66f3889da0edcbd200905c9e5b2b6009fb59353c",
       "ref_origin": "master"
     }
   },
