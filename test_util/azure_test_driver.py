@@ -58,6 +58,14 @@ def get_value(template_parameter):
     return(get_env_params()[template_parameter]['value'])
 
 
+def get_test_config():
+    add_env = {}
+    prefix = 'TEST_ADD_ENV_'
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            add_env[k.replace(prefix, '')] = v
+    return add_env
+
 def run():
     validate_env()
     location = os.getenv('AZURE_LOCATION', 'East US')
@@ -172,7 +180,9 @@ def run():
                 public_agent_list=ip_buckets['public'],
                 provider='azure',
                 test_dns_search=False,
-                add_env={'DCOS_AUTH_ENABLED': get_value('oauthEnabled')},
+                add_env=get_test_config().update({
+                    'DCOS_AUTH_ENABLED': get_value('oauthEnabled')
+                }),
                 pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
                 pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
