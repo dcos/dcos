@@ -11,8 +11,10 @@ from aiohttp import web
 import dcos_installer
 import dcos_installer.action_lib
 import gen.calc
+import pkgpanda.util
 from dcos_installer import backend
-from dcos_installer.constants import STATE_DIR
+from dcos_installer.config import Config, make_default_config_if_needed
+from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH, STATE_DIR
 from ssh.ssh_runner import Node
 
 
@@ -69,6 +71,29 @@ def get_version(args):
     return resp
 
 
+def try_read_file(path):
+    if os.path.isfile(path):
+        return pkgpanda.util.load_string(path)
+    return None
+
+
+def extract_external(post_data, start_key, dest_key, filename, mode) -> dict:
+    if start_key not in post_data:
+        return post_data
+
+    value = post_data[start_key]
+    if not value:
+        log.warning('Skipping write {} to {} because it looked empty.'.format(value, filename))
+        return post_data
+
+    log.warning('Writing {}'.format(filename))
+    pkgpanda.util.write_string(filename, value)
+    os.chmod(filename, mode)
+    del post_data[start_key]
+    post_data[dest_key] = filename
+    return post_data
+
+
 def configure(request):
     """Return /api/v1/configure
 
@@ -77,17 +102,40 @@ def configure(request):
     """
     if request.method == 'POST':
         new_config = yield from request.json()
+
+        # Save ssh_key, ip_detect as needed
+        # TODO(cmaloney): make ssh_key derive from ssh_key_path so we can just set ssh_key and skip all this.
+        new_config = extract_external(new_config, 'ssh_key', 'ssh_key_path', SSH_KEY_PATH, 0o600)
+        # TODO(cmaloney): change this to ip_detect_contents removing the need for the remapping.
+        new_config = extract_external(new_config, 'ip_detect_script', 'ip_detect_path', IP_DETECT_PATH, 0o644)
+
         log.info('POST to configure: {}'.format(new_config))
-        validation_err, messages = backend.create_config_from_post(new_config)
+        messages = backend.create_config_from_post(new_config, CONFIG_PATH)
+
+        # Map  back to DC/OS UI configuration parameters.
+        # TODO(cmaloney): Remove need to remap validation keys. The remapping is making things show up
+        # under the key of the user config chunk that caused them rather than their particular key so
+        # num_masters validation for instance shows up under master_list where the user would expect it.
+        if "ssh_key_path" in messages:
+            messages["ssh_key"] = messages["ssh_key_path"]
+
+        if "ip_detect_contents" in messages:
+            messages['ip_detect_path'] = messages['ip_detect_contents']
+
+        if 'num_masters' in messages:
+            messages['master_list'] = messages['num_masters']
 
         resp = web.json_response({}, status=200)
-        if validation_err:
+        if messages:
             resp = web.json_response(messages, status=400)
 
         return resp
 
     elif request.method == 'GET':
-        config = backend.get_ui_config()
+        config = Config(CONFIG_PATH).config
+        # TODO(cmaloney): should exclude the value entirely if the file doesn't exist.
+        config['ssh_key'] = try_read_file(SSH_KEY_PATH)
+        config['ip_detect_script'] = try_read_file(IP_DETECT_PATH)
         resp = web.json_response(config)
 
     resp.headers['Content-Type'] = 'application/json'
@@ -102,7 +150,7 @@ def configure_status(request):
     """
     log.info("Request for configuration validation made.")
     code = 200
-    messages = backend.do_validate_config()
+    messages = Config(CONFIG_PATH).do_validate(include_ssh=True)
     if messages:
         code = 400
     resp = web.json_response(messages, status=code)
@@ -126,7 +174,7 @@ def success(request):
     :type request: request | None
     """
     log.info("Request for success made.")
-    msgs, code = backend.success()
+    msgs, code = backend.success(Config(CONFIG_PATH))
     return web.json_response(msgs, status=code)
 
 
@@ -198,7 +246,7 @@ def action_action_name(request):
                     if failed_hosts:
                         yield from asyncio.async(
                             action(
-                                backend.get_config(),
+                                Config(CONFIG_PATH),
                                 state_json_dir=STATE_DIR,
                                 hosts=failed_hosts,
                                 try_remove_stale_dcos=True,
@@ -222,7 +270,7 @@ def action_action_name(request):
             else:
                 unlink_state_file(action_name)
 
-        yield from asyncio.async(action(backend.get_config(), state_json_dir=STATE_DIR, options=options, **params))
+        yield from asyncio.async(action(Config(CONFIG_PATH), state_json_dir=STATE_DIR, options=options, **params))
         return web.json_response({'status': '{} started'.format(action_name)})
 
 
@@ -309,6 +357,7 @@ def start(cli_options):
     options = cli_options
 
     log.debug('DC/OS Installer')
+    make_default_config_if_needed('genconf/config.yaml')
     loop = asyncio.get_event_loop()
     app = build_app(loop)
     handler = app.make_handler()

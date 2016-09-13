@@ -12,10 +12,8 @@ from dcos_installer.constants import SERVE_DIR
 log = logging.getLogger(__name__)
 
 
-def do_configure(gen_config):
-    gen_config.update(get_gen_extra_args())
-
-    gen_out = gen.generate(arguments=gen_config)
+def do_configure(config):
+    gen_out = config.do_gen_configure()
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.installer.bash.generate(gen_out, SERVE_DIR)
 
@@ -24,10 +22,6 @@ def do_configure(gen_config):
     fetch_bootstrap(gen_out.arguments['bootstrap_id'])
     # Write some package metadata
     pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
-
-
-def get_gen_extra_args():
-    return {'provider': 'onprem'}
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):

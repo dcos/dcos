@@ -5,6 +5,7 @@ import subprocess
 import passlib.hash
 
 from dcos_installer import backend
+from dcos_installer.config import Config, make_default_config_if_needed, to_config
 
 os.environ["BOOTSTRAP_ID"] = "12345"
 
@@ -24,14 +25,18 @@ def test_set_superuser_password(tmpdir):
 
     with tmpdir.as_cwd():
         tmpdir.join('genconf').ensure(dir=True)
-        # check config.yaml doesn't have the password
-        assert 'superuser_password_hash' not in backend.get_config('genconf/config.yaml')
+
+        # TODO(cmaloney): Add tests for the behavior around a non-existent config.yaml
+
+        # Setting in a non-empty config.yaml which has no password set
+        make_default_config_if_needed('genconf/config.yaml')
+        assert 'superuser_password_hash' not in Config('genconf/config.yaml').config
 
         # Set the password
         subprocess.check_call(['dcos_installer', '--set-superuser-password', 'foo'], cwd=str(tmpdir))
 
         # Check that config.yaml has the password set
-        config = backend.get_config('genconf/config.yaml')
+        config = Config('genconf/config.yaml')
         assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
 
 
@@ -51,6 +56,8 @@ def test_good_create_config_from_post(tmpdir):
     # Create a temp config
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
+    make_default_config_if_needed(temp_config_path)
+
     temp_ip_detect_path = workspace + '/ip-detect'
     f = open(temp_ip_detect_path, "w")
     f.write("#/bin/bash foo")
@@ -64,18 +71,18 @@ def test_good_create_config_from_post(tmpdir):
     }
     expected_good_messages = {}
 
-    err, msg = backend.create_config_from_post(
+    messages = backend.create_config_from_post(
         post_data=good_post_data,
         config_path=temp_config_path)
 
-    assert err is False
-    assert msg == expected_good_messages
+    assert messages == expected_good_messages
 
 
 def test_bad_create_config_from_post(tmpdir):
     # Create a temp config
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
+    make_default_config_if_needed(temp_config_path)
 
     bad_post_data = {
         "agent_list": "foo",
@@ -86,54 +93,54 @@ def test_bad_create_config_from_post(tmpdir):
                       "one because of: Expecting value: line 1 column 1 (char 0)",
         "master_list": 'Invalid IPv4 addresses in list: foo',
     }
-    err, msg = backend.create_config_from_post(
+    messages = backend.create_config_from_post(
         post_data=bad_post_data,
         config_path=temp_config_path)
-    assert err is True
-    assert msg == expected_bad_messages
+    assert messages == expected_bad_messages
 
 
 def test_do_validate_config(tmpdir):
     # Create a temp config
-    workspace = tmpdir.strpath
-    temp_config_path = workspace + '/config.yaml'
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    temp_config_path = str(genconf_dir.join('config.yaml'))
+
+    # Initialize with defautls
+    make_default_config_if_needed(temp_config_path)
 
     expected_output = {
+        'ip_detect_contents': 'ip-detect script `genconf/ip-detect` must exist',
         'ssh_user': 'Must set ssh_user, no way to calculate value.',
         'master_list': 'Must set master_list, no way to calculate value.',
+        'ssh_key_path': 'could not find ssh private key: genconf/ssh_key'
     }
-    # remove num_masters and masters_quorum since they can change between runs
-    messages = backend.do_validate_config(temp_config_path)
-    assert messages['ssh_user'] == expected_output['ssh_user']
-    assert messages['master_list'] == expected_output['master_list']
+    assert Config(config_path=temp_config_path).do_validate(include_ssh=True) == expected_output
 
 
 def test_get_config(tmpdir):
-    # Create a temp config
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
 
-    expected_file = """
-{
-    "cluster_name": "DC/OS",
-    "master_discovery": "static",
-    "exhibitor_storage_backend": "static",
-    "resolvers": ["8.8.8.8","8.8.4.4"],
-    "ssh_port": 22,
-    "process_timeout": 10000,
-    "bootstrap_url": "file:///opt/dcos_install_tmp"
-}
-    """
-    config = backend.get_config(config_path=temp_config_path)
-    expected_config = json.loads(expected_file)
-    assert expected_config == config
+    expected_data = {
+        'cluster_name': 'DC/OS',
+        'master_discovery': 'static',
+        'exhibitor_storage_backend': 'static',
+        'resolvers': ['8.8.8.8', '8.8.4.4'],
+        'ssh_port': 22,
+        'process_timeout': 10000,
+        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+    }
+
+    make_default_config_if_needed(temp_config_path)
+    config = Config(temp_config_path)
+    assert expected_data == config.config
 
 
 def test_determine_config_type(tmpdir):
-    # Create a temp config
+    # Ensure the default created config is of simple type
     workspace = tmpdir.strpath
     temp_config_path = workspace + '/config.yaml'
-
+    make_default_config_if_needed(temp_config_path)
     got_output = backend.determine_config_type(config_path=temp_config_path)
     expected_output = {
         'message': '',
@@ -143,10 +150,10 @@ def test_determine_config_type(tmpdir):
 
 
 def test_success():
-    mock_config = {
+    mock_config = to_config({
         'master_list': ['10.0.0.1', '10.0.0.2', '10.0.0.5'],
         'agent_list': ['10.0.0.3', '10.0.0.4']
-    }
+    })
     expected_output = {
         "success": "http://10.0.0.1",
         "master_count": 3,
@@ -158,8 +165,7 @@ def test_success():
         "agent_count": 0
     }
     got_output, code = backend.success(mock_config)
-    mock_config['master_list'] = None
-    mock_config['agent_list'] = None
+    mock_config.update({'master_list': '', 'agent_list': ''})
     bad_out, bad_code = backend.success(mock_config)
 
     assert got_output == expected_output
@@ -171,17 +177,22 @@ def test_success():
 def test_accept_overrides_for_undefined_config_params(tmpdir):
     temp_config_path = tmpdir.strpath + '/config.yaml'
     param = ('fake_test_param_name', 'fake_test_param_value')
-    validation_err, data = backend.create_config_from_post(
+    make_default_config_if_needed(temp_config_path)
+    messages = backend.create_config_from_post(
         post_data=dict([param]),
         config_path=temp_config_path)
 
-    assert not validation_err, "unexpected validation error: {}".format(data)
-    assert backend.get_config(config_path=temp_config_path)[param[0]] == param[1]
+    assert not messages, "unexpected validation error: {}".format(messages)
+    assert Config(config_path=temp_config_path)[param[0]] == param[1]
 
 
 simple_full_config = """---
+cluster_name: DC/OS
+master_discovery: static
+exhibitor_storage_backend: static
 master_list:
  - 127.0.0.1
+bootstrap_url: http://example.com
 """
 
 

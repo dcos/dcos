@@ -15,12 +15,12 @@ log = logging.getLogger(__name__)
 
 def get_async_runner(config, hosts, async_delegate=None):
     # TODO(cmaloney): Delete these repeats. Use gen / expanded configuration to get all the values.
-    process_timeout = config.get('process_timeout', 120)
-    extra_ssh_options = config.get('extra_ssh_options', '')
-    ssh_key_path = config.get('ssh_key_path', 'genconf/ssh_key')
+    process_timeout = config.hacky_default_get('process_timeout', 120)
+    extra_ssh_options = config.hacky_default_get('extra_ssh_options', '')
+    ssh_key_path = config.hacky_default_get('ssh_key_path', 'genconf/ssh_key')
 
     # if ssh_parallelism is not set, use 20 concurrent ssh sessions by default.
-    parallelism = config.get('ssh_parallelism', 20)
+    parallelism = config.hacky_default_get('ssh_parallelism', 20)
 
     return ssh.ssh_runner.MultiRunner(hosts, ssh_user=config['ssh_user'], ssh_key_path=ssh_key_path,
                                       process_timeout=process_timeout, extra_opts=extra_ssh_options,
@@ -45,7 +45,8 @@ class ExecuteException(Exception):
 
 
 def nodes_count_by_type(config):
-    total_agents_count = len(config.get('agent_list', [])) + len(config.get('public_agent_list', []))
+    total_agents_count = len(config.hacky_default_get('agent_list', [])) + \
+        len(config.hacky_default_get('public_agent_list', []))
     return {
         'total_masters': len(config['master_list']),
         'total_agents': total_agents_count
@@ -205,11 +206,11 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
         },
         'agent': {
             'tags': {'role': 'agent', 'dcos_install_param': 'slave'},
-            'hosts': config.get('agent_list', [])
+            'hosts': config.hacky_default_get('agent_list', [])
         },
         'public_agent': {
             'tags': {'role': 'public_agent', 'dcos_install_param': 'slave_public'},
-            'hosts': config.get('public_agent_list', [])
+            'hosts': config.hacky_default_get('public_agent_list', [])
         }
     }
 
