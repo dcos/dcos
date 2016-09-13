@@ -52,7 +52,6 @@ import random
 import stat
 import string
 import sys
-from contextlib import closing
 from os.path import join
 
 import passlib.hash
@@ -210,7 +209,7 @@ def main():
     def establish_host_connectivity():
         """Continually try to recreate the SSH Tunnels to all hosts for 2 minutes
         """
-        return closing(TunnelCollection(ssh_user, options.ssh_key_path, host_list_w_port))
+        return TunnelCollection(ssh_user, options.ssh_key_path, host_list_w_port)
 
     log.info('Checking that hosts are accessible')
     with establish_host_connectivity() as tunnels:
@@ -231,7 +230,7 @@ def main():
     public_agent_list = [local_ip[host_list[4]]]
     log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
 
-    with closing(SSHTunnel(ssh_user, options.ssh_key_path, test_host)) as test_host_tunnel:
+    with SSHTunnel(ssh_user, options.ssh_key_path, test_host) as test_host_tunnel:
         log.info('Setting up installer on test host')
 
         installer.setup_remote(
@@ -294,7 +293,7 @@ def main():
         log.info("Running Postflight")
         installer.postflight()
 
-    with closing(SSHTunnel(ssh_user, options.ssh_key_path, host_list[1])) as master_tunnel:
+    with SSHTunnel(ssh_user, options.ssh_key_path, host_list[1]) as master_tunnel:
         # Runs dcos-image integration tests inside the cluster
         result = test_util.test_runner.integration_test(
             tunnel=master_tunnel,

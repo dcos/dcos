@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from contextlib import closing, contextmanager
+from contextlib import contextmanager
 from functools import partial
 
 import pytest
@@ -342,7 +342,7 @@ def test_ssh_tunnel(sshd_manager):
             'ssh_key_path': sshd_manager.key_path,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
-        with closing(SSHTunnel(**tunnel_args)) as tunnel:
+        with SSHTunnel(**tunnel_args) as tunnel:
             tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
 
 
@@ -352,7 +352,7 @@ def test_ssh_tunnel_collection(sshd_manager):
             'ssh_user': getpass.getuser(),
             'ssh_key_path': sshd_manager.key_path,
             'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
-        with closing(TunnelCollection(**tunnel_args)) as tunnels:
+        with TunnelCollection(**tunnel_args) as tunnels:
             for tunnel in tunnels.tunnels:
                 tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
 
