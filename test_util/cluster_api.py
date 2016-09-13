@@ -30,6 +30,7 @@ def get_args_from_env():
         'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
+        'dockercfg_hook_enabled': os.getenv('DOCKERCFG_HOOK', 'false'),
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root'),
         'ca_cert_path': os.getenv('DCOS_CA_CERT_PATH', None)}
 
@@ -197,7 +198,7 @@ class ClusterApi(test_util.helpers.ApiClient):
         self.web_auth_default_user.authenticate(self)
         self.default_headers.update(self.web_auth_default_user.auth_header)
 
-    def __init__(self, dcos_url, masters, public_masters, slaves, public_slaves,
+    def __init__(self, dcos_url, masters, public_masters, slaves, public_slaves, dockercfg_hook_enabled,
                  default_os_user, web_auth_default_user=None, ca_cert_path=None):
         """Proxy class for DC/OS clusters.
 
@@ -207,6 +208,7 @@ class ClusterApi(test_util.helpers.ApiClient):
             public_masters: list of Mesos master IP addresses routable from
                 the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
+            dockercfg_hook_enabled: whether to remove fetched dockercfg files before container start.
             default_os_user: default user that marathon/metronome will launch tasks under
             web_auth_default_user: use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
@@ -232,6 +234,7 @@ class ClusterApi(test_util.helpers.ApiClient):
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves + public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
+        self.dockercfg_hook_enabled = dockercfg_hook_enabled == 'true'
         self.default_os_user = default_os_user
         self.web_auth_default_user = web_auth_default_user
 
