@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
-"""Integration test for SSH installer with CCM provided VPC
+"""Integration test for SSH installer with AWS provided VPC
 
 The following environment variables control test procedure:
 
-CCM_VPC_HOSTS: comma separated IP addresses that are accesible from localhost (default=None)
+VPC_HOSTS: comma separated IP addresses that are accesible from localhost (default=None)
     If provided, ssh_key must be in current working directory and hosts must
     be accessible using ssh -i ssh_key centos@IP
 
-CCM_HOST_SETUP: true or false (default=true)
+HOST_SETUP: true or false (default=true)
     If true, test will attempt to download the installer from INSTALLER_URL, start the bootstap
     ZK (if required), and setup the integration_test.py requirements (setup test runner, test
     registry, and test app in registry).
     If false, test will skip the above steps
 
+DCOS_SSH_KEY_PATH: string (default='default_ssh_key')
+    Use to set specific ssh key path. Otherwise, script will expect key at default_ssh_key
+
 INSTALLER_URL: URL that curl can grab the installer from (default=None)
-    This option is only used if CCM_HOST_SETUP=true. See above.
+    This option is only used if HOST_SETUP=true. See above.
 
 USE_INSTALELR_API: true or false (default=None)
-    starts installer web server as daemon when CCM_HOST_SETUP=true and proceeds to only
+    starts installer web server as daemon when HOST_SETUP=true and proceeds to only
     communicate with the installer via the API. In this mode, exhibitor backend is set
-    to static and a bootstrap ZK is not needed (see CCM_HOST_SETUP)
+    to static and a bootstrap ZK is not needed (see HOST_SETUP)
 
 TEST_INSTALL_PREREQS: true or false (default=None)
     If true, the capability of the installer to setup prereqs will be tested by starting
@@ -56,7 +59,7 @@ import passlib.hash
 import pkg_resources
 from retrying import retry
 
-import test_util.ccm
+import test_util.aws
 import test_util.installer_api_test
 import test_util.test_runner
 from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
@@ -66,10 +69,6 @@ logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
-
-
-def pkg_filename(relative_path):
-    return pkg_resources.resource_filename(__name__, relative_path)
 
 
 def get_local_address(tunnel, remote_dir):
@@ -88,39 +87,6 @@ def get_local_address(tunnel, remote_dir):
     return local_ip
 
 
-def make_vpc(use_bare_os=False):
-    """uses CCM to provision a test VPC of minimal size (3).
-    Args:
-        use_bare_os: if True, vanilla AMI is used. If False, custom AMI is used
-            with much faster prereq satisfaction time
-    """
-    random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-    unique_cluster_id = "installer-test-{}".format(random_identifier)
-    log.info("Spinning up AWS VPC via CCM with ID: {}".format(unique_cluster_id))
-    if use_bare_os:
-        os_name = "cent-os-7"
-    else:
-        os_name = "cent-os-7-dcos-prereqs"
-    ccm = test_util.ccm.Ccm()
-    vpc = ccm.create_vpc(
-        name=unique_cluster_id,
-        time=60,
-        instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
-        instance_type="m4.xlarge",
-        instance_os=os_name,
-        region=DEFAULT_AWS_REGION,
-        key_pair_name=unique_cluster_id
-    )
-
-    ssh_key, ssh_key_url = vpc.get_ssh_key()
-    log.info("Download cluster SSH key: {}".format(ssh_key_url))
-    # Write out the ssh key to the local filesystem for the ssh lib to pick up.
-    with open("ssh_key", "w") as ssh_key_fh:
-        ssh_key_fh.write(ssh_key)
-
-    return vpc
-
-
 def check_environment():
     """Test uses environment variables to play nicely with TeamCity config templates
     Grab all the environment variables here to avoid setting params all over
@@ -134,14 +100,14 @@ def check_environment():
     """
     options = type('Options', (object,), {})()
 
-    if 'CCM_VPC_HOSTS' in os.environ:
-        options.host_list = os.environ['CCM_VPC_HOSTS'].split(',')
+    if 'VPC_HOSTS' in os.environ:
+        options.host_list = os.environ['VPC_HOSTS'].split(',')
     else:
         options.host_list = None
 
-    if 'CCM_HOST_SETUP' in os.environ:
-        assert os.environ['CCM_HOST_SETUP'] in ['true', 'false']
-    options.do_setup = os.getenv('CCM_HOST_SETUP', 'true') == 'true'
+    if 'HOST_SETUP' in os.environ:
+        assert os.environ['HOST_SETUP'] in ['true', 'false']
+    options.do_setup = os.getenv('HOST_SETUP', 'true') == 'true'
 
     if options.do_setup:
         assert 'INSTALLER_URL' in os.environ, 'INSTALLER_URL must be set!'
@@ -167,6 +133,9 @@ def check_environment():
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
     options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    options.instance_type = os.environ.get('DCOS_AWS_INSTANCE_TYPE', 'm4.xlarge')
+
+    options.ssh_key_path = os.environ.get('DCOS_SSH_KEY_PATH', 'default_ssh_key')
 
     options.add_config_path = os.getenv('TEST_ADD_CONFIG')
     if options.add_config_path:
@@ -191,20 +160,41 @@ def main():
     vpc = None  # Set if the test owns the VPC
 
     if options.host_list is None:
-        log.info('CCM_VPC_HOSTS not provided, requesting new VPC from CCM...')
-        vpc = make_vpc(use_bare_os=options.test_install_prereqs)
-        host_list = vpc.hosts()
+        log.info('VPC_HOSTS not provided, requesting new VPC ...')
+        random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        unique_cluster_id = "installer-test-{}".format(random_identifier)
+        log.info("Spinning up AWS VPC with ID: {}".format(unique_cluster_id))
+        if options.test_install_prereqs:
+            os_name = "cent-os-7"
+        else:
+            os_name = "cent-os-7-dcos-prereqs"
+        # TODO(mellenburg): Switch to using generated keys
+        bw = test_util.aws.BotoWrapper(
+            region=DEFAULT_AWS_REGION,
+            aws_access_key_id=options.aws_access_key_id,
+            aws_secret_access_key=options.aws_secret_access_key)
+        vpc = test_util.aws.VpcCfStack.create(
+            stack_name=unique_cluster_id,
+            instance_type=options.instance_type,
+            instance_os=os_name,
+            instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
+            admin_location='0.0.0.0/0',
+            key_pair_name='default',
+            boto_wrapper=bw)
+        vpc.wait_for_stack_creation()
+
+        vpc_info = vpc.get_vpc_host_ips()
+        log.info('AWS provided VPC info: ' + repr(vpc_info))
+        host_list = [i.public_ip for i in vpc_info]
     else:
         host_list = options.host_list
 
-    assert os.path.exists('ssh_key'), 'Valid SSH key for hosts must be in working dir!'
-    # key must be chmod 600 for test_runner to use
-    os.chmod('ssh_key', stat.S_IREAD | stat.S_IWRITE)
-
     # Create custom SSH Runnner to help orchestrate the test
     ssh_user = 'centos'
-    ssh_key_path = 'ssh_key'
     remote_dir = '/home/centos'
+    assert os.path.exists(options.ssh_key_path), 'Valid SSH key for hosts must be in working dir!'
+
+    os.chmod(options.ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
 
     if options.use_api:
         installer = test_util.installer_api_test.DcosApiInstaller()
@@ -220,7 +210,7 @@ def main():
     def establish_host_connectivity():
         """Continually try to recreate the SSH Tunnels to all hosts for 2 minutes
         """
-        return closing(TunnelCollection(ssh_user, ssh_key_path, host_list_w_port))
+        return closing(TunnelCollection(ssh_user, options.ssh_key_path, host_list_w_port))
 
     log.info('Checking that hosts are accessible')
     with establish_host_connectivity() as tunnels:
@@ -241,7 +231,7 @@ def main():
     public_agent_list = [local_ip[host_list[4]]]
     log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
 
-    with closing(SSHTunnel(ssh_user, ssh_key_path, test_host)) as test_host_tunnel:
+    with closing(SSHTunnel(ssh_user, options.ssh_key_path, test_host)) as test_host_tunnel:
         log.info('Setting up installer on test host')
 
         installer.setup_remote(
@@ -259,7 +249,7 @@ def main():
 
         with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
             ip_detect_script = ip_detect_fh.read()
-        with open('ssh_key', 'r') as key_fh:
+        with open(options.ssh_key_path, 'r') as key_fh:
             ssh_key = key_fh.read()
         # Using static exhibitor is the only option in the GUI installer
         if options.use_api:
@@ -304,12 +294,12 @@ def main():
         log.info("Running Postflight")
         installer.postflight()
 
-    with closing(SSHTunnel(ssh_user, ssh_key_path, host_list[1])) as master_tunnel:
+    with closing(SSHTunnel(ssh_user, options.ssh_key_path, host_list[1])) as master_tunnel:
         # Runs dcos-image integration tests inside the cluster
         result = test_util.test_runner.integration_test(
             tunnel=master_tunnel,
             test_dir=remote_dir,
-            region=vpc.get_region() if vpc else DEFAULT_AWS_REGION,
+            region=DEFAULT_AWS_REGION,
             dcos_dns=master_list[0],
             master_list=master_list,
             agent_list=agent_list,

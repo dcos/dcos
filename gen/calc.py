@@ -296,6 +296,11 @@ def validate_cluster_packages(cluster_packages):
             raise AssertionError(str(ex)) from ex
 
 
+def calculate_no_proxy(no_proxy):
+    user_proxy_config = validate_json_list(no_proxy)
+    return ",".join(['*.mesos,127.0.0.1,localhost'] + user_proxy_config)
+
+
 def validate_zk_hosts(exhibitor_zk_hosts):
     # TODO(malnick) Add validation of IPv4 address and port to this
     assert not exhibitor_zk_hosts.startswith('zk://'), "Must be of the form `host:port,host:port', not start with zk://"
@@ -362,6 +367,7 @@ entry = {
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
@@ -404,6 +410,7 @@ entry = {
               }                                         \
             ]}',
         'dcos_remove_dockercfg_enable': "false",
+        'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
             # Disabled. REX-Ray will start but not register as a volume driver.
@@ -441,7 +448,8 @@ entry = {
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
-        'rexray_config_contents': calculate_rexray_config_contents
+        'rexray_config_contents': calculate_rexray_config_contents,
+        'no_proxy_final': calculate_no_proxy
     },
     'conditional': {
         'master_discovery': {

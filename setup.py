@@ -55,7 +55,8 @@ setup(
     entry_points={
         'console_scripts': [
             'release=release:main',
-            'ccm-deploy-test=test_util.test_installer_ccm:main',
+            # Note: This test does not touch CCM, but this is here for backward compatible CI
+            'ccm-deploy-test=test_util.test_aws_vpc:main',
             'test-aws-cf-deploy=test_util.test_aws_cf:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
