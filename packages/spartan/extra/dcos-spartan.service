@@ -6,6 +6,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 WorkingDirectory=/opt/mesosphere/active/spartan/spartan
+Environment=ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/dns_search_config
