@@ -1,6 +1,5 @@
 __pycache__
 test_util/dcos-vagrant/
-ext/dcos-installer/packages/
 this
 .idea/
 dcos-config--setup*.tar.xz
