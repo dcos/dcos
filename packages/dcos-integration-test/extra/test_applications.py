@@ -46,9 +46,14 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     app, test_uuid = cluster.get_test_app()
     app['container'] = {
         'type': 'MESOS',
-        'docker': {
+        'mesos': {
             # TODO(cmaloney): Switch to an alpine image with glibc inside.
-            'image': 'debian:jessie'
+            'image': {
+                'type': 'DOCKER',
+                'docker': {
+                    'name': 'debian:jessie'
+                }
+            }
         },
         'volumes': [{
             'containerPath': '/opt/mesosphere',
