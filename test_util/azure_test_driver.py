@@ -23,9 +23,13 @@ def validate_env():
     The following environment variables must be set to ensure the template can be deployed successfully and that
     parameters we rely on from a testing perspective are explicitly set and not relying on defaults which may change.
     '''
-    required = ['AZURE_PARAM_linuxAdminUsername', 'AZURE_PARAM_oauthEnabled',
-                'AZURE_PARAM_masterEndpointDNSNamePrefix', 'AZURE_PARAM_agentEndpointDNSNamePrefix',
-                'AZURE_TEMPLATE_URL', 'AZURE_PARAM_sshRSAPublicKey']
+    required = [
+        'AZURE_PARAM_linuxAdminUsername',
+        'AZURE_PARAM_masterEndpointDNSNamePrefix',
+        'AZURE_PARAM_agentEndpointDNSNamePrefix',
+        'AZURE_TEMPLATE_URL',
+        'AZURE_PARAM_sshRSAPublicKey'
+    ]
     values = {}
     for k in required:
         assert os.getenv(k), "Environment variable {} must be set".format(k)
