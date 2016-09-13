@@ -9,6 +9,7 @@ TasksMax=infinity
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-master
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 EnvironmentFile=-/opt/mesosphere/etc/mesos-master-provider
 EnvironmentFile=-/opt/mesosphere/etc/mesos-master-extras
 EnvironmentFile=-/run/dcos/etc/mesos-master

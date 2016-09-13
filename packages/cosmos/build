@@ -20,7 +20,7 @@ RestartSec=15
 PermissionsStartOnly=True
 User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/var/lib/dcos/environment.proxy
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
 ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos

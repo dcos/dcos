@@ -12,6 +12,7 @@ TasksMax=infinity
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave-common
 EnvironmentFile=/opt/mesosphere/etc/mesos-slave
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 EnvironmentFile=-/opt/mesosphere/etc/mesos-slave-common-extras
 EnvironmentFile=-/var/lib/dcos/mesos-slave-common
 EnvironmentFile=-/var/lib/dcos/mesos-resources
