@@ -66,7 +66,7 @@ def get_test_config():
             add_env[k.replace(prefix, '')] = v
     return add_env
 
-def run():
+def main():
     validate_env()
     location = os.getenv('AZURE_LOCATION', 'East US')
     credentials = azure.common.credentials.ServicePrincipalCredentials(
@@ -219,4 +219,4 @@ def run():
         sys.exit(2)
 
 if __name__ == '__main__':
-    run()
+    main()
