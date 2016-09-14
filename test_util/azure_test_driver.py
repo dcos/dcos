@@ -35,7 +35,6 @@ def validate_env():
         assert os.getenv(k), "Environment variable {} must be set".format(k)
         values[k] = os.getenv(k)
 
-    assert values['AZURE_PARAM_oauthEnabled'] in ['true', 'false']
     assert values['AZURE_PARAM_masterEndpointDNSNamePrefix'] != values['AZURE_PARAM_agentEndpointDNSNamePrefix'], \
         "Master and agent prefix must be unique"
 
@@ -184,9 +183,7 @@ def main():
                 public_agent_list=ip_buckets['public'],
                 provider='azure',
                 test_dns_search=False,
-                add_env=get_test_config().update({
-                    'DCOS_AUTH_ENABLED': get_value('oauthEnabled')
-                }),
+                add_env=get_test_config(),
                 pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
                 pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
