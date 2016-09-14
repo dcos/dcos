@@ -175,6 +175,13 @@ def calculate_mesos_log_retention_count(mesos_log_retention_mb):
     return str(int(1 + (int(mesos_log_retention_mb) - 512) / 256 * 10))
 
 
+def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
+    # We allow some maximum number of temporary/random files in the
+    # Mesos log directory.  This maximum takes into account the number
+    # of rotated logs that stay in the archive subdirectory.
+    return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -423,6 +430,7 @@ entry = {
         'mesos_container_logger': __logrotate_slave_module_name,
         'mesos_log_retention_mb': '4000',
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
+        'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',

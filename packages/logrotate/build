@@ -27,3 +27,8 @@ logrotate_timer="/pkg/extra/dcos-logrotate.timer"
 cp "$logrotate_timer" "$PKG_PATH/dcos.target.wants_master/dcos-logrotate-master.timer"
 cp "$logrotate_timer" "$PKG_PATH/dcos.target.wants_slave/dcos-logrotate-agent.timer"
 cp "$logrotate_timer" "$PKG_PATH/dcos.target.wants_slave_public/dcos-logrotate-agent.timer"
+
+
+postrotate_script="$PKG_PATH/bin/delete-oldest-unmanaged-files.py"
+cp /pkg/extra/delete-oldest-unmanaged-files.py "$postrotate_script"
+chmod +x "$postrotate_script"

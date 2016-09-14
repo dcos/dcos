@@ -240,7 +240,7 @@ package:
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              find /var/lib/dcos/mesos/log/ /var/lib/dcos/mesos/log/archive -mtime +14 -delete
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
           endscript
       }
   - path: /etc/logrotate_agent.config
@@ -256,7 +256,7 @@ package:
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              find /var/log/mesos/ /var/log/mesos/archive -mtime +14 -delete
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
           endscript
       }
   - path: /etc/mesos-master
