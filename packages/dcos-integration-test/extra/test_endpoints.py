@@ -31,9 +31,6 @@ def test_if_mesos_is_up(cluster):
 
 
 def test_if_all_mesos_slaves_have_registered(cluster):
-    # If we set the token TTL to a very short time, we need to log
-    # back into the cluster before running this test.
-    cluster._login()
     r = cluster.get('/mesos/master/slaves')
     assert r.status_code == 200
 
