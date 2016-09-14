@@ -289,20 +289,21 @@ class Cluster:
             return self.superuser_auth_header
         return {}
 
-    def _try_authenticate(self, result):
-        """If the value of the get request is 401, we should authenticate
-        in the case that we have an expired auth token."""
-        if result.status_code == 401:
-            self._authenticate()
-            return True
-        return False
-
-    @retrying.retry(retry_on_result=_try_authenticate, stop_max_attempt_number=1)
     def get(self, path="", params=None, disable_suauth=False, **kwargs):
         hdrs = self._suheader(disable_suauth)
         hdrs.update(kwargs.pop('headers', {}))
-        return requests.get(
-            self.dcos_uri + path, params=params, headers=hdrs, **kwargs)
+
+        def _get():
+            return requests.get(
+                self.dcos_uri + path, params=params, headers=hdrs, **kwargs)
+
+        resp = _get()
+        """If the status code is 401, try authenticating once more in the case
+        that the token has expired."""
+        if resp.status_code == 401:
+            self._authenticate()
+            return _get()
+        return resp
 
     def post(self, path="", payload=None, disable_suauth=False, **kwargs):
         hdrs = self._suheader(disable_suauth)
