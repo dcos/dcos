@@ -90,4 +90,4 @@ def start():
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
     BufferUpdater(state_buffer, headers_cb).run()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '15055')))
+    app.run(host='127.0.0.1', port=int(os.environ.get('PORT', '15055')))
