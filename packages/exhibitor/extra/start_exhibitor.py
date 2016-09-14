@@ -56,7 +56,7 @@ exhibitor_cmdline = [
 
 # Optionally pick up web server security configuration.
 if os.path.exists('/opt/mesosphere/etc/exhibitor_web.xml') and \
-        os.path.exists('/run/dcos_exhibitor/exhibitor_realm'):
+        os.path.exists('/opt/mesosphere/etc/exhibitor_realm'):
     exhibitor_cmdline.extend([
         '--security', '/opt/mesosphere/etc/exhibitor_web.xml',
         '--realm', 'DCOS:/opt/mesosphere/etc/exhibitor_realm',
