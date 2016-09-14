@@ -67,6 +67,7 @@ exhibitor_storage_backend: zookeeper
 exhibitor_zk_hosts: 192.168.65.50:2181
 exhibitor_zk_path: /zk-shared
 master_discovery: static
+check_time: 'false'
 master_list:
   - 192.168.65.90
   - 192.168.65.95
