@@ -8,9 +8,9 @@
       },
       "adminrouter": {
           "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "e86030082bcfda869770cab102bd7f2b5dedba04",
-          "ref_origin": "master"
+          "git": "https://github.com/darkonie/adminrouter.git",
+          "ref": "bb1e7d303f3b7b0ce660951776eb2c57c5b6eff4",
+          "ref_origin": "mnaboka/experimental"
       }
   }
 }
