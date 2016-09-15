@@ -363,7 +363,8 @@ entry = {
         lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
-        validate_rexray_config],
+        validate_rexray_config,
+        lambda check_time: validate_true_false(check_time)],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
@@ -373,6 +374,7 @@ entry = {
         'oauth_enabled': 'true',
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
+        'check_time': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',

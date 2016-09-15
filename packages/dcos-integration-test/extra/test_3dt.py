@@ -337,7 +337,7 @@ def make_nodes_ip_map(cluster):
         detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)['ip']
         node_private_public_ip_map[detected_ip] = node
 
-    for node in cluster.slaves:
+    for node in cluster.all_slaves:
         detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)['ip']
         node_private_public_ip_map[detected_ip] = node
 
@@ -350,7 +350,17 @@ def test_3dt_units_unit_nodes(cluster):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
-    nodes_ip_map = make_nodes_ip_map(cluster)
+
+    def get_nodes_from_response(response):
+        assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
+        nodes_ip_map = make_nodes_ip_map(cluster)
+        nodes = []
+        for node in response['nodes']:
+            assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
+                                                                                                   nodes_ip_map)
+            nodes.append(nodes_ip_map.get(node['host_ip']))
+        return nodes
 
     for master in cluster.masters:
         units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units', cluster)
@@ -362,7 +372,8 @@ def test_3dt_units_unit_nodes(cluster):
         # make sure dcos-mesos-master.service has master nodes and dcos-mesos-slave.service has agent nodes
         master_nodes_response = make_3dt_request(
             master, BASE_ENDPOINT_3DT + '/units/dcos-mesos-master.service/nodes', cluster)
-        master_nodes = list(map(lambda node: nodes_ip_map.get(node['host_ip']), master_nodes_response['nodes']))
+
+        master_nodes = get_nodes_from_response(master_nodes_response)
         logging.info('master_nodes: {}'.format(master_nodes))
 
         assert len(master_nodes) == len(cluster.masters), '{} != {}'.format(master_nodes, cluster.masters)
@@ -372,8 +383,10 @@ def test_3dt_units_unit_nodes(cluster):
 
         agent_nodes_response = make_3dt_request(
             master, BASE_ENDPOINT_3DT + '/units/dcos-mesos-slave.service/nodes', cluster)
-        agent_nodes = list(map(lambda node: nodes_ip_map.get(node['host_ip']), agent_nodes_response['nodes']))
-        logging.info('aget_nodes: {}'.format(agent_nodes))
+
+        agent_nodes = get_nodes_from_response(agent_nodes_response)
+        logging.info('agent_nodes: {}'.format(agent_nodes))
+
         assert len(agent_nodes) == len(cluster.slaves), '{} != {}'.format(agent_nodes, cluster.slaves)
 
 

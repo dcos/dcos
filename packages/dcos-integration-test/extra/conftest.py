@@ -215,6 +215,9 @@ class Cluster:
         self._wait_for_srouter_slaves_endpoints()
         self._wait_for_metronome()
 
+    @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000,
+                    retry_on_result=lambda r: r is False,
+                    retry_on_exception=lambda _: False)
     def _authenticate(self):
         if self.auth_enabled:
             # token valid until 2036 for user albert@bekstil.net
@@ -235,7 +238,9 @@ class Cluster:
             return
 
         r = requests.post(self.dcos_uri + '/acs/api/v1/auth/login', json=js)
-        assert r.status_code == 200
+        # In the case of the Advanced Templates this endpoint comes up a bit later
+        if r.status_code >= 400:
+            return False
         self.superuser_auth_header = {'Authorization': 'token=%s' % r.json()['token']}
         self.superuser_auth_cookie = r.cookies['dcos-acs-auth-cookie']
 
