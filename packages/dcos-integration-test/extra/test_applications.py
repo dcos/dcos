@@ -16,7 +16,7 @@ def test_if_marathon_app_can_be_deployed(cluster):
     the one assigned to test - test succeds.
     """
     app, test_uuid = cluster.get_test_app()
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    cluster.deploy_test_app_and_check(app, test_uuid, expected_user=app['user'])
 
 
 def test_if_docker_app_can_be_deployed(cluster):
@@ -26,7 +26,7 @@ def test_if_docker_app_can_be_deployed(cluster):
     deployed and accessed as expected.
     """
     app, test_uuid = cluster.get_test_app_in_docker(ip_per_container=False)
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    cluster.deploy_test_app_and_check(app, test_uuid, expected_user='root')
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
@@ -56,7 +56,9 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
             'mode': 'RO'
         }]
     }
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    # TODO(adam): Figure out why mesos containerizer needs root when image is specified.
+    app['user'] = 'root'
+    cluster.deploy_test_app_and_check(app, test_uuid, expected_user='root')
 
 
 def test_octarine_http(cluster, timeout=30):
