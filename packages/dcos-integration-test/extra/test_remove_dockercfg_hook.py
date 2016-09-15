@@ -27,7 +27,7 @@ def test_remove_dockercfg_hook(cluster):
             'cpus': 0.1,
             'mem': 32,
             'disk': 0,
-            'cmd': "test ! -f .dockercfg",
+            'cmd': "test -f .dockercfg",
             'artifacts': [{
                 'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
     try:
