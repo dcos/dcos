@@ -79,10 +79,10 @@ class Config():
                 return yaml.load(f)
         except FileNotFoundError as ex:
             raise NoConfigError(
-                "No config file found at {}. Please either refer to the DC/OS documentation for the "
-                "DC/OS disribution and deployment method chosen to see available options or use the "
-                "web installer (--web) which will help guide through configuration for simple "
-                "deploymesnts".format(self.config_path)) from ex
+                "No config file found at {}. See the DC/OS documentation for the "
+                "available configuration options. You can also use the GUI web installer (--web),"
+                "which provides a guided configuration and installation for simple "
+                "deployments.".format(self.config_path)) from ex
 
     def update(self, updates):
         # TODO(cmaloney): check that the updates are all for valid keys, keep
