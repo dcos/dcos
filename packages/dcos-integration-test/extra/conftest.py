@@ -418,7 +418,7 @@ class Cluster:
                 msg += "Detailed explanation of the problem: {2}"
                 pytest.fail(msg.format(r.status_code, r.reason, r.text))
 
-            assert r.json() == {'username': 'root'}
+            assert r.json() == {'username': 'root'} or r.json() == {'username': 'nobody'}
 
     def deploy_marathon_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
