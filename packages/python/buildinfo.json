@@ -1,19 +1,19 @@
 {
   "requires": ["openssl"],
   "environment": {
-    "PYTHONPATH": "/opt/mesosphere/lib/python3.4/site-packages",
+    "PYTHONPATH": "/opt/mesosphere/lib/python3.5/site-packages",
     "PYTHONUNBUFFERED": "true"
   },
   "sources": {
     "python": {
       "kind": "url_extract",
-      "url": "https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz",
-      "sha1": "7d192dec3dfc45a2d4a05b8d3512fa6fa2f64a72"
+      "url": "https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz",
+      "sha1": "4843aabacec5bc0cdd3e1f778faa926e532794d2"
     },
     "setuptools": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/15/b7/a76624e5a3b18c8c1c8d33a5240b34cdabb08aef2da44b536a8b53ba1a45/setuptools-21.0.0-py2.py3-none-any.whl",
-      "sha1": "0f1ac25c51d66e269d1449ad8650624fca8e3f03"
+      "url": "https://pypi.python.org/packages/0c/5d/309113d5359654094f7423ad9c32ac55255b83304f36d0fa96129f28db83/setuptools-27.2.0-py2.py3-none-any.whl",
+      "sha1": "e3e473b1a56dce0bb1892a004153cbaad6ddca8c"
     },
     "pip": {
       "kind": "url",
