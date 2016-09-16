@@ -362,6 +362,26 @@ def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
         "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
 
 
+def calculate_minuteman_min_named_ip_erltuple(minuteman_min_named_ip):
+    return ip_to_erltuple(minuteman_min_named_ip)
+
+
+def calculate_minuteman_max_named_ip_erltuple(minuteman_max_named_ip):
+    return ip_to_erltuple(minuteman_max_named_ip)
+
+
+def ip_to_erltuple(ip):
+    return '{' + ip.replace('.', ',') + '}'
+
+
+def validate_minuteman_min_named_ip(minuteman_min_named_ip):
+    validate_ipv4_addresses([minuteman_min_named_ip])
+
+
+def validate_minuteman_max_named_ip(minuteman_max_named_ip):
+    validate_ipv4_addresses([minuteman_max_named_ip])
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -387,7 +407,9 @@ entry = {
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config,
-        lambda check_time: validate_true_false(check_time)],
+        lambda check_time: validate_true_false(check_time),
+        validate_minuteman_min_named_ip,
+        validate_minuteman_max_named_ip],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
@@ -435,6 +457,8 @@ entry = {
               }                                         \
             ]}',
         'dcos_remove_dockercfg_enable': "false",
+        'minuteman_min_named_ip': '11.0.0.0',
+        'minuteman_max_named_ip': '11.255.255.255',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -469,6 +493,8 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'minuteman_forward_metrics': 'false',
+        'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
+        'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
         'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
