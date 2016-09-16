@@ -20,10 +20,9 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 WorkingDirectory=${PKG_PATH}/minuteman
-Environment=ERL_FLAGS=-kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/opt/mesosphere/etc/minuteman.env
+EnvironmentFile=/opt/mesosphere/etc/minuteman.env
 EnvironmentFile=-/run/dcos/etc/minuteman_auth.env
 ExecStartPre=/opt/mesosphere/bin/check-time
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-minuteman
