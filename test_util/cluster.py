@@ -1,12 +1,14 @@
 import itertools
+import json
 import logging
 import os
 import stat
 from contextlib import contextmanager
+from subprocess import CalledProcessError
 
 import passlib.hash
 import pkg_resources
-from retrying import retry
+from retrying import retry, RetryError
 
 import gen.calc
 import test_util.installer_api_test
@@ -184,6 +186,90 @@ class Cluster:
         """
         self.ssher.remote_cmd(hosts, ['echo'])
 
+    def mesos_metrics_snapshot(self, host):
+        """Return a snapshot of the Mesos metrics for host."""
+        if host in self.masters:
+            port = 5050
+        else:
+            port = 5051
+
+        with self.ssher.tunnel(host) as tunnel:
+            return json.loads(
+                tunnel.remote_cmd([
+                    'curl', '--silent', '{}:{}/metrics/snapshot'.format(host.private_ip, port)
+                ]).decode('utf-8')
+            )
+
+    def zk_mode(self, host):
+        """Return the mode of the ZooKeeper instance on host."""
+        with self.ssher.tunnel(host) as tunnel:
+            stat_out = tunnel.remote_cmd([
+                'sudo', 'docker', 'run',
+                '--net=host',
+                '--entrypoint=/bin/sh',
+                'gophernet/netcat',
+                '-c', '"echo stat | nc localhost 2181"',
+            ])
+        for line in stat_out.split(b'\n'):
+            line = line.strip()
+            if line.startswith(b'Mode: '):
+                mode = line.split(b':')[1].strip()
+                if mode not in (b'leader', b'follower', b'standalone'):
+                    raise Exception('Unexpected ZooKeeper mode {} on host {}'.format(mode, host))
+                return mode.decode('utf-8')
+        else:
+            raise Exception('ZooKeeper mode not found on host {}'.format(host))
+
+    def master_zk_modes(self):
+        """Return (master, zk_mode(master)) for each master."""
+        master_modes = [(master, self.zk_mode(master)) for master in self.masters]
+
+        # Validate modes.
+        modes = [m[1] for m in master_modes]
+        if len(modes) == 1 and modes != ['standalone']:
+            raise Exception(
+                'The mode for a standalone ZooKeeper must be standalone. modes: {}'.format(repr(master_modes))
+            )
+        elif len(modes) > 1:
+            if any(mode not in ('leader', 'follower') for mode in modes):
+                raise Exception(
+                    'All ZooKeepers in an ensemble must be a leader or follower. modes: {}'.format(repr(master_modes))
+                )
+            if modes.count('leader') != 1:
+                raise Exception(
+                    'There must be exactly one leader in a ZooKeeper ensemble. modes: {}'.format(repr(master_modes))
+                )
+
+        return master_modes
+
+
+def run_docker_container_daemon(tunnel, container_name, image, docker_run_args=None):
+    """Run a Docker container with the given name on the host at tunnel."""
+    docker_run_args = docker_run_args or []
+    tunnel.remote_cmd(
+        ['sudo', 'docker', 'run', '--name', container_name, '--detach=true'] + docker_run_args + [image]
+    )
+
+
+def run_bootstrap_zookeeper(tunnel):
+    """Run the bootstrap ZooKeeper daemon on the host at tunnel."""
+    run_docker_container_daemon(
+        tunnel,
+        'dcos-bootstrap-zk',
+        'jplock/zookeeper',
+        ['--publish=2181:2181', '--publish=2888:2888', '--publish=3888:3888'],
+    )
+
+
+def run_bootstrap_nginx(tunnel, home_dir):
+    """Run the bootstrap Nginx daemon on the host at tunnel."""
+    run_docker_container_daemon(
+        tunnel,
+        'dcos-bootstrap-nginx',
+        'nginx',
+        ['--publish=80:80', '--volume={}/genconf/serve:/usr/share/nginx/html:ro'.format(home_dir)],
+    )
+
 
 def install_dcos(
     cluster,
@@ -242,11 +328,8 @@ def install_dcos(
             zk_host = None  # causes genconf to use static exhibitor backend
         else:
             logging.info('Installer CLI is selected, so configure for ZK backend')
+            run_bootstrap_zookeeper(bootstrap_host_tunnel)
             zk_host = cluster.bootstrap_host.private_ip + ':2181'
-            zk_cmd = [
-                'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
-                '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
-            bootstrap_host_tunnel.remote_cmd(zk_cmd)
 
         logging.info("Configuring install...")
         installer.genconf(
@@ -276,6 +359,105 @@ def install_dcos(
 
         logging.info("Running Postflight")
         installer.postflight()
+
+
+def upgrade_dcos(cluster, installer_url, add_config_path=None):
+
+    def master_upgrade_order(cluster):
+        """Return a list of masters with the ZooKeeper leader last."""
+        return [master_zk_mode[0] for master_zk_mode in sorted(
+            cluster.master_zk_modes(),
+            # False < True
+            key=lambda host_zk_mode: host_zk_mode[1] == 'leader',
+        )]
+
+    def upgrade_host(tunnel, role, bootstrap_url):
+        # Download the install script for the new DC/OS.
+        tunnel.remote_cmd(['curl', '-O', bootstrap_url + '/dcos_install.sh'])
+
+        # Remove the old DC/OS.
+        tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
+        tunnel.remote_cmd(['sudo', 'rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'])
+
+        # Install the new DC/OS.
+        tunnel.remote_cmd(['sudo', 'bash', 'dcos_install.sh', '-d', role])
+
+    @retry(
+        wait_fixed=(1000 * 5),
+        stop_max_delay=(1000 * 60 * 5),
+        # Retry on SSH command error or metric not equal to expected value.
+        retry_on_exception=(lambda exc: isinstance(exc, CalledProcessError)),
+        retry_on_result=(lambda result: not result),
+    )
+    def wait_for_mesos_metric(cluster, host, key, value):
+        """Return True when host's Mesos metric key is equal to value."""
+        return cluster.mesos_metrics_snapshot(host).get(key) == value
+
+    assert all(h.public_ip for h in cluster.hosts), (
+        'All cluster hosts must be externally reachable. hosts: {}'.formation(cluster.hosts)
+    )
+    assert cluster.bootstrap_host, 'Upgrade requires a bootstrap host'
+
+    bootstrap_url = 'http://' + cluster.bootstrap_host.private_ip
+
+    logging.info('Preparing bootstrap host for upgrade')
+    with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
+        ip_detect_script = ip_detect_fh.read()
+    with open(cluster.ssher.key_path, 'r') as key_fh:
+        ssh_key = key_fh.read()
+    installer = test_util.installer_api_test.DcosCliInstaller()
+    with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
+        installer.setup_remote(
+            tunnel=bootstrap_host_tunnel,
+            installer_path=cluster.ssher.home_dir + '/dcos_generate_config.sh',
+            download_url=installer_url,
+        )
+        installer.genconf(
+            bootstrap_url=bootstrap_url,
+            zk_host=cluster.bootstrap_host.private_ip + ':2181',
+            master_list=[h.private_ip for h in cluster.masters],
+            agent_list=[h.private_ip for h in cluster.agents],
+            public_agent_list=[h.private_ip for h in cluster.public_agents],
+            ip_detect_script=ip_detect_script,
+            ssh_user=cluster.ssher.user,
+            ssh_key=ssh_key,
+            add_config_path=add_config_path,
+            rexray_config_preset='aws',
+        )
+        # Remove docker (and associated journald) restart from the install
+        # script. This prevents Docker-containerized tasks from being killed
+        # during agent upgrades.
+        bootstrap_host_tunnel.remote_cmd([
+            'sudo', 'sed',
+            '-i',
+            '-e', '"s/systemctl restart systemd-journald//g"',
+            '-e', '"s/systemctl restart docker//g"',
+            cluster.ssher.home_dir + '/genconf/serve/dcos_install.sh',
+        ])
+        run_bootstrap_nginx(bootstrap_host_tunnel, cluster.ssher.home_dir)
+
+    for role, role_name, hosts in [
+        ('master', 'master', master_upgrade_order(cluster)),
+        ('slave', 'agent', cluster.agents),
+        ('slave_public', 'public agent', cluster.public_agents),
+    ]:
+        logging.info('Upgrading {} nodes: {}'.format(role_name, repr(hosts)))
+        for host in hosts:
+            logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
+            with cluster.ssher.tunnel(host) as tunnel:
+                upgrade_host(tunnel, role, bootstrap_url)
+
+            logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
+            if role == 'master':
+                wait_metric = 'registrar/log/recovered'
+            else:
+                wait_metric = 'slave/registered'
+            try:
+                wait_for_mesos_metric(cluster, host, wait_metric, 1)
+            except RetryError as exc:
+                raise Exception(
+                    'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.format(role_name, repr(host))
+                ) from exc
 
 
 def run_integration_tests(cluster, setup=True, **kwargs):

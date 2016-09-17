@@ -270,7 +270,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
             ip_detect_script, rexray_config=None, rexray_config_preset=None,
-            zk_host=None, expect_errors=False, add_config_path=None):
+            zk_host=None, expect_errors=False, add_config_path=None,
+            bootstrap_url='file:///opt/dcos_install_tmp'):
         """Runs configuration generation.
 
         Args:
@@ -295,7 +296,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
         """
         test_config = {
             'cluster_name': 'SSH Installed DC/OS',
-            'bootstrap_url': 'file:///opt/dcos_install_tmp',
+            'bootstrap_url': bootstrap_url,
             'dns_search': 'mesos',
             'master_discovery': 'static',
             'master_list': master_list,
