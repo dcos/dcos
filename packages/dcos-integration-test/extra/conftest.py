@@ -64,6 +64,7 @@ def cluster():
                    slaves=os.environ['SLAVE_HOSTS'].split(','),
                    public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
                    dns_search_set=os.environ['DNS_SEARCH'],
+                   dockercfg_hook_enabled=os.getenv('DOCKERCFG_HOOK', 'false'),
                    provider=os.environ['DCOS_PROVIDER'],
                    auth_enabled=AUTH_ENABLED)
 
@@ -245,7 +246,7 @@ class Cluster:
         self.superuser_auth_cookie = r.cookies['dcos-acs-auth-cookie']
 
     def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
-                 dns_search_set, provider, auth_enabled):
+                 dns_search_set, dockercfg_hook_enabled, provider, auth_enabled):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -256,6 +257,8 @@ class Cluster:
             slaves: list of Mesos slave/agent advertised IP addresses.
             dns_search_set: string indicating that a DNS search domain is
                 configured if its value is "true".
+            dockercfg_hook_enabled: string indicating that the remove
+                dockercfg hook should be enabled
             provider: onprem, azure, or aws
             auth_enabled: True or False
         """
@@ -266,6 +269,7 @@ class Cluster:
         self.all_slaves = sorted(slaves + public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.dns_search_set = dns_search_set == 'true'
+        self.dockercfg_hook_enabled = dockercfg_hook_enabled == 'true'
         self.provider = provider
         self.auth_enabled = auth_enabled
 
