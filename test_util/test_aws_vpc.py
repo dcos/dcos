@@ -3,7 +3,8 @@
 
 The following environment variables control test procedure:
 
-VPC_HOSTS: comma separated IP addresses that are accesible from localhost (default=None)
+VPC_HOSTS: comma-delimeted string of colon-delimited public:private IP pairs (default=None)
+    Example: VPC_HOSTS=1.2.3.4:2.2.3.4,1.2.3.5:2.2.3.5,...
     If provided, ssh_key must be in current working directory and hosts must
     be accessible using ssh -i ssh_key centos@IP
 
@@ -12,6 +13,15 @@ HOST_SETUP: true or false (default=true)
     ZK (if required), and setup the integration_test.py requirements (setup test runner, test
     registry, and test app in registry).
     If false, test will skip the above steps
+
+MASTERS: integer (default=1)
+    The number of masters to create from VPC_HOSTS or a newly created VPC.
+
+AGENTS: integer (default=2)
+    The number of agents to create from VPC_HOSTS or a newly created VPC.
+
+PUBLIC_AGENTS: integer (default=1)
+    The number of public agents to create from VPC_HOSTS or a newly created VPC.
 
 DCOS_SSH_KEY_PATH: string (default='default_ssh_key')
     Use to set specific ssh key path. Otherwise, script will expect key at default_ssh_key
@@ -49,41 +59,17 @@ TEST_ADD_ENV_*: string (default=None)
 import logging
 import os
 import random
-import stat
 import string
 import sys
-from os.path import join
-
-import passlib.hash
-import pkg_resources
-from retrying import retry
 
 import test_util.aws
-import test_util.installer_api_test
-import test_util.test_runner
-from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
+import test_util.cluster
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
-
-
-def get_local_address(tunnel, remote_dir):
-    """Uses checked-in IP detect script to report local IP mapping
-    Args:
-        tunnel (SSHTunnel): see ssh.ssh_tunnel.SSHTunnel
-        remote_dir (str): path on hosts for ip-detect to be copied and run in
-
-    Returns:
-        dict[public_IP] = local_IP
-    """
-    ip_detect_script = pkg_resources.resource_filename('gen', 'ip-detect/aws.sh')
-    tunnel.write_to_remote(ip_detect_script, join(remote_dir, 'ip-detect.sh'))
-    local_ip = tunnel.remote_cmd(['bash', join(remote_dir, 'ip-detect.sh')]).decode('utf-8').strip('\n')
-    assert len(local_ip.split('.')) == 4
-    return local_ip
 
 
 def check_environment():
@@ -100,7 +86,9 @@ def check_environment():
     options = type('Options', (object,), {})()
 
     if 'VPC_HOSTS' in os.environ:
-        options.host_list = os.environ['VPC_HOSTS'].split(',')
+        options.host_list = [
+            test_util.aws.Host(*host_str.split(':')) for host_str in os.environ['VPC_HOSTS'].split(',')
+        ]
     else:
         options.host_list = None
 
@@ -113,6 +101,10 @@ def check_environment():
         options.installer_url = os.environ['INSTALLER_URL']
     else:
         options.installer_url = None
+
+    options.masters = int(os.environ.get('MASTERS', '1'))
+    options.agents = int(os.environ.get('AGENTS', '2'))
+    options.public_agents = int(os.environ.get('PUBLIC_AGENTS', '1'))
 
     assert 'USE_INSTALLER_API' in os.environ, 'USE_INSTALLER_API must be set in environ'
     assert os.environ['USE_INSTALLER_API'] in ['true', 'false']
@@ -155,9 +147,8 @@ def check_environment():
 def main():
     options = check_environment()
 
-    host_list = None
-    vpc = None  # Set if the test owns the VPC
-
+    cluster = None
+    vpc = None
     if options.host_list is None:
         log.info('VPC_HOSTS not provided, requesting new VPC ...')
         random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
@@ -172,149 +163,69 @@ def main():
             region=DEFAULT_AWS_REGION,
             aws_access_key_id=options.aws_access_key_id,
             aws_secret_access_key=options.aws_secret_access_key)
-        vpc = test_util.aws.VpcCfStack.create(
+        vpc, ssh_info = test_util.aws.VpcCfStack.create(
             stack_name=unique_cluster_id,
             instance_type=options.instance_type,
             instance_os=os_name,
-            instance_count=5,  # 1 bootstrap, 1 master, 2 agents, 1 public agent
+            # An instance for each cluster node plus the bootstrap.
+            instance_count=(options.masters + options.agents + options.public_agents + 1),
             admin_location='0.0.0.0/0',
             key_pair_name='default',
             boto_wrapper=bw)
         vpc.wait_for_stack_creation()
 
-        vpc_info = vpc.get_vpc_host_ips()
-        log.info('AWS provided VPC info: ' + repr(vpc_info))
-        host_list = [i.public_ip for i in vpc_info]
+        cluster = test_util.cluster.Cluster.from_vpc(
+            vpc,
+            ssh_info,
+            ssh_key_path=options.ssh_key_path,
+            num_masters=options.masters,
+            num_agents=options.agents,
+            num_public_agents=options.public_agents,
+        )
     else:
-        host_list = options.host_list
+        # Assume an existing onprem CentOS cluster.
+        cluster = test_util.cluster.Cluster.from_hosts(
+            ssh_info=test_util.aws.SSH_INFO['centos'],
+            ssh_key_path=options.ssh_key_path,
+            hosts=options.host_list,
+            num_masters=options.masters,
+            num_agents=options.agents,
+            num_public_agents=options.public_agents,
+        )
 
-    # Create custom SSH Runnner to help orchestrate the test
-    ssh_user = 'centos'
-    remote_dir = '/home/centos'
-    assert os.path.exists(options.ssh_key_path), 'Valid SSH key for hosts must be in working dir!'
+    test_util.cluster.install_dcos(
+        cluster,
+        installer_url=options.installer_url,
+        setup=options.do_setup,
+        api=options.use_api,
+        add_config_path=options.add_config_path,
+        # If we don't want to test the prereq install, use offline mode to avoid it.
+        installer_api_offline_mode=(not options.test_install_prereqs),
+        install_prereqs=options.test_install_prereqs,
+        install_prereqs_only=options.test_install_prereqs_only,
+    )
 
-    os.chmod(options.ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
+    if options.test_install_prereqs and options.test_install_prereqs_only:
+        # install_dcos() exited after running prereqs, so we're done.
+        if vpc:
+            vpc.delete()
+        sys.exit(0)
 
-    if options.use_api:
-        installer = test_util.installer_api_test.DcosApiInstaller()
-        if not options.test_install_prereqs:
-            # If we dont want to test the prereq install, use offline mode to avoid it
-            installer.offline_mode = True
-    else:
-        installer = test_util.installer_api_test.DcosCliInstaller()
-
-    host_list_w_port = [i + ':22' for i in host_list]
-
-    @retry(stop_max_delay=120000)
-    def establish_host_connectivity():
-        """Continually try to recreate the SSH Tunnels to all hosts for 2 minutes
-        """
-        return TunnelCollection(ssh_user, options.ssh_key_path, host_list_w_port)
-
-    log.info('Checking that hosts are accessible')
-    with establish_host_connectivity() as tunnels:
-        local_ip = {}
-        for tunnel in tunnels.tunnels:
-            local_ip[tunnel.host] = get_local_address(tunnel, remote_dir)
-            if options.do_setup:
-                # Make the default user priveleged to use docker
-                tunnel.remote_cmd(['sudo', 'usermod', '-aG', 'docker', ssh_user])
-
-    # use first node as bootstrap node, second node as master, all others as agents
-    test_host = host_list[0]
-    test_host_local = local_ip[host_list[0]]
-    master_list = [local_ip[host_list[1]]]
-    agent1 = local_ip[host_list[2]]
-    agent2 = local_ip[host_list[3]]
-    agent_list = [agent1, agent2]
-    public_agent_list = [local_ip[host_list[4]]]
-    log.info('Test host public/private IP: ' + test_host + '/' + test_host_local)
-
-    with SSHTunnel(ssh_user, options.ssh_key_path, test_host) as test_host_tunnel:
-        log.info('Setting up installer on test host')
-
-        installer.setup_remote(
-            tunnel=test_host_tunnel,
-            installer_path=remote_dir + '/dcos_generate_config.sh',
-            download_url=options.installer_url)
-        if options.do_setup:
-            # only do on setup so you can rerun this test against a living installer
-            log.info('Verifying installer password hashing')
-            test_pass = 'testpassword'
-            hash_passwd = installer.get_hashed_password(test_pass)
-            assert passlib.hash.sha512_crypt.verify(test_pass, hash_passwd), 'Hash does not match password'
-            if options.use_api:
-                installer.start_web_server()
-
-        with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
-            ip_detect_script = ip_detect_fh.read()
-        with open(options.ssh_key_path, 'r') as key_fh:
-            ssh_key = key_fh.read()
-        # Using static exhibitor is the only option in the GUI installer
-        if options.use_api:
-            log.info('Installer API is selected, so configure for static backend')
-            zk_host = None  # causes genconf to use static exhibitor backend
-        else:
-            log.info('Installer CLI is selected, so configure for ZK backend')
-            zk_host = test_host_local + ':2181'
-            zk_cmd = [
-                'sudo', 'docker', 'run', '-d', '-p', '2181:2181', '-p',
-                '2888:2888', '-p', '3888:3888', 'jplock/zookeeper']
-            test_host_tunnel.remote_cmd(zk_cmd)
-
-        log.info("Configuring install...")
-        installer.genconf(
-            zk_host=zk_host,
-            master_list=master_list,
-            agent_list=agent_list,
-            public_agent_list=public_agent_list,
-            ip_detect_script=ip_detect_script,
-            ssh_user=ssh_user,
-            ssh_key=ssh_key,
-            add_config_path=options.add_config_path,
-            rexray_config_preset='aws')
-
-        log.info("Running Preflight...")
-        if options.test_install_prereqs:
-            # Runs preflight in --web or --install-prereqs for CLI
-            # This may take up 15 minutes...
-            installer.install_prereqs()
-            if options.test_install_prereqs_only:
-                if vpc:
-                    vpc.delete()
-                sys.exit(0)
-        else:
-            # Will not fix errors detected in preflight
-            installer.preflight()
-
-        log.info("Running Deploy...")
-        installer.deploy()
-
-        log.info("Running Postflight")
-        installer.postflight()
-
-    with SSHTunnel(ssh_user, options.ssh_key_path, host_list[1]) as master_tunnel:
-        # Runs dcos-image integration tests inside the cluster
-        result = test_util.test_runner.integration_test(
-            tunnel=master_tunnel,
-            test_dir=remote_dir,
-            region=DEFAULT_AWS_REGION,
-            dcos_dns=master_list[0],
-            master_list=master_list,
-            agent_list=agent_list,
-            public_agent_list=public_agent_list,
-            provider='onprem',
-            # Setting dns_search: mesos not currently supported in API
-            test_dns_search=not options.use_api,
-            aws_access_key_id=options.aws_access_key_id,
-            aws_secret_access_key=options.aws_secret_access_key,
-            add_env=options.add_env,
-            pytest_dir=options.pytest_dir,
-            pytest_cmd=options.pytest_cmd)
+    result = test_util.cluster.run_integration_tests(
+        cluster,
+        # Setting dns_search: mesos not currently supported in API
+        test_dns_search=(not options.use_api),
+        region=DEFAULT_AWS_REGION,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key,
+        add_env=options.add_env,
+        pytest_dir=options.pytest_dir,
+        pytest_cmd=options.pytest_cmd,
+    )
 
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
-        if vpc is not None:
+        if vpc:
             vpc.delete()
     else:
         log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")
