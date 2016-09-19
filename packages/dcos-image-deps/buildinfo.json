@@ -1,6 +1,7 @@
 {
   "requires": [
     "boto",
+    "dnspython",
     "flask",
     "python",
     "python-docopt",
