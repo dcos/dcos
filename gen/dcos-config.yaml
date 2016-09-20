@@ -37,6 +37,9 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
+  - path: /etc/spartan.env
+    content: |
+      ERL_FLAGS=" -kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501"
   - path: /etc_slave/spartan.json
     content: |
       {
@@ -91,6 +94,9 @@ package:
           ]
         }
       ].
+  - path: /etc/navstar.env
+    content: |
+      ERL_FLAGS=" -kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502"
   - path: /etc_master/navstar.app.config
     content: |
       [
@@ -287,6 +293,9 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
+  - path: /etc/minuteman.env
+    content: |
+      ERL_FLAGS=" -kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503"
   - path: /etc/minuteman/overrides.json
     content: |
       {

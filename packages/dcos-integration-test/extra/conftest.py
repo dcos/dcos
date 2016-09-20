@@ -396,7 +396,7 @@ class Cluster:
         return app, test_uuid
 
     def deploy_test_app_and_check(self, app, test_uuid):
-        with self.marathon_deploy_and_cleanup(app) as service_points:
+        with self.marathon_deploy_and_cleanup(app, timeout=240) as service_points:
             r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
                                                              service_points[0].port))
             if r.status_code != 200:
