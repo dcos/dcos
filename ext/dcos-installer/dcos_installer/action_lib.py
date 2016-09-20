@@ -251,6 +251,34 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
         stage=lambda node: 'Installing DC/OS'
     )
 
+    # enable on gatewayd on agents
+    inline_script = """
+#/bin/sh
+set -e
+
+# override gatewayd to make it listen on unix socket
+sudo tee /etc/systemd/system/systemd-journal-gatewayd.socket <<- EOF
+[Unit]
+Description=Journal Gateway Service Socket
+Documentation=man:systemd-journal-gatewayd(8)
+
+[Socket]
+ListenStream=/var/run/systemd-journal-gatewayd.sock
+
+[Install]
+WantedBy=systemd-journal-gatewayd.service
+EOF
+
+sudo systemctl enable systemd-journal-gatewayd.socket
+sudo systemctl start systemd-journal-gatewayd.socket
+sudo systemctl enable systemd-journal-gatewayd.service
+sudo systemctl start systemd-journal-gatewayd.service
+"""
+    chain.add_execute(
+        lambda node: [inline_script] if node.tags['role'] in ('agent', 'public_agent') else [],
+        stage='Enabling logging API'
+    )
+
     # UI expects total_masters, total_agents to be top level keys in deploy.json
     delegate_extra_params = nodes_count_by_type(config)
     if kwargs.get('retry') and state_json_dir:
