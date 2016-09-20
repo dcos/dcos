@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 import logging
 import pprint
-from collections import namedtuple
 
 import boto3
 import retrying
 
+from test_util.helpers import Host, SshInfo
+
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-Host = namedtuple('Host', ['private_ip', 'public_ip'])
-SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
 
 VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'
 VPC_EBS_ONLY_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-ebs-only-cluster-template.json'
@@ -132,7 +130,9 @@ class DcosCfSimple(CfStack):
             'PublicSlaveInstanceCount': str(public_agents),
             'SlaveInstanceCount': str(private_agents)}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper), SSH_INFO['coreos']
+        # Use stack_name as the binding identifier. At time of implementation,
+        # stack.stack_name returns stack_id if Stack was created with ID
+        return cls(stack.stack.stack_name, boto_wrapper), SSH_INFO['coreos']
 
     def delete(self):
         logger.info('Starting deletion of CF stack')
@@ -140,24 +140,6 @@ class DcosCfSimple(CfStack):
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
         self.stack.delete()
         self.empty_and_delete_s3_bucket_from_stack()
-
-    def get_tag_instances(self, tag):
-        return self.boto_wrapper.client('ec2').describe_instances(
-            Filters=[
-                {'Name': 'tag-value', 'Values': [self.stack.stack_name]},
-                {'Name': 'tag-value', 'Values': [tag]}])['Reservations'][0]['Instances']
-
-    def get_master_ips(self):
-        instances = self.get_tag_instances('MasterServerGroup')
-        return instances_to_hosts(instances)
-
-    def get_public_agent_ips(self):
-        instances = self.get_tag_instances('PublicSlaveServerGroup')
-        return instances_to_hosts(instances)
-
-    def get_private_agent_ips(self):
-        instances = self.get_tag_instances('SlaveServerGroup')
-        return instances_to_hosts(instances)
 
     def empty_and_delete_s3_bucket_from_stack(self):
         bucket_id = self.stack.Resource('ExhibitorS3Bucket').physical_resource_id
@@ -173,6 +155,30 @@ class DcosCfSimple(CfStack):
         logger.info('Trying deleting bucket {} itself'.format(bucket))
         bucket.delete()
         logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
+
+    def get_master_ips(self, state_list=None):
+        instances = self.get_group_instances(['MasterServerGroup'], state_list)
+        return instances_to_hosts(instances)
+
+    def get_public_agent_ips(self, state_list=None):
+        instances = self.get_group_instances(['PublicSlaveServerGroup'], state_list)
+        return instances_to_hosts(instances)
+
+    def get_private_agent_ips(self, state_list=None):
+        instances = self.get_group_instances(['SlaveServerGroup'], state_list)
+        return instances_to_hosts(instances)
+
+    def get_group_instances(self, group_list, state_list=None):
+        """Returns a list of dictionaries that describe currently running instances of group
+        """
+        filters = [{'Name': 'tag:aws:cloudformation:stack-name', 'Values': [self.stack.stack_name]}]
+        if group_list:
+            filters.append({'Name': 'tag:aws:cloudformation:logical-id', 'Values': group_list})
+        if state_list:
+            filters.append({'Name': 'instance-state-name', 'Values': state_list})
+        reservations = self.boto_wrapper.client('ec2').describe_instances(
+            Filters=filters)['Reservations']
+        return [instance for res in reservations for instance in res['Instances']]
 
 
 class DcosCfAdvanced(CfStack):
@@ -224,7 +230,7 @@ class DcosCfAdvanced(CfStack):
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper), SSH_INFO['coreos']
+        return cls(stack.stack.stack_name, boto_wrapper), SSH_INFO['coreos']
 
     def delete(self, delete_vpc=False):
         logger.info('Starting deletion of CF Advanced stack')
@@ -300,7 +306,7 @@ class VpcCfStack(CfStack):
             'InstanceType': str(instance_type),
             'AmiCode': ami_code}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_id, boto_wrapper), OS_SSH_INFO[instance_os]
+        return cls(stack.stack.stack_name, boto_wrapper), OS_SSH_INFO[instance_os]
 
     def delete(self):
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based

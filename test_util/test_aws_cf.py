@@ -21,7 +21,11 @@ DCOS_SSH_KEY_PATH: string
     Defaults to 'default_ssh_key'
 
 DCOS_ADVANCED_TEMPLATE: boolean (default:false)
-    If true, then DCOS_TEMPLATE_URL is a zen template
+    If true, then DCOS_STACK_NAME is for a DC/OS advanced stack
+
+TEST_DCOS_RESILIENCY: true/false (default: false)
+    Will setup a cluster for resiliency testing and then run the resiliency tests
+    after the standard integration tests
 
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
@@ -62,18 +66,18 @@ def check_environment():
     # Defaults
     options.ci_flags = os.getenv('CI_FLAGS', '')
     options.aws_region = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
-    options.advanced = os.getenv('DCOS_ADVANCED_TEMPLATE', 'false') == 'true'
     options.gateway = os.getenv('DCOS_ADVANCED_GATEWAY', None)
     options.vpc = os.getenv('DCOS_ADVANCED_VPC', None)
     options.private_subnet = os.getenv('DCOS_ADVANCED_PRIVATE_SUBNET', None)
     options.public_subnet = os.getenv('DCOS_ADVANCED_PUBLIC_SUBNET', None)
-    options.ssh_user = os.getenv('DCOS_SSH_USER', 'core')
+    options.host_os = os.getenv('DCOS_HOST_OS', 'coreos')
     options.agents = int(os.environ.get('AGENTS', '2'))
     options.public_agents = int(os.environ.get('PUBLIC_AGENTS', '1'))
+    options.ssh_key_path = os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')
+    options.test_resiliency = os.getenv('TEST_DCOS_RESILIENCY', 'false') == 'true'
 
     # Mandatory
     options.stack_name = os.getenv('DCOS_STACK_NAME', None)
-    options.ssh_key_path = os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')
     options.template_url = os.getenv('DCOS_TEMPLATE_URL', None)
     if not options.template_url:
         assert options.stack_name is not None, 'if DCOS_TEMPLATE_URL is not provided, '\
@@ -85,6 +89,7 @@ def check_environment():
     else:
         options.advanced = not options.template_url.endswith('single-master.cloudformation.json') and \
             not options.template_url.endswith('multi-master.cloudformation.json')
+    # Required
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
@@ -96,6 +101,8 @@ def check_environment():
     options.add_env = add_env
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
+    if options.test_resiliency:
+        options.pytest_cmd += ' --resiliency '
     return options
 
 
@@ -160,10 +167,15 @@ def provide_cluster(options):
                 boto_wrapper=bw)
         cf.wait_for_stack_creation()
     else:
-        cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
-        ssh_info = test_util.aws.SSH_INFO['coreos']
+        if options.advanced:
+            cf = test_util.aws.DcosCfAdvanced.create(options.stack_name, bw)
+        else:
+            cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
+        ssh_info = test_util.aws.SSH_INFO[options.host_os]
+        stack_name = options.stack_name
+    if options.test_resiliency:
+        options.add_env['AWS_STACK_NAME'] = stack_name
     return cf, ssh_info
-
 
 if __name__ == '__main__':
     main()
