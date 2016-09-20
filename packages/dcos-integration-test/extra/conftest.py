@@ -292,8 +292,18 @@ class Cluster:
     def get(self, path="", params=None, disable_suauth=False, **kwargs):
         hdrs = self._suheader(disable_suauth)
         hdrs.update(kwargs.pop('headers', {}))
-        return requests.get(
-            self.dcos_uri + path, params=params, headers=hdrs, **kwargs)
+
+        def _get():
+            return requests.get(
+                self.dcos_uri + path, params=params, headers=hdrs, **kwargs)
+
+        resp = _get()
+        """If the status code is 401 and the authorization header is set,
+        try authenticating once more in the case that the token has expired."""
+        if resp.status_code == 401 and not disable_suauth:
+            self._authenticate()
+            return _get()
+        return resp
 
     def post(self, path="", payload=None, disable_suauth=False, **kwargs):
         hdrs = self._suheader(disable_suauth)
