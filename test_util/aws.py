@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import logging
+import pprint
 from collections import namedtuple
 
 import boto3
+import retrying
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -69,13 +71,55 @@ class CfStack():
         self.boto_wrapper = boto_wrapper
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
 
+    def wait_for_status_change(self, state_1, state_2, timeout=3600):
+        """Note: Do not use boto waiter class, it has very poor error handling
+        and will raise an exception when the rate limit is hit whereas botoclient
+        methods will simply sleep and retry
+        """
+        stack_states = [
+            'CREATE_IN_PROGRESS', 'CREATE_FAILED', 'CREATE_COMPLETE',
+            'ROLLBACK_IN_PROGRESS', 'ROLLBACK_FAILED', 'ROLLBACK_COMPLETE',
+            'DELETE_IN_PROGRESS', 'DELETE_FAILED', 'DELETE_COMPLETE',
+            'UPDATE_IN_PROGRESS', 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+            'UPDATE_COMPLETE', 'UPDATE_ROLLBACK_IN_PROGRESS',
+            'UPDATE_ROLLBACK_FAILED', 'UPDATE_ROLLBACK_COMPLETE',
+            'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS']
+        state_args = set([state_1, state_2])
+        assert state_args.issubset(stack_states), 'Invalid state(s): {}. states must be one of: {}'.format(
+            repr(state_args.difference(stack_states)), repr(stack_states))
+        logging.info('Waiting for status to change from {} to {}'.format(state_1, state_2))
+
+        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
+                        retry_on_result=lambda res: res is False,
+                        retry_on_exception=lambda ex: False)
+        def wait_loop():
+            stack_details = self.get_stack_details()
+            stack_status = stack_details['StackStatus']
+            if stack_status == state_2:
+                return True
+            if stack_status != state_1:
+                logging.exception('Stack Details:\n{}'.format(
+                    pprint.pformat(stack_details)))
+                logging.exception('Stack Events:\n{}'.format(
+                    pprint.pformat(self.get_stack_events())))
+                raise Exception('StackStatus changed unexpectedly to: {}'.format(stack_status))
+            return False
+
+        wait_loop()
+
+    def get_stack_details(self):
+        return self.boto_wrapper.client('cloudformation').describe_stacks(
+            StackName=self.stack.stack_id)['Stacks'][0]
+
+    def get_stack_events(self):
+        return self.boto_wrapper.client('cloudformation').describe_stack_events(
+            StackName=self.stack.stack_id)['StackEvents']
+
     def wait_for_stack_creation(self):
-        self.boto_wrapper.client('cloudformation').get_waiter('stack_create_complete').\
-            wait(StackName=self.stack.stack_name)
+        self.wait_for_status_change('CREATE_IN_PROGRESS', 'CREATE_COMPLETE')
 
     def wait_for_stack_deletion(self):
-        self.boto_wrapper.client('cloudformation').get_waiter('stack_delete_complete').\
-            wait(StackName=self.stack.stack_name)
+        self.wait_for_status_change('DELETE_IN_PROGRESS', 'DELETE_COMPLETE')
 
 
 class DcosCfSimple(CfStack):
