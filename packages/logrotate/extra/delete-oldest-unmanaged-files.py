@@ -16,7 +16,7 @@ def main(directory, max_files, managed_file):
     @type max_files: int, maximum number of files to keep
     @type managed_file: str, one file (i.e. leading log) to excempt from cleanup
     '''
-    logging.basicConfig(format='%(levelname)-5s %(asctime)s ] %(message)s',
+    logging.basicConfig(format='%(levelname)-4s ] %(message)s',
                         level=logging.INFO)
 
     # For simplicity, convert all paths to absolute paths.

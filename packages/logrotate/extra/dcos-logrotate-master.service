@@ -4,4 +4,4 @@ Description=Logrotate Mesos Master: Rotate Mesos master logs
 Type=simple
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/mesos/log/archive
-ExecStart=$PKG_PATH/bin/logrotate /opt/mesosphere/etc/logrotate_master.config -s /var/lib/dcos/mesos/logrotate_master.status
+ExecStart=$PKG_PATH/bin/logrotate -v /opt/mesosphere/etc/logrotate_master.config -s /var/lib/dcos/mesos/logrotate_master.status
