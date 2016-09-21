@@ -4,7 +4,7 @@
     "minuteman": {
       "kind": "git",
       "git": "https://github.com/dcos/minuteman.git",
-      "ref": "3ee7f8b5a8bbf2f02430326b49cefbcb664aa4ae",
+      "ref": "aaea38183fe65d8f9f8c92c524a1cbf020800fb1",
       "ref_origin": "anatoly/fix-socket-leak"
     }
   },
