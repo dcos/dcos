@@ -3,9 +3,9 @@
   "sources": {
     "navstar": {
       "kind": "git",
-      "git": "https://github.com/dcos/navstar.git",
-      "ref": "da5e2820703bd05c2adbb8148f68257b67ffd448",
-      "ref_origin": "master"
+      "git": "https://github.com/drewkerrigan/navstar.git",
+      "ref": "658aef511278b8589ad6f42c1cd775cb79f96198",
+      "ref_origin": "ack-cni-tasks"
     }
   }
 }
