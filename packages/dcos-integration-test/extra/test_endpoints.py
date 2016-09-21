@@ -1,6 +1,7 @@
 import urllib.parse
 
 import bs4
+from retrying import retry
 
 
 def test_if_dcos_ui_is_up(cluster):
@@ -116,15 +117,20 @@ def test_if_pkgpanda_metadata_is_available(cluster):
 
 
 def test_if_dcos_history_service_is_getting_data(cluster):
-    r = cluster.get('/dcos-history-service/history/last')
-    assert r.status_code == 200
-    # Make sure some basic fields are present from state-summary which the DC/OS
-    # UI relies upon. Their exact content could vary so don't test the value.
-    json = r.json()
-    assert 'cluster' in json
-    assert 'frameworks' in json
-    assert 'slaves' in json
-    assert 'hostname' in json
+
+    @retry(stop_max_delay=20000, wait_fixed=500)
+    def check_up():
+        r = cluster.get('/dcos-history-service/history/last')
+        assert r.status_code == 200
+        # Make sure some basic fields are present from state-summary which the DC/OS
+        # UI relies upon. Their exact content could vary so don't test the value.
+        json = r.json()
+        assert 'cluster' in json
+        assert 'frameworks' in json
+        assert 'slaves' in json
+        assert 'hostname' in json
+
+    check_up()
 
 
 def test_if_we_have_capabilities(cluster):

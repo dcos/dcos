@@ -2,9 +2,11 @@ import logging
 import os
 import sys
 
+
 from flask import Flask, Response
 from flask.ext.compress import Compress
 from history.statebuffer import BufferCollection, BufferUpdater
+
 
 app = Flask(__name__)
 compress = Compress()
@@ -79,7 +81,7 @@ def _response_(content):
     return Response(response=content, content_type="application/json", headers=headers_cb())
 
 
-def start():
+def on_starting_server(server):
     global state_buffer
     logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
 
@@ -90,4 +92,10 @@ def start():
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
     BufferUpdater(state_buffer, headers_cb).run()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '15055')))
+
+
+def start():
+    # Used for testing only; on dc/os $PATH should have gunicorn
+    # Have to be in the same folder to run this
+    # In case of failure it will not sys.exit
+    os.system("gunicorn -c dcos_history_conf.py server:app")
