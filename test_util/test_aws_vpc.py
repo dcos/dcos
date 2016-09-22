@@ -64,12 +64,25 @@ import sys
 
 import test_util.aws
 import test_util.cluster
+import test_util.installer_api_test
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 DEFAULT_AWS_REGION = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
+
+
+def get_cluster_systemd_units(cluster):
+    all_hosts = [cluster.bootstrap_host] + cluster.agents + cluster.public_agents +\
+        cluster.masters
+    unit_map = {}
+    for host in all_hosts:
+        with cluster.ssher.tunnel(host) as tunnel:
+            units = tunnel.remote_cmd(['systemctl', 'list-units']).decode().split('\n')
+            # only looking at the names for simplicity
+            unit_map[host.public_ip] = sorted([u[0] for u in units])
+    return unit_map
 
 
 def check_environment():
@@ -193,6 +206,10 @@ def main():
             num_public_agents=options.public_agents,
         )
 
+    if not options.use_api:
+        # attempt uninstall if we are using the CLI installer
+        pre_install_units = get_cluster_systemd_units(cluster)
+
     test_util.cluster.install_dcos(
         cluster,
         installer_url=options.installer_url,
@@ -226,6 +243,18 @@ def main():
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
         if vpc:
+            if not options.use_api:
+                # Only the CLI supports uninstall
+                installer_api = test_util.installer_api_test.DcosCliInstaller()
+                installer_api.setup_remote(
+                    tunnel=None,
+                    installer_path=cluster.ssher.home_dir + '/dcos_generate_config.sh',
+                    download_url=None,
+                    host=cluster.bootstrap_host.public_ip,
+                    ssh_user=cluster.ssher.user,
+                    ssh_key_path=cluster.ssher.ssh_key_path)
+                installer_api.uninstall()
+                assert pre_install_units == get_cluster_systemd_units(cluster), 'Systemd units have changed after uninstall!'
             vpc.delete()
     else:
         log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")

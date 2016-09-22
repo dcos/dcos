@@ -343,3 +343,6 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def postflight(self, expect_errors=False):
         self.run_cli_cmd('--postflight', expect_errors=expect_errors)
+
+    def uninstall(self, expect_errors=False):
+        self.run_cli_cmd('--uninstall', expect_errors=expect_errors)
