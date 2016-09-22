@@ -57,14 +57,7 @@ cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
 
 # Copy the log-redirection wrapper script for the master/agent.
-# These are renamed to `mesos-master` and `mesos-agent` so that they show up
-# with those names in journald.
-tee_stderr_script="$PKG_PATH/bin/wrappers/mesos-agent"
-mkdir -p "$(dirname "$tee_stderr_script")"
-cp /pkg/extra/tee_stderr "$tee_stderr_script"
-chmod +x "$tee_stderr_script"
-
-tee_stderr_script="$PKG_PATH/bin/wrappers/mesos-master"
+tee_stderr_script="$PKG_PATH/bin/tee_stderr"
 cp /pkg/extra/tee_stderr "$tee_stderr_script"
 chmod +x "$tee_stderr_script"
 
