@@ -27,7 +27,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 WorkingDirectory=${PKG_PATH}/navstar
-Environment=ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
+EnvironmentFile=/opt/mesosphere/etc/navstar-erl.env
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/navstar.env
