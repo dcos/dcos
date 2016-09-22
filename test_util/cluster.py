@@ -92,7 +92,7 @@ class Cluster:
         num_agents,
         num_public_agents,
     ):
-        assert all(x > 0 for x in [num_masters, num_agents, num_public_agents]), (
+        assert all(x >= 0 for x in [num_masters, num_agents, num_public_agents]), (
             'num_masters, num_agents, and num_public_agents must be 0 or greater. '
             'num_masters: {num_masters}, num_agents: {num_agents}, num_public_agents: {num_public_agents}'.format(
                 num_masters=num_masters,
