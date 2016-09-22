@@ -467,7 +467,7 @@ class ClusterApi:
     @contextmanager
     def marathon_deploy_and_cleanup(self, app_definition, check_health=True, ignore_failed_tasks=False):
         timeout = int(os.getenv(DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_ENV_VAR,
-                            DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_DEFAULT))
+                                DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_DEFAULT))
 
         yield self.deploy_marathon_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
