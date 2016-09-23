@@ -1,5 +1,7 @@
 Documentation of changes which may break some install environments
 
+1.9
+ - bootstrap_url must not be set if the ssh installer is being used.
 
 1.8-dev
  - Marathon will refuse to accept new apps, and will refuse changes to existing

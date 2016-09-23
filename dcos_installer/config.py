@@ -21,7 +21,6 @@ resolvers:
 - 8.8.4.4
 ssh_port: 22
 process_timeout: 10000
-bootstrap_url: file:///opt/dcos_install_tmp
 """
 
 
