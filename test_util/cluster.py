@@ -15,6 +15,9 @@ import test_util.test_runner
 from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
 
 
+zookeeper_docker_image = 'jplock/zookeeper'
+zookeeper_docker_run_args = ['--publish=2181:2181', '--publish=2888:2888', '--publish=3888:3888']
+
 curl_cmd = [
     'curl',
     '--silent',
@@ -265,8 +268,8 @@ def run_bootstrap_zookeeper(tunnel):
     run_docker_container_daemon(
         tunnel,
         'dcos-bootstrap-zk',
-        'jplock/zookeeper',
-        ['--publish=2181:2181', '--publish=2888:2888', '--publish=3888:3888'],
+        zookeeper_docker_image,
+        zookeeper_docker_run_args,
     )
 
 
