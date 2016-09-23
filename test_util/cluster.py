@@ -243,7 +243,7 @@ def run_docker_container_daemon(tunnel, container_name, image, docker_run_args=N
     """Run a Docker container with the given name on the host at tunnel."""
     docker_run_args = docker_run_args or []
     tunnel.remote_cmd(
-        ['sudo', 'docker', 'run', '--name', container_name, '--detach=true'] + docker_run_args + [image]
+        ['docker', 'run', '--name', container_name, '--detach=true'] + docker_run_args + [image]
     )
 
 
