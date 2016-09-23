@@ -73,7 +73,7 @@ def cluster():
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
-    return test_util.cluster_api.ClusterApi(
+    cluster_api = test_util.cluster_api.ClusterApi(
         dcos_uri=os.environ['DCOS_DNS_ADDRESS'],
         masters=os.environ['MASTER_HOSTS'].split(','),
         public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
@@ -84,3 +84,5 @@ def cluster():
         auth_enabled=os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
         username=os.getenv('DCOS_LOGIN_UNAME', None),
         password=os.getenv('DCOS_LOGIN_PW', None))
+    cluster_api.wait_for_dcos()
+    return cluster_api

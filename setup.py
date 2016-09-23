@@ -23,6 +23,7 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     packages=[
+        'dcos_installer',
         'gen',
         'gen.aws',
         'gen.azure',
@@ -35,6 +36,9 @@ setup(
         'ssh',
         'test_util'],
     install_requires=[
+        'aiohttp==0.22.5',
+        'analytics-python',
+        'coloredlogs',
         'Flask',
         'flask-compress',
         # Pins taken from 'azure==2.0.0rc4'
@@ -60,6 +64,7 @@ setup(
             'test-aws-cf-deploy=test_util.test_aws_cf:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
+            'dcos_installer=dcos_installer.cli:main'
         ],
     },
     package_data={

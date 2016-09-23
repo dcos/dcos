@@ -54,6 +54,23 @@ def test_invalid_telemetry_enabled(default_arguments):
         err_msg)
 
 
+def test_invalid_ports(default_arguments):
+    test_bad_range = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'
+    range_err_msg = "Must be between 1 and 65535 inclusive"
+    test_bad_value = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:abc"]'
+    value_err_msg = "Must be an integer but got a str: abc"
+
+    validate_error(
+        {'resolvers': test_bad_range},
+        'resolvers',
+        range_err_msg)
+
+    validate_error(
+        {'resolvers': test_bad_value},
+        'resolvers',
+        value_err_msg)
+
+
 def test_invalid_ipv4(default_arguments):
     test_ips = '["52.37.192.49", "52.37.181.230", "foo", "52.37.163.105", "bar"]'
     err_msg = "Invalid IPv4 addresses in list: foo, bar"

@@ -31,7 +31,7 @@ This repo contains the release and package building tools necessary to produce i
 | --------- | -------- |
 | *docker*             | Locally defined docker containers packages are built in
 | *docs*               | Documentation
-| *ext/dcos-installer* | Backend for Web, SSH, and some bits of the Advanced installer. To be merged into the top codebase once the code is cleaned up
+| *dcos_installer*     | Backend for Web, SSH, and some bits of the Advanced installer. Code is being cleaned up
 | *gen*                | Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
 | *gen/installer*      | Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
 | *packages*           | Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.

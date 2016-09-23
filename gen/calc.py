@@ -96,6 +96,29 @@ def validate_ip_list(json_str: str):
     validate_ipv4_addresses(nodes_list)
 
 
+def validate_ip_port_list(json_str: str):
+    nodes_list = validate_json_list(json_str)
+    check_duplicates(nodes_list)
+    # Validate azure addresses which are a bit magical late binding stuff independently of just a
+    # list of static IPv4 addresses
+    if any(map(is_azure_addr, nodes_list)):
+        assert all(map(is_azure_addr, nodes_list)), "Azure resolver list and IP based static " \
+            "resolver list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
+        return
+    # Create a list of only ip addresses by spliting the port from the node. Use the resulting
+    # ip_list to validate that it is an ipv4 address. If the port was specified, validate its
+    # value is between 1 and 65535.
+    ip_list = []
+    for node in nodes_list:
+        ip, separator, port = node.rpartition(':')
+        if not separator:
+            ip = node
+        else:
+            validate_int_in_range(port, 1, 65535)
+        ip_list.append(ip)
+    validate_ipv4_addresses(ip_list)
+
+
 def calculate_environment_variable(name):
     value = os.getenv(name)
     assert value is not None, "{} must be a set environment variable".format(name)
@@ -259,7 +282,7 @@ def validate_master_list(master_list):
 
 
 def validate_resolvers(resolvers):
-    return validate_ip_list(resolvers)
+    return validate_ip_port_list(resolvers)
 
 
 def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
