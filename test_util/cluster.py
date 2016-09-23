@@ -204,11 +204,7 @@ class Cluster:
         """Return the mode of the ZooKeeper instance on host."""
         with self.ssher.tunnel(host) as tunnel:
             stat_out = tunnel.remote_cmd([
-                'sudo', 'docker', 'run',
-                '--net=host',
-                '--entrypoint=/bin/sh',
-                'gophernet/netcat',
-                '-c', '"echo stat | nc localhost 2181"',
+                'echo', 'stat', '|', '/opt/mesosphere/bin/toybox', 'nc', 'localhost', '2181'
             ])
         for line in stat_out.split(b'\n'):
             line = line.strip()
