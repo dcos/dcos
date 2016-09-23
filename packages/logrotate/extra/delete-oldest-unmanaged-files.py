@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+import time
 
 
 def main(directory, max_files, managed_file):
@@ -16,7 +17,7 @@ def main(directory, max_files, managed_file):
     @type max_files: int, maximum number of files to keep
     @type managed_file: str, one file (i.e. leading log) to excempt from cleanup
     '''
-    logging.basicConfig(format='%(levelname)-4s ] %(message)s',
+    logging.basicConfig(format='[%(levelname)s] %(message)s',
                         level=logging.INFO)
 
     # For simplicity, convert all paths to absolute paths.
@@ -36,11 +37,16 @@ def main(directory, max_files, managed_file):
     if len(all_files) <= max_files:
         return
 
-    oldest_first = sorted(all_files, key=lambda x: os.stat(x).st_mtime)
+    oldest_first = sorted(all_files, key=lambda x: os.stat(x).st_mtime_ns)
     to_delete = oldest_first[0:len(all_files) - max_files]
 
+    delete_mtime_threshold = time.strftime(
+        "%a, %d %b %Y %H:%M:%S +0000",
+        time.gmtime(os.path.getmtime(to_delete[-1])))
+
+    logging.info("Deleting all files modified after: {0}", delete_mtime_threshold)
     for path in to_delete:
-        logging.info("Deleting unmanaged file inside log directory: {0}".format(path))
+        logging.info("Deleting old file inside log directory: {0}".format(path))
         os.remove(path)
 
 

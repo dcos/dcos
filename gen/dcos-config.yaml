@@ -227,7 +227,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc_master/logrotate_master.config
+  - path: /etc/logrotate_master.config
     content: |
       compress
       delaycompress
