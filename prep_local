@@ -14,4 +14,3 @@ pip install -U pip
 
 # Install the packages in editable mode to the virtual environment.
 pip install -e $PWD
-pip install -e ext/dcos-installer

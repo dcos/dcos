@@ -5,7 +5,5 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$PKG_NAME
 
-pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$PKG_NAME/ext/dcos-installer
-
 mkdir -p "$LIB_INSTALL_DIR/dcos_installer/"
 ln -s /opt/mesosphere/active/dcos-installer-ui/usr/ "$LIB_INSTALL_DIR/dcos_installer/templates"
