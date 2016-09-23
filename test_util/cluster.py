@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 import passlib.hash
-import pkg_resources
 from retrying import retry, RetryError
 
 import gen.calc
@@ -328,8 +327,6 @@ def install_dcos(
             if api:
                 installer.start_web_server()
 
-        with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
-            ip_detect_script = ip_detect_fh.read()
         with open(cluster.ssher.key_path, 'r') as key_fh:
             ssh_key = key_fh.read()
         # Using static exhibitor is the only option in the GUI installer
@@ -347,7 +344,7 @@ def install_dcos(
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect_script=ip_detect_script,
+            ip_detect='aws',
             ssh_user=cluster.ssher.user,
             ssh_key=ssh_key,
             add_config_path=add_config_path,
@@ -411,8 +408,6 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
     bootstrap_url = 'http://' + cluster.bootstrap_host.private_ip
 
     logging.info('Preparing bootstrap host for upgrade')
-    with open(pkg_resources.resource_filename("gen", "ip-detect/aws.sh")) as ip_detect_fh:
-        ip_detect_script = ip_detect_fh.read()
     with open(cluster.ssher.key_path, 'r') as key_fh:
         ssh_key = key_fh.read()
     installer = test_util.installer_api_test.DcosCliInstaller()
@@ -428,7 +423,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect_script=ip_detect_script,
+            ip_detect='aws',
             ssh_user=cluster.ssher.user,
             ssh_key=ssh_key,
             add_config_path=add_config_path,

@@ -5,6 +5,7 @@ import json
 import os
 from subprocess import CalledProcessError
 
+import pkg_resources
 import requests
 import yaml
 from retrying import retry
@@ -78,6 +79,13 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         passwd_hash = p.decode('utf-8').split('\n')[-2]
         return passwd_hash
 
+    @staticmethod
+    def ip_detect_script(preset_name):
+        try:
+            return pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(preset_name)).decode('utf-8')
+        except FileNotFoundError as exc:
+            raise Exception('IP-detect preset not found: {}'.format(preset_name)) from exc
+
     @abc.abstractmethod
     def genconf(self, expect_errors=False):
         pass
@@ -117,7 +125,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, rexray_config=None, rexray_config_preset=None,
+            ip_detect, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
@@ -125,7 +133,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv4 addresses to be used as public agents
-            ip_detect_script (str): complete contents of IP-detect script
+            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
@@ -148,7 +156,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'public_agent_list': public_agent_list,
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
-            'ip_detect_script': ip_detect_script}
+            'ip_detect_script': self.ip_detect_script(ip_detect)}
         if rexray_config:
             payload['rexray_config'] = rexray_config
         if rexray_config_preset:
@@ -269,7 +277,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect_script, rexray_config=None, rexray_config_preset=None,
+            ip_detect, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None,
             bootstrap_url='file:///opt/dcos_install_tmp'):
         """Runs configuration generation.
@@ -278,7 +286,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv$ addresses to be used as public agents
-            ip_detect_script (str): complete contents of IP-detect script
+            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
@@ -321,7 +329,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
         with open('config.yaml', 'w') as config_fh:
             config_fh.write(yaml.dump(test_config))
         with open('ip-detect', 'w') as ip_detect_fh:
-            ip_detect_fh.write(ip_detect_script)
+            ip_detect_fh.write(self.ip_detect_script(ip_detect))
         with open('ssh_key', 'w') as key_fh:
             key_fh.write(ssh_key)
         remote_dir = os.path.dirname(self.installer_path)
