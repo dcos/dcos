@@ -69,7 +69,20 @@ if len(spartans_up) > 0:
 
 # If Spartan is not up, fall back, and insert the upstreams
 else:
-    fallback_servers = os.environ['RESOLVERS'].split(',')
+    fallback_servers = []
+
+    # Resolvconf does not support custom ports, skip if not default
+    for ns in os.environ['RESOLVERS'].split(','):
+        ip, separator, port = ns.rpartition(':')
+        if not separator:
+            fallback_servers.append(ns)
+            continue
+        if port == "53":
+            fallback_servers.append(ip)
+            continue
+        print('Skipping DNS server {}: non-default ports are not supported in /etc/resolv.conf'.format(
+            ns), file=sys.stderr)
+
     random.shuffle(fallback_servers)
     for ns in fallback_servers[:MAX_SERVER_COUNT]:
         contents += "nameserver {}\n".format(ns)
