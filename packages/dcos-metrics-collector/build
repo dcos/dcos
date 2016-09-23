@@ -1,0 +1,17 @@
+#!/bin/bash
+export GOPATH=$GOPATH:/pkg
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-signal /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/mesosphere/dcos-metrics/
+
+# Use the local Makefile which include ldflag overrides for version and revision
+make
+
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+# Create the service file
+service="$PKG_PATH/dcos.target.wants_master/dcos-metrics-collector.service"
+mkdir -p "$(dirname "$service")"
+cp /pkg/extra/dcos-metrics-collector.service "$service"
