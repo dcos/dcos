@@ -441,22 +441,24 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         ])
         run_bootstrap_nginx(bootstrap_host_tunnel, cluster.ssher.home_dir)
 
-    for role, role_name, hosts in [
+    upgrade_ordering = [
         ('master', 'master', master_upgrade_order(cluster)),
         ('slave', 'agent', cluster.agents),
         ('slave_public', 'public agent', cluster.public_agents),
-    ]:
+    ]
+    for role, role_name, hosts in upgrade_ordering:
         logging.info('Upgrading {} nodes: {}'.format(role_name, repr(hosts)))
         for host in hosts:
             logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
             with cluster.ssher.tunnel(host) as tunnel:
                 upgrade_host(tunnel, role, bootstrap_url)
 
-            logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
             if role == 'master':
                 wait_metric = 'registrar/log/recovered'
             else:
                 wait_metric = 'slave/registered'
+
+            logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
             try:
                 wait_for_mesos_metric(cluster, host, wait_metric, 1)
             except RetryError as exc:
