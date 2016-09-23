@@ -16,6 +16,20 @@ import test_util.test_runner
 from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
 
 
+curl_cmd = [
+    'curl',
+    '--silent',
+    '--verbose',
+    '--show-error',
+    '--fail',
+    '--location',
+    '--keepalive-time', '2',
+    '--retry', '20',
+    '--speed-limit', '100000',
+    '--speed-time', '60',
+]
+
+
 class Ssher:
 
     def __init__(self, user, home_dir, key_path):
@@ -195,9 +209,9 @@ class Cluster:
 
         with self.ssher.tunnel(host) as tunnel:
             return json.loads(
-                tunnel.remote_cmd([
-                    'curl', '--silent', '{}:{}/metrics/snapshot'.format(host.private_ip, port)
-                ]).decode('utf-8')
+                tunnel.remote_cmd(
+                    curl_cmd + ['{}:{}/metrics/snapshot'.format(host.private_ip, port)]
+                ).decode('utf-8')
             )
 
     def zk_mode(self, host):
@@ -369,7 +383,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
 
     def upgrade_host(tunnel, role, bootstrap_url):
         # Download the install script for the new DC/OS.
-        tunnel.remote_cmd(['curl', '-O', bootstrap_url + '/dcos_install.sh'])
+        tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
 
         # Remove the old DC/OS.
         tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
