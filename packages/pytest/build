@@ -1,6 +1,6 @@
 #!/bin/bash
 source /opt/mesosphere/environment.export
-export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.4/site-packages"
+export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.5/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
 for package in pytest teamcity-messages; do
