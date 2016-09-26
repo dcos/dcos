@@ -91,12 +91,22 @@ package:
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }}
       }
-  - path: /etc_master/minuteman.app.config
+  - path: /etc_master/minuteman.config.d/master.config
     content: |
       [
         {minuteman,
           [
             {agent_polling_enabled, false}
+          ]
+        }
+      ].
+  - path: /etc/minuteman.config.d/common.config
+    content: |
+      [
+        {minuteman,
+          [
+            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
+            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
           ]
         }
       ].
