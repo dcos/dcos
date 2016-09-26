@@ -383,9 +383,6 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-metrics-collector.yaml
-    content: |
-
   - path: /etc/adminrouter.env
     content: |
       ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}

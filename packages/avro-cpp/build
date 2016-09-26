@@ -16,7 +16,7 @@ cmake \
   ..
 
 # build/unittest
-make -j8
+make -j$NUM_CORES
 make test
 # install lib to $PKG_PATH/...
 make install

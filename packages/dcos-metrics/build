@@ -1,0 +1,71 @@
+#!/bin/bash
+
+### Build for Mesos Metrics Module ###
+mkdir -p build
+pushd build
+
+# configure module build with cmake
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTESTS_ENABLED=False \
+  -DCMAKE_INSTALL_PREFIX=$PKG_PATH \
+  -Dmesos_INCLUDE_DIR=/opt/mesosphere/include \
+  -Ddefault_BIN_DIR=/opt/mesosphere/bin \
+  -Ddefault_LIB_DIR=/opt/mesosphere/lib \
+  -DUSE_LOCAL_PROTOBUF=False \
+  -Dprotobuf_INCLUDE_DIR=/opt/mesosphere/lib/mesos/3rdparty/include \
+  -DUSE_LOCAL_GLOG=False \
+  -Dglog_INCLUDE_DIR=/opt/mesosphere/lib/mesos/3rdparty/include \
+  -DUSE_LOCAL_AVRO=False \
+	/pkg/src/dcos-metrics/mesos_module
+
+make -j$NUM_CORES
+# Installs lib to $PKG_PATH/
+make install
+popd
+
+# Copy the json file describing metrics modules.
+module_json="$PKG_PATH/etc/mesos-slave-modules/metrics.json"
+mkdir -p "$(dirname "$module_json")"
+cp /pkg/extra/metrics.json "$module_json"
+
+### Build for Metrics Master & Agent Service ###
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-metrics /pkg/src/github.com/dcos/dcos-metrics
+
+pushd /pkg/src/github.com/dcos/dcos-metrics
+make build
+popd
+
+mkdir -p $PKG_PATH/bin
+mv /pkg/src/github.com/dcos/dcos-metrics/build/collector/dcos-metrics-collector-* $PKG_PATH/bin/dcos-metrics
+
+# We build this for integration tests
+mv /pkg/src/github.com/dcos/dcos-metrics/build/statsd-emitter/dcos-metrics-statsd-emitter-* $PKG_PATH/bin/statsd-emitter
+
+# Create the service file for all roles 
+agent_service="$PKG_PATH/dcos.target.wants_slave/dcos-metrics-agent.service"
+mkdir -p "$(dirname "$agent_service")"
+cp /pkg/extra/dcos-metrics-agent.service "$agent_service"
+
+agent_public_service="$PKG_PATH/dcos.target.wants_slave_public/dcos-metrics-agent.service"
+mkdir -p "$(dirname "$agent_public_service")"
+cp /pkg/extra/dcos-metrics-agent.service "$agent_public_service"
+
+master_service="$PKG_PATH/dcos.target.wants_master/dcos-metrics-master.service"
+mkdir -p "$(dirname "$master_service")"
+cp /pkg/extra/dcos-metrics-master.service "$master_service"
+
+# Create socket files for all roles
+agent_socket="$PKG_PATH/dcos.target.wants_slave/dcos-metrics-agent.socket"
+mkdir -p "$(dirname "$agent_socket")"
+cp /pkg/extra/dcos-metrics-agent.socket "$agent_socket"
+
+agent_public_socket="$PKG_PATH/dcos.target.wants_slave_public/dcos-metrics-agent.socket"
+mkdir -p "$(dirname "$agent_public_socket")"
+cp /pkg/extra/dcos-metrics-agent.socket "$agent_public_socket"
+
+master_socket="$PKG_PATH/dcos.target.wants_master/dcos-metrics-master.socket"
+mkdir -p "$(dirname "$master_socket")"
+cp /pkg/extra/dcos-metrics-master.socket "$master_socket"
