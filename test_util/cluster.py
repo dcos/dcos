@@ -456,11 +456,11 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             with cluster.ssher.tunnel(host) as tunnel:
                 upgrade_host(tunnel, role, bootstrap_url)
 
-            if role == 'master':
-                wait_metric = 'registrar/log/recovered'
-            else:
-                wait_metric = 'slave/registered'
-
+            wait_metric = {
+                'master': 'registrar/log/recovered',
+                'slave': 'slave/registered',
+                'slave_public': 'slave/registered',
+            }[role]
             logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
             try:
                 wait_for_mesos_metric(cluster, host, wait_metric, 1)
