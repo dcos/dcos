@@ -150,44 +150,25 @@ class ClusterApi:
     def wait_for_dcos(self):
         self._wait_for_leader_election()
         self._wait_for_adminrouter_up()
-        self._authenticate()
+        if self.auth_enabled and self.web_auth_default_user:
+            self._authenticate_default_user()
         self._wait_for_marathon_up()
         self._wait_for_slaves_to_join()
         self._wait_for_dcos_history_up()
         self._wait_for_srouter_slaves_endpoints()
         self._wait_for_metronome()
 
-    @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000,
-                    retry_on_result=lambda r: r is False,
-                    retry_on_exception=lambda _: False)
-    def _authenticate(self):
-        if self.auth_enabled:
-            # token valid until 2036 for user albert@bekstil.net
-            # {
-            #   "email": "albert@bekstil.net",
-            #   "email_verified": true,
-            #   "iss": "https://dcos.auth0.com/",
-            #   "sub": "google-oauth2|109964499011108905050",
-            #   "aud": "3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m",
-            #   "exp": 2090884974,
-            #   "iat": 1460164974
-            # }
-            js = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}  # noqa
-            if self.username and self.password:
-                js = {'uid': self.username, 'password': self.password}
-        else:
-            # no authentication required
-            return
-
-        r = requests.post(self.dcos_uri + '/acs/api/v1/auth/login', json=js)
-        # In the case of the Advanced Templates this endpoint comes up a bit later
-        if r.status_code >= 400:
-            return False
-        self.superuser_auth_header = {'Authorization': 'token=%s' % r.json()['token']}
-        self.superuser_auth_cookie = r.cookies['dcos-acs-auth-cookie']
+    @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
+    def _authenticate_default_user(self):
+        """retry default auth user because in some deployments,
+        the auth endpoint might not be routable immediately
+        after adminrouter is up. DcosUser.authenticate()
+        will raise exception if authorization fails
+        """
+        self.web_auth_default_user.authenticate(self)
 
     def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
-                 dns_search_set, provider, auth_enabled, username, password):
+                 dns_search_set, provider, auth_enabled, web_auth_default_user=None):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -200,6 +181,8 @@ class ClusterApi:
                 configured if its value is "true".
             provider: onprem, azure, or aws
             auth_enabled: True or False
+            web_auth_default_user: if auth_enabled, use this user's auth for all requests
+                Note: user must be authenticated explicitly or call self.wait_for_dcos()
         """
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
@@ -210,8 +193,7 @@ class ClusterApi:
         self.dns_search_set = dns_search_set == 'true'
         self.provider = provider
         self.auth_enabled = auth_enabled
-        self.username = username
-        self.password = password
+        self.web_auth_default_user = web_auth_default_user
 
         assert len(self.masters) == len(self.public_masters)
 
@@ -228,7 +210,7 @@ class ClusterApi:
 
     def _suheader(self, disable_suauth):
         if not disable_suauth and self.auth_enabled:
-            return self.superuser_auth_header
+            return self.web_auth_default_user.auth_header
         return {}
 
     def get(self, path="", params=None, disable_suauth=False, **kwargs):
