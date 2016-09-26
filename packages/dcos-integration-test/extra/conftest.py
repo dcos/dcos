@@ -83,6 +83,7 @@ def cluster():
         provider=os.environ['DCOS_PROVIDER'],
         auth_enabled=os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
         username=os.getenv('DCOS_LOGIN_UNAME', None),
-        password=os.getenv('DCOS_LOGIN_PW', None))
+        password=os.getenv('DCOS_LOGIN_PW', None),
+        default_os_user=os.getenv('DCOS_DEFAULT_OS_USER', 'root'))
     cluster_api.wait_for_dcos()
     return cluster_api
