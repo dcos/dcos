@@ -1,0 +1,4 @@
+[Unit]
+Description=Metrics Socket: Socket for DC/OS Metrics Service
+[Socket]
+ListenStream=/run/dcos/dcos-metrics.sock

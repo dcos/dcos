@@ -1,0 +1,10 @@
+[Unit]
+Description=Metrics Service: DC/OS Metrics Service for Application, Container and Host Level Metrics.
+[Service]
+Restart=always
+RestartSec=5
+PermissionsStartOnly=True
+User=dcos_metrics
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics
+ExecStart=/opt/mesosphere/bin/dcos-metrics -config /opt/mesosphere/etc/dcos-metrics-config.yaml -role agent -loglevel debug

@@ -353,6 +353,10 @@ class ClusterApi(test_util.helpers.ApiClient):
     def metronome(self):
         return self.get_client('/service/metronome/v1')
 
+    @property
+    def metrics(self):
+        return self.get_client('/system/v1/metrics/v0')
+
     def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
         """Run a job on metronome and block until it returns success
         """

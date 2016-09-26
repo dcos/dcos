@@ -379,8 +379,30 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-metrics-collector.yaml
+  - path: /etc/dcos-metrics-config.yaml
     content: |
+      #######################################
+      # Configuration file for dcos-metrics #
+      #######################################
+
+      # Collector configuration
+      collector:
+        http_profiler: false
+
+        node:
+          poll_period: 15
+
+        # DC/OS (Mesos) agent configuration
+        mesos_agent:
+          port: 5051
+          poll_period: 15
+          request_protocol: http
+
+      # Producers configuration
+      producers:
+        # HTTP producer
+        http:
+          port: 9000
 
   - path: /etc/adminrouter.env
     content: |

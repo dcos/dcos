@@ -16,7 +16,7 @@ cmake \
   -DUSE_LOCAL_GLOG=False \
   -Dglog_INCLUDE_DIR=/opt/mesosphere/lib/mesos/3rdparty/include \
   -DUSE_LOCAL_AVRO=False \
-  /pkg/src/mesos-metrics-module/module/
+  /pkg/src/mesos-metrics-module/mesos_module/
 
 make -j8
 
