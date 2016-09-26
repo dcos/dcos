@@ -1,0 +1,10 @@
+[Unit]
+Description=Signal: DC/OS Metrics Collector 
+[Service]
+Restart=always
+RestartSec=5
+PermissionsStartOnly=True
+User=dcos_metrics
+EnvironmentFile=/opt/mesosphere/environment
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-collector
+ExecStart=/opt/mesosphere/bin/dcos-metrics-collector -config /opt/mesosphere/etc/dcos-metrics-collector.yaml
