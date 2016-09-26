@@ -4,47 +4,53 @@ import json
 import logging
 import os
 import tempfile
+import urllib.parse
 import zipfile
 
+import pytest
 import requests
 import retrying
 
 BASE_ENDPOINT_3DT = '/system/health/v1'
-PORT_3DT = 1050
-PORT_3DT_AGENT = 61001
 # Expected latency for all 3dt units to refresh after postflight
 LATENCY = 60
 
 
-def make_3dt_request(ip, endpoint, cluster, port=80):
+@pytest.fixture
+def make_3dt_request(cluster):
     """
-    a helper function to get info from 3dt endpoint. Default port is 80 for pulled data from agents.
-    if a destination port in 80, that means all requests should go though master (adminrouter) and we can re-use
-    cluster.get otherwise we can query 3dt agents directly to port 61001 (agent-adminrouter).
+    returns a function that performs authenticated connections to 3DT on the appropriate port
+    and appends ?cache=0 to all endpoints
     """
-    if port == 80:
+    def make_request(ip, endpoint, is_agent):
         assert endpoint.startswith('/'), 'endpoint {} must start with /'.format(endpoint)
-        logging.info('GET {}'.format(endpoint))
-        json_response = cluster.get(path=endpoint).json()
-        logging.info('Response: {}'.format(json_response))
+        endpoint = BASE_ENDPOINT_3DT + endpoint + '?cache=0'
+        scheme = urllib.parse.urlparse(cluster.dcos_uri).scheme
+        # TODO: SSL settings are not a part of dcos/dcos. Migrate settings to be in the same repo
+        port = {
+            'agent': {'http': 61001, 'https': 61002},
+            'master': {'http': 80, 'https': 443}}['agent' if is_agent else 'master'][scheme]
+        url = '{}://{}:{}/{}'.format(scheme, ip, port, endpoint.lstrip('/'))
+        logging.info('GET {}'.format(url))
+        request_headers = {}
+        if cluster.auth_enabled:
+            request_headers = cluster.superuser_auth_header
+        response = requests.get(url, headers=request_headers)
+        assert response.ok
+        try:
+            json_response = response.json()
+            logging.info('Response: {}'.format(json_response))
+        except ValueError:
+            logging.exception('Coult not deserialized json response from {}\nResponse contents:{}'.format(
+                url, response.content.decode()))
+            raise
+        assert len(json_response) > 0, 'json response is invalid from {}: {}'.format(url, json_response)
         return json_response
-
-    url = 'http://{}:{}/{}'.format(ip, port, endpoint.lstrip('/'))
-    logging.info('GET {}'.format(url))
-    request = requests.get(url)
-    assert request.ok
-    try:
-        json_response = request.json()
-        logging.info('Response: {}'.format(json_response))
-    except ValueError:
-        logging.error('Coult not deserialized json response from {}'.format(url))
-        raise
-    assert len(json_response) > 0, 'json response is invalid from {}'.format(url)
-    return json_response
+    return make_request
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_health(cluster):
+def test_3dt_health(cluster, make_3dt_request):
     """
     test health endpoint /system/health/v1
     """
@@ -54,7 +60,7 @@ def test_3dt_health(cluster):
 
     # Check all masters 3DT instances on base port since this is extra-cluster request (outside localhost)
     for host in cluster.masters:
-        response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
+        response = make_3dt_request(host, '/', is_agent=False)
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
@@ -90,7 +96,7 @@ def test_3dt_health(cluster):
 
     # Check all agents running 3DT behind agent-adminrouter on 61001
     for host in cluster.slaves:
-        response = make_3dt_request(host, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
+        response = make_3dt_request(host, '/', is_agent=True)
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
@@ -145,12 +151,12 @@ def validate_node(nodes):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_nodes(cluster):
+def test_3dt_nodes(cluster, make_3dt_request):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
     for master in cluster.masters:
-        response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes', cluster)
+        response = make_3dt_request(master, '/nodes', is_agent=False)
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
@@ -161,18 +167,18 @@ def test_3dt_nodes(cluster):
         validate_node(response['nodes'])
 
 
-def test_3dt_nodes_node(cluster):
+def test_3dt_nodes_node(cluster, make_3dt_request):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
     """
     for master in cluster.masters:
         # get a list of nodes
-        response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes', cluster)
+        response = make_3dt_request(master, '/nodes', is_agent=False)
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
         logging.info('received the following nodes: {}'.format(nodes))
 
         for node in nodes:
-            node_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}'.format(node), cluster)
+            node_response = make_3dt_request(master, '/nodes/{}'.format(node), is_agent=False)
             validate_node([node_response])
 
 
@@ -215,20 +221,20 @@ def validate_unit(unit):
     assert unit['help'], 'help field cannot be empty'
 
 
-def test_3dt_nodes_node_units(cluster):
+def test_3dt_nodes_node_units(cluster, make_3dt_request):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
     """
     for master in cluster.masters:
         # get a list of nodes
-        response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes', cluster)
+        response = make_3dt_request(master, '/nodes', is_agent=False)
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
         logging.info('received the following nodes: {}'.format(nodes))
 
         for node in nodes:
-            node_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}'.format(node), cluster)
+            node_response = make_3dt_request(master, '/nodes/{}'.format(node), is_agent=False)
             logging.info('node reponse: {}'.format(node_response))
-            units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}/units'.format(node), cluster)
+            units_response = make_3dt_request(master, '/nodes/{}/units'.format(node), is_agent=False)
             logging.info('units reponse: {}'.format(units_response))
 
             assert len(units_response) == 1, 'unit response should have only 1 field `units`'
@@ -236,45 +242,45 @@ def test_3dt_nodes_node_units(cluster):
             validate_units(units_response['units'])
 
 
-def test_3dt_nodes_node_units_unit(cluster):
+def test_3dt_nodes_node_units_unit(cluster, make_3dt_request):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
     """
     for master in cluster.masters:
-        response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes', cluster)
+        response = make_3dt_request(master, '/nodes', is_agent=False)
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
         for node in nodes:
-            units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}/units'.format(node), cluster)
+            units_response = make_3dt_request(master, '/nodes/{}/units'.format(node), is_agent=False)
             unit_ids = list(map(lambda unit: unit['id'], units_response['units']))
             logging.info('unit ids: {}'.format(unit_ids))
 
             for unit_id in unit_ids:
                 validate_unit(
-                    make_3dt_request(master, BASE_ENDPOINT_3DT + '/nodes/{}/units/{}'.format(node, unit_id), cluster))
+                    make_3dt_request(master, '/nodes/{}/units/{}'.format(node, unit_id), is_agent=False))
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units(cluster):
+def test_3dt_units(cluster, make_3dt_request):
     """
     test a list of collected units, endpoint /system/health/v1/units
     """
     # get all unique unit names
     all_units = set()
     for node in cluster.masters:
-        node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)
+        node_response = make_3dt_request(node, '/', is_agent=False)
         for unit in node_response['units']:
             all_units.add(unit['id'])
 
     for node in cluster.all_slaves:
-        node_response = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)
+        node_response = make_3dt_request(node, '/', is_agent=True)
         for unit in node_response['units']:
             all_units.add(unit['id'])
 
     logging.info('Master units: {}'.format(all_units))
 
-    # test agaist masters
+    # test against masters
     for master in cluster.masters:
-        units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units', cluster)
+        units_response = make_3dt_request(master, '/units', is_agent=False)
         validate_units(units_response['units'])
 
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
@@ -285,15 +291,14 @@ def test_3dt_units(cluster):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_systemd_units_health(cluster):
+def test_systemd_units_health(cluster, make_3dt_request):
     """
     test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
     meaning it focuses on making sure the cluster is healthy, rather then testing 3dt itself.
     """
     unhealthy_output = []
     assert cluster.masters, "Must have at least 1 master node"
-    report_response = make_3dt_request(cluster.masters[0], BASE_ENDPOINT_3DT + '/report?cache=0', cluster,
-                                       port=PORT_3DT)
+    report_response = make_3dt_request(cluster.masters[0], '/report', is_agent=False)
     assert 'Units' in report_response, "Missing `Units` field in response"
     for unit_name, unit_props in report_response['Units'].items():
         assert 'Health' in unit_props, "Unit {} missing `Health` field".format(unit_name)
@@ -316,29 +321,29 @@ def test_systemd_units_health(cluster):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-def test_3dt_units_unit(cluster):
+def test_3dt_units_unit(cluster, make_3dt_request):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
     """
     for master in cluster.masters:
-        units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units', cluster)
+        units_response = make_3dt_request(master, '/units', is_agent=False)
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         for unit in pulled_units:
-            unit_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units/{}'.format(unit), cluster)
+            unit_response = make_3dt_request(master, '/units/{}'.format(unit), is_agent=False)
             validate_units([unit_response])
 
 
-def make_nodes_ip_map(cluster):
+def make_nodes_ip_map(cluster, make_3dt_request):
     """
     a helper function to make a map detected_ip -> external_ip
     """
     node_private_public_ip_map = {}
     for node in cluster.masters:
-        detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT)['ip']
+        detected_ip = make_3dt_request(node, '/', is_agent=False)['ip']
         node_private_public_ip_map[detected_ip] = node
 
     for node in cluster.all_slaves:
-        detected_ip = make_3dt_request(node, BASE_ENDPOINT_3DT, cluster, port=PORT_3DT_AGENT)['ip']
+        detected_ip = make_3dt_request(node, '/', is_agent=True)['ip']
         node_private_public_ip_map[detected_ip] = node
 
     logging.info('detected ips: {}'.format(node_private_public_ip_map))
@@ -346,14 +351,14 @@ def make_nodes_ip_map(cluster):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units_unit_nodes(cluster):
+def test_3dt_units_unit_nodes(cluster, make_3dt_request):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
     def get_nodes_from_response(response):
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
-        nodes_ip_map = make_nodes_ip_map(cluster)
+        nodes_ip_map = make_nodes_ip_map(cluster, make_3dt_request)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
@@ -363,15 +368,15 @@ def test_3dt_units_unit_nodes(cluster):
         return nodes
 
     for master in cluster.masters:
-        units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units', cluster)
+        units_response = make_3dt_request(master, '/units', is_agent=False)
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         for unit in pulled_units:
-            nodes_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units/{}/nodes'.format(unit), cluster)
+            nodes_response = make_3dt_request(master, '/units/{}/nodes'.format(unit), is_agent=False)
             validate_node(nodes_response['nodes'])
 
         # make sure dcos-mesos-master.service has master nodes and dcos-mesos-slave.service has agent nodes
         master_nodes_response = make_3dt_request(
-            master, BASE_ENDPOINT_3DT + '/units/dcos-mesos-master.service/nodes', cluster)
+            master, '/units/dcos-mesos-master.service/nodes', is_agent=False)
 
         master_nodes = get_nodes_from_response(master_nodes_response)
         logging.info('master_nodes: {}'.format(master_nodes))
@@ -382,7 +387,7 @@ def test_3dt_units_unit_nodes(cluster):
         )
 
         agent_nodes_response = make_3dt_request(
-            master, BASE_ENDPOINT_3DT + '/units/dcos-mesos-slave.service/nodes', cluster)
+            master, '/units/dcos-mesos-slave.service/nodes', is_agent=False)
 
         agent_nodes = get_nodes_from_response(agent_nodes_response)
         logging.info('agent_nodes: {}'.format(agent_nodes))
@@ -390,23 +395,23 @@ def test_3dt_units_unit_nodes(cluster):
         assert len(agent_nodes) == len(cluster.slaves), '{} != {}'.format(agent_nodes, cluster.slaves)
 
 
-def test_3dt_units_unit_nodes_node(cluster):
+def test_3dt_units_unit_nodes_node(cluster, make_3dt_request):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
     """
     required_node_fields = ['host_ip', 'health', 'role', 'output', 'help']
 
     for master in cluster.masters:
-        units_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units', cluster)
+        units_response = make_3dt_request(master, '/units', is_agent=False)
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         logging.info('pulled units: {}'.format(pulled_units))
         for unit in pulled_units:
-            nodes_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/units/{}/nodes'.format(unit), cluster)
+            nodes_response = make_3dt_request(master, '/units/{}/nodes'.format(unit), is_agent=False)
             pulled_nodes = list(map(lambda node: node['host_ip'], nodes_response['nodes']))
             logging.info('pulled nodes: {}'.format(pulled_nodes))
             for node in pulled_nodes:
                 node_response = make_3dt_request(
-                    master, BASE_ENDPOINT_3DT + '/units/{}/nodes/{}'.format(unit, node), cluster)
+                    master, '/units/{}/nodes/{}'.format(unit, node), is_agent=False)
                 logging.info('node response: {}'.format(node_response))
                 assert len(node_response) == len(required_node_fields), 'required fields: {}'.format(
                     ', '.format(required_node_fields)
@@ -422,24 +427,24 @@ def test_3dt_units_unit_nodes_node(cluster):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-def test_3dt_selftest(cluster):
+def test_3dt_selftest(cluster, make_3dt_request):
     """
     test invokes 3dt `self test` functionality
     """
     for node in cluster.masters:
-        response = make_3dt_request(node, BASE_ENDPOINT_3DT + '/selftest/info', cluster)
+        response = make_3dt_request(node, '/selftest/info', is_agent=False)
         for test_name, attrs in response.items():
             assert 'Success' in attrs, 'Field `Success` does not exist'
             assert 'ErrorMessage' in attrs, 'Field `ErrorMessage` does not exist'
             assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
 
 
-def test_3dt_report(cluster):
+def test_3dt_report(cluster, make_3dt_request):
     """
     test 3dt report endpoint /system/health/v1/report
     """
     for master in cluster.masters:
-        report_response = make_3dt_request(master, BASE_ENDPOINT_3DT + '/report', cluster)
+        report_response = make_3dt_request(master, '/report', is_agent=False)
         assert 'Units' in report_response
         assert len(report_response['Units']) > 0
 
