@@ -7,6 +7,5 @@
     "ref_origin": "master"
   },
   "username": "dcos_metrics",
-  "group": "systemd-journal",
   "state_directory": true
 }
