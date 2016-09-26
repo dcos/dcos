@@ -227,9 +227,41 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/logrotate_master.config
+    content: |
+      compress
+      delaycompress
+      notifempty
+      missingok
+      nomail
+      /var/lib/dcos/mesos/log/mesos-master.log {
+          olddir /var/lib/dcos/mesos/log/archive
+          maxsize 256M
+          rotate {{ mesos_log_retention_count }}
+          copytruncate
+          postrotate
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
+          endscript
+      }
+  - path: /etc/logrotate_agent.config
+    content: |
+      compress
+      delaycompress
+      notifempty
+      missingok
+      nomail
+      /var/log/mesos/mesos-agent.log {
+          olddir /var/log/mesos/archive
+          maxsize 256M
+          rotate {{ mesos_log_retention_count }}
+          copytruncate
+          postrotate
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
+          endscript
+      }
   - path: /etc/mesos-master
     content: |
-      MESOS_LOG_DIR=/var/lib/dcos/mesos/log
+      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
@@ -251,7 +283,7 @@ package:
     content: |
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_CONTAINERIZERS=docker,mesos
-      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
       MESOS_ISOLATION={{ mesos_isolation }}
