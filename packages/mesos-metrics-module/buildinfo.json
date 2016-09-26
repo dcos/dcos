@@ -1,9 +1,0 @@
-{
-  "requires": ["mesos", "boost-libs", "avro-cpp"],
-  "single_source" : {
-    "kind": "git",
-    "git": "git@github.com:mesosphere/dcos-stats.git",
-    "ref" : "ed8697ff5900dfe41e2ddb12d7c3338305075369",
-    "ref_origin": "master"
-  }
-}

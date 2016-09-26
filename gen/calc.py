@@ -557,7 +557,8 @@ entry = {
         'minuteman_forward_metrics': 'false',
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
-        'mesos_isolation': calculate_mesos_isolation,
+        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
+        ',com_mesosphere_MetricsIsolatorModule',
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
