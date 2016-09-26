@@ -1,0 +1,8 @@
+{
+  "requires": ["mesos", "boost-libs"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "http://apache.mirrors.pair.com/avro/avro-1.8.0/cpp/avro-cpp-1.8.0.tar.gz",
+    "sha1": "c95154147f23f889d9d30937f654f85be59aa06a"
+  }
+}
