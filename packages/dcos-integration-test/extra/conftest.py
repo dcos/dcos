@@ -4,7 +4,8 @@ import os
 
 import pytest
 
-import test_util.cluster_api
+from test_util.cluster_api import ClusterApi
+from test_util.helpers import DcosUser
 
 LOG_LEVEL = logging.INFO
 
@@ -71,7 +72,7 @@ def user():
     if 'DCOS_AUTH_JSON_PATH' in os.environ:
         with open(os.environ['DCOS_AUTH_JSON_PATH'], 'r') as auth_json_fh:
             auth_json = json.load(auth_json_fh)
-    return test_util.helpers.DcosUser(auth_json)
+    return DcosUser(auth_json)
 
 
 @pytest.fixture(scope='session')
@@ -93,7 +94,7 @@ def cluster(user):
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
-    cluster_api = test_util.cluster_api.ClusterApi(
+    cluster_api = ClusterApi(
         dcos_uri=os.environ['DCOS_DNS_ADDRESS'],
         masters=os.environ['MASTER_HOSTS'].split(','),
         public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),

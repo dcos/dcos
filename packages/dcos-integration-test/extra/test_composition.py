@@ -45,13 +45,12 @@ def test_if_all_exhibitors_are_in_sync(cluster):
 
 
 def test_mesos_agent_role_assignment(cluster):
-    state_url = cluster.scheme + '://{}:5051/state.json'
-    headers = cluster._suheader(False)
+    state_endpoint = '/state.json'
     for agent in cluster.public_slaves:
-        r = requests.get(state_url.format(agent), headers=headers)
+        r = cluster.get(path=state_endpoint, node=agent, port=5051)
         assert r.json()['flags']['default_role'] == 'slave_public'
     for agent in cluster.slaves:
-        r = requests.get(state_url.format(agent), headers=headers)
+        r = cluster.get(path=state_endpoint, node=agent, port=5051)
         assert r.json()['flags']['default_role'] == '*'
 
 

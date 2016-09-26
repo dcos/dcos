@@ -472,7 +472,7 @@ def test_3dt_bundle_create(cluster):
 
     # start the diagnostics bundle job
     create_url = '/system/health/v1/report/diagnostics/create'
-    create_response = cluster.post(path=create_url, payload={"nodes": ["all"]}).json()
+    create_response = cluster.post(path=create_url, json={"nodes": ["all"]}).json()
     logging.info('POST {}, response: {}'.format(create_url, create_response))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
