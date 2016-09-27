@@ -1,7 +1,7 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://openssl.org/source/openssl-1.0.2i.tar.gz",
-    "sha1": "25a92574ebad029dcf2fa26c02e10400a0882111"
+    "url": "https://openssl.org/source/openssl-1.0.2j.tar.gz",
+    "sha1": "bdfbdb416942f666865fa48fe13c2d0e588df54f"
   }
 }
