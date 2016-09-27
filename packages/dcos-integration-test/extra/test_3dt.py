@@ -34,7 +34,7 @@ def make_3dt_request(cluster):
         logging.info('GET {}'.format(url))
         request_headers = {}
         if cluster.auth_enabled:
-            request_headers = cluster.superuser_auth_header
+            request_headers = cluster.web_auth_default_user.auth_header
         response = requests.get(url, headers=request_headers)
         assert response.ok
         try:
@@ -561,6 +561,42 @@ def test_3dt_bundle_download_and_extract(cluster):
     # for public agent host
     expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
 
+    def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
+        # raises KeyError if item is not in zipfile.
+        item_content = z.read(item).decode()
+
+        if to_json:
+            # raises ValueError if cannot deserialize item_content.
+            return json.loads(item_content)
+
+        return item_content
+
+    def _get_3dt_health(z: zipfile.ZipFile, item: str):
+        # try to load 3dt health report and validate the report is for this host
+        try:
+            _health_report = _read_from_zip(z, item)
+        except KeyError:
+            # we did not find a key in archive, let's take a look at items in archive and try to read
+            # diagnostics logs.
+
+            # namelist() gets a list of all items in a zip archive.
+            logging.info(z.namelist())
+
+            # summaryErrorsReport.txt and summaryReport.txt are diagnostic job log files.
+            for log in ('summaryErrorsReport.txt', 'summaryReport.txt'):
+                try:
+                    log_data = _read_from_zip(z, item)
+                    logging.info("{}:\n{}".format(log, log_data))
+                except KeyError:
+                    logging.info("Could not read {}".format(log))
+            raise
+
+        except ValueError:
+            logging.info("Could not deserialize 3dt-health")
+            raise
+
+        return _health_report
+
     with tempfile.TemporaryDirectory() as tmp_dir:
         download_base_url = '/system/health/v1/report/diagnostics/serve'
         for bundle in bundles:
@@ -582,7 +618,7 @@ def test_3dt_bundle_download_and_extract(cluster):
                 master_folder = master_ip + '_master/'
 
                 # try to load 3dt health report and validate the report is for this host
-                health_report = json.loads(z.read(master_folder + '3dt-health.json').decode())
+                health_report = _get_3dt_health(z, master_folder + '3dt-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == master_ip
 
@@ -599,7 +635,7 @@ def test_3dt_bundle_download_and_extract(cluster):
                 agent_folder = slave_ip + '_agent/'
 
                 # try to load 3dt health report and validate the report is for this host
-                health_report = json.loads(z.read(agent_folder + '3dt-health.json').decode())
+                health_report = _get_3dt_health(z, agent_folder + '3dt-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == slave_ip
 
@@ -616,7 +652,7 @@ def test_3dt_bundle_download_and_extract(cluster):
                 agent_public_folder = public_slave_ip + '_agent_public/'
 
                 # try to load 3dt health report and validate the report is for this host
-                health_report = json.loads(z.read(agent_public_folder + '3dt-health.json').decode())
+                health_report = _get_3dt_health(z, agent_public_folder + '3dt-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == public_slave_ip
 

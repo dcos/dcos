@@ -27,7 +27,7 @@ def test_adminrouter_access_control_enforcement(auth_cluster):
 
     # Test authentication with auth cookie instead of Authorization header.
     authcookie = {
-        'dcos-acs-auth-cookie': auth_cluster.superuser_auth_cookie}
+        'dcos-acs-auth-cookie': auth_cluster.web_auth_default_user.auth_cookie}
     r = auth_cluster.get(
         '/service/marathon/',
         disable_suauth=True,
