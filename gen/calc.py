@@ -163,6 +163,25 @@ def calculate_mesos_dns_resolvers_str(resolvers):
         return '"externalOn": false'
 
 
+def validate_mesos_log_retention_mb(mesos_log_retention_mb):
+    assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
+
+
+def calculate_mesos_log_retention_count(mesos_log_retention_mb):
+    # Determine how many 256 MB log chunks can be fit into the given size.
+    # We assume a 90% compression factor; logs are compressed after 2 rotations.
+    # We return the number of times the log can be rotated by logrotate;
+    # this is one less than the total number of log file retained.
+    return str(int(1 + (int(mesos_log_retention_mb) - 512) / 256 * 10))
+
+
+def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
+    # We allow some maximum number of temporary/random files in the
+    # Mesos log directory.  This maximum takes into account the number
+    # of rotated logs that stay in the archive subdirectory.
+    return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -362,6 +381,26 @@ def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
         "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
 
 
+def calculate_minuteman_min_named_ip_erltuple(minuteman_min_named_ip):
+    return ip_to_erltuple(minuteman_min_named_ip)
+
+
+def calculate_minuteman_max_named_ip_erltuple(minuteman_max_named_ip):
+    return ip_to_erltuple(minuteman_max_named_ip)
+
+
+def ip_to_erltuple(ip):
+    return '{' + ip.replace('.', ',') + '}'
+
+
+def validate_minuteman_min_named_ip(minuteman_min_named_ip):
+    validate_ipv4_addresses([minuteman_min_named_ip])
+
+
+def validate_minuteman_max_named_ip(minuteman_max_named_ip):
+    validate_ipv4_addresses([minuteman_max_named_ip])
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -378,6 +417,7 @@ entry = {
         validate_cluster_packages,
         validate_oauth_enabled,
         validate_mesos_dns_ip_sources,
+        validate_mesos_log_retention_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
@@ -387,7 +427,9 @@ entry = {
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         validate_rexray_config,
-        lambda check_time: validate_true_false(check_time)],
+        lambda check_time: validate_true_false(check_time),
+        validate_minuteman_min_named_ip,
+        validate_minuteman_max_named_ip],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
@@ -408,6 +450,7 @@ entry = {
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_container_logger': __logrotate_slave_module_name,
+        'mesos_log_retention_mb': '4000',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -435,6 +478,8 @@ entry = {
               }                                         \
             ]}',
         'dcos_remove_dockercfg_enable': "false",
+        'minuteman_min_named_ip': '11.0.0.0',
+        'minuteman_max_named_ip': '11.255.255.255',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -458,6 +503,8 @@ entry = {
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
+        'mesos_log_retention_count': calculate_mesos_log_retention_count,
+        'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
         'dcos_version': '1.9-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
@@ -469,6 +516,8 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'minuteman_forward_metrics': 'false',
+        'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
+        'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
         'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,

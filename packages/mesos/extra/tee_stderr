@@ -1,0 +1,11 @@
+#!/bin/bash
+# This file takes two arguments:
+#  <program>: The command to run.
+#  <output file>: Where to `tee` the stderr of the <program>.
+
+if [ $# -ne 2 ]; then
+    echo "usage: $0 <program> <output file>"
+    exit 1
+fi
+
+$1 2>&1 | tee -a "$2"
