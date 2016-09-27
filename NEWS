@@ -1,5 +1,7 @@
 Documentation of changes which may break some install environments
 
+1.9-dev
+ - Docker 1.12 for azure, --install-prerequisites
 
 1.8-dev
  - Marathon will refuse to accept new apps, and will refuse changes to existing
