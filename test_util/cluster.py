@@ -222,15 +222,14 @@ class Cluster:
             stat_out = tunnel.remote_cmd([
                 'echo', 'stat', '|', '/opt/mesosphere/bin/toybox', 'nc', 'localhost', '2181'
             ])
-        for line in stat_out.split(b'\n'):
-            line = line.strip()
-            if line.startswith(b'Mode: '):
-                mode = line.split(b':')[1].strip()
-                if mode not in (b'leader', b'follower', b'standalone'):
-                    raise Exception('Unexpected ZooKeeper mode {} on host {}'.format(mode, host))
-                return mode.decode('utf-8')
-        else:
-            raise Exception('ZooKeeper mode not found on host {}'.format(host))
+        for message in (l.strip().split(b':', 2) for l in stat_out.split(b'\n')):
+            if message[0] != b'Mode':
+                continue
+            mode = message[1].strip()
+            if mode not in (b'leader', b'follower', b'standalone'):
+                raise Exception('Unexpected ZooKeeper mode {} on host {}'.format(mode, host))
+            return mode.decode('utf-8')
+        raise Exception('ZooKeeper mode not found on host {}'.format(host))
 
     def master_zk_modes(self):
         """Return (master, zk_mode(master)) for each master."""
