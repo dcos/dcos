@@ -407,16 +407,24 @@ class ClusterApi:
                     'Application deployment failed, reason: {}'.format(data['app']['lastTaskFailure']['message'])
                 )
 
-            if (
-                data['app']['tasksRunning'] == app_definition['instances'] and
-                (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
-            ):
+            check_tasks_running = (data['app']['tasksRunning'] == app_definition['instances'])
+            check_tasks_healthy = (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
+
+            if (check_tasks_running and check_tasks_healthy):
                 res = [Endpoint(t['host'], t['ports'][0], t['ipAddresses'][0]['ipAddress'])
                        for t in data['app']['tasks']]
                 logging.info('Application deployed, running on {}'.format(res))
                 return res
+            elif (not check_tasks_running):
+                logging.info('Waiting for application to be deployed: '
+                             'Not all instances are running: {}'.format(repr(data)))
+                return None
+            elif (not check_tasks_healthy):
+                logging.info('Waiting for application to be deployed: '
+                             'Not all instances are healthy: {}'.format(repr(data)))
+                return None
             else:
-                logging.info('Waiting for application to be deployed %s', repr(data))
+                logging.info('Waiting for application to be deployed: {}'.format(repr(data)))
                 return None
 
         try:
