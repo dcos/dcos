@@ -274,6 +274,7 @@ class ClusterApi:
             'cpus': 0.1,
             'mem': 32,
             'instances': 1,
+            'user': 'nobody',
             # NOTE: uses '.' rather than `source`, since `source` only exists in bash and this is
             # run by sh
             'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
@@ -337,7 +338,7 @@ class ClusterApi:
 
         return app, test_uuid
 
-    def deploy_test_app_and_check(self, app, test_uuid):
+    def deploy_test_app_and_check(self, app, test_uuid, expected_user):
         with self.marathon_deploy_and_cleanup(app) as service_points:
             r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
                                                              service_points[0].port))
@@ -350,7 +351,7 @@ class ClusterApi:
 
             assert r_data['test_uuid'] == test_uuid
 
-            # Test the app is running as root
+            # Test the app is running as the expected user
             r = requests.get('http://{}:{}/operating_environment'.format(
                 service_points[0].host,
                 service_points[0].port))
@@ -360,7 +361,7 @@ class ClusterApi:
                 msg += "Detailed explanation of the problem: {2}"
                 raise Exception(msg.format(r.status_code, r.reason, r.text))
 
-            assert r.json() == {'username': 'root'}
+            assert r.json() == {'username': expected_user}
 
     def deploy_marathon_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
