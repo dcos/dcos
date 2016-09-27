@@ -23,15 +23,18 @@ def validate_env():
     The following environment variables must be set to ensure the template can be deployed successfully and that
     parameters we rely on from a testing perspective are explicitly set and not relying on defaults which may change.
     '''
-    required = ['AZURE_PARAM_linuxAdminUsername', 'AZURE_PARAM_oauthEnabled',
-                'AZURE_PARAM_masterEndpointDNSNamePrefix', 'AZURE_PARAM_agentEndpointDNSNamePrefix',
-                'AZURE_TEMPLATE_URL', 'AZURE_PARAM_sshRSAPublicKey']
+    required = [
+        'AZURE_PARAM_linuxAdminUsername',
+        'AZURE_PARAM_masterEndpointDNSNamePrefix',
+        'AZURE_PARAM_agentEndpointDNSNamePrefix',
+        'AZURE_TEMPLATE_URL',
+        'AZURE_PARAM_sshRSAPublicKey'
+    ]
     values = {}
     for k in required:
         assert os.getenv(k), "Environment variable {} must be set".format(k)
         values[k] = os.getenv(k)
 
-    assert values['AZURE_PARAM_oauthEnabled'] in ['true', 'false']
     assert values['AZURE_PARAM_masterEndpointDNSNamePrefix'] != values['AZURE_PARAM_agentEndpointDNSNamePrefix'], \
         "Master and agent prefix must be unique"
 
@@ -58,7 +61,15 @@ def get_value(template_parameter):
     return(get_env_params()[template_parameter]['value'])
 
 
-def run():
+def get_test_config():
+    add_env = {}
+    prefix = 'TEST_ADD_ENV_'
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            add_env[k.replace(prefix, '')] = v
+    return add_env
+
+def main():
     validate_env()
     location = os.getenv('AZURE_LOCATION', 'East US')
     credentials = azure.common.credentials.ServicePrincipalCredentials(
@@ -172,7 +183,7 @@ def run():
                 public_agent_list=ip_buckets['public'],
                 provider='azure',
                 test_dns_search=False,
-                add_env={'DCOS_AUTH_ENABLED': get_value('oauthEnabled')},
+                add_env=get_test_config(),
                 pytest_dir=os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test'),
                 pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
@@ -209,4 +220,4 @@ def run():
         sys.exit(2)
 
 if __name__ == '__main__':
-    run()
+    main()
