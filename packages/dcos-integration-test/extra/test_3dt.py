@@ -34,7 +34,7 @@ def make_3dt_request(cluster):
         logging.info('GET {}'.format(url))
         request_headers = {}
         if cluster.auth_enabled:
-            request_headers = cluster.superuser_auth_header
+            request_headers = cluster.web_auth_default_user.auth_header
         response = requests.get(url, headers=request_headers)
         assert response.ok
         try:
