@@ -168,7 +168,7 @@ class ClusterApi:
         self.web_auth_default_user.authenticate(self)
 
     def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
-                 dns_search_set, provider, auth_enabled, web_auth_default_user=None):
+                 dns_search_set, provider, auth_enabled, default_os_user, web_auth_default_user=None):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -181,6 +181,7 @@ class ClusterApi:
                 configured if its value is "true".
             provider: onprem, azure, or aws
             auth_enabled: True or False
+            default_os_user: default user that marathon/metronome will launch tasks under
             web_auth_default_user: if auth_enabled, use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
         """
@@ -193,6 +194,7 @@ class ClusterApi:
         self.dns_search_set = dns_search_set == 'true'
         self.provider = provider
         self.auth_enabled = auth_enabled
+        self.default_os_user = default_os_user
         self.web_auth_default_user = web_auth_default_user
 
         assert len(self.masters) == len(self.public_masters)
@@ -320,6 +322,19 @@ class ClusterApi:
         return app, test_uuid
 
     def deploy_test_app_and_check(self, app, test_uuid):
+        """This method deploys the test server app and then
+        pings its /operating_environment endpoint to retrieve the container
+        user running the task.
+
+        In a mesos container, this will be the marathon user
+        In a docker container this user comes from the USER setting
+            from the app's Dockerfile, which, for the test application
+            is the default, root
+        """
+        if 'container' in app and app['container']['type'] == 'DOCKER':
+            marathon_user = 'root'
+        else:
+            marathon_user = app.get('user', self.default_os_user)
         with self.marathon_deploy_and_cleanup(app) as service_points:
             r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
                                                              service_points[0].port))
@@ -342,7 +357,7 @@ class ClusterApi:
                 msg += "Detailed explanation of the problem: {2}"
                 raise Exception(msg.format(r.status_code, r.reason, r.text))
 
-            assert r.json() == {'username': 'root'}
+            assert r.json() == {'username': marathon_user}
 
     def deploy_marathon_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon

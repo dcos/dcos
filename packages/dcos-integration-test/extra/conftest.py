@@ -102,6 +102,7 @@ def cluster(user):
         dns_search_set=os.environ['DNS_SEARCH'],
         provider=os.environ['DCOS_PROVIDER'],
         auth_enabled=os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
-        web_auth_default_user=user)
+        web_auth_default_user=user,
+        default_os_user=os.getenv('DCOS_DEFAULT_OS_USER', 'root'))
     cluster_api.wait_for_dcos()
     return cluster_api
