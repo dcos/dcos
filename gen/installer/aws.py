@@ -54,6 +54,71 @@ aws_region_names = [
         'id': 'ap-southeast-2'
     }]
 
+
+region_to_ami_map = {
+    'ap-northeast-1': {
+        'coreos': 'ami-965899f7',
+        'stable': 'ami-965899f7',
+        'el7': 'ami-264f8747',
+        'natami': 'ami-55c29e54'
+    },
+    'ap-southeast-1': {
+        'coreos': 'ami-3120fe52',
+        'stable': 'ami-3120fe52',
+        'el7': 'ami-0765bd64',
+        'natami': 'ami-b082dae2'
+    },
+    'ap-southeast-2': {
+        'coreos': 'ami-b1291dd2',
+        'stable': 'ami-b1291dd2',
+        'el7': 'ami-3f1a2c5c',
+        'natami': 'ami-996402a3'
+    },
+    'eu-central-1': {
+        'coreos': 'ami-3ae31555',
+        'stable': 'ami-3ae31555',
+        'el7': 'ami-846e9eeb',
+        'natami': 'ami-204c7a3d'
+    },
+    'eu-west-1': {
+        'coreos': 'ami-b7cba3c4',
+        'stable': 'ami-b7cba3c4',
+        'el7': 'ami-250c7f56',
+        'natami': 'ami-3760b040'
+    },
+    'sa-east-1': {
+        'coreos': 'ami-61e3750d',
+        'stable': 'ami-61e3750d',
+        'el7': 'ami-0e019062',
+        'natami': 'ami-b972dba4'
+    },
+    'us-east-1': {
+        'coreos': 'ami-6d138f7a',
+        'stable': 'ami-6d138f7a',
+        'el7': 'ami-47096750',
+        'natami': 'ami-4c9e4b24'
+    },
+    'us-gov-west-1': {
+        'coreos': 'ami-b712acd6',
+        'stable': 'ami-b712acd6',
+        'el7': '',
+        'natami': ''
+    },
+    'us-west-1': {
+        'coreos': 'ami-ee57148e',
+        'stable': 'ami-ee57148e',
+        'el7': 'ami-e4afe284',
+        'natami': 'ami-2b2b296e'
+    },
+    'us-west-2': {
+        'coreos': 'ami-dc6ba3bc',
+        'stable': 'ami-dc6ba3bc',
+        'el7': 'ami-ab07d1cb',
+        'natami': 'ami-bb69128b'
+    }
+}
+
+
 late_services = """- name: dcos-cfn-signal.service
   command: start
   no_block: true
@@ -136,6 +201,19 @@ def get_test_session(config=None):
 
     # TODO(cmaloney): get_session shouldn't live in release.storage
     return release.call_matching_arguments(release.storage.aws.get_session, config, True)
+
+
+def gen_ami_mapping(mappings):
+    # create new dict with required mappings
+    # all will have region by default
+    final = {}
+    for region, amis in region_to_ami_map.items():
+        final[region] = dict()
+        for map_entry in mappings:
+            final_key = 'default' if map_entry == 'natami' else map_entry
+            final[region][final_key] = amis[map_entry]
+
+    return json.dumps(final, indent=4, sort_keys=True)
 
 
 def get_cloudformation_s3_url():
@@ -224,7 +302,8 @@ def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
 def gen_supporting_template():
     for template_key in ['infra.json']:
         cf_template = 'aws/templates/advanced/{}'.format(template_key)
-        cloudformation = render_cloudformation(resource_string("gen", cf_template).decode())
+        cloudformation = render_cloudformation_transform(resource_string("gen", cf_template).decode(),
+                                                         nat_ami_mapping=gen_ami_mapping({'natami'}))
 
         print("Validating CloudFormation: {}".format(cf_template))
         validate_cf(cloudformation)
@@ -316,6 +395,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
         node_args = deepcopy(node_args)
         node_args.update(arguments)
         node_args['os_type'] = os_type
+        node_args['region_to_ami_mapping'] = gen_ami_mapping({"coreos", "el7"})
         params = deepcopy(cf_instance_groups[node_template_id])
         params['report_name'] = node_args.pop('report_name')
         params['os_type'] = os_type
@@ -347,6 +427,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                         **bunch.results.arguments))
         else:
             node_args['num_masters'] = "1"
+            node_args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
             bunch = make_advanced_bunch(node_args,
                                         template_name,
                                         params)
@@ -462,6 +543,8 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         args['exhibitor_storage_backend'] = 'aws_s3'
         args['master_role'] = '{ "Ref" : "MasterRole" }'
         args['agent_role'] = '{ "Ref" : "SlaveRole" }'
+        args['region_to_ami_mapping'] = gen_ami_mapping({"stable"})
+        args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
 
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
 
