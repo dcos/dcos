@@ -20,6 +20,9 @@ def main():
     num_public_agents = 1
     stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
+    pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
+    pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
+
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
     installer_url = os.environ['INSTALLER_URL']
 
@@ -53,7 +56,7 @@ def main():
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
     test_util.cluster.upgrade_dcos(cluster, installer_url)
 
-    result = test_util.cluster.run_integration_tests(cluster)
+    result = test_util.cluster.run_integration_tests(cluster, pytest_dir=pytest_dir, pytest_cmd=pytest_cmd)
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
         vpc.delete()
