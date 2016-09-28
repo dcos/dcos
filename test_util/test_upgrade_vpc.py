@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 
 def main():
-    num_masters = 3
-    num_agents = 2
-    num_public_agents = 1
+    num_masters = int(os.getenv('MASTERS', '3'))
+    num_agents = int(os.getenv('AGENTS', '2'))
+    num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
     stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
     pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
