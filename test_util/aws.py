@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import logging
 import os
-import pprint
 import time
 
 import boto3
 import retrying
+from botocore.exceptions import ClientError
 
 from test_util.helpers import Host, SshInfo
 
@@ -77,7 +77,8 @@ class CfStack():
     def wait_for_status_change(self, state_1, state_2, timeout=3600):
         """Note: Do not use boto waiter class, it has very poor error handling
         and will raise an exception when the rate limit is hit whereas botoclient
-        methods will simply sleep and retry
+        methods will simply sleep and retry up to 4 times. After that a ClientError
+        is raised, at which point the poll interval backs off
         """
         stack_states = [
             'CREATE_IN_PROGRESS', 'CREATE_FAILED', 'CREATE_COMPLETE',
@@ -94,8 +95,28 @@ class CfStack():
 
         logging.info('Sleeping for {} minutes before polling'.format(AWS_WAIT_BEFORE_POLL_MIN))
         time.sleep(60 * AWS_WAIT_BEFORE_POLL_MIN)
+        default_poll_interval = 10
 
-        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
+        @retrying.retry(stop_max_delay=timeout * 1000,
+                        retry_on_result=lambda res: res is False,
+                        retry_on_exception=lambda ex: False)
+        def wait_and_backoff():
+            nonlocal default_poll_interval
+            try:
+                self._wait_loop(state_1, state_2, default_poll_interval)
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'Throttling':
+                    logging.warn('AWS Client raised a throttling error; increasing poll interval...')
+                    default_poll_interval += 10
+                    return False
+                raise
+        wait_and_backoff()
+
+    def _wait_loop(self, state_1, state_2, interval):
+        """This method is still vulnerable to being interrupted by an
+        AWS Client throttling errror, use wait_for_status_change()
+        """
+        @retrying.retry(wait_fixed=interval * 1000,
                         retry_on_result=lambda res: res is False,
                         retry_on_exception=lambda ex: False)
         def wait_loop():
@@ -104,13 +125,11 @@ class CfStack():
             if stack_status == state_2:
                 return True
             if stack_status != state_1:
-                logging.exception('Stack Details:\n{}'.format(
-                    pprint.pformat(stack_details)))
-                logging.exception('Stack Events:\n{}'.format(
-                    pprint.pformat(self.get_stack_events())))
+                logging.exception('Stack Details: {}'.format(stack_details))
+                for event in self.get_stack_events():
+                    logging.exception('Stack Events: {}'.format(repr(event)))
                 raise Exception('StackStatus changed unexpectedly to: {}'.format(stack_status))
             return False
-
         wait_loop()
 
     def get_stack_details(self):
