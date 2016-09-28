@@ -412,6 +412,8 @@ class ClusterApi:
 
             if (check_tasks_running and check_tasks_healthy):
                 res = [Endpoint(t['host'], t['ports'][0], t['ipAddresses'][0]['ipAddress'])
+                       if len(t['ports']) is not 0
+                       else Endpoint(t['host'], 0, t['ipAddresses'][0]['ipAddress'])
                        for t in data['app']['tasks']]
                 logging.info('Application deployed, running on {}'.format(res))
                 return res

@@ -59,3 +59,19 @@ def test_ip_per_container(cluster):
         app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points)()
+
+
+def test_ip_per_container_with_named_vip(cluster):
+    """Test if we are able to connect to a task with ip-per-container mode using named vip
+    """
+    origin_app, test_uuid = cluster.get_test_app_in_docker(ip_per_container=True)
+    origin_app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': 'foo:6000'}
+    origin_app['healthChecks'][0]['port'] = origin_app['container']['docker']['portMappings'][0]['containerPort']
+    del origin_app['container']['docker']['portMappings'][0]['hostPort']
+    del origin_app['healthChecks'][0]['portIndex']
+
+    with cluster.marathon_deploy_and_cleanup(origin_app):
+        proxy_app, proxy_uuid = cluster.get_test_app()
+        with cluster.marathon_deploy_and_cleanup(proxy_app) as service_points:
+            cmd = '/opt/mesosphere/bin/curl -s -f http://foo.marathon.l4lb.thisdcos.directory:6000/ping'
+            ensure_routable(cmd, service_points)()
