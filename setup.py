@@ -62,6 +62,7 @@ setup(
             # Note: This test does not touch CCM, but this is here for backward compatible CI
             'ccm-deploy-test=test_util.test_aws_vpc:main',
             'test-aws-cf-deploy=test_util.test_aws_cf:main',
+            'test-upgrade-vpc=test_util.test_upgrade_vpc:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main'
