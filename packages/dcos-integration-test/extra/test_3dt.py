@@ -155,6 +155,8 @@ def test_3dt_nodes(cluster, make_3dt_request):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
+    r = cluster.get('/exhibitor/exhibitor/v1/cluster/status').json()
+    logging.info('Exhibitor cluster status: {}'.format(r))
     for master in cluster.masters:
         response = make_3dt_request(master, '/nodes', is_agent=False)
         assert len(response) == 1, 'nodes response must have only one field: nodes'
