@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
+import os
 import pprint
+import time
 
 import boto3
 import retrying
@@ -13,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'
 VPC_EBS_ONLY_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-ebs-only-cluster-template.json'
+
+# At time of implementation, VPC averaged 4 minutes and CF 9 minutes
+AWS_WAIT_BEFORE_POLL_MIN = os.getenv('AWS_WAIT_BEFORE_POLL_MIN', 3)
 
 
 def template_by_instance_type(instance_type):
@@ -86,6 +91,9 @@ class CfStack():
         assert state_args.issubset(stack_states), 'Invalid state(s): {}. states must be one of: {}'.format(
             repr(state_args.difference(stack_states)), repr(stack_states))
         logging.info('Waiting for status to change from {} to {}'.format(state_1, state_2))
+
+        logging.info('Sleeping for {} minutes before polling'.format(AWS_WAIT_BEFORE_POLL_MIN))
+        time.sleep(60 * AWS_WAIT_BEFORE_POLL_MIN)
 
         @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda res: res is False,
