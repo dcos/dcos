@@ -32,6 +32,19 @@ class ClusterApi:
             logging.info(msg.format(r.status_code))
             return False
 
+    @retrying.retry(wait_fixed=1000)
+    def _wait_for_zk_quorum(self):
+        """Queries exhibitor to ensure all master ZKs have joined
+        """
+        r = self.get('/exhibitor/exhibitor/v1/cluster/status')
+        if not r.ok:
+            logging.warning('Exhibitor status not available')
+            r.raise_for_status()
+        status = r.json()
+        logging.info('Exhibitor cluster status: {}'.format(status))
+        zk_nodes = sorted([n['hostname'] for n in status])
+        assert zk_nodes == self.masters, 'ZooKeeper has not formed the expected quorum'
+
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
@@ -153,6 +166,7 @@ class ClusterApi:
         if self.auth_enabled and self.web_auth_default_user:
             self._authenticate_default_user()
         self._wait_for_marathon_up()
+        self._wait_for_zk_quorum()
         self._wait_for_slaves_to_join()
         self._wait_for_dcos_history_up()
         self._wait_for_srouter_slaves_endpoints()
