@@ -1,4 +1,36 @@
 #!/usr/bin/env python3
+"""Integration test for onprem DC/OS upgraded from latest stable.
+
+The following environment variables control test procedure:
+
+MASTERS: integer (default=3)
+    The number of masters to create from a newly created VPC.
+
+AGENTS: integer (default=2)
+    The number of agents to create from a newly created VPC.
+
+PUBLIC_AGENTS: integer (default=1)
+    The number of public agents to create from a newly created VPC.
+
+DCOS_SSH_KEY_PATH: string (default='default_ssh_key')
+    Use to set specific ssh key path. Otherwise, script will expect key at default_ssh_key
+
+INSTALLER_URL: Installer URL for the DC/OS release under test.
+
+STABLE_INSTALLER_URL: Installer URL for the latest stable DC/OS release.
+
+CI_FLAGS: string (default=None)
+    If provided, this string will be passed directly to py.test as in:
+    py.test -vv CI_FLAGS integration_test.py
+
+DCOS_PYTEST_DIR: string(default='/opt/mesosphere/active/dcos-integration-test')
+    The working dir for py.test.
+
+DCOS_PYTEST_CMD: string(default='py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
+    The complete py.test command used to run integration tests. If provided,
+    CI_FLAGS is ignored.
+
+"""
 
 import logging
 import os
