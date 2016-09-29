@@ -6,6 +6,8 @@ import asyncio
 from history.statebuffer import BufferCollection, BufferUpdater
 from aiohttp import web
 
+
+app = web.Application()
 state_buffer = None
 log = logging.getLogger(__name__)
 add_headers_cb = None
@@ -92,6 +94,7 @@ def buff_update(loop):
     #loop.call_later(2, buff_update(loop), loop)
 
 
+
 def start():
     global state_buffer
 
@@ -101,6 +104,7 @@ def start():
         sys.exit('HISTORY_BUFFER_DIR must be set!')
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
+
 
     loop = asyncio.get_event_loop()
     app = build_app(loop)
@@ -119,3 +123,5 @@ def start():
         loop.run_until_complete(srv.wait_closed())
 
     loop.close()
+
+
