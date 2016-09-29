@@ -42,5 +42,5 @@ def test_logout(auth_cluster):
     """
     r = auth_cluster.get('/acs/api/v1/auth/logout')
     cookieheader = r.headers['set-cookie']
-    assert 'dcos-acs-auth-cookie=;' in cookieheader
+    assert 'dcos-acs-auth-cookie=;' in cookieheader or 'dcos-acs-auth-cookie="";' in cookieheader
     assert 'expires' in cookieheader.lower()
