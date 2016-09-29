@@ -177,8 +177,9 @@ class DcosCfSimple(CfStack):
         obj_count = len(list(all_objects))
         if obj_count > 0:
             assert obj_count == 1, 'Expected one object in Exhibitor S3 bucket but found: ' + str(obj_count)
-            logger.info('Trying to delete object from bucket: {}'.format(repr(all_objects[0])))
-            all_objects[0].delete()
+            exhibitor_object = list(all_objects)[0]
+            logger.info('Trying to delete object from bucket: {}'.format(repr(exhibitor_object)))
+            exhibitor_object.delete()
         logger.info('Trying deleting bucket {} itself'.format(bucket))
         bucket.delete()
         logger.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
