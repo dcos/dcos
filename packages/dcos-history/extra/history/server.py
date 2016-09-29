@@ -2,18 +2,14 @@ import logging
 import os
 import sys
 
-
-from flask import Flask, Response
-from flask.ext.compress import Compress
 from history.statebuffer import BufferCollection, BufferUpdater
+from aiohttp import web
 
 
-app = Flask(__name__)
-compress = Compress()
+app = web.Application()
 state_buffer = None
 log = logging.getLogger(__name__)
 add_headers_cb = None
-
 
 try:
     import dcos_auth_python
@@ -45,31 +41,26 @@ def headers_cb():
     return headers
 
 
-@app.route('/')
-def home():
+def home(request):
     return _response_("history/last - to get the last fetched state\n" +
                       "history/minute - to get the state array of the last minute\n" +
                       "history/hour - to get the state array of the last hour\n" +
                       "ping - to get a pong\n")
 
 
-@app.route('/ping')
-def ping():
+def ping(request):
     return _response_("pong")
 
 
-@app.route('/history/last')
-def last():
+def last(request):
     return _response_(state_buffer.dump('last')[0])
 
 
-@app.route('/history/minute')
-def minute():
+def minute(request):
     return _buffer_response_('minute')
 
 
-@app.route('/history/hour')
-def hour():
+def hour(request):
     return _buffer_response_('hour')
 
 
@@ -78,14 +69,20 @@ def _buffer_response_(name):
 
 
 def _response_(content):
-    return Response(response=content, content_type="application/json", headers=headers_cb())
+    resp = web.json_response(content, headers=headers_cb())
+    resp.enable_compression()
+    return resp
 
 
-def on_starting_server(server):
+def start():
     global state_buffer
     logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
 
-    compress.init_app(app)
+    app.router.add_route('GET', '/', home)
+    app.router.add_route('GET', '/ping', ping)
+    app.router.add_route('GET', '/history/last', last)
+    app.router.add_route('GET', '/history/minute', minute)
+    app.router.add_route('GET', '/history/hour', hour)
 
     if 'HISTORY_BUFFER_DIR' not in os.environ:
         sys.exit('HISTORY_BUFFER_DIR must be set!')
@@ -93,9 +90,4 @@ def on_starting_server(server):
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
     BufferUpdater(state_buffer, headers_cb).run()
 
-
-def start():
-    # Used for testing only; on dc/os $PATH should have gunicorn
-    # Have to be in the same folder to run this
-    # In case of failure it will not sys.exit
-    os.system("gunicorn -c dcos_history_conf.py server:app")
+    web.run_app(app, host="0.0.0.0", port=15055)
