@@ -14,14 +14,14 @@ class DcosUser:
     """A lightweight user representation."""
     def __init__(self, auth_json):
         self.auth_json = auth_json
-        self.auth_header = None
+        self.auth_header = {}
         self.auth_token = None
         self.auth_cookie = None
 
     def authenticate(self, cluster):
         assert isinstance(cluster, test_util.cluster_api.ClusterApi), 'Unrecognized cluster object!'
         logging.info('Attempting authentication')
-        r = cluster.post(path='/acs/api/v1/auth/login', disable_suauth=True, payload=self.auth_json)
+        r = cluster.post(path='/acs/api/v1/auth/login', user=None, json=self.auth_json)
         r.raise_for_status()
         logging.info('Received authorization blob: {}'.format(r.json()))
         assert r.ok, 'Authentication failed with status_code: {}'.format(r.status_code)

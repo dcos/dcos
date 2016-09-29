@@ -143,12 +143,12 @@ def test_octarine_srv(cluster, timeout=30):
 def test_pkgpanda_api(cluster):
 
     def get_and_validate_package_ids(node, uri):
-        r = cluster.node_get(node, uri)
+        r = cluster.get(node=node, path=uri)
         assert r.status_code == 200
         package_ids = r.json()
         assert isinstance(package_ids, list)
         for package_id in package_ids:
-            r = cluster.node_get(node, uri + package_id)
+            r = cluster.get(node=node, path=uri + package_id)
             assert r.status_code == 200
             name, version = package_id.split('--')
             assert r.json() == {'id': package_id, 'name': name, 'version': version}

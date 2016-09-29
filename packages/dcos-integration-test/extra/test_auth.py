@@ -9,7 +9,7 @@ def auth_cluster(cluster):
 
 
 def test_adminrouter_access_control_enforcement(auth_cluster):
-    r = auth_cluster.get('/acs/api/v1', disable_suauth=True)
+    r = auth_cluster.get('/acs/api/v1', user=None)
     assert r.status_code == 401
     assert r.headers['WWW-Authenticate'] in ('acsjwt', 'oauthjwt')
     # Make sure that this is UI's error page body,
@@ -20,7 +20,7 @@ def test_adminrouter_access_control_enforcement(auth_cluster):
     # Verify that certain locations are forbidden to access
     # when not authed, but are reachable as superuser.
     for path in ('/mesos_dns/v1/config', '/service/marathon/', '/mesos/'):
-        r = auth_cluster.get(path, disable_suauth=True)
+        r = auth_cluster.get(path, user=None)
         assert r.status_code == 401
         r = auth_cluster.get(path)
         assert r.status_code == 200
@@ -30,7 +30,7 @@ def test_adminrouter_access_control_enforcement(auth_cluster):
         'dcos-acs-auth-cookie': auth_cluster.web_auth_default_user.auth_cookie}
     r = auth_cluster.get(
         '/service/marathon/',
-        disable_suauth=True,
+        user=None,
         cookies=authcookie)
     assert r.status_code == 200
 

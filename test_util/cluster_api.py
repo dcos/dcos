@@ -1,9 +1,10 @@
 import collections
 import copy
+import functools
 import logging
 import uuid
 from contextlib import contextmanager
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 import dns.exception
 import dns.resolver
@@ -17,6 +18,7 @@ class ClusterApi:
 
     adminrouter_master_port = {'http': 80, 'https': 443}
     adminrouter_agent_port = {'http': 61001, 'https': 61002}
+    request_methods = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options']
 
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
@@ -108,7 +110,7 @@ class ClusterApi:
         try:
             # Yeah, we can also put it in retry_on_exception, but
             # this way we will loose debug messages
-            self.get(disable_suauth=True)
+            self.get('/')
         except requests.ConnectionError as e:
             msg = "Cannot connect to nginx, error string: '{}', continuing to wait"
             logging.info(msg.format(e))
@@ -215,55 +217,63 @@ class ClusterApi:
 
         # URI must include scheme
         assert dcos_uri.startswith('http')
-        self.scheme = urlparse(dcos_uri).scheme
+        parse_result = urlparse(dcos_uri)
+        self.scheme = parse_result.scheme
+        self.dns_host = parse_result.netloc.split(':')[0]
 
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
+    def cluster_request(self, request_method, path, node=None, port=None, **kwargs):
+        """Args:
+            request_method: (str) name of method for requests.request
+            path: (str) URL path to request
+            node: (str) the hostname of the node to be requested from, if node=None,
+                then public cluster address (see environment DCOS_DNS_ADDRESS)
+            port: (int) port to be requested at. If port=None, the adminrouter port
+                for that given node type will be used
+            user: (test_util.helpers.DcosUser) if this argument is specified, this
+                user's auth header will be used to make the request. If user=None,
+                then the web_auth_default_user's auth will be used. If user=None,
+                then no auth headers are used, even if auth is enabled
+            **kwargs: any optional arguments to be passed to requests.request
+        """
+        assert request_method in self.request_methods
+        user = kwargs.pop('user', self.web_auth_default_user)
+        if node is None:
+            node = self.dns_host
+        headers = kwargs.pop('headers', {})
+        if self.auth_enabled and user:
+            headers.update(user.auth_header)
+        url = self.get_url(node=node, path=path, port=port)
+        logging.info('{}: {}'.format(request_method, url))
+        return requests.request(request_method, url, headers=headers, **kwargs)
+
+    def get_url(self, node, path, port=None):
+        """Looks up node type and appends the appropriate port and scheme
+        """
+        if node in self.masters or node == self.dns_host:
+            default_port = self.adminrouter_master_port[self.scheme]
+        elif node in self.all_slaves:
+            default_port = self.adminrouter_agent_port[self.scheme]
+        else:
+            raise Exception('Node {} is not in the cluster.'.format(node))
+        if port is None:
+            port = default_port
+        return '{}://{}/{}'.format(self.scheme, '{}:{}'.format(node, port) if port else node, path.lstrip('/'))
+
+    # Declare wrapped cluster request function short cuts
+    get = functools.partialmethod(cluster_request, 'get')
+    put = functools.partialmethod(cluster_request, 'put')
+    post = functools.partialmethod(cluster_request, 'post')
+    patch = functools.partialmethod(cluster_request, 'patch')
+    delete = functools.partialmethod(cluster_request, 'delete')
+    head = functools.partialmethod(cluster_request, 'head')
+    options = functools.partialmethod(cluster_request, 'options')
+
     @staticmethod
     def _marathon_req_headers():
         return {'Accept': 'application/json, text/plain, */*'}
-
-    def _suheader(self, disable_suauth):
-        if not disable_suauth and self.auth_enabled:
-            return self.web_auth_default_user.auth_header
-        return {}
-
-    def get(self, path="", params=None, disable_suauth=False, **kwargs):
-        hdrs = self._suheader(disable_suauth)
-        hdrs.update(kwargs.pop('headers', {}))
-        return requests.get(
-            self.dcos_uri + path, params=params, headers=hdrs, **kwargs)
-
-    def post(self, path="", payload=None, disable_suauth=False, **kwargs):
-        hdrs = self._suheader(disable_suauth)
-        hdrs.update(kwargs.pop('headers', {}))
-        if payload is None:
-            payload = {}
-        return requests.post(self.dcos_uri + path, json=payload, headers=hdrs)
-
-    def delete(self, path="", disable_suauth=False, **kwargs):
-        hdrs = self._suheader(disable_suauth)
-        hdrs.update(kwargs.pop('headers', {}))
-        return requests.delete(self.dcos_uri + path, headers=hdrs, **kwargs)
-
-    def head(self, path="", disable_suauth=False):
-        hdrs = self._suheader(disable_suauth)
-        return requests.head(self.dcos_uri + path, headers=hdrs)
-
-    def node_get(self, node, path="", params=None, disable_suauth=False, **kwargs):
-        """Execute a GET request against the adminrouter on node."""
-        hdrs = self._suheader(disable_suauth)
-        hdrs.update(kwargs.pop('headers', {}))
-
-        if node in self.masters:
-            port = self.adminrouter_master_port[self.scheme]
-        elif node in self.all_slaves:
-            port = self.adminrouter_agent_port[self.scheme]
-        else:
-            raise Exception('Node {} is not in the cluster.'.format(node))
-        url = urlunparse([self.scheme, ':'.join([node, str(port)]), path, None, None, None])
-        return requests.get(url, params=params, headers=hdrs, **kwargs)
 
     def get_test_app(self, custom_port=False):
         test_uuid = uuid.uuid4().hex
@@ -396,7 +406,7 @@ class ClusterApi:
             applications. I.E:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
-        r = self.post('/marathon/v2/apps', app_definition, headers=self._marathon_req_headers())
+        r = self.post('/marathon/v2/apps', json=app_definition, headers=self._marathon_req_headers())
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
@@ -411,7 +421,7 @@ class ClusterApi:
                           ('embed', 'apps.counts'))
             req_uri = '/marathon/v2/apps' + app_id
 
-            r = self.get(req_uri, req_params, headers=self._marathon_req_headers())
+            r = self.get(req_uri, params=req_params, headers=self._marathon_req_headers())
             assert r.ok
 
             data = r.json()
@@ -496,7 +506,7 @@ class ClusterApi:
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def wait_for_completion():
-            r = self.get('/service/metronome/v1/jobs/' + job_id, {'embed': 'history'})
+            r = self.get('/service/metronome/v1/jobs/' + job_id, params={'embed': 'history'})
             assert r.ok
             out = r.json()
             if not ignore_failures and (out['history']['failureCount'] != 0):
@@ -507,7 +517,7 @@ class ClusterApi:
             logging.info('Metronome one-off successful')
             return True
         logging.info('Creating metronome job: ' + repr(job_definition))
-        r = self.post('/service/metronome/v1/jobs', job_definition)
+        r = self.post('/service/metronome/v1/jobs', json=job_definition)
         assert r.ok, r.json()
         logging.info('Starting metronome job')
         r = self.post('/service/metronome/v1/jobs/{}/runs'.format(job_id))
