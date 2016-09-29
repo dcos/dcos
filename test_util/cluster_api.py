@@ -1,9 +1,10 @@
 import collections
 import copy
+import functools
 import logging
 import uuid
 from contextlib import contextmanager
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 import dns.exception
 import dns.resolver
@@ -109,7 +110,7 @@ class ClusterApi:
         try:
             # Yeah, we can also put it in retry_on_exception, but
             # this way we will loose debug messages
-            self.get()
+            self.get('/')
         except requests.ConnectionError as e:
             msg = "Cannot connect to nginx, error string: '{}', continuing to wait"
             logging.info(msg.format(e))
@@ -223,30 +224,34 @@ class ClusterApi:
         # Make URI never end with /
         self.dcos_uri = dcos_uri.rstrip('/')
 
-        # Generate request functions
-        for method in self.request_methods:
-            setattr(self, method, self.cluster_request(getattr(requests, method)))
-
-    def cluster_request(self, request_fn):
-        """Decorator function for making authorized requests within the cluster
+    def cluster_request(self, request_method, path, node=None, port=None, **kwargs):
+        """Args:
+            request_method: (str) name of method for requests.request
+            path: (str) URL path to request
+            node: (str) the hostname of the node to be requested from, if node=None,
+                then public cluster address (see environment DCOS_DNS_ADDRESS)
+            port: (int) port to be requested at. If port=None, the adminrouter port
+                for that given node type will be used
+            user: (test_util.helpers.DcosUser) if this argument is specified, this
+                user's auth header will be used to make the request. If user=None,
+                then the web_auth_default_user's auth will be used. If user=None,
+                then no auth headers are used, even if auth is enabled
+            **kwargs: any optional arguments to be passed to requests.request
         """
-        def wrapped_request(path="", node=None, user=self.web_auth_default_user, port=None, **kwargs):
-            """Requests to DC/OS nodes (or dns if unset) using auth headers
-            from default_user (if set)
-            """
-            if node is None:
-                node = self.dns_host
-            if self.auth_enabled and user:
-                hdrs = user.auth_header
-            else:
-                hdrs = {}
-            hdrs.update(kwargs.pop('headers', {}))
-            url = self.get_url(node=node, path=path, port=port)
-            logging.info('{}: {}'.format(request_fn.__name__, url))
-            return request_fn(url, headers=hdrs, **kwargs)
-        return wrapped_request
+        assert request_method in self.request_methods
+        user = kwargs.pop('user', self.web_auth_default_user)
+        if node is None:
+            node = self.dns_host
+        headers = kwargs.pop('headers', {})
+        if self.auth_enabled and user:
+            headers.update(user.auth_header)
+        url = self.get_url(node=node, path=path, port=port)
+        logging.info('{}: {}'.format(request_method, url))
+        return requests.request(request_method, url, headers=headers, **kwargs)
 
     def get_url(self, node, path, port=None):
+        """Looks up node type and appends the appropriate port and scheme
+        """
         if node in self.masters or node == self.dns_host:
             default_port = self.adminrouter_master_port[self.scheme]
         elif node in self.all_slaves:
@@ -255,7 +260,16 @@ class ClusterApi:
             raise Exception('Node {} is not in the cluster.'.format(node))
         if port is None:
             port = default_port
-        return urlunparse([self.scheme, ':'.join([node, str(port)]), path, None, None, None])
+        return '{}://{}/{}'.format(self.scheme, '{}:{}'.format(node, port) if port else node, path.lstrip('/'))
+
+    # Declare wrapped cluster request function short cuts
+    get = functools.partialmethod(cluster_request, 'get')
+    put = functools.partialmethod(cluster_request, 'put')
+    post = functools.partialmethod(cluster_request, 'post')
+    patch = functools.partialmethod(cluster_request, 'patch')
+    delete = functools.partialmethod(cluster_request, 'delete')
+    head = functools.partialmethod(cluster_request, 'head')
+    options = functools.partialmethod(cluster_request, 'options')
 
     @staticmethod
     def _marathon_req_headers():
