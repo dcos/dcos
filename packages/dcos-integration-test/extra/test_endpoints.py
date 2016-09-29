@@ -129,6 +129,7 @@ def test_if_dcos_history_service_is_getting_data(cluster):
         assert 'frameworks' in json
         assert 'slaves' in json
         assert 'hostname' in json
+
     check_up()
 
 
