@@ -8,10 +8,6 @@ mkdir -p "$LIB_INSTALL_DIR"
 cp -r /pkg/extra /build
 
 
-# Copy the gunicorn conf file to $PKG_PATH
-cp /pkg/extra/history/dcos_history_conf.py "$PKG_PATH/dcos_history_conf.py"
-
-
 pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /build
 
 # Create the service file

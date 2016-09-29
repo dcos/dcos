@@ -18,9 +18,7 @@ config = {
         ]
     },
     'install_requires': [
-        'Flask>=0.10.1',
-        'flask-compress',
-        'gunicorn',
+        'aiohttp==0.22.5',
         'requests']
 }
 
