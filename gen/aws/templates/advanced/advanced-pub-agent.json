@@ -286,7 +286,7 @@
       },
       "us-gov-west-1": {
         "coreos": "ami-b712acd6",
-        "el7": ""
+        "el7": "ami-c4a41da5"
       },
       "us-west-1": {
         "coreos": "ami-ee57148e",

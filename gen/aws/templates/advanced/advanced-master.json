@@ -77,6 +77,12 @@
           ]
         }
       ]
+    },
+    "RegionIsUsGovWest1" : {
+      "Fn::Equals" : [
+        { "Ref" : "AWS::Region" },
+        "us-gov-west-1"
+      ]
     }
   },
   "Mappings": {
@@ -172,8 +178,21 @@
                 "s3:PutObjectAcl"
               ],
               "Resource": [
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }, "/*"]]},
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }]]}
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" },
+                    "/*"
+                  ]
+                ] },
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" }
+                  ]
+                ] }
               ]
             },
             {
