@@ -1,12 +1,11 @@
 import logging
 import os
 import sys
+import asyncio
 
 from history.statebuffer import BufferCollection, BufferUpdater
 from aiohttp import web
 
-
-app = web.Application()
 state_buffer = None
 log = logging.getLogger(__name__)
 add_headers_cb = None
@@ -74,9 +73,8 @@ def _response_(content):
     return resp
 
 
-def start():
-    global state_buffer
-    logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
+def build_app(loop):
+    app = web.Application(loop=loop)
 
     app.router.add_route('GET', '/', home)
     app.router.add_route('GET', '/ping', ping)
@@ -84,10 +82,40 @@ def start():
     app.router.add_route('GET', '/history/minute', minute)
     app.router.add_route('GET', '/history/hour', hour)
 
+    return app
+
+
+@asyncio.coroutine
+def buff_update(loop):
+    BufferUpdater(state_buffer, headers_cb())
+    #yield from asyncio.sleep(2)
+    #loop.call_later(2, buff_update(loop), loop)
+
+
+def start():
+    global state_buffer
+
+    logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
+
     if 'HISTORY_BUFFER_DIR' not in os.environ:
         sys.exit('HISTORY_BUFFER_DIR must be set!')
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
-    BufferUpdater(state_buffer, headers_cb).run()
 
-    web.run_app(app, host="0.0.0.0", port=15055)
+    loop = asyncio.get_event_loop()
+    app = build_app(loop)
+    handler = app.make_handler()
+    f = loop.create_server(handler, '0.0.0.0', 15055)
+    srv = loop.run_until_complete(f)
+
+    try:
+            loop.call_soon(buff_update(loop), loop)
+            loop.run_forever()
+    finally:
+        srv.close()
+        loop.run_until_complete(app.shutdown())
+        loop.run_until_complete(handler.finish_connections(1.0))
+        loop.run_until_complete(app.cleanup())
+        loop.run_until_complete(srv.wait_closed())
+
+    loop.close()
