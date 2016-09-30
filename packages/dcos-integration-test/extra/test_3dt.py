@@ -569,7 +569,7 @@ def test_3dt_bundle_download_and_extract(cluster):
             # summaryErrorsReport.txt and summaryReport.txt are diagnostic job log files.
             for log in ('summaryErrorsReport.txt', 'summaryReport.txt'):
                 try:
-                    log_data = _read_from_zip(z, item)
+                    log_data = _read_from_zip(z, log, to_json=False)
                     logging.info("{}:\n{}".format(log, log_data))
                 except KeyError:
                     logging.info("Could not read {}".format(log))
