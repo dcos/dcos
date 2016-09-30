@@ -276,7 +276,7 @@ def do_aws_cf_configure():
 
     # TODO(cmaloney): Print where the user can find the files in AWS
     # TODO(cmaloney): Dump out a JSON with machine paths to make scripting easier.
-    return 1
+    return 0
 
 
 def create_config_from_post(post_data, config_path):
