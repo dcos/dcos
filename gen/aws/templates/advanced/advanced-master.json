@@ -314,7 +314,7 @@
             "InstanceProtocol" : "HTTP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
@@ -341,7 +341,7 @@
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
