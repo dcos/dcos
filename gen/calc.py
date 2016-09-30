@@ -198,8 +198,14 @@ def calculate_rexray_config_contents(rexray_config):
     )
 
 
-def validate_rexray_config(rexray_config):
-    assert isinstance(json.loads(rexray_config), dict), 'Must be a mapping.'
+def validate_json_dictionary(data):
+    # TODO(cmaloney): Pull validate_json() out.
+    try:
+        loaded = json.loads(data)
+        assert isinstance(loaded, dict), "Must be a JSON dictionary. Got a {}".format(type_str(loaded))
+        return loaded
+    except ValueError as ex:
+        raise AssertionError("Must be valid JSON. Got: {}".format(data)) from ex
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -401,6 +407,24 @@ def validate_minuteman_max_named_ip(minuteman_max_named_ip):
     validate_ipv4_addresses([minuteman_max_named_ip])
 
 
+def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
+    if cluster_docker_credentials == "{}":
+        return "false"
+    else:
+        return "true"
+
+
+def calculate_cluster_docker_credentials_path(cluster_docker_credentials_dcos_owned):
+    return {
+        'true': '/opt/mesosphere/etc/docker_credentials',
+        'false': '/etc/mesosphere/docker_credentials'
+    }[cluster_docker_credentials_dcos_owned]
+
+
+def calculate_cluster_docker_registry_enabled(cluster_docker_registry_url):
+    return 'false' if cluster_docker_registry_url == '' else 'true'
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -426,10 +450,15 @@ entry = {
         lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
-        validate_rexray_config,
+        lambda rexray_config: validate_json_dictionary(rexray_config),
         lambda check_time: validate_true_false(check_time),
         validate_minuteman_min_named_ip,
-        validate_minuteman_max_named_ip],
+        validate_minuteman_max_named_ip,
+        lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
+        lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
+        lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
+        lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials)
+    ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
@@ -495,7 +524,12 @@ entry = {
                     }
                 }
             }
-        })
+        }),
+        'cluster_docker_registry_url': '',
+        'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
+        'cluster_docker_credentials_write_to_etc': 'true',
+        'cluster_docker_credentials_enabled': 'true',
+        'cluster_docker_credentials': "{}"
     },
     'must': {
         'custom_auth': 'false',
@@ -523,7 +557,9 @@ entry = {
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,
-        'no_proxy_final': calculate_no_proxy
+        'no_proxy_final': calculate_no_proxy,
+        'cluster_docker_credentials_path': calculate_cluster_docker_credentials_path,
+        'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
     },
     'conditional': {
         'master_discovery': {
