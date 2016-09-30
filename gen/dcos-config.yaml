@@ -318,6 +318,23 @@ package:
       MESOS_HOOKS={{ mesos_hooks }}
 {% case "false" %}
 {% endswitch %}
+{% switch cluster_docker_registry_enabled %}
+{% case "true" %}
+      MESOS_DOCKER_REGISTRY={{ cluster_docker_registry_url }}
+{% case "false" %}
+{% endswitch %}
+{% switch cluster_docker_credentials_enabled %}
+{% case "true" %}
+      MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
+{% case "false" %}
+{% endswitch %}
+{% switch cluster_docker_credentials_dcos_owned %}
+{% case "true" %}
+  - path: /etc/docker_credentials
+    permissions: "0600"
+    content: {{ cluster_docker_credentials }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-slave
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
