@@ -526,8 +526,8 @@ entry = {
         }),
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
-        'cluster_docker_credentials_write_to_etc': 'true',
-        'cluster_docker_credentials_enabled': 'true',
+        'cluster_docker_credentials_write_to_etc': 'false',
+        'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}"
     },
     'must': {
