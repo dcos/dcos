@@ -24,24 +24,53 @@ def do_configure(config):
     pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 
 
+def parent_dirs(filename):
+    assert not (filename.startswith('/') or filename.endswith('/'))
+    dirs = []
+    for directory in filename.split('/')[:-1]:
+        dirs.append(directory)
+        yield '/'.join(dirs)
+
+
 def do_move_atomic(src_dir, dest_dir, filenames):
     assert os.path.exists(src_dir)
     assert os.path.exists(dest_dir)
 
+    created_dirs = []
+    created_files = []
+
+    def mkdir(dirname):
+        created_dirs.append(dirname)
+        subprocess.check_output(['mkdir', dirname])
+
+    def copy(src, dest):
+        created_files.append(dest)
+        subprocess.check_output(['cp', src, dest])
+
     def rollback():
-        for filename in filenames:
-            filename = dest_dir + '/' + filename
+        for filename in reversed(created_files):
             try:
                 os.remove(filename)
             except OSError as ex:
                 log.error("Internal error removing temporary file. Might have corrupted file %s: %s",
                           filename, ex.strerror)
+
+        for filename in reversed(created_dirs):
+            try:
+                os.rmdir(filename)
+            except OSError as ex:
+                log.error("Internal error removing temporary dir %s: %s", filename, ex.strerror)
+
         sys.exit(1)
 
     try:
         # Copy across
         for filename in filenames:
-            subprocess.check_output(['cp', src_dir + '/' + filename, dest_dir + '/' + filename])
+            for parent_dir in parent_dirs(filename):
+                dest_parent_dir = dest_dir + '/' + parent_dir
+                if not os.path.exists(dest_parent_dir):
+                    mkdir(dest_parent_dir)
+            copy(src_dir + '/' + filename, dest_dir + '/' + filename)
     except subprocess.CalledProcessError as ex:
         log.error("Copy failed: %s\nOutput:\n%s", ex.cmd, ex.output)
         log.error("Removing partial artifacts")
