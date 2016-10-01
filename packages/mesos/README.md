@@ -13,3 +13,6 @@
 <li>[3e703af02bc309a9d6653392d02627bf3d3ce930] Updated logrotation module to use `os::pagesize()`. (landing in 1.1.0)
 <li>[1d45ba9f4f7f943d24282e0a91fb01c68815d6c3] Fixed sign comparisons in logrotate module. (landing in 1.1.0)
 <li>[b546e7544c04a6d3e0da87cd6207ae8f4d827add] Added a way to set logrotate settings per executor. (landing in 1.1.0)
+<li>[199c788ba1b9ce293b1e96fd35616e1f5b026847] Added ExitedEvents for links whose sockets fail on creation.
+<li>[aa1637e46f67e1362ac56667380ef3fdd74ffd1f] Prevented a race when relinking with SSL downgrade enabled.
+<li>[ede33d5e78102e2ef535beb2a0e264e1aad965e6] Added synchronization in link logic to prevent relinking races.
