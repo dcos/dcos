@@ -56,7 +56,8 @@ region_to_endpoint = {
     'ap-northeast-1': 's3-ap-northeast-1.amazonaws.com',
     'eu-central-1': 's3.eu-central-1.amazonaws.com',
     'eu-west-1': 's3-eu-west-1.amazonaws.com',
-    'sa-east-1': 's3-sa-east-1.amazonaws.com'
+    'sa-east-1': 's3-sa-east-1.amazonaws.com',
+    'us-gov-west-1': 's3-us-gov-west-1.amazonaws.com'
 }
 
 
@@ -276,7 +277,7 @@ def do_aws_cf_configure():
 
     # TODO(cmaloney): Print where the user can find the files in AWS
     # TODO(cmaloney): Dump out a JSON with machine paths to make scripting easier.
-    return 1
+    return 0
 
 
 def create_config_from_post(post_data, config_path):

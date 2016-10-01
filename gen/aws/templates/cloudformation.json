@@ -104,6 +104,9 @@
       },
       "us-west-2": {
           "default": "ami-bb69128b"
+      },
+      "us-gov-west-1": {
+        "default": "ami-e8ab1489"
       }
     },
     "Parameters": {
@@ -132,7 +135,13 @@
   },
 
   "Conditions" : {
-    "RegionIsUsEast1": { "Fn::Equals": [ { "Ref": "AWS::Region" }, "us-east-1" ] }
+    "RegionIsUsEast1": { "Fn::Equals": [ { "Ref": "AWS::Region" }, "us-east-1" ] },
+    "RegionIsUsGovWest1" : {
+      "Fn::Equals" : [
+        { "Ref" : "AWS::Region" },
+        "us-gov-west-1"
+      ]
+    }
   },
 
   "Resources" : {
@@ -444,8 +453,21 @@
                 "s3:PutObjectAcl"
               ],
               "Resource": [
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }, "/*"]]},
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }]]}
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" },
+                    "/*"
+                  ]
+                ] },
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" }
+                  ]
+                ] }
               ]
             },
             {
@@ -669,7 +691,7 @@
             "InstanceProtocol" : "HTTP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
@@ -697,7 +719,7 @@
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",

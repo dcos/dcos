@@ -23,6 +23,10 @@ DCOS_SSH_KEY_PATH: string
 DCOS_ADVANCED_TEMPLATE: boolean (default:false)
     If true, then DCOS_STACK_NAME is for a DC/OS advanced stack
 
+DCOS_HOST_OS: 'coreos' or 'centos'
+    This must be set only if you are attaching to an already provisioned
+    DC/OS Advanced template cluster
+
 TEST_DCOS_RESILIENCY: true/false (default: false)
     Will setup a cluster for resiliency testing and then run the resiliency tests
     after the standard integration tests

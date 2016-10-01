@@ -258,7 +258,15 @@ class DcosCfAdvanced(CfStack):
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
         stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
-        return cls(stack.stack.stack_name, boto_wrapper), SSH_INFO['coreos']
+        try:
+            os_string = template_url.split('/')[-1].split('.')[-2].split('-')[0]
+            ssh_info = CF_OS_SSH_INFO[os_string]
+        except (KeyError, IndexError):
+            logging.exception('Unexpected template URL: {}'.format(template_url))
+            if os_string:
+                logging.exception('No SSH info for OS string: {}'.format(os_string))
+            raise
+        return cls(stack.stack.stack_name, boto_wrapper), ssh_info
 
     def delete(self, delete_vpc=False):
         logger.info('Starting deletion of CF Advanced stack')
@@ -380,6 +388,11 @@ OS_SSH_INFO = {
     'debian-8': SSH_INFO['debian'],
     'rhel-7': SSH_INFO['rhel'],
     'ubuntu-16-04': SSH_INFO['ubuntu'],
+}
+
+CF_OS_SSH_INFO = {
+    'el7': SSH_INFO['centos'],
+    'coreos': SSH_INFO['coreos']
 }
 
 
