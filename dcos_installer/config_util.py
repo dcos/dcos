@@ -41,6 +41,11 @@ def do_move_atomic(src_dir, dest_dir, filenames):
     try:
         # Copy across
         for filename in filenames:
+            # TODO(branden): Need to clean this up on rollback
+            base_dest_filename = os.path.dirname(dest_dir + filename)
+            if base_dest_filename:
+                subprocess.check_output(['mkdir', '-p', base_dest_filename])
+
             subprocess.check_output(['cp', src_dir + filename, dest_dir + filename])
     except subprocess.CalledProcessError as ex:
         log.error("Copy failed: %s\nOutput:\n%s", ex.cmd, ex.output)
