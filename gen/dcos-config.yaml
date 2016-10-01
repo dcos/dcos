@@ -332,7 +332,8 @@ package:
 {% case "true" %}
   - path: /etc/docker_credentials
     permissions: "0600"
-    content: {{ cluster_docker_credentials }}
+    content: |
+        {{ cluster_docker_credentials }}
 {% case "false" %}
 {% endswitch %}
   - path: /etc/mesos-slave
