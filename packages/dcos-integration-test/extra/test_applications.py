@@ -1,5 +1,7 @@
 import uuid
 
+from test_util.marathon import get_test_app, get_test_app_in_docker
+
 
 def test_if_marathon_app_can_be_deployed(cluster):
     """Marathon app deployment integration test
@@ -15,8 +17,7 @@ def test_if_marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeds.
     """
-    app, test_uuid = cluster.get_test_app()
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    cluster.marathon.deploy_test_app_and_check(*get_test_app())
 
 
 def test_if_docker_app_can_be_deployed(cluster):
@@ -25,8 +26,7 @@ def test_if_docker_app_can_be_deployed(cluster):
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected.
     """
-    app, test_uuid = cluster.get_test_app_in_docker(ip_per_container=False)
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    cluster.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
@@ -43,7 +43,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     When port mapping is available (MESOS-4777), this test should be updated to
     reflect that.
     """
-    app, test_uuid = cluster.get_test_app()
+    app, test_uuid = get_test_app()
     app['container'] = {
         'type': 'MESOS',
         'docker': {
@@ -56,7 +56,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
             'mode': 'RO'
         }]
     }
-    cluster.deploy_test_app_and_check(app, test_uuid)
+    cluster.marathon.deploy_test_app_and_check(app, test_uuid)
 
 
 def test_octarine_http(cluster, timeout=30):
@@ -90,7 +90,7 @@ def test_octarine_http(cluster, timeout=30):
         }]
     }
 
-    cluster.marathon_deploy_and_cleanup(app_definition)
+    cluster.marathon.deploy_and_cleanup(app_definition)
 
 
 def test_octarine_srv(cluster, timeout=30):
@@ -137,7 +137,7 @@ def test_octarine_srv(cluster, timeout=30):
         }]
     }
 
-    cluster.marathon_deploy_and_cleanup(app_definition)
+    cluster.marathon.deploy_and_cleanup(app_definition)
 
 
 def test_pkgpanda_api(cluster):
