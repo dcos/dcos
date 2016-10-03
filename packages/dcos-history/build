@@ -3,18 +3,12 @@ source /opt/mesosphere/environment.export
 export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.5/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
-
 # Copy from the ro /pkg/extra to a rw folder.
 cp -r /pkg/extra /build
-
-
-# Copy the gunicorn conf file to $PKG_PATH
-cp /pkg/extra/history/dcos_history_conf.py "$PKG_PATH/dcos_history_conf.py"
-
 
 pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /build
 
 # Create the service file
 service="$PKG_PATH/dcos.target.wants_master/dcos-history.service"
 mkdir -p "$(dirname "$service")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-history.service > "$service"
+cp /pkg/extra/dcos-history.service  "$service"
