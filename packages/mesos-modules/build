@@ -10,6 +10,6 @@ pushd build
 /pkg/src/mesos-modules/configure \
      --with-mesos=/opt/mesosphere/active/mesos \
      --prefix="$PKG_PATH"
-make -j8
+make -j$NUM_CORES
 make install
 popd

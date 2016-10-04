@@ -8,7 +8,7 @@ export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
 export CXXFLAGS=-I/opt/mesosphere/include
 
 /pkg/src/python/configure --enable-shared --prefix="$PKG_PATH" --enable-ipv6 --with-threads --with-computed-gotos
-make -j8
+make -j$NUM_CORES
 make install
 
 # Remove some big things we don't use at all
