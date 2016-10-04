@@ -25,7 +25,6 @@
         "SecurityGroups" : [ { "Ref" : "PrivateAgentSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "PrivateAgentInstanceProfile" },
         "AssociatePublicIpAddress" : "false",
-        {{ aws_private_agent_spot_price }}
         "InstanceType" : { "Ref" : "PrivateAgentInstanceType" },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ cloud_config }}
