@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-import history.server
+import history.server_util
 import history.statebuffer
 from history.statebuffer import FETCH_PERIOD, FILE_EXT
 
@@ -37,12 +37,12 @@ def history_service(monkeypatch, tmpdir):
     def mock_headers():
         return {'Authorization': 'test'}
 
-    monkeypatch.setattr(history.server, 'add_headers_cb', mock_headers)
+    monkeypatch.setattr(history.server_util, 'add_headers_cb', mock_headers)
 
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     start_time = datetime.now()
-    history.server.state_buffer = sb  # connect mock to app
-    test_app = history.server.app
+    history.server_util.state_buffer = sb  # connect mock to app
+    test_app = history.server_util.test()
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
     updater = history.statebuffer.BufferUpdater(sb, None)
@@ -121,8 +121,8 @@ def test_data_recovery(monkeypatch, tmpdir):
     # set start_time after instantiation to guarantee update on first write
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     start_time = datetime.now()
-    history.server.state_buffer = sb
-    test_app = history.server.app
+    history.server_util.state_buffer = sb
+    test_app = history.server_util.test()
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
     updater = history.statebuffer.BufferUpdater(sb, None)
