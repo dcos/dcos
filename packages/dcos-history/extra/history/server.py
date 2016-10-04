@@ -88,7 +88,7 @@ def build_app(loop):
 @asyncio.coroutine
 def buff_update(loop):
     BufferUpdater(state_buffer, headers_cb())
-    #yield from asyncio.sleep(2)
+    await   asyncio.sleep(2)
     #loop.call_later(2, buff_update(loop), loop)
 
 
@@ -107,10 +107,9 @@ def start():
     handler = app.make_handler()
     f = loop.create_server(handler, '0.0.0.0', 15055)
     srv = loop.run_until_complete(f)
-
+    task = asyncio.ensure_future(buff_update, loop)
     try:
-            loop.call_soon(buff_update(loop), loop)
-            loop.run_forever()
+        loop.run_forever()
     finally:
         srv.close()
         loop.run_until_complete(app.shutdown())
