@@ -1,19 +1,14 @@
 import logging
 import os
 import sys
+import asyncio
 
-
-from flask import Flask, Response
-from flask.ext.compress import Compress
 from history.statebuffer import BufferCollection, BufferUpdater
+from aiohttp import web
 
-
-app = Flask(__name__)
-compress = Compress()
 state_buffer = None
 log = logging.getLogger(__name__)
 add_headers_cb = None
-
 
 try:
     import dcos_auth_python
@@ -45,31 +40,26 @@ def headers_cb():
     return headers
 
 
-@app.route('/')
-def home():
+def home(request):
     return _response_("history/last - to get the last fetched state\n" +
                       "history/minute - to get the state array of the last minute\n" +
                       "history/hour - to get the state array of the last hour\n" +
                       "ping - to get a pong\n")
 
 
-@app.route('/ping')
-def ping():
+def ping(request):
     return _response_("pong")
 
 
-@app.route('/history/last')
-def last():
+def last(request):
     return _response_(state_buffer.dump('last')[0])
 
 
-@app.route('/history/minute')
-def minute():
+def minute(request):
     return _buffer_response_('minute')
 
 
-@app.route('/history/hour')
-def hour():
+def hour(request):
     return _buffer_response_('hour')
 
 
@@ -78,24 +68,54 @@ def _buffer_response_(name):
 
 
 def _response_(content):
-    return Response(response=content, content_type="application/json", headers=headers_cb())
+    resp = web.json_response(content, headers=headers_cb())
+    resp.enable_compression()
+    return resp
 
 
-def on_starting_server(server):
+def build_app(loop):
+    app = web.Application(loop=loop)
+
+    app.router.add_route('GET', '/', home)
+    app.router.add_route('GET', '/ping', ping)
+    app.router.add_route('GET', '/history/last', last)
+    app.router.add_route('GET', '/history/minute', minute)
+    app.router.add_route('GET', '/history/hour', hour)
+
+    return app
+
+
+@asyncio.coroutine
+def buff_update(loop):
+    BufferUpdater(state_buffer, headers_cb())
+    await   asyncio.sleep(2)
+    #yield from asyncio.sleep(2)
+    #loop.call_later(2, buff_update(loop), loop)
+
+
+def start():
     global state_buffer
-    logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
 
-    compress.init_app(app)
+    logging.basicConfig(format='[%(levelname)s:%(asctime)s] %(message)s', level='INFO')
 
     if 'HISTORY_BUFFER_DIR' not in os.environ:
         sys.exit('HISTORY_BUFFER_DIR must be set!')
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
-    BufferUpdater(state_buffer, headers_cb).run()
+    loop = asyncio.get_event_loop()
+    app = build_app(loop)
+    handler = app.make_handler()
+    f = loop.create_server(handler, '0.0.0.0', 15055)
+    srv = loop.run_until_complete(f)
+    task = asyncio.ensure_future(buff_update, loop)
+    try:
+        loop.run_forever()
+    finally:
+        srv.close()
+        loop.run_until_complete(app.shutdown())
+        loop.run_until_complete(handler.finish_connections(1.0))
+        loop.run_until_complete(app.cleanup())
+        loop.run_until_complete(srv.wait_closed())
 
+    loop.close()
 
-def start():
-    # Used for testing only; on dc/os $PATH should have gunicorn
-    # Have to be in the same folder to run this
-    # In case of failure it will not sys.exit
-    os.system("gunicorn -c dcos_history_conf.py server:app")

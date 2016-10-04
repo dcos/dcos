@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-import threading
+import asyncio
 from collections import deque
 from datetime import datetime, timedelta
 
@@ -9,7 +9,6 @@ import requests
 
 logging.getLogger('requests.packages.urllib3').setLevel(logging.WARN)
 
-FETCH_PERIOD = 2
 FILE_EXT = '.state-summary.json'
 
 STATE_SUMMARY_URI = os.getenv('STATE_SUMMARY_URI', 'http://leader.mesos:5050/state-summary')
@@ -163,7 +162,3 @@ class BufferUpdater():
     def update(self):
         self.buffer_collection.add_data(*fetch_state(self.headers_cb))
 
-    def run(self):
-        self.update()
-        t = threading.Timer(FETCH_PERIOD, self.run)
-        t.start()
