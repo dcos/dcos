@@ -89,6 +89,7 @@ def build_app(loop):
 def buff_update(loop):
     BufferUpdater(state_buffer, headers_cb())
     await   asyncio.sleep(2)
+    #yield from asyncio.sleep(2)
     #loop.call_later(2, buff_update(loop), loop)
 
 
@@ -101,7 +102,6 @@ def start():
         sys.exit('HISTORY_BUFFER_DIR must be set!')
 
     state_buffer = BufferCollection(os.environ['HISTORY_BUFFER_DIR'])
-
     loop = asyncio.get_event_loop()
     app = build_app(loop)
     handler = app.make_handler()
