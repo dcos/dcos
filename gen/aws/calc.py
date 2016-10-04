@@ -9,6 +9,15 @@ def get_spot(name, spot_price):
     else:
         return ''
 
+
+def get_ip_detect(name):
+    return yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
+
+
+def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
+    return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
+
+
 entry = {
     'default': {
         'resolvers': '["169.254.169.253"]',
@@ -19,7 +28,8 @@ entry = {
         # If set to empty strings / unset then no spot instances will be used.
         'master_spot_price': '',
         'slave_spot_price': '',
-        'slave_public_spot_price': ''
+        'slave_public_spot_price': '',
+        'aws_masters_have_public_ip': 'true'
     },
     'must': {
         'aws_master_spot_price': lambda master_spot_price: get_spot('master', master_spot_price),
@@ -27,9 +37,8 @@ entry = {
         'aws_public_agent_spot_price':
             lambda slave_public_spot_price: get_spot('slave_public', slave_public_spot_price),
         'aws_region': '{ "Ref" : "AWS::Region" }',
-        'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws.sh').decode()),
-        'ip_detect_public_contents':
-            yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws_public.sh').decode()),
+        'ip_detect_contents': get_ip_detect('aws'),
+        'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'exhibitor_explicit_keys': 'false',
         'cluster_name': '{ "Ref" : "AWS::StackName" }',
         'master_discovery': 'master_http_loadbalancer',
