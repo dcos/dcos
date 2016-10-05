@@ -3,18 +3,26 @@ import pkg_resources
 import yaml
 
 
+def get_ip_detect(name):
+    return yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
+
+
+def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
+    return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
+
+
 entry = {
     'default': {
         'resolvers': '["169.254.169.253"]',
         'num_private_slaves': '5',
         'num_public_slaves': '1',
         'os_type': '',
+        'aws_masters_have_public_ip': 'true'
     },
     'must': {
         'aws_region': '{ "Ref" : "AWS::Region" }',
-        'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws.sh').decode()),
-        'ip_detect_public_contents':
-            yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/aws_public.sh').decode()),
+        'ip_detect_contents': get_ip_detect('aws'),
+        'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'exhibitor_explicit_keys': 'false',
         'cluster_name': '{ "Ref" : "AWS::StackName" }',
         'master_discovery': 'master_http_loadbalancer',

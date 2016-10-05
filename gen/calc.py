@@ -457,7 +457,8 @@ entry = {
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
-        lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials)
+        lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
+        lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
