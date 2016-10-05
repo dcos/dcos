@@ -351,7 +351,7 @@ if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ]); then
   exit 0
 fi
 
-version=$(cat /etc/*-release | sed -n 's@^VERSION_ID="\(.*\)"$@\\1@p')
+version=$(cat /etc/*-release | sed -n 's@^VERSION_ID="\([0-9]*\)\([0-9\.]*\)"$@\1@p')
 if [ $version -lt 7 ]; then
   echo "$version is not supported. Only >= 7 version is supported" >&2
   exit 0
