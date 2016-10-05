@@ -40,6 +40,16 @@ def test_agent_failure(dcos_launchpad, cluster, vip_apps):
         return dcos_launchpad.get_group_instances(
             ['PublicSlaveServerGroup', 'SlaveServerGroup'], state_list=['running'])
 
+    # Tell mesos the machines are "down" and not coming up so things get rescheduled.
+    down_hosts = [{'hostname': slave, 'ip': slave} for slave in cluster.all_slaves]
+    cluster.post(
+        '/mesos/maintenance/schedule',
+        json={'windows': [{
+            'machine_ids': down_hosts,
+            'unavailability': {'start': {'nanoseconds': 0}}
+        }]}).raise_for_status()
+    cluster.post('/mesos/machine/down', json=down_hosts).raise_for_status()
+
     # Wait for replacements
     test_util.helpers.wait_for_len(get_running_agents, len(cluster.all_slaves), 600)
 

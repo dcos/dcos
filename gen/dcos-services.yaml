@@ -22,11 +22,10 @@
     Wants=network-online.target
     ConditionPathExists=!/opt/mesosphere/
     [Service]
-    EnvironmentFile=/etc/mesosphere/setup-flags/bootstrap-id
     Type=oneshot
     StandardOutput=journal+console
     StandardError=journal+console
-    ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
+    ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/{{ bootstrap_id }}.bootstrap.tar.xz
     ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
     ExecStart=/usr/bin/tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
     ExecStartPost=-/usr/bin/rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
