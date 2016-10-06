@@ -1,0 +1,46 @@
+#!/bin/bash
+export GOPATH=$GOPATH:/pkg
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-log /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/dcos-log
+
+apt-get update && apt-get install -y libsystemd-dev
+make install
+
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-log.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log.service
+
+master_socket_service=${PKG_PATH}/dcos.target.wants_master/dcos-log.socket
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log.socket
+
+mkdir -p $(dirname $master_service)
+mkdir -p $(dirname $slave_service)
+mkdir -p $(dirname $slave_public_service)
+
+cat <<EOF | tee $master_service $slave_service $slave_public_service
+[Unit]
+Description=DC/OS Log service: DC/OS logging service
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+User=dcos_log
+ExecStart=/opt/mesosphere/bin/dcos-log -verbose -debug
+EOF
+
+cat <<EOF | tee $master_socket_service $slave_socket_service $slave_public_socket_service
+[Unit]
+Description=DC/OS Log socket: DC/OS logging socket
+[Socket]
+ListenStream=/run/dcos/dcos-log.sock
+[Install]
+WantedBy=dcos-log.service
+EOF
+

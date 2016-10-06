@@ -1,0 +1,11 @@
+{
+  "docker": "golang:1.7",
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-log.git",
+    "ref": "20d6a096311d6aca48ef1fb4c870bfe905327e7c",
+    "ref_origin": "master"
+  },
+  "username": "dcos_log",
+  "group": "systemd-journal"
+}
