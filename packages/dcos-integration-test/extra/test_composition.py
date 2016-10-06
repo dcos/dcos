@@ -121,6 +121,8 @@ def test_signal_service(cluster):
         'cosmos-service',
         'exhibitor-service',
         'history-service',
+        'log-master-service',
+        'log-master-socket',
         'logrotate-master-service',
         'logrotate-master-timer',
         'marathon-service',
@@ -152,6 +154,8 @@ def test_signal_service(cluster):
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',
         'adminrouter-agent-reload-timer',
+        'log-agent-service',
+        'log-agent-socket',
         'logrotate-agent-service',
         'logrotate-agent-timer',
         'rexray-service']
