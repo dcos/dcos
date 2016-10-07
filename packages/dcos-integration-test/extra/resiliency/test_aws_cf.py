@@ -4,6 +4,7 @@ import pytest
 
 import test_util.aws
 import test_util.helpers
+from test_util.helpers import retry_boto_rate_limits
 
 ENV_FLAG = 'ENABLE_RESILIENCY_TESTING'
 
@@ -39,7 +40,8 @@ def test_agent_failure(dcos_launchpad, cluster, vip_apps):
 
     # Agents are in autoscaling groups, so they will automatically be replaced
     dcos_launchpad.boto_wrapper.client('ec2').terminate_instances(InstanceIds=agents)
-    dcos_launchpad.boto_wrapper.client('ec2').get_waiter('instance_terminated').wait(InstanceIds=agents)
+    waiter = dcos_launchpad.boto_wrapper.client('ec2').get_waiter('instance_terminated')
+    retry_boto_rate_limits(waiter.wait)(InstanceIds=agents)
 
     def get_running_agents():
         return dcos_launchpad.get_group_instances(
