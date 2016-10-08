@@ -13,7 +13,6 @@ LOG_LEVEL = logging.INFO
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')
-    config.addinivalue_line('markers', 'resiliency: Run tests that cause critical failures')
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -29,16 +28,6 @@ def pytest_collection_modifyitems(session, config, items):
         else:
             new_items.append(item)
     items[:] = new_items + last_items
-
-
-def pytest_addoption(parser):
-    parser.addoption('--resiliency', action='store_true')
-
-
-def pytest_runtest_setup(item):
-    if item.get_marker('resiliency'):
-        if not item.config.getoption('--resiliency'):
-            pytest.skip('Test requires --resiliency option')
 
 
 @pytest.yield_fixture
