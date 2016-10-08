@@ -287,7 +287,9 @@ class ClusterApi:
             'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
                    '/opt/mesosphere/active/dcos-integration-test/python_test_server.py ',
             'env': {
-                'DCOS_TEST_UUID': test_uuid
+                'DCOS_TEST_UUID': test_uuid,
+                # required for python_test_server.py to run as nobody
+                'HOME': '/'
             },
             'healthChecks': [
                 {
