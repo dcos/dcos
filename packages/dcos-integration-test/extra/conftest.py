@@ -7,7 +7,9 @@ import pytest
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import DcosUser
 
-LOG_LEVEL = logging.INFO
+logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("botocore").setLevel(logging.WARNING)
 
 
 def pytest_configure(config):
@@ -78,10 +80,6 @@ def cluster(user):
     assert os.environ['DNS_SEARCH'] in ['true', 'false']
 
     assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
-
-    logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=LOG_LEVEL)
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("botocore").setLevel(logging.WARNING)
 
     cluster_api = ClusterApi(
         dcos_uri=os.environ['DCOS_DNS_ADDRESS'],

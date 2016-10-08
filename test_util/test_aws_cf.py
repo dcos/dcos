@@ -27,10 +27,6 @@ DCOS_HOST_OS: 'coreos' or 'centos'
     This must be set only if you are attaching to an already provisioned
     DC/OS Advanced template cluster
 
-TEST_DCOS_RESILIENCY: true/false (default: false)
-    Will setup a cluster for resiliency testing and then run the resiliency tests
-    after the standard integration tests
-
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
@@ -78,7 +74,6 @@ def check_environment():
     options.agents = int(os.environ.get('AGENTS', '2'))
     options.public_agents = int(os.environ.get('PUBLIC_AGENTS', '1'))
     options.ssh_key_path = os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')
-    options.test_resiliency = os.getenv('TEST_DCOS_RESILIENCY', 'false') == 'true'
 
     # Mandatory
     options.stack_name = os.getenv('DCOS_STACK_NAME', None)
@@ -105,8 +100,6 @@ def check_environment():
     options.add_env = add_env
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
-    if options.test_resiliency:
-        options.pytest_cmd += ' --resiliency '
     return options
 
 
@@ -177,8 +170,8 @@ def provide_cluster(options):
             cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
         ssh_info = test_util.aws.SSH_INFO[options.host_os]
         stack_name = options.stack_name
-    if options.test_resiliency:
-        options.add_env['AWS_STACK_NAME'] = stack_name
+    # Resiliency testing requires knowing the stack name
+    options.add_env['AWS_STACK_NAME'] = stack_name
     return cf, ssh_info
 
 if __name__ == '__main__':
