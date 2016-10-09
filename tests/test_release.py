@@ -472,8 +472,8 @@ def mock_do_build_packages(cache_repository_url):
     write_string("packages/cache/bootstrap/bootstrap.latest", "bootstrap_id")
     write_string("packages/cache/bootstrap/installer.bootstrap.latest", "installer_bootstrap_id")
     write_json("packages/cache/bootstrap/installer_bootstrap_id.active.json", ['c--d', 'e--f'])
-    write_string("packages/cache/bootstrap/ee.installer.bootstrap.latest", "ee_installer_bootstrap_id")
-    write_json("packages/cache/bootstrap/ee_installer_bootstrap_id.active.json", [])
+    write_string("packages/cache/bootstrap/downstream.installer.bootstrap.latest", "downstream_installer_bootstrap_id")
+    write_json("packages/cache/bootstrap/downstream_installer_bootstrap_id.active.json", [])
 
     subprocess.check_call(['mkdir', '-p', 'packages/cache/complete'])
     write_json(
@@ -483,13 +483,13 @@ def mock_do_build_packages(cache_repository_url):
         "packages/cache/complete/installer.complete.latest.json",
         {'bootstrap': 'installer_bootstrap_id', 'packages': ['c--d', 'e--f']})
     write_json(
-        "packages/cache/complete/ee.installer.complete.latest.json",
+        "packages/cache/complete/downstream.installer.complete.latest.json",
         {'bootstrap': 'installer_bootstrap_id', 'packages': []})
 
     return {
         None: {"bootstrap": "bootstrap_id", "packages": ["a--b", "c--d"]},
         "installer": {"bootstrap": "installer_bootstrap_id", "packages": ["c--d", "e--f"]},
-        "ee.installer": {"bootstrap": "ee_installer_bootstrap_id", "packages": []}
+        "downstream.installer": {"bootstrap": "downstream_installer_bootstrap_id", "packages": []}
     }
 
 
@@ -508,14 +508,14 @@ stable_artifacts_metadata = {
             'reproducible_path': 'packages/a/a--b.tar.xz'},
         {'local_path': 'packages/cache/packages/c/c--d.tar.xz',
             'reproducible_path': 'packages/c/c--d.tar.xz'},
-        {'local_path': 'packages/cache/bootstrap/ee_installer_bootstrap_id.bootstrap.tar.xz',
-         'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.bootstrap.tar.xz'},
-        {'local_path': 'packages/cache/bootstrap/ee_installer_bootstrap_id.active.json',
-         'reproducible_path': 'bootstrap/ee_installer_bootstrap_id.active.json'},
-        {'channel_path': 'ee.installer.bootstrap.latest',
-         'local_path': 'packages/cache/bootstrap/ee.installer.bootstrap.latest'},
-        {'local_path': 'packages/cache/complete/ee.installer.complete.latest.json',
-         'channel_path': 'ee.installer.complete.latest.json'},
+        {'local_path': 'packages/cache/bootstrap/downstream_installer_bootstrap_id.bootstrap.tar.xz',
+         'reproducible_path': 'bootstrap/downstream_installer_bootstrap_id.bootstrap.tar.xz'},
+        {'local_path': 'packages/cache/bootstrap/downstream_installer_bootstrap_id.active.json',
+         'reproducible_path': 'bootstrap/downstream_installer_bootstrap_id.active.json'},
+        {'channel_path': 'downstream.installer.bootstrap.latest',
+         'local_path': 'packages/cache/bootstrap/downstream.installer.bootstrap.latest'},
+        {'local_path': 'packages/cache/complete/downstream.installer.complete.latest.json',
+         'channel_path': 'downstream.installer.complete.latest.json'},
         {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.bootstrap.tar.xz',
             'reproducible_path': 'bootstrap/installer_bootstrap_id.bootstrap.tar.xz'},
         {'local_path': 'packages/cache/bootstrap/installer_bootstrap_id.active.json',
@@ -532,7 +532,7 @@ stable_artifacts_metadata = {
     'all_bootstraps': {
         None: "bootstrap_id",
         "installer": "installer_bootstrap_id",
-        "ee.installer": "ee_installer_bootstrap_id"},
+        "downstream.installer": "downstream_installer_bootstrap_id"},
     'complete_dict': {
         None: {
             'bootstrap': 'bootstrap_id',
@@ -545,8 +545,8 @@ stable_artifacts_metadata = {
         'installer': {
             'bootstrap': 'installer_bootstrap_id',
             'packages': ['c--d', 'e--f']},
-        'ee.installer': {
-            'bootstrap': 'ee_installer_bootstrap_id',
+        'downstream.installer': {
+            'bootstrap': 'downstream_installer_bootstrap_id',
             'packages': []}
     }
 }
@@ -589,13 +589,41 @@ def test_make_channel_artifacts(monkeypatch):
         'tag': 'test_tag',
         'bootstrap_dict': {
             None: 'bootstrap_id',
-            'ee': 'ee_bootstrap_id'
+            'downstream': 'downstream_bootstrap_id'
         },
         'all_bootstraps': {
             None: 'bootstrap_id',
-            'ee': 'ee_bootstrap_id',
+            'downstream': 'downstream_bootstrap_id',
             'installer': 'installer_bootstrap_id',
-            'ee.installer': 'ee_installer_bootstrap_id'
+            'downstream.installer': 'downstream_installer_bootstrap_id'
+        },
+        'complete_dict': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+        },
+        'all_completes': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+            'installer': {
+                'bootstrap': 'installer_bootstrap_id',
+                'packages': ['installer-package--version'],
+            },
+            'downstream.installer': {
+                'bootstrap': 'downstream_installer_bootstrap_id',
+                'packages': ['downstream-installer-package--version'],
+            },
         },
         'build_name': 'r_path/channel',
         'reproducible_artifact_path': 'r_path/channel/commit/sha-1',

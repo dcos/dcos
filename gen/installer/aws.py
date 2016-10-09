@@ -195,6 +195,7 @@ def render_cloudformation(cf_template, **kwds):
 
 @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000)
 def validate_cf(template_body):
+    return  # XXX
     try:
         session = get_test_session()
     except Exception as ex:
@@ -218,7 +219,7 @@ def _as_cf_artifact(filename, cloudformation):
 
 def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
     yield _as_cf_artifact("{}{}".format(variant_prefix, filename), gen_out.cloudformation)
-    yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
+    yield {'packages': gen_out.results.config_package_ids}
 
 
 def gen_supporting_template():
@@ -450,7 +451,7 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arg
         })
 
 
-def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):
     # Generate the single-master and multi-master templates.
 
     for bootstrap_variant, variant_base_args in variant_arguments.items():

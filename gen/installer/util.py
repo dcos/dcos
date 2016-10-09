@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from datetime import datetime
@@ -14,10 +15,6 @@ if dcos_image_commit is None:
     raise "Unable to set dcos_image_commit from teamcity or git."
 
 template_generation_date = str(datetime.utcnow())
-
-
-def cluster_to_extra_packages(cluster_packages):
-    return [pkg['id'] for pkg in cluster_packages.values()]
 
 
 def try_makedirs(path):
@@ -43,9 +40,10 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
     for filename in extra_files:
         shutil.copy(filename, output_dir + filename)
 
-    # Copy the cluster packages
-    for name, info in gen_out.cluster_packages.items():
-        copy_makedirs(info['filename'], output_dir + info['filename'])
+    # Copy the config packages
+    for package_name in json.loads(gen_out.arguments['config_package_names']):
+        filename = gen_out.cluster_packages[package_name]['filename']
+        copy_makedirs(filename, output_dir + filename)
 
     # Write an index of the cluster packages
     write_json(output_dir + 'cluster-package-info.json', gen_out.cluster_packages)

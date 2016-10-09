@@ -222,6 +222,7 @@ def do_aws_cf_configure():
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
+    gen_config['package_ids'] = full_config['package_ids']
     gen_config['cloudformation_s3_url'] = full_config['cloudformation_s3_url']
 
     # Convert the bootstrap_Variant string we have back to a bootstrap_id as used internally by all

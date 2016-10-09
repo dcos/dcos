@@ -8,6 +8,7 @@ import pkg_resources
 
 import gen.installer.util as util
 import gen.template
+import pkgpanda
 import pkgpanda.util
 
 
@@ -554,7 +555,8 @@ def make_bash(gen_out):
     return 'dcos_install.sh'
 
 
-def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
+def make_installer_docker(variant, variant_info, installer_info):
+    bootstrap_id = variant_info['bootstrap']
     assert len(bootstrap_id) > 0
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
@@ -562,9 +564,10 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
-    installer_bootstrap_filename = installer_bootstrap_id + '.bootstrap.tar.xz'
+    installer_bootstrap_filename = installer_info['bootstrap'] + '.bootstrap.tar.xz'
     bootstrap_latest_filename = pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
     latest_complete_filename = pkgpanda.util.variant_prefix(variant) + 'complete.latest.json'
+    packages_dir = 'packages'
     docker_image_name = 'mesosphere/dcos-genconf:' + image_version
 
     # TODO(cmaloney): All of this should use package_resources
@@ -577,7 +580,9 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
             return build_dir + '/' + filename
 
         def copy_to_build(src_prefix, filename):
-            subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_path(filename)])
+            dest_filename = dest_path(filename)
+            os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+            subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
 
         def fill_template(base_name, format_args):
             pkgpanda.util.write_string(
@@ -589,7 +594,8 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
             'bootstrap_filename': bootstrap_filename,
             'bootstrap_active_filename': bootstrap_active_filename,
             'bootstrap_latest_filename': bootstrap_latest_filename,
-            'latest_complete_filename': latest_complete_filename})
+            'latest_complete_filename': latest_complete_filename,
+            'packages_dir': packages_dir})
 
         fill_template('installer_internal_wrapper', {
             'variant': pkgpanda.util.variant_str(variant),
@@ -605,6 +611,9 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
         copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
         copy_to_build('packages/cache/bootstrap', bootstrap_latest_filename)
         copy_to_build('packages/cache/complete', latest_complete_filename)
+        for package_id in variant_info['packages']:
+            package_name = pkgpanda.PackageId(package_id).name
+            copy_to_build('packages/cache/', packages_dir + '/' + package_name + '/' + package_id + '.tar.xz')
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
@@ -634,7 +643,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     return installer_filename
 
 
-def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):
     """Create a installer script for each variant in bootstrap_dict.
 
     Writes a dcos_generate_config.<variant>.sh for each variant in
@@ -650,9 +659,10 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
     for variant, bootstrap_info in sorted(variant_arguments.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
         print("Building installer for variant:", pkgpanda.util.variant_name(variant))
         bootstrap_installer_name = '{}installer'.format(pkgpanda.util.variant_prefix(variant))
-        bootstrap_installer_id = all_bootstraps[bootstrap_installer_name]
-
-        installer_filename = make_installer_docker(variant, bootstrap_info['bootstrap_id'], bootstrap_installer_id)
+        installer_filename = make_installer_docker(
+            variant,
+            all_completes[variant],
+            all_completes[bootstrap_installer_name])
 
         yield {
             'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
