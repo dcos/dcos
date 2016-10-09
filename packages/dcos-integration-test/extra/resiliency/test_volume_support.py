@@ -3,11 +3,12 @@ need to fix error from mkfs
 """
 import os
 import re
+import stat
 import tempfile
 
 import pytest
 
-from ssh.ssh_tunnel import SshTunnel
+from ssh.ssh_tunnel import SSHTunnel
 
 MOUNT_PATTERN = re.compile(
     'on\s+(/dcos/volume([^0][0-9]{2,}|[0]\d{3,}))\s+', re.M | re.I
@@ -36,7 +37,7 @@ def clear_volume_discovery_state():
 
 @pytest.yield_fixture(scope='session')
 def agent_tunnel(cluster):
-    """ Opens an SshTunnel with and clean up SSH key afterwards
+    """ Opens an SSHTunnel with and clean up SSH key afterwards
     """
     ssh_key = os.environ['DCOS_SSH_KEY']
     ssh_user = os.environ['DCOS_SSH_USER']
@@ -44,7 +45,8 @@ def agent_tunnel(cluster):
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(ssh_key.endcode())
         ssh_key_path = f.name
-    yield SshTunnel(ssh_user, ssh_key_path, host)
+    os.chmod(ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
+    yield SSHTunnel(ssh_user, ssh_key_path, host)
     os.remove(ssh_key_path)
 
 
