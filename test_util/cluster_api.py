@@ -2,6 +2,7 @@ import collections
 import copy
 import functools
 import logging
+import os
 import uuid
 from contextlib import contextmanager
 from urllib.parse import urlparse
@@ -12,6 +13,9 @@ import requests
 import retrying
 
 TEST_APP_NAME_FMT = '/integration-test-{}'
+
+DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_ENV_VAR = "DCOS_TEST_MARATHON_DEPLOY_TIMEOUT"
+DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_DEFAULT = 120
 
 
 class ClusterApi:
@@ -494,9 +498,13 @@ class ClusterApi:
                             "completed in {} seconds.".format(timeout))
 
     @contextmanager
-    def marathon_deploy_and_cleanup(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
+    def marathon_deploy_and_cleanup(self, app_definition, check_health=True, ignore_failed_tasks=False):
+        timeout = int(os.getenv(DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_ENV_VAR,
+                                DCOS_TEST_MARATHON_DEPLOY_TIMEOUT_DEFAULT))
+
         yield self.deploy_marathon_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
+
         self.destroy_marathon_app(app_definition['id'], timeout)
 
     def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
