@@ -59,7 +59,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     cluster.deploy_test_app_and_check(app, test_uuid)
 
 
-def test_if_Marathon_pods_can_be_deployed_with_Mesos_containerizer(cluster):
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
     """Marathon pods deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon pods can be deployed.
@@ -69,22 +69,22 @@ def test_if_Marathon_pods_can_be_deployed_with_Mesos_containerizer(cluster):
 
     pod_definition = {
         'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': { 'kind': 'fixed', 'instances': 1 },
-        'environment': { 'PING': 'PONG' },
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
         'containers': [
             {
                 'name': 'ct1',
-                'resources': { 'cpus': 0.1,'mem': 32 },
-                'image': { 'kind': 'DOCKER', 'id': 'busybox' },
-                'exec': { 'command': { 'shell': 'while true; do echo the current time is $(date); sleep 1; done' } }
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'busybox'},
+                'exec': {'command': {'shell': 'while true; do echo the current time is $(date); sleep 1; done'}}
             },
             {
                 'name': 'ct2',
-                'resources': { 'cpus': 0.1, 'mem': 32 },
-                'exec': { 'command': { 'shell': 'while true; do echo -n $PING ' ';sleep 1; done' } }
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {'command': {'shell': 'while true; do echo -n $PING ' ';sleep 1; done'}}
             }
         ],
-        'networks': [ { 'mode': 'host' }  ]
+        'networks': [{'mode': 'host'}]
     }
 
     instances = cluster.deploy_marathon_pod(pod_definition)

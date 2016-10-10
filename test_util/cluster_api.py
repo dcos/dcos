@@ -493,7 +493,6 @@ class ClusterApi:
             raise Exception("Application destroy failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-
     def deploy_marathon_pod(self, pod_definition, timeout=300, check_health=False):
         """Deploy a pod to marathon
 
@@ -517,7 +516,7 @@ class ClusterApi:
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
+        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _wait_for_deployment(pod_id):
@@ -535,9 +534,8 @@ class ClusterApi:
         try:
             return _wait_for_deployment(pod_definition['id'])
         except retrying.RetryError:
-            pytest.fail("Pod deployment failed - operation was not "
-                        "completed in {} seconds.".format(timeout))
-
+            raise Exception("Pod deployment failed - operation was not "
+                            "completed in {} seconds.".format(timeout))
 
     def destroy_marathon_pod(self, pod_id, timeout=300):
         """Remove a marathon pod
@@ -548,7 +546,7 @@ class ClusterApi:
             pod_id: id of the pod to remove
             timeout: seconds to wait for destruction before failing test
         """
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout*1000,
+        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
@@ -568,9 +566,8 @@ class ClusterApi:
         try:
             _destroy_complete(r.headers['Marathon-Deployment-Id'])
         except retrying.RetryError:
-            pytest.fail("Pod destroy failed - operation was not "
-                        "completed in {} seconds.".format(timeout))
-
+            raise Exception("Pod destroy failed - operation was not "
+                            "completed in {} seconds.".format(timeout))
 
     @contextmanager
     def marathon_deploy_and_cleanup(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
