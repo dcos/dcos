@@ -566,7 +566,7 @@ class ClusterApi:
         assert r.ok
 
         try:
-            _destroy_complete(r.json()['deploymentId'])
+            _destroy_complete(r.headers['Marathon-Deployment-Id'])
         except retrying.RetryError:
             pytest.fail("Pod destroy failed - operation was not "
                         "completed in {} seconds.".format(timeout))
