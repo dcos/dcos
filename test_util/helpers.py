@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import namedtuple
 
 import requests
@@ -59,3 +60,11 @@ def wait_for_len(fetch_fn, target_count, timeout):
         if count != target_count:
             return False
     check_for_match()
+
+
+def gather_prefix_env(prefix):
+    gathered = dict()
+    for k, v in os.environ.items():
+        if k.startswith(prefix):
+            gathered[k.replace(prefix, '')] = v
+    return gathered

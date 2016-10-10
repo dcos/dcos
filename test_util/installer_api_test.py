@@ -126,7 +126,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
             ip_detect, rexray_config=None, rexray_config_preset=None,
-            zk_host=None, expect_errors=False, add_config_path=None):
+            zk_host=None, expect_errors=False, add_config_path=None, add_config_keys=None):
         """Runs configuration generation.
 
         Args:
@@ -167,6 +167,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             with open(add_config_path, 'r') as fh:
                 add_config = yaml.load(fh)
             payload.update(add_config)
+        if add_config_keys:
+            payload.upldate(add_config_keys)
         response = requests.post(self.url + '/api/v1/configure', headers=headers, data=json.dumps(payload))
         assert response.status_code == 200, "{} {}".format(response.status_code, response.content)
         response_json_keys = list(response.json().keys())
@@ -279,7 +281,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
             ip_detect, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None,
-            bootstrap_url='file:///opt/dcos_install_tmp'):
+            add_config_keys=None, bootstrap_url='file:///opt/dcos_install_tmp'):
         """Runs configuration generation.
 
         Args:
@@ -326,6 +328,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
             with open(add_config_path, 'r') as fh:
                 add_config = yaml.load(fh)
             test_config.update(add_config)
+        if add_config_keys:
+            test_config.update(add_config_keys)
         with open('config.yaml', 'w') as config_fh:
             config_fh.write(yaml.dump(test_config))
         with open('ip-detect', 'w') as ip_detect_fh:

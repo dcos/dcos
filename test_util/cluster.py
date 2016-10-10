@@ -288,6 +288,7 @@ def install_dcos(
     api=False,
     setup=True,
     add_config_path=None,
+    add_config_keys=None,
     installer_api_offline_mode=True,
     install_prereqs=True,
     install_prereqs_only=False,
@@ -350,6 +351,7 @@ def install_dcos(
             ssh_user=cluster.ssher.user,
             ssh_key=ssh_key,
             add_config_path=add_config_path,
+            add_config_keys=add_config_keys,
             rexray_config_preset='aws')
 
         logging.info("Running Preflight...")
@@ -370,7 +372,7 @@ def install_dcos(
         installer.postflight()
 
 
-def upgrade_dcos(cluster, installer_url, add_config_path=None):
+def upgrade_dcos(cluster, installer_url, add_config_path=None, add_config_keys=None):
 
     def master_upgrade_order(cluster):
         """Return a list of masters with the ZooKeeper leader last."""
@@ -429,6 +431,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             ssh_user=cluster.ssher.user,
             ssh_key=ssh_key,
             add_config_path=add_config_path,
+            add_config_keys=add_config_keys,
             rexray_config_preset='aws',
         )
         # Remove docker (and associated journald) restart from the install
