@@ -513,7 +513,7 @@ class ClusterApi:
         Returns:
             Scaling instance count
         """
-        r = self.post('/marathon/v2/pods', pod_definition, headers=self._marathon_req_headers())
+        r = self.post('/marathon/v2/pods', json=pod_definition, headers=self._marathon_req_headers())
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
