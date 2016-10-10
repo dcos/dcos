@@ -43,7 +43,7 @@ def agent_tunnel(cluster):
     ssh_user = os.environ['DCOS_SSH_USER']
     host = cluster.slaves[0]
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        f.write(ssh_key.endcode())
+        f.write(ssh_key.encode())
         ssh_key_path = f.name
     os.chmod(ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
     yield SSHTunnel(ssh_user, ssh_key_path, host)
