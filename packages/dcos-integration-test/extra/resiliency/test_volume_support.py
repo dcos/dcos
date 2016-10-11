@@ -2,7 +2,6 @@
 need to fix error from mkfs
 """
 import os
-import re
 import stat
 import tempfile
 
@@ -10,9 +9,16 @@ import pytest
 
 from ssh.ssh_tunnel import SSHTunnel
 
-MOUNT_PATTERN = re.compile(
-    'on\s+(/dcos/volume([^0][0-9]{2,}|[0]\d{3,}))\s+', re.M | re.I
-)
+add_vol_script = """#!/bin/bash
+mkdir -p $1
+dd if=/dev/zero of=$2 bs=1M count=$3
+free_loop=`losetup --find`
+losetup $free_loop $2
+mkfs -t ext4 $free_loop
+losetup -d $free_loop
+echo "$2 $1 auto loop 0 2" | tee -a /etc/fstab
+mount $1
+"""
 
 
 def sudo(cmd):
@@ -47,21 +53,16 @@ def agent_tunnel(cluster):
 
 
 @pytest.yield_fixture(scope='function')
-def resetting_agent(agent_tunnel):
+def resetting_agent(agent_tunnel, cluster):
     roles = agent_tunnel.remote_cmd(['ls', '/etc/mesosphere/roles']).decode()
     if 'slave' not in roles:
         pytest.skip('Test must be run on an agent!')
     yield agent_tunnel
     agent_tunnel.remote_cmd(mesos_agent('stop'))
-    # Cleanup in case removing volumes previously failed
-    # mount_blob = agent_tunnel.remove_cmd(['mount']).decode()
-    # dcos_mounts = MOUNT_PATTERN.findall(mount_blob)
-    # cmds = [sudo(['/usr/bin/umount', m[0]]) for m in dcos_mounts]
-    # for cmd in cmds:
-    #     agent_tunnel.remote_cmd(cmd)
     agent_tunnel.remote_cmd(clear_volume_discovery_state())
     agent_tunnel.remote_cmd(clear_mesos_agent_state())
     agent_tunnel.remote_cmd(mesos_agent('start'))
+    cluster.wait_for_up()
 
 
 class VolumeManager:
@@ -69,6 +70,12 @@ class VolumeManager:
     def __init__(self, tunnel):
         self.tunnel = tunnel
         self.volumes = []
+        self.script_path
+
+    def __enter__(self):
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(add_vol_script.encode())
+            self.tunnel.write_to_remote(f.name, '/tmp/add_vol.sh')
 
     def purge_volumes(self):
         for i, _, img, vol in enumerate(self.volumes[:]):
@@ -85,34 +92,7 @@ class VolumeManager:
         for i, vol_size in enumerate(vol_sizes, 100):
             img = '/root/{}.img'.format(i)
             mount_point = '/dcos/volume{}'.format(i)
-            #self.tunnel.remote_cmd(
-            #    sudo(['dd', 'of='+img, 'if=/dev/zero', 'bs=1M', 'count='+str(vol_size)]))
-            #loop_device = self.tunnel.remote_cmd(sudo(['losetup', '--find'])).decode().strip('\n')
-            add_vol_script = """#!/bin/bash
-rm -rf /var/lib/mesos/slave
-rm -rf /var/lib/dcos/mesos-resources
-mkdir -p $1
-dd if=/dev/zero of=$2 bs=1M count=$3
-free_loop=`losetup --find`
-losetup $free_loop $2
-mkfs -t ext4 $free_loop
-losetup -d $free_loop
-echo "$2 $1 loop 0 2" | tee -a /etc/fstab
-mount $1
-"""
-            with open('/tmp/foobar', 'w') as fh:
-                fh.write(add_vol_script)
-            #cmds = (
-            #    ['mkdir', '-p', mount_point],
-            #    ['losetup', loop_device, img],
-            #    ['mkfs', '-t', 'ext4', loop_device],
-            #    ['losetup', '-d', loop_device],
-            #    ['echo', '"{} {} auto loop 0 2"'.format(img, loop_device), '>>', '/etc/fstab'],
-            #    ['mount', mount_point])
-            #for cmd in cmds:
-            #    self.tunnel.remote_cmd(sudo(cmd))
-            self.tunnel.write_to_remote('/tmp/foobar', '/home/core/vol_add.sh')
-            self.tunnel.remote_cmd(sudo(['bash', '/home/core/vol_add.sh', mount_point, img, vol_size]))
+            self.tunnel.remote_cmd(sudo(['bash', '/home/core/vol_add.sh', mount_point, img, str(vol_size)]))
             self.volumes.append((vol_size, img, mount_point))
 
 
@@ -154,9 +134,9 @@ def Dtest_missing_disk_resource_file(agent_tunnel):
 
 def Dtest_add_volume_works(agent_tunnel, volume_manager, cluster):
     agent_tunnel.remote_cmd(mesos_agent('stop'))
-    volume_manager.add_volumes_to_agent((200, 200))
     agent_tunnel.remote_cmd(clear_volume_discovery_state())
     agent_tunnel.remote_cmd(clear_mesos_agent_state())
+    volume_manager.add_volumes_to_agent((200, 200))
     agent_tunnel.remote_cmd(sudo('reboot'))
     cluster.wait_for_up()
     # assert on mounted resources
