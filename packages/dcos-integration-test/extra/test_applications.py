@@ -50,11 +50,24 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
             # TODO(cmaloney): Switch to an alpine image with glibc inside.
             'image': 'debian:jessie'
         },
-        'volumes': [{
-            'containerPath': '/opt/mesosphere',
-            'hostPath': '/opt/mesosphere',
-            'mode': 'RO'
-        }]
+        'volumes': [
+            {
+                'containerPath': '/opt/mesosphere',
+                'hostPath': '/opt/mesosphere',
+                'mode': 'RO'
+            },
+            # required for getpass in python_test_server.py to work
+            {
+                'containerPath': '/etc/passwd',
+                'hostPath': '/etc/passwd',
+                'mode': 'RO'
+            },
+            {
+                'containerPath': '/etc/group',
+                'hostPath': '/etc/group',
+                'mode': 'RO'
+            },
+        ]
     }
     cluster.marathon.deploy_test_app_and_check(app, test_uuid)
 
