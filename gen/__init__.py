@@ -150,7 +150,7 @@ utils = Bunch({
 
 
 def render_yaml(data):
-    return yaml.dump(data, default_style='|', default_flow_style=False, Dumper=yaml.CDumper)
+    return yaml.dump(data, default_style='|', default_flow_style=False)
 
 
 # Recursively merge to python dictionaries.
@@ -255,7 +255,7 @@ def render_templates(template_dict, arguments):
                 assert len(templates) == 1
                 full_template = rendered_template
                 continue
-            template_data = yaml.load(rendered_template, Loader=yaml.CLoader)
+            template_data = yaml.load(rendered_template)
 
             if full_template:
                 full_template = merge_dictionaries(full_template, template_data)

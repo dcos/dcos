@@ -184,7 +184,7 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
 
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
-    return yaml.dump(open(ip_detect_filename, encoding='utf-8').read(), Dumper=yaml.CDumper)
+    return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
 def calculate_ip_detect_public_contents(ip_detect_contents):
