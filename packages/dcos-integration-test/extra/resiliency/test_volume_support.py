@@ -9,6 +9,12 @@ import pytest
 
 from ssh.ssh_tunnel import SSHTunnel
 
+ENV_FLAG = 'ENABLE_RESILIENCY_TESTING'
+
+pytestmark = pytest.mark.skipif(
+    ENV_FLAG not in os.environ or os.environ[ENV_FLAG] != 'true',
+    reason='Must explicitly enable resiliency testing with {}'.format(ENV_FLAG))
+
 add_vol_script = """#!/bin/bash
 mkdir -p $1
 dd if=/dev/zero of=$2 bs=1M count=$3
