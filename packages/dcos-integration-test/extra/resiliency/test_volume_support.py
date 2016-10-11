@@ -85,18 +85,34 @@ class VolumeManager:
         for i, vol_size in enumerate(vol_sizes, 100):
             img = '/root/{}.img'.format(i)
             mount_point = '/dcos/volume{}'.format(i)
-            self.tunnel.remote_cmd(
-                sudo(['dd', 'of='+img, 'if=/dev/zero', 'bs=1M', 'count='+str(vol_size)]))
-            loop_device = self.tunnel.remote_cmd(sudo(['losetup', '--find'])).decode().strip('\n')
-            cmds = (
-                ['mkdir', '-p', mount_point],
-                ['losetup', loop_device, img],
-                ['mkfs', '-t', 'ext4', loop_device],
-                ['losetup', '-d', 'ext4', loop_device],
-                ['echo', '"{} {} auto loop 0 2"'.format(img, loop_device), '>>', '/etc/fstab']
-                ['mount', mount_point])
-            for cmd in cmds:
-                self.tunnel.remote_cmd(sudo(cmd))
+            #self.tunnel.remote_cmd(
+            #    sudo(['dd', 'of='+img, 'if=/dev/zero', 'bs=1M', 'count='+str(vol_size)]))
+            #loop_device = self.tunnel.remote_cmd(sudo(['losetup', '--find'])).decode().strip('\n')
+            add_vol_script = """#!/bin/bash
+rm -rf /var/lib/mesos/slave
+rm -rf /var/lib/dcos/mesos-resources
+mkdir -p $1
+dd if=/dev/zero of=$2 bs=1M count=$3
+free_loop=`losetup --find`
+losetup $free_loop $2
+mkfs -t ext4 $free_loop
+losetup -d $free_loop
+echo "$2 $1 loop 0 2" | tee -a /etc/fstab
+mount $1
+"""
+            with open('/tmp/foobar', 'w') as fh:
+                fh.write(add_vol_script)
+            #cmds = (
+            #    ['mkdir', '-p', mount_point],
+            #    ['losetup', loop_device, img],
+            #    ['mkfs', '-t', 'ext4', loop_device],
+            #    ['losetup', '-d', loop_device],
+            #    ['echo', '"{} {} auto loop 0 2"'.format(img, loop_device), '>>', '/etc/fstab'],
+            #    ['mount', mount_point])
+            #for cmd in cmds:
+            #    self.tunnel.remote_cmd(sudo(cmd))
+            self.tunnel.write_to_remote('/tmp/foobar', '/home/core/vol_add.sh')
+            self.tunnel.remote_cmd(sudo(['bash', '/home/core/vol_add.sh', mount_point, img, vol_size]))
             self.volumes.append((vol_size, img, mount_point))
 
 
