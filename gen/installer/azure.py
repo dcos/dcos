@@ -6,8 +6,6 @@ import sys
 import urllib
 from copy import deepcopy
 
-import yaml
-
 import gen
 import gen.installer.util as util
 import gen.template
@@ -56,14 +54,14 @@ def validate_cloud_config(cc_string):
         sys.exit(1)
 
 
-def transform(cloud_config_yaml_str):
+def transform(cloud_config):
     '''
     Transforms the given yaml into a list of strings which are concatenated
     together by the ARM template system. We must make it a list of strings so
     that ARM template parameters appear at the top level of the template and get
     substituted.
     '''
-    cc_json = json.dumps(yaml.load(cloud_config_yaml_str), sort_keys=True)
+    cc_json = json.dumps(cloud_config, sort_keys=True)
     arm_list = ["[base64(concat('#cloud-config\n\n', "]
     # Find template parameters and seperate them out as seperate elements in a
     # json list.
@@ -86,14 +84,14 @@ def transform(cloud_config_yaml_str):
 
 def render_arm(
         arm_template,
-        master_cloudconfig_yaml_str,
-        slave_cloudconfig_yaml_str,
-        slave_public_cloudconfig_yaml_str):
+        master_cloudconfig,
+        slave_cloudconfig,
+        slave_public_cloudconfig):
 
     template_str = gen.template.parse_str(arm_template).render({
-        'master_cloud_config': transform(master_cloudconfig_yaml_str),
-        'slave_cloud_config': transform(slave_cloudconfig_yaml_str),
-        'slave_public_cloud_config': transform(slave_public_cloudconfig_yaml_str)
+        'master_cloud_config': transform(master_cloudconfig),
+        'slave_cloud_config': transform(slave_cloudconfig),
+        'slave_public_cloud_config': transform(slave_public_cloudconfig)
     })
 
     # Add in some metadata to help support engineers
@@ -144,7 +142,7 @@ def gen_templates(user_args, arm_template):
         # NOTE: If this gets printed in string stylerather than '|' the Azure
         # parameters which need to be split out for the arm to
         # interpret end up all escaped and undoing it would be hard.
-        variant_cloudconfig[variant] = results.utils.render_cloudconfig(cc_variant)
+        variant_cloudconfig[variant] = cc_variant
 
     # Render the arm
     arm = render_arm(
