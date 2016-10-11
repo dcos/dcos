@@ -324,6 +324,12 @@ package:
       MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
 {% case "false" %}
 {% endswitch %}
+{% switch mesos_http_command_executor_enable %}
+{% case "true" %}
+      MESOS_HTTP_COMMAND_EXECUTOR=true
+{% case "false" %}
+{% endswitch %}
+
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
   - path: /etc/docker_credentials
