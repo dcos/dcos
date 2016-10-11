@@ -86,13 +86,15 @@ class VolumeManager:
             img = '/root/{}.img'.format(i)
             mount_point = '/dcos/volume{}'.format(i)
             self.tunnel.remote_cmd(
-                sudo(['dd', 'of='+img, 'if=/dev/null', 'bs=1M', 'count='+str(vol_size)]))
+                sudo(['dd', 'of='+img, 'if=/dev/zero', 'bs=1M', 'count='+str(vol_size)]))
             loop_device = self.tunnel.remote_cmd(sudo(['losetup', '--find'])).decode().strip('\n')
             cmds = (
-                ['/usr/bin/mkdir', '-p', mount_point],
-                ['/usr/sbin/losetup', loop_device, img],
-                ['/usr/sbin/mkfs', '-t', 'ext4', loop_device],
-                ['/usr/bin/mount', loop_device, mount_point])
+                ['mkdir', '-p', mount_point],
+                ['losetup', loop_device, img],
+                ['mkfs', '-t', 'ext4', loop_device],
+                ['losetup', '-d', 'ext4', loop_device],
+                ['echo', '"{} {} auto loop 0 2"'.format(img, loop_device), '>>', '/etc/fstab']
+                ['mount', mount_point])
             for cmd in cmds:
                 self.tunnel.remote_cmd(sudo(cmd))
             self.volumes.append((vol_size, img, mount_point))
@@ -137,10 +139,10 @@ def Dtest_missing_disk_resource_file(agent_tunnel):
 def Dtest_add_volume_works(agent_tunnel, volume_manager, cluster):
     agent_tunnel.remote_cmd(mesos_agent('stop'))
     volume_manager.add_volumes_to_agent((200, 200))
-    clear_volume_discovery_state()
     agent_tunnel.remote_cmd(clear_volume_discovery_state())
     agent_tunnel.remote_cmd(clear_mesos_agent_state())
-    agent_tunnel.remote_cmd(mesos_agent('start'))
+    agent_tunnel.remote_cmd(sudo('reboot'))
+    cluster.wait_for_up()
     # assert on mounted resources
     for d in get_state_json(cluster):
         for _, _, vol in volume_manager.volumes:
