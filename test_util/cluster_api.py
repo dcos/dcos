@@ -143,7 +143,7 @@ class ClusterApi:
             # is confirmed to work for all known agents.
             uri = '/slave/{}/slave%281%29/state.json'.format(slave_id)
             r = self.get(uri)
-            if r.status_code <= 400:
+            if r.status_code >= 400:
                 return False
             assert r.status_code == 200
             data = r.json()

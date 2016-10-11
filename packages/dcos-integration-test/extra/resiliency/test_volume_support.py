@@ -6,6 +6,7 @@ import stat
 import tempfile
 
 import pytest
+import retrying
 
 from ssh.ssh_tunnel import SSHTunnel
 
@@ -43,7 +44,12 @@ def clear_volume_discovery_state():
     return sudo(['rm', '/var/lib/dcos/mesos-resources'])
 
 
-@pytest.yield_fixture(scope='session')
+@retrying.retry(wait_fixed=3000, stop_max_delay=300 * 1000)
+def wait_for_ssh_tunnel(user, key_path, host):
+    return SSHTunnel(user, key_path, host)
+
+
+@pytest.yield_fixture(scope='function')
 def agent_tunnel(cluster):
     """ Opens an SSHTunnel with and clean up SSH key afterwards
     """
@@ -54,7 +60,7 @@ def agent_tunnel(cluster):
         f.write(ssh_key.encode())
         ssh_key_path = f.name
     os.chmod(ssh_key_path, stat.S_IREAD | stat.S_IWRITE)
-    yield SSHTunnel(ssh_user, ssh_key_path, host)
+    yield wait_for_ssh_tunnel(ssh_user, ssh_key_path, host)
     os.remove(ssh_key_path)
 
 
@@ -68,7 +74,7 @@ def resetting_agent(agent_tunnel, cluster):
     agent_tunnel.remote_cmd(clear_volume_discovery_state())
     agent_tunnel.remote_cmd(clear_mesos_agent_state())
     agent_tunnel.remote_cmd(mesos_agent('start'))
-    cluster.wait_for_up()
+    cluster.wait_for_dcos()
 
 
 class VolumeManager:
@@ -84,14 +90,13 @@ class VolumeManager:
             self.tunnel.write_to_remote(f.name, '/tmp/add_vol.sh')
 
     def purge_volumes(self):
-        for i, _, img, vol in enumerate(self.volumes[:]):
+        for i, vol in enumerate(self.volumes):
             cmds = (
-                ['/usr/bin/umount', vol],
-                ['/usr/sbin/losetup', '--detach', vol],
-                ['rm', '-f', img])
+                ['/usr/bin/umount', vol[2]],
+                ['rm', '-f', vol[1]])
             for cmd in cmds:
                 self.tunnel.remote_cmd(sudo(cmd))
-            del self.volumes[i]
+        self.volumes = []
 
     def add_volumes_to_agent(self, vol_sizes):
         # reserve /dcos/volume100+ for our tests
@@ -110,6 +115,7 @@ def get_state_json(cluster):
     for slave_id in slaves_ids:
         uri = '/slave/{}/slave%281%29/state.json'.format(slave_id)
         r = cluster.get(uri)
+        assert r.ok
         data = r.json()
         yield data
 
@@ -124,44 +130,32 @@ def volume_manager(resetting_agent):
 def test_add_volume_noop(agent_tunnel, volume_manager, cluster):
     agent_tunnel.remote_cmd(mesos_agent('stop'))
     volume_manager.add_volumes_to_agent((200, 200))
+    # agent_tunnel.remote_cmd(sudo(['reboot']))
     agent_tunnel.remote_cmd(mesos_agent('start'))
+    cluster.wait_for_dcos()
     # assert on mounted resources
     for d in get_state_json(cluster):
         for size, _, vol in volume_manager.volumes:
             assert vol not in d
 
 
-def Dtest_missing_disk_resource_file(agent_tunnel):
-    agent_tunnel.remote_cmd(mesos_agent('stop'))
-    agent_tunnel.remote_cmd(clear_volume_discovery_state())
-    started = agent_tunnel.remote_cmd(mesos_agent('start')).decode()
-    assert 'error' in started.lower()
-
-
-def Dtest_add_volume_works(agent_tunnel, volume_manager, cluster):
+def test_add_volume_works(agent_tunnel, volume_manager, cluster):
     agent_tunnel.remote_cmd(mesos_agent('stop'))
     agent_tunnel.remote_cmd(clear_volume_discovery_state())
     agent_tunnel.remote_cmd(clear_mesos_agent_state())
     volume_manager.add_volumes_to_agent((200, 200))
-    agent_tunnel.remote_cmd(sudo('reboot'))
-    cluster.wait_for_up()
+    agent_tunnel.remote_cmd(mesos_agent('start'))
+    # agent_tunnel.remote_cmd(sudo(['reboot']))
+    cluster.wait_for_dcos()
     # assert on mounted resources
     for d in get_state_json(cluster):
         for _, _, vol in volume_manager.volumes:
             assert vol in d
 
 
-def Dtest_vol_discovery_fails_due_to_size(agent_tunnel, volume_manager):
+def test_vol_discovery_fails_due_to_size(agent_tunnel, volume_manager):
     agent_tunnel.remote_cmd(mesos_agent('stop'))
     volume_manager.add_volumes_to_agent((200, 200, 50,))
     agent_tunnel.remote_cmd(mesos_agent('start'))
     res_file = agent_tunnel.remote_cmd(['ls', '/var/lib/dcos/mesos-resources']).decode()
     assert 'No such file or directory' in res_file
-
-
-def Dtest_vol_discovery_non_json_mesos_resources(agent_tunnel):
-    agent_tunnel.remote_cmd(mesos_agent('stop'))
-    write_bad_file = ['printf', 'MESOS_RESOURCES=ports:[1025-2180]', '>', '/etc/mesos-slave']
-    agent_tunnel.remote_cmd(sudo(write_bad_file))
-    discovery_status = agent_tunnel.remote_cmd(mesos_agent('start'))
-    assert 'error' in discovery_status
