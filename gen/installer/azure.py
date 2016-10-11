@@ -1,7 +1,6 @@
 """Azure Image Creation, Management, Testing"""
 
 import json
-import re
 import sys
 import urllib
 from copy import deepcopy
@@ -15,10 +14,6 @@ import release.storage
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
-
-ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
-
-TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
 DOWNLOAD_URL_TEMPLATE = ("{download_url}{reproducible_artifact_path}/azure/{arm_template_name}")
 
@@ -52,6 +47,24 @@ def validate_cloud_config(cc_string):
         sys.exit(1)
 
 
+def yield_chunks(cc_json):
+    chunks = cc_json.split('[[[')
+
+    def byte_str(val):
+        validate_cloud_config(val)
+        return "'{}'".format(val)
+
+    def param(name):
+        name
+
+    yield byte_str(chunks[0])
+
+    for chunk in chunks[1:]:
+        [item_name, tail] = chunk.split(']]]', 1)
+        yield item_name
+        yield byte_str(tail)
+
+
 def transform(cloud_config):
     '''
     Transforms the given yaml into a list of strings which are concatenated
@@ -63,18 +76,8 @@ def transform(cloud_config):
     arm_list = ["[base64(concat('#cloud-config\n\n', "]
     # Find template parameters and seperate them out as seperate elements in a
     # json list.
-    prev_end = 0
-    # TODO(JL) - Why does validate_cloud_config not operate on entire string?
-    for m in TEMPLATE_PATTERN.finditer(cc_json):
-        before = m.group('pre')
-        param = m.group('inject')
-        validate_cloud_config(before)
-        arm_list.append("'{}', {},".format(before, param))
-        prev_end = m.end()
-
-    # Add the last little bit
-    validate_cloud_config(cc_json[prev_end:])
-    arm_list.append("'{}'))]".format(cc_json[prev_end:]))
+    arm_list.append(', '.join(yield_chunks(cc_json)))
+    arm_list.append("))]")
 
     # We're embedding this as a json string, so json encode it and return.
     return json.dumps(''.join(arm_list))
