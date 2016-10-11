@@ -20,7 +20,6 @@ import os.path
 import textwrap
 from copy import copy, deepcopy
 from functools import partialmethod
-from subprocess import check_call
 from tempfile import TemporaryDirectory
 
 import yaml
