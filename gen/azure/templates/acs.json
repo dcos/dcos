@@ -784,6 +784,20 @@
               "priority": 200,
               "direction": "Inbound"
             }
+          },
+          {
+            "name": "sshPort22",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2222",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Inbound"
+            }
           }
         ]
       }
