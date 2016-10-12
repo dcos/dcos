@@ -5,6 +5,7 @@ import json
 import logging
 import os
 
+import aiohttp_debugtoolbar
 import pkg_resources
 from aiohttp import web
 
@@ -360,6 +361,10 @@ def start(cli_options):
     make_default_config_if_needed('genconf/config.yaml')
     loop = asyncio.get_event_loop()
     app = build_app(loop)
+
+    if options.verbose:
+        aiohttp_debugtoolbar.setup(app)
+
     handler = app.make_handler()
     f = loop.create_server(
         handler,

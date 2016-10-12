@@ -37,6 +37,7 @@ setup(
         'test_util'],
     install_requires=[
         'aiohttp==0.22.5',
+        'aiohttp_debugtoolbar',
         'analytics-python',
         'coloredlogs',
         'Flask',
