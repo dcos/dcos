@@ -16,6 +16,6 @@ EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.agent.conf
-ExecReload=/usr/bin/kill -HUP \$MAINPID
+ExecReload=/usr/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
