@@ -1,8 +1,10 @@
 """
 Test for mesos agent volume mounting capabilities
-Note: This only supports onprem installations. Specifically, persistent nodes are required.
-If run against an AWS stack with autoscaling groups, the instances
-will be reprovisioned once the health checks are failed
+Note: this test requires the rebooting of nodes to finalize the mounting of the
+    generated filesystems. As such, any deployment where nodes are health checked
+    by pinging a mesos endpoint will likely fail this test as it is possible that
+    the health check will simply cause the node to be removed and replaced rather than
+    rebooted
 TODO: add tests that very that a unhealthy state is made on certain mount conditions
 """
 import os
@@ -17,6 +19,7 @@ from ssh.ssh_tunnel import SSHTunnel
 from test_util.aws import BotoWrapper
 
 ENV_FLAG = 'ENABLE_VOLUME_TESTING'
+REMOTE_TMP_PATH = '/tmp/add_volume.sh'
 
 pytestmark = pytest.mark.skipif(
     ENV_FLAG not in os.environ or os.environ[ENV_FLAG] != 'true',
@@ -105,11 +108,11 @@ class VolumeManager:
     def __init__(self, tunnel):
         self.tunnel = tunnel
         self.volumes = []
-        self.tmp_path
+        self.tmp_path = None
         with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(add_vol_script.encode())
             self.tmp_path = f.name
-        self.tunnel.write_to_remote(self.tmp_path, '/tmp/add_vol.sh')
+        self.tunnel.write_to_remote(self.tmp_path, REMOTE_TMP_PATH)
 
     def purge_volumes(self):
         for i, vol in enumerate(self.volumes):
@@ -125,7 +128,7 @@ class VolumeManager:
         for i, vol_size in enumerate(vol_sizes, 100):
             img = '/root/{}.img'.format(i)
             mount_point = '/dcos/volume{}'.format(i)
-            self.tunnel.remote_cmd(sudo(['bash', '/tmp/vol_add.sh', mount_point, img, str(vol_size)]))
+            self.tunnel.remote_cmd(sudo(['bash', REMOTE_TMP_PATH, mount_point, img, str(vol_size)]))
             self.volumes.append((vol_size, img, mount_point))
 
 

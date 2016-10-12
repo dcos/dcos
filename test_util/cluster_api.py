@@ -121,8 +121,7 @@ class ClusterApi:
 
     # Retry if returncode is False, do not retry on exceptions.
     @retrying.retry(wait_fixed=2000,
-                    retry_on_result=lambda r: r is False,
-                    retry_on_exception=lambda _: False)
+                    retry_on_result=lambda r: r is False)
     def _wait_for_srouter_slaves_endpoints(self):
         # Get currently known agents. This request is served straight from
         # Mesos (no AdminRouter-based caching is involved).
@@ -132,21 +131,20 @@ class ClusterApi:
         data = r.json()
         # only check against the slaves we expect to be in the cluster
         # so we can check that cluster has returned after a failure
-        # in which case will will have new slaves and dead slaves
+        # in which case we will have new slaves and dead slaves
         slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in self.all_slaves)
 
         for slave_id in slaves_ids:
             # AdminRouter's slave endpoint internally uses cached Mesos
             # state data. That is, slave IDs of just recently joined
-            # slaves can be unknown here. For those, this endpoint
-            # returns a 404. Retry in this case, until this endpoint
-            # is confirmed to work for all known agents.
+            # slaves can be unknown here. Additionally, when waiting
+            # for slaves that have been dropped to rejoint the cluster,
+            # the dropped slave endpoint will return an error
             uri = '/slave/{}/slave%281%29/state.json'.format(slave_id)
             r = self.get(uri)
-            if r.status_code >= 400:
-                return False
-            assert r.status_code == 200
+            r.raise_for_status()
             data = r.json()
+            logging.debug("Agent state retrieved for {}: {}".format(slave_id, data))
             assert "id" in data
             assert data["id"] == slave_id
 
