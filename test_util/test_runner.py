@@ -7,7 +7,7 @@ import sys
 from os.path import join
 from subprocess import CalledProcessError
 
-from pkgpanda.util import write_string
+from pkgpanda.util import load_string, write_string
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
@@ -55,7 +55,9 @@ def integration_test(
         'DNS_SEARCH=' + dns_search,
         'AWS_ACCESS_KEY_ID=' + aws_access_key_id,
         'AWS_SECRET_ACCESS_KEY=' + aws_secret_access_key,
-        'AWS_REGION=' + region]
+        'AWS_REGION=' + region,
+        'DCOS_SSH_USER=' + tunnel.ssh_user,
+        'DCOS_SSH_KEY=\'{}\''.format(load_string(tunnel.ssh_key_path).replace('\n', ''))]
     if add_env:
         for key, value in add_env.items():
             extra_env = key + '=' + value
