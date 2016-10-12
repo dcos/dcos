@@ -182,6 +182,8 @@ def main():
             num_agents=options.agents,
             num_public_agents=options.public_agents,
         )
+        options.add_env['AWS_STACK_NAME'] = unique_cluster_id
+        options.add_env['ENABLE_VOLUME_TESTING'] = 'true'
     else:
         # Assume an existing onprem CentOS cluster.
         cluster = test_util.cluster.Cluster.from_hosts(
