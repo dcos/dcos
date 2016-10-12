@@ -7,13 +7,14 @@ import pytest
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import DcosUser
 
-LOG_LEVEL = logging.INFO
+logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("botocore").setLevel(logging.WARNING)
 
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')
-    config.addinivalue_line('markers', 'resiliency: Run tests that cause critical failures')
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -29,16 +30,6 @@ def pytest_collection_modifyitems(session, config, items):
         else:
             new_items.append(item)
     items[:] = new_items + last_items
-
-
-def pytest_addoption(parser):
-    parser.addoption('--resiliency', action='store_true')
-
-
-def pytest_runtest_setup(item):
-    if item.get_marker('resiliency'):
-        if not item.config.getoption('--resiliency'):
-            pytest.skip('Test requires --resiliency option')
 
 
 @pytest.yield_fixture
@@ -89,10 +80,6 @@ def cluster(user):
     assert os.environ['DNS_SEARCH'] in ['true', 'false']
 
     assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
-
-    logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=LOG_LEVEL)
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("botocore").setLevel(logging.WARNING)
 
     cluster_api = ClusterApi(
         dcos_uri=os.environ['DCOS_DNS_ADDRESS'],

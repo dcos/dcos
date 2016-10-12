@@ -97,7 +97,7 @@ def test_bootstrap(tmpdir):
     pkg_dir = tmpdir.join("bootstrap_test")
     copytree("resources/", str(pkg_dir))
     with pkg_dir.as_cwd():
-        treeinfo = {'variants': {'variant': 'ee'}}
+        treeinfo = {'variants': {'variant': 'downstream'}}
         pkg_dir.join("treeinfo.json").write(json.dumps(treeinfo), ensure=True)
         check_call(["mkpanda", "tree", "--mkbootstrap"])
         cache_dir = str(pkg_dir.join("cache/bootstrap")) + "/"
