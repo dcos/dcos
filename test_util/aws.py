@@ -114,7 +114,7 @@ class CfStack():
 
     def _wait_loop(self, state_1, state_2, interval):
         """This method is still vulnerable to being interrupted by an
-        AWS Client throttling errror, use wait_for_status_change()
+        AWS Client throttling error, use wait_for_status_change()
         """
         @retrying.retry(wait_fixed=interval * 1000,
                         retry_on_result=lambda res: res is False,
