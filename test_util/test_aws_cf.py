@@ -162,10 +162,10 @@ def provide_cluster(options):
                 admin_location='0.0.0.0/0',
                 key_pair_name='default',
                 boto_wrapper=bw)
-        cf.wait_for_stack_creation()
+        cf.wait_for_stack_creation(wait_before_poll_min=5)
     else:
         if options.advanced:
-            cf = test_util.aws.DcosCfAdvanced.create(options.stack_name, bw)
+            cf = test_util.aws.DcosCfAdvanced(options.stack_name, bw)
         else:
             cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
         ssh_info = test_util.aws.SSH_INFO[options.host_os]

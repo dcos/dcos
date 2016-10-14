@@ -1,8 +1,14 @@
+"""Various helpers for test runners and integration testing directly
+"""
+import copy
 import logging
+import time
 from collections import namedtuple
+from functools import wraps
 
 import requests
 import retrying
+from botocore.exceptions import ClientError, WaiterError
 
 import test_util
 
@@ -29,6 +35,42 @@ class DcosUser:
         self.auth_header = {'Authorization': 'token={}'.format(self.auth_token)}
         self.auth_cookie = r.cookies['dcos-acs-auth-cookie']
         logging.info('Authentication successful')
+
+
+def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
+    """Decorator to make boto functions resilient to AWS rate limiting and throttling.
+    If one of these errors is encounterd, the function will sleep for a geometrically
+    increasing amount of time
+    """
+    @wraps(boto_fn)
+    def ignore_rate_errors(*args, **kwargs):
+        local_wait = copy.copy(wait)
+        local_timeout = copy.copy(timeout)
+        while local_timeout > 0:
+            next_time = time.time() + local_wait
+            try:
+                return boto_fn(*args, **kwargs)
+            except (ClientError, WaiterError) as e:
+                if isinstance(e, ClientError):
+                    error_code = e.response['Error']['Code']
+                elif isinstance(e, WaiterError):
+                    error_code = e.last_response['Error']['Code']
+                else:
+                    raise
+                if error_code in ['Throttling', 'RequestLimitExceeded']:
+                    logging.warn('AWS API Limiting error: {}'.format(error_code))
+                    logging.warn('Sleeping for {} seconds before retrying'.format(local_wait))
+                    time_to_next = next_time - time.time()
+                    if time_to_next > 0:
+                        time.sleep(time_to_next)
+                    else:
+                        local_timeout += time_to_next
+                    local_timeout -= local_wait
+                    local_wait *= 2
+                    continue
+                raise
+        raise Exception('Rate-limit timeout encountered waiting for {}'.format(boto_fn.__name__))
+    return ignore_rate_errors
 
 
 def wait_for_pong(url, timeout):

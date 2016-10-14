@@ -63,6 +63,7 @@ setup(
             'ccm-deploy-test=test_util.test_aws_vpc:main',
             'test-aws-cf-deploy=test_util.test_aws_cf:main',
             'test-upgrade-vpc=test_util.test_upgrade_vpc:main',
+            'test-azure-rm-deploy=test_util.azure_test_driver:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main'

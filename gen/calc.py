@@ -374,6 +374,13 @@ def calculate_config_yaml(user_arguments):
         prefix='  ' * 3)
 
 
+def calculate_mesos_isolation(enable_gpu_isolation):
+    isolators = 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
+    if enable_gpu_isolation == 'true':
+        isolators += ',cgroups/devices,gpu/nvidia'
+    return isolators
+
+
 def validate_os_type(os_type):
     validate_one_of(os_type, ['coreos', 'el7'])
 
@@ -452,6 +459,7 @@ entry = {
         lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
         lambda rexray_config: validate_json_dictionary(rexray_config),
         lambda check_time: validate_true_false(check_time),
+        lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
         validate_minuteman_min_named_ip,
         validate_minuteman_max_named_ip,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
@@ -525,6 +533,7 @@ entry = {
                 }
             }
         }),
+        'enable_gpu_isolation': 'false',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
         'cluster_docker_credentials_write_to_etc': 'false',
@@ -552,7 +561,7 @@ entry = {
         'minuteman_forward_metrics': 'false',
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
-        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
+        'mesos_isolation': calculate_mesos_isolation,
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,

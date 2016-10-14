@@ -87,6 +87,22 @@ class ClusterApi:
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
+    def _wait_for_dcos_history_data(self):
+        ro = self.get('/dcos-history-service/history/last')
+        # resp_code >= 500 -> backend is still down probably
+        if ro.status_code <= 500:
+            logging.info("DC/OS History is probably getting data")
+            json = ro.json()
+            assert len(json["slaves"]) == len(self.all_slaves)
+            return True
+        else:
+            msg = "Waiting for DC/OS History, resp code is: {}"
+            logging.info(msg.format(ro.status_code))
+            return False
+
+    @retrying.retry(wait_fixed=1000,
+                    retry_on_result=lambda ret: ret is False,
+                    retry_on_exception=lambda x: False)
     def _wait_for_leader_election(self):
         mesos_resolver = dns.resolver.Resolver()
         mesos_resolver.nameservers = self.public_masters
@@ -172,6 +188,7 @@ class ClusterApi:
         self._wait_for_slaves_to_join()
         self._wait_for_dcos_history_up()
         self._wait_for_srouter_slaves_endpoints()
+        self._wait_for_dcos_history_data()
         self._wait_for_metronome()
 
     @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
@@ -284,7 +301,7 @@ class ClusterApi:
             'instances': 1,
             # NOTE: uses '.' rather than `source`, since `source` only exists in bash and this is
             # run by sh
-            'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
+            'cmd': '/opt/mesosphere/bin/dcos-shell python '
                    '/opt/mesosphere/active/dcos-integration-test/python_test_server.py ',
             'env': {
                 'DCOS_TEST_UUID': test_uuid,
