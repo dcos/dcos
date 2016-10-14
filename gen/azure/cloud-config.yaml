@@ -86,8 +86,8 @@ fs_setup:
     filesystem: ext4
     overwrite: True
   - device: ephemeral0.3
-      filesystem: ext4
-      overwrite: True
+    filesystem: ext4
+    overwrite: True
 mounts:
   - [ ephemeral0.1, /var/lib/mesos ]
   - [ ephemeral0.2, /var/lib/docker ]
