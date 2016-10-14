@@ -12,4 +12,5 @@ EnvironmentFile=-/opt/mesosphere/etc/dcos-history-extras.env
 Environment=HISTORY_BUFFER_DIR=/var/lib/dcos/dcos-history
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-history
-ExecStart=/opt/mesosphere/bin/dcos-history
+ExecStart=/opt/mesosphere/bin/gunicorn --bind 0.0.0.0:15055 \
+                history.server:app
