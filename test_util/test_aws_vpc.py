@@ -64,6 +64,8 @@ import sys
 
 import test_util.aws
 import test_util.cluster
+from test_util.helpers import gather_prefix_env
+
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -132,12 +134,9 @@ def check_environment():
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
-    add_env = {}
-    prefix = 'TEST_ADD_ENV_'
-    for k, v in os.environ.items():
-        if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
+    options.add_config_keys = gather_prefix_env('TEST_CONFIG_KEY_')
+
+    options.add_env = gather_prefix_env('TEST_ADD_ENV_')
 
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -rs -vv ' + options.ci_flags)

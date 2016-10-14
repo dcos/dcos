@@ -44,6 +44,7 @@ import sys
 import test_util.aws
 import test_util.cluster
 from gen.calc import calculate_environment_variable
+from test_util.helpers import gather_prefix_env
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -92,12 +93,7 @@ def check_environment():
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
-    add_env = {}
-    prefix = 'TEST_ADD_ENV_'
-    for k, v in os.environ.items():
-        if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
+    options.add_env = gather_prefix_env('TEST_ADD_ENV_')
     options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
     return options
