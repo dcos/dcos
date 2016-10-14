@@ -10,8 +10,8 @@ root:
       Environment=DEBIAN_FRONTEND=noninteractive
       StandardOutput=journal+console
       StandardError=journal+console
-      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/lib/mesos/dcos/d.deb https://az837203.vo.msecnd.net/dcos-deps/docker-engine_1.11.2-0~xenial_amd64.deb
-      ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /var/lib/mesos/dcos/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/d.deb https://az837203.vo.msecnd.net/dcos-deps/docker-engine_1.11.2-0~xenial_amd64.deb
+      ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /var/tmp/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
   - path: /etc/systemd/system/docker.service.d/execstart.conf
     permissions: "0644"
     content: |
@@ -59,14 +59,13 @@ runcmd:
     - [ ln, -s, /usr/sbin/useradd, /usr/bin/useradd ]
     - [ systemctl, disable, --now, resolvconf.service ]
     - [ systemctl, mask, --now, lxc-net.service ]
-    - mkdir /var/lib/mesos/dcos
-    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/lib/mesos/dcos/1.deb https://az837203.vo.msecnd.net/dcos-deps/libipset3_6.29-1_amd64.deb
-    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/lib/mesos/dcos/2.deb https://az837203.vo.msecnd.net/dcos-deps/ipset_6.29-1_amd64.deb
-    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/lib/mesos/dcos/3.deb https://az837203.vo.msecnd.net/dcos-deps/unzip_6.0-20ubuntu1_amd64.deb
-    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/lib/mesos/dcos/4.deb https://az837203.vo.msecnd.net/dcos-deps/libltdl7_2.4.6-0.1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/1.deb https://az837203.vo.msecnd.net/dcos-deps/libipset3_6.29-1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/2.deb https://az837203.vo.msecnd.net/dcos-deps/ipset_6.29-1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/3.deb https://az837203.vo.msecnd.net/dcos-deps/unzip_6.0-20ubuntu1_amd64.deb
+    - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/4.deb https://az837203.vo.msecnd.net/dcos-deps/libltdl7_2.4.6-0.1_amd64.deb
     - sudo sed -i "s/^Port 22$/Port 22\nPort 2222/1" /etc/ssh/sshd_config
     - sudo service ssh restart
-    - bash -c "try=1;until dpkg -i /var/lib/mesos/dcos/{1,2,3,4}.deb || ((try>9));do echo retry \$((try++));sleep \$((try*try));done"
+    - bash -c "try=1;until dpkg -i /var/tmp/{1,2,3,4}.deb || ((try>9));do echo retry \$((try++));sleep \$((try*try));done"
     - [ cp, -p, /etc/resolv.conf, /tmp/resolv.conf ]
     - [ rm, -f, /etc/resolv.conf ]
     - [ cp, -p, /tmp/resolv.conf, /etc/resolv.conf ]
@@ -77,7 +76,7 @@ bootcmd:
 disk_setup:
   ephemeral0:
     table_type: gpt
-    layout: [ 50, 50 ]
+    layout: [ 25, 50, 25 ]
     overwrite: True
 fs_setup:
   - device: ephemeral0.1
@@ -86,6 +85,10 @@ fs_setup:
   - device: ephemeral0.2
     filesystem: ext4
     overwrite: True
+  - device: ephemeral0.3
+      filesystem: ext4
+      overwrite: True
 mounts:
   - [ ephemeral0.1, /var/lib/mesos ]
   - [ ephemeral0.2, /var/lib/docker ]
+  - [ ephemeral0.3, /var/tmp ]
