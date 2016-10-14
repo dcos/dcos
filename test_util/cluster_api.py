@@ -284,7 +284,7 @@ class ClusterApi:
             'instances': 1,
             # NOTE: uses '.' rather than `source`, since `source` only exists in bash and this is
             # run by sh
-            'cmd': '. /opt/mesosphere/environment.export && /opt/mesosphere/bin/python '
+            'cmd': '/opt/mesosphere/bin/dcos-shell python '
                    '/opt/mesosphere/active/dcos-integration-test/python_test_server.py ',
             'env': {
                 'DCOS_TEST_UUID': test_uuid,
