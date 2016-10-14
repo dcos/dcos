@@ -19,6 +19,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 ### UDP
 
  - 62053: dcos-spartan
+ - 64000: DCOS Overlay
 
 ## Master
 

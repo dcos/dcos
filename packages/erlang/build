@@ -7,7 +7,7 @@ export CXXFLAGS=CFLAGS
 
 pushd /pkg/src/erlang
 ./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --enable-dirty-schedulers --disable-hipe --enable-kernel-poll
-make -j8
+make -j$NUM_CORES
 make install
 popd
 

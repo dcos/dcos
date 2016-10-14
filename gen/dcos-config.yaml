@@ -15,11 +15,7 @@ package:
     content: {{ ip_detect_public_contents }}
   - path: /etc/check_time.env
     content: |
-{% switch check_time %}
-{% case "true" %}
-{% case "false" %}
-      IGNORE_CHECK_TIME=true
-{% endswitch %}
+        ENABLE_CHECK_TIME={{ check_time }}
   - path: /check/check_ip
     permissions: "0755"
     content: |
@@ -157,6 +153,12 @@ package:
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
+  - path: /etc/mesos-master-modules/dummy.json
+    content: |
+      {}
+  - path: /etc/mesos-slave-modules/dummy.json
+    content: |
+      {}
 {% switch dcos_overlay_enable %}
 {% case "true" %}
   - path: /etc/mesos-master-modules/overlay_master_modules.json

@@ -606,7 +606,6 @@
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        {{ aws_master_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "MasterInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join": ["", [
           {{ master_cloud_config }}
@@ -791,7 +790,6 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
         "AssociatePublicIpAddress" : "false",
-        {{ aws_private_agent_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "SlaveInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_private_cloud_config }}
@@ -836,7 +834,6 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        {{ aws_public_agent_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "PublicSlaveInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_public_cloud_config }}

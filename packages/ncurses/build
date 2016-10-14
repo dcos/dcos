@@ -5,5 +5,5 @@ pushd build
 
 cd /pkg/src/ncurses
 ./configure --prefix="$PKG_PATH" --with-termlib --with-ticlib
-make -j8
+make -j$NUM_CORES
 make install

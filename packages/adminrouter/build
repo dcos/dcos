@@ -20,7 +20,7 @@ pushd "/pkg/src/nginx"
   --with-http_ssl_module \
   --with-luajit
 
-make -j8
+make -j$NUM_CORES
 make install
 popd
 

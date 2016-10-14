@@ -5,6 +5,12 @@ import pytest
 import test_util.aws
 import test_util.helpers
 
+ENV_FLAG = 'ENABLE_RESILIENCY_TESTING'
+
+pytestmark = pytest.mark.skipif(
+    ENV_FLAG not in os.environ or os.environ[ENV_FLAG] != 'true',
+    reason='Must explicitly enable resiliency testing with {}'.format(ENV_FLAG))
+
 
 @pytest.fixture(scope='session')
 def dcos_launchpad(cluster):
@@ -23,7 +29,6 @@ def dcos_launchpad(cluster):
 
 
 @pytest.mark.last
-@pytest.mark.resiliency
 def test_agent_failure(dcos_launchpad, cluster, vip_apps):
     # make sure the app works before starting
     test_util.helpers.wait_for_pong(vip_apps[0][1], 120)
@@ -39,6 +44,16 @@ def test_agent_failure(dcos_launchpad, cluster, vip_apps):
     def get_running_agents():
         return dcos_launchpad.get_group_instances(
             ['PublicSlaveServerGroup', 'SlaveServerGroup'], state_list=['running'])
+
+    # Tell mesos the machines are "down" and not coming up so things get rescheduled.
+    down_hosts = [{'hostname': slave, 'ip': slave} for slave in cluster.all_slaves]
+    cluster.post(
+        '/mesos/maintenance/schedule',
+        json={'windows': [{
+            'machine_ids': down_hosts,
+            'unavailability': {'start': {'nanoseconds': 0}}
+        }]}).raise_for_status()
+    cluster.post('/mesos/machine/down', json=down_hosts).raise_for_status()
 
     # Wait for replacements
     test_util.helpers.wait_for_len(get_running_agents, len(cluster.all_slaves), 600)

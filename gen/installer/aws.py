@@ -297,12 +297,13 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
 def get_s3_url_prefix(arguments, reproducible_artifact_path) -> str:
     assert reproducible_artifact_path, "reproducible_artifact_path must not be empty"
     if 'cloudformation_s3_url' in arguments:
-        url = arguments['cloudformation_s3_url']
+        # Caller is `dcos_generate_config.sh --aws-cloudformation`
+        url = arguments['cloudformation_s3_url'] + '/cloudformation'
+        return url
     else:
-        url = get_cloudformation_s3_url()
-
-    url += '/' + reproducible_artifact_path + '/cloudformation'
-    return url
+        # Caller is release create
+        url = get_cloudformation_s3_url() + '/{}/cloudformation'.format(reproducible_artifact_path)
+        return url
 
 
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
