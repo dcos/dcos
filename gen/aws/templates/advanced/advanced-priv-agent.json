@@ -233,77 +233,8 @@
         "default": "PT60M"
       }
     },
-    "NATAmi": {
-      "us-west-2": {
-        "default": "ami-bb69128b"
-      },
-      "sa-east-1": {
-        "default": "ami-b972dba4"
-      },
-      "ap-northeast-1": {
-        "default": "ami-55c29e54"
-      },
-      "us-east-1": {
-        "default": "ami-4c9e4b24"
-      },
-      "ap-southeast-1": {
-        "default": "ami-b082dae2"
-      },
-      "eu-central-1": {
-        "default": "ami-204c7a3d"
-      },
-      "us-west-1": {
-        "default": "ami-2b2b296e"
-      },
-      "eu-west-1": {
-        "default": "ami-3760b040"
-      },
-      "ap-southeast-2": {
-        "default": "ami-996402a3"
-      }
-    },
-    "RegionToAmi": {
-      "ap-northeast-1": {
-        "coreos": "ami-965899f7",
-        "el7": "ami-264f8747"
-      },
-      "ap-southeast-1": {
-        "coreos": "ami-3120fe52",
-        "el7": "ami-0765bd64"
-      },
-      "ap-southeast-2": {
-        "coreos": "ami-b1291dd2",
-        "el7": "ami-3f1a2c5c"
-      },
-      "eu-central-1": {
-        "coreos": "ami-3ae31555",
-        "el7": "ami-846e9eeb"
-      },
-      "eu-west-1": {
-        "coreos": "ami-b7cba3c4",
-        "el7": "ami-250c7f56"
-      },
-      "sa-east-1": {
-        "coreos": "ami-61e3750d",
-        "el7": "ami-0e019062"
-      },
-      "us-east-1": {
-        "coreos": "ami-6d138f7a",
-        "el7": "ami-47096750"
-      },
-      "us-gov-west-1": {
-        "coreos": "ami-b712acd6",
-        "el7": "ami-c4a41da5"
-      },
-      "us-west-1": {
-        "coreos": "ami-ee57148e",
-        "el7": "ami-e4afe284"
-      },
-      "us-west-2": {
-        "coreos": "ami-dc6ba3bc",
-        "el7": "ami-ab07d1cb"
-      }
-    }
+    "NATAmi": {{ nat_ami_mapping }},
+    "RegionToAmi": {{ region_to_ami_mapping }}
   },
   "Description": "DC/OS AWS CloudFormation Advanced Private Agent Template"
 }
