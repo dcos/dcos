@@ -165,7 +165,7 @@ def provide_cluster(options):
         cf.wait_for_stack_creation()
     else:
         if options.advanced:
-            cf = test_util.aws.DcosCfAdvanced.create(options.stack_name, bw)
+            cf = test_util.aws.DcosCfAdvanced(options.stack_name, bw)
         else:
             cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
         ssh_info = test_util.aws.SSH_INFO[options.host_os]
