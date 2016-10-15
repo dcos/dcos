@@ -44,7 +44,7 @@ class HttpStorageProvider(AbstractStorageProvider):
                 os.remove(local_path_tmp)
             except Exception:
                 pass
-        self.get_object(path).download_file(local_path)
+            raise
 
     def exists(self, path):
         url = self._get_absolute(path)
@@ -57,7 +57,7 @@ class HttpStorageProvider(AbstractStorageProvider):
     def fetch(self, path):
         r = requests.get(url=self._get_absolute(path))
         r.raise_for_status()
-        return r.body
+        return r.content
 
     def remove_recursive(self, path):
         raise NotImplementedError()
