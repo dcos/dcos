@@ -18,6 +18,8 @@
 
 from pkg_resources import resource_string
 
+import gen.internals
+
 identifier_valid_characters = 'abcdefghijklmnopqrstuvwxyz_0123456789'
 
 
@@ -378,32 +380,28 @@ class Template():
 
         return render_ast(self.ast)
 
-    def get_scoped_arguments(self):
+    def target_from_ast(self):
         def variables_from_ast(ast, blacklist):
-            variables = set()
-            sub_scopes = dict()
+            target = gen.internals.Target()
             for chunk in ast:
                 if isinstance(chunk, Switch):
-                    sub_scopes[chunk.identifier] = dict()
+                    scope = gen.internals.Scope(chunk.identifier)
                     for value, sub_ast in chunk.cases.items():
-                        sub_scopes[chunk.identifier][value] = variables_from_ast(sub_ast, blacklist)
+                        scope.add_case(value, variables_from_ast(sub_ast, blacklist))
+                    target.add_scope(scope)
+
                 elif isinstance(chunk, Replacement):
                     if chunk.identifier not in blacklist:
-                        variables.add(chunk.identifier)
+                        target.add_variable(chunk.identifier)
                 elif isinstance(chunk, For):
-                    additions = variables_from_ast(chunk.body, blacklist | {chunk.new_var})
-                    variables |= additions['variables']
-                    # TODO(cmaloney): Recursively merge sub_scope dictionaries.
-                    sub_scopes.update(sub_scopes)
+                    target += variables_from_ast(chunk.body, blacklist | {chunk.new_var})
                 elif isinstance(chunk, str):
                     continue
                 else:
                     raise NotImplementedError(
                         "Unknown chunk type {}".format(type(chunk)))
-            return {
-                'variables': variables,
-                'sub_scopes': sub_scopes
-            }
+            return target
+
         return variables_from_ast(self.ast, set())
 
     def get_filters(self):
@@ -429,7 +427,7 @@ class Template():
         return filters
 
     def __repr__(self):
-        return "<template {}>".format(self.__ast)
+        return "<template {}>".format(self.ast)
 
     def __eq__(self, other):
         return isinstance(other, Template) and self.ast == other.ast

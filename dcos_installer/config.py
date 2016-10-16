@@ -99,12 +99,13 @@ class Config():
 
     def do_validate(self, include_ssh):
         user_arguments = self.as_gen_format()
-        config_targets = [gen.get_dcosconfig_target_and_templates(user_arguments, [])[0]]
+        sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [])
 
         if include_ssh:
-            config_targets.append(ssh.validate.get_config_target())
+            sources.append(ssh.validate.source)
+            targets.append(ssh.validate.target)
 
-        messages = gen.validate_config_for_targets(config_targets, user_arguments)
+        messages = gen.internals.validate_configuration(sources, targets, user_arguments)
         # TODO(cmaloney): kill this function and make the API return the structured
         # results api as was always intended rather than the flattened / lossy other
         # format. This will be an  API incompatible change. The messages format was

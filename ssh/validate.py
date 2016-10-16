@@ -2,6 +2,7 @@ import os
 import stat
 
 import gen
+from gen.internals import Source, Target
 
 
 def validate_ssh_key_path(ssh_key_path):
@@ -26,7 +27,7 @@ def validate_agent_lists(agent_list, public_agent_list):
     compare_lists(agent_list, public_agent_list)
 
 
-entry = {
+source = Source({
     'validate': [
         lambda agent_list: gen.calc.validate_ip_list(agent_list),
         lambda public_agent_list: gen.calc.validate_ip_list(public_agent_list),
@@ -48,33 +49,24 @@ entry = {
         'process_timeout': '120',
         'ssh_parallelism': '20'
     }
-}
+})
 
-parameters = {
-    'variables': {
-        'ssh_user',
-        'ssh_port',
-        'ssh_key_path',
-        'master_list',
-        'agent_list',
-        'public_agent_list',
-        'ssh_parallelism',
-        'process_timeout'
-    }
-}
-
-
-def get_config_target():
-    config_target = gen.ConfigTarget(parameters)
-    config_target.add_entry(entry, False)
-    return config_target
+target = Target({
+    'ssh_user',
+    'ssh_port',
+    'ssh_key_path',
+    'master_list',
+    'agent_list',
+    'public_agent_list',
+    'ssh_parallelism',
+    'process_timeout'})
 
 
 # TODO(cmaloney): Work this API, callers until this result remapping is unnecessary
 # and the couple places that need this can just make a trivial call directly.
 def validate_config(user_arguments):
     user_arguments = gen.stringify_configuration(user_arguments)
-    messages = gen.validate_config_for_targets([get_config_target()], user_arguments)
+    messages = gen.internals.validate_configuration([source], [target], user_arguments)
     if messages['status'] == 'ok':
         return {}
 
