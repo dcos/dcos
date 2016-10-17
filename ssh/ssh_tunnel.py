@@ -46,7 +46,7 @@ class SSHTunnel():
             '-oPasswordAuthentication=no']
 
         start_tunnel = self.ssh_cmd + [
-            '-fnN',
+            '-fnN', '-tt',
             '-i', ssh_key_path,
             '-p', str(port), self.target]
         logger.debug('Starting SSH tunnel: ' + ' '.join(start_tunnel))
@@ -70,7 +70,7 @@ class SSHTunnel():
         if timeout:
             assert isinstance(timeout, int), 'timeout must be an int (seconds)'
         run_cmd = self.ssh_cmd + ['-p', str(self.port), self.target] + cmd
-        logger.debug('Running socket cmd: ' + ' '.join(run_cmd))
+        logger.info('Running socket cmd: ' + ' '.join(run_cmd))
         try:
             if stdout:
                 return check_call(run_cmd, stdout=stdout, timeout=timeout)
