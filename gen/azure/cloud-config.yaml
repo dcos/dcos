@@ -63,8 +63,8 @@ runcmd:
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/2.deb https://az837203.vo.msecnd.net/dcos-deps/ipset_6.29-1_amd64.deb
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/3.deb https://az837203.vo.msecnd.net/dcos-deps/unzip_6.0-20ubuntu1_amd64.deb
     - curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/4.deb https://az837203.vo.msecnd.net/dcos-deps/libltdl7_2.4.6-0.1_amd64.deb
-    - sudo sed -i "s/^Port 22$/Port 22\nPort 2222/1" /etc/ssh/sshd_config
-    - sudo service ssh restart
+    - sed -i "s/^Port 22$/Port 22\nPort 2222/1" /etc/ssh/sshd_config
+    - service ssh restart
     - bash -c "try=1;until dpkg -i /var/tmp/{1,2,3,4}.deb || ((try>9));do echo retry \$((try++));sleep \$((try*try));done"
     - [ cp, -p, /etc/resolv.conf, /tmp/resolv.conf ]
     - [ rm, -f, /etc/resolv.conf ]
