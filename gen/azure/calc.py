@@ -3,6 +3,9 @@ import pkg_resources
 import yaml
 
 entry = {
+    'default': {
+        'enable_docker_gc': 'true'
+    },
     'must': {
         'resolvers': '["168.63.129.16"]',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),

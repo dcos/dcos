@@ -461,6 +461,12 @@ package:
       com.netflix.exhibitor.azure.account-name={{ exhibitor_azure_account_name }}
       com.netflix.exhibitor.azure.account-key={{ exhibitor_azure_account_key }}
 {% endswitch %}
+{% switch enable_docker_gc %}
+{% case "true" %}
+  - path: /etc/docker_gc_enabled
+    content: ""
+{% case "false" %}
+{% endswitch %}
 # /etc/ui-config.json is minified due to late-binding and to preserve available cloud-config space
   - path: /etc/ui-config.json
     content: |
