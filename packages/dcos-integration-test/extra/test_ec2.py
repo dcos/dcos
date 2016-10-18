@@ -76,11 +76,10 @@ def test_move_external_volume_to_new_agent(cluster):
     }
 
     try:
-        cluster.deploy_marathon_app(write_app, **deploy_kwargs)
-        cluster.destroy_marathon_app(write_app['id'])
-
-        cluster.deploy_marathon_app(read_app, **deploy_kwargs)
-        cluster.destroy_marathon_app(read_app['id'])
+        with cluster.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
+            logging.info('Successfully wrote to volume')
+        with cluster.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
+            logging.info('Successfully read from volume')
     finally:
         logging.info('Deleting volume: ' + test_label)
         delete_cmd = \

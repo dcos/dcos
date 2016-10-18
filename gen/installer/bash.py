@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 
 import pkg_resources
+import py
 
 import gen.installer.util as util
 import gen.template
@@ -634,6 +635,20 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     return installer_filename
 
 
+def make_dcos_launch():
+    # NOTE: this needs to be kept in sync with build_dcos_launch.sh
+    work_dir = py.path.local.mkdtemp()
+    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string(__name__, 'bash/dcos-launch.spec'))
+    work_dir.join('test_util').ensure(dir=True)
+    work_dir.join('test_util').join('launch.py').write(pkg_resources.resource_string('test_util', 'launch.py'))
+    with work_dir.as_cwd():
+        subprocess.check_call(['pyinstaller', 'dcos-launch.spec'])
+    subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), "dcos-launch"])
+    work_dir.remove()
+
+    return "dcos-launch"
+
+
 def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
     """Create a installer script for each variant in bootstrap_dict.
 
@@ -658,3 +673,12 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
             'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
             'local_path': installer_filename
         }
+
+    # Build dcos-launch
+    # TODO(cmaloney): This really doesn't belong to here, but it's the best place it fits for now.
+    #                 dcos-launch works many places which aren't bash / on-premise installers.
+    #                 It also isn't dependent on the "reproducible" artifacts at all. Just the commit...
+    yield {
+        'channel_path': 'dcos-launch',
+        'local_path': make_dcos_launch()
+    }
