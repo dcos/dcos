@@ -10,7 +10,7 @@ for package in analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
   pip3 install --no-deps --no-index --target="$LIB_INSTALL_DIR" /pkg/src/$package/*.whl
 done
 
-for package in aiohttp chardet coloredlogs docker-py humanfriendly multidict oauthlib waitress \
-    websocket-client; do
+for package in aiohttp chardet coloredlogs docker-py humanfriendly multidict oauthlib pyinstaller \
+    waitress websocket-client; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package
 done

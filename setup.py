@@ -11,7 +11,7 @@ def get_advanced_templates():
 setup(
     name='dcos_image',
     version='0.1',
-    description='DC/OS packaging, management, install utilities',
+    description='DC/OS cluster configuration, assembly, and launch, and maintenance code',
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
@@ -52,6 +52,8 @@ setup(
         'coloredlogs',
         'docopt',
         'passlib',
+        'py',
+        'pyinstaller==3.2',
         'pyyaml',
         'requests==2.10.0',
         'retrying',
@@ -66,7 +68,8 @@ setup(
             'test-azure-rm-deploy=test_util.azure_test_driver:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
-            'dcos_installer=dcos_installer.cli:main'
+            'dcos_installer=dcos_installer.cli:main',
+            'dcos-launch=test_util.launch:main',
         ],
     },
     package_data={
@@ -90,12 +93,16 @@ setup(
             'installer/bash/dcos_generate_config.sh.in',
             'installer/bash/Dockerfile.in',
             'installer/bash/installer_internal_wrapper.in',
+            'installer/bash/dcos-launch.spec',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
         'pkgpanda': [
             'docker/dcos-builder/Dockerfile'
         ],
+        'test_util': [
+            'launch.py'
+        ]
     },
     zip_safe=False
 )
