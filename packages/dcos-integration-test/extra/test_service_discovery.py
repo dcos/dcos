@@ -4,6 +4,8 @@ import pytest
 import requests
 import retrying
 
+from test_util.marathon import get_test_app, get_test_app_in_docker
+
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
@@ -53,7 +55,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
     """
 
     # TODO(cmaloney): For non docker network bridge we should just do a mesos container.
-    app_definition, test_uuid = cluster.get_test_app_in_docker(ip_per_container=False)
+    app_definition, test_uuid = get_test_app_in_docker(ip_per_container=False)
 
     if not docker_network_bridge:
         # TODO(cmaloney): This is very hacky to make PORT0 on the end instead of 9080...
@@ -72,7 +74,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
 
     app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 
-    with cluster.marathon_deploy_and_cleanup(app_definition) as service_points:
+    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
         # Verify if Mesos-DNS agrees with Marathon:
         @retrying.retry(wait_fixed=1000,
                         stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT * 1000,
@@ -141,8 +143,8 @@ def test_if_search_is_working(cluster):
     Please check test_server.py for more details.
     """
     # Launch the app
-    app_definition, test_uuid = cluster.get_test_app()
-    with cluster.marathon_deploy_and_cleanup(app_definition) as service_points:
+    app_definition, test_uuid = get_test_app()
+    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
         # Get the status
         r = requests.get('http://{}:{}/dns_search'.format(service_points[0].host,
                                                           service_points[0].port))

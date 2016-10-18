@@ -6,6 +6,7 @@ import pytest
 
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import DcosUser
+from test_util.marathon import get_test_app
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -35,15 +36,15 @@ def pytest_collection_modifyitems(session, config, items):
 @pytest.yield_fixture
 def vip_apps(cluster):
     vip1 = '6.6.6.1:6661'
-    test_app1, _ = cluster.get_test_app()
+    test_app1, _ = get_test_app()
     test_app1['portDefinitions'][0]['labels'] = {
         'VIP_0': vip1}
-    test_app2, _ = cluster.get_test_app()
+    test_app2, _ = get_test_app()
     test_app2['portDefinitions'][0]['labels'] = {
         'VIP_0': 'foobarbaz:5432'}
     vip2 = 'foobarbaz.marathon.l4lb.thisdcos.directory:5432'
-    with cluster.marathon_deploy_and_cleanup(test_app1):
-        with cluster.marathon_deploy_and_cleanup(test_app2):
+    with cluster.marathon.deploy_and_cleanup(test_app1):
+        with cluster.marathon.deploy_and_cleanup(test_app2):
             yield ((test_app1, vip1), (test_app2, vip2))
 
 
@@ -87,10 +88,11 @@ def cluster(user):
         public_masters=os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         slaves=os.environ['SLAVE_HOSTS'].split(','),
         public_slaves=os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-        dns_search_set=os.environ['DNS_SEARCH'],
+        dns_search_set=os.environ['DNS_SEARCH'] == 'true',
         provider=os.environ['DCOS_PROVIDER'],
         auth_enabled=os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
+        default_os_user=os.getenv('DCOS_DEFAULT_OS_USER', 'root'),
         web_auth_default_user=user,
-        default_os_user=os.getenv('DCOS_DEFAULT_OS_USER', 'root'))
+        ca_cert_path=os.getenv('DCOS_CA_CERT_PATH', None))
     cluster_api.wait_for_dcos()
     return cluster_api
