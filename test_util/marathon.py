@@ -206,7 +206,7 @@ class Marathon(test_util.helpers.ApiClient):
         with deploy_pod_and_cleanup(pod) as instances:
             assert pod['scaling']['instances'] == instances
 
-    def deploy_pod(self, pod_definition, timeout=60):
+    def deploy_pod(self, pod_definition, timeout=120):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
@@ -249,7 +249,7 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Pod deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-    def destroy_pod(self, pod_id, timeout=60):
+    def destroy_pod(self, pod_id, timeout=120):
         """Remove a marathon pod
 
         Abort the test if the removal was unsuccesful.
