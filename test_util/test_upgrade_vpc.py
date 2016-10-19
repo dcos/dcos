@@ -39,6 +39,7 @@ import uuid
 
 import test_util.aws
 import test_util.cluster
+from pkgpanda.util import load_string
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import CI_AUTH_JSON, DcosUser
 from test_util.marathon import TEST_APP_NAME_FMT
@@ -109,7 +110,7 @@ def main():
     num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
     stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
-    pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + os.getenv('CI_FLAGS', ''))
+    test_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + os.getenv('CI_FLAGS', ''))
 
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
     installer_url = os.environ['INSTALLER_URL']
@@ -132,7 +133,7 @@ def main():
     cluster = test_util.cluster.Cluster.from_vpc(
         vpc,
         ssh_info,
-        ssh_key_path=os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key'),
+        ssh_key=load_string(os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')),
         num_masters=num_masters,
         num_agents=num_agents,
         num_public_agents=num_public_agents,
@@ -183,7 +184,7 @@ def main():
             task_info_before_upgrade.last_success_time + task_info_before_upgrade.health_check_interval), \
         "Invalid health-check for the task in the upgraded cluster."
 
-    result = test_util.cluster.run_integration_tests(cluster, pytest_cmd=pytest_cmd)
+    result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")

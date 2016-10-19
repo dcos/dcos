@@ -65,6 +65,8 @@ import sys
 import test_util.aws
 import test_util.cluster
 
+from pkgpanda.util import load_string
+
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -132,14 +134,12 @@ def check_environment():
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
-    add_env = {}
+    add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
-
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + options.ci_flags)
+            add_env.append(k.replace(prefix, '') + '=' + v)
+    options.test_cmd = os.getenv('DCOS_PYTEST_CMD', ' '.join(add_env) + ' py.test -vv -s -rs ' + options.ci_flags)
     return options
 
 
@@ -148,6 +148,7 @@ def main():
 
     cluster = None
     vpc = None
+    ssh_key = load_string(options.ssh_key_path)
     if options.host_list is None:
         log.info('VPC_HOSTS not provided, requesting new VPC ...')
         random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
@@ -176,7 +177,7 @@ def main():
         cluster = test_util.cluster.Cluster.from_vpc(
             vpc,
             ssh_info,
-            ssh_key_path=options.ssh_key_path,
+            ssh_key=ssh_key,
             num_masters=options.masters,
             num_agents=options.agents,
             num_public_agents=options.public_agents,
@@ -185,7 +186,7 @@ def main():
         # Assume an existing onprem CentOS cluster.
         cluster = test_util.cluster.Cluster.from_hosts(
             ssh_info=test_util.aws.SSH_INFO['centos'],
-            ssh_key_path=options.ssh_key_path,
+            ssh_key=ssh_key,
             hosts=options.host_list,
             num_masters=options.masters,
             num_agents=options.agents,
@@ -216,8 +217,7 @@ def main():
         region=DEFAULT_AWS_REGION,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,
-        add_env=options.add_env,
-        pytest_cmd=options.pytest_cmd,
+        test_cmd=options.test_cmd,
     )
 
     if result == 0:

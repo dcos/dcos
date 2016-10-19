@@ -12,7 +12,7 @@ import yaml
 from retrying import retry
 
 from pkgpanda.util import load_yaml
-from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnelled
+from ssh.tunnel import Tunnelled
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
 
@@ -23,8 +23,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.offline_mode = False
 
     def setup_remote(
-            self, tunnel: Optional[Tunnelled], installer_path, download_url,
-            host=None, ssh_user=None, ssh_key_path=None):
+            self, tunnel: Optional[Tunnelled], installer_path, download_url):
         """Creates a light, system-based ssh handler
         Args:
             tunnel: Tunneled instance to avoid recreating SSH connections.
@@ -32,35 +31,10 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
                 set and one-off connections will be made
             installer_path: (str) path on host to download installer to
             download_url: (str) URL that installer can be pulled from
-            host: (str) where the installer will be downloaded to
-            ssh_user: (str) user with access to host
-            ssh_key_path: (str) path to valid ssh key for ssh_user@host
         """
         self.installer_path = installer_path
-        if tunnel:
-            self.tunnel = tunnel
-            self.url = "http://{}:9000".format(tunnel.host)
-
-            def ssh(cmd):
-                return tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
-
-            def scp(src, dst):
-                return tunnel.write_to_remote(src, dst)
-
-        else:
-            assert ssh_user, 'ssh_user must be set if tunnel not set'
-            assert ssh_key_path, 'ssh_key_path must be set if tunnel not set'
-            assert host, 'host must be set if tunnel not set'
-            self.url = "http://{}:9000".format(host)
-
-            def ssh(cmd):
-                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, timeout=MAX_STAGE_TIME)
-
-            def scp(src, dst):
-                return run_scp_cmd(ssh_user, ssh_key_path, host, src, dst)
-
-        self.ssh = ssh
-        self.scp = scp
+        self.tunnel = tunnel
+        self.url = "http://{}:9000".format(tunnel.host)
 
         @retry(wait_fixed=3000, stop_max_delay=300 * 1000)
         def download_dcos():
@@ -68,14 +42,14 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             have been returning 403 for valid uploads for 10-15 minutes after CI finished build
             Therefore, give a five minute buffer to help stabilize CI
             """
-            self.ssh(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
-                      '--create-dirs', '-o', self.installer_path, download_url])
+            self.tunnel.remote_cmd(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
+                                    '--create-dirs', '-o', self.installer_path, download_url])
 
         if download_url:
             download_dcos()
 
     def get_hashed_password(self, password):
-        p = self.ssh(["bash", self.installer_path, "--hash-password", password])
+        p = self.tunnel.remote_cmd(["bash", self.installer_path, "--hash-password", password])
         # password hash is last line output but output ends with newline
         passwd_hash = p.decode('utf-8').split('\n')[-2]
         return passwd_hash
@@ -114,7 +88,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         cmd = ['DCOS_INSTALLER_DAEMONIZE=true', 'bash', self.installer_path, '--web']
         if self.offline_mode:
             cmd.append('--offline')
-        self.ssh(cmd)
+        self.tunnel.remote_cmd(cmd)
 
         @retry(wait_fixed=1000, stop_max_delay=10000)
         def wait_for_up():
@@ -265,7 +239,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
         cmd = ['bash', self.installer_path, mode]
         if expect_errors:
             try:
-                output = self.ssh(cmd)
+                output = self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
                 err_msg = "{} succeeded when it should have failed".format(cmd)
                 print(output)
                 raise AssertionError(err_msg)
@@ -273,7 +247,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
                 # expected behavior
                 pass
         else:
-            print(self.ssh(cmd))
+            print(self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME))
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
@@ -332,11 +306,11 @@ class DcosCliInstaller(AbstractDcosInstaller):
         with open('ssh_key', 'w') as key_fh:
             key_fh.write(ssh_key)
         remote_dir = os.path.dirname(self.installer_path)
-        self.ssh(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
-        self.scp('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
-        self.scp('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
-        self.scp('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
-        self.ssh(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
+        self.tunnel.remote_cmd(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
+        self.tunnel.write_to_remote('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
+        self.tunnel.write_to_remote('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
+        self.tunnel.write_to_remote('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
+        self.tunnel.remote_cmd(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
         self.run_cli_cmd('--genconf', expect_errors=expect_errors)
 
     def preflight(self, expect_errors=False):
