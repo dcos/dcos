@@ -20,7 +20,6 @@ import os.path
 import textwrap
 from copy import copy, deepcopy
 from functools import partialmethod
-from subprocess import check_call
 from tempfile import TemporaryDirectory
 
 import yaml
@@ -530,7 +529,7 @@ def do_gen_package(config, package_filename):
             os.makedirs(os.path.dirname(package_filename), exist_ok=True)
 
         # Make the package top level directory readable by users other than the owner (root).
-        check_call(['chmod', 'go+rx', tmpdir])
+        os.chmod(tmpdir, 0o755)
 
         make_tar(package_filename, tmpdir)
 

@@ -1,12 +1,9 @@
 """Azure Image Creation, Management, Testing"""
 
 import json
-import re
 import sys
 import urllib
 from copy import deepcopy
-
-import yaml
 
 import gen
 import gen.installer.util as util
@@ -17,10 +14,6 @@ import release.storage
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
-
-ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
-
-TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
 DOWNLOAD_URL_TEMPLATE = ("{download_url}{reproducible_artifact_path}/azure/{arm_template_name}")
 
@@ -48,37 +41,43 @@ def validate_cloud_config(cc_string):
 
     @param cc_string: str, Cloud Configuration
     '''
-    illegal_match = ILLEGAL_ARM_CHARS_PATTERN.search(cc_string)
-    if illegal_match:
+    if "'" in cc_string:
         print("ERROR: Illegal cloud config string detected.", file=sys.stderr)
-        print("ERROR: {} matches pattern {}".format(
-            illegal_match.string, illegal_match.re), file=sys.stderr)
+        print("ERROR: {} contains a `'`".format(cc_string), file=sys.stderr)
         sys.exit(1)
 
 
-def transform(cloud_config_yaml_str):
+def yield_chunks(cc_json):
+    chunks = cc_json.split('[[[')
+
+    def byte_str(val):
+        validate_cloud_config(val)
+        return "'{}'".format(val)
+
+    def param(name):
+        name
+
+    yield byte_str(chunks[0])
+
+    for chunk in chunks[1:]:
+        [item_name, tail] = chunk.split(']]]', 1)
+        yield item_name
+        yield byte_str(tail)
+
+
+def transform(cloud_config):
     '''
     Transforms the given yaml into a list of strings which are concatenated
     together by the ARM template system. We must make it a list of strings so
     that ARM template parameters appear at the top level of the template and get
     substituted.
     '''
-    cc_json = json.dumps(yaml.load(cloud_config_yaml_str), sort_keys=True)
+    cc_json = json.dumps(cloud_config, sort_keys=True)
     arm_list = ["[base64(concat('#cloud-config\n\n', "]
     # Find template parameters and seperate them out as seperate elements in a
     # json list.
-    prev_end = 0
-    # TODO(JL) - Why does validate_cloud_config not operate on entire string?
-    for m in TEMPLATE_PATTERN.finditer(cc_json):
-        before = m.group('pre')
-        param = m.group('inject')
-        validate_cloud_config(before)
-        arm_list.append("'{}', {},".format(before, param))
-        prev_end = m.end()
-
-    # Add the last little bit
-    validate_cloud_config(cc_json[prev_end:])
-    arm_list.append("'{}'))]".format(cc_json[prev_end:]))
+    arm_list.append(', '.join(yield_chunks(cc_json)))
+    arm_list.append("))]")
 
     # We're embedding this as a json string, so json encode it and return.
     return json.dumps(''.join(arm_list))
@@ -86,14 +85,14 @@ def transform(cloud_config_yaml_str):
 
 def render_arm(
         arm_template,
-        master_cloudconfig_yaml_str,
-        slave_cloudconfig_yaml_str,
-        slave_public_cloudconfig_yaml_str):
+        master_cloudconfig,
+        slave_cloudconfig,
+        slave_public_cloudconfig):
 
     template_str = gen.template.parse_str(arm_template).render({
-        'master_cloud_config': transform(master_cloudconfig_yaml_str),
-        'slave_cloud_config': transform(slave_cloudconfig_yaml_str),
-        'slave_public_cloud_config': transform(slave_public_cloudconfig_yaml_str)
+        'master_cloud_config': transform(master_cloudconfig),
+        'slave_cloud_config': transform(slave_cloudconfig),
+        'slave_public_cloud_config': transform(slave_public_cloudconfig)
     })
 
     # Add in some metadata to help support engineers
@@ -144,7 +143,7 @@ def gen_templates(user_args, arm_template):
         # NOTE: If this gets printed in string stylerather than '|' the Azure
         # parameters which need to be split out for the arm to
         # interpret end up all escaped and undoing it would be hard.
-        variant_cloudconfig[variant] = results.utils.render_cloudconfig(cc_variant)
+        variant_cloudconfig[variant] = cc_variant
 
     # Render the arm
     arm = render_arm(

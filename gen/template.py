@@ -514,9 +514,18 @@ def parse_str(text):
     return Template(ast)
 
 
+parse_cache = dict()
+
+
 def parse_resources(filename):
+    global parse_cache
+
     try:
-        return parse_str(resource_string(__name__, filename).decode())
+        if filename in parse_cache:
+            return parse_cache[filename]
+        value = parse_str(resource_string(__name__, filename).decode())
+        parse_cache[filename] = value
+        return value
     except SyntaxError as ex:
         # Don't accidentally overwrite a previously set filename. Shouldn't
         # happen since no code this calls sets ex.filename.

@@ -248,7 +248,7 @@ def test_ssh_command_terminate_async(sshd_manager, loop):
         workspace = str(sshd_manager.tmpdir)
 
         runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path, process_timeout=2)
+                             ssh_key_path=sshd_manager.key_path, process_timeout=0.05)
 
         chain = CommandChain('test')
         chain.add_execute(['sleep', '20'])

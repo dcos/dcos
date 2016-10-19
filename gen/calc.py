@@ -194,7 +194,8 @@ def calculate_ip_detect_public_contents(ip_detect_contents):
 def calculate_rexray_config_contents(rexray_config):
     return yaml.dump(
         # Assume block style YAML (not flow) for REX-Ray config.
-        yaml.dump(json.loads(rexray_config), default_flow_style=False)
+        yaml.dump(json.loads(rexray_config), default_flow_style=False, Dumper=yaml.Dumper),
+        Dumper=yaml.Dumper
     )
 
 
