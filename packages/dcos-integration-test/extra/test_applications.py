@@ -87,9 +87,9 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
         'networks': [{'mode': 'host'}]
     }
 
-    instances = cluster.deploy_marathon_pod(pod_definition)
+    instances = cluster.marathon.deploy_marathon_pod(pod_definition)
     assert pod_definition['scaling']['instances'] == instances
-    cluster.destroy_marathon_pod(pod_definition['id'])
+    cluster.marathon.destroy_marathon_pod(pod_definition['id'])
 
 
 def test_octarine_http(cluster, timeout=30):
