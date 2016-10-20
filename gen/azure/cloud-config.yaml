@@ -76,7 +76,7 @@ bootcmd:
 disk_setup:
   ephemeral0:
     table_type: gpt
-    layout: [ 25, 50, 25 ]
+    layout: [ 45, 45, 10 ]
     overwrite: True
 fs_setup:
   - device: ephemeral0.1
