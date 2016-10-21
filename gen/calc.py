@@ -427,18 +427,6 @@ def calculate_set(parameter):
         return 'true'
 
 
-def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_storage_backend):
-    if master_discovery != 'static':
-        assert exhibitor_storage_backend != 'static', "When master_discovery is not static, " \
-            "exhibitor_storage_backend must be non-static. Having a variable list of master which " \
-            "are discovered by agents using the master_discovery method but also having a fixed " \
-            "known at install time static list of master ips doesn't " \
-            "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
-
-
-__logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
-
-
 entry = {
     'validate': [
         validate_num_masters,
@@ -493,7 +481,6 @@ entry = {
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
-        'mesos_container_logger': __logrotate_slave_module_name,
         'mesos_log_retention_mb': '4000',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
