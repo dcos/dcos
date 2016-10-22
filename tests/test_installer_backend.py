@@ -1,13 +1,39 @@
 import json
 import os
 import subprocess
+import uuid
 
 import passlib.hash
+import pytest
 
+import gen
+import gen.installer.aws
+import release
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
 
 os.environ["BOOTSTRAP_ID"] = "12345"
+
+
+@pytest.fixture(scope='module')
+def config():
+    if not os.path.exists('dcos-release.config.yaml'):
+        pytest.skip("Skipping because there is no configuration in dcos-release.config.yaml")
+    return release.load_config('dcos-release.config.yaml')
+
+
+@pytest.fixture(scope='module')
+def config_testing(config):
+    if 'testing' not in config:
+        pytest.skip("Skipped because there is no `testing` configuration in dcos-release.config.yaml")
+    return config['testing']
+
+
+@pytest.fixture(scope='module')
+def config_aws(config_testing):
+    if 'aws' not in config_testing:
+        pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
+    return config_testing['aws']
 
 
 def test_password_hash():
@@ -221,16 +247,57 @@ aws_template_upload: false
 
 def test_do_aws_configure(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
-    genconf_dir = tmpdir.join('genconf')
-    genconf_dir.ensure(dir=True)
-    config_path = genconf_dir.join('config.yaml')
-    config_path.write(aws_base_config)
-    artifact_dir = tmpdir.join('artifacts/bootstrap')
-    artifact_dir.ensure(dir=True)
-    artifact_dir.join('12345.bootstrap.tar.xz').write("compressed_bootstrap_contents")
-    artifact_dir.join('12345.active.json').write("['a-package']")
-    artifact_dir.join('test_variant.bootstrap.latest').write("12345")
-    tmpdir.join('artifacts/complete/test_variant.complete.latest.json').write('{"complete": "contents"}', ensure=True)
+    create_fake_build_artifacts(aws_base_config, tmpdir)
 
     with tmpdir.as_cwd():
         assert backend.do_aws_cf_configure() == 0
+
+
+valid_storage_config = """---
+master_list:
+ - 127.0.0.1
+aws_template_storage_access_key_id: {key_id}
+aws_template_storage_bucket: {bucket}
+aws_template_storage_bucket_path: mofo-the-gorilla
+aws_template_storage_secret_access_key: {access_key}
+aws_template_upload: true
+"""
+
+
+def test_do_aws_cf_configure_valid_storage_config(config_aws, tmpdir, monkeypatch):
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
+    session = gen.installer.aws.get_test_session(config_aws)
+    s3 = session.resource('s3')
+    bucket = str(uuid.uuid4())
+    s3_bucket = s3.Bucket(bucket)
+    s3_bucket.create(CreateBucketConfiguration={'LocationConstraint': config_aws['region_name']})
+
+    try:
+        config_str = valid_storage_config.format(
+            key_id=config_aws["access_key_id"],
+            bucket=bucket,
+            access_key=config_aws["secret_access_key"])
+        create_fake_build_artifacts(config_str, tmpdir)
+
+        with tmpdir.as_cwd():
+            assert backend.do_aws_cf_configure() == 0
+            # TODO: add an assertion that the config that was resolved inside do_aws_cf_configure
+            # ended up with the correct region where the above testing bucket was created.
+    finally:
+        objects = [{'Key': o.key} for o in s3_bucket.objects.all()]
+        s3_bucket.delete_objects(Delete={'Objects': objects})
+        s3_bucket.delete()
+
+
+def create_fake_build_artifacts(config_str, tmpdir):
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    config_path = genconf_dir.join('config.yaml')
+    config_path.write(config_str)
+    genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
+    artifact_dir = tmpdir.join('artifacts/bootstrap')
+    artifact_dir.ensure(dir=True)
+    artifact_dir.join('12345.bootstrap.tar.xz').write('contents_of_bootstrap', ensure=True)
+    artifact_dir.join('12345.active.json').write('{"active": "contents"}', ensure=True)
+    artifact_dir.join('test_variant.bootstrap.latest').write("12345")
+    tmpdir.join('artifacts/complete/test_variant.complete.latest.json').write('{"complete": "contents"}', ensure=True)
