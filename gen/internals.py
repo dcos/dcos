@@ -86,6 +86,9 @@ class Scope:
         assert isinstance(other, Scope)
         return self.name == other.name and self.cases == other.cases
 
+    def __repr__(self):
+        return "<Scope cases: {}>".format(self.cases.items())
+
 
 class Target:
 
@@ -99,7 +102,10 @@ class Target:
         self.variables.add(variable)
 
     def add_scope(self, scope: Scope):
-        self.sub_scopes[scope.name] = scope
+        if scope.name in self.sub_scopes:
+            self.sub_scopes[scope.name] += scope
+        else:
+            self.sub_scopes[scope.name] = scope
 
     def __iadd__(self, other):
         assert isinstance(other, Target), "Internal consistency error, expected Target but got {}".format(type(other))
@@ -113,6 +119,9 @@ class Target:
                 self.sub_scopes[name] = scope
 
         return self
+
+    def __repr__(self):
+        return "<Target variables: {}, sub_scopes: {}>".format(self.variables, self.sub_scopes.items())
 
     def __eq__(self, other):
         assert isinstance(other, Target)
