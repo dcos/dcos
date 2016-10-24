@@ -13,6 +13,13 @@ import requests
 from pkgpanda.exceptions import FetchError, ValidationError
 
 
+json_prettyprint_args = {
+    "sort_keys": True,
+    "indent": 2,
+    "separators": (',', ':')
+}
+
+
 def variant_str(variant):
     """Return a string representation of variant."""
     if variant is None:
@@ -121,7 +128,7 @@ def make_file(name):
 
 def write_json(filename, data):
     with open(filename, "w+") as f:
-        return json.dump(data, f, indent=2, sort_keys=True)
+        return json.dump(data, f, **json_prettyprint_args)
 
 
 def write_string(filename, data):
@@ -132,6 +139,10 @@ def write_string(filename, data):
 def load_string(filename):
     with open(filename) as f:
         return f.read().strip()
+
+
+def json_prettyprint(data):
+    return json.dumps(data, **json_prettyprint_args)
 
 
 def if_exists(fn, *args, **kwargs):

@@ -10,6 +10,7 @@ import botocore.exceptions
 import gen
 import gen.calc
 import gen.installer.aws
+import gen.internals
 import release
 import release.storage.aws
 import release.storage.local
@@ -126,7 +127,7 @@ def calculate_cloudformation_s3_url(bootstrap_url, config_id):
     return '{}/config_id/{}'.format(bootstrap_url, config_id)
 
 
-aws_advanced_entry = {
+aws_advanced_source = gen.internals.Source({
     # TOOD(cmaloney): Add parameter validation for AWS Advanced template output.
     'validate': [
         lambda aws_template_upload: gen.calc.validate_true_false(aws_template_upload),
@@ -150,11 +151,11 @@ aws_advanced_entry = {
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path
     }, gen.installer.aws.groups['master'][1])
-}
+})
 
 
-aws_advanced_parameters = {
-    'variables': {
+aws_advanced_target = gen.internals.Target(
+    variables={
         # TODO(cmaloney): Namespacing would be really handy here...
         'aws_template_storage_bucket',
         'aws_template_storage_bucket_path',
@@ -164,21 +165,21 @@ aws_advanced_parameters = {
         'provider',
         'bootstrap_url',
         'bootstrap_variant',
-        'reproducible_artifact_path'
-    },
-    'sub_scopes': {
-        'aws_template_upload': {
-            'true': {
-                'variables': {
+        'reproducible_artifact_path'},
+    sub_scopes={
+        'aws_template_upload': gen.internals.Scope(
+            name='aws_template_upload',
+            cases={
+                'true': gen.internals.Target({
                     'aws_template_storage_access_key_id',
                     'aws_template_storage_secret_access_key',
                     'aws_template_storage_region_name'
-                }
-            },
-            'false': {}
-        }
+                }),
+                'false': gen.internals.Target()
+            }
+        )
     }
-}
+)
 
 
 # TODO(cmaloney): Make it so validation happens using the provided AWS credentials.
@@ -191,18 +192,14 @@ def do_aws_cf_configure():
     # TODO(cmaloney): Move to Config class introduced in https://github.com/dcos/dcos/pull/623
     config = Config(CONFIG_PATH)
 
-    aws_config_target = gen.ConfigTarget(aws_advanced_parameters)
-    aws_config_target.add_entry(aws_advanced_entry, False)
-
     gen_config = config.as_gen_format()
     # TODO(cmaloney): this is hacky....
     del gen_config['provider']
 
-    config_targets = [
-        gen.get_dcosconfig_target_and_templates(gen_config, [])[0],
-        aws_config_target]
-
-    messages = gen.validate_config_for_targets(config_targets, gen_config)
+    sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(gen_config, [])
+    sources.append(aws_advanced_source)
+    targets.append(aws_advanced_target)
+    messages = gen.internals.validate_configuration(sources, targets, gen_config)
     # TODO(cmaloney): kill this function and make the API return the structured
     # results api as was always intended rather than the flattened / lossy other
     # format. This will be an  API incompatible change. The messages format was
@@ -218,7 +215,7 @@ def do_aws_cf_configure():
     # object.
     # NOTE: the copying across, as well as validation is guaranteed to succeed because we've already
     # done a validation run.
-    full_config = gen.calculate_config_for_targets(config_targets, gen_config)
+    full_config = gen.internals.resolve_configuration(sources, targets, gen_config)
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
