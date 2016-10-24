@@ -48,11 +48,9 @@ def validate_cloud_config(cc_string):
 
     @param cc_string: str, Cloud Configuration
     '''
-    illegal_match = ILLEGAL_ARM_CHARS_PATTERN.search(cc_string)
-    if illegal_match:
+    if "'" in cc_string:
         print("ERROR: Illegal cloud config string detected.", file=sys.stderr)
-        print("ERROR: {} matches pattern {}".format(
-            illegal_match.string, illegal_match.re), file=sys.stderr)
+        print("ERROR: {} contains a `'`".format(cc_string), file=sys.stderr)
         sys.exit(1)
 
 
