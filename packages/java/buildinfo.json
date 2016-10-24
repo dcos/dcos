@@ -2,8 +2,8 @@
   "sources" : {
     "java": {
       "kind": "url_extract",
-      "url": "https://downloads.mesosphere.com/java/jdk-8u92-linux-x64.tar.gz",
-      "sha1": "efb9e9fed2f146ef2e97040415522bad22015e36"
+      "url": "https://downloads.mesosphere.com/java/jdk-8u112-linux-x64.tar.gz",
+      "sha1": "5c872c34f945ae8fb059d073d0f82fc4bd2f8a42"
     }
   },
   "environment": {
