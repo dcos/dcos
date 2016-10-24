@@ -105,7 +105,27 @@ def test_do_validate_config(tmpdir):
     genconf_dir.ensure(dir=True)
     temp_config_path = str(genconf_dir.join('config.yaml'))
 
-    # Initialize with defautls
+    # Initialize with defaults
+    make_default_config_if_needed(temp_config_path)
+
+    expected_output = {
+        'ip_detect_contents': 'ip-detect script `genconf/ip-detect` must exist',
+        'ssh_user': 'Must set ssh_user, no way to calculate value.',
+        'master_list': 'Must set master_list, no way to calculate value.',
+        'ssh_key_path': 'could not find ssh private key: genconf/ssh_key'
+    }
+    assert Config(config_path=temp_config_path).do_validate(include_ssh=True) == expected_output
+
+
+def test_update_config(tmpdir):
+    # TODO : check if the path with config_id exists
+    # this test is useless without it
+    # Create a temp config
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    temp_config_path = str(genconf_dir.join('config.yaml'))
+
+    # Initialize with defaults
     make_default_config_if_needed(temp_config_path)
 
     expected_output = {

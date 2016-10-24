@@ -188,8 +188,6 @@ def do_aws_cf_configure():
 
     Generates AWS templates using a custom config.yaml
     """
-
-    # TODO(cmaloney): Move to Config class introduced in https://github.com/dcos/dcos/pull/623
     config = Config(CONFIG_PATH)
 
     gen_config = config.as_gen_format()
@@ -393,3 +391,22 @@ def success(config: Config):
     msgs['master_count'] = len(master_ips)
     msgs['agent_count'] = len(agent_ips)
     return msgs, code
+
+
+def update_config(config_path=CONFIG_PATH):
+    config = Config(config_path)
+
+    validate_gen = config.do_validate(include_ssh=False)
+    if len(validate_gen) > 0:
+        for key, error in validate_gen.items():
+            log.error('{}: {}'.format(key, error))
+        return 1
+
+    config_util.do_configure(config, updating_config=True)
+    return 0
+
+
+def generate_upgrade_script():
+    # generate bash script to upgrade a node
+    # takes the config id as an argument
+    return 0

@@ -32,6 +32,8 @@ def test_set_arg_parser():
     parser = cli.parse_args(['--hash-password', 'foo'])
     assert parser.hash_password == ['foo']
     assert parser.action is None
+    parser = cli.parse_args(['--update-config'])
+    assert parser.action == 'update-config'
 
     parser = cli.parse_args(['--set-superuser-password', 'foo'])
     assert parser.set_superuser_password == ['foo']
