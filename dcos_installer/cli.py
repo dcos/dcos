@@ -155,7 +155,7 @@ dispatch_dict_simple = {
         'Run the web interface'),
     'genconf': (
         lambda args: backend.do_configure(),
-        'EXECUTING CONFIGURATION GENERATION'
+        'EXECUTING CONFIGURATION GENERATION',
         'Execute the configuration generation (genconf).'),
     'validate-config': (
         do_validate_config,
@@ -265,6 +265,7 @@ def parse_args(args):
     mutual_exc.add_argument(
         '--hash-password',
         action='append',
+        metavar='password',
         nargs='?',
         help='Hash a password and print the results to copy into a config.yaml.'
     )
@@ -272,6 +273,7 @@ def parse_args(args):
     mutual_exc.add_argument(
         '--set-superuser-password',
         action='append',
+        metavar='password',
         nargs='?',
         help='Hash the given password and store it as the superuser password in config.yaml'
     )
@@ -310,10 +312,10 @@ def parse_args(args):
 
     # Add all arg modes
     for name, value in dispatch_dict_simple.items():
-        add_mode(name, value[1])
+        add_mode(name, value[2])
 
     for name, value in dispatch_dict_aio.items():
-        add_mode(name, value[1])
+        add_mode(name, value[2])
 
     return parser.parse_args(args)
 
