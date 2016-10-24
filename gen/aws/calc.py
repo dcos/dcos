@@ -31,6 +31,7 @@ entry = {
         'master_cloud_config': '{{ master_cloud_config }}',
         'agent_private_cloud_config': '{{ slave_cloud_config }}',
         'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
+        'master_external_load_balancer': '{ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }',
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'oauth_available': 'true',

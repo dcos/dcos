@@ -432,6 +432,13 @@ def calculate_cluster_docker_registry_enabled(cluster_docker_registry_url):
     return 'false' if cluster_docker_registry_url == '' else 'true'
 
 
+def calculate_set(parameter):
+    if parameter == '':
+        return 'false'
+    else:
+        return 'true'
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -487,6 +494,7 @@ entry = {
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
+        'master_external_loadbalancer': '',
         'mesos_container_logger': __logrotate_slave_module_name,
         'mesos_log_retention_mb': '4000',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
@@ -569,6 +577,8 @@ entry = {
         'no_proxy_final': calculate_no_proxy,
         'cluster_docker_credentials_path': calculate_cluster_docker_credentials_path,
         'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
+        'has_master_external_loadbalancer':
+            lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer)
     },
     'conditional': {
         'master_discovery': {
