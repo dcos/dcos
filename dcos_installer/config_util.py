@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def do_configure(config):
     gen_out = config.do_gen_configure()
 
-    subprocess.check_call(['mkdir', '-p', config.get_output_path() + SERVE_DIR ])
+    subprocess.check_call(['mkdir', '-p', config.get_output_path() + SERVE_DIR])
     gen.installer.bash.generate(gen_out, config.get_output_path() + SERVE_DIR)
 
     # Get bootstrap from artifacts
