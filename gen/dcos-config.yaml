@@ -503,6 +503,18 @@ package:
       METRONOME_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
       METRONOME_MESOS_USER=root
+  - path: /etc/extra_master_addresses
+    content: |
+{% switch master_discovery %}
+{% case "master_http_loadbalancer" %}
+      INTERNAL_MASTER_LB_DNSNAME={{ exhibitor_address }}
+{% case "static" %}
+{% endswitch %}
+{% switch has_master_external_loadbalancer %}
+{% case "true" %}
+      MASTER_LB_DNSNAME={{ master_external_loadbalancer }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
