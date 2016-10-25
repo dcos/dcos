@@ -1,10 +1,11 @@
 import copy
 import inspect
 import logging
-from functools import partialmethod
+from contextlib import contextmanager
+from functools import partial, partialmethod
 
 from gen.exceptions import ValidationError
-from pkgpanda.util import json_prettyprint
+
 
 log = logging.getLogger(__name__)
 
@@ -26,11 +27,22 @@ def validate_arguments_strings(arguments: dict):
         raise ValidationError(errors, set())
 
 
+# TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
+def validate_one_of(val: str, valid_values) -> None:
+    """Test if object `val` is a member of container `valid_values`.
+    Raise a AssertionError if it is not a member. The exception message contains
+    both, the representation (__repr__) of `val` as well as the representation
+    of all items in `valid_values`.
+    """
+    if val not in valid_values:
+        options_string = ', '.join("'{}'".format(v) for v in valid_values)
+        raise AssertionError("Must be one of {}. Got '{}'.".format(options_string, val))
+
+
 class Setter:
 
     # NOTE: value may either be a function or a string.
-    def __init__(self, name, value, is_optional, conditions, is_user):
-        assert isinstance(conditions, list)
+    def __init__(self, name: str, value, is_optional: bool, conditions: list, is_user: bool):
         self.name = name
         self.is_optional = is_optional
         self.conditions = conditions
@@ -97,6 +109,7 @@ class Target:
     def __init__(self, variables=None, sub_scopes=None):
         self.variables = variables if variables else set()
         self.sub_scopes = sub_scopes if sub_scopes else dict()
+        self._arguments = None
 
     def add_variable(self, variable: str):
         self.variables.add(variable)
@@ -106,6 +119,30 @@ class Target:
             self.sub_scopes[scope.name] += scope
         else:
             self.sub_scopes[scope.name] = scope
+
+    def finalize(self, arguments: dict):
+        assert self._arguments is None, "finalize should only be called once. If it was called " \
+            "more than once likely some code is re-using a target rather than creating a new " \
+            "instance for every resolve_configuration() call"
+
+        # TODO(cmaloney): Walk the tree of things that every argument is
+        # dependent upon to get the "full" set of arguments.
+        self._arguments = arguments
+
+    @property
+    def arguments(self):
+        assert self._arguments is not None, "Must only be called after finalize()"
+        return self._arguments
+
+    def yield_validates(self):
+        # Recursively walk the target / sub scope tree and yield a
+        # validate function for each and every switch.
+        for name, scope in self.sub_scopes.items():
+            # Note: It's important scope.cases.keys() is evaluated now, not later
+            # (is evaluated before the validate is called)
+            yield name, partial(validate_one_of, valid_values=scope.cases.keys())
+            for sub_target in scope.cases.values():
+                yield from sub_target.yield_validates()
 
     def __iadd__(self, other):
         assert isinstance(other, Target), "Internal consistency error, expected Target but got {}".format(type(other))
@@ -129,7 +166,7 @@ class Target:
 
 
 class Source:
-    def __init__(self, entry=None, is_user=False,):
+    def __init__(self, entry=None, is_user=False):
         self.setters = dict()
         self.validate = list()
         self.is_user = is_user
@@ -184,27 +221,117 @@ class Source:
         self.add_conditional_scope(entry, [])
 
 
-# NOTE: This exception should never escape the DFSArgumentCalculator
+# NOTE: This exception should never escape the Resolver
 class CalculatorError(Exception):
-    def __init__(self, message, chain=[]):
-        assert isinstance(message, str)
+
+    def __init__(self, message: str, chain=None):
+        if chain is None:
+            chain = list()
         assert isinstance(chain, list)
         self.message = message
         self.chain = chain
         super().__init__(message)
 
 
+class SkipError(Exception):
+    """Raised when this key should silently produce no errors."""
+    pass
+
+
+class Resolvable:
+    """ Keeps track of the state of the resolution of a variable with a given name
+
+    - Manages the states (unresolved vs. error / success)
+    - Keeps track of what ended up setting the value
+    - Keeps track of what caused the resolvable to enter existence (it's cause)
+    """
+
+    UNRESOLVED = 'unresolved'
+    ERROR = 'error'
+    RESOLVED = 'resolved'
+
+    def __init__(self, name):
+        self._state = Resolvable.UNRESOLVED
+        self.name = name
+        self.error = None
+        self.setter = None
+        self._value = None
+
+    @property
+    def is_finalized(self):
+        return self._state != Resolvable.UNRESOLVED
+
+    @property
+    def is_error(self):
+        return self._state == Resolvable.ERROR
+
+    @property
+    def is_resolved(self):
+        return self._state == Resolvable.RESOLVED
+
+    def finalize_error(self, error):
+        assert self._state == Resolvable.UNRESOLVED
+        self._state = Resolvable.ERROR
+        self.error = error
+
+    def finalize_value(self, value: str, setter: Setter):
+        assert self._state == Resolvable.UNRESOLVED
+        self._state = Resolvable.RESOLVED
+        self._value = value
+        self.setter = setter
+
+    @property
+    def value(self):
+        assert self.is_resolved, "is_resolved() must return true for this function to " \
+            "be called. State: {}, is_resolved: {}".format(self._state, self.is_resolved)
+
+        return self._value
+
+    def __str__(self):
+        return "<Resolvable name: {}, state: {}>".format(self.name, self._state)
+
+
+class ArgumentDict(dict):
+    """Manages a set of arguments and their values.
+
+    Makes it easy to keep track of a set of resolvables, automatically creating
+    a new one when an argument never before asked for is first accessed.
+    """
+
+    def __init__(self):
+        self._finalized = False
+
+    def __missing__(self, key):
+        assert not self._finalized, "No missing keys should be accessed"
+
+        value = self[key] = Resolvable(key)
+        return value
+
+    def finalize(self):
+        assert not self._finalized
+        self._finalized = True
+
+
 # Depth first search argument calculator. Detects cycles, as well as unmet
 # dependencies.
 # TODO(cmaloney): Separate chain / path building when unwinding from the root
 #                 error messages.
-class DFSArgumentCalculator():
-    def __init__(self, setters, validate_fns):
+class Resolver:
+    def __init__(self, setters, validate_fns, targets):
+        self._resolved = False
         self._setters = setters
-        self._arguments = dict()
-        self.__in_progress = set()
+        self._targets = targets
+
         self._errors = dict()
         self._unset = set()
+
+        # The current stack of resolvables which are in the process of being resolved.
+        self._eval_stack = list()
+
+        # Set of Resolvables() which are resolved, being resolved.
+        self._arguments = ArgumentDict()
+
+        self._contexts = list()
 
         # Re-arrange the validation functions so we can more easily access them by
         # argument name.
@@ -217,18 +344,17 @@ class DFSArgumentCalculator():
             # thing but the timing / handling of when and how we run single vs. multi-parameter
             # validation functions is fairly different, the extra bit here simplifies the later code.
             if len(parameters) == 1:
-                self._validate_by_arg[parameters.pop()] = fn
-                assert not parameters
+                self._validate_by_arg.setdefault(parameters.pop(), list()).append(fn)
             else:
-                self._multi_arg_validate[frozenset(parameters)] = fn
+                self._multi_arg_validate.setdefault(frozenset(parameters), list()).append(fn)
 
-    def _calculate_argument(self, name):
+    def _calculate(self, resolvable):
         # Filter out any setters which have predicates / conditions which are
         # satisfiably false.
         def all_conditions_met(setter):
             for condition_name, condition_value in setter.conditions:
                 try:
-                    if self._get(condition_name) != condition_value:
+                    if self._resolve_name(condition_name) != condition_value:
                         return False
                 except CalculatorError as ex:
                     raise CalculatorError(
@@ -237,11 +363,11 @@ class DFSArgumentCalculator():
             return True
 
         # Find the right setter to calculate the argument.
-        feasible = list(filter(all_conditions_met, self._setters.get(name, list())))
+        feasible = list(filter(all_conditions_met, self._setters.get(resolvable.name, list())))
 
         if len(feasible) == 0:
-            self._unset.add(name)
-            raise CalculatorError("no way to set")
+            self._unset.add(resolvable.name)
+            raise SkipError("no way to calculate. Must be set in configuration.")
 
         # Filtier out all optional setters if there is more than one way to set.
         if len(feasible) > 1:
@@ -249,126 +375,223 @@ class DFSArgumentCalculator():
             assert final_feasible, "Had multiple optionals and no musts. Template internal error: {!r}".format(feasible)
             feasible = final_feasible
 
+        # TODO(cmaloney): As long as all paths to set the value evaluate to the same value then
+        # having more than one way to calculate is fine. This is true of both multiple internal /
+        # system setters, and having multiple user setters.
         # Must be calculated but user tried to provide.
         if len(feasible) == 2 and (feasible[0].is_user or feasible[1].is_user):
-            self._errors[name] = ("{} must be calculated, but was explicitly set in the "
-                                  "configuration. Remove it from the configuration.").format(name)
-            raise CalculatorError("{} must be calculated but set twice".format(name))
-
+            raise CalculatorError("{} must be calculated, but was explicitly set in the "
+                                  "configuration. Remove it from the configuration.").format(resolvable.name)
         if len(feasible) > 1:
-            self._errors[name] = "Internal error: Multiple ways to set {}.".format(name)
-            raise CalculatorError("multiple ways to set",
-                                  ["options: {}".format(feasible)])
+            raise CalculatorError("Internal error: Multiple ways to set {}.".format(resolvable.name))
 
         setter = feasible[0]
 
-        # Get values for the parameters, then call. the setter function.
+        # Get values for the parameters of the setter than call it to calculate the value.
         kwargs = {}
         for parameter in setter.parameters:
-            kwargs[parameter] = self._get(parameter)
+            # TODO(cmaloney): Should catch the exceptions, and wrap with the context of what
+            # parameter caused the error to happen so we have a path back to the source value that
+            # caused the problem.
+            # TODO(cmaloney): Should evaluate all parameters, even if an early one errors, and
+            # collect all the error messages to let the user know of as many errors as possible as
+            # early as possible.
+            kwargs[parameter] = self._resolve_name(parameter)
 
         try:
             value = setter.calc(**kwargs)
+            validate_fns = self._validate_by_arg.get(resolvable.name)
+            if validate_fns is not None:
+                for validate_fn in validate_fns:
+                    validate_fn(value)
         except AssertionError as ex:
-            self._errors[name] = ex.args[0]
-            raise CalculatorError("assertion while calc")
+            raise CalculatorError(ex.args[0], [ex]) from ex
 
-        if name in self._validate_by_arg:
+        return value, setter
+
+    @contextmanager
+    def _stack_layer(self, name):
+        # If we're in the middle of resolving it already and find it again, that indicates there
+        # was a circular dependency / cycle. Raise an error so that all the resolvers depending on
+        # it (including itself) get put into an error state / marked appropriately.
+        if name in self._eval_stack:
+            raise CalculatorError(
+                "Internal error: config calculation cycle detected. Name shouldn't repeat in the "
+                "eval stack. name: {} eval_stack: {}".format(
+                    name, self._eval_stack), [(name, copy.copy(self._eval_stack),)])
+        self._eval_stack.append(name)
+        yield
+        foo = self._eval_stack.pop()
+        assert foo == name, "Internal consistency error: Unwinding stack seems to not be the order it was built in..."
+
+    def _ensure_finalized(self, resolvable):
+        if resolvable.is_finalized:
+            return
+
+        # Calculate the value, noting that we're in the context of calculating it.
+        # NOTE: _stack_layer is outside the try/except so if we find a loop, it will report /
+        # finalize on the first instance we passed, rather than finalizing once immediately for
+        # the second time the resolvable was encountered, and then trying to finalize a second time
+        # when the stack unwinds.
+        with self._stack_layer(resolvable.name):
             try:
-                self._validate_by_arg[name](value)
-            except AssertionError as ex:
-                self._errors[name] = ex.args[0]
-                raise CalculatorError("assertion while validate")
+                resolvable.finalize_value(*self._calculate(resolvable))
+            except CalculatorError as ex:
+                resolvable.finalize_error(ex)
+                self._errors[resolvable.name] = ex.args[0]
+            except SkipError as ex:
+                resolvable.finalize_error(ex)
+            except Exception as ex:
+                msg = "Unexpected exception: {}".format(ex)
+                resolvable.finalize_error(CalculatorError(msg, [ex]))
+                self._errors[resolvable.name] = msg
+                raise
 
-        return value
-
-    def _get(self, name):
-        if name in self._arguments:
-            if self._arguments[name] is None:
-                raise CalculatorError("No way to set", [name])
-            return self._arguments[name]
-
-        # Detect cycles by checking if we're in the middle of calculating the
-        # argument being asked for
-        if name in self.__in_progress:
-            raise CalculatorError("Internal error. cycle detected. re-encountered {}".format(name))
-
-        self.__in_progress.add(name)
+    def _resolve_name(self, name):
         try:
-            self._arguments[name] = self._calculate_argument(name)
-            return self._arguments[name]
+            resolvable = self._arguments[name]
+
+            # Ensure the resolvable is resolved
+            self._ensure_finalized(resolvable)
+
         except CalculatorError as ex:
-            self._arguments[name] = None
-            raise CalculatorError(ex.message, ex.chain + ['while calculating {}'.format(name)]) from ex
-        except:
-            self._arguments[name] = None
+            log.debug("Error calculating %s: %s. Chain: %s", name, ex.message, ex.chain)
+            raise
+        except SkipError as ex:
+            log.debug("Skipping error for key %s: %s", name, ex)
             raise
         finally:
-            self.__in_progress.remove(name)
+            # The resolvable must have either
+            assert resolvable.is_finalized, "_ensure_finalized is supposed to always finalize a " \
+                "resolvable but didn't: {}".format(resolvable)
+
+        # If the resolvable is in an error state, raise it so that all the resolvables
+        # depending on it will be put into an error state.
+        if resolvable.is_error:
+            # TODO(cmaloney): Should re-raise the original error with it's original context.
+            raise SkipError(
+                "Value depended upon {} has an error: {}".format(resolvable.name, resolvable.error),
+                [(name, copy.copy(self._eval_stack))])
+
+        return resolvable.value
 
     def _calculate_target(self, target):
-        def evaluate_var(name):
-            try:
-                self._get(name)
-            except CalculatorError as ex:
-                log.debug("Error calculating %s: %s. Chain: %s", name, ex.message, ex.chain)
+        finalized_arguments = dict()
 
+        # TODO(cmaloney): All the arguments depended upon by the arguments resolved here should be
+        # included in the target's full set of finalized arguments.
         for name in target.variables:
-            evaluate_var(name)
+            self._ensure_finalized(self._arguments[name])
 
         for name, sub_scope in target.sub_scopes.items():
-            if name not in self._arguments:
-                evaluate_var(name)
+            self._ensure_finalized(self._arguments[name])
+            resolvable = self._arguments[name]
 
-            # If the internal arg is None, there was an error, don't check if it
-            # is a legal choice.
-            if self._arguments[name] is None:
+            assert resolvable.is_finalized, " _resolve_name should have resulted in finalization " \
+                "of {}".format(resolvable)
+
+            # Tried solving for the condition but couldn't, so we can't check
+            # the sub-scope because we don't know which one to check.
+            if resolvable.is_error:
                 continue
 
-            choice = self._get(name)
+            assert resolvable.is_resolved, "uhhh: {}".format(resolvable)
 
-            if choice not in sub_scope.cases:
-                self._errors[name] = "Invalid choice {}. Must choose one of {}".format(
-                    choice, ", ".join(sorted(sub_scope.keys())))
-                continue
+            # Must be in the cases since we add validation functions for all switches automatically.
+            assert resolvable.value in sub_scope.cases
 
-            self._calculate_target(sub_scope.cases[choice])
+            # Calculate all the items in the sub-scope
+            sub_target = sub_scope.cases[resolvable.value]
+            self._calculate_target(sub_target)
 
+            # This .update() is safe because Resolver guarantees each argument
+            # only ever has one value / resolvable.
+            finalized_arguments.update(sub_target.arguments)
+
+        target.finalize(finalized_arguments)
+
+    # Force calculation of all arguments by accessing the arguments in this
+    # scope and recursively all sub-scopes.
+    def resolve(self):
+        assert not self._resolved, "Resolvers should only be resolved once"
+        self._resolved = True
+
+        for target in self._targets:
+            self._calculate_target(target)
+
+        # TODO(cmaloney): figure out a way to validate as parameters are calculated.
         # Perform all multi-argument validations
-        for parameter_set, validate_fn in self._multi_arg_validate.items():
+        for parameter_set, validate_fns in self._multi_arg_validate.items():
             # Build up argument map for validate function. If any arguments are
             # unset then skip this validate function.
             kwargs = dict()
             skip = False
             for parameter in parameter_set:
-                if (parameter not in self._arguments) or (self._arguments[parameter] is None):
+                # Exit early if the parameter was never calculated / asked for (We don't
+                # validate things that are never used or given)
+                if parameter not in self._arguments:
                     skip = True
                     break
-                kwargs[parameter] = self._arguments[parameter]
+
+                # Exit if the parameter resolved to an error
+                resolvable = self._arguments[parameter]
+                if resolvable.is_error:
+                    skip = True
+                    break
+
+                kwargs[parameter] = self._arguments[parameter].value
+
             if skip:
                 continue
 
             # Call the validation function, catching AssertionErrors and turning them into errors in
             # the error dictionary.
             try:
-                validate_fn(**kwargs)
+                for validate_fn in validate_fns:
+                    validate_fn(**kwargs)
             except AssertionError as ex:
                 self._errors[parameter_set] = ex.args[0]
 
-        # TODO(cmaloney): Return per-target results with the path to calculate each argument and the
-        # full set of arguments touched included.
+    @property
+    def arguments(self):
+        assert self._resolved, "Can't get arguments until they've been resolved"
         return self._arguments
 
-    # Force calculation of all arguments by accessing the arguments in this
-    # scope and recursively all sub-scopes.
-    def calculate(self, targets):
-        for target in targets:
-            self._calculate_target(target)
+    @property
+    def status_dict(self):
+        assert self._resolved, "Can't retrieve status dictionary until configuration has been resolved"
+        if not self._errors:
+            return {'status': 'ok'}
 
-        if len(self._errors) or len(self._unset):
-            raise ValidationError(self._errors, self._unset)
+        # Defer multi-key validation errors and noramlize them to be single-key
+        # ones. The multi-key is always less important than the single-key
+        # messages which is why single-key messages we never overwrite.
+        # TODO(cmaloney): Teach the whole stack to be able to handle multi-key
+        # validation errors.
+        messages = dict()
+        to_do = dict()
 
-        return self._arguments
+        for key, msg in self._errors.items():
+            if isinstance(key, frozenset):
+                to_do[key] = msg
+                continue
+
+            assert isinstance(key, str)
+            messages[key] = {'message': msg}
+
+        for keys, msg in to_do.items():
+            for name in keys:
+                # Skip ones we already have one message for.
+                if name in messages:
+                    continue
+
+                messages[name] = {'message': msg}
+
+        return {
+            'status': 'errors',
+            'errors': messages,
+            'unset': self._unset
+        }
 
 
 def resolve_configuration(sources: list, targets: list, user_arguments: dict):
@@ -417,50 +640,24 @@ def resolve_configuration(sources: list, targets: list, user_arguments: dict):
             setters[name] += setter_list
         validate += source.validate
 
+    for target in targets:
+        for validate_fn in target.yield_validates:
+            validate.append(validate_fn)
+
     # Use setters to caluclate every required parameter
-    arguments = DFSArgumentCalculator(setters, validate).calculate(targets)
+    resolver = Resolver(setters, validate, targets)
+    resolver.resolve()
+
+    def target_finalized(target):
+        return all([arg.is_finalized for arg in target.arguments.values()])
+    assert all(map(target_finalized, targets)), "All targets arguments should have been finalized to values"
 
     # Validate all new / calculated arguments are strings.
-    validate_arguments_strings(arguments)
+    arg_dict = dict()
+    for resolvable in resolver.arguments.values():
+        if resolvable.is_error:
+            continue
+        arg_dict[resolvable.name] = resolvable.value
+    validate_arguments_strings(arg_dict)
 
-    log.info("Final arguments:" + json_prettyprint(arguments))
-
-    # TODO(cmaloney) Give each config target the values for all it's parameters that were hit as
-    # well as any parameters that led to those parameters.
-    return arguments
-
-
-def validate_configuration(sources: list, targets: list, user_arguments: dict):
-    try:
-        resolve_configuration(sources, targets, user_arguments)
-        return {'status': 'ok'}
-    except ValidationError as ex:
-        messages = {}
-
-        # Defer multi-key validation errors and noramlize them to be single-key
-        # ones. The multi-key is always less important than the single-key
-        # messages which is why single-key messages we never overwrite.
-        # TODO(cmaloney): Teach the whole stack to be able to handle multi-key
-        # validation errors.
-        to_do = dict()
-        for key, msg in ex.errors.items():
-            if isinstance(key, frozenset):
-                to_do[key] = msg
-                continue
-
-            assert isinstance(key, str)
-            messages[key] = {'message': msg}
-
-        for keys, msg in to_do.items():
-            for name in keys:
-                # Skip ones we already have one message for.
-                if name in messages:
-                    continue
-
-                messages[name] = {'message': msg}
-
-        return {
-            'status': 'errors',
-            'errors': messages,
-            'unset': ex.unset
-        }
+    return resolver

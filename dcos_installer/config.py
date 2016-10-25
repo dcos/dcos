@@ -103,14 +103,14 @@ class Config():
 
         if include_ssh:
             sources.append(ssh.validate.source)
-            targets.append(ssh.validate.target)
+            targets.append(ssh.validate.get_target())
 
-        messages = gen.internals.validate_configuration(sources, targets, user_arguments)
+        resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
         # TODO(cmaloney): kill this function and make the API return the structured
         # results api as was always intended rather than the flattened / lossy other
         # format. This will be an  API incompatible change. The messages format was
         # specifically so that there wouldn't be this sort of API incompatibility.
-        return normalize_config_validation(messages)
+        return normalize_config_validation(resolver.status_dict)
 
     def do_gen_configure(self):
         return gen.generate(self.as_gen_format())

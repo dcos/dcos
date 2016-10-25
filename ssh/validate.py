@@ -51,22 +51,24 @@ source = Source({
     }
 })
 
-target = Target({
-    'ssh_user',
-    'ssh_port',
-    'ssh_key_path',
-    'master_list',
-    'agent_list',
-    'public_agent_list',
-    'ssh_parallelism',
-    'process_timeout'})
+
+def get_target():
+    return Target({
+        'ssh_user',
+        'ssh_port',
+        'ssh_key_path',
+        'master_list',
+        'agent_list',
+        'public_agent_list',
+        'ssh_parallelism',
+        'process_timeout'})
 
 
 # TODO(cmaloney): Work this API, callers until this result remapping is unnecessary
 # and the couple places that need this can just make a trivial call directly.
 def validate_config(user_arguments):
     user_arguments = gen.stringify_configuration(user_arguments)
-    messages = gen.internals.validate_configuration([source], [target], user_arguments)
+    messages = gen.internals.resolve_configuration([source], [get_target()], user_arguments).status_dict
     if messages['status'] == 'ok':
         return {}
 
