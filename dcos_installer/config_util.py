@@ -14,14 +14,15 @@ log = logging.getLogger(__name__)
 
 def do_configure(config):
     gen_out = config.do_gen_configure()
-    subprocess.check_call(['mkdir', '-p', SERVE_DIR])
-    gen.installer.bash.generate(gen_out, SERVE_DIR)
+
+    subprocess.check_call(['mkdir', '-p', config.get_output_path() + SERVE_DIR ])
+    gen.installer.bash.generate(gen_out, config.get_output_path() + SERVE_DIR)
 
     # Get bootstrap from artifacts
     # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
-    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
+    fetch_bootstrap(gen_out.arguments['bootstrap_id'], config.get_output_path())
     # Write some package metadata
-    pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
+    pkgpanda.util.write_json(config.get_output_path() + 'genconf/cluster_packages.json', gen_out.cluster_packages)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):
@@ -51,11 +52,11 @@ def do_move_atomic(src_dir, dest_dir, filenames):
         rollback()
 
 
-def fetch_bootstrap(bootstrap_id):
+def fetch_bootstrap(bootstrap_id, path):
     filenames = [
         "{}.bootstrap.tar.xz".format(bootstrap_id),
         "{}.active.json".format(bootstrap_id)]
-    dest_dir = "genconf/serve/bootstrap/"
+    dest_dir = path + "genconf/serve/bootstrap/"
     container_cache_dir = "artifacts/bootstrap/"
 
     # If all the targets already exist, no-op
