@@ -334,7 +334,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
         '/etc/mesos-master-provider']
 
     if cc_params['node_type'] == 'master':
-        cc_package_files.append('/etc/aws_dnsnames')
+        cc_package_files.append('/etc/extra_master_addresses')
 
     results = gen.generate(
         arguments=variant_args,
@@ -449,7 +449,7 @@ def gen_templates(arguments):
             '/etc/dns_config',
             '/etc/exhibitor',
             '/etc/mesos-master-provider',
-            '/etc/aws_dnsnames'])
+            '/etc/extra_master_addresses'])
 
     cloud_config = results.templates['cloud-config.yaml']
 

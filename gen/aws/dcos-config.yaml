@@ -6,7 +6,3 @@ package:
       AWS_STACK_NAME={ "Ref" : "AWS::StackName" }
       AWS_IAM_MASTER_ROLE_NAME={{ master_role }}
       AWS_IAM_SLAVE_ROLE_NAME={{ agent_role }}
-  - path: /etc/aws_dnsnames
-    content: |
-      INTERNAL_MASTER_LB_DNSNAME={ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }
-      MASTER_LB_DNSNAME={ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }
