@@ -98,7 +98,6 @@ def check_environment():
         if k.startswith(prefix):
             add_env[k.replace(prefix, '')] = v
     options.add_env = add_env
-    options.pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
     return options
 
@@ -115,7 +114,6 @@ def main():
         aws_secret_access_key=options.aws_secret_access_key,
         test_dns_search=False,
         add_env=options.add_env,
-        pytest_dir=options.pytest_dir,
         pytest_cmd=options.pytest_cmd,
     )
     if result == 0:

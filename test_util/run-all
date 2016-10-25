@@ -96,7 +96,7 @@ export DCOS_AUTH_ENABLED=false
 export DCOS_PROVIDER=onprem
 export DCOS_DEFAULT_OS_USER=root
 cd /opt/mesosphere/active/dcos-integration-test
-py.test -rs -vv -m "not ccm" ${CI_FLAGS:-}
+/opt/mesosphere/bin/dcos-shell py.test -rs -vv -m "not ccm" ${CI_FLAGS:-}
 EOF
 chmod +x test_wrapper.sh
 echo "Running integration test"

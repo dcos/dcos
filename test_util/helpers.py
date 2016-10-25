@@ -1,8 +1,11 @@
 """Various helpers for test runners and integration testing directly
 """
+import atexit
 import copy
 import functools
 import logging
+import os
+import tempfile
 import time
 from collections import namedtuple
 from functools import wraps
@@ -190,3 +193,20 @@ def wait_for_len(fetch_fn, target_count, timeout):
         if count != target_count:
             return False
     check_for_match()
+
+
+def session_tempfile(data):
+    """Writes bites to a named temp file and returns its path
+    the temp file will be removed when the interpreter exits
+    """
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(data)
+        temp_path = f.name
+
+    def remove_file():
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+    # Attempt to remove the file upon normal interpreter exit.
+    atexit.register(remove_file)
+    return temp_path
