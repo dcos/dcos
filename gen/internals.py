@@ -1,5 +1,6 @@
 import copy
 import inspect
+import itertools
 import logging
 from functools import partialmethod
 
@@ -61,6 +62,12 @@ class Scope:
         self.name = name
         self.cases = cases if cases else dict()
 
+    @property
+    def parameters(self):
+        return {self.name} | set(
+            itertools.chain.from_iterable(target.parameters for target in self.cases.values())
+        )
+
     def add_case(self, value: str, target):
         assert isinstance(target, Target)
         self.cases[value] = target
@@ -97,6 +104,12 @@ class Target:
     def __init__(self, variables=None, sub_scopes=None):
         self.variables = variables if variables else set()
         self.sub_scopes = sub_scopes if sub_scopes else dict()
+
+    @property
+    def parameters(self):
+        return self.variables | set(
+            itertools.chain.from_iterable(scope.parameters for scope in self.sub_scopes.values())
+        )
 
     def add_variable(self, variable: str):
         self.variables.add(variable)
