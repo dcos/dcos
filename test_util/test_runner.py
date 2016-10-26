@@ -20,8 +20,7 @@ def integration_test(
         provider,
         test_dns_search=True,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
-        pytest_cmd='py.test -rs -vv',
-        pytest_dir='/opt/mesosphere/active/dcos-integration-test'):
+        pytest_cmd='py.test -rs -vv'):
     """Runs integration test on host
 
     Args:
@@ -37,7 +36,6 @@ def integration_test(
         region: string indicating AWS region in which cluster is running
         add_env: a python dict with any number of key=value assignments to be passed to
             the test environment
-        pytest_dir: directory of test package on test host
         pytest_cmd: string representing command for py.test
 
     Returns:
@@ -64,18 +62,15 @@ def integration_test(
     test_env_str = ''.join(['export ' + e + '\n' for e in test_env])
 
     test_boilerplate = """#!/bin/bash
-source /opt/mesosphere/environment.export
 {env}
-cd {pytest_dir}
-{cmd}
+cd /opt/mesosphere/active/dcos-integration-test
+/opt/mesosphere/bin/dcos-shell {cmd}
 """
 
     write_string('test_preflight.sh', test_boilerplate.format(
-        env=test_env_str, pytest_dir=pytest_dir,
-        cmd='py.test -rs -vv --collect-only'))
+        env=test_env_str, cmd='py.test -rs -vv --collect-only'))
     write_string('test_wrapper.sh', test_boilerplate.format(
-        env=test_env_str, pytest_dir=pytest_dir,
-        cmd=pytest_cmd))
+        env=test_env_str, cmd=pytest_cmd))
 
     pretest_path = join(test_dir, 'test_preflight.sh')
     log.info('Running integration test setup check...')

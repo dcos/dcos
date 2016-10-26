@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 from urllib.parse import urlparse
 
 import dns.exception
@@ -9,6 +10,36 @@ import retrying
 
 import test_util.helpers
 import test_util.marathon
+
+
+def get_args_from_env():
+    """Does basic sanity checks and returns args converted
+    from strings to python data types
+    """
+    assert 'DCOS_DNS_ADDRESS' in os.environ
+    assert 'MASTER_HOSTS' in os.environ
+    assert 'PUBLIC_MASTER_HOSTS' in os.environ
+    assert 'SLAVE_HOSTS' in os.environ
+    assert 'PUBLIC_SLAVE_HOSTS' in os.environ
+    assert 'DNS_SEARCH' in os.environ
+    assert 'DCOS_PROVIDER' in os.environ
+
+    # must be true or false (prevents misspellings)
+    assert os.environ['DNS_SEARCH'] in ['true', 'false']
+
+    assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
+
+    return {
+        'dcos_uri': os.environ['DCOS_DNS_ADDRESS'],
+        'masters': os.environ['MASTER_HOSTS'].split(','),
+        'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
+        'slaves': os.environ['SLAVE_HOSTS'].split(','),
+        'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
+        'dns_search_set': os.environ['DNS_SEARCH'] == 'true',
+        'provider': os.environ['DCOS_PROVIDER'],
+        'auth_enabled': os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
+        'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root'),
+        'ca_cert_path': os.getenv('DCOS_CA_CERT_PATH', None)}
 
 
 class ClusterApi(test_util.helpers.ApiClient):
