@@ -454,7 +454,7 @@ def gen_templates(arguments):
             '/etc/dns_config',
             '/etc/exhibitor',
             '/etc/mesos-master-provider',
-            '/etc/extra_master_addresses'])
+            '/etc/extra_master_addresses']
 
     results = gen.generate(
         arguments=arguments,
