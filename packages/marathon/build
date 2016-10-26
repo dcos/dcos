@@ -12,6 +12,7 @@ mkdir -p $(dirname "$marathon_service")
 cat <<EOF > "$marathon_service"
 [Unit]
 Description=Marathon: DC/OS Init System
+Requires=dcos-mesos-master.service
 
 [Service]
 User=dcos_marathon
