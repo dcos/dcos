@@ -36,6 +36,7 @@ RUN apt-get -qq update && apt-get -y install \
   scala \
   unzip \
   wget \
+  xutils-dev \
   xz-utils \
   zlib1g-dev
 
