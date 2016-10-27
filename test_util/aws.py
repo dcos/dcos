@@ -101,9 +101,9 @@ class CfStack():
             if stack_status == state_2:
                 return True
             if stack_status != state_1:
-                log.exception('Stack Details: {}'.format(stack_details))
+                log.error('Stack Details: {}'.format(stack_details))
                 for event in self.get_stack_events():
-                    log.exception('Stack Events: {}'.format(repr(event)))
+                    log.error('Stack Events: {}'.format(event))
                 raise Exception('StackStatus changed unexpectedly to: {}'.format(stack_status))
             return False
         wait_loop()
