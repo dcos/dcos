@@ -555,7 +555,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         args['exhibitor_storage_backend'] = 'aws_s3'
         args['master_role'] = '{ "Ref" : "MasterRole" }'
         args['agent_role'] = '{ "Ref" : "SlaveRole" }'
-        args['region_to_ami_mapping'] = gen_ami_mapping({"stable", "el7"})
+        args['region_to_ami_mapping'] = gen_ami_mapping({"coreos", "el7"})
         args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
 
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
@@ -576,7 +576,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         # Multi master templates
         multi_args = deepcopy(args)
         multi_args['num_masters'] = "3"
-        multi_args['os_type'] = 'stable'
+        multi_args['os_type'] = 'coreos'
         yield from make(multi_args, 'multi-master.cloudformation.json')
         multi_args['os_type'] = 'el7'
         yield from make(multi_args, 'el7.multi-master.cloudformation.json')
