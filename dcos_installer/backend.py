@@ -145,7 +145,14 @@ def calculate_aws_template_storage_region_name(
 
     try:
         location_info = session.client('s3').get_bucket_location(Bucket=aws_template_storage_bucket)
-        return location_info["LocationConstraint"]
+        loc = location_info["LocationConstraint"]
+        if loc is None or loc.strip() == "":
+            # If a buckets region is in fact 'us-east-1' the response from the api will actually be an empty value?!
+            # Rather than returning the empty value on to we set it to 'us-east-1'.
+            # See http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGETlocation.html#RESTBucketGETlocation-responses-response-elements  # noqa
+            return "us-east-1"
+        else:
+            return loc
     except botocore.exceptions.ClientError as ex:
         if ex.response['Error']['Code'] == '404':
             raise AssertionError("s3 bucket {} does not exist".format(aws_template_storage_bucket)) from ex
