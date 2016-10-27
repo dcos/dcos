@@ -19,6 +19,7 @@ RUN apt-get -qq update && apt-get -y install \
   libcurl4-openssl-dev \
   libnl-3-dev \
   libnl-genl-3-dev \
+  libpcre++-dev \
   libpopt-dev \
   libsasl2-dev \
   libsvn-dev \
