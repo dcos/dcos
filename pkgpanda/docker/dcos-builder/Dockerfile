@@ -39,4 +39,7 @@ RUN apt-get -qq update && apt-get -y install \
   xz-utils \
   zlib1g-dev
 
+ENV CC=/usr/bin/gcc-4.8
+ENV CXX=/usr/bin/g++-4.8
+
 RUN pip install awscli
