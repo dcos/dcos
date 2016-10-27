@@ -23,9 +23,6 @@ CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
 
-DCOS_PYTEST_DIR: string(default='/opt/mesosphere/active/dcos-integration-test')
-    The working dir for py.test.
-
 DCOS_PYTEST_CMD: string(default='py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
     The complete py.test command used to run integration tests. If provided,
     CI_FLAGS is ignored.
@@ -52,7 +49,6 @@ def main():
     num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
     stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
-    pytest_dir = os.getenv('DCOS_PYTEST_DIR', '/opt/mesosphere/active/dcos-integration-test')
     pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
 
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
@@ -88,7 +84,7 @@ def main():
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
     test_util.cluster.upgrade_dcos(cluster, installer_url)
 
-    result = test_util.cluster.run_integration_tests(cluster, pytest_dir=pytest_dir, pytest_cmd=pytest_cmd)
+    result = test_util.cluster.run_integration_tests(cluster, pytest_cmd=pytest_cmd)
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
         vpc.delete()

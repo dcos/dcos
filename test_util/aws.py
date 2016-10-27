@@ -126,6 +126,12 @@ class CfStack():
     def wait_for_stack_deletion(self, wait_before_poll_min=3):
         self.wait_for_status_change('DELETE_IN_PROGRESS', 'DELETE_COMPLETE', wait_before_poll_min)
 
+    def get_parameter(self, param):
+        for p in self.stack.parameters:
+            if p['ParameterKey'] == param:
+                return p['ParameterValue']
+        return None
+
 
 class DcosCfSimple(CfStack):
     @classmethod
@@ -251,11 +257,7 @@ class DcosCfAdvanced(CfStack):
 
     def delete(self, delete_vpc=False):
         log.info('Starting deletion of CF Advanced stack')
-        # Get VPC id first
-        for p in self.stack.parameters:
-            if p['ParameterKey'] == 'Vpc':
-                vpc_id = p['ParameterValue']
-                break
+        vpc_id = self.get_parameter('Vpc')
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
         log.info('Deleting Infrastructure Stack')
@@ -334,12 +336,17 @@ class VpcCfStack(CfStack):
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
         self.stack.delete()
 
+    @retrying.retry(wait_fixed=3000, stop_max_delay=600 * 1000,
+                    retry_on_result=lambda res: res is False)
     @retry_boto_rate_limits
     def get_vpc_host_ips(self):
+        expected_instances = int(self.get_parameter('ClusterSize'))
         reservations = self.boto_wrapper.client('ec2').describe_instances(Filters=[{
             'Name': 'tag-value', 'Values': [self.stack.stack_name]}])['Reservations']
         log.debug('Reservations for {}: {}'.format(self.stack.stack_id, reservations))
-        instances = reservations[0]['Instances']
+        instances = [instance for res in reservations for instance in res['Instances']]
+        if len(instances) != expected_instances:
+            return False
         return instances_to_hosts(instances)
 
 

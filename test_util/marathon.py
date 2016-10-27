@@ -20,7 +20,7 @@ def get_test_app(custom_port=False):
         'mem': 32,
         'instances': 1,
         'cmd': '/opt/mesosphere/bin/dcos-shell python '
-               '/opt/mesosphere/active/dcos-integration-test/python_test_server.py ',
+               '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py ',
         'env': {
             'DCOS_TEST_UUID': test_uuid,
             # required for python_test_server.py to run as nobody

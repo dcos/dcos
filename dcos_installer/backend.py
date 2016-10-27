@@ -10,7 +10,6 @@ import botocore.exceptions
 import gen
 import gen.calc
 import gen.installer.aws
-import gen.internals
 import release
 import release.storage.aws
 import release.storage.local
@@ -105,6 +104,14 @@ def validate_aws_bucket_access(aws_template_storage_region_name,
                 aws_template_storage_bucket_path, aws_template_storage_bucket, ex)) from ex
 
 
+def validate_aws_template_storage_access_key_id(aws_template_storage_access_key_id):
+    assert aws_template_storage_access_key_id, "Must be non-empty"
+
+
+def validate_aws_template_storage_secret_access_key(aws_template_storage_secret_access_key):
+    assert aws_template_storage_secret_access_key, "Must be non-empty"
+
+
 def calculate_reproducible_artifact_path(config_id):
     return 'config_id/{}'.format(config_id)
 
@@ -127,14 +134,35 @@ def calculate_cloudformation_s3_url(bootstrap_url, config_id):
     return '{}/config_id/{}'.format(bootstrap_url, config_id)
 
 
+def calculate_aws_template_storage_region_name(
+        aws_template_storage_access_key_id,
+        aws_template_storage_secret_access_key,
+        aws_template_storage_bucket):
+
+    session = boto3.session.Session(
+        aws_access_key_id=aws_template_storage_access_key_id,
+        aws_secret_access_key=aws_template_storage_secret_access_key)
+
+    try:
+        location_info = session.client('s3').get_bucket_location(Bucket=aws_template_storage_bucket)
+        return location_info["LocationConstraint"]
+    except botocore.exceptions.ClientError as ex:
+        if ex.response['Error']['Code'] == '404':
+            raise AssertionError("s3 bucket {} does not exist".format(aws_template_storage_bucket)) from ex
+        raise AssertionError("Unable to determine region location of s3 bucket {}: {}".format(
+            aws_template_storage_bucket, ex)) from ex
+
+
 aws_advanced_source = gen.internals.Source({
-    # TOOD(cmaloney): Add parameter validation for AWS Advanced template output.
+    # TODO(cmaloney): Add parameter validation for AWS Advanced template output.
     'validate': [
         lambda aws_template_upload: gen.calc.validate_true_false(aws_template_upload),
         lambda aws_template_storage_bucket_path_autocreate:
             gen.calc.validate_true_false(aws_template_storage_bucket_path_autocreate),
         validate_aws_template_storage_region_name,
-        validate_aws_bucket_access
+        validate_aws_bucket_access,
+        validate_aws_template_storage_access_key_id,
+        validate_aws_template_storage_secret_access_key
     ],
     'default': {
         'num_masters': '5',
@@ -150,7 +178,17 @@ aws_advanced_source = gen.internals.Source({
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path
-    }, gen.installer.aws.groups['master'][1])
+    }, gen.installer.aws.groups['master'][1]),
+    'conditional': {
+        'aws_template_upload': {
+            'true': {
+                'must': {
+                    'aws_template_storage_region_name': calculate_aws_template_storage_region_name
+                }
+            },
+            'false': {}
+        }
+    }
 })
 
 
