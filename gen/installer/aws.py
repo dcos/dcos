@@ -439,7 +439,7 @@ def gen_templates(arguments):
         'aws/templates/cloudformation.json',
         'aws/dcos-config.yaml',
     ]
-    if arguments['os_type'] == 'coreos':
+    if arguments['os_type'] == 'coreos' or arguments['os_type'] == 'stable':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
     elif arguments['os_type'] == 'el7':
@@ -568,7 +568,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         single_args = deepcopy(args)
         single_args['num_masters'] = "1"
         # TODO(jeid) probably not the way to handle os_type
-        single_args['os_type'] = 'coreos'
+        single_args['os_type'] = 'stable'
         yield from make(single_args, 'single-master.cloudformation.json')
         single_args['os_type'] = 'el7'
         yield from make(single_args, 'el7.single-master.cloudformation.json')
@@ -576,7 +576,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         # Multi master templates
         multi_args = deepcopy(args)
         multi_args['num_masters'] = "3"
-        multi_args['os_type'] = 'coreos'
+        multi_args['os_type'] = 'stable'
         yield from make(multi_args, 'multi-master.cloudformation.json')
         multi_args['os_type'] = 'el7'
         yield from make(multi_args, 'el7.multi-master.cloudformation.json')
