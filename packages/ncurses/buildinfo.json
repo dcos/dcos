@@ -1,7 +1,7 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "http://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz",
+    "url": "https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz",
     "sha1": "acd606135a5124905da770803c05f1f20dd3b21c"
   }
 }
