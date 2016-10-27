@@ -1,4 +1,4 @@
-FROM ubuntu:14.04.4
+FROM ubuntu:16.04
 MAINTAINER help@dcos.io
 
 RUN apt-get -qq update && apt-get -y install \
@@ -10,7 +10,8 @@ RUN apt-get -qq update && apt-get -y install \
   default-jdk \
   default-jre \
   dpkg-dev \
-  gcc \
+  g++-4.8 \
+  gcc-4.8 \
   gettext-base \
   git \
   gzip \
@@ -22,7 +23,7 @@ RUN apt-get -qq update && apt-get -y install \
   libsasl2-dev \
   libsvn-dev \
   libtool \
-  linux-headers-3.19.0-21-generic \
+  linux-headers-4.4.0-45-generic \
   make \
   maven \
   patch \
