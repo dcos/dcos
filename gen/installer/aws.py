@@ -568,7 +568,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         single_args = deepcopy(args)
         single_args['num_masters'] = "1"
         # TODO(jeid) probably not the way to handle os_type
-        single_args['os_type'] = 'stable'
+        single_args['os_type'] = 'coreos'
         yield from make(single_args, 'single-master.cloudformation.json')
         single_args['os_type'] = 'el7'
         yield from make(single_args, 'el7.single-master.cloudformation.json')
