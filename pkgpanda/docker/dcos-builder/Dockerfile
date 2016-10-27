@@ -5,35 +5,36 @@ RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
   cmake \
-  make \
-  gcc \
   cpp \
-  patch \
-  python-dev \
-  python-pip \
-  git \
-  libtool \
+  curl \
   default-jdk \
   default-jre \
-  gzip \
-  zlib1g-dev \
-  libcurl4-openssl-dev \
-  python-setuptools \
   dpkg-dev \
-  libsasl2-dev \
-  maven \
+  gcc \
+  gettext-base \
+  git \
+  gzip \
   libapr1-dev \
-  libsvn-dev \
-  ruby \
-  curl \
-  wget \
-  scala \
-  xz-utils \
-  libpopt-dev \
+  libcurl4-openssl-dev \
   libnl-3-dev \
   libnl-genl-3-dev \
+  libpopt-dev \
+  libsasl2-dev \
+  libsvn-dev \
+  libtool \
   linux-headers-3.19.0-21-generic \
+  make \
+  maven \
+  patch \
   pkg-config \
-  gettext-base \
-  unzip
+  python-dev \
+  python-pip \
+  python-setuptools \
+  ruby \
+  scala \
+  unzip \
+  wget \
+  xz-utils \
+  zlib1g-dev
+
 RUN pip install awscli
