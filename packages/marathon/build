@@ -4,7 +4,7 @@ mkdir -p "$PKG_PATH/usr/"
 
 cp -rp /pkg/src/marathon/target/scala-2.11/marathon-assembly-*.jar "$PKG_PATH/usr/marathon.jar"
 
-sudo chmod -R o+r "$PKG_PATH/usr"
+chmod -R o+r "$PKG_PATH/usr"
 
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
