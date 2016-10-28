@@ -512,6 +512,9 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+__dcos_overlay_network_default_name = 'dcos'
+
+
 entry = {
     'validate': [
         validate_num_masters,
@@ -588,11 +591,12 @@ entry = {
             'vtep_subnet': '44.128.0.0/20',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
-                'name': 'dcos',
+                'name': __dcos_overlay_network_default_name,
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }]
         }),
+        'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
