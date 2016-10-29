@@ -29,7 +29,7 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
-ExecStartPre=/bin/bash -c 'echo "OPTFLAG_DEFAULT_NETWORK_NAME=\${MARATHON_DEFAULT_NETWORK_NAME:+--default_network_name \$MARATHON_DEFAULT_NETWORK_NAME}" > /var/lib/dcos/marathon/optional.flags.marathon'
+ExecStartPre=-/bin/bash -c '[ -n "\$MARATHON_DEFAULT_NETWORK_NAME" ] && echo OPTFLAG_DEFAULT_NETWORK_NAME=\\"--default_network_name \$MARATHON_DEFAULT_NETWORK_NAME\\" > /var/lib/dcos/marathon/optional.flags.marathon'
 ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
     -jar "$PKG_PATH/usr/marathon.jar" \\
