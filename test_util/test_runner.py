@@ -20,7 +20,7 @@ def integration_test(
         provider,
         test_dns_search=True,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
-        pytest_cmd='py.test -rs -vv'):
+        pytest_cmd='py.test -vv -s -rs'):
     """Runs integration test on host
 
     Args:
