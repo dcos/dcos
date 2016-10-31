@@ -23,6 +23,7 @@ RUN apt-get -qq update && apt-get -y install \
   libpopt-dev \
   libsasl2-dev \
   libsvn-dev \
+  libsystemd-dev \
   libtool \
   linux-headers-4.4.0-45-generic \
   make \
