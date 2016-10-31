@@ -4,7 +4,7 @@ mkdir -p "$PKG_PATH/lib/"
 mkdir -p "$PKG_PATH/usr/"
 
 cp -rp /pkg/src/cosmos/cosmos-*-one-jar.jar "${PKG_PATH}/usr/cosmos.jar"
-sudo chmod -R o+r "${PKG_PATH}/usr"
+chmod -R o+r "${PKG_PATH}/usr"
 
 cosmos_service="${PKG_PATH}/dcos.target.wants_master/dcos-cosmos.service"
 mkdir -p $(dirname "$cosmos_service")
