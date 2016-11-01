@@ -1,39 +1,46 @@
-FROM ubuntu:14.04.4
+FROM ubuntu:16.04
 MAINTAINER help@dcos.io
 
 RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
   cmake \
-  make \
-  gcc \
   cpp \
-  patch \
-  python-dev \
-  python-pip \
-  git \
-  libtool \
+  curl \
   default-jdk \
   default-jre \
-  gzip \
-  zlib1g-dev \
-  libcurl4-openssl-dev \
-  python-setuptools \
   dpkg-dev \
-  libsasl2-dev \
-  maven \
+  g++-4.8 \
+  gcc-4.8 \
+  gettext-base \
+  git \
+  gzip \
   libapr1-dev \
-  libsvn-dev \
-  ruby \
-  curl \
-  wget \
-  scala \
-  xz-utils \
-  libpopt-dev \
+  libcurl4-openssl-dev \
   libnl-3-dev \
   libnl-genl-3-dev \
-  linux-headers-3.19.0-21-generic \
+  libpcre++-dev \
+  libpopt-dev \
+  libsasl2-dev \
+  libsvn-dev \
+  libtool \
+  linux-headers-4.4.0-45-generic \
+  make \
+  maven \
+  patch \
   pkg-config \
-  gettext-base \
-  unzip
+  python-dev \
+  python-pip \
+  python-setuptools \
+  ruby \
+  scala \
+  unzip \
+  wget \
+  xutils-dev \
+  xz-utils \
+  zlib1g-dev
+
+ENV CC=/usr/bin/gcc-4.8
+ENV CXX=/usr/bin/g++-4.8
+
 RUN pip install awscli

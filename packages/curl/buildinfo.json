@@ -2,7 +2,7 @@
   "requires": ["openssl", "python-requests"],
   "single_source": {
     "kind": "url_extract",
-    "url": "http://curl.haxx.se/download/curl-7.48.0.tar.gz",
+    "url": "https://curl.haxx.se/download/curl-7.48.0.tar.gz",
     "sha1": "eac95625b849408362cf6edb0bc9489da317ba30"
   }
 }
