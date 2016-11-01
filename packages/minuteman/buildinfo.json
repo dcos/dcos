@@ -3,8 +3,8 @@
   "sources": {
     "minuteman": {
       "kind": "git",
-      "git": "https://github.com/dcos/minuteman.git",
-      "ref": "cf123706036a5b7b0b853466b73fc5048e3bda1e",
+      "git": "https://github.com/GoelDeepak/minuteman.git",
+      "ref": "26b69f27396299766a0e56411ecdd847ccf8511d",
       "ref_origin": "master"
     }
   },
