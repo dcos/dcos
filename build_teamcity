@@ -25,7 +25,7 @@ rm -rf wheelhouse/
 export PYTHONUNBUFFERED="notemtpy"
 
 # enable pkgpanda virtualenv *ALWAYS COPY* otherwise the TC cleanup will traverse and corrupt system python
-virtualenv --always-copy build/env
+virtualenv --always-copy --python=python3.4 build/env
 . build/env/bin/activate
 
 : ${TEAMCITY_BRANCH?"TEAMCITY_BRANCH must be set (determines the tag and testing/ channel)"}
