@@ -3,8 +3,8 @@
   "sources": {
     "navstar": {
       "kind": "git",
-      "git": "https://github.com/dcos/navstar.git",
-      "ref": "cd49867f102c54579ce2a92138eb6345c9890609",
+      "git": "https://github.com/GoelDeepak/navstar.git",
+      "ref": "48aa571cf03b0c05a8f08e02dac84004ce771e96",
       "ref_origin": "master"
     }
   }
