@@ -188,8 +188,7 @@ def wait_for_len(fetch_fn, target_count, timeout):
     def check_for_match():
         items = fetch_fn()
         count = len(items)
-        logging.info('Waiting for len({})=={}. Current count: {}. Items: {}'.format(
-            fetch_fn.__name__, target_count, count, repr(items)))
+        logging.info('Waiting for len()=={}. Current count: {}. Items: {}'.format(target_count, count, repr(items)))
         if count != target_count:
             return False
     check_for_match()
