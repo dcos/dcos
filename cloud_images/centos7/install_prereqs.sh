@@ -3,7 +3,7 @@ set -o errexit -o nounset -o pipefail
 
 echo ">>> Kernel: $(uname -r)"
 echo ">>> Updating system"
-yum update --assumeyes
+yum -y update
 
 echo ">>> Disabling SELinux"
 sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
@@ -21,7 +21,7 @@ sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
 echo ">>> Installing DC/OS dependencies and essential packages"
-yum install --assumeyes --tolerant perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync
+yum -y --tolerant install perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync nfs-utils
 
 echo ">>> Set up filesystem mounts"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
@@ -33,11 +33,22 @@ Type=oneshot
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0
+ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdh /var/log
 
 [Install]
 WantedBy=local-fs.target
 EOF
 systemctl enable dcos_vol_setup
+
+echo ">>> Disable rsyslog"
+systemctl disable rsyslog
+
+echo ">>> Set journald limits"
+mkdir -p /etc/systemd/journald.conf.d/
+echo -e "[Journal]\nRateLimitBurst=15000\nRateLimitInterval=30s\nSystemMaxUse=10G" > /etc/systemd/journald.conf.d/dcos-el7.conf
+
+echo ">>> Removing tty requirement for sudo"
+sed -i'' -E 's/^(Defaults.*requiretty)/#\1/' /etc/sudoers
 
 echo ">>> Install Docker"
 curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-engine-1.11.2-1.el7.centos.x86_64.rpm \
@@ -70,7 +81,7 @@ echo ">>> Cleaning up SSH host keys"
 shred -u /etc/ssh/*_key /etc/ssh/*_key.pub
 
 echo ">>> Cleaning up accounting files"
-rm -f rm -f /var/run/utmp
+rm -f /var/run/utmp
 >/var/log/lastlog
 >/var/log/wtmp
 >/var/log/btmp
