@@ -125,7 +125,7 @@ def main(output_env_file):
     @type output_env_file: str, filename to write resources
     '''
     if os.path.exists(output_env_file):
-        print('Voume discovery assumed to be completed because {} exists'.format(output_env_file))
+        print('Volume discovery assumed to be completed because {} exists'.format(output_env_file))
         return
 
     mounts_dfree = list(get_mounts_and_freespace(find_mounts_matching(MOUNT_PATTERN)))
