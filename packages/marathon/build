@@ -12,7 +12,8 @@ mkdir -p $(dirname "$marathon_service")
 cat <<EOF > "$marathon_service"
 [Unit]
 Description=Marathon: DC/OS Init System
-
+Requires=dcos-mesos-master.service
+After=dcos-mesos-master.service
 [Service]
 User=dcos_marathon
 Restart=always
@@ -23,7 +24,6 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
-ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
