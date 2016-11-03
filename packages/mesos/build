@@ -20,7 +20,14 @@ LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/m
 make -j$NUM_CORES
 
 make install
+
 cp src/java/target/mesos-*.jar "$libdir"
+
+# This is copied during `make install` as per the configure flag
+# `--enable-install-module-dependencies`.  Modules that have their
+# own protobufs may wish to use this during their builds.
+ln -s "$PKG_PATH/lib/mesos/3rdparty/bin/protoc" "$PKG_PATH/bin/protoc"
+
 popd
 popd
 
