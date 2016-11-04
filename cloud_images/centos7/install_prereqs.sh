@@ -43,10 +43,6 @@ systemctl enable dcos_vol_setup
 echo ">>> Disable rsyslog"
 systemctl disable rsyslog
 
-echo ">>> Set journald limits"
-mkdir -p /etc/systemd/journald.conf.d/
-echo -e "[Journal]\nRateLimitBurst=15000\nRateLimitInterval=30s\nSystemMaxUse=10G" > /etc/systemd/journald.conf.d/dcos-el7.conf
-
 echo ">>> Removing tty requirement for sudo"
 sed -i'' -E 's/^(Defaults.*requiretty)/#\1/' /etc/sudoers
 
