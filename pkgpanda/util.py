@@ -6,12 +6,15 @@ import re
 import shutil
 import socketserver
 import subprocess
+from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
 
 import requests
+import teamcity
+from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
@@ -279,3 +282,74 @@ class TestRepo:
 def resources_test_dir(path):
     assert not path.startswith('/')
     return "pkgpanda/test_resources/{}".format(path)
+
+
+class MessageLogger:
+    """Abstraction over TeamCity Build Messages
+
+    When pkgpanda is ran in a TeamCity environment additional meta-messages will be output to stdout
+    such that TeamCity can provide improved status reporting, log line highlighting, and failure
+    reporting. When pkgpanda is ran in an environment other than TeamCity all meta-messages will
+    silently be omitted.
+
+    TeamCity docs: https://confluence.jetbrains.com/display/TCD10/Build+Script+Interaction+with+TeamCity
+    """
+    def __init__(self):
+        self.loggers = []
+        if teamcity.is_running_under_teamcity():
+            self.loggers.append(TeamcityServiceMessages())
+        else:
+            self.loggers.append(PrintLogger())
+
+    def _custom_message(self, text, status, error_details='', flow_id=None):
+        for log in self.loggers:
+            log.customMessage(text, status, errorDetails=error_details, flowId=flow_id)
+
+    @contextmanager
+    def _block(self, log, name, flow_id):
+        log.blockOpened(name, flowId=flow_id)
+        log.progressMessage(name)
+        yield
+        log.blockClosed(name, flowId=flow_id)
+
+    @contextmanager
+    def scope(self, name, flow_id=None):
+        """
+        Creates a new scope for TeamCity messages. This method is intended to be called in a ``with`` statement
+
+        :param name: The name of the scope
+        :param flow_id: Optional flow id that can be used if ``name`` can be non-unique
+        """
+        with ExitStack() as stack:
+            for log in self.loggers:
+                stack.enter_context(self._block(log, name, flow_id))
+            yield
+
+    def normal(self, text, flow_id=None):
+        self._custom_message(text=text, status='NORMAL', flow_id=flow_id)
+
+    def warning(self, text, flow_id=None):
+        self._custom_message(text=text, status='WARNING', flow_id=flow_id)
+
+    def error(self, text, flow_id=None, error_details=''):
+        self._custom_message(text=text, status='ERROR', flow_id=flow_id, error_details=error_details)
+
+    def failure(self, text, flow_id=None):
+        self._custom_message(text=text, status='FAILURE', flow_id=flow_id)
+
+
+class PrintLogger:
+    def customMessage(self, text, status, errorDetails='', flowId=None):  # noqa: N802, N803
+        print("{}: {} {}".format(status, text, errorDetails))
+
+    def progressMessage(self, message):  # noqa: N802, N803
+        pass
+
+    def blockOpened(self, name, flowId=None):  # noqa: N802, N803
+        print("starting: {}".format(name))
+
+    def blockClosed(self, name, flowId=None):  # noqa: N802, N803
+        print("completed: {}".format(name))
+
+
+logger = MessageLogger()

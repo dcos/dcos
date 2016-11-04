@@ -4,7 +4,7 @@ import shutil
 from subprocess import CalledProcessError, check_call, check_output
 
 from pkgpanda.exceptions import ValidationError
-from pkgpanda.util import download_atomic, sha1
+from pkgpanda.util import download_atomic, logger, sha1
 
 
 # Ref must be a git sha-1. We then pass it through get_sha1 to make
@@ -104,8 +104,8 @@ class GitSrcFetcher(SourceFetcher):
         except Exception as ex:
             raise ValidationError("Unable to find sha1 of ref_origin {}: {}".format(self.ref_origin, ex))
         if self.ref != origin_commit:
-            print(
-                "WARNING: Current ref doesn't match the ref origin. "
+            logger.warning(
+                "Current ref doesn't match the ref origin. "
                 "Package ref should probably be updated to pick up "
                 "new changes to the code:" +
                 " Current: {}, Origin: {}".format(self.ref,

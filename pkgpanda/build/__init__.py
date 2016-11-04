@@ -20,8 +20,8 @@ from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
-                           load_string, make_file, make_tar, rewrite_symlinks,
-                           write_json, write_string)
+                           load_string, logger, make_file, make_tar,
+                           rewrite_symlinks, write_json, write_string)
 
 
 class BuildError(Exception):
@@ -713,13 +713,13 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     else:
         package_sets = package_store.get_all_package_sets()
 
-    # Build all required packages for all tree variants.
-    for package_set in package_sets:
-        visit_packages(package_set.all_packages)
+    with logger.scope("resolve package graph"):
+        # Build all required packages for all tree variants.
+        for package_set in package_sets:
+            visit_packages(package_set.all_packages)
 
     built_packages = dict()
     for (name, variant) in build_order:
-        print("Building: {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
         built_packages.setdefault(name, dict())
 
         # Run the build, store the built package path for later use.
@@ -732,16 +732,16 @@ def build_tree(package_store, mkbootstrap, tree_variant):
 
     # Build bootstrap tarballs for all tree variants.
     def make_bootstrap(package_set):
-        print("Making bootstrap variant:", pkgpanda.util.variant_name(package_set.variant))
-        package_paths = list()
-        for name, pkg_variant in package_set.bootstrap_packages:
-            package_paths.append(built_packages[name][pkg_variant])
+        with logger.scope("Making bootstrap variant: {}".format(pkgpanda.util.variant_name(package_set.variant))):
+            package_paths = list()
+            for name, pkg_variant in package_set.bootstrap_packages:
+                package_paths.append(built_packages[name][pkg_variant])
 
-        if mkbootstrap:
-            return make_bootstrap_tarball(
-                package_store,
-                list(sorted(package_paths)),
-                package_set.variant)
+            if mkbootstrap:
+                return make_bootstrap_tarball(
+                    package_store,
+                    list(sorted(package_paths)),
+                    package_set.variant)
 
     # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
@@ -826,8 +826,13 @@ class IdBuilder():
 
 
 def build(package_store, name, variant, clean_after_build, recursive=False):
+    msg = "Building package {} variant {}".format(name, pkgpanda.util.variant_name(variant))
+    with logger.scope(msg):
+        return _build(package_store, name, variant, clean_after_build, recursive)
+
+
+def _build(package_store, name, variant, clean_after_build, recursive):
     assert isinstance(package_store, PackageStore)
-    print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
     repository = Repository(tmpdir.name)
 
@@ -1230,17 +1235,16 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # TODO(cmaloney): Move to an RAII wrapper.
     check_call(['rm', '-rf', install_dir])
 
-    print("Building package tarball")
+    with logger.scope("Build package tarball"):
+        # Check for forbidden services before packaging the tarball:
+        try:
+            check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
+        except ValidationError as ex:
+            raise BuildError("Package validation failed: {}".format(ex))
 
-    # Check for forbidden services before packaging the tarball:
-    try:
-        check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
-    except ValidationError as ex:
-        raise BuildError("Package validation failed: {}".format(ex))
-
-    # TODO(cmaloney): Updating / filling last_build should be moved out of
-    # the build function.
-    write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
+        # TODO(cmaloney): Updating / filling last_build should be moved out of
+        # the build function.
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"

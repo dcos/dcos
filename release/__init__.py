@@ -24,6 +24,7 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+from pkgpanda.util import logger
 
 provider_names = ['aws', 'azure', 'bash']
 
@@ -298,11 +299,11 @@ def make_stable_artifacts(cache_repository_url):
 
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
-    try:
-        all_completes = do_build_packages(cache_repository_url)
-    except pkgpanda.build.BuildError as ex:
-        print("ERROR Building packages:", ex, file=sys.stderr)
-        raise
+    with logger.scope("Building packages"):
+        try:
+            all_completes = do_build_packages(cache_repository_url)
+        except pkgpanda.build.BuildError as ex:
+            logger.error("Building packages: {}".format(ex))
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the complete_dict to enumerate all variants a whole lot,
@@ -398,26 +399,27 @@ def make_channel_artifacts(metadata):
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
-        for built_resource in module.do_create(
-                tag=metadata['tag'],
-                build_name=metadata['build_name'],
-                reproducible_artifact_path=metadata['reproducible_artifact_path'],
-                commit=metadata['commit'],
-                variant_arguments=variant_arguments,
-                all_bootstraps=metadata["all_bootstraps"]):
+        with logger.scope("Creating {} deploy tools".format(module.__name__)):
+            for built_resource in module.do_create(
+                    tag=metadata['tag'],
+                    build_name=metadata['build_name'],
+                    reproducible_artifact_path=metadata['reproducible_artifact_path'],
+                    commit=metadata['commit'],
+                    variant_arguments=variant_arguments,
+                    all_bootstraps=metadata["all_bootstraps"]):
 
-            assert isinstance(built_resource, dict), built_resource
+                assert isinstance(built_resource, dict), built_resource
 
-            # Type switch
-            if 'packages' in built_resource:
-                for package in built_resource['packages']:
-                    artifacts.append(get_gen_package_artifact(package))
-            else:
-                assert 'packages' not in built_resource
-                artifacts.append(built_resource)
+                # Type switch
+                if 'packages' in built_resource:
+                    for package in built_resource['packages']:
+                        artifacts.append(get_gen_package_artifact(package))
+                else:
+                    assert 'packages' not in built_resource
+                    artifacts.append(built_resource)
 
-        # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
-        artifacts += provider_data.get('artifacts', list())
+            # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
+            artifacts += provider_data.get('artifacts', list())
 
     return artifacts
 
@@ -429,6 +431,11 @@ def make_abs(path):
 
 
 def do_build_docker(name, path):
+    with logger.scope("dcos/dcos-builder ({})".format(name)):
+        return _do_build_docker(name, path)
+
+
+def _do_build_docker(name, path):
     path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
@@ -458,9 +465,9 @@ def do_build_docker(name, path):
         try:
             subprocess.check_call(['docker', 'push', container_name])
         except subprocess.CalledProcessError:
-            print("NOTICE: docker push of dcos-builder failed. This means it will be very difficult "
-                  "for this build to be reproduced (others will have a different / non-identical "
-                  "base docker for most packages.")
+            logger.warning("docker push of dcos-builder failed. This means it will be very difficult "
+                           "for this build to be reproduced (others will have a different / non-identical "
+                           "base docker for most packages.")
             pass
 
     # mark as latest so it will be used when building packages
@@ -748,7 +755,8 @@ class ReleaseManager():
         if self.__noop:
             return
 
-        apply_storage_commands(self.__storage_providers, storage_commands)
+        with logger.scope("Uploading artifacts"):
+            apply_storage_commands(self.__storage_providers, storage_commands)
 
 
 _config = None
