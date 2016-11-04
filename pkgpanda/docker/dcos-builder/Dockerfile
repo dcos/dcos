@@ -40,7 +40,12 @@ RUN apt-get -qq update && apt-get -y install \
   xz-utils \
   zlib1g-dev
 
-ENV CC=/usr/bin/gcc-4.8
-ENV CXX=/usr/bin/g++-4.8
+RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
+  ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \
+  ln -sf /usr/bin/gcc-4.8 /usr/bin/gcc && \
+  ln -sf /usr/bin/gcc-ar-4.8 /usr/bin/gcc-ar && \
+  ln -sf /usr/bin/gcc-nm-4.8 /usr/bin/gcc-nm && \
+  ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
+  ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
 
 RUN pip install awscli
