@@ -1,10 +1,13 @@
 import hashlib
+import http.server
 import json
 import os
 import re
 import shutil
+import socketserver
 import subprocess
 from itertools import chain
+from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
 
@@ -250,3 +253,29 @@ def run(cmd, *args, **kwargs):
 
     assert len(stderr) == 0
     return stdout.decode('utf-8')
+
+
+def launch_server(directory):
+    os.chdir("resources/repo")
+    httpd = socketserver.TCPServer(
+        ("", 8000),
+        http.server.SimpleHTTPRequestHandler)
+    httpd.serve_forever()
+
+
+class TestRepo:
+
+    def __init__(self, repo_dir):
+        self.__dir = repo_dir
+
+    def __enter__(self):
+        self.__server = Process(target=launch_server, args=(self.__dir))
+        self.__server.start()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.__server.join()
+
+
+def resources_test_dir(path):
+    assert not path.startswith('/')
+    return "pkgpanda/test_resources/{}".format(path)

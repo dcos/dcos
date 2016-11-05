@@ -5,17 +5,17 @@ import shutil
 import pytest
 
 from pkgpanda import Install, Repository
-from pkgpanda.util import expect_fs
+from pkgpanda.util import expect_fs, resources_test_dir
 
 
 @pytest.fixture
 def repository():
-    return Repository("../resources/packages")
+    return Repository(str(resources_test_dir("packages")))
 
 
 @pytest.fixture
 def install():
-    return Install("../resources/install", "../resources/systemd", True, False, True)
+        return Install(resources_test_dir("install"), resources_test_dir("systemd"), True, False, True)
 
 
 # Test that the active set is detected correctly.
@@ -44,8 +44,8 @@ def test_recovery_noop(install):
 
 def test_recovery_archive(tmpdir):
     # Recover from the "archive" state correctly.
-    shutil.copytree("../resources/install_recovery_archive", str(tmpdir.join("install")), symlinks=True)
-    install = Install(str(tmpdir.join("install")), "../resources/systemd", True, False, True)
+    shutil.copytree(resources_test_dir("install_recovery_archive"), str(tmpdir.join("install")), symlinks=True)
+    install = Install(str(tmpdir.join("install")), resources_test_dir("systemd"), True, False, True)
     action, _ = install.recover_swap_active()
     assert action
 
@@ -70,8 +70,8 @@ def test_recovery_archive(tmpdir):
 
 def test_recovery_move_new(tmpdir):
     # From the "move_new" state correctly.
-    shutil.copytree("../resources/install_recovery_move", str(tmpdir.join("install")), symlinks=True)
-    install = Install(str(tmpdir.join("install")), "../resources/systemd", True, False, True)
+    shutil.copytree(resources_test_dir("install_recovery_move"), str(tmpdir.join("install")), symlinks=True)
+    install = Install(str(tmpdir.join("install")), resources_test_dir("systemd"), True, False, True)
     action, _ = install.recover_swap_active()
     assert action
 
