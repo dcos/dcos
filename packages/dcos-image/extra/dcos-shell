@@ -3,7 +3,7 @@ set -o errexit -o nounset -o pipefail
 
 source /opt/mesosphere/environment.export
 
-if [ $# -eq 1 ]; then
+if [ $# -eq 0 ]; then
   exec "$SHELL"
 fi
 
