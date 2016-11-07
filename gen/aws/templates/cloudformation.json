@@ -50,10 +50,10 @@
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m3.xlarge"
+        "default": "c4.xlarge"
       },
       "SlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "c4.xlarge"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -65,7 +65,7 @@
         "default": "10.0.0.0/16"
       },
       "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "c4.xlarge"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -540,7 +540,14 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [
+	      { "DeviceName": "/dev/xvda",
+		"Ebs": {
+		    "VolumeSize": "100",
+		    "DeleteOnTermination": "true",
+		    "VolumeType": "gp2"
+		}
+	      }],
         "SecurityGroups" : [ { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
@@ -724,7 +731,14 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [
+	      { "DeviceName": "/dev/xvda",
+		"Ebs": {
+		    "VolumeSize": "100",
+		    "DeleteOnTermination": "true",
+		    "VolumeType": "gp2"
+		}
+	      }],
         "SecurityGroups" : [ { "Ref" : "SlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
@@ -768,7 +782,14 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [
+	      { "DeviceName": "/dev/xvda",
+		"Ebs": {
+		    "VolumeSize": "100",
+		    "DeleteOnTermination": "true",
+		    "VolumeType": "gp2"
+		}
+	      }],
         "SecurityGroups" : [ { "Ref" : "PublicSlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",

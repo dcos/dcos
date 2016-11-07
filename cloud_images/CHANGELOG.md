@@ -56,6 +56,9 @@ DC/OS AMI's:
 * us-east-1: ami-7848b115
 * us-west-1: ami-a891ebc8
 * us-west-2: ami-1e22d97e
+* ap-northeast-2: ami-6c419502
+* ap-south-1: ami-1a99ed75
+* us-east-2: ami-624e1407
 
 #### centos7-201606081536
 

@@ -120,6 +120,18 @@ aws_region_names = [
     {
         'name': 'Asia Pacific (Sydney)',
         'id': 'ap-southeast-2'
+    },
+    {
+        'name': 'Asia Pacific (Seoul)',
+        'id': 'ap-northeast-2'
+    },
+    {
+        'name': 'Asia Pacific (Mumbai)',
+        'id': 'ap-south-1'
+    },
+    {
+        'name': 'US East (Ohio)',
+        'id': 'us-east-2'
     }]
 
 
@@ -183,6 +195,24 @@ region_to_ami_map = {
         'stable': 'ami-2551d145',
         'el7': 'ami-4953df29',
         'natami': 'ami-bb69128b'
+    },
+    'ap-northeast-2': {
+        'coreos': 'ami-4622f628',
+        'stable': 'ami-4622f628',
+        'el7': 'ami-6c419502',
+        'natami': 'ami-b036e2de'
+    },
+    'ap-south-1': {
+        'coreos': 'ami-d4a7d3bb',
+        'stable': 'ami-d4a7d3bb',
+        'el7': 'ami-1a99ed75',
+        'natami': 'ami-93b5c1fc'
+    },
+    'us-east-2': {
+        'coreos': 'ami-37217b52',
+        'stable': 'ami-37217b52',
+        'el7': 'ami-624e1407',
+        'natami': 'ami-8d5a00e8'
     }
 }
 
