@@ -5,18 +5,23 @@ export device=${1:-}
 export mount_location=${2:-}
 
 function usage {
-cat <<USAGE
- USAGE: $(basename "$0") <device> <mount_location>
+cat <<EOUSAGE
+USAGE: $(basename "$0") <device> <mount_location>
 
-  This script will format, and persistently mount the device to the specified location.
-  It is intended to run as an early systemd unit (local-fs-pre.target) on AWS to set up EBS volumes.
-  It will only execute if <device> doesn't already contain a filesystem.
+ This script will format, and persistently mount the device to the specified
+ location. It is intended to run as an early systemd unit (local-fs-pre.target)
+ on AWS to set up EBS volumes.
 
- EXAMPLES:
+ If <mount_location> is /var/log the script will migrate existing data to the
+ new filesystem.
 
-  $(basename "$0") /dev/xvde /dcos/volume1
+ It will only execute if <device> doesn't already contain a filesystem.
 
-USAGE
+EXAMPLES:
+
+ $(basename "$0") /dev/xvde /dcos/volume1
+
+EOUSAGE
 }
 
 for i in "$@"
