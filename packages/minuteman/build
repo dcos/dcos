@@ -31,6 +31,7 @@ ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/mnesia
 ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/minuteman/lashup
+ExecStartPre=/usr/bin/env modprobe ip_vs_wlc
 ExecStart=${PKG_PATH}/minuteman/bin/minuteman-env foreground
 Environment=HOME=/opt/mesosphere
 EOF
