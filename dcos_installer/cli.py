@@ -164,7 +164,15 @@ dispatch_dict_simple = {
     'aws-cloudformation': (
         lambda args: backend.do_aws_cf_configure(),
         'EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION',
-        'Generate AWS Advanced AWS CloudFormation templates using the provided config')
+        'Generate AWS Advanced AWS CloudFormation templates using the provided config'),
+    'update-config': (
+        lambda args: backend.update_config(),
+        'EXECUTING CONFIGURATION GENERATION',
+        'Execute the configuration generation'),
+    'generate-upgrade-script': (
+        lambda args: backend.generate_upgrade_script(),
+        'EXECUTING UPGRADE SCRIPT GENERATION',
+        'Execute the upgrade script generation')
 }
 
 dispatch_dict_aio = {

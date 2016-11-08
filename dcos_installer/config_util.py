@@ -7,21 +7,29 @@ import gen
 import gen.installer.aws
 import gen.installer.bash
 import pkgpanda
-from dcos_installer.constants import SERVE_DIR
+from dcos_installer.constants import GENCONF_DIR, GENERATED_CONFIG_DIR, SERVE_DIR
+
 
 log = logging.getLogger(__name__)
 
 
-def do_configure(config):
+def do_configure(config, updating_config=False):
     gen_out = config.do_gen_configure()
-    subprocess.check_call(['mkdir', '-p', SERVE_DIR])
-    gen.installer.bash.generate(gen_out, SERVE_DIR)
+
+    config_id = gen_out.arguments['config_id']
+    config_id_dir = GENERATED_CONFIG_DIR + config_id + '/serve'
+    output_dir = config_id_dir if updating_config else SERVE_DIR
+    bootstrap_dir = output_dir + '/bootstrap'
+
+    subprocess.check_call(['mkdir', '-p', output_dir])
+    gen.installer.bash.generate(gen_out, output_dir)
 
     # Get bootstrap from artifacts
     # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
-    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
+    fetch_bootstrap(gen_out.arguments['bootstrap_id'], bootstrap_dir)
     # Write some package metadata
-    pkgpanda.util.write_json('genconf/cluster_packages.json', gen_out.cluster_packages)
+    base_dir = GENERATED_CONFIG_DIR + config_id if updating_config else GENCONF_DIR
+    pkgpanda.util.write_json(base_dir + '/cluster_packages.json', gen_out.cluster_packages)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):
@@ -51,11 +59,10 @@ def do_move_atomic(src_dir, dest_dir, filenames):
         rollback()
 
 
-def fetch_bootstrap(bootstrap_id):
+def fetch_bootstrap(bootstrap_id, dest_dir):
     filenames = [
         "{}.bootstrap.tar.xz".format(bootstrap_id),
         "{}.active.json".format(bootstrap_id)]
-    dest_dir = "genconf/serve/bootstrap/"
     container_cache_dir = "artifacts/bootstrap/"
 
     # If all the targets already exist, no-op
@@ -70,5 +77,5 @@ def fetch_bootstrap(bootstrap_id):
             log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
             raise FileNotFoundError(filename)
 
-    subprocess.check_call(['mkdir', '-p', 'genconf/serve/bootstrap/'])
+    subprocess.check_call(['mkdir', '-p', dest_dir])
     do_move_atomic(container_cache_dir, dest_dir, filenames)

@@ -63,7 +63,7 @@ class Config():
     def __init__(self, config_path):
         self.config_path = config_path
 
-        # Create the config file iff allowed and there isn't one provided by the user.
+        # Create the config file if allowed and there isn't one provided by the user.
 
         self._config = self._load_config()
         if not isinstance(self._config, dict):
