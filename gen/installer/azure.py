@@ -201,6 +201,7 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
         args['exhibitor_azure_account_key'] = ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
                                                "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]")
         args['cluster_name'] = "[[[variables('masterPublicIPAddressName')]]]"
+        args['bootstrap_tmp_dir'] = "/var/tmp"
         dcos_template = gen_templates(args, 'acs')
     else:
         raise ValueError("Unknown Azure varietal specified")
