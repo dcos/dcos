@@ -90,7 +90,6 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
     cluster.marathon.deploy_test_pod_and_check(pod_definition, test_uuid)
 
 
-
 def test_octarine_http(cluster, timeout=30):
     """
     Test if we are able to send traffic through octarine.

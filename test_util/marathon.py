@@ -203,7 +203,7 @@ class Marathon(test_util.helpers.ApiClient):
                             "completed in {} seconds.".format(timeout))
 
     def deploy_test_pod_and_check(self, pod, test_uuid):
-        with deploy_pod_and_cleanup(pod) as instances:
+        with self.deploy_pod_and_cleanup(pod) as instances:
             assert pod['scaling']['instances'] == instances
 
     def deploy_pod(self, pod_definition, timeout=120):
@@ -221,7 +221,6 @@ class Marathon(test_util.helpers.ApiClient):
                      after which the test should be failed.
             check_health: wait until Marathon reports tasks as healthy before
                           returning
-
         Returns:
             Scaling instance count
         """
@@ -318,7 +317,6 @@ class Marathon(test_util.helpers.ApiClient):
         yield self.deploy_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
         self.destroy_app(app_definition['id'], timeout)
-
 
     @contextmanager
     def deploy_pod_and_cleanup(self, pod_definition, timeout=120, ignore_failed_tasks=False):
