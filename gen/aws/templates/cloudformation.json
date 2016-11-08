@@ -49,10 +49,10 @@
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.xlarge"
       },
       "SlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.xlarge"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -64,7 +64,7 @@
         "default": "10.0.0.0/16"
       },
       "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.xlarge"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -317,7 +317,7 @@
         "SourceDestCheck" : "false",
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m3.medium",
+        "InstanceType" : "m4.large",
         "NetworkInterfaces" : [
           {
             "SubnetId" : { "Ref" : "PublicSubnet" },
