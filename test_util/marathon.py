@@ -319,7 +319,6 @@ class Marathon(test_util.helpers.ApiClient):
         self.destroy_app(app_definition['id'], timeout)
 
     @contextmanager
-    def deploy_pod_and_cleanup(self, pod_definition, timeout=120, ignore_failed_tasks=False):
-        yield self.deploy_pod(
-            pod_definition, timeout, ignore_failed_tasks)
+    def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
+        yield self.deploy_pod(pod_definition, timeout)
         self.destroy_pod(pod_definition['id'], timeout)
