@@ -1,9 +1,0 @@
-{
-  "requires": ["mesos"],
-    "single_source" : {
-      "kind": "git",
-      "git": "https://github.com/dcos/mesos-overlay-modules.git",
-      "ref": "0cff3a004729a8f220d6347ad453a390d3dc74c7",
-      "ref_origin": "master"
-    }
-}
