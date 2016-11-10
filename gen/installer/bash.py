@@ -568,6 +568,7 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     latest_complete_filename = pkgpanda.util.variant_prefix(variant) + 'complete.latest.json'
     docker_image_name = 'mesosphere/dcos-genconf:' + image_version
 
+
     # TODO(cmaloney): All of this should use package_resources
     with tempfile.TemporaryDirectory() as build_dir:
         assert build_dir[-1] != '/'

@@ -149,6 +149,21 @@ region_to_ami_map = {
 }
 
 
+region_instance_type_map = {
+    'ap-south-1': {
+        'm4.xlarge'
+    },
+    'ap-northeast-2': {
+        'm4.xlarge'
+    },
+    'us-east-2': {
+        'm4.xlarge'
+    },
+    'default': {
+        'm4.xlarge'
+    }
+}
+
 late_services = """- name: dcos-cfn-signal.service
   command: start
   no_block: true
