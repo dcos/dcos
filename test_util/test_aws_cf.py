@@ -172,5 +172,6 @@ def provide_cluster(options):
     options.add_env['AWS_STACK_NAME'] = stack_name
     return cf, ssh_info
 
+
 if __name__ == '__main__':
     main()

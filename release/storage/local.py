@@ -75,6 +75,7 @@ class LocalStorageProvider(AbstractStorageProvider):
     def url(self):
         return 'file://' + self.__storage_path + '/'
 
+
 factories = {
     'path': LocalStorageProvider
 }

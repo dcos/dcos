@@ -103,6 +103,7 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
         for blob_name in self.list_recursive(path):
             self.blob_service.delete_blob(self.container, blob_name)
 
+
 factories = {
     "block_blob": AzureBlockBlobStorageProvider
 }
