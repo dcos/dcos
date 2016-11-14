@@ -77,8 +77,11 @@
     },
     "agentVMSize": {
       "allowedValues": [
-        "Standard_A0",
-        "Standard_A1",
+        "Basic_A2",
+        "Basic_A3",
+        "Basic_A4",
+        "Standard_A10",
+        "Standard_A11",
         "Standard_A2",
         "Standard_A3",
         "Standard_A4",
@@ -87,43 +90,68 @@
         "Standard_A7",
         "Standard_A8",
         "Standard_A9",
-        "Standard_A10",
-        "Standard_A11",
-        "Standard_D1",
-        "Standard_D2",
-        "Standard_D3",
-        "Standard_D4",
         "Standard_D11",
+        "Standard_D11_v2",
         "Standard_D12",
+        "Standard_D12_v2",
         "Standard_D13",
+        "Standard_D13_v2",
         "Standard_D14",
-        "Standard_D1_v2",
+        "Standard_D14_v2",
+        "Standard_D15_v2",
+        "Standard_D2",
         "Standard_D2_v2",
+        "Standard_D3",
         "Standard_D3_v2",
+        "Standard_D4",
         "Standard_D4_v2",
         "Standard_D5_v2",
-        "Standard_D11_v2",
-        "Standard_D12_v2",
-        "Standard_D13_v2",
-        "Standard_D14_v2",
+        "Standard_DS11",
+        "Standard_DS11_v2",
+        "Standard_DS12",
+        "Standard_DS12_v2",
+        "Standard_DS13",
+        "Standard_DS13_v2",
+        "Standard_DS14",
+        "Standard_DS14_v2",
+        "Standard_DS15_v2",
+        "Standard_DS2",
+        "Standard_DS2_v2",
+        "Standard_DS3",
+        "Standard_DS3_v2",
+        "Standard_DS4",
+        "Standard_DS4_v2",
+        "Standard_DS5_v2",
+        "Standard_F16",
+        "Standard_F16s",
+        "Standard_F2",
+        "Standard_F2s",
+        "Standard_F4",
+        "Standard_F4s",
+        "Standard_F8",
+        "Standard_F8s",
         "Standard_G1",
         "Standard_G2",
         "Standard_G3",
         "Standard_G4",
         "Standard_G5",
-        "Standard_DS1",
-        "Standard_DS2",
-        "Standard_DS3",
-        "Standard_DS4",
-        "Standard_DS11",
-        "Standard_DS12",
-        "Standard_DS13",
-        "Standard_DS14",
         "Standard_GS1",
         "Standard_GS2",
         "Standard_GS3",
         "Standard_GS4",
-        "Standard_GS5"
+        "Standard_GS5",
+        "Standard_H16",
+        "Standard_H16m",
+        "Standard_H16mr",
+        "Standard_H16r",
+        "Standard_H8",
+        "Standard_H8m",
+        "Standard_NC12",
+        "Standard_NC24",
+        "Standard_NC6",
+        "Standard_NV12",
+        "Standard_NV24",
+        "Standard_NV6"
       ],
       "defaultValue": "Standard_D2",
       "metadata": {
@@ -343,10 +371,13 @@
     "osImageVersion": "[variables('linuxVersion')]",
     "virtualNetworkName": "[concat(variables('orchestratorName'), '-vnet-', variables('nameSuffix'))]",
     "vmSizesMap": {
-      "Standard_A0": {
+      "Basic_A2": {
         "storageAccountType": "Standard_LRS"
       },
-      "Standard_A1": {
+      "Basic_A3": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Basic_A4": {
         "storageAccountType": "Standard_LRS"
       },
       "Standard_A10": {
@@ -379,9 +410,6 @@
       "Standard_A9": {
         "storageAccountType": "Standard_LRS"
       },
-      "Standard_D1": {
-        "storageAccountType": "Standard_LRS"
-      },
       "Standard_D11": {
         "storageAccountType": "Standard_LRS"
       },
@@ -406,7 +434,7 @@
       "Standard_D14_v2": {
         "storageAccountType": "Standard_LRS"
       },
-      "Standard_D1_v2": {
+      "Standard_D15_v2": {
         "storageAccountType": "Standard_LRS"
       },
       "Standard_D2": {
@@ -430,29 +458,77 @@
       "Standard_D5_v2": {
         "storageAccountType": "Standard_LRS"
       },
-      "Standard_DS1": {
+      "Standard_DS11": {
         "storageAccountType": "Premium_LRS"
       },
-      "Standard_DS11": {
+      "Standard_DS11_v2": {
         "storageAccountType": "Premium_LRS"
       },
       "Standard_DS12": {
         "storageAccountType": "Premium_LRS"
       },
+      "Standard_DS12_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
       "Standard_DS13": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS13_v2": {
         "storageAccountType": "Premium_LRS"
       },
       "Standard_DS14": {
         "storageAccountType": "Premium_LRS"
       },
+      "Standard_DS14_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS15_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
       "Standard_DS2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS2_v2": {
         "storageAccountType": "Premium_LRS"
       },
       "Standard_DS3": {
         "storageAccountType": "Premium_LRS"
       },
+      "Standard_DS3_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
       "Standard_DS4": {
         "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS4_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS5_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_F16": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F16s": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F2s": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F4": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F4s": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F8": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F8s": {
+        "storageAccountType": "Standard_LRS"
       },
       "Standard_G1": {
         "storageAccountType": "Standard_LRS"
@@ -483,6 +559,42 @@
       },
       "Standard_GS5": {
         "storageAccountType": "Premium_LRS"
+      },
+      "Standard_H16": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_H16m": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_H16mr": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_H16r": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_H8": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_H8m": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NC12": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NC24": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NC6": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NV12": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NV24": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_NV6": {
+        "storageAccountType": "Standard_LRS"
       }
     },
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
@@ -494,7 +606,6 @@
     "agentPrivateAddressPrefix": "10.32.0.0/11",
     "agentPublicSubnetName": "[concat(variables('orchestratorName'), '-agentPublicSubnet')]",
     "agentPrivateSubnetName": "[concat(variables('orchestratorName'), '-agentPrivateSubnet')]",
-    "storageAccountType": "Standard_LRS",
     "storageAccountPrefixes": [
       "0","6","c","i","o","u","1","7","d","j","p","v",
       "2","8","e","k","q","w","3","9","f","l","r","x",
@@ -589,7 +700,7 @@
     "enableNewStorageAccountNaming": "[parameters('enableNewStorageAccountNaming')]",
     "masterSizes": [
       "Standard_D2",
-      "Standard_A1"
+      "Standard_A2"
     ]
 {% switch oauth_available %}
 {% case "true" %}
