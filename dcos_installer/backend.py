@@ -180,12 +180,12 @@ aws_advanced_source = gen.internals.Source({
         # environment to set as keys. Not doing for now since they would need to be passed through
         # the `docker run` inside dcos_generate_config.sh
     },
-    'must': gen.merge_dictionaries({
+    'must': {
         'provider': 'aws',
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path
-    }, gen.build_deploy.aws.groups['master'][1]),
+    },
     'conditional': {
         'aws_template_upload': {
             'true': {
@@ -239,11 +239,13 @@ def do_aws_cf_configure():
     config = Config(CONFIG_PATH)
 
     gen_config = config.as_gen_format()
-    # TODO(cmaloney): this is hacky....
-    del gen_config['provider']
 
-    sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(gen_config, [])
-    sources.append(aws_advanced_source)
+    extra_sources = [
+        gen.build_deploy.aws.aws_base_source,
+        aws_advanced_source,
+        gen.build_deploy.aws.groups['master'][1]]
+
+    sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(gen_config, [], extra_sources)
     targets.append(get_aws_advanced_target())
     resolver = gen.internals.resolve_configuration(sources, targets, gen_config)
     # TODO(cmaloney): kill this function and make the API return the structured

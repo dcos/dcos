@@ -25,8 +25,6 @@ setup(
     packages=[
         'dcos_installer',
         'gen',
-        'gen.aws',
-        'gen.azure',
         'gen.build_deploy',
         'pkgpanda',
         'pkgpanda.build',

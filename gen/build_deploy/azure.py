@@ -6,6 +6,7 @@ import sys
 import urllib
 from copy import deepcopy
 
+import pkg_resources
 import yaml
 
 import gen
@@ -14,6 +15,7 @@ import gen.template
 import pkgpanda.build
 import release
 import release.storage
+from gen.internals import Source
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
@@ -38,6 +40,24 @@ INSTANCE_GROUPS = {
         'roles': ['slave_public']
     }
 }
+
+
+azure_base_source = Source(entry={
+    'default': {
+        'enable_docker_gc': 'true'
+    },
+    'must': {
+        'resolvers': '["168.63.129.16"]',
+        'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
+        'master_discovery': 'static',
+        'exhibitor_storage_backend': 'azure',
+        'master_cloud_config': '{{ master_cloud_config }}',
+        'slave_cloud_config': '{{ slave_cloud_config }}',
+        'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
+        'oauth_enabled': "[[[variables('oauthEnabled')]]]",
+        'oauth_available': 'true'
+    }
+})
 
 
 def validate_cloud_config(cc_string):
@@ -101,7 +121,7 @@ def render_arm(
     return json.dumps(template_json)
 
 
-def gen_templates(user_args, arm_template):
+def gen_templates(gen_arguments, arm_template, extra_sources):
     '''
     Render the cloud_config template given a particular set of options
 
@@ -111,7 +131,7 @@ def gen_templates(user_args, arm_template):
                          by the gen library (e.g. 'azure/templates/azuredeploy.json')
     '''
     results = gen.generate(
-        arguments=user_args,
+        arguments=gen_arguments,
         extra_templates=['azure/cloud-config.yaml', 'azure/templates/' + arm_template + '.json'],
         cc_package_files=[
             '/etc/exhibitor',
@@ -119,7 +139,8 @@ def gen_templates(user_args, arm_template):
             '/etc/adminrouter.env',
             '/etc/ui-config.json',
             '/etc/mesos-master-provider',
-            '/etc/master_list'])
+            '/etc/master_list'],
+        extra_sources=[azure_base_source] + extra_sources)
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -175,6 +196,30 @@ def master_list_arm_json(num_masters, varietal):
     return json.dumps([arm_expression.format(x) for x in range(num_masters)])
 
 
+azure_dcos_source = Source({
+    'must': {
+        'exhibitor_azure_prefix': "[[[variables('uniqueName')]]]",
+        'exhibitor_azure_account_name': "[[[variables('storageAccountName')]]]",
+        'exhibitor_azure_account_key': ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
+                                        "variables('storageAccountName')), '2015-05-01-preview').key1]]]"),
+        'cluster_name': "[[[variables('uniqueName')]]]"
+    }
+})
+
+azure_acs_source = Source({
+    'must': {
+        'ui_tracking': 'false',
+        'telemetry_enabled': 'false',
+        'exhibitor_azure_prefix': "[[[variables('masterPublicIPAddressName')]]]",
+        'exhibitor_azure_account_name': "[[[variables('masterStorageAccountExhibitorName')]]]",
+        'exhibitor_azure_account_key': ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
+                                        "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]"),
+        'cluster_name': "[[[variables('masterPublicIPAddressName')]]]",
+        'bootstrap_tmp_dir': "/var/tmp"
+    }
+})
+
+
 def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix):
     '''
     Return a tuple: the generated template for num_masters and the artifact dict.
@@ -185,24 +230,19 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     @param varietal: string, indicate template varietal to build for either 'acs' or 'dcos'
     '''
 
-    gen_arguments['master_list'] = master_list_arm_json(num_masters, varietal)
-    args = deepcopy(gen_arguments)
+    master_list_source = Source()
+    master_list_source.add_must('master_list', master_list_arm_json(num_masters, varietal))
 
     if varietal == 'dcos':
-        args['exhibitor_azure_prefix'] = "[[[variables('uniqueName')]]]"
-        args['exhibitor_azure_account_name'] = "[[[variables('storageAccountName')]]]"
-        args['exhibitor_azure_account_key'] = ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                               "variables('storageAccountName')), '2015-05-01-preview').key1]]]")
-        args['cluster_name'] = "[[[variables('uniqueName')]]]"
-        dcos_template = gen_templates(args, 'azuredeploy')
+        dcos_template = gen_templates(
+            gen_arguments,
+            'azuredeploy',
+            extra_sources=[master_list_source, azure_dcos_source])
     elif varietal == 'acs':
-        args['exhibitor_azure_prefix'] = "[[[variables('masterPublicIPAddressName')]]]"
-        args['exhibitor_azure_account_name'] = "[[[variables('masterStorageAccountExhibitorName')]]]"
-        args['exhibitor_azure_account_key'] = ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                               "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]")
-        args['cluster_name'] = "[[[variables('masterPublicIPAddressName')]]]"
-        args['bootstrap_tmp_dir'] = "/var/tmp"
-        dcos_template = gen_templates(args, 'acs')
+        dcos_template = gen_templates(
+            gen_arguments,
+            'acs',
+            extra_sources=[master_list_source, azure_acs_source])
     else:
         raise ValueError("Unknown Azure varietal specified")
 
@@ -218,13 +258,9 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
     for arm_t in ['dcos', 'acs']:
         for num_masters in [1, 3, 5]:
             for bootstrap_name, gen_arguments in variant_arguments.items():
-                gen_args = deepcopy(gen_arguments)
-                if arm_t == 'acs':
-                    gen_args['ui_tracking'] = 'false'
-                    gen_args['telemetry_enabled'] = 'false'
                 yield from make_template(
                     num_masters,
-                    gen_args,
+                    gen_arguments,
                     arm_t,
                     pkgpanda.util.variant_prefix(bootstrap_name))
 
