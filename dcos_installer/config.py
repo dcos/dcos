@@ -44,9 +44,6 @@ def normalize_config_validation(messages):
     return validation
 
 
-extra_args = {'provider': 'onprem'}
-
-
 def make_default_config_if_needed(config_path):
     if os.path.exists(config_path):
         return
