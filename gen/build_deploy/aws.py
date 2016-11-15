@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from copy import deepcopy
+from collections import namedtuple
 
 import botocore.exceptions
 import yaml
@@ -184,6 +185,8 @@ groups = {
 }
 
 AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
+
+ResultTuple = namedtuple('ResultTuple', ['cloudformation', 'results'])
 
 
 def get_test_session(config=None):
@@ -368,10 +371,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
-    return gen.Bunch({
-        'cloudformation': cloudformation,
-        'results': results
-    })
+    return ResultTuple(cloudformation, results)
 
 
 def get_s3_url_prefix(arguments, reproducible_artifact_path) -> str:
@@ -485,10 +485,7 @@ def gen_templates(arguments):
     with logger.scope("Validating CloudFormation"):
         validate_cf(cloudformation)
 
-    return gen.Bunch({
-        'cloudformation': cloudformation,
-        'results': results
-    })
+    return ResultTuple(cloudformation, results)
 
 
 button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_full_s3_url}/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
