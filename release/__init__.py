@@ -429,7 +429,7 @@ def make_abs(path):
 
 
 def do_build_docker(name, path):
-    path_sha = pkgpanda.build.hash_folder(path)
+    path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
     print("Attempting to pull docker:", container_name)
