@@ -1,5 +1,4 @@
 import copy
-import functools
 import logging
 import os
 from urllib.parse import urlparse
@@ -316,7 +315,7 @@ class ClusterApi(test_util.helpers.ApiClient):
             netloc = '{}:{}'.format(node, port)
         return '{}://{}'.format(self.scheme, netloc)
 
-    def cluster_api_request(self, method, path, host_url=None, node=None, port=None, **kwargs):
+    def request_wrapper(self, request_fn, path, host_url=None, node=None, port=None, **kwargs):
         """
         Performs the same specialized request as ClusterApi but allows setting node
         Args:
@@ -327,31 +326,26 @@ class ClusterApi(test_util.helpers.ApiClient):
         if node is not None:
             assert host_url is None, 'Cannot set both node and host_url'
             host_url = self.get_node_url(node, port=port)
-        return self.api_request(method, path, host_url=host_url, **kwargs)
+        return super().request_wrapper(request_fn, path, host_url=host_url, **kwargs)
 
-    get = functools.partialmethod(cluster_api_request, 'get')
-    post = functools.partialmethod(cluster_api_request, 'post')
-    put = functools.partialmethod(cluster_api_request, 'put')
-    delete = functools.partialmethod(cluster_api_request, 'delete')
-    options = functools.partialmethod(cluster_api_request, 'options')
-    head = functools.partialmethod(cluster_api_request, 'head')
-    patch = functools.partialmethod(cluster_api_request, 'patch')
-    delete = functools.partialmethod(cluster_api_request, 'delete')
-
-    def get_client(self, path, default_headers=None):
-        return test_util.helpers.ApiClient(
+    def get_client(self, path):
+        new_client = test_util.helpers.ApiClient(
             default_host_url=self.dcos_url,
             api_base=path,
             ca_cert_path=self.ca_cert_path,
-            default_headers=self.default_headers if default_headers is None else default_headers)
+            default_headers=self.default_headers)
+        # give spawned clients the node= reqest option
+        new_client.request_wrapper = self.request_wrapper
 
     @property
     def marathon(self):
-        return test_util.marathon.Marathon(
+        marathon_client = test_util.marathon.Marathon(
             default_host_url=self.dcos_url,
             default_os_user=self.default_os_user,
             default_headers=self.default_headers,
             ca_cert_path=self.ca_cert_path)
+        # give spawned clients the node= request option
+        marathon_client.request_wrapper = self.request_wrapper
 
     @property
     def metronome(self):
