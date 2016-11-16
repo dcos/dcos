@@ -1,6 +1,6 @@
 from shutil import copytree
 
-from pkgpanda.util import run
+from pkgpanda.util import resources_test_dir, run
 
 
 list_output = """mesos:
@@ -23,22 +23,22 @@ mesos-config:
 
 
 def test_list():
-    assert run(["pkgpanda", "list", "--repository=../resources/packages"]) == list_output
+    assert run(["pkgpanda", "list", "--repository={}".format(resources_test_dir("packages"))]) == list_output
 
 
 def test_active():
-    assert run(["pkgpanda", "active", "--root=../resources/install"]) == active_output
+    assert run(["pkgpanda", "active", "--root={}".format(resources_test_dir("install"))]) == active_output
 
 
 def test_remove(tmpdir):
     repo_dir = str(tmpdir.join("repo"))
-    copytree("../resources/packages", repo_dir)
+    copytree(resources_test_dir("packages"), repo_dir)
     assert run([
         "pkgpanda",
         "remove",
         "mesos--0.22.0",
         "--repository={}".format(repo_dir),
-        "--root=../resources/install_empty"])
+        "--root={}".format(resources_test_dir("install_empty"))])
 
     assert run(["pkgpanda", "list", "--repository={}".format(repo_dir)]) == list_remove_output
     # TODO(cmaloney): Test removing a non-existant package.

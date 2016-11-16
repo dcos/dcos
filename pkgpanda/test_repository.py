@@ -5,10 +5,12 @@ import pytest
 import pkgpanda.exceptions
 from pkgpanda import Repository
 
+from pkgpanda.util import resources_test_dir
+
 
 @pytest.fixture
 def repository():
-    return Repository("../resources/packages")
+    return Repository(resources_test_dir("packages"))
 
 
 def test_list(repository):
