@@ -4,6 +4,7 @@ import os
 from shutil import copytree
 
 from pkgpanda.http import app
+from pkgpanda.util import resources_test_dir
 
 
 def assert_response(response, status_code, body, headers=None, body_cmp=operator.eq):
@@ -78,8 +79,8 @@ def assert_error(response, status_code, headers=None, **kwargs):
 
 def _set_test_config(app):
     app.config['TESTING'] = True
-    app.config['DCOS_ROOT'] = '../resources/install'
-    app.config['DCOS_REPO_DIR'] = '../resources/packages'
+    app.config['DCOS_ROOT'] = resources_test_dir('install')
+    app.config['DCOS_REPO_DIR'] = resources_test_dir('packages')
 
 
 def test_list_packages():
@@ -139,7 +140,7 @@ def test_get_active_package():
 def test_activate_packages(tmpdir):
     _set_test_config(app)
     install_dir = str(tmpdir.join('install'))
-    copytree('../resources/install', install_dir, symlinks=True)
+    copytree(resources_test_dir('install'), install_dir, symlinks=True)
     app.config['DCOS_ROOT'] = install_dir
     app.config['DCOS_ROOTED_SYSTEMD'] = True
     client = app.test_client()
@@ -193,7 +194,7 @@ def test_fetch_package(tmpdir):
             '/repository/mesos--0.22.0',
             content_type='application/json',
             data=json.dumps({
-                'repository_url': 'file://{}/../resources/remote_repo'.format(os.getcwd())
+                'repository_url': 'file://{}/{}/'.format(os.getcwd(), resources_test_dir('remote_repo'))
             }),
         ),
         204,
@@ -217,7 +218,7 @@ def test_fetch_package(tmpdir):
             '/repository/invalid---package',
             content_type='application/json',
             data=json.dumps({
-                'repository_url': 'file://{}/../resources/remote_repo'.format(os.getcwd())
+                'repository_url': 'file://{}/'.format(resources_test_dir('remote_repo'))
             }),
         ),
         400,
@@ -227,7 +228,7 @@ def test_fetch_package(tmpdir):
 def test_remove_package(tmpdir):
     _set_test_config(app)
     repo_dir = str(tmpdir.join('repo'))
-    copytree('../resources/packages', repo_dir)
+    copytree(resources_test_dir('packages'), repo_dir)
     app.config['DCOS_REPO_DIR'] = repo_dir
     client = app.test_client()
 

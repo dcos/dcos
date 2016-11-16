@@ -25,7 +25,7 @@ def template_by_instance_type(instance_type):
 
 
 def instances_to_hosts(instances):
-    return [Host(i['PrivateIpAddress'], i['PublicIpAddress'] if 'PublicIpAddress' in i else None) for i in instances]
+    return [Host(i.private_ip_address, i.public_ip_address) for i in instances]
 
 
 class BotoWrapper():
@@ -70,6 +70,7 @@ class CfStack():
     def __init__(self, stack_name, boto_wrapper):
         self.boto_wrapper = boto_wrapper
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
+        self._host_cache = {}
 
     def wait_for_status_change(self, state_1, state_2, wait_before_poll_min, timeout=60 * 60):
         """
@@ -127,10 +128,34 @@ class CfStack():
         self.wait_for_status_change('DELETE_IN_PROGRESS', 'DELETE_COMPLETE', wait_before_poll_min)
 
     def get_parameter(self, param):
+        """Returns param if in stack parameters, else returns None
+        """
         for p in self.stack.parameters:
             if p['ParameterKey'] == param:
                 return p['ParameterValue']
-        return None
+        raise KeyError('Key not found in template parameters: {}. Parameters: {}'.
+                       format(param, self.stack.parameters))
+
+    @retry_boto_rate_limits
+    def get_auto_scaling_instances(self, logical_id):
+        """ Get instances in ASG with logical_id. If logical_id is None, all ASGs will be used
+        Will return instance objects as describd here:
+        http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#instance
+
+        Note: there is no ASG resource hence the need for this method
+        """
+        ec2 = self.boto_wrapper.resource('ec2')
+        return [ec2.Instance(i['InstanceId']) for asg in self.boto_wrapper.client('autoscaling').
+                describe_auto_scaling_groups(
+                    AutoScalingGroupNames=[self.stack.Resource(logical_id).physical_resource_id])
+                ['AutoScalingGroups'] for i in asg['Instances']]
+
+    def get_hosts_cached(self, group_name, refresh=False):
+        if refresh or group_name not in self._host_cache:
+            host_list = instances_to_hosts(self.get_auto_scaling_instances(group_name))
+            self._host_cache[group_name] = host_list
+            return host_list
+        return self._host_cache[group_name]
 
 
 class DcosCfSimple(CfStack):
@@ -170,30 +195,14 @@ class DcosCfSimple(CfStack):
         bucket.delete()
         log.info('Delete successfully triggered for {}'.format(self.stack.stack_name))
 
-    def get_master_ips(self, state_list=None):
-        instances = self.get_group_instances(['MasterServerGroup'], state_list)
-        return instances_to_hosts(instances)
+    def get_master_ips(self, refresh=False):
+        return self.get_hosts_cached('MasterServerGroup', refresh=refresh)
 
-    def get_public_agent_ips(self, state_list=None):
-        instances = self.get_group_instances(['PublicSlaveServerGroup'], state_list)
-        return instances_to_hosts(instances)
+    def get_public_agent_ips(self, refresh=False):
+        return self.get_hosts_cached('PublicSlaveServerGroup', refresh=refresh)
 
-    def get_private_agent_ips(self, state_list=None):
-        instances = self.get_group_instances(['SlaveServerGroup'], state_list)
-        return instances_to_hosts(instances)
-
-    @retry_boto_rate_limits
-    def get_group_instances(self, group_list, state_list=None):
-        """Returns a list of dictionaries that describe currently running instances of group
-        """
-        filters = [{'Name': 'tag:aws:cloudformation:stack-name', 'Values': [self.stack.stack_name]}]
-        if group_list:
-            filters.append({'Name': 'tag:aws:cloudformation:logical-id', 'Values': group_list})
-        if state_list:
-            filters.append({'Name': 'instance-state-name', 'Values': state_list})
-        reservations = self.boto_wrapper.client('ec2').describe_instances(
-            Filters=filters)['Reservations']
-        return [instance for res in reservations for instance in res['Instances']]
+    def get_private_agent_ips(self, refresh=False):
+        return self.get_hosts_cached('SlaveServerGroup', refresh=refresh)
 
 
 class DcosCfAdvanced(CfStack):
@@ -274,46 +283,19 @@ class DcosCfAdvanced(CfStack):
             self.wait_for_stack_deletion()
             self.boto_wrapper.resource('ec2').Vpc(vpc_id).delete()
 
-    @retry_boto_rate_limits
-    def get_vpc(self):
-        vpc_id = self.boto_wrapper.client('ec2').describe_vpcs(Filters=[
-            {'Name': 'tag:Name', 'Values': [self.stack.stack_name]}])['Vpcs'][0]['VpcId']
-        return self.boto_wrapper.resouce('ec2').Vpc(vpc_id)
+    def get_master_ips(self, refresh=False):
+        return self.get_resource_stack('MasterStack').get_hosts_cached('MasterServerGroup', refresh=refresh)
 
-    def get_master_ips(self):
-        return self.get_substack_hosts('MasterStack')
+    def get_private_agent_ips(self, refresh=False):
+        return self.get_resource_stack('PrivateAgentStack').get_hosts_cached('PrivateAgentServerGroup', refresh=refresh)
 
-    def get_private_agent_ips(self):
-        return self.get_substack_hosts('PrivateAgentStack')
+    def get_public_agent_ips(self, refresh=False):
+        return self.get_resource_stack('PublicAgentStack').get_hosts_cached('PublicAgentServerGroup', refresh=refresh)
 
-    def get_public_agent_ips(self):
-        return self.get_substack_hosts('PublicAgentStack')
-
-    @retry_boto_rate_limits
     def get_resource_stack(self, resource_name):
         """Returns a CfStack for a given resource
         """
-        resources = self.boto_wrapper.client('cloudformation').describe_stack_resources(StackName=self.stack.stack_name)
-        print(resources)
-        for r in resources['StackResources']:
-            if r['LogicalResourceId'] == resource_name:
-                return CfStack(r['PhysicalResourceId'], self.boto_wrapper)
-
-    @retry_boto_rate_limits
-    def get_substack_instance_ids(self, substack):
-        """returns list of instance ids
-        """
-        asg = self.get_resource_stack(substack).stack.\
-            Resource(substack.replace('Stack', 'ServerGroup')).physical_resource_id
-        return [i['InstanceId'] for i in self.boto_wrapper.client('autoscaling').
-                describe_auto_scaling_groups(
-                AutoScalingGroupNames=[asg])['AutoScalingGroups'][0]['Instances']]
-
-    @retry_boto_rate_limits
-    def get_substack_hosts(self, substack):
-        instances = self.boto_wrapper.client('ec2').describe_instances(
-            InstanceIds=self.get_substack_instance_ids(substack))['Reservations'][0]['Instances']
-        return instances_to_hosts(instances)
+        return CfStack(self.stack.Resource(resource_name).physical_resource_id, self.boto_wrapper)
 
 
 class VpcCfStack(CfStack):
@@ -336,18 +318,10 @@ class VpcCfStack(CfStack):
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
         self.stack.delete()
 
-    @retrying.retry(wait_fixed=3000, stop_max_delay=600 * 1000,
-                    retry_on_result=lambda res: res is False)
-    @retry_boto_rate_limits
     def get_vpc_host_ips(self):
-        expected_instances = int(self.get_parameter('ClusterSize'))
-        reservations = self.boto_wrapper.client('ec2').describe_instances(Filters=[{
-            'Name': 'tag-value', 'Values': [self.stack.stack_name]}])['Reservations']
-        log.debug('Reservations for {}: {}'.format(self.stack.stack_id, reservations))
-        instances = [instance for res in reservations for instance in res['Instances']]
-        if len(instances) != expected_instances:
-            return False
-        return instances_to_hosts(instances)
+        # the vpc templates use the misleading name CentOSServerAutoScale for all deployments
+        # https://mesosphere.atlassian.net/browse/DCOS-11534
+        return self.get_hosts_cached('CentOSServerAutoScale')
 
 
 SSH_INFO = {

@@ -209,9 +209,8 @@ def do_hash_password(password):
 
 def dispatch(args):
     """ Dispatches the selected mode based on command line args. """
-    if getattr(args, 'set_superuser_password'):
-        assert len(args.set_superuser_password) == 1
-        password_hash = do_hash_password(args.set_superuser_password[0])
+    if args.action == 'set-superuser-password':
+        password_hash = do_hash_password(args.password)
         messages = backend.create_config_from_post(
             {'superuser_password_hash': password_hash},
             dcos_installer.constants.CONFIG_PATH)
@@ -220,11 +219,10 @@ def dispatch(args):
             sys.exit(1)
         sys.exit(0)
 
-    if getattr(args, 'hash_password'):
-        assert len(args.hash_password) == 1
+    if args.action == 'hash-password':
         # TODO(cmaloney): Import a function from the auth stuff to do the hashing and guarantee it
         # always matches
-        byte_str = do_hash_password(args.hash_password[0]).encode('ascii')
+        byte_str = do_hash_password(args.password).encode('ascii')
         sys.stdout.buffer.write(byte_str + b'\n')
         sys.exit(0)
 
@@ -254,7 +252,14 @@ def dispatch(args):
     sys.exit(1)
 
 
-def parse_args(args):
+class PasswordAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        assert self.option_strings[0][:2] == '--'
+        setattr(namespace, 'action', self.option_strings[0][2:])
+        setattr(namespace, self.dest, values)
+
+
+def get_argument_parser():
     """
     Parse CLI arguments and return a map of options.
     """
@@ -264,7 +269,8 @@ def parse_args(args):
 
     mutual_exc.add_argument(
         '--hash-password',
-        action='append',
+        action=PasswordAction,
+        dest='password',
         metavar='password',
         nargs='?',
         help='Hash a password and print the results to copy into a config.yaml.'
@@ -272,8 +278,9 @@ def parse_args(args):
 
     mutual_exc.add_argument(
         '--set-superuser-password',
-        action='append',
+        action=PasswordAction,
         metavar='password',
+        dest='password',
         nargs='?',
         help='Hash the given password and store it as the superuser password in config.yaml'
     )
@@ -317,17 +324,20 @@ def parse_args(args):
     for name, value in dispatch_dict_aio.items():
         add_mode(name, value[2])
 
-    return parser.parse_args(args)
+    parser.set_defaults(action='genconf')
+
+    return parser
 
 
 def main():
-    if len(sys.argv) == 1:
-        args = ["--genconf"]
-    else:
-        args = sys.argv[1:]
+    # Passd in by installer_internal_wrapper since in ash exec can't set argv0
+    # directly to not be the name of the binary being executed.
+    if 'INSTALLER_ARGV0' in os.environ:
+        sys.argv[0] = os.environ['INSTALLER_ARGV0']
+    argument_parser = get_argument_parser()
 
     try:
-        options = parse_args(args)
+        options = argument_parser.parse_args()
         setup_logger(options)
         dispatch(options)
     except dcos_installer.config.NoConfigError as ex:

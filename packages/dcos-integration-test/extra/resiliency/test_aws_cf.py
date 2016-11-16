@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 import pytest
 
@@ -32,20 +33,20 @@ def dcos_launchpad(cluster):
 @pytest.mark.last
 def test_agent_failure(dcos_launchpad, cluster, vip_apps):
     # make sure the app works before starting
+    @retry_boto_rate_limits
+    def get_running_agents(group_name):
+        return [i for i in dcos_launchpad.get_auto_scaling_instances(group_name)
+                if i.state['Name'] == 'running']
+
     test_util.helpers.wait_for_pong(vip_apps[0][1], 120)
     test_util.helpers.wait_for_pong(vip_apps[1][1], 10)
-
-    agents = [i['InstanceId'] for i in dcos_launchpad.
-              get_group_instances(['PublicSlaveServerGroup', 'SlaveServerGroup'], state_list=['running'])]
+    agents = [i.instance_id for i in get_running_agents('PublicSlaveServerGroup') +
+              get_running_agents('SlaveServerGroup')]
 
     # Agents are in autoscaling groups, so they will automatically be replaced
     dcos_launchpad.boto_wrapper.client('ec2').terminate_instances(InstanceIds=agents)
     waiter = dcos_launchpad.boto_wrapper.client('ec2').get_waiter('instance_terminated')
     retry_boto_rate_limits(waiter.wait)(InstanceIds=agents)
-
-    def get_running_agents():
-        return dcos_launchpad.get_group_instances(
-            ['PublicSlaveServerGroup', 'SlaveServerGroup'], state_list=['running'])
 
     # Tell mesos the machines are "down" and not coming up so things get rescheduled.
     down_hosts = [{'hostname': slave, 'ip': slave} for slave in cluster.all_slaves]
@@ -58,13 +59,15 @@ def test_agent_failure(dcos_launchpad, cluster, vip_apps):
     cluster.post('/mesos/machine/down', json=down_hosts).raise_for_status()
 
     # Wait for replacements
-    test_util.helpers.wait_for_len(get_running_agents, len(cluster.all_slaves), 600)
+    test_util.helpers.wait_for_len(partial(get_running_agents, 'SlaveServerGroup'), len(cluster.slaves), 600)
+    test_util.helpers.wait_for_len(
+        partial(get_running_agents, 'PublicSlaveServerGroup'), len(cluster.public_slaves), 600)
 
     # Reset the cluster to have the replacement agents
-    cluster.slaves = sorted([agent.private_ip for agent in
-                             dcos_launchpad.get_private_agent_ips(state_list=['running'])])
-    cluster.public_slaves = sorted([agent.private_ip for agent in
-                                    dcos_launchpad.get_public_agent_ips(state_list=['running'])])
+    cluster.slaves = sorted([agent.private_ip_address for agent in
+                             get_running_agents('SlaveServerGroup')])
+    cluster.public_slaves = sorted([agent.private_ip_address for agent in
+                                    get_running_agents('PublicSlaveServerGroup')])
     cluster.all_slaves = sorted(cluster.slaves + cluster.public_slaves)
 
     # verify that everything else is still working

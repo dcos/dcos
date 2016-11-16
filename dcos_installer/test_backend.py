@@ -42,6 +42,7 @@ def test_password_hash():
     password = 'DcosTestingPassword!@#'
     # only reads from STDOUT
     hash_pw = subprocess.check_output(['dcos_installer', '--hash-password', password])
+    print(hash_pw)
     hash_pw = hash_pw.decode('ascii').strip('\n')
     assert passlib.hash.sha512_crypt.verify(password, hash_pw), 'Hash does not match password'
 
