@@ -13,4 +13,9 @@ export DCOS_IMAGE_COMMIT={dcos_image_commit}
 export BOOTSTRAP_ID={bootstrap_id}
 export BOOTSTRAP_VARIANT={variant}
 
+# ash exec inside busybox doesn't have an equivalent to `-a` letting us set argv0
+# directly, and python also doesn't have a way of setting it, so we pass argv0
+# out of line and have it picked up by the installer
+export INSTALLER_ARGV0="dcos_generate_config.sh"
+
 exec /opt/mesosphere/bin/python3 /opt/mesosphere/bin/dcos_installer "$@"

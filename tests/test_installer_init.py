@@ -5,45 +5,54 @@ from dcos_installer import cli
 
 
 def test_default_arg_parser():
-    parser = cli.parse_args([])
+    parser = cli.get_argument_parser().parse_args([])
     assert parser.verbose is False
     assert parser.port == 9000
-    assert parser.action is None
+    assert parser.action == 'genconf'
 
 
 def test_set_arg_parser():
-    parser = cli.parse_args(['-v', '-p 12345'])
+    argument_parser = cli.get_argument_parser()
+
+    def parse_args(arg_list):
+        return argument_parser.parse_args(arg_list)
+
+    parser = parse_args(['-v', '-p 12345'])
     assert parser.verbose is True
     assert parser.port == 12345
-    parser = cli.parse_args(['--web'])
+    parser = parse_args(['--web'])
     assert parser.action == 'web'
-    parser = cli.parse_args(['--genconf'])
+    parser = parse_args(['--genconf'])
     assert parser.action == 'genconf'
-    parser = cli.parse_args(['--preflight'])
+    parser = parse_args(['--preflight'])
     assert parser.action == 'preflight'
-    parser = cli.parse_args(['--postflight'])
+    parser = parse_args(['--postflight'])
     assert parser.action == 'postflight'
-    parser = cli.parse_args(['--deploy'])
+    parser = parse_args(['--deploy'])
     assert parser.action == 'deploy'
-    parser = cli.parse_args(['--validate-config'])
+    parser = parse_args(['--validate-config'])
     assert parser.action == 'validate-config'
-    parser = cli.parse_args(['--uninstall'])
+    parser = parse_args(['--uninstall'])
     assert parser.action == 'uninstall'
-    parser = cli.parse_args(['--hash-password', 'foo'])
-    assert parser.hash_password == ['foo']
-    assert parser.action is None
+    parser = parse_args(['--hash-password', 'foo'])
+    assert parser.password == 'foo'
+    assert parser.action == 'hash-password'
 
-    parser = cli.parse_args(['--set-superuser-password', 'foo'])
-    assert parser.set_superuser_password == ['foo']
-    assert parser.action is None
+    parser = parse_args(['--hash-password'])
+    assert parser.password is None
+    assert parser.action == 'hash-password'
 
-    parser = cli.parse_args(['--set-superuser-password'])
-    assert parser.set_superuser_password == [None]
-    assert parser.action is None
+    parser = parse_args(['--set-superuser-password', 'foo'])
+    assert parser.password == 'foo'
+    assert parser.action == 'set-superuser-password'
+
+    parser = parse_args(['--set-superuser-password'])
+    assert parser.password is None
+    assert parser.action == 'set-superuser-password'
 
     # Can't do two at once
     with pytest.raises(SystemExit):
-        cli.parse_args(['--validate', '--hash-password', 'foo'])
+        parse_args(['--validate', '--hash-password', 'foo'])
 
 
 def test_stringify_config():
