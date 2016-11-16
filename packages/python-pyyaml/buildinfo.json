@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.11.tar.gz",
-    "sha1": "1a2d5df8b31124573efb9598ec6d54767f3c4cd4"
+    "url": "https://pypi.python.org/packages/4a/85/db5a2df477072b2902b0eb892feb37d88ac635d36245a72a6a69b23b383a/PyYAML-3.12.tar.gz",
+    "sha1": "cb7fd3e58c129494ee86e41baedfec69eb7dafbe"
   }
 }
