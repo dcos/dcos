@@ -15,7 +15,7 @@ import pkgpanda.util
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed
 from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH, STATE_DIR
-from ssh.ssh_runner import Node
+from ssh.runner import Node
 
 
 log = logging.getLogger()
