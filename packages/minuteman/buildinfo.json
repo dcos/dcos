@@ -4,7 +4,7 @@
     "minuteman": {
       "kind": "git",
       "git": "https://github.com/dcos/minuteman.git",
-      "ref": "791ad86f4b448d2107923de12c20e939e822d196",
+      "ref": "d3aeb27c13d7c2fb02bd129eecda7ccd7d666158",
       "ref_origin": "ipvs-metrics"
     }
   },
