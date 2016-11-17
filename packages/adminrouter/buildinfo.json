@@ -9,7 +9,7 @@
       "adminrouter": {
           "kind": "git",
           "git": "https://github.com/vespian/adminrouter.git",
-          "ref": "b4f89e423679b16cb0fa3991a174b75fbce6c35e",
+          "ref": "d8aa66b19632497cd7b3af17339654769103f668",
           "ref_origin": "prozlach/DCOS-9269_standarizing_open_and_ee_ar_stage3"
       }
   }
