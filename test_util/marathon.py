@@ -205,11 +205,9 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-
     def deploy_test_pod_and_check(self, pod, test_uuid):
         with self.deploy_pod_and_cleanup(pod) as instances:
             assert pod['scaling']['instances'] == instances
-
 
     def deploy_pod(self, pod_definition, timeout=120):
         """Deploy a pod to marathon
@@ -253,7 +251,6 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Pod deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-
     def destroy_pod(self, pod_id, timeout=120):
         """Remove a marathon pod
 
@@ -285,7 +282,6 @@ class Marathon(test_util.helpers.ApiClient):
         except retrying.RetryError:
             raise Exception("Pod destroy failed - operation was not "
                             "completed in {} seconds.".format(timeout))
-
 
     def destroy_app(self, app_name, timeout=120):
         """Remove a marathon app
@@ -319,13 +315,11 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Application destroy failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-
     @contextmanager
     def deploy_and_cleanup(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         yield self.deploy_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
         self.destroy_app(app_definition['id'], timeout)
-
 
     @contextmanager
     def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
