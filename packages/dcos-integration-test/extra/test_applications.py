@@ -1,3 +1,4 @@
+import pytest
 import uuid
 
 from test_util.marathon import get_test_app, get_test_app_in_docker
@@ -29,6 +30,11 @@ def test_if_docker_app_can_be_deployed(cluster):
     cluster.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
+@pytest.mark.xfail(
+    dcos.config['security'] == 'strict',
+    reason='Strict security mode does not currently support pods.',
+    strict=True
+)
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     """Marathon app deployment integration test using the Mesos Containerizer
 
