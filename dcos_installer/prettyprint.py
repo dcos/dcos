@@ -17,13 +17,13 @@ class PrettyPrint():
 
     """
     def __init__(self, output):
-        self.ssh_out = output
+        self.output = output
         self.fail_hosts = []
         self.success_hosts = []
         self.preflight = False
 
     def beautify(self, mode='print_data_basic'):
-        self.failed_data, self.success_data = self.find_data(self.ssh_out)
+        self.failed_data, self.success_data = self.find_data(self.output)
         getattr(self, mode)()
         return self.failed_data, self.success_data
 
@@ -109,4 +109,4 @@ class PrettyPrint():
                     log.debug('          {}'.format(line))
 
     def print_json(self):
-        pprint.pprint(json.dumps(self.ssh_out))
+        pprint.pprint(json.dumps(self.output))

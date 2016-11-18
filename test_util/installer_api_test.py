@@ -10,7 +10,7 @@ import requests
 import yaml
 from retrying import retry
 
-from ssh.ssh_tunnel import run_scp_cmd, run_ssh_cmd, SSHTunnel
+from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnel
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
 
@@ -25,7 +25,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             host=None, ssh_user=None, ssh_key_path=None):
         """Creates a light, system-based ssh handler
         Args:
-            tunnel: SSHTunnel instance to avoid recreating SSH connections.
+            tunnel: Tunnel instance to avoid recreating SSH connections.
                 If set to None, ssh_user, host, and ssh_key_path must be
                 set and one-off connections will be made
             installer_path: (str) path on host to download installer to
@@ -36,7 +36,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         """
         self.installer_path = installer_path
         if tunnel:
-            assert isinstance(tunnel, SSHTunnel)
+            assert isinstance(tunnel, Tunnel)
             self.tunnel = tunnel
             self.url = "http://{}:9000".format(tunnel.host)
 

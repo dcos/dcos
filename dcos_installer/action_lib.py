@@ -5,7 +5,7 @@ import os
 
 import pkgpanda
 import ssh.utils
-from ssh.ssh_runner import Node
+from ssh.runner import Node
 
 REMOTE_TEMP_DIR = '/opt/dcos_install_tmp'
 CLUSTER_PACKAGES_FILE = 'genconf/cluster_packages.json'
@@ -22,9 +22,14 @@ def get_async_runner(config, hosts, async_delegate=None):
     # if ssh_parallelism is not set, use 20 concurrent ssh sessions by default.
     parallelism = config.hacky_default_get('ssh_parallelism', 20)
 
-    return ssh.ssh_runner.MultiRunner(hosts, ssh_user=config['ssh_user'], ssh_key_path=ssh_key_path,
-                                      process_timeout=process_timeout, extra_opts=extra_ssh_options,
-                                      async_delegate=async_delegate, parallelism=parallelism)
+    return ssh.runner.MultiRunner(
+        hosts,
+        user=config['ssh_user'],
+        key_path=ssh_key_path,
+        process_timeout=process_timeout,
+        extra_opts=extra_ssh_options,
+        async_delegate=async_delegate,
+        parallelism=parallelism)
 
 
 def add_pre_action(chain, ssh_user):
@@ -96,7 +101,7 @@ def run_preflight(config, pf_script_path='genconf/serve/dcos_install.sh', block=
         else:
             _add_prereqs_script(preflight_chain)
 
-    add_pre_action(preflight_chain, pf.ssh_user)
+    add_pre_action(preflight_chain, pf.user)
     preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Copying preflight script')
 
     preflight_chain.add_execute(
@@ -240,7 +245,7 @@ def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_del
     chain = ssh.utils.CommandChain('deploy')
     chains.append(chain)
 
-    add_pre_action(chain, runner.ssh_user)
+    add_pre_action(chain, runner.user)
     _add_copy_dcos_install(chain)
     _add_copy_packages(chain)
     _add_copy_bootstap(chain, bootstrap_tarball)
@@ -279,7 +284,7 @@ def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, asy
     targets = get_full_nodes_list(config)
     pf = get_async_runner(config, targets, async_delegate=async_delegate)
     postflight_chain = ssh.utils.CommandChain('postflight')
-    add_pre_action(postflight_chain, pf.ssh_user)
+    add_pre_action(postflight_chain, pf.user)
 
     if dcos_diag is None:
         dcos_diag = """
