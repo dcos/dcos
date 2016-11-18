@@ -14,13 +14,12 @@ import requests
 import retrying
 from botocore.exceptions import ClientError, WaiterError
 
-
 Host = namedtuple('Host', ['private_ip', 'public_ip'])
 SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
 
-ADMINROUTER_PORT_MAPPING = {
-    'master': {'http': 80, 'https': 443},
-    'agent': {'http': 61001, 'https': 61002}}
+
+def path_join(p1, p2):
+    return '{}/{}'.format(p1.rstrip('/'), p2.lstrip('/'))
 
 
 class DcosUser:
@@ -48,85 +47,56 @@ class DcosUser:
         logging.info('Authentication successful')
 
 
-class ApiClient:
+class ApiClient():
 
-    def __init__(self, cluster, user, api_base, default_headers=None, ca_cert_path=None):
-        self.cluster = cluster
-        self.user = user
+    def __init__(self, default_host_url, api_base, default_headers=None, ca_cert_path=None):
+        self.default_host_url = default_host_url
         self.api_base = api_base
         if default_headers is None:
             default_headers = dict()
         self.default_headers = default_headers
         self.ca_cert_path = ca_cert_path
 
-    def api_request(self, method, path, node=None, port=None, **kwargs):
+    def request_wrapper(self, request_fn, path, host_url=None, **kwargs):
         """
         Makes a request with default headers + user auth headers if necessary
-        If DCOS_CA_CERT_PATH is set in environment, this method will pass it to requests
+        If self.ca_cert_path is set, this method will pass it to requests
         Args:
             method: (str) name of method for requests.request
-            node: see get_url()
             path: see get_url()
-            port: see get_url()
+            host_url: override the client's default host URL
             **kwargs: any optional arguments to be passed to requests.request
         """
         headers = copy.copy(self.default_headers)
-        if self.cluster.auth_enabled and self.cluster.web_auth_default_user:
-            headers.update(self.cluster.web_auth_default_user.auth_header)
 
-        if self.ca_cert_path:
+        # allow kwarg to override verification so client can be used generically
+        if self.ca_cert_path and 'verify' not in kwargs:
             kwargs['verify'] = self.ca_cert_path
 
+        if self.api_base:
+            path = path_join(self.api_base, path)
+
+        request_url = path_join(host_url if host_url else self.default_host_url, path)
         headers.update(kwargs.pop('headers', {}))
-        url = self.get_url(node=node, path=path, port=port)
-        logging.info('Request method {}: {}'.format(method, url))
+        logging.info('Request method {}: {}'.format(request_fn.__name__, request_url))
         logging.debug('Reqeust kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
-        return requests.request(method, url, headers=headers, **kwargs)
+        return request_fn(request_url, headers=headers, **kwargs)
 
-    def get_url(self, node, path, port=None):
+    def wrapped_request(self, request_fn, *args, **kwargs):
+        """Thin wrapper to allow wrapping requests dynamically by mapping
+        a function to self.request_wrapper
         """
-        Args:
-            path: (str) URL path to request if self.api_base is set it will be prepended
-            node: (str) the hostname of the node to be requested from, if node=None,
-                then public cluster address (see environment DCOS_DNS_ADDRESS)
-            port: (int) port to be requested at. If port=None, the default port
-                for that given node type will be used
-        Returns:
-            fully-qualified URL string for this API
-        """
-        if node is None:
-            node = self.cluster.dns_host
-            role = 'master'
-        else:
-            if node in self.cluster.masters:
-                role = 'master'
-            elif node in self.cluster.all_slaves:
-                role = 'agent'
-            else:
-                raise Exception('Node {} is not recognized within the DC/OS cluster'.format(node))
+        return self.request_wrapper(request_fn, *args, **kwargs)
 
-        if self.api_base:
-            path = '{}/{}'.format(self.api_base.rstrip('/'), path.lstrip('/'))
-
-        if port is None:
-            port = ADMINROUTER_PORT_MAPPING[role][self.cluster.scheme]
-
-        if (port == 80 and self.cluster.scheme == 'http') or (port == 443 and self.cluster.scheme == 'https'):
-            netloc = node
-        else:
-            netloc = '{}:{}'.format(node, port)
-
-        return '{}://{}/{}'.format(self.cluster.scheme, netloc, path.lstrip('/'))
-
-    get = functools.partialmethod(api_request, 'get')
-    post = functools.partialmethod(api_request, 'post')
-    put = functools.partialmethod(api_request, 'put')
-    delete = functools.partialmethod(api_request, 'delete')
-    options = functools.partialmethod(api_request, 'options')
-    head = functools.partialmethod(api_request, 'head')
-    patch = functools.partialmethod(api_request, 'patch')
-    delete = functools.partialmethod(api_request, 'delete')
+    get = functools.partialmethod(wrapped_request, requests.request.get)
+    post = functools.partialmethod(wrapped_request, requests.request.post)
+    put = functools.partialmethod(wrapped_request, requests.request.put)
+    delete = functools.partialmethod(wrapped_request, requests.request.delete)
+    options = functools.partialmethod(wrapped_request, requests.request.options)
+    head = functools.partialmethod(wrapped_request, requests.request.head)
+    patch = functools.partialmethod(wrapped_request, requests.request.patch)
+    delete = functools.partialmethod(wrapped_request, requests.request.delete)
 
 
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
