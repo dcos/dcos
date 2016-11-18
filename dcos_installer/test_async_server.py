@@ -1,9 +1,11 @@
 import asyncio
 
 import aiohttp
+import os
 import pytest
 import webtest_aiohttp
 
+import dcos_installer
 import dcos_installer.backend
 import gen.calc
 from dcos_installer.async_server import build_app
@@ -336,3 +338,13 @@ def test_action_deploy_retry(client, monkeypatch):
     assert len(set(removed_hosts)) == 2, \
         "Should have had two hosts removed exactly once, removed_hosts: {}".format(removed_hosts)
     assert set(removed_hosts) == {'127.0.0.3:22022', '127.0.0.1:22'}
+
+
+def test_unlink_state_file(monkeypatch):
+    monkeypatch.setattr(os.path, 'isfile', lambda x: True)
+
+    def mocked_unlink(path):
+        assert path == 'genconf/state/preflight.json'
+
+    monkeypatch.setattr(os, 'unlink', mocked_unlink)
+    dcos_installer.async_server.unlink_state_file('preflight')
