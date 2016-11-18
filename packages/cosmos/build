@@ -21,7 +21,13 @@ PermissionsStartOnly=True
 User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/proxy.env
+EnvironmentFile=/opt/mesosphere/etc/cosmos.env
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
-ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos
+ExecStart=/opt/mesosphere/bin/java \\
+    -Xmx2G \\
+    -classpath ${PKG_PATH}/usr/cosmos.jar \\
+    com.simontuffs.onejar.Boot \\
+    \${COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG} \\
+    \${COSMOS_PACKAGE_STORAGE_URI_FLAG}
 EOF

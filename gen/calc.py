@@ -6,6 +6,7 @@ import socket
 import textwrap
 from math import floor
 from subprocess import check_output
+from urllib.parse import urlparse
 
 import yaml
 
@@ -65,6 +66,15 @@ def validate_ipv4_addresses(ips: list):
             return None
     invalid_ips = list(filter(lambda ip: try_parse_ip(ip) is None, ips))
     assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
+
+
+def validate_url(url: str):
+    try:
+        urlparse(url)
+    except ValueError as ex:
+        raise AssertionError(
+            "Couldn't parse given value `{}` as an URL".format(url)
+        ) from ex
 
 
 def is_azure_addr(addr: str):
@@ -419,6 +429,68 @@ def calculate_cluster_docker_registry_enabled(cluster_docker_registry_url):
     return 'false' if cluster_docker_registry_url == '' else 'true'
 
 
+def validate_cosmos_config(cosmos_config):
+    """The schema for this configuration is.
+    {
+      "schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+        "staged_package_storage_uri": {
+          "type": "string"
+        },
+        "package_storage_uri": {
+          "type": "string"
+        }
+      }
+    }
+    """
+    config = validate_json_dictionary(cosmos_config)
+    if ('staged_package_storage_uri' in config and
+            'package_storage_uri' not in config):
+        raise AssertionError(
+            '"cosmos_config.stage_package_storage_uri" ({}) specified but '
+            '"cosmos_config.package_storage_uri" was not specified'.format(
+                config['staged_package_storage_uri']
+            )
+        )
+    elif ('staged_package_storage_uri' not in config and
+          'package_storage_uri' in config):
+        raise AssertionError(
+            '"cosmos_config.package_storage_uri" ({}) specified but '
+            '"cosmos_config.stage_package_storage_uri" was not '
+            'specified'.format(
+                config['package_storage_uri']
+            )
+        )
+    elif ('staged_package_storage_uri' in config and
+          'package_storage_uri' in config):
+        # Let's try to parse the string as an URL
+        validate_url(config['staged_package_storage_uri'])
+        validate_url(config['package_storage_uri'])
+
+
+def calculate_cosmos_staged_package_storage_uri_flag(cosmos_config):
+    if 'staged_package_storage_uri' in cosmos_config:
+        return (
+            '-com.mesosphere.cosmos.stagedPackageStorageUri={}'.format(
+                json.loads(cosmos_config)['staged_package_storage_uri']
+            )
+        )
+    else:
+        return ''
+
+
+def calculate_cosmos_package_storage_uri_flag(cosmos_config):
+    if 'package_storage_uri' in cosmos_config:
+        return (
+            '-com.mesosphere.cosmos.packageStorageUri={}'.format(
+                json.loads(cosmos_config)['package_storage_uri']
+            )
+        )
+    else:
+        return ''
+
+
 def calculate_set(parameter):
     if parameter == '':
         return 'false'
@@ -470,7 +542,8 @@ entry = {
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
         lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
-        validate_exhibitor_storage_master_discovery
+        validate_exhibitor_storage_master_discovery,
+        validate_cosmos_config
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -543,7 +616,8 @@ entry = {
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
         'cluster_docker_credentials_write_to_etc': 'false',
         'cluster_docker_credentials_enabled': 'false',
-        'cluster_docker_credentials': "{}"
+        'cluster_docker_credentials': "{}",
+        'cosmos_config': '{}'
     },
     'must': {
         'custom_auth': 'false',
@@ -575,7 +649,11 @@ entry = {
         'cluster_docker_credentials_path': calculate_cluster_docker_credentials_path,
         'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
         'has_master_external_loadbalancer':
-            lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer)
+            lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer),
+        'cosmos_staged_package_storage_uri_flag':
+            calculate_cosmos_staged_package_storage_uri_flag,
+        'cosmos_package_storage_uri_flag':
+            calculate_cosmos_package_storage_uri_flag
     },
     'conditional': {
         'master_discovery': {
