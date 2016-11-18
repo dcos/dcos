@@ -363,7 +363,7 @@ if [ -f /opt/dcos-prereqs.installed ]; then
 fi
 
 sudo setenforce 0 && \
-sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
+sudo sed -i --follow-symlinks 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
 [dockerrepo]
