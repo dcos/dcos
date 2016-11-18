@@ -4,6 +4,8 @@ import urllib.parse
 import bs4
 from retrying import retry
 
+from pkgpanda.util import load_json
+
 
 def test_if_dcos_ui_is_up(cluster):
     r = cluster.get('/')
@@ -142,6 +144,43 @@ def test_if_we_have_capabilities(cluster):
     )
     assert r.status_code == 200
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
+
+
+def test_cosmos_package_add(cluster):
+    r = cluster.post(
+        '/package/add',
+        headers={
+            'Accept': (
+                'application/vnd.dcos.package.add-response+json;'
+                'charset=utf-8;version=v1'
+            ),
+            'Content-Type': (
+                'application/vnd.dcos.package.add-request+json;'
+                'charset=utf-8;version=v1'
+            )
+        },
+        json={
+            'packageName': 'cassandra',
+            'packageVersion': '1.0.20-3.0.10'
+        }
+    )
+
+    user_config = load_json("/opt/mesosphere/etc/expanded.config.json")
+    if (user_config['cosmos_staged_package_storage_uri_flag'] and
+            user_config['cosmos_package_storage_uri_flag']):
+        # if the config is enabled then Cosmos should accept the request and
+        # return 202
+        assert r.status_code == 202, 'status = {}, content = {}'.format(
+            r.status_code,
+            r.content
+        )
+    else:
+        # if the config is disabled then Cosmos should accept the request and
+        # return Not Implemented 501
+        assert r.status_code == 501, 'status = {}, content = {}'.format(
+            r.status_code,
+            r.content
+        )
 
 
 def test_if_overlay_master_is_up(cluster):
