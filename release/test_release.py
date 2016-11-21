@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 
-import gen.installer.aws
+import gen.build_deploy.aws
 import release
 import release.storage.aws
 from pkgpanda.util import variant_prefix, write_json, write_string
@@ -223,7 +223,7 @@ def test_storage_provider_azure(config_azure, tmpdir):
 # TODO(cmaloney): Add skipping when not run under CI with the environment variables
 # So devs without the variables don't see expected failures https://pytest.org/latest/skipping.html
 def test_storage_provider_aws(config_aws, tmpdir):
-    session = gen.installer.aws.get_test_session(config_aws)
+    session = gen.build_deploy.aws.get_test_session(config_aws)
 
     s3 = session.resource('s3')
     bucket = config_aws['bucket']
@@ -556,14 +556,14 @@ stable_artifacts_metadata = {
 # containing overlapping
 def test_make_stable_artifacts(monkeypatch, tmpdir):
     monkeypatch.setattr("release.do_build_packages", mock_do_build_packages)
-    monkeypatch.setattr("gen.installer.util.dcos_image_commit", "commit_sha1")
+    monkeypatch.setattr("gen.build_deploy.util.dcos_image_commit", "commit_sha1")
 
     with tmpdir.as_cwd():
         metadata = release.make_stable_artifacts("http://test")
         assert metadata == stable_artifacts_metadata
 
 
-# NOTE: Implicitly tests all gen.installer do_create functions since it calls them.
+# NOTE: Implicitly tests all gen.build_deploy do_create functions since it calls them.
 # TODO(cmaloney): Test make_channel_artifacts, module do_create functions
 def mock_make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
     return "dcos_generate_config." + variant_prefix(variant) + "sh"
@@ -586,9 +586,9 @@ def mock_make_tar(result_filename, folder):
 # Test that the do_create functions for each provider output data in the right
 # shape.
 def test_make_channel_artifacts(monkeypatch):
-    monkeypatch.setattr('gen.installer.bash.make_installer_docker', mock_make_installer_docker)
-    monkeypatch.setattr('gen.installer.aws.get_cloudformation_s3_url', mock_get_cf_s3_url)
-    monkeypatch.setattr('gen.installer.azure.get_download_url', mock_get_azure_download_url)
+    monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
+    monkeypatch.setattr('gen.build_deploy.aws.get_cloudformation_s3_url', mock_get_cf_s3_url)
+    monkeypatch.setattr('gen.build_deploy.azure.get_download_url', mock_get_azure_download_url)
     monkeypatch.setattr('pkgpanda.util.make_tar.__code__', mock_make_tar.__code__)
 
     metadata = {
