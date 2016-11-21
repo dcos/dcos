@@ -227,7 +227,7 @@ class Marathon(test_util.helpers.ApiClient):
         Returns:
             Scaling instance count
         """
-        r = self.post('/pods', json=pod_definition)
+        r = self.post('v2/pods', json=pod_definition)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
@@ -235,13 +235,13 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_result=lambda ret: ret is False,
                         retry_on_exception=lambda x: False)
         def _wait_for_pod_deployment(pod_id):
-            r = self.get('/deployments')
+            r = self.get('v2/deployments')
             data = r.json()
             if len(data) > 0:
                 logging.info('Waiting for pod to be deployed %s', repr(data))
                 return False
             # deployment complete
-            r = self.get('/pods' + pod_id)
+            r = self.get('v2/pods' + pod_id)
             data = r.json()
             return data["scaling"]["instances"]
 
@@ -264,7 +264,7 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_pod_complete(deployment_id):
-            r = self.get('/deployments')
+            r = self.get('v2/deployments')
             assert r.ok
 
             for deployment in r.json():
@@ -274,7 +274,7 @@ class Marathon(test_util.helpers.ApiClient):
             logging.info('Pod destroyed')
             return True
 
-        r = self.delete('/pods' + pod_id)
+        r = self.delete('v2/pods' + pod_id)
         assert r.ok
 
         try:
