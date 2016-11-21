@@ -87,7 +87,7 @@ class ApiClient:
             host_url = host_url if host_url else self.default_host_url
         request_url = path_join(host_url, path)
         headers.update(kwargs.pop('headers', {}))
-        logging.info('Request method {}: {}'.format(method, request_url))
+        logging.info('Request method {}: {}'.format(request_fn.__name__, request_url))
         logging.debug('Reqeust kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
         return requests.request(method, request_url, headers=headers, **kwargs)
