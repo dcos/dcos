@@ -202,6 +202,10 @@ def dispatch(args):
         sys.stdout.buffer.write(byte_str + b'\n')
         sys.exit(0)
 
+    if args.action == 'generate-node-upgrade-script':
+        status = backend.generate_node_upgrade_script(args.installed_version)
+        sys.exit(status)
+
     if args.action in dispatch_dict_simple:
         action = dispatch_dict_simple[args.action]
         if action[1] is not None:
@@ -228,7 +232,7 @@ def dispatch(args):
     sys.exit(1)
 
 
-class PasswordAction(argparse.Action):
+class ArgsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         assert self.option_strings[0][:2] == '--'
         setattr(namespace, 'action', self.option_strings[0][2:])
@@ -245,7 +249,7 @@ def get_argument_parser():
 
     mutual_exc.add_argument(
         '--hash-password',
-        action=PasswordAction,
+        action=ArgsAction,
         dest='password',
         metavar='password',
         nargs='?',
@@ -254,11 +258,20 @@ def get_argument_parser():
 
     mutual_exc.add_argument(
         '--set-superuser-password',
-        action=PasswordAction,
+        action=ArgsAction,
         metavar='password',
         dest='password',
         nargs='?',
         help='Hash the given password and store it as the superuser password in config.yaml'
+    )
+
+    mutual_exc.add_argument(
+        '--generate-node-upgrade-script',
+        action=ArgsAction,
+        metavar='installed_version',
+        dest='installed_version',
+        nargs='?',
+        help='Generate the node upgrade script'
     )
 
     parser.add_argument(

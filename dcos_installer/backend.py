@@ -13,7 +13,7 @@ import gen.calc
 import release
 import release.storage.aws
 import release.storage.local
-from dcos_installer import config_util
+from dcos_installer import config_util, upgrade
 from dcos_installer.config import Config, normalize_config_validation
 from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
 
@@ -25,6 +25,14 @@ def print_messages(messages):
         log.error('{}: {}'.format(key, error))
 
 
+def validate_gen(config):
+    validate = config.do_validate(include_ssh=False)
+    if len(validate) > 0:
+        for key, error in validate.items():
+            log.error('{}: {}'.format(key, error))
+        return 1
+
+
 def do_configure(config_path=CONFIG_PATH):
     """Returns error code
 
@@ -33,13 +41,28 @@ def do_configure(config_path=CONFIG_PATH):
     """
     config = Config(config_path)
 
-    validate_gen = config.do_validate(include_ssh=False)
-    if len(validate_gen) > 0:
-        for key, error in validate_gen.items():
-            log.error('{}: {}'.format(key, error))
+    if validate_gen(config):
         return 1
 
     config_util.do_configure(config)
+
+    return 0
+
+
+def generate_node_upgrade_script(installed_version, config_path=CONFIG_PATH):
+
+    if installed_version is None:
+        print('Must provide the version of the cluster upgrading from')
+        return 1
+
+    config = Config(config_path)
+    validate_gen(config)
+    gen_out = config_util.onprem_generate(config)
+    config_util.make_serve_dir(gen_out)
+
+    # generate the upgrade script
+    upgrade.generate_node_upgrade_script(gen_out, installed_version)
+
     return 0
 
 
