@@ -47,13 +47,10 @@
   "Mappings": {
     "RegionToAmi": {{ region_to_ami_mapping }},
     "NATAmi" : {{ nat_ami_mapping }},
+    "RegionToMasterInstanceType": {{ region_to_instance_type_mapping }},
+    "RegionToSlaveInstanceType": {{ region_to_instance_type_mapping }},
+    "RegionToPublicSlaveInstanceType": {{ region_to_instance_type_mapping }},
     "Parameters": {
-      "MasterInstanceType": {
-        "default": "m3.xlarge"
-      },
-      "SlaveInstanceType": {
-        "default": "m3.xlarge"
-      },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
       },
@@ -62,9 +59,6 @@
       },
       "VPCSubnetRange": {
         "default": "10.0.0.0/16"
-      },
-      "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -317,7 +311,7 @@
         "SourceDestCheck" : "false",
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m3.medium",
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToMasterInstanceType", { "Ref" : "AWS::Region" }, "default" ] },
         "NetworkInterfaces" : [
           {
             "SubnetId" : { "Ref" : "PublicSubnet" },
@@ -544,7 +538,7 @@
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "MasterInstanceType", "default" ] },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToMasterInstanceType", { "Ref" : "AWS::Region" }, "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join": ["", [
           {{ master_cloud_config }}
         ]]
@@ -728,7 +722,7 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
         "AssociatePublicIpAddress" : "false",
-        "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "SlaveInstanceType", "default" ] },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToSlaveInstanceType", { "Ref" : "AWS::Region" }, "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_private_cloud_config }}
         ]]}}
@@ -772,7 +766,7 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "PublicSlaveInstanceType", "default" ] },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToPublicSlaveInstanceType", { "Ref" : "AWS::Region" },  "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_public_cloud_config }}
         ]]}}
