@@ -187,7 +187,7 @@ def main():
                 provider='azure',
                 test_dns_search=False,
                 add_env=get_test_config(),
-                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
+                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         traceback.print_exc()
