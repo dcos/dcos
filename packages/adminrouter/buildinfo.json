@@ -8,9 +8,9 @@
       },
       "adminrouter": {
           "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "0f1e4d44701d5b9960da980f8136c03c98c96594",
-          "ref_origin": "master"
+          "git": "https://github.com/cmaloney/adminrouter.git",
+          "ref": "32780edd6e276c1a9d575d5805013548f3bb0aa9",
+          "ref_origin": "unified-proxy"
       }
   }
 }
