@@ -57,7 +57,8 @@ setup(
         'pyyaml',
         'requests==2.10.0',
         'retrying',
-        'keyring==9.1'],  # FIXME: pin keyring to prevent dbus dep
+        'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
+        'teamcity-messages'],
     entry_points={
         'console_scripts': [
             'release=release:main',

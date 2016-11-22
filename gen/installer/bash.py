@@ -10,7 +10,7 @@ import py
 import gen.installer.util as util
 import gen.template
 import pkgpanda.util
-
+from pkgpanda.util import logger
 
 file_template = """mkdir -p `dirname {filename}`
 cat <<'EOF' > "{filename}"
@@ -659,26 +659,28 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
 
     Outputs the generated dcos_generate_config.sh as it's artifacts.
     """
-
     # TODO(cmaloney): Build installers in parallel.
     # Variants are sorted for stable ordering.
-    for variant, bootstrap_info in sorted(variant_arguments.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        print("Building installer for variant:", pkgpanda.util.variant_name(variant))
-        bootstrap_installer_name = '{}installer'.format(pkgpanda.util.variant_prefix(variant))
-        bootstrap_installer_id = all_bootstraps[bootstrap_installer_name]
+    for variant, bootstrap_info in sorted(variant_arguments.items(),
+                                          key=lambda kv: pkgpanda.util.variant_str(kv[0])):
+        with logger.scope("Building installer for variant: ".format(pkgpanda.util.variant_name(variant))):
+            bootstrap_installer_name = '{}installer'.format(pkgpanda.util.variant_prefix(variant))
+            bootstrap_installer_id = all_bootstraps[bootstrap_installer_name]
 
-        installer_filename = make_installer_docker(variant, bootstrap_info['bootstrap_id'], bootstrap_installer_id)
+            installer_filename = make_installer_docker(variant, bootstrap_info['bootstrap_id'],
+                                                       bootstrap_installer_id)
 
-        yield {
-            'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
-            'local_path': installer_filename
-        }
+            yield {
+                'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
+                'local_path': installer_filename
+            }
 
     # Build dcos-launch
     # TODO(cmaloney): This really doesn't belong to here, but it's the best place it fits for now.
     #                 dcos-launch works many places which aren't bash / on-premise installers.
     #                 It also isn't dependent on the "reproducible" artifacts at all. Just the commit...
-    yield {
-        'channel_path': 'dcos-launch',
-        'local_path': make_dcos_launch()
-    }
+    with logger.scope("building dcos-launch"):
+        yield {
+            'channel_path': 'dcos-launch',
+            'local_path': make_dcos_launch()
+        }

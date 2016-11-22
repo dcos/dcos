@@ -12,8 +12,9 @@
     "python-pyyaml",
     "python-requests",
     "python-retrying",
-    "six"
-    ],
+    "six",
+    "teamcity-messages"
+  ],
   "sources": {
     "aiohttp": {
       "kind": "url_extract",
