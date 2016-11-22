@@ -7,7 +7,8 @@ import random
 import shutil
 import string
 import tempfile
-from os import mkdir
+from contextlib import contextmanager
+from os import chdir, getcwd, mkdir
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -449,13 +450,60 @@ def hash_checkout(item):
         raise NotImplementedError("{} of type {}".format(item, type(item)))
 
 
-def hash_folder(directory):
+def hash_files_in_folder(directory):
+    """Given a relative path, hashes all files inside that folder and subfolders
+
+    Returns a dictionary from filename to the hash of that file. If that whole
+    dictionary is hashed, you get a hash of all the contents of the folder.
+
+    This is split out from calculating the whole folder hash so that the
+    behavior in different walking corner cases can be more easily tested.
+    """
+    assert not directory.startswith('/'), \
+        "For the hash to be reproducible on other machines relative paths must always be used. " \
+        "Got path: {}".format(directory)
+    directory = directory.rstrip('/')
     file_hash_dict = {}
+    # TODO(cmaloney): Disallow symlinks as they're hard to hash, people can symlink / copy in their
+    # build steps if needed.
     for root, dirs, filenames in os.walk(directory):
+        assert not root.startswith('/')
         for name in filenames:
-            filename = root + '/' + name
-            file_hash_dict[filename] = pkgpanda.util.sha1(filename)
-    return hash_checkout(file_hash_dict)
+            path = root + '/' + name
+            base = path[len(directory) + 1:]
+            file_hash_dict[base] = pkgpanda.util.sha1(path)
+
+        # If the directory has files inside of it, then it'll be picked up implicitly. by the files
+        # or folders inside of it. If it contains nothing, it wouldn't be picked up but the existence
+        # is important, so added it with a value for it's hash not-makeable via sha1 (empty string).
+        if len(filenames) == 0 and len(dirs) == 0:
+            path = root[len(directory) + 1:]
+            # Empty path means it is the root directory, in which case we want no entries, not a
+            # single entry "": ""
+            if path:
+                file_hash_dict[root[len(directory) + 1:]] = ""
+
+    return file_hash_dict
+
+
+@contextmanager
+def as_cwd(path):
+    start_dir = getcwd()
+    chdir(path)
+    yield
+    chdir(start_dir)
+
+
+def hash_folder_abs(directory, work_dir):
+    assert directory.startswith(work_dir), "directory must be inside work_dir: {} {}".format(directory, work_dir)
+    assert not work_dir[-1] == '/', "This code assumes no trailing slash on the work_dir"
+
+    with as_cwd(work_dir):
+        return hash_folder(directory[len(work_dir) + 1:])
+
+
+def hash_folder(directory):
+    return hash_checkout(hash_files_in_folder(directory))
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -855,7 +903,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Add the "extra" folder inside the package as an additional source if it
     # exists
     if os.path.exists(extra_dir):
-        extra_id = hash_folder(extra_dir)
+        extra_id = hash_folder_abs(extra_dir, package_dir)
         builder.add('extra_source', extra_id)
         final_buildinfo['extra_source'] = extra_id
 

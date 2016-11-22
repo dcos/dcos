@@ -3,6 +3,7 @@ import logging
 import pytest
 
 from cluster_fixture import make_cluster_fixture
+
 from test_util.marathon import get_test_app
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)

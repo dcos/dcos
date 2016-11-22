@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+
 from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError, NoNodeException
 from kazoo.handlers.threading import SequentialThreadingHandler

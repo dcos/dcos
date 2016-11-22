@@ -1,4 +1,5 @@
 import os
+
 import history.server_util
 
 app = history.server_util.create_app()

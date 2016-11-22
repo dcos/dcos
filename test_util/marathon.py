@@ -9,7 +9,9 @@ import retrying
 
 import test_util.helpers
 
+DEFAULT_API_BASE = 'marathon'
 TEST_APP_NAME_FMT = '/integration-test-{}'
+REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
 
 
 def get_test_app(custom_port=False):
@@ -79,16 +81,17 @@ def get_test_app_in_docker(ip_per_container):
 
 
 class Marathon(test_util.helpers.ApiClient):
-    def __init__(self, cluster, user, api_base='/marathon/v2', default_headers=None, ca_cert_path=None):
-        required_headers = {'Accept': 'application/json, text/plain, */*'}
-        if default_headers:
-            required_headers.update(default_headers)
+    def __init__(self, default_host_url, default_os_user='root', api_base=DEFAULT_API_BASE,
+                 default_headers=None, ca_cert_path=None):
+        if default_headers is None:
+            default_headers = dict()
+        default_headers.update(REQUIRED_HEADERS)
         super().__init__(
-            cluster=cluster,
-            user=user,
+            default_host_url=default_host_url,
             api_base=api_base,
-            default_headers=required_headers,
+            default_headers=default_headers,
             ca_cert_path=ca_cert_path)
+        self.default_os_user = default_os_user
 
     def deploy_test_app_and_check(self, app, test_uuid):
         """This method deploys the test server app and then
@@ -103,7 +106,7 @@ class Marathon(test_util.helpers.ApiClient):
         if 'container' in app and app['container']['type'] == 'DOCKER':
             marathon_user = 'root'
         else:
-            marathon_user = app.get('user', self.cluster.default_os_user)
+            marathon_user = app.get('user', self.default_os_user)
         with self.deploy_and_cleanup(app) as service_points:
             r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
                                                              service_points[0].port))
@@ -150,7 +153,7 @@ class Marathon(test_util.helpers.ApiClient):
             applications. I.E:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
-        r = self.post('/apps', json=app_definition)
+        r = self.post('v2/apps', json=app_definition)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
@@ -164,7 +167,7 @@ class Marathon(test_util.helpers.ApiClient):
             req_params = (('embed', 'apps.lastTaskFailure'),
                           ('embed', 'apps.counts'))
 
-            r = self.get('/apps' + app_id, params=req_params)
+            r = self.get('v2/apps' + app_id, params=req_params)
             assert r.ok
 
             data = r.json()
@@ -215,7 +218,7 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
-            r = self.get('/deployments')
+            r = self.get('v2/deployments')
             assert r.ok
 
             for deployment in r.json():
@@ -225,7 +228,7 @@ class Marathon(test_util.helpers.ApiClient):
             logging.info('Application destroyed')
             return True
 
-        r = self.delete('/apps' + app_name)
+        r = self.delete('v2/apps' + app_name)
         assert r.ok
 
         try:

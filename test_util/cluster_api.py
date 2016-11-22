@@ -1,4 +1,5 @@
 import copy
+import functools
 import logging
 import os
 from urllib.parse import urlparse
@@ -10,6 +11,10 @@ import retrying
 
 import test_util.helpers
 import test_util.marathon
+
+ADMINROUTER_PORT_MAPPING = {
+    'master': {'http': 80, 'https': 443},
+    'agent': {'http': 61001, 'https': 61002}}
 
 
 def get_args_from_env():
@@ -30,7 +35,7 @@ def get_args_from_env():
     assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
 
     return {
-        'dcos_uri': os.environ['DCOS_DNS_ADDRESS'],
+        'dcos_url': os.environ['DCOS_DNS_ADDRESS'],
         'masters': os.environ['MASTER_HOSTS'].split(','),
         'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
@@ -223,14 +228,15 @@ class ClusterApi(test_util.helpers.ApiClient):
         will raise exception if authorization fails
         """
         self.web_auth_default_user.authenticate(self)
+        self.default_headers.update(self.web_auth_default_user.auth_header)
 
-    def __init__(self, dcos_uri, masters, public_masters, slaves, public_slaves,
+    def __init__(self, dcos_url, masters, public_masters, slaves, public_slaves,
                  dns_search_set, provider, auth_enabled, default_os_user,
                  web_auth_default_user=None, ca_cert_path=None):
         """Proxy class for DC/OS clusters.
 
         Args:
-            dcos_uri: address for the DC/OS web UI.
+            dcos_url: address for the DC/OS web UI.
             masters: list of Mesos master advertised IP addresses.
             public_masters: list of Mesos master IP addresses routable from
                 the local host.
@@ -244,9 +250,17 @@ class ClusterApi(test_util.helpers.ApiClient):
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
             ca_cert_path: (str) optional path point to the CA cert to make requests against
         """
+        # URL must include scheme
+        assert dcos_url.startswith('http')
+        parse_result = urlparse(dcos_url)
+        self.scheme = parse_result.scheme
+        self.dns_host = parse_result.netloc.split(':')[0]
+
+        # Make URL never end with /
+        self.dcos_url = dcos_url.rstrip('/')
+
         super().__init__(
-            cluster=self,
-            user=web_auth_default_user,
+            default_host_url=self.dcos_url,
             api_base=None,
             ca_cert_path=ca_cert_path)
         self.masters = sorted(masters)
@@ -263,39 +277,81 @@ class ClusterApi(test_util.helpers.ApiClient):
 
         assert len(self.masters) == len(self.public_masters)
 
-        # URI must include scheme
-        assert dcos_uri.startswith('http')
-        parse_result = urlparse(dcos_uri)
-        self.scheme = parse_result.scheme
-        self.dns_host = parse_result.netloc.split(':')[0]
-
-        # Make URI never end with /
-        self.dcos_uri = dcos_uri.rstrip('/')
-
     def get_user_session(self, user):
-        """ Return a copy of self instead of new instance of ClusterApi
-        so that children of this class return siblings, not parents
+        """Returns a copy of self with auth headers set for user
         """
         new_session = copy.deepcopy(self)
-        if user:
-            user.authenticate(self)
+        # purge old auth headers
+        if self.web_auth_default_user is not None:
+            for k in self.web_auth_default_user.auth_header.keys():
+                del new_session.default_headers[k]
+        # if user is given then auth and update the headers
+        if user is not None:
+            new_session._authenticate_default_user()
         new_session.web_auth_default_user = user
         return new_session
 
+    def get_node_url(self, node, port=None):
+        """
+        Args:
+            node: (str) the hostname of the node to be requested from, if node=None,
+                then public cluster address (see environment DCOS_DNS_ADDRESS)
+            port: (int) port to be requested at. If port=None, the default port
+                for that given node type will be used
+        Returns:
+            fully-qualified URL string for this API
+        """
+        if node in self.masters:
+            role = 'master'
+        elif node in self.all_slaves:
+            role = 'agent'
+        else:
+            raise Exception('Node {} is not recognized within the DC/OS cluster'.format(node))
+        if port is None:
+            port = ADMINROUTER_PORT_MAPPING[role][self.scheme]
+        # do not explicitly declare default ports
+        if (port == 80 and self.scheme == 'http') or (port == 443 and self.scheme == 'https'):
+            netloc = node
+        else:
+            netloc = '{}:{}'.format(node, port)
+        return '{}://{}'.format(self.scheme, netloc)
+
+    def cluster_api_request(self, method, path, host_url=None, node=None, port=None, **kwargs):
+        """
+        Performs the same specialized request as ClusterApi but allows setting node
+        Args:
+            see ClusterApi for descriptions
+            node: host string corresponding to the ones stored in this object
+            port: if node is given, then a port can also be specified
+        """
+        if node is not None:
+            assert host_url is None, 'Cannot set both node and host_url'
+            host_url = self.get_node_url(node, port=port)
+        return self.api_request(method, path, host_url=host_url, **kwargs)
+
+    get = functools.partialmethod(cluster_api_request, 'get')
+    post = functools.partialmethod(cluster_api_request, 'post')
+    put = functools.partialmethod(cluster_api_request, 'put')
+    delete = functools.partialmethod(cluster_api_request, 'delete')
+    options = functools.partialmethod(cluster_api_request, 'options')
+    head = functools.partialmethod(cluster_api_request, 'head')
+    patch = functools.partialmethod(cluster_api_request, 'patch')
+    delete = functools.partialmethod(cluster_api_request, 'delete')
+
     def get_client(self, path, default_headers=None):
         return test_util.helpers.ApiClient(
-            cluster=self,
-            user=self.web_auth_default_user,
+            default_host_url=self.dcos_url,
             api_base=path,
             ca_cert_path=self.ca_cert_path,
-            default_headers=default_headers)
+            default_headers=self.default_headers if default_headers is None else default_headers)
 
     @property
     def marathon(self):
         return test_util.marathon.Marathon(
-            cluster=self,
-            ca_cert_path=self.ca_cert_path,
-            user=self.web_auth_default_user)
+            default_host_url=self.dcos_url,
+            default_os_user=self.default_os_user,
+            default_headers=self.default_headers,
+            ca_cert_path=self.ca_cert_path)
 
     @property
     def metronome(self):

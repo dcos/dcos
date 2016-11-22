@@ -12,7 +12,7 @@ from retrying import retry, RetryError
 import gen.calc
 import test_util.installer_api_test
 import test_util.test_runner
-from ssh.ssh_tunnel import SSHTunnel, TunnelCollection
+from ssh.tunnel import Tunnel, TunnelCollection
 
 
 zookeeper_docker_image = 'jplock/zookeeper'
@@ -50,7 +50,7 @@ class Ssher:
             )) from exc
 
     def tunnel(self, host):
-        return SSHTunnel(self.user, self.key_path, host.public_ip)
+        return Tunnel(self.user, self.key_path, host.public_ip)
 
     @contextmanager
     def tunnels(self, hosts):
