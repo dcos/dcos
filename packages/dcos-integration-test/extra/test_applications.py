@@ -1,3 +1,4 @@
+import pytest
 import uuid
 
 from test_util.marathon import get_test_app, get_test_app_in_docker
@@ -29,6 +30,11 @@ def test_if_docker_app_can_be_deployed(cluster):
     cluster.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
+@pytest.mark.xfail(
+    dcos.config['security'] == 'strict',
+    reason='Strict security mode does not currently support pods.',
+    strict=True
+)
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     """Marathon app deployment integration test using the Mesos Containerizer
 
@@ -57,6 +63,37 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
         }]
     }
     cluster.marathon.deploy_test_app_and_check(app, test_uuid)
+
+
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
+    """Marathon pods deployment integration test using the Mesos Containerizer
+
+    This test verifies that a Marathon pods can be deployed.
+    """
+
+    test_uuid = uuid.uuid4().hex
+
+    pod_definition = {
+        'id': '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'ct1',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'busybox'},
+                'exec': {'command': {'shell': 'while true; do echo the current time is $(date); sleep 1; done'}}
+            },
+            {
+                'name': 'ct2',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {'command': {'shell': 'while true; do echo -n $PING ' ';sleep 1; done'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}]
+    }
+
+    cluster.marathon.deploy_test_pod_and_check(pod_definition, test_uuid)
 
 
 def test_octarine_http(cluster, timeout=30):
