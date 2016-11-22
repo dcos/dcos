@@ -1,7 +1,7 @@
 import asyncio
+import os
 
 import aiohttp
-import os
 import pytest
 import webtest_aiohttp
 

@@ -15,6 +15,7 @@ import gen.installer.util as util
 import pkgpanda.util
 import release
 import release.storage
+from pkgpanda.util import logger
 
 aws_region_names = [
     {
@@ -481,8 +482,8 @@ def gen_templates(arguments):
         slave_cloud_config=variant_cloudconfig['slave'],
         slave_public_cloud_config=variant_cloudconfig['slave_public'])
 
-    print("Validating CloudFormation")
-    validate_cf(cloudformation)
+    with logger.scope("Validating CloudFormation"):
+        validate_cf(cloudformation)
 
     return gen.Bunch({
         'cloudformation': cloudformation,

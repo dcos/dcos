@@ -98,7 +98,7 @@ def check_environment():
         if k.startswith(prefix):
             add_env[k.replace(prefix, '')] = v
     options.add_env = add_env
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + options.ci_flags)
+    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + options.ci_flags)
     return options
 
 
