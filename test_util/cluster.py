@@ -316,15 +316,14 @@ def install_dcos(
 def upgrade_dcos(cluster, installer_url, add_config_path=None):
 
     def upgrade_host(tunnel, role, bootstrap_url):
-        # Download the install script for the new DC/OS.
-        tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
+        # Download the upgrade script for the new DC/OS.
+        tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/upgrade.latest'])
+        upgrade_id = tunnel.remote_cmd(['cat', 'upgrade.latest'])
+        tunnel.remote_cmd(curl_cmd + ['-o', 'dcos_node_upgrade.sh', bootstrap_url + '/upgrade/' +
+                                      upgrade_id.strip().decode('utf-8') + '/dcos_node_upgrade.sh'])
 
-        # Remove the old DC/OS.
-        tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
-        tunnel.remote_cmd(['sudo', 'rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'])
-
-        # Install the new DC/OS.
-        tunnel.remote_cmd(['sudo', 'bash', 'dcos_install.sh', '-d', role])
+        # Upgrade to the new DC/OS.
+        tunnel.remote_cmd(['sudo', 'bash', 'dcos_node_upgrade.sh'])
 
     @retry(
         wait_fixed=(1000 * 5),
@@ -364,6 +363,11 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             add_config_path=add_config_path,
             rexray_config_preset='aws',
         )
+
+        logging.info("Generating node upgrade script")
+        # Generate node upgrade script
+        installer.generate_node_upgrade_script()
+
         # Remove docker (and associated journald) restart from the install
         # script. This prevents Docker-containerized tasks from being killed
         # during agent upgrades.

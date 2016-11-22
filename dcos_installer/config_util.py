@@ -23,6 +23,8 @@ def do_configure(config):
     # Write some package metadata
     pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 
+    return gen_out
+
 
 def do_move_atomic(src_dir, dest_dir, filenames):
     assert os.path.exists(src_dir)

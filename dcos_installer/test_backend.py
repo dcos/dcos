@@ -67,6 +67,38 @@ def test_set_superuser_password(tmpdir):
         assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
 
 
+def test_generate_node_upgrade_script(tmpdir):
+    """
+    Test the generate upgrade script works
+    """
+    genconf_dir = tmpdir.join('genconf')
+    genconf_dir.ensure(dir=True)
+    config_path = genconf_dir.join('config.yaml')
+    config_path.write(simple_full_config)
+    genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
+    tmpdir.join('artifacts/bootstrap/12345.bootstrap.tar.xz').write('contents_of_bootstrap', ensure=True)
+    tmpdir.join('artifacts/bootstrap/12345.active.json').write('{"active": "contents"}', ensure=True)
+
+    genconf_dir.join('serve')
+
+    cluster_package_sample = '''
+{
+  "dcos-config": {
+    "filename": "packages/dcos-config/dcos-config--setup_652c02f8bc9611362ffd4657a01f4cb29b2ff68b.tar.xz",
+    "id": "dcos-config--setup_652c02f8bc9611362ffd4657a01f4cb29b2ff68b"
+  },
+  "dcos-metadata": {
+    "filename": "packages/dcos-metadata/dcos-metadata--setup_652c02f8bc9611362ffd4657a01f4cb29b2ff68b.tar.xz",
+    "id": "dcos-metadata--setup_652c02f8bc9611362ffd4657a01f4cb29b2ff68b"
+  }
+}
+    '''
+
+    tmpdir.join('genconf/serve/cluster-package-info.json').write(cluster_package_sample, ensure=True)
+
+    subprocess.check_call(['dcos_installer', '--generate-node-upgrade-script', 'foo'], cwd=str(tmpdir))
+
+
 def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()

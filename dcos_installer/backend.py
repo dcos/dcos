@@ -13,7 +13,7 @@ import gen.calc
 import release
 import release.storage.aws
 import release.storage.local
-from dcos_installer import config_util
+from dcos_installer import config_util, upgrades
 from dcos_installer.config import Config, normalize_config_validation
 from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
 
@@ -40,6 +40,28 @@ def do_configure(config_path=CONFIG_PATH):
         return 1
 
     config_util.do_configure(config)
+    return 0
+
+
+def generate_node_upgrade_script(current_version, config_path=CONFIG_PATH):
+
+    if current_version is None:
+        log.error('Must provide the current version of the cluster')
+        return 0
+
+    config = Config(config_path)
+
+    validate_gen = config.do_validate(include_ssh=False)
+    if len(validate_gen) > 0:
+        for key, error in validate_gen.items():
+            log.error('{}: {}'.format(key, error))
+        return 1
+
+    gen_out = config_util.do_configure(config)
+
+    # generate the upgrade script
+    upgrades.generate_node_upgrade_script(gen_out, current_version)
+
     return 0
 
 
