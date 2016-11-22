@@ -2,8 +2,8 @@
   "requires": ["mesos"],
     "single_source" : {
       "kind": "git",
-      "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "11d8b8fbab3f98112b403059446338a8a3a81190",
-      "ref_origin": "master"
+      "git": "https://github.com/tillt/dcos-mesos-modules.git",
+      "ref": "23f73c6f591e09c831089acb6258d87440bcd916",
+      "ref_origin": "till/mesos-1.1.0-release"
     }
 }
