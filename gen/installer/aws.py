@@ -436,26 +436,36 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
 
 
 def gen_templates(arguments):
-    results = gen.generate(
-        arguments=arguments,
-        extra_templates=[
-            'aws/templates/cloudformation.json',
-            'aws/dcos-config.yaml',
-            'coreos-aws/cloud-config.yaml',
-            'coreos/cloud-config.yaml'],
-        cc_package_files=[
+    extra_templates=[
+        'aws/templates/cloudformation.json',
+        'aws/dcos-config.yaml',
+    ]
+    if arguments['os_type'] == 'coreos' or arguments['os_type'] == 'stable':
+        extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
+        cloud_init_implementation = 'coreos'
+    elif arguments['os_type'] == 'el7':
+        cloud_init_implementation = 'canonical'
+    else:
+        raise RuntimeError('Unsupported os_type: {}'.format(arguments['os_type']))
+
+    cc_package_files=[
             '/etc/cfn_signal_metadata',
             '/etc/adminrouter.env',
             '/etc/ui-config.json',
             '/etc/dns_config',
             '/etc/exhibitor',
             '/etc/mesos-master-provider',
-            '/etc/extra_master_addresses'])
+            '/etc/extra_master_addresses']
+
+    results = gen.generate(
+        arguments=arguments,
+        extra_templates=extra_templates,
+        cc_package_files=cc_package_files)
 
     cloud_config = results.templates['cloud-config.yaml']
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config, 'coreos')
+    cloud_config = results.utils.add_services(cloud_config, cloud_init_implementation)
 
     # Specialize for master, slave, slave_public
     variant_cloudconfig = {}
@@ -465,7 +475,8 @@ def gen_templates(arguments):
         # Specialize the dcos-cfn-signal service
         cc_variant = results.utils.add_units(
             cc_variant,
-            yaml.load(gen.template.parse_str(late_services).render(params)))
+            yaml.load(gen.template.parse_str(late_services).render(params)),
+            cloud_init_implementation)
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])
@@ -475,6 +486,7 @@ def gen_templates(arguments):
         # interpret end up all escaped and undoing it would be hard.
         variant_cloudconfig[variant] = results.utils.render_cloudconfig(cc_variant)
 
+    #TODO (jeid) might have to add os_type passing in to here.
     # Render the cloudformation
     cloudformation = render_cloudformation(
         results.templates['cloudformation.json'],
@@ -544,7 +556,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         args['exhibitor_storage_backend'] = 'aws_s3'
         args['master_role'] = '{ "Ref" : "MasterRole" }'
         args['agent_role'] = '{ "Ref" : "SlaveRole" }'
-        args['region_to_ami_mapping'] = gen_ami_mapping({"stable"})
+        args['region_to_ami_mapping'] = gen_ami_mapping({"coreos", "el7"})
         args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
 
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
@@ -556,12 +568,19 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         # Single master templates
         single_args = deepcopy(args)
         single_args['num_masters'] = "1"
+        # TODO(jeid) probably not the way to handle os_type
+        single_args['os_type'] = 'coreos'
         yield from make(single_args, 'single-master.cloudformation.json')
+        single_args['os_type'] = 'el7'
+        yield from make(single_args, 'el7.single-master.cloudformation.json')
 
         # Multi master templates
         multi_args = deepcopy(args)
         multi_args['num_masters'] = "3"
+        multi_args['os_type'] = 'coreos'
         yield from make(multi_args, 'multi-master.cloudformation.json')
+        multi_args['os_type'] = 'el7'
+        yield from make(multi_args, 'el7.multi-master.cloudformation.json')
 
         # Advanced templates
         for os_type in ['coreos', 'el7']:
