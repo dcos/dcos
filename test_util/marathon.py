@@ -205,10 +205,6 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-    def deploy_test_pod_and_check(self, pod, test_uuid):
-        with self.deploy_pod_and_cleanup(pod) as instances:
-            assert pod['scaling']['instances'] == instances
-
     def deploy_pod(self, pod_definition, timeout=120):
         """Deploy a pod to marathon
 
@@ -231,7 +227,7 @@ class Marathon(test_util.helpers.ApiClient):
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
                         retry_on_exception=lambda x: False)
         def _wait_for_pod_deployment(pod_id):
@@ -242,9 +238,12 @@ class Marathon(test_util.helpers.ApiClient):
                 return False
             # deployment complete
             r = self.get('v2/pods' + pod_id)
+            r.raise_for_status()
             data = r.json()
-            return data["scaling"]["instances"]
-
+            if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
+                logging.info('Pod is still scaling. Continuing to wait...')
+                return False
+            return data
         try:
             return _wait_for_pod_deployment(pod_definition['id'])
         except retrying.RetryError:

@@ -89,7 +89,9 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
         'networks': [{'mode': 'host'}]
     }
 
-    cluster.marathon.deploy_test_pod_and_check(pod_definition, test_uuid)
+    with cluster.marathon.deploy_pod_and_cleanup(pod_definition):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
 
 
 def test_octarine_http(cluster, timeout=30):
