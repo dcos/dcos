@@ -148,7 +148,7 @@ package:
         {
           "allocate_subnet": true,
           "mesos_bridge": false,
-          "docker_bridge": true,
+          "docker_bridge": false,
           "overlay_mtu": {{ dcos_overlay_mtu }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
