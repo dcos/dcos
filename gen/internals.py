@@ -312,6 +312,82 @@ class ArgumentDict(dict):
         self._finalized = True
 
 
+class Validator:
+    """Holds a collection of validate functions, and can be asked to call them"""
+
+    def __init__(self, validate_functions, targets):
+        # Note: targets must be passed in and inspected here, since the validate_functions that a
+        # target yields can't be inspected for the parameter name. To get around this yield_validates
+        # returns a two-tuple of the name and a callable.
+
+        # Re-arrange the validation functions so we can more easily access them by
+        # argument name.
+        self._validate_by_arg = dict()
+        self._multi_arg_validate = dict()
+
+        for function in validate_functions:
+            parameters = get_function_parameters(function)
+            # Could build up the single and multi parameter validation function maps in the same
+            # thing but the timing / handling of when and how we run single vs. multi-parameter
+            # validation functions is fairly different, the extra bit here simplifies the later code.
+            if len(parameters) == 1:
+                self._validate_by_arg.setdefault(parameters.pop(), list()).append(function)
+            else:
+                self._multi_arg_validate.setdefault(frozenset(parameters), list()).append(function)
+
+        for target in targets:
+            for parameter, function in target.yield_validates():
+                self._validate_by_arg.setdefault(parameter, list()).append(function)
+
+    def validate_single(self, name: str, value: str):
+        """Calls all validate functions which validate the given parameter name
+
+        The validate functions will raise an AssertionError which should be caught by the caller
+        when validation fails.
+        """
+        validate_fns = self._validate_by_arg.get(name)
+        if validate_fns is not None:
+            for validate_fn in validate_fns:
+                validate_fn(value)
+
+    # TODO(cmaloney): The distance between the validate_single and multi_arg_validate interface,
+    # while necessary for efficient functioning currently, is showing that there is tension between
+    # how / when each is run. Moving the multi-argument validation to as soon as possible after an
+    # argument set is finalized rather than one big pass at the end would likely make it much
+    # cleaner.
+    def yield_multi_argument_validate_errors(self, arguments: ArgumentDict):
+        for parameter_set, validate_fns in self._multi_arg_validate.items():
+            # Build up argument map for validate function. If any arguments are
+            # unset then skip this validate function.
+            kwargs = dict()
+            skip = False
+            for parameter in parameter_set:
+                # Exit early if the parameter was never calculated / asked for (We don't
+                # validate things that are never used or given)
+                if parameter not in arguments:
+                    skip = True
+                    break
+
+                # Exit if the parameter resolved to an error
+                resolvable = arguments[parameter]
+                if resolvable.is_error:
+                    skip = True
+                    break
+
+                kwargs[parameter] = arguments[parameter].value
+
+            if skip:
+                continue
+
+            # Call the validation function, catching AssertionErrors and turning them into errors in
+            # the error dictionary.
+            try:
+                for validate_fn in validate_fns:
+                    validate_fn(**kwargs)
+            except AssertionError as ex:
+                yield (parameter_set, ex.args[0])
+
+
 # Depth first search argument calculator. Detects cycles, as well as unmet
 # dependencies.
 # TODO(cmaloney): Separate chain / path building when unwinding from the root
@@ -333,20 +409,7 @@ class Resolver:
 
         self._contexts = list()
 
-        # Re-arrange the validation functions so we can more easily access them by
-        # argument name.
-        self._validate_by_arg = dict()
-        self._multi_arg_validate = dict()
-
-        for fn in validate_fns:
-            parameters = get_function_parameters(fn)
-            # Could build up the single and multi parameter validation function maps in the same
-            # thing but the timing / handling of when and how we run single vs. multi-parameter
-            # validation functions is fairly different, the extra bit here simplifies the later code.
-            if len(parameters) == 1:
-                self._validate_by_arg.setdefault(parameters.pop(), list()).append(fn)
-            else:
-                self._multi_arg_validate.setdefault(frozenset(parameters), list()).append(fn)
+        self._validator = Validator(validate_fns, targets)
 
     def _calculate(self, resolvable):
         # Filter out any setters which have predicates / conditions which are
@@ -400,10 +463,7 @@ class Resolver:
 
         try:
             value = setter.calc(**kwargs)
-            validate_fns = self._validate_by_arg.get(resolvable.name)
-            if validate_fns is not None:
-                for validate_fn in validate_fns:
-                    validate_fn(value)
+            self._validator.validate_single(resolvable.name, value)
         except AssertionError as ex:
             raise CalculatorError(ex.args[0], [ex]) from ex
 
@@ -519,38 +579,8 @@ class Resolver:
         for target in self._targets:
             self._calculate_target(target)
 
-        # TODO(cmaloney): figure out a way to validate as parameters are calculated.
-        # Perform all multi-argument validations
-        for parameter_set, validate_fns in self._multi_arg_validate.items():
-            # Build up argument map for validate function. If any arguments are
-            # unset then skip this validate function.
-            kwargs = dict()
-            skip = False
-            for parameter in parameter_set:
-                # Exit early if the parameter was never calculated / asked for (We don't
-                # validate things that are never used or given)
-                if parameter not in self._arguments:
-                    skip = True
-                    break
-
-                # Exit if the parameter resolved to an error
-                resolvable = self._arguments[parameter]
-                if resolvable.is_error:
-                    skip = True
-                    break
-
-                kwargs[parameter] = self._arguments[parameter].value
-
-            if skip:
-                continue
-
-            # Call the validation function, catching AssertionErrors and turning them into errors in
-            # the error dictionary.
-            try:
-                for validate_fn in validate_fns:
-                    validate_fn(**kwargs)
-            except AssertionError as ex:
-                self._errors[parameter_set] = ex.args[0]
+        for parameter_set, error in self._validator.yield_multi_argument_validate_errors(self._arguments):
+            self._errors[parameter_set] = error
 
     @property
     def arguments(self):
@@ -639,10 +669,6 @@ def resolve_configuration(sources: list, targets: list, user_arguments: dict):
             setters.setdefault(name, list())
             setters[name] += setter_list
         validate += source.validate
-
-    for target in targets:
-        for validate_fn in target.yield_validates:
-            validate.append(validate_fn)
 
     # Use setters to caluclate every required parameter
     resolver = Resolver(setters, validate, targets)

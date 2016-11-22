@@ -2,6 +2,7 @@ import pytest
 
 import gen.internals
 from gen.exceptions import ValidationError
+from gen.internals import Scope, Source, Target
 
 
 def sample_fn_small():
@@ -55,9 +56,6 @@ def validate_a(a):
 
 
 def test_resolve_simple():
-    Scope = gen.internals.Scope
-    Source = gen.internals.Source
-    Target = gen.internals.Target
 
     test_source = Source({
         'validate': [validate_a],
