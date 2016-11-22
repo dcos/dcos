@@ -76,12 +76,14 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
                 'name': 'ct1',
                 'resources': {'cpus': 0.1, 'mem': 32},
                 'image': {'kind': 'DOCKER', 'id': 'busybox'},
-                'exec': {'command': {'shell': 'while true; do echo the current time is $(date); sleep 1; done'}}
+                'exec': {'command': {'shell': 'touch foo'}},
+                'healthcheck': {'command': {'shell': 'test -f foo'}}
             },
             {
                 'name': 'ct2',
                 'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'while true; do echo -n $PING ' ';sleep 1; done'}}
+                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
             }
         ],
         'networks': [{'mode': 'host'}]
