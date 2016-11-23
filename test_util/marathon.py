@@ -205,7 +205,7 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
-    def deploy_pod(self, pod_definition, timeout=120):
+    def deploy_pod(self, pod_definition):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
@@ -216,16 +216,16 @@ class Marathon(test_util.helpers.ApiClient):
         Args:
             pod_definition: a dict with pod definition as specified in
                             Marathon API
-            timeout: a time to wait for the pod to reach 'Healthy' status
-                     after which the test should be failed.
             check_health: wait until Marathon reports tasks as healthy before
                           returning
         Returns:
             Scaling instance count
         """
+        timeout = 120
+
         r = self.post('v2/pods', json=pod_definition)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
-        assert r.ok
+        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
@@ -246,9 +246,9 @@ class Marathon(test_util.helpers.ApiClient):
             return data
         try:
             return _wait_for_pod_deployment(pod_definition['id'])
-        except retrying.RetryError:
+        except retrying.RetryError as ex:
             raise Exception("Pod deployment failed - operation was not "
-                            "completed in {} seconds.".format(timeout))
+                            "completed in {} seconds.".format(timeout)) from ex
 
     def destroy_pod(self, pod_id, timeout=120):
         """Remove a marathon pod
@@ -264,7 +264,7 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_exception=lambda x: False)
         def _destroy_pod_complete(deployment_id):
             r = self.get('v2/deployments')
-            assert r.ok
+            assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
@@ -274,13 +274,13 @@ class Marathon(test_util.helpers.ApiClient):
             return True
 
         r = self.delete('v2/pods' + pod_id)
-        assert r.ok
+        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
 
         try:
             _destroy_pod_complete(r.headers['Marathon-Deployment-Id'])
-        except retrying.RetryError:
+        except retrying.RetryError as ex:
             raise Exception("Pod destroy failed - operation was not "
-                            "completed in {} seconds.".format(timeout))
+                            "completed in {} seconds.".format(timeout)) from ex
 
     def destroy_app(self, app_name, timeout=120):
         """Remove a marathon app
@@ -322,5 +322,5 @@ class Marathon(test_util.helpers.ApiClient):
 
     @contextmanager
     def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
-        yield self.deploy_pod(pod_definition, timeout)
+        yield self.deploy_pod(pod_definition)
         self.destroy_pod(pod_definition['id'], timeout)
