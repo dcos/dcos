@@ -1,4 +1,3 @@
-import collections
 import logging
 import os
 import sys
@@ -29,7 +28,6 @@ def activate_packages(install, repository, package_ids, systemd, block_systemd):
     block_systemd: if systemd, block waiting for systemd services to come up
 
     """
-    assert isinstance(package_ids, collections.Sequence)
     install.activate(repository.load_packages(package_ids))
     if systemd:
         _start_dcos_target(block_systemd)
@@ -105,8 +103,9 @@ def add_package_file(repository, package_filename):
     name = os.path.basename(package_filename)
 
     if not name.endswith(filename_suffix):
-        print("ERROR: Can only add package tarballs which have names "
-              "like {{pkg-id}}{}".format(filename_suffix))
+        raise ValidationError(
+            "ERROR: Can only add package tarballs which have names like "
+            "{{pkg-id}}{}".format(filename_suffix))
 
     pkg_id = name[:-len(filename_suffix)]
 
@@ -250,8 +249,8 @@ def _do_bootstrap(install, repository):
         print("Checking for cluster packages in:", cluster_packages_filename)
         if cluster_packages:
             if not isinstance(cluster_packages, list):
-                print('ERROR: {} should contain a JSON list of packages. Got a {}'.format(cluster_packages_filename,
-                                                                                          type(cluster_packages)))
+                raise ValidationError('{} should contain a JSON list of packages. Got a {}'.format(
+                    cluster_packages_filename, type(cluster_packages)))
             print("Loading cluster-packages: {}".format(cluster_packages))
 
             for package_id_str in cluster_packages:
