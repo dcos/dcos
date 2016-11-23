@@ -1,5 +1,6 @@
 import os.path
 import subprocess
+from typing import Optional
 
 from release.storage import AbstractStorageProvider
 
@@ -11,8 +12,7 @@ from release.storage import AbstractStorageProvider
 class LocalStorageProvider(AbstractStorageProvider):
     name = 'local_storage_provider'
 
-    def __init__(self, path):
-        assert isinstance(path, str)
+    def __init__(self, path: str):
         assert not path.endswith('/')
         self.__storage_path = path
 
@@ -34,7 +34,13 @@ class LocalStorageProvider(AbstractStorageProvider):
     def copy(self, source_path, destination_path):
         self.__copy(self.__full_path(source_path), self.__full_path(destination_path))
 
-    def upload(self, destination_path, blob=None, local_path=None, no_cache=None, content_type=None):
+    def upload(
+            self,
+            destination_path: str,
+            blob: Optional[bytes]=None,
+            local_path: Optional[str]=None,
+            no_cache: bool=False,
+            content_type: Optional[str]=None):
         # TODO(cmaloney): Don't discard the extra no_cache / content_type. We ideally want to be
         # able to test those are set.
         destination_full_path = self.__full_path(destination_path)

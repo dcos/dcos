@@ -88,8 +88,7 @@ class AbstractStorageProvider(metaclass=abc.ABCMeta):
 
 
 class ReadOnlyProxy(AbstractStorageProvider):
-    def __init__(self, storage_provider):
-        assert isinstance(storage_provider, AbstractStorageProvider)
+    def __init__(self, storage_provider: AbstractStorageProvider):
         self._storage_provider = storage_provider
 
     def copy(self,

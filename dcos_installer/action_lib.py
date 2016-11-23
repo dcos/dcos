@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+from typing import Optional
 
 import pkgpanda
 import ssh.utils
@@ -197,11 +198,16 @@ def _remove_host(state_file, host):
 
 
 @asyncio.coroutine
-def install_dcos(config, block=False, state_json_dir=None, hosts=None, async_delegate=None, try_remove_stale_dcos=False,
-                 **kwargs):
+def install_dcos(
+        config,
+        block=False,
+        state_json_dir=None,
+        hosts: Optional[list]=None,
+        async_delegate=None,
+        try_remove_stale_dcos=False,
+        **kwargs):
     if hosts is None:
         hosts = []
-    assert isinstance(hosts, list)
 
     # Role specific parameters
     role_params = {

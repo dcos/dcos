@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+from typing import Callable, Union
 
 log = logging.getLogger(__name__)
 
@@ -23,8 +24,7 @@ class CommandChain():
         self.commands_stack = []
         self.namespace = namespace
 
-    def add_execute(self, cmd, rollback=None, stage=None):
-        assert isinstance(cmd, list) or callable(cmd)
+    def add_execute(self, cmd: Union[list, Callable], rollback=None, stage=None):
         self.commands_stack.append((self.execute_flag, cmd, rollback, stage))
 
     def add_copy(self, local_path, remote_path, remote_to_local=False, recursive=False, stage=None):
@@ -34,9 +34,8 @@ class CommandChain():
         # Return all commands
         return self.commands_stack
 
-    def prepend_command(self, cmd, rollback=None, stage=None):
+    def prepend_command(self: list, cmd, rollback=None, stage=None):
         # We can specify a command to be executed before the main chain of commands, for example some setup commands
-        assert isinstance(cmd, list)
         self.commands_stack.insert(0, (self.execute_flag, cmd, rollback, stage))
 
 
@@ -156,9 +155,7 @@ class JsonDelegate(AbstractSSHLibDelegate):
 
     # When the function is invoked the json status file will be populated with a list of nodes passed as a parameter.
     # In this case a node should not be in any state and should just wait to be processed.
-    def prepare_status(self, name, nodes):
-        assert isinstance(name, str)
-        assert isinstance(nodes, list)
+    def prepare_status(self, name: str, nodes: list):
 
         json_status = self._read_json_state(name)
 
