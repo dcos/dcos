@@ -224,8 +224,8 @@ class Marathon(test_util.helpers.ApiClient):
         timeout = 120
 
         r = self.post('v2/pods', json=pod_definition)
-        logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+        logging.info('Response from marathon: {}'.format(repr(r.json())))
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,

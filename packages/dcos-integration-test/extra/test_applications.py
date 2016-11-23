@@ -75,7 +75,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
             {
                 'name': 'ct1',
                 'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'busybox'},
+                'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
                 'exec': {'command': {'shell': 'touch foo'}},
                 'healthcheck': {'command': {'shell': 'test -f foo'}}
             },
