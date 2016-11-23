@@ -57,7 +57,7 @@ class ApiClient:
         self.default_headers = default_headers
         self.ca_cert_path = ca_cert_path
 
-    def api_request(self, method, path, host_url=None, **kwargs):
+    def request_wrapper(self, request_fn, path, host_url=None, **kwargs):
         """
         Makes a request with default headers + user auth headers if necessary
         If self.ca_cert_path is set, this method will pass it to requests
@@ -78,19 +78,31 @@ class ApiClient:
 
         request_url = path_join(host_url if host_url else self.default_host_url, path)
         headers.update(kwargs.pop('headers', {}))
-        logging.info('Request method {}: {}'.format(method, request_url))
+        logging.info('Request method {}: {}'.format(request_fn.__name__, request_url))
         logging.debug('Reqeust kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
-        return requests.request(method, request_url, headers=headers, **kwargs)
+        return request_fn(request_url, headers=headers, **kwargs)
 
-    get = functools.partialmethod(api_request, 'get')
-    post = functools.partialmethod(api_request, 'post')
-    put = functools.partialmethod(api_request, 'put')
-    delete = functools.partialmethod(api_request, 'delete')
-    options = functools.partialmethod(api_request, 'options')
-    head = functools.partialmethod(api_request, 'head')
-    patch = functools.partialmethod(api_request, 'patch')
-    delete = functools.partialmethod(api_request, 'delete')
+    def extra_wrapper(self, orig_wrapper, request_fn, *args, **kwargs):
+        """Trivial wrapper to allow children and applications to change
+        wrapper behavior by overloading this method
+        """
+        return orig_wrapper(request_fn, *args, **kwargs)
+
+    def wrapped_request(self, request_fn, *args, **kwargs):
+        """Thin wrapper to allow wrapping requests dynamically by mapping
+        a function to self.request_wrapper
+        """
+        return self.extra_wrapper(self.request_wrapper, request_fn, *args, **kwargs)
+
+    get = functools.partialmethod(wrapped_request, requests.get)
+    post = functools.partialmethod(wrapped_request, requests.post)
+    put = functools.partialmethod(wrapped_request, requests.put)
+    delete = functools.partialmethod(wrapped_request, requests.delete)
+    options = functools.partialmethod(wrapped_request, requests.options)
+    head = functools.partialmethod(wrapped_request, requests.head)
+    patch = functools.partialmethod(wrapped_request, requests.patch)
+    delete = functools.partialmethod(wrapped_request, requests.delete)
 
 
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):

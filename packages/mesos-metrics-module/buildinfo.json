@@ -1,0 +1,9 @@
+{
+  "requires": ["mesos", "boost-libs", "avro-cpp"],
+  "single_source" : {
+    "kind": "git",
+    "git": "git@github.com:dcos/dcos-metrics.git",
+    "ref" : "f2b12c09acb0be57fa4a0dd8f7b5dd38efd458a5",
+    "ref_origin": "master"
+  }
+}

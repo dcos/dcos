@@ -133,6 +133,8 @@ def test_signal_service(cluster):
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
+        'metrics-service',
+        'metrics-socket',
         'minuteman-service',
         'navstar-service',
         'pkgpanda-api-service',

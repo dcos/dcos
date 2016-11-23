@@ -1,0 +1,31 @@
+#!/bin/bash
+
+mkdir -p build
+pushd build
+
+# configure module build with cmake
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTESTS_ENABLED=False \
+  -DCMAKE_INSTALL_PREFIX=$PKG_PATH \
+  -Dmesos_INCLUDE_DIR=/opt/mesosphere/include \
+  -Ddefault_BIN_DIR=/opt/mesosphere/bin \
+  -Ddefault_LIB_DIR=/opt/mesosphere/lib \
+  -DUSE_LOCAL_PROTOBUF=False \
+  -Dprotobuf_INCLUDE_DIR=/opt/mesosphere/lib/mesos/3rdparty/include \
+  -DUSE_LOCAL_GLOG=False \
+  -Dglog_INCLUDE_DIR=/opt/mesosphere/lib/mesos/3rdparty/include \
+  -DUSE_LOCAL_AVRO=False \
+  /pkg/src/mesos-metrics-module/mesos_module/
+
+make -j8
+
+# install lib to $PKG_PATH/...
+make install
+
+popd
+
+# Copy the json file describing metrics modules.
+module_json="$PKG_PATH/etc/mesos-slave-modules/metrics.json"
+mkdir -p "$(dirname "$module_json")"
+cp /pkg/extra/metrics.json "$module_json"

@@ -1,0 +1,40 @@
+#!/bin/bash
+export GOPATH=$GOPATH:/pkg
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-metrics /pkg/src/github.com/dcos/dcos-metrics
+cd /pkg/src/github.com/dcos/dcos-metrics
+
+make build
+
+mkdir -p $PKG_PATH/bin
+mv /pkg/src/github.com/dcos/dcos-metrics/build/collector/dcos-metrics-collector-* $PKG_PATH/bin/dcos-metrics
+
+# We build this for integration tests
+mv /pkg/src/github.com/dcos/dcos-metrics/build/statsd-emitter/dcos-metrics-statsd-emitter-* $PKG_PATH/bin/statsd-emitter
+
+# Create the service file for all roles 
+agent_service="$PKG_PATH/dcos.target.wants_slave/dcos-metrics.service"
+mkdir -p "$(dirname "$agent_service")"
+cp /pkg/extra/dcos-metrics-agent.service "$agent_service"
+
+agent_public_service="$PKG_PATH/dcos.target.wants_slave_public/dcos-metrics.service"
+mkdir -p "$(dirname "$agent_public_service")"
+cp /pkg/extra/dcos-metrics-agent.service "$agent_public_service"
+
+master_service="$PKG_PATH/dcos.target.wants_master/dcos-metrics.service"
+mkdir -p "$(dirname "$master_service")"
+cp /pkg/extra/dcos-metrics-master.service "$master_service"
+
+# Create socket files for all roles
+agent_socket="$PKG_PATH/dcos.target.wants_slave/dcos-metrics.socket"
+mkdir -p "$(dirname "$agent_socket")"
+cp /pkg/extra/dcos-metrics.socket "$agent_socket"
+
+agent_public_socket="$PKG_PATH/dcos.target.wants_slave_public/dcos-metrics.socket"
+mkdir -p "$(dirname "$agent_public_socket")"
+cp /pkg/extra/dcos-metrics.socket "$agent_public_socket"
+
+master_socket="$PKG_PATH/dcos.target.wants_master/dcos-metrics.socket"
+mkdir -p "$(dirname "$master_socket")"
+cp /pkg/extra/dcos-metrics.socket "$master_socket"
