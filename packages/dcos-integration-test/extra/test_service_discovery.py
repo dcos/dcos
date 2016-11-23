@@ -4,6 +4,8 @@ import pytest
 import requests
 import retrying
 
+from test_helpers import dcos_config
+
 from test_util.marathon import get_test_app, get_test_app_in_docker
 
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
@@ -161,7 +163,7 @@ def test_if_search_is_working(cluster):
         expected_error = {'error': '[Errno -2] Name or service not known'}
 
         # Check that result matches expectations for this cluster
-        if cluster.dns_search_set:
+        if dcos_config['dns_search']:
             assert r_data['search_hit_leader'] in cluster.masters
             assert r_data['always_hit_leader'] in cluster.masters
             assert r_data['always_miss'] == expected_error

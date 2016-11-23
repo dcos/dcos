@@ -91,9 +91,6 @@ export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
 export SLAVE_HOSTS=192.168.65.111,192.168.65.121
 export PUBLIC_SLAVE_HOSTS=192.168.65.60
 export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
-export DNS_SEARCH=true
-export DCOS_AUTH_ENABLED=false
-export DCOS_PROVIDER=onprem
 export DCOS_DEFAULT_OS_USER=root
 cd /opt/mesosphere/active/dcos-integration-test
 /opt/mesosphere/bin/dcos-shell py.test -vv -s -rs -m "not ccm" ${CI_FLAGS:-}

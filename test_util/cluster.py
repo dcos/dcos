@@ -71,7 +71,6 @@ class Cluster:
         self,
         ssh_info,
         ssh_key_path,
-        provider,
         masters,
         agents,
         public_agents,
@@ -81,7 +80,6 @@ class Cluster:
         gen.calc.validate_num_masters(str(len(masters)))
 
         self.ssher = Ssher(ssh_info.user, ssh_info.home_dir, ssh_key_path)
-        self.provider = provider
         self.masters = masters
         self.agents = agents
         self.public_agents = public_agents
@@ -91,10 +89,7 @@ class Cluster:
             'All cluster hosts require a private IP. hosts: {}'.format(repr(self.hosts))
         )
 
-        if self.provider == 'onprem':
-            self.check_ssh(self.hosts)
-        else:
-            self.check_ssh(self.masters)
+        self.check_ssh(self.masters)
 
         logging.info('Bootstrap host: ' + repr(self.bootstrap_host))
         logging.info('Masters: ' + repr(self.masters))
@@ -137,7 +132,6 @@ class Cluster:
         return cls(
             ssh_info=ssh_info,
             ssh_key_path=ssh_key_path,
-            provider='onprem',
             masters=masters,
             agents=agents,
             public_agents=public_agents,
@@ -157,7 +151,7 @@ class Cluster:
         hosts = vpc.get_vpc_host_ips()
         logging.info('AWS provided VPC info: ' + repr(hosts))
 
-        return cls.from_hosts(
+        vpc_cluster = cls.from_hosts(
             ssh_info=ssh_info,
             ssh_key_path=ssh_key_path,
             hosts=hosts,
@@ -165,13 +159,15 @@ class Cluster:
             num_agents=num_agents,
             num_public_agents=num_public_agents,
         )
+        # check that entire vpc is actually SSH accessible
+        vpc_cluster.check_ssh(vpc_cluster.hosts)
+        return vpc_cluster
 
     @classmethod
     def from_cloudformation(cls, cf, ssh_info, ssh_key_path):
         return cls(
             ssh_info=ssh_info,
             ssh_key_path=ssh_key_path,
-            provider='aws',
             masters=cf.get_master_ips(),
             agents=cf.get_private_agent_ips(),
             public_agents=cf.get_public_agent_ips(),
@@ -256,9 +252,6 @@ def install_dcos(
     install_prereqs=True,
     install_prereqs_only=False,
 ):
-    if cluster.provider != 'onprem':
-        raise NotImplementedError('Install is only supported for onprem clusters')
-
     assert cluster.bootstrap_host is not None, 'Install requires a bootstrap host'
     assert all(h.public_ip for h in cluster.hosts), (
         'Install requires that all cluster hosts have a public IP. hosts: {}'.format(repr(cluster.hosts))
@@ -452,5 +445,4 @@ def run_integration_tests(cluster, **kwargs):
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            provider=cluster.provider,
             **kwargs)

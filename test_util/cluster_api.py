@@ -23,13 +23,6 @@ def get_args_from_env():
     assert 'PUBLIC_MASTER_HOSTS' in os.environ
     assert 'SLAVE_HOSTS' in os.environ
     assert 'PUBLIC_SLAVE_HOSTS' in os.environ
-    assert 'DNS_SEARCH' in os.environ
-    assert 'DCOS_PROVIDER' in os.environ
-
-    # must be true or false (prevents misspellings)
-    assert os.environ['DNS_SEARCH'] in ['true', 'false']
-
-    assert os.environ['DCOS_PROVIDER'] in ['onprem', 'aws', 'azure']
 
     return {
         'dcos_url': os.environ['DCOS_DNS_ADDRESS'],
@@ -37,9 +30,6 @@ def get_args_from_env():
         'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-        'dns_search_set': os.environ['DNS_SEARCH'] == 'true',
-        'provider': os.environ['DCOS_PROVIDER'],
-        'auth_enabled': os.getenv('DCOS_AUTH_ENABLED', 'true') == 'true',
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root'),
         'ca_cert_path': os.getenv('DCOS_CA_CERT_PATH', None)}
 
@@ -187,7 +177,7 @@ class ClusterApi(test_util.helpers.ApiClient):
 
     def wait_for_dcos(self):
         self._wait_for_adminrouter_up()
-        if self.auth_enabled and self.web_auth_default_user:
+        if self.web_auth_default_user is not None:
             self._authenticate_default_user()
         self._wait_for_marathon_up()
         self._wait_for_zk_quorum()
@@ -208,8 +198,7 @@ class ClusterApi(test_util.helpers.ApiClient):
         self.default_headers.update(self.web_auth_default_user.auth_header)
 
     def __init__(self, dcos_url, masters, public_masters, slaves, public_slaves,
-                 dns_search_set, provider, auth_enabled, default_os_user,
-                 web_auth_default_user=None, ca_cert_path=None):
+                 default_os_user, web_auth_default_user=None, ca_cert_path=None):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -218,12 +207,8 @@ class ClusterApi(test_util.helpers.ApiClient):
             public_masters: list of Mesos master IP addresses routable from
                 the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
-            dns_search_set: string indicating that a DNS search domain is
-                configured if its value is "true".
-            provider: onprem, azure, or aws
-            auth_enabled: True or False
             default_os_user: default user that marathon/metronome will launch tasks under
-            web_auth_default_user: if auth_enabled, use this user's auth for all requests
+            web_auth_default_user: use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
             ca_cert_path: (str) optional path point to the CA cert to make requests against
         """
@@ -247,9 +232,6 @@ class ClusterApi(test_util.helpers.ApiClient):
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves + public_slaves)
         self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
-        self.dns_search_set = dns_search_set
-        self.provider = provider
-        self.auth_enabled = auth_enabled
         self.default_os_user = default_os_user
         self.web_auth_default_user = web_auth_default_user
 

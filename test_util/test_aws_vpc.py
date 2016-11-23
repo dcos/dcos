@@ -213,7 +213,6 @@ def main():
     result = test_util.cluster.run_integration_tests(
         cluster,
         # Setting dns_search: mesos not currently supported in API
-        test_dns_search=(not options.use_api),
         region=DEFAULT_AWS_REGION,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,

@@ -2,7 +2,6 @@
 ClusterApi object that will be injected into the pytest 'cluster' fixture
 via the make_cluster_fixture() method
 """
-
 from test_util.cluster_api import ClusterApi, get_args_from_env
 from test_util.helpers import CI_AUTH_JSON, DcosUser
 
