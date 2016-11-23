@@ -60,11 +60,13 @@ class NoConfigError(Exception):
 
 class Config():
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, output_path=''):
         self.config_path = config_path
 
-        # Create the config file iff allowed and there isn't one provided by the user.
+        # Currently setting to None, can be used to configure later
+        self.output_path = output_path
 
+        # Create the config file if allowed and there isn't one provided by the user.
         self._config = self._load_config()
         if not isinstance(self._config, dict):
             # FIXME
@@ -133,6 +135,14 @@ class Config():
     # set these defaults.
     def hacky_default_get(self, *args, **kwargs):
         return self._config.get(*args, **kwargs)
+
+    def set_output_path(self, path):
+        # update path
+        self.output_path = path
+
+    def get_output_path(self):
+        # get path
+        return self.output_path
 
     @property
     def config(self):
