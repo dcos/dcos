@@ -231,6 +231,8 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_result=lambda ret: ret is False,
                         retry_on_exception=lambda x: False)
         def _wait_for_pod_deployment(pod_id):
+            # TODO(greggomann): Revisit this logic. Can we make a request for
+            # info on only our specific deployment? See DCOS-11707.
             r = self.get('v2/deployments')
             data = r.json()
             if len(data) > 0:
