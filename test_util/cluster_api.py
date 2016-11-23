@@ -367,7 +367,7 @@ class ClusterApi(test_util.helpers.ApiClient):
                         retry_on_exception=lambda x: False)
         def wait_for_completion():
             r = self.metronome.get('jobs/' + job_id, params={'embed': 'history'})
-            assert r.ok
+            r.raise_for_status()
             out = r.json()
             if not ignore_failures and (out['history']['failureCount'] != 0):
                 raise Exception('Metronome job failed!: ' + repr(out))
@@ -378,11 +378,11 @@ class ClusterApi(test_util.helpers.ApiClient):
             return True
         logging.info('Creating metronome job: ' + repr(job_definition))
         r = self.metronome.post('jobs', json=job_definition)
-        assert r.ok, r.json()
+        r.raise_for_status()
         logging.info('Starting metronome job')
         r = self.metronome.post('jobs/{}/runs'.format(job_id))
-        assert r.ok, r.json()
+        r.raise_for_status()
         wait_for_completion()
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
-        assert r.ok
+        r.raise_for_status()
