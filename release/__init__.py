@@ -738,6 +738,15 @@ class ReleaseManager():
         assert 'complete_dict' in metadata
         assert 'commit' in metadata
 
+        # Assert that each variant's bootstrap's active packages are included in its complete package list.
+        # TODO(branden): Make the complete package list available in the installer (for
+        # dcos_installer.backend.do_aws_cf_configure()) and move this assertion to make_bootstrap_artifacts().
+        for info in metadata['all_completes'].values():
+            bootstrap_active_packages = set(
+                pkgpanda.util.load_json('packages/cache/bootstrap/{}.active.json'.format(info['bootstrap']))
+            )
+            assert bootstrap_active_packages <= set(info['packages'])
+
         repository = Repository(repository_path, channel, 'commit/{}'.format(metadata['commit']))
         set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
         metadata['tag'] = tag
