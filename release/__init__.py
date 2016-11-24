@@ -735,6 +735,7 @@ class ReleaseManager():
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
+        assert 'complete_dict' in metadata
         assert 'commit' in metadata
 
         repository = Repository(repository_path, channel, 'commit/{}'.format(metadata['commit']))
