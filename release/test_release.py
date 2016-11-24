@@ -604,6 +604,34 @@ def test_make_channel_artifacts(monkeypatch):
             'installer': 'installer_bootstrap_id',
             'downstream.installer': 'downstream_installer_bootstrap_id'
         },
+        'complete_dict': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+        },
+        'all_completes': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+            'installer': {
+                'bootstrap': 'installer_bootstrap_id',
+                'packages': ['installer-package--version'],
+            },
+            'downstream.installer': {
+                'bootstrap': 'downstream_installer_bootstrap_id',
+                'packages': ['downstream-installer-package--version'],
+            },
+        },
         'build_name': 'r_path/channel',
         'reproducible_artifact_path': 'r_path/channel/commit/sha-1',
         'repository_path': 'r_path',
