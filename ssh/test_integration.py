@@ -16,7 +16,7 @@ from retrying import retry
 
 import pkgpanda.util
 from ssh.runner import MultiRunner, Node
-from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnel, TunnelCollection
+from ssh.tunnel import run_scp_cmd, run_ssh_cmd, tunnel, tunnel_collection
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -342,8 +342,8 @@ def test_ssh_tunnel(sshd_manager):
             'key_path': sshd_manager.key_path,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
-        with Tunnel(**tunnel_args) as tunnel:
-            tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
+        with tunnel(**tunnel_args) as t:
+            tunnel_write_and_run(t.write_to_remote, t.remote_cmd)
 
 
 def test_ssh_tunnel_collection(sshd_manager):
@@ -352,9 +352,9 @@ def test_ssh_tunnel_collection(sshd_manager):
             'user': getpass.getuser(),
             'key_path': sshd_manager.key_path,
             'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
-        with TunnelCollection(**tunnel_args) as tunnels:
-            for tunnel in tunnels.tunnels:
-                tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
+        with tunnel_collection(**tunnel_args) as tunnels:
+            for t in tunnels:
+                tunnel_write_and_run(t.write_to_remote, t.remote_cmd)
 
 
 def test_ssh_one_offs(sshd_manager):
