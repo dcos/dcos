@@ -8,8 +8,8 @@ import boto3
 import botocore.exceptions
 
 import gen
+import gen.build_deploy.aws
 import gen.calc
-import gen.installer.aws
 import release
 import release.storage.aws
 import release.storage.local
@@ -185,7 +185,7 @@ aws_advanced_source = gen.internals.Source({
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path
-    }, gen.installer.aws.groups['master'][1]),
+    }, gen.build_deploy.aws.groups['master'][1]),
     'conditional': {
         'aws_template_upload': {
             'true': {
@@ -274,7 +274,7 @@ def do_aws_cf_configure():
     bootstrap_variant = full_config['bootstrap_variant'] if full_config['bootstrap_variant'] else None
 
     artifacts = list()
-    for built_resource in list(gen.installer.aws.do_create(
+    for built_resource in list(gen.build_deploy.aws.do_create(
             tag='dcos_generate_config.sh --aws-cloudformation',
             build_name='Custom',
             reproducible_artifact_path=full_config['reproducible_artifact_path'],

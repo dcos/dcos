@@ -4,8 +4,7 @@ import subprocess
 import sys
 
 import gen
-import gen.installer.aws
-import gen.installer.bash
+import gen.build_deploy.bash
 import pkgpanda
 from dcos_installer.constants import SERVE_DIR
 
@@ -15,7 +14,7 @@ log = logging.getLogger(__name__)
 def do_configure(config):
     gen_out = config.do_gen_configure()
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
-    gen.installer.bash.generate(gen_out, SERVE_DIR)
+    gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
     # Get bootstrap from artifacts
     # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
