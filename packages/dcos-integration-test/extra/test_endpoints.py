@@ -141,3 +141,25 @@ def test_if_we_have_capabilities(cluster):
     )
     assert r.status_code == 200
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
+
+
+def test_if_overlay_master_is_up(cluster):
+    r = cluster.get('/mesos/overlay-master/state')
+    assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
+
+    # Make sure the `dcos` overlay has been configured.
+    json = r.json()
+
+    dcos_overlay_network = {
+        'vtep_subnet': '44.128.0.0/20',
+        'vtep_mac_oui': '70:B3:D5:00:00:00',
+        'overlays': [
+            {
+                'name': 'dcos',
+                'subnet': '9.0.0.0/8',
+                'prefix': 24
+            }
+        ]
+    }
+
+    assert json['network'] == dcos_overlay_network
