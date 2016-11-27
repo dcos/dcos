@@ -58,7 +58,7 @@ def add_host(target):
 
 
 class MultiRunner():
-    def __init__(self, targets, async_delegate=None, ssh_user=None, ssh_key_path=None, extra_opts='',
+    def __init__(self, targets, async_delegate=None, user=None, key_path=None, extra_opts='',
                  process_timeout=120, parallelism=10):
         assert isinstance(targets, list)
         # TODO(cmaloney): accept an "ssh_config" object which generates an ssh
@@ -68,8 +68,8 @@ class MultiRunner():
         # host section which applies to all hosts, sets things like "user".
         self.extra_opts = extra_opts
         self.process_timeout = process_timeout
-        self.ssh_user = ssh_user
-        self.ssh_key_path = ssh_key_path
+        self.user = user
+        self.key_path = key_path
         self.ssh_bin = '/usr/bin/ssh'
         self.scp_bin = '/usr/bin/scp'
         self.async_delegate = async_delegate
@@ -97,7 +97,7 @@ class MultiRunner():
             '-oBatchMode=yes',
             '-oPasswordAuthentication=no',
             '{}{}'.format(port_option, host.port),
-            '-i', self.ssh_key_path]
+            '-i', self.key_path]
         shared_opts.extend(add_opts)
         return shared_opts
 
@@ -151,7 +151,7 @@ class MultiRunner():
         if callable(cmd):
             cmd = cmd(host)
 
-        full_cmd = self._get_base_args(self.ssh_bin, host) + ['{}@{}'.format(self.ssh_user, host.ip)] + cmd
+        full_cmd = self._get_base_args(self.ssh_bin, host) + ['{}@{}'.format(self.user, host.ip)] + cmd
         log.debug('executing command {}'.format(full_cmd))
         result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future, stage)
         return result
@@ -164,7 +164,7 @@ class MultiRunner():
         copy_command = []
         if recursive:
             copy_command += ['-r']
-        remote_full_path = '{}@{}:{}'.format(self.ssh_user, host.ip, remote_path)
+        remote_full_path = '{}@{}:{}'.format(self.user, host.ip, remote_path)
         if remote_to_local:
             copy_command += [remote_full_path, local_path]
         else:
@@ -278,8 +278,8 @@ class MultiRunner():
 
     def validate(self):
         """Raises an AssertException if validation does not pass"""
-        ssh.validate.validate_ssh_user(self.ssh_user)
-        ssh.validate.validate_ssh_key_path(self.ssh_key_path)
+        ssh.validate.validate_ssh_user(self.user)
+        ssh.validate.validate_ssh_key_path(self.key_path)
 
         for node in self.__targets:
             ssh.validate.validate_ssh_port(node.port)

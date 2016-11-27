@@ -7,7 +7,8 @@ import random
 import shutil
 import string
 import tempfile
-from os import mkdir
+from contextlib import contextmanager
+from os import chdir, getcwd, mkdir
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -19,8 +20,8 @@ from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
-                           load_string, make_file, make_tar, rewrite_symlinks,
-                           write_json, write_string)
+                           load_string, logger, make_file, make_tar,
+                           rewrite_symlinks, write_json, write_string)
 
 
 class BuildError(Exception):
@@ -449,13 +450,60 @@ def hash_checkout(item):
         raise NotImplementedError("{} of type {}".format(item, type(item)))
 
 
-def hash_folder(directory):
+def hash_files_in_folder(directory):
+    """Given a relative path, hashes all files inside that folder and subfolders
+
+    Returns a dictionary from filename to the hash of that file. If that whole
+    dictionary is hashed, you get a hash of all the contents of the folder.
+
+    This is split out from calculating the whole folder hash so that the
+    behavior in different walking corner cases can be more easily tested.
+    """
+    assert not directory.startswith('/'), \
+        "For the hash to be reproducible on other machines relative paths must always be used. " \
+        "Got path: {}".format(directory)
+    directory = directory.rstrip('/')
     file_hash_dict = {}
+    # TODO(cmaloney): Disallow symlinks as they're hard to hash, people can symlink / copy in their
+    # build steps if needed.
     for root, dirs, filenames in os.walk(directory):
+        assert not root.startswith('/')
         for name in filenames:
-            filename = root + '/' + name
-            file_hash_dict[filename] = pkgpanda.util.sha1(filename)
-    return hash_checkout(file_hash_dict)
+            path = root + '/' + name
+            base = path[len(directory) + 1:]
+            file_hash_dict[base] = pkgpanda.util.sha1(path)
+
+        # If the directory has files inside of it, then it'll be picked up implicitly. by the files
+        # or folders inside of it. If it contains nothing, it wouldn't be picked up but the existence
+        # is important, so added it with a value for it's hash not-makeable via sha1 (empty string).
+        if len(filenames) == 0 and len(dirs) == 0:
+            path = root[len(directory) + 1:]
+            # Empty path means it is the root directory, in which case we want no entries, not a
+            # single entry "": ""
+            if path:
+                file_hash_dict[root[len(directory) + 1:]] = ""
+
+    return file_hash_dict
+
+
+@contextmanager
+def as_cwd(path):
+    start_dir = getcwd()
+    chdir(path)
+    yield
+    chdir(start_dir)
+
+
+def hash_folder_abs(directory, work_dir):
+    assert directory.startswith(work_dir), "directory must be inside work_dir: {} {}".format(directory, work_dir)
+    assert not work_dir[-1] == '/', "This code assumes no trailing slash on the work_dir"
+
+    with as_cwd(work_dir):
+        return hash_folder(directory[len(work_dir) + 1:])
+
+
+def hash_folder(directory):
+    return hash_checkout(hash_files_in_folder(directory))
 
 
 # Try to read json from the given file. If it is an empty file, then return an
@@ -665,13 +713,13 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     else:
         package_sets = package_store.get_all_package_sets()
 
-    # Build all required packages for all tree variants.
-    for package_set in package_sets:
-        visit_packages(package_set.all_packages)
+    with logger.scope("resolve package graph"):
+        # Build all required packages for all tree variants.
+        for package_set in package_sets:
+            visit_packages(package_set.all_packages)
 
     built_packages = dict()
     for (name, variant) in build_order:
-        print("Building: {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
         built_packages.setdefault(name, dict())
 
         # Run the build, store the built package path for later use.
@@ -684,16 +732,16 @@ def build_tree(package_store, mkbootstrap, tree_variant):
 
     # Build bootstrap tarballs for all tree variants.
     def make_bootstrap(package_set):
-        print("Making bootstrap variant:", pkgpanda.util.variant_name(package_set.variant))
-        package_paths = list()
-        for name, pkg_variant in package_set.bootstrap_packages:
-            package_paths.append(built_packages[name][pkg_variant])
+        with logger.scope("Making bootstrap variant: {}".format(pkgpanda.util.variant_name(package_set.variant))):
+            package_paths = list()
+            for name, pkg_variant in package_set.bootstrap_packages:
+                package_paths.append(built_packages[name][pkg_variant])
 
-        if mkbootstrap:
-            return make_bootstrap_tarball(
-                package_store,
-                list(sorted(package_paths)),
-                package_set.variant)
+            if mkbootstrap:
+                return make_bootstrap_tarball(
+                    package_store,
+                    list(sorted(package_paths)),
+                    package_set.variant)
 
     # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
@@ -778,8 +826,13 @@ class IdBuilder():
 
 
 def build(package_store, name, variant, clean_after_build, recursive=False):
+    msg = "Building package {} variant {}".format(name, pkgpanda.util.variant_name(variant))
+    with logger.scope(msg):
+        return _build(package_store, name, variant, clean_after_build, recursive)
+
+
+def _build(package_store, name, variant, clean_after_build, recursive):
     assert isinstance(package_store, PackageStore)
-    print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
     repository = Repository(tmpdir.name)
 
@@ -855,7 +908,7 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # Add the "extra" folder inside the package as an additional source if it
     # exists
     if os.path.exists(extra_dir):
-        extra_id = hash_folder(extra_dir)
+        extra_id = hash_folder_abs(extra_dir, package_dir)
         builder.add('extra_source', extra_id)
         final_buildinfo['extra_source'] = extra_id
 
@@ -1182,17 +1235,16 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
     # TODO(cmaloney): Move to an RAII wrapper.
     check_call(['rm', '-rf', install_dir])
 
-    print("Building package tarball")
+    with logger.scope("Build package tarball"):
+        # Check for forbidden services before packaging the tarball:
+        try:
+            check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
+        except ValidationError as ex:
+            raise BuildError("Package validation failed: {}".format(ex))
 
-    # Check for forbidden services before packaging the tarball:
-    try:
-        check_forbidden_services(cache_abs("result"), RESERVED_UNIT_NAMES)
-    except ValidationError as ex:
-        raise BuildError("Package validation failed: {}".format(ex))
-
-    # TODO(cmaloney): Updating / filling last_build should be moved out of
-    # the build function.
-    write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
+        # TODO(cmaloney): Updating / filling last_build should be moved out of
+        # the build function.
+        write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"

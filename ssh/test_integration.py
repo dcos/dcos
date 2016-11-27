@@ -15,8 +15,8 @@ import pytest
 from retrying import retry
 
 import pkgpanda.util
-from ssh.ssh_runner import MultiRunner, Node
-from ssh.ssh_tunnel import run_scp_cmd, run_ssh_cmd, SSHTunnel, TunnelCollection
+from ssh.runner import MultiRunner, Node
+from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnel, TunnelCollection
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -111,8 +111,8 @@ def test_ssh_async(sshd_manager, loop):
             pass
 
     with sshd_manager.run(20) as sshd_ports:
-        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path, async_delegate=DummyAsyncDelegate())
+        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], user=getpass.getuser(),
+                             key_path=sshd_manager.key_path, async_delegate=DummyAsyncDelegate())
         host_port = ['127.0.0.1:{}'.format(port) for port in sshd_ports]
 
         chain = CommandChain('test')
@@ -141,8 +141,8 @@ def test_scp_remote_to_local_async(sshd_manager, loop):
         workspace = str(sshd_manager.tmpdir)
         id = uuid.uuid4().hex
         pkgpanda.util.write_string(workspace + '/pilot.txt', id)
-        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path)
+        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], user=getpass.getuser(),
+                             key_path=sshd_manager.key_path)
         host_port = ['127.0.0.1:{}'.format(port) for port in sshd_ports]
 
         chain = CommandChain('test')
@@ -171,8 +171,8 @@ def test_scp_async(sshd_manager, loop):
         workspace = str(sshd_manager.tmpdir)
         id = uuid.uuid4().hex
         pkgpanda.util.write_string(workspace + '/pilot.txt', id)
-        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path)
+        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], user=getpass.getuser(),
+                             key_path=sshd_manager.key_path)
         host_port = ['127.0.0.1:{}'.format(port) for port in sshd_ports]
 
         chain = CommandChain('test')
@@ -201,8 +201,8 @@ def test_scp_recursive_async(sshd_manager, loop):
 
         id = uuid.uuid4().hex
         pkgpanda.util.write_string(workspace + '/recursive_pilot.txt', id)
-        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path)
+        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], user=getpass.getuser(),
+                             key_path=sshd_manager.key_path)
         host_port = ['127.0.0.1:{}'.format(port) for port in sshd_ports]
 
         chain = CommandChain('test')
@@ -247,8 +247,8 @@ def test_ssh_command_terminate_async(sshd_manager, loop):
     with sshd_manager.run(1) as sshd_ports:
         workspace = str(sshd_manager.tmpdir)
 
-        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], ssh_user=getpass.getuser(),
-                             ssh_key_path=sshd_manager.key_path, process_timeout=0.05)
+        runner = MultiRunner(['127.0.0.1:{}'.format(port) for port in sshd_ports], user=getpass.getuser(),
+                             key_path=sshd_manager.key_path, process_timeout=0.05)
 
         chain = CommandChain('test')
         chain.add_execute(['sleep', '20'])
@@ -286,8 +286,8 @@ def test_tags_async(sshd_manager, loop):
         for _port in sshd_ports:
             _host = Node('127.0.0.1:{}'.format(_port), {'tag1': 'test1', 'tag2': 'test2'})
             targets.append(_host)
-        runner = MultiRunner(targets, ssh_user=getpass.getuser(),
-                             ssh_key_path=workspace + '/host_key')
+        runner = MultiRunner(targets, user=getpass.getuser(),
+                             key_path=workspace + '/host_key')
 
         chain = CommandChain('test')
         chain.add_execute(['sleep', '1'])
@@ -338,19 +338,19 @@ def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
 def test_ssh_tunnel(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
         tunnel_args = {
-            'ssh_user': getpass.getuser(),
-            'ssh_key_path': sshd_manager.key_path,
+            'user': getpass.getuser(),
+            'key_path': sshd_manager.key_path,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
-        with SSHTunnel(**tunnel_args) as tunnel:
+        with Tunnel(**tunnel_args) as tunnel:
             tunnel_write_and_run(tunnel.write_to_remote, tunnel.remote_cmd)
 
 
 def test_ssh_tunnel_collection(sshd_manager):
     with sshd_manager.run(10) as sshd_ports:
         tunnel_args = {
-            'ssh_user': getpass.getuser(),
-            'ssh_key_path': sshd_manager.key_path,
+            'user': getpass.getuser(),
+            'key_path': sshd_manager.key_path,
             'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
         with TunnelCollection(**tunnel_args) as tunnels:
             for tunnel in tunnels.tunnels:
@@ -360,8 +360,8 @@ def test_ssh_tunnel_collection(sshd_manager):
 def test_ssh_one_offs(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
         ssh_args = {
-            'ssh_user': getpass.getuser(),
-            'ssh_key_path': sshd_manager.key_path,
+            'user': getpass.getuser(),
+            'key_path': sshd_manager.key_path,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
         scp = partial(run_scp_cmd, **ssh_args)

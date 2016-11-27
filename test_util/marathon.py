@@ -9,7 +9,9 @@ import retrying
 
 import test_util.helpers
 
+DEFAULT_API_BASE = 'marathon'
 TEST_APP_NAME_FMT = '/integration-test-{}'
+REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
 
 
 def get_test_app(custom_port=False):
@@ -79,16 +81,17 @@ def get_test_app_in_docker(ip_per_container):
 
 
 class Marathon(test_util.helpers.ApiClient):
-    def __init__(self, cluster, user, api_base='/marathon/v2', default_headers=None, ca_cert_path=None):
-        required_headers = {'Accept': 'application/json, text/plain, */*'}
-        if default_headers:
-            required_headers.update(default_headers)
+    def __init__(self, default_host_url, default_os_user='root', api_base=DEFAULT_API_BASE,
+                 default_headers=None, ca_cert_path=None):
+        if default_headers is None:
+            default_headers = dict()
+        default_headers.update(REQUIRED_HEADERS)
         super().__init__(
-            cluster=cluster,
-            user=user,
+            default_host_url=default_host_url,
             api_base=api_base,
-            default_headers=required_headers,
+            default_headers=default_headers,
             ca_cert_path=ca_cert_path)
+        self.default_os_user = default_os_user
 
     def deploy_test_app_and_check(self, app, test_uuid):
         """This method deploys the test server app and then
@@ -103,7 +106,7 @@ class Marathon(test_util.helpers.ApiClient):
         if 'container' in app and app['container']['type'] == 'DOCKER':
             marathon_user = 'root'
         else:
-            marathon_user = app.get('user', self.cluster.default_os_user)
+            marathon_user = app.get('user', self.default_os_user)
         with self.deploy_and_cleanup(app) as service_points:
             r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
                                                              service_points[0].port))
@@ -150,7 +153,7 @@ class Marathon(test_util.helpers.ApiClient):
             applications. I.E:
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
-        r = self.post('/apps', json=app_definition)
+        r = self.post('v2/apps', json=app_definition)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         assert r.ok
 
@@ -164,7 +167,7 @@ class Marathon(test_util.helpers.ApiClient):
             req_params = (('embed', 'apps.lastTaskFailure'),
                           ('embed', 'apps.counts'))
 
-            r = self.get('/apps' + app_id, params=req_params)
+            r = self.get('v2/apps' + app_id, params=req_params)
             assert r.ok
 
             data = r.json()
@@ -202,6 +205,85 @@ class Marathon(test_util.helpers.ApiClient):
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
 
+    def deploy_pod(self, pod_definition):
+        """Deploy a pod to marathon
+
+        This function deploys an a pod and then waits for marathon to
+        aknowledge it's successfull creation or fails the test.
+
+        It waits until all the instances reach tasksRunning and then tasksHealthy state.
+
+        Args:
+            pod_definition: a dict with pod definition as specified in
+                            Marathon API
+            check_health: wait until Marathon reports tasks as healthy before
+                          returning
+        Returns:
+            Scaling instance count
+        """
+        timeout = 120
+
+        r = self.post('v2/pods', json=pod_definition)
+        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+        logging.info('Response from marathon: {}'.format(repr(r.json())))
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
+                        retry_on_result=lambda ret: ret is False,
+                        retry_on_exception=lambda x: False)
+        def _wait_for_pod_deployment(pod_id):
+            # TODO(greggomann): Revisit this logic. Can we make a request for
+            # info on only our specific deployment? See DCOS-11707.
+            r = self.get('v2/deployments')
+            data = r.json()
+            if len(data) > 0:
+                logging.info('Waiting for pod to be deployed %s', repr(data))
+                return False
+            # deployment complete
+            r = self.get('v2/pods' + pod_id)
+            r.raise_for_status()
+            data = r.json()
+            if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
+                logging.info('Pod is still scaling. Continuing to wait...')
+                return False
+            return data
+        try:
+            return _wait_for_pod_deployment(pod_definition['id'])
+        except retrying.RetryError as ex:
+            raise Exception("Pod deployment failed - operation was not "
+                            "completed in {} seconds.".format(timeout)) from ex
+
+    def destroy_pod(self, pod_id, timeout=120):
+        """Remove a marathon pod
+
+        Abort the test if the removal was unsuccesful.
+
+        Args:
+            pod_id: id of the pod to remove
+            timeout: seconds to wait for destruction before failing test
+        """
+        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
+                        retry_on_result=lambda ret: not ret,
+                        retry_on_exception=lambda x: False)
+        def _destroy_pod_complete(deployment_id):
+            r = self.get('v2/deployments')
+            assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+
+            for deployment in r.json():
+                if deployment_id == deployment.get('id'):
+                    logging.info('Waiting for pod to be destroyed')
+                    return False
+            logging.info('Pod destroyed')
+            return True
+
+        r = self.delete('v2/pods' + pod_id)
+        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+
+        try:
+            _destroy_pod_complete(r.headers['Marathon-Deployment-Id'])
+        except retrying.RetryError as ex:
+            raise Exception("Pod destroy failed - operation was not "
+                            "completed in {} seconds.".format(timeout)) from ex
+
     def destroy_app(self, app_name, timeout=120):
         """Remove a marathon app
 
@@ -215,7 +297,7 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
-            r = self.get('/deployments')
+            r = self.get('v2/deployments')
             assert r.ok
 
             for deployment in r.json():
@@ -225,7 +307,7 @@ class Marathon(test_util.helpers.ApiClient):
             logging.info('Application destroyed')
             return True
 
-        r = self.delete('/apps' + app_name)
+        r = self.delete('v2/apps' + app_name)
         assert r.ok
 
         try:
@@ -239,3 +321,8 @@ class Marathon(test_util.helpers.ApiClient):
         yield self.deploy_app(
             app_definition, timeout, check_health, ignore_failed_tasks)
         self.destroy_app(app_definition['id'], timeout)
+
+    @contextmanager
+    def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
+        yield self.deploy_pod(pod_definition)
+        self.destroy_pod(pod_definition['id'], timeout)

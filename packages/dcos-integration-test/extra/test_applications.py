@@ -59,6 +59,41 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
     cluster.marathon.deploy_test_app_and_check(app, test_uuid)
 
 
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
+    """Marathon pods deployment integration test using the Mesos Containerizer
+
+    This test verifies that a Marathon pods can be deployed.
+    """
+
+    test_uuid = uuid.uuid4().hex
+
+    pod_definition = {
+        'id': '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'ct1',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
+                'exec': {'command': {'shell': 'touch foo'}},
+                'healthcheck': {'command': {'shell': 'test -f foo'}}
+            },
+            {
+                'name': 'ct2',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}]
+    }
+
+    with cluster.marathon.deploy_pod_and_cleanup(pod_definition):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
+
+
 def test_octarine_http(cluster, timeout=30):
     """
     Test if we are able to send traffic through octarine.
@@ -142,13 +177,13 @@ def test_octarine_srv(cluster, timeout=30):
 
 def test_pkgpanda_api(cluster):
 
-    def get_and_validate_package_ids(node, uri):
-        r = cluster.get(node=node, path=uri)
+    def get_and_validate_package_ids(node, path):
+        r = cluster.get(node=node, path=path)
         assert r.status_code == 200
         package_ids = r.json()
         assert isinstance(package_ids, list)
         for package_id in package_ids:
-            r = cluster.get(node=node, path=uri + package_id)
+            r = cluster.get(node=node, path=path + package_id)
             assert r.status_code == 200
             name, version = package_id.split('--')
             assert r.json() == {'id': package_id, 'name': name, 'version': version}

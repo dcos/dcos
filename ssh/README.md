@@ -7,18 +7,18 @@ This library implements a SSH runner capable of running multiple SSH processes f
 
 ```python
 ssh = SSHRunner()
-ssh.ssh_user = 'ubuntu'
-ssh.ssh_key_path = '/home/ubuntu/key.pem'
+ssh.user = 'ubuntu'
+ssh.key_path = '/home/ubuntu/key.pem'
 ssh.targets = ['127.0.0.1', '127.0.0.2']
 ssh.log_directory = '/tmp'
 ssh.use_cache = False
 
-ssh_out = ssh.execute_cmd('hostname')
+output = ssh.execute_cmd('hostname')
 
 copy_out = ssh.copy_cmd('/tmp/file.txt', '/tmp')
 copy_recursive_out = ssh.copy_cmd('/usr', '/', recursive=True)
 
-print(ssh_out)
+print(output)
 print(copy_out)
 print(copy_recursive_out)
 ```
@@ -27,10 +27,10 @@ print(copy_recursive_out)
 
 #### Parameters
 
-##### `.ssh_user` *string*
+##### `.user` *string*
 The user to SSH to the remote target as.
 
-##### `.ssh_key_path` *string*
+##### `.key_path` *string*
 The path to the private key.
 
 ##### `.targets` *list*
@@ -58,16 +58,16 @@ The pretty printer provides a nice way to print colored output for success and f
 
 ```python
 from ssh.prettyprint import SSHPrettyPrint
-ssh_out = ssh.execute_cmd('hostname')
+output = ssh.execute_cmd('hostname')
 
-pretty_out = SSHPrettyPrint(ssh_out)
-ssh_out.beautify()
+pretty_out = SSHPrettyPrint(output)
+output.beautify()
 ```
 
 #### Parameters
 
-##### `.ssh_out` *dictionary* *output from SSHRunner*
-Pass the output from SSHRunner to .ssh_out.
+##### `.output` *dictionary* *output from SSHRunner*
+Pass the output from SSHRunner to .output.
 
 ##### `.beautify()` *None*
 Print the output from SSHRunner in a pretty way :)

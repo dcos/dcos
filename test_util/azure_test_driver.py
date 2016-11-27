@@ -14,7 +14,7 @@ from azure.mgmt.resource.resources.models import (DeploymentMode,
 from retrying import retry
 
 import pkgpanda.util
-from ssh.ssh_tunnel import SSHTunnel
+from ssh.tunnel import Tunnel
 from test_util.test_runner import integration_test
 
 
@@ -176,7 +176,7 @@ def main():
 
         print('Detected IP configuration: {}'.format(ip_buckets))
 
-        with SSHTunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200) as t:
+        with Tunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200) as t:
             integration_test(
                 tunnel=t,
                 test_dir='/home/{}'.format(get_value('linuxAdminUsername')),
@@ -187,7 +187,7 @@ def main():
                 provider='azure',
                 test_dns_search=False,
                 add_env=get_test_config(),
-                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -rs -vv -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
+                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         traceback.print_exc()
