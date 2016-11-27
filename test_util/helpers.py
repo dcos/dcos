@@ -39,7 +39,6 @@ class DcosUser:
         r = post('/acs/api/v1/auth/login', json=self.auth_json)
         r.raise_for_status()
         logging.info('Received authorization blob: {}'.format(r.json()))
-        assert r.ok, 'Authentication failed with status_code: {}'.format(r.status_code)
         self.auth_token = r.json()['token']
         self.auth_header = {'Authorization': 'token={}'.format(self.auth_token)}
         self.auth_cookie = r.cookies['dcos-acs-auth-cookie']
@@ -154,7 +153,7 @@ def wait_for_pong(url, timeout):
     def ping_app():
         logging.info('Attempting to ping test application')
         r = requests.get('http://{}/ping'.format(url), timeout=10)
-        assert r.ok, 'Bad response from test server: ' + str(r.status_code)
+        r.raise_for_status()
         assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
     ping_app()
 

@@ -7,10 +7,10 @@ from contextlib import contextmanager
 import requests
 import retrying
 
-import test_util.helpers
+from test_util.helpers import ApiClient, path_join
 
 DEFAULT_API_BASE = 'marathon'
-TEST_APP_NAME_FMT = '/integration-test-{}'
+TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
 
 
@@ -80,7 +80,7 @@ def get_test_app_in_docker(ip_per_container):
     return app, test_uuid
 
 
-class Marathon(test_util.helpers.ApiClient):
+class Marathon(ApiClient):
     def __init__(self, default_host_url, default_os_user='root', api_base=DEFAULT_API_BASE,
                  get_node_url=None, default_headers=None, ca_cert_path=None):
         if default_headers is None:
@@ -156,7 +156,7 @@ class Marathon(test_util.helpers.ApiClient):
         """
         r = self.post('v2/apps', json=app_definition)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
-        assert r.ok
+        r.raise_for_status()
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
@@ -168,8 +168,8 @@ class Marathon(test_util.helpers.ApiClient):
             req_params = (('embed', 'apps.lastTaskFailure'),
                           ('embed', 'apps.counts'))
 
-            r = self.get('v2/apps' + app_id, params=req_params)
-            assert r.ok
+            r = self.get(path_join('v2/apps', app_id), params=req_params)
+            r.raise_for_status()
 
             data = r.json()
 
@@ -299,7 +299,7 @@ class Marathon(test_util.helpers.ApiClient):
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):
             r = self.get('v2/deployments')
-            assert r.ok
+            r.raise_for_status()
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
@@ -308,8 +308,8 @@ class Marathon(test_util.helpers.ApiClient):
             logging.info('Application destroyed')
             return True
 
-        r = self.delete('v2/apps' + app_name)
-        assert r.ok
+        r = self.delete(path_join('v2/apps', app_name))
+        r.raise_for_status()
 
         try:
             _destroy_complete(r.json()['deploymentId'])
