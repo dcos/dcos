@@ -6,6 +6,7 @@ import os.path
 import random
 import shutil
 import string
+import sys
 import tempfile
 from contextlib import contextmanager
 from os import chdir, getcwd, mkdir
@@ -825,6 +826,18 @@ class IdBuilder():
         return self._buildinfo
 
 
+def create_temp_store(diropts):
+    """Create a directory under the user's home directory to hold temporary build data.
+    This is needed on OS X since the Docker VM only maps /Users from the host into the VM.
+    If we just stick with using the system's temporary location then most steps will fail on OS X."""
+
+    home_dir = os.path.expanduser("~/pkgpanda")
+    if not os.path.exists(home_dir):
+        os.makedirs(home_dir)
+
+    diropts["dir"] = home_dir
+
+
 def build(package_store, name, variant, clean_after_build, recursive=False):
     msg = "Building package {} variant {}".format(name, pkgpanda.util.variant_name(variant))
     with logger.scope(msg):
@@ -833,7 +846,12 @@ def build(package_store, name, variant, clean_after_build, recursive=False):
 
 def _build(package_store, name, variant, clean_after_build, recursive):
     assert isinstance(package_store, PackageStore)
-    tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
+    print("Building package {} variant {}".format(name, pkgpanda.util.variant_str(variant)))
+    diropts = {"prefix": "pkgpanda_repo"}
+    if sys.platform == "darwin":
+        create_temp_store(diropts)
+
+    tmpdir = tempfile.TemporaryDirectory(**diropts)
     repository = Repository(tmpdir.name)
 
     package_dir = package_store.get_package_folder(name)
@@ -962,7 +980,11 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Packages need directories inside the fake install root (otherwise docker
     # will try making the directories on a readonly filesystem), so build the
     # install root now, and make the package directories in it as we go.
-    install_dir = tempfile.mkdtemp(prefix="pkgpanda-")
+    diropts = {"prefix": "pkgpanda-"}
+    if sys.platform == "darwin":
+        create_temp_store(diropts)
+
+    install_dir = tempfile.mkdtemp(**diropts)
 
     active_packages = list()
     active_package_ids = set()
@@ -1215,7 +1237,8 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         "PKG_ID": pkg_id,
         "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
         "PKG_VARIANT": variant if variant is not None else "<default>",
-        "NUM_CORES": multiprocessing.cpu_count()
+        "NUM_CORES": multiprocessing.cpu_count(),
+        "OS": sys.platform
     }
 
     try:

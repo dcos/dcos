@@ -8,6 +8,19 @@ set -o errexit -o pipefail
 # Fail quickly if docker isn't working / up
 docker ps
 
+# Also fail quickly if Docker doesn't have enough memory to build some of the big components
+DOCKER_MEMORY=$(docker info | grep Memory | awk '{print $3}')
+if (( $(echo "$DOCKER_MEMORY < 5" | bc -l) )); then
+    echo "Docker does not have enough memory for building the larger components. Exiting..."
+    exit 1
+fi
+
+# Make sure we have gtar if we're on OS X
+if [ "$(uname)" == "Darwin" ] && [ -z "$(which gtar)" ]; then
+    echo "Please install GNU tar by running brew install gnu-tar"
+    exit 1
+fi
+
 # Cleanup from previous build
 rm -rf /tmp/dcos_build_venv
 

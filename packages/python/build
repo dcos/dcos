@@ -18,7 +18,6 @@ rm -rf "$PKG_PATH/lib/python3.5/test"
 # mkpanda option to apply to any package.
 find "$PKG_PATH/lib/" ! -type d -name "*.a" -exec rm -f -- '{}' +
 
-
 # Take control of setuptools and pip version.
 # Note(JP): For making pip upgrade itself reliably, it's best
 # to run pip as a module (python -m pip).
