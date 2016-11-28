@@ -1,5 +1,4 @@
 import copy
-import functools
 import logging
 import os
 from urllib.parse import urlparse
@@ -262,7 +261,8 @@ class ClusterApi(test_util.helpers.ApiClient):
         super().__init__(
             default_host_url=self.dcos_url,
             api_base=None,
-            ca_cert_path=ca_cert_path)
+            ca_cert_path=ca_cert_path,
+            get_node_url=self.get_node_url)
         self.masters = sorted(masters)
         self.public_masters = sorted(public_masters)
         self.slaves = sorted(slaves)
@@ -316,42 +316,15 @@ class ClusterApi(test_util.helpers.ApiClient):
             netloc = '{}:{}'.format(node, port)
         return '{}://{}'.format(self.scheme, netloc)
 
-    def cluster_api_request(self, method, path, host_url=None, node=None, port=None, **kwargs):
-        """
-        Performs the same specialized request as ClusterApi but allows setting node
-        Args:
-            see ClusterApi for descriptions
-            node: host string corresponding to the ones stored in this object
-            port: if node is given, then a port can also be specified
-        """
-        if node is not None:
-            assert host_url is None, 'Cannot set both node and host_url'
-            host_url = self.get_node_url(node, port=port)
-        return self.api_request(method, path, host_url=host_url, **kwargs)
-
-    get = functools.partialmethod(cluster_api_request, 'get')
-    post = functools.partialmethod(cluster_api_request, 'post')
-    put = functools.partialmethod(cluster_api_request, 'put')
-    delete = functools.partialmethod(cluster_api_request, 'delete')
-    options = functools.partialmethod(cluster_api_request, 'options')
-    head = functools.partialmethod(cluster_api_request, 'head')
-    patch = functools.partialmethod(cluster_api_request, 'patch')
-    delete = functools.partialmethod(cluster_api_request, 'delete')
-
-    def get_client(self, path, default_headers=None):
-        return test_util.helpers.ApiClient(
-            default_host_url=self.dcos_url,
-            api_base=path,
-            ca_cert_path=self.ca_cert_path,
-            default_headers=self.default_headers if default_headers is None else default_headers)
-
     @property
     def marathon(self):
-        return test_util.marathon.Marathon(
+        marathon_client = test_util.marathon.Marathon(
             default_host_url=self.dcos_url,
             default_os_user=self.default_os_user,
             default_headers=self.default_headers,
-            ca_cert_path=self.ca_cert_path)
+            ca_cert_path=self.ca_cert_path,
+            get_node_url=self.get_node_url)
+        return marathon_client
 
     @property
     def metronome(self):
@@ -367,7 +340,7 @@ class ClusterApi(test_util.helpers.ApiClient):
                         retry_on_exception=lambda x: False)
         def wait_for_completion():
             r = self.metronome.get('jobs/' + job_id, params={'embed': 'history'})
-            assert r.ok
+            r.raise_for_status()
             out = r.json()
             if not ignore_failures and (out['history']['failureCount'] != 0):
                 raise Exception('Metronome job failed!: ' + repr(out))
@@ -378,11 +351,11 @@ class ClusterApi(test_util.helpers.ApiClient):
             return True
         logging.info('Creating metronome job: ' + repr(job_definition))
         r = self.metronome.post('jobs', json=job_definition)
-        assert r.ok, r.json()
+        r.raise_for_status()
         logging.info('Starting metronome job')
         r = self.metronome.post('jobs/{}/runs'.format(job_id))
-        assert r.ok, r.json()
+        r.raise_for_status()
         wait_for_completion()
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
-        assert r.ok
+        r.raise_for_status()

@@ -4,13 +4,14 @@ import abc
 import json
 import os
 from subprocess import CalledProcessError
+from typing import Optional
 
 import pkg_resources
 import requests
 import yaml
 from retrying import retry
 
-from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnel
+from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnelled
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
 
@@ -21,11 +22,11 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.offline_mode = False
 
     def setup_remote(
-            self, tunnel, installer_path, download_url,
+            self, tunnel: Optional[Tunnelled], installer_path, download_url,
             host=None, ssh_user=None, ssh_key_path=None):
         """Creates a light, system-based ssh handler
         Args:
-            tunnel: Tunnel instance to avoid recreating SSH connections.
+            tunnel: Tunneled instance to avoid recreating SSH connections.
                 If set to None, ssh_user, host, and ssh_key_path must be
                 set and one-off connections will be made
             installer_path: (str) path on host to download installer to
@@ -36,7 +37,6 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         """
         self.installer_path = installer_path
         if tunnel:
-            assert isinstance(tunnel, Tunnel)
             self.tunnel = tunnel
             self.url = "http://{}:9000".format(tunnel.host)
 

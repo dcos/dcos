@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Simple helper script to build dcos-launch binary
-# NOTE: this needs to be kept in sync with gen.installer.bash::make_dcos_launch()
+# NOTE: this needs to be kept in sync with gen.build_deploy.bash::make_dcos_launch()
 
 set -x
 set -o errexit -o pipefail
@@ -22,7 +22,7 @@ git clone "file://$PWD" /tmp/dcos-installer-build
 pushd /tmp/dcos-installer-build
 # Install the DC/OS tools
 pip install -e /tmp/dcos-installer-build
-cp gen/installer/bash/dcos-launch.spec ./
+cp gen/build_deploy/bash/dcos-launch.spec ./
 pyinstaller dcos-launch.spec
 popd
 cp /tmp/dcos-installer-build/dist/dcos-launch ./

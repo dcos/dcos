@@ -8,7 +8,6 @@ import os
 import tempfile
 import time
 from collections import namedtuple
-from functools import wraps
 
 import requests
 import retrying
@@ -40,7 +39,6 @@ class DcosUser:
         r = post('/acs/api/v1/auth/login', json=self.auth_json)
         r.raise_for_status()
         logging.info('Received authorization blob: {}'.format(r.json()))
-        assert r.ok, 'Authentication failed with status_code: {}'.format(r.status_code)
         self.auth_token = r.json()['token']
         self.auth_header = {'Authorization': 'token={}'.format(self.auth_token)}
         self.auth_cookie = r.cookies['dcos-acs-auth-cookie']
@@ -49,15 +47,17 @@ class DcosUser:
 
 class ApiClient:
 
-    def __init__(self, default_host_url, api_base, default_headers=None, ca_cert_path=None):
+    def __init__(self, default_host_url, api_base, default_headers=None,
+                 ca_cert_path=None, get_node_url=None):
         self.default_host_url = default_host_url
         self.api_base = api_base
         if default_headers is None:
             default_headers = dict()
         self.default_headers = default_headers
         self.ca_cert_path = ca_cert_path
+        self._get_node_url = get_node_url
 
-    def api_request(self, method, path, host_url=None, **kwargs):
+    def api_request(self, method, path, host_url=None, node=None, port=None, **kwargs):
         """
         Makes a request with default headers + user auth headers if necessary
         If self.ca_cert_path is set, this method will pass it to requests
@@ -65,6 +65,9 @@ class ApiClient:
             method: (str) name of method for requests.request
             path: see get_url()
             host_url: override the client's default host URL
+            node: if a get_node_url function is set, node and port will be passed to this function
+                instead of setting a host_url or using the default
+            port: can be used with node with get_node_url is set
             **kwargs: any optional arguments to be passed to requests.request
         """
         headers = copy.copy(self.default_headers)
@@ -76,12 +79,25 @@ class ApiClient:
         if self.api_base:
             path = path_join(self.api_base, path)
 
-        request_url = path_join(host_url if host_url else self.default_host_url, path)
+        if node is not None:
+            assert host_url is None, 'Cannot set both node ({}) and host_url ({})'.format(node, host_url)
+            assert self._get_node_url is not None, 'get_node_url function must be supplied'
+            host_url = self._get_node_url(node, port=port)
+        else:
+            host_url = host_url if host_url else self.default_host_url
+        request_url = path_join(host_url, path)
         headers.update(kwargs.pop('headers', {}))
         logging.info('Request method {}: {}'.format(method, request_url))
         logging.debug('Reqeust kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
         return requests.request(method, request_url, headers=headers, **kwargs)
+
+    def get_client(self, path, default_headers=None):
+        new_client = copy.deepcopy(self)
+        if default_headers is not None:
+            new_client.default_headers.update(default_headers)
+        new_client.api_base = path_join(self.api_base, path) if self.api_base is not None else path
+        return new_client
 
     get = functools.partialmethod(api_request, 'get')
     post = functools.partialmethod(api_request, 'post')
@@ -98,7 +114,7 @@ def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
     If one of these errors is encounterd, the function will sleep for a geometrically
     increasing amount of time
     """
-    @wraps(boto_fn)
+    @functools.wraps(boto_fn)
     def ignore_rate_errors(*args, **kwargs):
         local_wait = copy.copy(wait)
         local_timeout = copy.copy(timeout)
@@ -137,7 +153,7 @@ def wait_for_pong(url, timeout):
     def ping_app():
         logging.info('Attempting to ping test application')
         r = requests.get('http://{}/ping'.format(url), timeout=10)
-        assert r.ok, 'Bad response from test server: ' + str(r.status_code)
+        r.raise_for_status()
         assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
     ping_app()
 

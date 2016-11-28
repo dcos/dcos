@@ -27,20 +27,8 @@ def check_duplicates(items: list):
         ', '.join('{} appears {} times'.format(*item) for item in duplicates.items()))
 
 
-# TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
-def validate_one_of(val: str, valid_values) -> None:
-    """Test if object `val` is a member of container `valid_values`.
-    Raise a AssertionError if it is not a member. The exception message contains
-    both, the representation (__repr__) of `val` as well as the representation
-    of all items in `valid_values`.
-    """
-    if val not in valid_values:
-        options_string = ', '.join("'{}'".format(v) for v in valid_values)
-        raise AssertionError("Must be one of {}. Got '{}'.".format(options_string, val))
-
-
 def validate_true_false(val) -> None:
-    validate_one_of(val, ['true', 'false'])
+    gen.internals.validate_one_of(val, ['true', 'false'])
 
 
 def validate_int_in_range(value, low, high):
@@ -375,14 +363,15 @@ def calculate_config_yaml(user_arguments):
 
 
 def calculate_mesos_isolation(enable_gpu_isolation):
-    isolators = 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
+    isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
+                 'docker/runtime,docker/volume,volume/sandbox_path')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators
 
 
 def validate_os_type(os_type):
-    validate_one_of(os_type, ['coreos', 'el7'])
+    gen.internals.validate_one_of(os_type, ['coreos', 'el7'])
 
 
 def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):

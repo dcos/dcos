@@ -8,8 +8,8 @@ import boto3
 import botocore.exceptions
 
 import gen
+import gen.build_deploy.aws
 import gen.calc
-import gen.installer.aws
 import release
 import release.storage.aws
 import release.storage.local
@@ -185,7 +185,7 @@ aws_advanced_source = gen.internals.Source({
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path
-    }, gen.installer.aws.groups['master'][1]),
+    }, gen.build_deploy.aws.groups['master'][1]),
     'conditional': {
         'aws_template_upload': {
             'true': {
@@ -199,32 +199,33 @@ aws_advanced_source = gen.internals.Source({
 })
 
 
-aws_advanced_target = gen.internals.Target(
-    variables={
-        # TODO(cmaloney): Namespacing would be really handy here...
-        'aws_template_storage_bucket',
-        'aws_template_storage_bucket_path',
-        'aws_template_upload',
-        'aws_template_storage_bucket_path_autocreate',
-        'cloudformation_s3_url',
-        'provider',
-        'bootstrap_url',
-        'bootstrap_variant',
-        'reproducible_artifact_path'},
-    sub_scopes={
-        'aws_template_upload': gen.internals.Scope(
-            name='aws_template_upload',
-            cases={
-                'true': gen.internals.Target({
-                    'aws_template_storage_access_key_id',
-                    'aws_template_storage_secret_access_key',
-                    'aws_template_storage_region_name'
-                }),
-                'false': gen.internals.Target()
-            }
-        )
-    }
-)
+def get_aws_advanced_target():
+    return gen.internals.Target(
+        variables={
+            # TODO(cmaloney): Namespacing would be really handy here...
+            'aws_template_storage_bucket',
+            'aws_template_storage_bucket_path',
+            'aws_template_upload',
+            'aws_template_storage_bucket_path_autocreate',
+            'cloudformation_s3_url',
+            'provider',
+            'bootstrap_url',
+            'bootstrap_variant',
+            'reproducible_artifact_path'},
+        sub_scopes={
+            'aws_template_upload': gen.internals.Scope(
+                name='aws_template_upload',
+                cases={
+                    'true': gen.internals.Target({
+                        'aws_template_storage_access_key_id',
+                        'aws_template_storage_secret_access_key',
+                        'aws_template_storage_region_name'
+                    }),
+                    'false': gen.internals.Target()
+                }
+            )
+        }
+    )
 
 
 # TODO(cmaloney): Make it so validation happens using the provided AWS credentials.
@@ -243,13 +244,13 @@ def do_aws_cf_configure():
 
     sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(gen_config, [])
     sources.append(aws_advanced_source)
-    targets.append(aws_advanced_target)
-    messages = gen.internals.validate_configuration(sources, targets, gen_config)
+    targets.append(get_aws_advanced_target())
+    resolver = gen.internals.resolve_configuration(sources, targets, gen_config)
     # TODO(cmaloney): kill this function and make the API return the structured
     # results api as was always intended rather than the flattened / lossy other
     # format. This will be an  API incompatible change. The messages format was
     # specifically so that there wouldn't be this sort of API incompatibility.
-    messages = normalize_config_validation(messages)
+    messages = normalize_config_validation(resolver.status_dict)
     if messages:
         print_messages(messages)
         return 1
@@ -260,7 +261,9 @@ def do_aws_cf_configure():
     # object.
     # NOTE: the copying across, as well as validation is guaranteed to succeed because we've already
     # done a validation run.
-    full_config = gen.internals.resolve_configuration(sources, targets, gen_config)
+    full_config = {k: v.value for k, v in resolver.arguments.items()}
+
+    # TODO(cmaloney): Switch to using the targets
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
@@ -271,7 +274,7 @@ def do_aws_cf_configure():
     bootstrap_variant = full_config['bootstrap_variant'] if full_config['bootstrap_variant'] else None
 
     artifacts = list()
-    for built_resource in list(gen.installer.aws.do_create(
+    for built_resource in list(gen.build_deploy.aws.do_create(
             tag='dcos_generate_config.sh --aws-cloudformation',
             build_name='Custom',
             reproducible_artifact_path=full_config['reproducible_artifact_path'],

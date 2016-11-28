@@ -7,7 +7,7 @@ import tempfile
 import pkg_resources
 import py
 
-import gen.installer.util as util
+import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.util
 from pkgpanda.util import logger

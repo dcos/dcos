@@ -33,7 +33,7 @@ This repo contains the release and package building tools necessary to produce i
 | *docs*               | Documentation
 | *dcos_installer*     | Backend for Web, SSH, and some bits of the Advanced installer. Code is being cleaned up
 | *gen*                | Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
-| *gen/installer*      | Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
+| *gen/build_deploy*   | Code to take a build and transform it into a particular platform deployment tool (Bash / command line, AWS, Azure, etc.)
 | *packages*           | Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.
 | *pkgpanda*           | DC/OS baseline/host package management system. Tools for building, deploying, upgrading, and bundling packages together which live on the root filesystem of a machine / underneath Mesos.
 | *pytest*             | Misc. tests. Should be moved to live next to the appropriate code

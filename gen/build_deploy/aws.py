@@ -11,7 +11,7 @@ from pkg_resources import resource_string
 from retrying import retry
 
 import gen
-import gen.installer.util as util
+import gen.build_deploy.util as util
 import pkgpanda.util
 import release
 import release.storage

@@ -3,7 +3,7 @@
 1. Build and upload a DC/OS release to a release URL
 2. Move a latest version of a release from one place to another
 
-Co-ordinates across all gen installers.
+Co-ordinates across all gen.build_deploy
 """
 
 import argparse
@@ -19,7 +19,7 @@ from distutils.version import LooseVersion
 import pkg_resources
 import yaml
 
-import gen.installer.util as util
+import gen.build_deploy.util as util
 import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
@@ -118,7 +118,7 @@ def from_json(json_str):
 
 
 def load_providers():
-    return {name: importlib.import_module("gen.installer." + name)
+    return {name: importlib.import_module("gen.build_deploy." + name)
             for name in provider_names}
 
 
@@ -816,7 +816,7 @@ def main():
 
     try:
         # TODO(cmaloney): HACK. This is so we can get to the config for aws
-        # inside gen/installer/aws.py
+        # inside gen/build_deploy/aws.py
         global _config
         config = load_config(options.config)
         _config = config

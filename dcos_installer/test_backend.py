@@ -7,7 +7,7 @@ import passlib.hash
 import pytest
 
 import gen
-import gen.installer.aws
+import gen.build_deploy.aws
 import release
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
@@ -267,7 +267,7 @@ aws_template_upload: true
 
 def test_do_aws_cf_configure_valid_storage_config(config_aws, tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
-    session = gen.installer.aws.get_test_session(config_aws)
+    session = gen.build_deploy.aws.get_test_session(config_aws)
     s3 = session.resource('s3')
     bucket = str(uuid.uuid4())
     s3_bucket = s3.Bucket(bucket)

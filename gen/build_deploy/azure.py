@@ -9,7 +9,7 @@ from copy import deepcopy
 import yaml
 
 import gen
-import gen.installer.util as util
+import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
 import release
@@ -273,7 +273,7 @@ def get_download_url():
     assert release._config is not None
     # TODO: HACK. Stashing and pulling the config from release/__init__.py
     # is definitely not the right way to do this.
-    # See also gen/installer/aws.py#get_cloudformation_s3_url
+    # See also gen/build_deploy/aws.py#get_cloudformation_s3_url
 
     if 'storage' not in release._config:
         raise RuntimeError("No storage section in configuration")

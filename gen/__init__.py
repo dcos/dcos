@@ -362,7 +362,7 @@ def validate(
         extra_templates=list(),
         cc_package_files=list()):
     sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates)
-    return gen.internals.validate_configuration(sources, targets, arguments)
+    return gen.internals.resolve_configuration(sources, targets, arguments).status_dict
 
 
 # TODO(cmaloney): This function should disolve away like the ssh one is and just become a big
@@ -429,18 +429,26 @@ def generate(
     sources, targets, templates = get_dcosconfig_source_target_and_templates(user_arguments, extra_templates)
 
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
-    arguments = gen.internals.resolve_configuration(sources, targets, user_arguments)
-    log.debug("Final arguments:" + json_prettyprint(arguments))
+    resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
+    status = resolver.status_dict
+
+    if status['status'] == 'errors':
+        raise ValidationError(errors=status['errors'], unset=status['unset'])
+
+    argument_dict = {k: v.value for k, v in resolver.arguments.items()}
+    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
     # calculated. Can't be calculated because that would have an infinite recursion problem (the set
     # of all arguments would want to include itself).
     # Explicitly / manaully setup so that it'll fit where we want it.
-    arguments['expanded_config'] = textwrap.indent(json_prettyprint(arguments), prefix='  ' * 3)
+    # TODO(cmaloney): Make this late-bound by gen.internals
+    argument_dict['expanded_config'] = textwrap.indent(json_prettyprint(argument_dict), prefix='  ' * 3)
 
     # Fill in the template parameters
-    rendered_templates = render_templates(templates, arguments)
+    # TODO(cmaloney): render_templates should ideally take the template targets.
+    rendered_templates = render_templates(templates, argument_dict)
 
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
@@ -476,13 +484,13 @@ def generate(
     for item in cc_package_files:
         assert item['path'].startswith('/')
         item['path'] = '/etc/mesosphere/setup-packages/dcos-provider-{}--setup'.format(
-            arguments['provider']) + item['path']
+            argument_dict['provider']) + item['path']
         rendered_templates['cloud-config.yaml']['root'].append(item)
 
     cluster_package_info = {}
 
     # Render all the cluster packages
-    for package_id_str in json.loads(arguments['cluster_packages']):
+    for package_id_str in json.loads(argument_dict['cluster_packages']):
         package_id = PackageId(package_id_str)
         package_filename = 'packages/{}/{}.tar.xz'.format(
             package_id.name,
@@ -520,7 +528,7 @@ def generate(
     utils.add_services = add_services
 
     return Bunch({
-        'arguments': arguments,
+        'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
         'templates': rendered_templates,
         'utils': utils

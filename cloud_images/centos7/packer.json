@@ -22,17 +22,49 @@
       {
         "device_name": "/dev/sde",
         "volume_type": "gp2",
-        "volume_size": 20,
+        "volume_size": 50,
         "delete_on_termination": true
       },
       {
         "device_name": "/dev/sdf",
         "volume_type": "gp2",
-        "volume_size": 20,
+        "volume_size": 100,
         "delete_on_termination": true
       },
       {
         "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdh",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      }
+    ],
+    "launch_block_device_mappings": [
+      {
+        "device_name": "/dev/sde",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdf",
+        "volume_type": "gp2",
+        "volume_size": 100,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdh",
         "volume_type": "gp2",
         "volume_size": 20,
         "delete_on_termination": true
