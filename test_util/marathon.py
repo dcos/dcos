@@ -237,7 +237,7 @@ class Marathon(ApiClient):
             r = self.get('v2/deployments')
             data = r.json()
             if len(data) > 0:
-                logging.info('Waiting for pod to be deployed %s', repr(data))
+                logging.info('Waiting for pod to be deployed %r', data)
                 return False
             # deployment complete
             r = self.get('v2/pods' + pod_id)
