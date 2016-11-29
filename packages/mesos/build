@@ -62,11 +62,6 @@ disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
 
-# Copy the log-redirection wrapper script for the master/agent.
-tee_stderr_script="$PKG_PATH/bin/tee_stderr"
-cp /pkg/extra/tee_stderr "$tee_stderr_script"
-chmod +x "$tee_stderr_script"
-
 # Install slave modules.
 mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
 cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"

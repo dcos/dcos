@@ -159,6 +159,52 @@ package:
   - path: /etc/mesos-slave-modules/dummy.json
     content: |
       {}
+  - path: /etc/mesos-master-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  - path: /etc/mesos-slave-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/log/mesos/mesos-agent.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
 {% switch dcos_overlay_enable %}
 {% case "true" %}
   - path: /etc/mesos-master-modules/overlay_master_modules.json
