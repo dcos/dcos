@@ -11,7 +11,7 @@ from retrying import retry, RetryError
 
 import gen.calc
 import test_util.installer_api_test
-import test_util.test_runner
+import test_util.runner
 from ssh.tunnel import tunnel, tunnel_collection
 
 
@@ -484,7 +484,7 @@ def run_integration_tests(cluster, setup=True, **kwargs):
     logging.info('Test host: ' + repr(test_host))
 
     with cluster.ssher.tunnel(test_host) as test_tunnel:
-        return test_util.test_runner.integration_test(
+        return test_util.runner.integration_test(
             tunnel=test_tunnel,
             test_dir=cluster.ssher.home_dir,
             dcos_dns=cluster.masters[0].private_ip,

@@ -15,7 +15,7 @@ from retrying import retry
 
 import pkgpanda.util
 from ssh.tunnel import tunnel
-from test_util.test_runner import integration_test
+from test_util.runner import integration_test
 
 
 def validate_env():

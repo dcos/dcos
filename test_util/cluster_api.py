@@ -284,11 +284,12 @@ class ClusterApi(test_util.helpers.ApiClient):
         # purge old auth headers
         if self.web_auth_default_user is not None:
             for k in self.web_auth_default_user.auth_header.keys():
-                del new_session.default_headers[k]
+                if k in new_session.default_headers:
+                    del new_session.default_headers[k]
         # if user is given then auth and update the headers
+        new_session.web_auth_default_user = user
         if user is not None:
             new_session._authenticate_default_user()
-        new_session.web_auth_default_user = user
         return new_session
 
     def get_node_url(self, node, port=None):
