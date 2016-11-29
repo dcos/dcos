@@ -436,7 +436,6 @@ def generate(
         raise ValidationError(errors=status['errors'], unset=status['unset'])
 
     argument_dict = {k: v.value for k, v in resolver.arguments.items()}
-    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
@@ -445,6 +444,7 @@ def generate(
     # Explicitly / manaully setup so that it'll fit where we want it.
     # TODO(cmaloney): Make this late-bound by gen.internals
     argument_dict['expanded_config'] = textwrap.indent(json_prettyprint(argument_dict), prefix='  ' * 3)
+    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # Fill in the template parameters
     # TODO(cmaloney): render_templates should ideally take the template targets.
