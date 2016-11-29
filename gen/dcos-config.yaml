@@ -16,6 +16,9 @@ package:
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
+  - path: /etc/gen_resolv.env
+    content: |
+        EDNS0={{ edns0 }}
   - path: /check/check_ip
     permissions: "0755"
     content: |
