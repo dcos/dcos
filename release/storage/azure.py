@@ -1,3 +1,5 @@
+from typing import Optional
+
 import azure.storage.blob
 import requests
 from retrying import retry
@@ -48,11 +50,11 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
 
     @retry(stop_max_attempt_number=3)
     def upload(self,
-               destination_path,
-               blob=None,
-               local_path=None,
-               no_cache=None,
-               content_type=None):
+               destination_path: str,
+               blob: Optional[bytes]=None,
+               local_path: Optional[str]=None,
+               no_cache: bool=False,
+               content_type: Optional[str]=None):
         content_settings = azure.storage.blob.ContentSettings()
 
         if no_cache:
@@ -72,7 +74,6 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
                 max_connections=16)
         else:
             assert blob is not None
-            assert isinstance(blob, bytes)
             self.blob_service.create_blob_from_text(
                 self.container,
                 destination_path,

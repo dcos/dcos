@@ -1,3 +1,5 @@
+from typing import Optional
+
 import boto3
 import botocore
 
@@ -73,11 +75,11 @@ class S3StorageProvider(AbstractStorageProvider):
         new_object.copy_from(CopySource=old_path)
 
     def upload(self,
-               destination_path,
-               blob=None,
-               local_path=None,
-               no_cache=None,
-               content_type=None):
+               destination_path: str,
+               blob: Optional[bytes]=None,
+               local_path: Optional[str]=None,
+               no_cache: bool=False,
+               content_type: Optional[str]=None):
         extra_args = {}
         if no_cache:
             extra_args['CacheControl'] = 'no-cache'

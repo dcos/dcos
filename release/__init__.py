@@ -15,6 +15,7 @@ import os.path
 import subprocess
 import sys
 from distutils.version import LooseVersion
+from typing import Optional
 
 import pkg_resources
 import yaml
@@ -128,13 +129,12 @@ def load_providers():
 # have all the logic about channels and repositories.
 class Repository():
 
-    def __init__(self, repository_path, channel_name, unique_id):
+    def __init__(self, repository_path, channel_name: Optional[str], unique_id):
         if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
         assert not repository_path.endswith('/')
         if channel_name is not None:
-            assert isinstance(channel_name, str)
             assert len(channel_name) > 0, "For an empty channel name pass None"
             assert not channel_name.startswith('/')
             assert not channel_name.endswith('/')
@@ -346,8 +346,6 @@ def make_stable_artifacts(cache_repository_url):
 
 
 def built_resource_to_artifacts(built_resource: dict):
-    assert isinstance(built_resource, dict), built_resource
-
     # Type switch
     if 'packages' in built_resource:
         return [get_gen_package_artifact(package) for package in built_resource['packages']]

@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import os
 import pty
@@ -18,8 +19,7 @@ def make_slave_pty():
     os.close(master_pty)
 
 
-def parse_ip(ip):
-    assert isinstance(ip, str), 'IP should be string, {} given'.format(ip)
+def parse_ip(ip: str):
     tmp = ip.split(':')
     if len(tmp) == 2:
         return {"ip": tmp[0], "port": int(tmp[1])}
@@ -32,9 +32,8 @@ def parse_ip(ip):
 
 
 class Node():
-    def __init__(self, host, tags=dict()):
-        assert isinstance(tags, dict)
-        self.tags = tags
+    def __init__(self, host, tags: dict=dict()):
+        self.tags = copy.copy(tags)
         self.host = parse_ip(host)
         self.ip = self.host['ip']
         self.port = self.host['port']
@@ -58,9 +57,8 @@ def add_host(target):
 
 
 class MultiRunner():
-    def __init__(self, targets, async_delegate=None, user=None, key_path=None, extra_opts='',
+    def __init__(self, targets: list, async_delegate=None, user=None, key_path=None, extra_opts='',
                  process_timeout=120, parallelism=10):
-        assert isinstance(targets, list)
         # TODO(cmaloney): accept an "ssh_config" object which generates an ssh
         # config file, then add a '-F' to that temporary config file rather than
         # manually building up / adding the arguments in _get_base_args which is
@@ -174,8 +172,7 @@ class MultiRunner():
         result = yield from self.run_cmd_return_dict_async(full_cmd, host, namespace, future, stage)
         return result
 
-    def _run_chain_command(self, chain, host, chain_result):
-        assert isinstance(chain, CommandChain)
+    def _run_chain_command(self, chain: CommandChain, host, chain_result):
 
         # Prepare status json
         if self.async_delegate is not None:
@@ -252,8 +249,7 @@ class MultiRunner():
         return chain_result
 
     @asyncio.coroutine
-    def run_commands_chain_async(self, chains, block=False, state_json_dir=None, delegate_extra_params={}):
-        assert isinstance(chains, list)
+    def run_commands_chain_async(self, chains: list, block=False, state_json_dir=None, delegate_extra_params={}):
         sem = asyncio.Semaphore(self.__parallelism)
 
         if state_json_dir:
