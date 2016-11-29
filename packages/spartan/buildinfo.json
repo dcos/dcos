@@ -4,7 +4,7 @@
     "spartan": {
       "kind": "git",
       "git": "https://github.com/dcos/spartan.git",
-      "ref": "2d2f9b95e3e5db84a3599d0bd13dc5025ecfb0ee",
+      "ref": "b44292fc37acb165d85f996b4965ac769f35cec0",
       "ref_origin": "master"
     }
   }

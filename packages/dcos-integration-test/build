@@ -1,2 +1,9 @@
 #!/bin/bash
+
+cp -r /pkg/extra/dcos-dns-test /tmp
+pushd /tmp/dcos-dns-test
+make
+cp test-prog $PKG_PATH
+popd
+
 cp -r /pkg/extra/* $PKG_PATH
