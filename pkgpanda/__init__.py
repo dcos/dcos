@@ -17,8 +17,10 @@ import pwd
 import re
 import shutil
 import tempfile
+from collections import Iterable
 from itertools import chain
 from subprocess import CalledProcessError, check_call, check_output
+from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 RESERVED_UNIT_NAMES)
@@ -82,7 +84,7 @@ class Systemd:
 class PackageId:
 
     @staticmethod
-    def parse(id):
+    def parse(id: str):
         parts = id.split('--')
         if len(parts) != 2:
             raise ValidationError(
@@ -119,7 +121,6 @@ class PackageId:
                 "Invalid package version {0}. Must match the regex {1}".format(version, version_regex))
 
     def __init__(self, id):
-        assert isinstance(id, str)
         self.name, self.version = PackageId.parse(id)
 
     def __repr__(self):
@@ -128,7 +129,7 @@ class PackageId:
 
 class Package:
 
-    def __init__(self, path, id, pkginfo):
+    def __init__(self, path, id: Union[PackageId, str], pkginfo):
         if isinstance(id, str):
             id = PackageId(id)
         self.__id = id
@@ -187,12 +188,13 @@ class Package:
         return str(self.__id)
 
 
-def expand_require(require):
+def expand_require(require: Union[str, dict]):
     name = None
     variant = None
     if isinstance(require, str):
         name = require
-    elif isinstance(require, dict):
+    else:
+        assert isinstance(require, dict)
         if 'name' not in require or 'variant' not in require:
             raise ValidationError(
                 "When specifying a dependency in requires by dictionary to " +
@@ -342,7 +344,7 @@ class Repository:
         return self.__packages
 
     # Load the given package
-    def load(self, id):
+    def load(self, id: str):
 
         # Validate the package id.
         PackageId(id)
@@ -362,7 +364,7 @@ class Repository:
 
         return Package(path, id, pkginfo)
 
-    def load_packages(self, ids):
+    def load_packages(self, ids: Iterable):
         packages = set()
         for id in ids:
             packages.add(self.load(id))
@@ -465,8 +467,7 @@ class UserManagement:
     referenced / used.
     """
 
-    def __init__(self, manage_users, add_users):
-        assert isinstance(manage_users, bool)
+    def __init__(self, manage_users: bool, add_users: bool):
         self._manage_users = manage_users
         self._add_users = add_users
         self._users = set()

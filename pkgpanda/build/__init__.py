@@ -26,8 +26,7 @@ from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
 
 class BuildError(Exception):
     """An error while building something."""
-    def __init__(self, msg):
-        assert isinstance(msg, str)
+    def __init__(self, msg: str):
         self.msg = msg
 
     def __str__(self):
@@ -360,8 +359,7 @@ class PackageStore:
     def packages_dir(self):
         return self._packages_dir
 
-    def try_fetch_by_id(self, pkg_id):
-        assert isinstance(pkg_id, PackageId)
+    def try_fetch_by_id(self, pkg_id: PackageId):
         if self._repository_url is None:
             return False
 
@@ -656,7 +654,7 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     visited = set()
     built = set()
 
-    def visit(pkg_tuple):
+    def visit(pkg_tuple: tuple):
         """Add a package and its requires to the build order.
 
         Raises AssertionError if pkg_tuple is in the set of visited packages.
@@ -665,7 +663,6 @@ def build_tree(package_store, mkbootstrap, tree_variant):
         to the build order depth-first. Then the package itself is added.
 
         """
-        assert isinstance(pkg_tuple, tuple)
 
         # Visit the node for the first (and only) time.
         assert pkg_tuple not in visited
@@ -825,7 +822,7 @@ class IdBuilder():
         return self._buildinfo
 
 
-def build(package_store, name, variant, clean_after_build, recursive=False):
+def build(package_store: PackageStore, name: str, variant, clean_after_build, recursive=False):
     msg = "Building package {} variant {}".format(name, pkgpanda.util.variant_name(variant))
     with logger.scope(msg):
         return _build(package_store, name, variant, clean_after_build, recursive)

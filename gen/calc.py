@@ -128,7 +128,6 @@ def calculate_resolvers_str(resolvers):
     # Validation because accidentally slicing a string instead of indexing a
     # list of resolvers then finding out at cluster launch is painful.
     resolvers = json.loads(resolvers)
-    assert isinstance(resolvers, list)
     return ",".join(resolvers)
 
 

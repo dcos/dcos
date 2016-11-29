@@ -3,6 +3,7 @@ import inspect
 import logging
 from contextlib import contextmanager
 from functools import partial, partialmethod
+from typing import Callable, Dict, List, Optional, Union
 
 from gen.exceptions import ValidationError
 
@@ -42,7 +43,7 @@ def validate_one_of(val: str, valid_values) -> None:
 class Setter:
 
     # NOTE: value may either be a function or a string.
-    def __init__(self, name: str, value, is_optional: bool, conditions: list, is_user: bool):
+    def __init__(self, name: str, value: Union[str, Callable], is_optional: bool, conditions: list, is_user: bool):
         self.name = name
         self.is_optional = is_optional
         self.conditions = conditions
@@ -74,10 +75,12 @@ class Scope:
         self.cases = cases if cases else dict()
 
     def add_case(self, value: str, target):
+        # Note: Can't make a parameter because target uses Scope for parameters.
         assert isinstance(target, Target)
         self.cases[value] = target
 
     def __iadd__(self, other):
+        # Note: can't use type being defined as parameter type
         assert isinstance(other, Scope), "Internal consistency error, expected Scope but got {}".format(type(other))
 
         # Must have the same name and same options in order to be merged (can't have a new
@@ -95,6 +98,7 @@ class Scope:
         return self
 
     def __eq__(self, other):
+        # Note: can't use type being defined as parameter type
         assert isinstance(other, Scope)
         return self.name == other.name and self.cases == other.cases
 
@@ -145,6 +149,7 @@ class Target:
                 yield from sub_target.yield_validates()
 
     def __iadd__(self, other):
+        # Note: can't use type being defined as parameter type
         assert isinstance(other, Target), "Internal consistency error, expected Target but got {}".format(type(other))
         self.variables |= other.variables
 
@@ -161,6 +166,7 @@ class Target:
         return "<Target variables: {}, sub_scopes: {}>".format(self.variables, self.sub_scopes.items())
 
     def __eq__(self, other):
+        # Note: can't use type being defined as parameter type
         assert isinstance(other, Target)
         return self.variables == other.variables and self.sub_scopes == other.sub_scopes
 
@@ -224,10 +230,9 @@ class Source:
 # NOTE: This exception should never escape the Resolver
 class CalculatorError(Exception):
 
-    def __init__(self, message: str, chain=None):
+    def __init__(self, message: str, chain: Optional[list]):
         if chain is None:
             chain = list()
-        assert isinstance(chain, list)
         self.message = message
         self.chain = chain
         super().__init__(message)
@@ -624,7 +629,7 @@ class Resolver:
         }
 
 
-def resolve_configuration(sources: list, targets: list, user_arguments: dict):
+def resolve_configuration(sources: List[Source], targets: List[Target], user_arguments: Dict[str, str]):
 
     # Make sure all user provided arguments are strings.
     # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
@@ -645,11 +650,6 @@ def resolve_configuration(sources: list, targets: list, user_arguments: dict):
             setters.setdefault(name, list())
             setters[name] += setter_list
         validate += source.validate
-
-    # Validate that targets is a list of Targets
-    for target in targets:
-        assert isinstance(target, Target), \
-            "target should be a Target found a {} with value: {}".format(type(target), target)
 
     # TODO(cmaloney): Re-enable this after sorting out how to have "optional" config targets which
     # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)

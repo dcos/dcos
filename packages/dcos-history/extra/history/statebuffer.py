@@ -4,6 +4,7 @@ import os
 import threading
 from collections import deque
 from datetime import datetime, timedelta
+from typing import Optional
 
 import requests
 
@@ -104,8 +105,7 @@ class HistoryBuffer():
         # Guarantees first call after instanciation will cause update
         self.next_update = datetime.now()
 
-    def _get_datafile_name(self, timestamp):
-        assert isinstance(timestamp, datetime)
+    def _get_datafile_name(self, timestamp: datetime):
         assert timestamp.tzinfo is None
         return '{}/{}{}'.format(self.path, timestamp.isoformat(), FILE_EXT)
 
@@ -113,17 +113,15 @@ class HistoryBuffer():
         while len(self.disk_files) > self.disk_count:
             os.remove(self.disk_files.pop(0))
 
-    def add_data(self, timestamp, state):
-        assert isinstance(timestamp, datetime)
+    def add_data(self, timestamp: datetime, state):
         if timestamp >= self.next_update:
             self._update_buffer(state, storage_time=timestamp)
 
-    def _update_buffer(self, state, storage_time=None):
+    def _update_buffer(self, state, storage_time: Optional[datetime]=None):
         self.in_memory.append(state)
         self.next_update += self.update_period
 
         if storage_time and (self.disk_count > 0):
-            assert isinstance(storage_time, datetime)
             data_file = self._get_datafile_name(storage_time)
             with open(data_file, 'w') as f:
                 json.dump(state, f)

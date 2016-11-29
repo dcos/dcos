@@ -15,6 +15,7 @@
 #   switch <identifier>
 #   case <string>:
 #   endswith
+from typing import Optional, Tuple
 
 from pkg_resources import resource_string
 
@@ -38,8 +39,7 @@ class SyntaxError(Exception):
 
 class Tokenizer():
 
-    def __init__(self, corpus):
-        assert isinstance(corpus, str)
+    def __init__(self, corpus: str):
         self.__corpus = corpus
         self.__to_lex = corpus
 
@@ -258,10 +258,8 @@ class Tokenizer():
 
 class Switch():
 
-    def __init__(self, identifier, cases):
-        assert isinstance(identifier, str)
+    def __init__(self, identifier: str, cases: dict):
         self.identifier = identifier
-        assert isinstance(cases, dict)
         self.cases = cases
 
     def __repr__(self):
@@ -272,12 +270,9 @@ class Switch():
 
 
 class For():
-    def __init__(self, new_var, iterable, body):
-        assert isinstance(new_var, str)
+    def __init__(self, new_var: str, iterable: str, body: list):
         self.new_var = new_var
-        assert isinstance(iterable, str)
         self.iterable = iterable
-        assert isinstance(body, list)
         self.body = body
 
     def __repr__(self):
@@ -289,12 +284,9 @@ class For():
 
 class Replacement():
 
-    def __init__(self, identifier_and_filter):
+    def __init__(self, identifier_and_filter: Tuple[str, Optional[str]]):
         self.identifier = identifier_and_filter[0]
         self.filter = identifier_and_filter[1]
-
-        assert(isinstance(self.identifier, str))
-        assert(isinstance(self.filter, str) or self.filter is None)
 
     def __repr__(self):
         return "<replacement {}{}>".format(
@@ -317,12 +309,10 @@ class UnsetMarker():
 
 class Template():
 
-    def __init__(self, ast):
-        assert isinstance(ast, list)
+    def __init__(self, ast: list):
         self.ast = ast
 
-    def render(self, arguments, filters={}):
-        assert isinstance(arguments, dict)
+    def render(self, arguments: dict, filters: dict={}):
 
         def get_argument(name):
             try:
