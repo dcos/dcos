@@ -159,10 +159,10 @@ def wait_for_pong(url, timeout):
 
 
 def wait_for_len(fetch_fn, target_count, timeout):
-    """Will call fetch_fn, get len() on the result and repeat until it is
+    """Will call fetch_fn every 10s, get len() on the result and repeat until it is
     equal to target count or timeout (in seconds) has been reached
     """
-    @retrying.retry(wait_fixed=3000, stop_max_delay=timeout * 1000,
+    @retrying.retry(wait_fixed=10000, stop_max_delay=timeout * 1000,
                     retry_on_result=lambda res: res is False,
                     retry_on_exception=lambda ex: False)
     def check_for_match():

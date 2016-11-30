@@ -24,6 +24,7 @@ def template_by_instance_type(instance_type):
         return VPC_TEMPLATE_URL
 
 
+@retry_boto_rate_limits
 def instances_to_hosts(instances):
     return [Host(i.private_ip_address, i.public_ip_address) for i in instances]
 
