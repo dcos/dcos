@@ -105,7 +105,7 @@ class Config():
         sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [], extra_sources)
         targets = targets + extra_targets
 
-        resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
+        resolver = gen.internals.resolve_configuration(sources, targets)
         # TODO(cmaloney): kill this function and make the API return the structured
         # results api as was always intended rather than the flattened / lossy other
         # format. This will be an  API incompatible change. The messages format was

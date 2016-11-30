@@ -3,7 +3,7 @@ import inspect
 import logging
 from contextlib import contextmanager
 from functools import partial, partialmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 from gen.exceptions import ValidationError
 from pkgpanda.build import hash_checkout
@@ -232,10 +232,6 @@ class Source:
                 self.add_conditional_scope(sub_scope, conditions + [(name, value)])
 
     add_must = partialmethod(add_setter, is_optional=False, conditions=[])
-
-    def add_value_dict(self, value_dict):
-        for name, value in value_dict.items():
-            self.add_must(name, value)
 
     def remove_setters(self, scope):
         def del_setter(name):
@@ -674,11 +670,7 @@ class Resolver:
         }
 
 
-def resolve_configuration(sources: List[Source], targets: List[Target], user_arguments: Dict[str, str]):
-    # Make sure all user provided arguments are strings.
-    # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
-    # as they all have a gen specific string form.
-    validate_arguments_strings(user_arguments)
+def resolve_configuration(sources: List[Source], targets: List[Target]):
 
     # Merge the sources into a big dictionary of setters + validators, ensuring
     # that all setters are either strings or functions.
@@ -699,10 +691,7 @@ def resolve_configuration(sources: List[Source], targets: List[Target], user_arg
     # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)
     # validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
 
-    # Add in all user arguments as setters.
-    # Happens last so that they are never overwritten with replace_existing=True
     user_config = Source(is_user=True)
-    user_config.add_value_dict(user_arguments)
 
     # Merge all the seters and validate function into one uber list
     setters = copy.deepcopy(user_config.setters)

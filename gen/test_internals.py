@@ -91,12 +91,17 @@ def test_resolve_simple():
                     'd_2': Target({'d_2_a', 'd_2_b'})
                 })})
 
-    resolver = gen.internals.resolve_configuration(
-        [test_source], [get_test_target()], {'c': 'c_str', 'd_1_a': 'd_1_a_str'})
+    test_user_source = Source(is_user=True)
+    test_user_source.add_must('c', 'c_str')
+    test_user_source.add_must('d_1_a', 'd_1_a_str')
+
+    resolver = gen.internals.resolve_configuration([test_source, test_user_source], [get_test_target()])
     print(resolver)
     assert resolver.status_dict == {'status': 'ok'}
 
     # Make sure having a unset variable results in a non-ok status
-    resolver = gen.internals.resolve_configuration([test_source], [get_test_target()], {'d_1_a': 'd_1_a_str'})
+    test_partial_source = Source(is_user=True)
+    test_partial_source.add_must('d_1_a', 'd_1_a_str')
+    resolver = gen.internals.resolve_configuration([test_source, test_partial_source], [get_test_target()])
     print(resolver)
     assert resolver.status_dict == {'status': 'errors', 'errors': {}, 'unset': {'c'}}

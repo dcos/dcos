@@ -247,7 +247,7 @@ def do_aws_cf_configure():
 
     sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(gen_config, [], extra_sources)
     targets.append(get_aws_advanced_target())
-    resolver = gen.internals.resolve_configuration(sources, targets, gen_config)
+    resolver = gen.internals.resolve_configuration(sources, targets)
     # TODO(cmaloney): kill this function and make the API return the structured
     # results api as was always intended rather than the flattened / lossy other
     # format. This will be an  API incompatible change. The messages format was
