@@ -15,7 +15,7 @@ import release.storage.aws
 import release.storage.local
 from dcos_installer import config_util
 from dcos_installer.config import Config, normalize_config_validation
-from dcos_installer.constants import CONFIG_PATH
+from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
 
 log = logging.getLogger()
 
@@ -295,13 +295,14 @@ def do_aws_cf_configure():
 
     storage_commands = repository.make_commands({'core_artifacts': [], 'channel_artifacts': artifacts})
 
-    log.warning("Writing local copies to genconf/cloudformation")
-    storage_provider = release.storage.local.LocalStorageProvider('genconf/cloudformation')
+    cf_dir = GENCONF_DIR + '/cloudformation'
+    log.warning("Writing local copies to {}".format(cf_dir))
+    storage_provider = release.storage.local.LocalStorageProvider(cf_dir)
     release.apply_storage_commands({'local': storage_provider}, storage_commands)
 
     log.warning(
         "Generated templates locally available at %s",
-        "genconf/cloudformation/" + full_config["reproducible_artifact_path"])
+        cf_dir + "/" + full_config["reproducible_artifact_path"])
     # TODO(cmaloney): Print where the user can find the files locally
 
     if full_config['aws_template_upload'] == 'false':
@@ -407,8 +408,13 @@ def determine_config_type(config_path=CONFIG_PATH):
             adv_found[key] = config[key]
 
     if adv_found:
-        message = "Advanced configuration detected in genconf/config.yaml ({}).\nPlease backup " \
-                  "or remove genconf/config.yaml to use the UI installer.".format(adv_found)
+        message = (
+            "Advanced configuration detected in {config_path} ({adv_found}).\nPlease backup "
+            "or remove {config_path} to use the UI installer.".format(
+                config_path=CONFIG_PATH,
+                adv_found=adv_found,
+            )
+        )
         config_type = 'advanced'
     else:
         message = ''
