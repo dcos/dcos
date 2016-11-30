@@ -82,14 +82,21 @@ def test_resolve_simple():
         }
     })
 
-    test_target = Target(
-        {'a', 'b', 'c'},
-        {'d': Scope(
-            'd', {
-                'd_1': Target({'d_1_a', 'd_1_b'}),
-                'd_2': Target({'d_2_a', 'd_2_b'})
-            })})
+    def get_test_target():
+        return Target(
+            {'a', 'b', 'c'},
+            {'d': Scope(
+                'd', {
+                    'd_1': Target({'d_1_a', 'd_1_b'}),
+                    'd_2': Target({'d_2_a', 'd_2_b'})
+                })})
 
-    resolver = gen.internals.resolve_configuration([test_source], [test_target], {'c': 'c_str', 'd_1_a': 'd_1_a_str'})
+    resolver = gen.internals.resolve_configuration(
+        [test_source], [get_test_target()], {'c': 'c_str', 'd_1_a': 'd_1_a_str'})
     print(resolver)
     assert resolver.status_dict == {'status': 'ok'}
+
+    # Make sure having a unset variable results in a non-ok status
+    resolver = gen.internals.resolve_configuration([test_source], [get_test_target()], {'d_1_a': 'd_1_a_str'})
+    print(resolver)
+    assert resolver.status_dict == {'status': 'errors', 'errors': {}, 'unset': {'c'}}
