@@ -8,6 +8,7 @@ import pytest
 import gen.build_deploy.aws
 import release
 import release.storage.aws
+from pkgpanda.build import BuildError
 from pkgpanda.util import variant_prefix, write_json, write_string
 
 
@@ -552,6 +553,10 @@ stable_artifacts_metadata = {
 }
 
 
+def mock_failed_build_packages(_):
+    raise BuildError('This build failed!')
+
+
 # TODO(cmaloney): Add test for do_build_packages returning multiple bootstraps
 # containing overlapping
 def test_make_stable_artifacts(monkeypatch, tmpdir):
@@ -561,6 +566,11 @@ def test_make_stable_artifacts(monkeypatch, tmpdir):
     with tmpdir.as_cwd():
         metadata = release.make_stable_artifacts("http://test")
         assert metadata == stable_artifacts_metadata
+
+    # Check that a BuildError is propogated
+    monkeypatch.setattr("release.do_build_packages", mock_failed_build_packages)
+    with pytest.raises(BuildError):
+        release.make_stable_artifacts("http://test")
 
 
 # NOTE: Implicitly tests all gen.build_deploy do_create functions since it calls them.
@@ -603,6 +613,34 @@ def test_make_channel_artifacts(monkeypatch):
             'downstream': 'downstream_bootstrap_id',
             'installer': 'installer_bootstrap_id',
             'downstream.installer': 'downstream_installer_bootstrap_id'
+        },
+        'complete_dict': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+        },
+        'all_completes': {
+            None: {
+                'bootstrap': 'bootstrap_id',
+                'packages': ['package--version'],
+            },
+            'downstream': {
+                'bootstrap': 'downstream_bootstrap_id',
+                'packages': ['downstream-package--version'],
+            },
+            'installer': {
+                'bootstrap': 'installer_bootstrap_id',
+                'packages': ['installer-package--version'],
+            },
+            'downstream.installer': {
+                'bootstrap': 'downstream_installer_bootstrap_id',
+                'packages': ['downstream-installer-package--version'],
+            },
         },
         'build_name': 'r_path/channel',
         'reproducible_artifact_path': 'r_path/channel/commit/sha-1',
