@@ -6,5 +6,5 @@ RestartSec=5
 PermissionsStartOnly=True
 User=dcos_metrics
 EnvironmentFile=/opt/mesosphere/environment
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-agent
 ExecStart=/opt/mesosphere/bin/dcos-metrics -config /opt/mesosphere/etc/dcos-metrics-config.yaml -role agent

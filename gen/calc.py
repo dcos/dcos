@@ -363,7 +363,8 @@ def calculate_config_yaml(user_arguments):
 
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
-                 'docker/runtime,docker/volume,volume/sandbox_path')
+                 'docker/runtime,docker/volume,volume/sandbox_path,'
+                 'com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators
@@ -557,8 +558,7 @@ entry = {
         'minuteman_forward_metrics': 'false',
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
-        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume'
-        ',com_mesosphere_MetricsIsolatorModule',
+        'mesos_isolation': calculate_mesos_isolation,
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
