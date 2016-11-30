@@ -303,7 +303,8 @@ def make_stable_artifacts(cache_repository_url):
         try:
             all_completes = do_build_packages(cache_repository_url)
         except pkgpanda.build.BuildError as ex:
-            logger.error("Building packages: {}".format(ex))
+            logger.error("Failure building package(s): {}".format(ex))
+            raise
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the complete_dict to enumerate all variants a whole lot,
