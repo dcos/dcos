@@ -16,7 +16,7 @@ import gen.build_deploy.util as util
 import pkgpanda.util
 import release
 import release.storage
-from gen.internals import Source
+from gen.internals import Late, Source
 from pkgpanda.util import logger
 
 
@@ -38,21 +38,22 @@ aws_base_source = Source(entry={
         'enable_docker_gc': 'true'
     },
     'must': {
-        'aws_region': '{ "Ref" : "AWS::Region" }',
+        'has_master_external_loadbalancer': 'true',
+        'aws_region': Late('{ "Ref" : "AWS::Region" }'),
         'ip_detect_contents': get_ip_detect('aws'),
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'exhibitor_explicit_keys': 'false',
-        'cluster_name': '{ "Ref" : "AWS::StackName" }',
+        'cluster_name': Late('{ "Ref" : "AWS::StackName" }'),
         'master_discovery': 'master_http_loadbalancer',
         # The cloud_config template variables pertaining to "cloudformation.json"
         'master_cloud_config': '{{ master_cloud_config }}',
         'agent_private_cloud_config': '{{ slave_cloud_config }}',
         'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
-        'master_external_loadbalancer': '{ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }',
+        'master_external_loadbalancer': Late('{ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }'),
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'oauth_available': 'true',
-        'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
+        'oauth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
         'rexray_config_preset': 'aws'
     }
 })
@@ -205,26 +206,26 @@ aws_advanced_report_names = {
 groups = {
     'master': (
         'master', Source(entry={'must': {
-            's3_bucket': '{ "Ref" : "ExhibitorS3Bucket" }',
-            's3_prefix': '{ "Ref" : "AWS::StackName" }',
+            's3_bucket': Late('{ "Ref" : "ExhibitorS3Bucket" }'),
+            's3_prefix': Late('{ "Ref" : "AWS::StackName" }'),
             'exhibitor_storage_backend': 'aws_s3',
-            'master_role': '{ "Ref" : "MasterRole" }',
+            'master_role': Late('{ "Ref" : "MasterRole" }'),
             'agent_role': '',
-            'exhibitor_address': '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }',
+            'exhibitor_address': Late('{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }'),
         }})),
     'pub-agent': (
         'slave_public', Source(entry={'must': {
             'master_role': '',
-            'agent_role': '{ "Ref" : "PublicAgentRole" }',
+            'agent_role': Late('{ "Ref" : "PublicAgentRole" }'),
             'exhibitor_storage_backend': 'agent_only_group_no_exhibitor',
-            'exhibitor_address': '{ "Ref" : "InternalMasterLoadBalancerDnsName" }',
+            'exhibitor_address': Late('{ "Ref" : "InternalMasterLoadBalancerDnsName" }'),
         }})),
     'priv-agent': (
         'slave', Source(entry={'must': {
             'master_role': '',
-            'agent_role': '{ "Ref" : "PrivateAgentRole" }',
+            'agent_role': Late('{ "Ref" : "PrivateAgentRole" }'),
             'exhibitor_storage_backend': 'agent_only_group_no_exhibitor',
-            'exhibitor_address': '{ "Ref" : "InternalMasterLoadBalancerDnsName" }',
+            'exhibitor_address': Late('{ "Ref" : "InternalMasterLoadBalancerDnsName" }'),
         }}))
 }
 
@@ -358,20 +359,9 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
     else:
         raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
 
-    cc_package_files = [
-        '/etc/cfn_signal_metadata',
-        '/etc/adminrouter.env',
-        '/etc/dns_config',
-        '/etc/exhibitor',
-        '/etc/mesos-master-provider']
-
-    if cc_params['node_type'] == 'master':
-        cc_package_files.append('/etc/extra_master_addresses')
-
     results = gen.generate(
         arguments=variant_args,
         extra_templates=extra_templates,
-        cc_package_files=cc_package_files,
         extra_sources=extra_sources + [aws_base_source],
         # TODO(cmaloney): Merge this with dcos_installer/backend.py::get_aws_advanced_target()
         extra_targets=[gen.internals.Target(variables={'cloudformation_s3_url_full'})])
@@ -455,12 +445,12 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
 
 aws_simple_source = Source({
     'must': {
-        'exhibitor_address': '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }',
-        's3_bucket': '{ "Ref" : "ExhibitorS3Bucket" }',
+        'exhibitor_address': Late('{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }'),
+        's3_bucket': Late('{ "Ref" : "ExhibitorS3Bucket" }'),
         'exhibitor_storage_backend': 'aws_s3',
-        'master_role': '{ "Ref" : "MasterRole" }',
-        'agent_role': '{ "Ref" : "SlaveRole" }',
-        's3_prefix': '{ "Ref" : "AWS::StackName" }',
+        'master_role': Late('{ "Ref" : "MasterRole" }'),
+        'agent_role': Late('{ "Ref" : "SlaveRole" }'),
+        's3_prefix': Late('{ "Ref" : "AWS::StackName" }'),
         'region_to_ami_mapping': gen_ami_mapping({"stable"}),
         'nat_ami_mapping': gen_ami_mapping({"natami"})
     }
@@ -475,14 +465,6 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
             'aws/dcos-config.yaml',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'],
-        cc_package_files=[
-            '/etc/cfn_signal_metadata',
-            '/etc/adminrouter.env',
-            '/etc/ui-config.json',
-            '/etc/dns_config',
-            '/etc/exhibitor',
-            '/etc/mesos-master-provider',
-            '/etc/extra_master_addresses'],
         extra_sources=[aws_base_source, aws_simple_source, extra_source])
 
     cloud_config = results.templates['cloud-config.yaml']

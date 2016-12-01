@@ -306,20 +306,16 @@ def do_gen_package(config, package_filename):
     log.info("Package filename: %s", package_filename)
 
 
-def extract_files_with_path(start_files, paths):
+def extract_files_containing_late_variables(start_files):
     found_files = []
-    found_file_paths = []
     left_files = []
 
     for file_info in deepcopy(start_files):
-        if file_info['path'] in paths:
-            found_file_paths.append(file_info['path'])
+        if gen.internals.LATE_BIND_PLACEHOLD_START in file_info['content']:
             found_files.append(file_info)
         else:
             left_files.append(file_info)
 
-    # Assert all files were found. If not it was a programmer error of some form.
-    assert set(found_file_paths) == set(paths)
     # All files still belong somewhere
     assert len(found_files) + len(left_files) == len(start_files)
 
@@ -362,7 +358,6 @@ def validate_all_arguments_match_parameters(parameters, setters, arguments):
 def validate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list(),
         extra_sources=list()):
     sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates, extra_sources)
     return gen.internals.resolve_configuration(sources, targets).status_dict
@@ -444,10 +439,29 @@ def get_dcosconfig_source_target_and_templates(
     return sources, targets, templates
 
 
+def build_late_package(late_files, config_id, provider):
+    if not late_files:
+        return None
+
+    # Add a empty pkginfo.json to the late package after validating there
+    # isn't already one.
+    for file_info in late_files:
+        assert file_info['path'] != '/pkginfo.json'
+        assert file_info['path'].startswith('/')
+
+    late_files.append({
+        "path": "/pkginfo.json",
+        "content": "{}"})
+
+    return {
+        'package': late_files,
+        'package_name': 'dcos-provider-{}-{}--setup'.format(config_id, provider)
+    }
+
+
 def generate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list(),
         extra_sources=list(),
         extra_targets=list()):
     # To maintain the old API where we passed arguments rather than the new name.
@@ -460,6 +474,20 @@ def generate(
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
     resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
     status = resolver.status_dict
+
+    # Gather out the late variables. The presence of late variables changes
+    # whether or not a late package is created
+    late_variables = dict()
+    for source in sources:
+        for setter_list in source.setters.values():
+            for setter in setter_list:
+                if not setter.is_late:
+                    continue
+
+                # Validate a late variable should only have one source.
+                assert setter.name not in late_variables
+
+                late_variables[setter.name] = setter.late_expression
 
     if status['status'] == 'errors':
         raise ValidationError(errors=status['errors'], unset=status['unset'])
@@ -492,29 +520,33 @@ def generate(
             log.debug("validating template file %s", name)
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
-    # Extract cc_package_files out of the dcos-config template and put them into
-    # the cloud-config package.
-    cc_package_files, dcos_config_files = extract_files_with_path(rendered_templates['dcos-config.yaml']['package'],
-                                                                  cc_package_files)
-    rendered_templates['dcos-config.yaml'] = {'package': dcos_config_files}
+    # Find all files which contain late bind variables and turn them into a "late bind package"
+    # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
+    late_files, regular_files = extract_files_containing_late_variables(
+        rendered_templates['dcos-config.yaml']['package'])
+    # put the regular files right back
+    rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
-    # Add a empty pkginfo.json to the cc_package_files.
-    # Also assert there isn't one already (can only write out a file once).
-    for item in cc_package_files:
-        assert item['path'] != '/pkginfo.json'
+    # Turn the late files into a late package + late-config.json in cloud-config.
+    late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
+    # Add a json to the cloud-config containing the late variables
+    if late_variables:
+        assert late_package
 
-    # If there aren't any files for a cloud-config package don't make one start
-    # existing adding a pkginfo.json
-    if len(cc_package_files) > 0:
-        cc_package_files.append({
-            "path": "/pkginfo.json",
-            "content": "{}"})
+        # Turn the late package into a
+        # Collect all late variables from all sources
 
-    for item in cc_package_files:
-        assert item['path'].startswith('/')
-        item['path'] = '/etc/mesosphere/setup-packages/dcos-provider-{}--setup'.format(
-            argument_dict['provider']) + item['path']
-        rendered_templates['cloud-config.yaml']['root'].append(item)
+        # NOTE: Use yaml here simply to make avoidng painful escaping and
+        # unescaping easier.
+        rendered_templates['cloud-config.yaml']['root'].append({
+            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+            'permissions': '0644',
+            'owner': 'root',
+            # TODO(cmaloney): don't prettyprint to save bytes.
+            'content': {
+                'late_bound_package_id': late_package['name'],
+                'bound_values': render_yaml(late_variables)
+            }})
 
     cluster_package_info = {}
 

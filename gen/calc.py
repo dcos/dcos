@@ -67,31 +67,15 @@ def validate_ipv4_addresses(ips: list):
     assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
 
 
-def is_azure_addr(addr: str):
-    return addr.startswith('[[[reference(') and addr.endswith(').ipConfigurations[0].properties.privateIPAddress]]]')
-
-
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure static master list and IP based static " \
-            "master list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     validate_ipv4_addresses(nodes_list)
 
 
 def validate_ip_port_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure resolver list and IP based static " \
-            "resolver list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     # Create a list of only ip addresses by spliting the port from the node. Use the resulting
     # ip_list to validate that it is an ipv4 address. If the port was specified, validate its
     # value is between 1 and 65535.
