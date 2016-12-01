@@ -264,21 +264,6 @@ def gen_ami_mapping(mappings):
     return json.dumps(final, indent=4, sort_keys=True)
 
 
-def get_cloudformation_s3_url():
-    assert release._config is not None
-    # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-    # is definitely not the right way to do this.
-
-    if 'options' not in release._config:
-        raise RuntimeError("No options section in configuration")
-
-    if 'cloudformation_s3_url' not in release._config['options']:
-        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release._config['options']['cloudformation_s3_url']
-
-
 def transform(line):
     m = AWS_REF_REGEX.search(line)
     # no splitting necessary
@@ -388,7 +373,9 @@ def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
         arguments=variant_args,
         extra_templates=extra_templates,
         cc_package_files=cc_package_files,
-        extra_sources=extra_sources + [aws_base_source])
+        extra_sources=extra_sources + [aws_base_source],
+        # TODO(cmaloney): Merge this with dcos_installer/backend.py::get_aws_advanced_target()
+        extra_targets=[gen.internals.Target(variables={'cloudformation_s3_url_full'})])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -419,21 +406,7 @@ def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
     return ResultTuple(cloudformation, results)
 
 
-def get_s3_url_prefix(arguments, reproducible_artifact_path) -> str:
-    assert reproducible_artifact_path, "reproducible_artifact_path must not be empty"
-    if 'cloudformation_s3_url' in arguments:
-        # Caller is `dcos_generate_config.sh --aws-cloudformation`
-        url = arguments['cloudformation_s3_url'] + '/cloudformation'
-        return url
-    else:
-        # Caller is release create
-        url = get_cloudformation_s3_url() + '/{}/cloudformation'.format(reproducible_artifact_path)
-        return url
-
-
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
-    cloudformation_full_s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
-
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
         # without noticing (such as exhibitor_storage_backend)
@@ -470,7 +443,6 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         reproducible_artifact_path=reproducible_artifact_path,
-                        cloudformation_full_s3_url=cloudformation_full_s3_url,
                         **bunch.results.arguments))
         else:
             local_source.add_must('num_masters', '1')
@@ -571,7 +543,7 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arg
         button_line = ""
         for variant, arguments in variant_arguments.items():
             variant_prefix = pkgpanda.util.variant_prefix(variant)
-            s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
+            s3_url = arguments['cloudformation_s3_url_full']
             button_line += region_line_template.format(
                 region_name=region['name'],
                 region_id=region['id'],

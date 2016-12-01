@@ -448,7 +448,8 @@ def generate(
         arguments,
         extra_templates=list(),
         cc_package_files=list(),
-        extra_sources=list()):
+        extra_sources=list(),
+        extra_targets=list()):
     # To maintain the old API where we passed arguments rather than the new name.
     user_arguments = arguments
     arguments = None
@@ -457,7 +458,7 @@ def generate(
         user_arguments, extra_templates, extra_sources)
 
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
-    resolver = gen.internals.resolve_configuration(sources, targets)
+    resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
     status = resolver.status_dict
 
     if status['status'] == 'errors':

@@ -127,11 +127,13 @@ def calculate_base_repository_url(
 
 
 # Figure out the s3 bucket url from region + bucket + path
-# TODO(cmaloney): Allow using a CDN rather than the raw S3 url, which will allow
-# us to use this same logic for both the internal / do_create version and the
-# user dcos_generate_config.sh option.
 def calculate_cloudformation_s3_url(bootstrap_url, config_id):
     return '{}/config_id/{}'.format(bootstrap_url, config_id)
+
+
+# Figure out the s3 bucket url from region + bucket + path
+def calculate_cloudformation_s3_url_full(cloudformation_s3_url):
+    return '{}/cloudformation'.format(cloudformation_s3_url)
 
 
 def calculate_aws_template_storage_region_name(
@@ -183,8 +185,9 @@ aws_advanced_source = gen.internals.Source({
     'must': {
         'provider': 'aws',
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
+        'cloudformation_s3_url_full': calculate_cloudformation_s3_url_full,
         'bootstrap_url': calculate_base_repository_url,
-        'reproducible_artifact_path': calculate_reproducible_artifact_path
+        'reproducible_artifact_path': calculate_reproducible_artifact_path,
     },
     'conditional': {
         'aws_template_upload': {
@@ -208,6 +211,7 @@ def get_aws_advanced_target():
             'aws_template_upload',
             'aws_template_storage_bucket_path_autocreate',
             'cloudformation_s3_url',
+            'cloudformation_s3_url_full',
             'provider',
             'bootstrap_url',
             'bootstrap_variant',
@@ -269,7 +273,7 @@ def do_aws_cf_configure():
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
-    gen_config['cloudformation_s3_url'] = full_config['cloudformation_s3_url']
+    gen_config['cloudformation_s3_url_full'] = full_config['cloudformation_s3_url_full']
 
     # Convert the bootstrap_Variant string we have back to a bootstrap_id as used internally by all
     # the tooling (never has empty string, uses None to say "no variant")
