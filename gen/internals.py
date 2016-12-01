@@ -640,7 +640,7 @@ class Resolver:
     @property
     def status_dict(self):
         assert self._resolved, "Can't retrieve status dictionary until configuration has been resolved"
-        if not self._errors:
+        if not self._errors and not self._unset:
             return {'status': 'ok'}
 
         # Defer multi-key validation errors and noramlize them to be single-key
