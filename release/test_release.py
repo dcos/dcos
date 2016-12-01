@@ -1,4 +1,5 @@
 import copy
+import logging
 import os
 import subprocess
 import uuid
@@ -596,6 +597,7 @@ def mock_make_tar(result_filename, folder):
 # Test that the do_create functions for each provider output data in the right
 # shape.
 def test_make_channel_artifacts(monkeypatch):
+    logging.basicConfig(level=logging.DEBUG)
     monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
     monkeypatch.setattr('gen.build_deploy.aws.get_cloudformation_s3_url', mock_get_cf_s3_url)
     monkeypatch.setattr('gen.build_deploy.azure.get_download_url', mock_get_azure_download_url)

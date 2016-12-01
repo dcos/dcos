@@ -29,7 +29,8 @@ def default_arguments():
         'cluster_name': 'Mesosphere: The Data Center Operating System',
         'bootstrap_variant': '',
         'oauth_available': 'true',
-        'oauth_enabled': 'true'})
+        'oauth_enabled': 'true',
+        'enable_docker_gc': 'false'})
 
 
 def validate_error(new_arguments, key, message):

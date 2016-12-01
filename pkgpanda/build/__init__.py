@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from os import chdir, getcwd, mkdir
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
+from typing import List
 
 import pkgpanda.build.constants
 import pkgpanda.build.src_fetchers
@@ -26,6 +27,7 @@ from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
 
 class BuildError(Exception):
     """An error while building something."""
+
     def __init__(self, msg: str):
         self.msg = msg
 
@@ -408,17 +410,17 @@ def get_docker_id(docker_name):
     return check_output(["docker", "inspect", "-f", "{{ .Id }}", docker_name]).decode('utf-8').strip()
 
 
-def hash_str(s):
+def hash_str(s: str):
     hasher = hashlib.sha1()
     hasher.update(s.encode('utf-8'))
     return hasher.hexdigest()
 
 
-def hash_int(i):
+def hash_int(i: int):
     return hash_str(str(i))
 
 
-def hash_dict(d):
+def hash_dict(d: dict):
     item_hashes = []
     for k in sorted(d.keys()):
         assert isinstance(k, str)
@@ -426,10 +428,9 @@ def hash_dict(d):
     return hash_str(",".join(item_hashes))
 
 
-def hash_list(l):
+def hash_list(l: List[str]):
     item_hashes = []
     for item in sorted(l):
-        assert isinstance(item, str)
         item_hashes.append(hash_checkout(item))
     return hash_str(",".join(item_hashes))
 
@@ -444,6 +445,8 @@ def hash_checkout(item):
         return hash_list(item)
     elif isinstance(item, int):
         return hash_int(item)
+    elif isinstance(item, set):
+        return hash_list(list(item))
     else:
         raise NotImplementedError("{} of type {}".format(item, type(item)))
 

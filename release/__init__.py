@@ -11,6 +11,7 @@ import copy
 import importlib
 import inspect
 import json
+import logging
 import os.path
 import subprocess
 import sys
@@ -371,6 +372,15 @@ def built_resource_to_artifacts(built_resource: dict):
 def make_channel_artifacts(metadata):
     artifacts = []
 
+    # Set logging to debug so we get gen error messages, since those are
+    # logging.DEBUG currently to not show up when people are using `--genconf`
+    # and friends.
+    # TODO(cmaloney): Remove this and make the core bits of gen, code log at
+    # the proper info / warning / etc. level.
+    log = logging.getLogger()
+    original_log_level = log.getEffectiveLevel()
+    log.setLevel(logging.DEBUG)
+
     provider_data = {}
     providers = load_providers()
     for name, module in sorted(providers.items()):
@@ -419,6 +429,8 @@ def make_channel_artifacts(metadata):
 
             # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
             artifacts += provider_data.get('artifacts', list())
+
+    log.setLevel(original_log_level)
 
     return artifacts
 
