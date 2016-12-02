@@ -111,10 +111,10 @@ if [ $RET -ne 0 ]; then
   for i in boot m1 m2 m3 a1 a2 p1; do
     if [ "$TEAMCITY_BUILD_ENV" == "true" ]; then
       echo "##teamcity[blockOpened name='$i']"
-      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+      vagrant ssh $i -c "sudo journalctl -n $LOG_REPLAY_LINES"
       echo "##teamcity[blockClosed name='$i']"
     else
-      vagrant ssh $i -c "'sudo journalctl -n $LOG_REPLAY_LINES'"
+      vagrant ssh $i -c "sudo journalctl -n $LOG_REPLAY_LINES"
     fi
   done
   if [ "$TEAMCITY_BUILD_ENV" == "true" ]; then
