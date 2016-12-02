@@ -314,6 +314,7 @@ package:
       MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
+      MESOS_IO_SWITCHBOARD_ENABLE_SERVER=true
       GLOG_drop_log_memory=false
   - path: /etc/dcos-log-config.json
     content: |
