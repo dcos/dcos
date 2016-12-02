@@ -69,6 +69,7 @@ setup(
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main',
             'dcos-launch=test_util.launch:main',
+            'dcos-spaceport=spaceport.cli:main'
         ],
     },
     package_data={
