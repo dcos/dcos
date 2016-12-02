@@ -1,0 +1,10 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-log.git",
+    "ref": "cf8996621ef23ca19dc22d8fc9681e4893ac648a",
+    "ref_origin": "master"
+  },
+  "username": "dcos_log",
+  "group": "systemd-journal"
+}

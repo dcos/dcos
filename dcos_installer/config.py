@@ -7,7 +7,7 @@ import yaml
 import gen
 import ssh.validate
 from gen.build_deploy.bash import onprem_source
-from pkgpanda.util import write_string
+from pkgpanda.util import load_yaml, write_string, YamlParseError
 
 log = logging.getLogger(__name__)
 
@@ -73,14 +73,15 @@ class Config():
             return {}
 
         try:
-            with open(self.config_path) as f:
-                return yaml.load(f)
+            return load_yaml(self.config_path)
         except FileNotFoundError as ex:
             raise NoConfigError(
                 "No config file found at {}. See the DC/OS documentation for the "
                 "available configuration options. You can also use the GUI web installer (--web),"
                 "which provides a guided configuration and installation for simple "
                 "deployments.".format(self.config_path)) from ex
+        except YamlParseError as ex:
+            raise NoConfigError("Unable to load configuration file. {}".format(ex)) from ex
 
     def update(self, updates):
         # TODO(cmaloney): check that the updates are all for valid keys, keep

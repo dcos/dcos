@@ -19,7 +19,6 @@ from distutils.version import LooseVersion
 from typing import Optional
 
 import pkg_resources
-import yaml
 
 import gen.build_deploy.util as util
 import pkgpanda
@@ -64,8 +63,7 @@ def expand_env_vars(config):
 
 
 def load_config(filename):
-    with open(filename) as config_file:
-        return expand_env_vars(yaml.load(config_file))
+    return expand_env_vars(pkgpanda.util.load_yaml(filename))
 
 
 def strip_locals(data):

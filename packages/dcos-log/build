@@ -1,0 +1,54 @@
+#!/bin/bash
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-log /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/dcos-log
+
+make install
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-log-master.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log-agent.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log-agent.service
+
+master_socket_service=${PKG_PATH}/dcos.target.wants_master/dcos-log-master.socket
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log-agent.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log-agent.socket
+
+mkdir -p $(dirname $master_service)
+mkdir -p $(dirname $slave_service)
+mkdir -p $(dirname $slave_public_service)
+
+cat <<EOF | tee $master_service
+[Unit]
+Description=DC/OS Log service master: DC/OS logging service
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+User=dcos_log
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-log-master
+ExecStart=/opt/mesosphere/bin/dcos-log -config /opt/mesosphere/etc/dcos-log-config.json
+EOF
+
+cat <<EOF | tee $slave_service $slave_public_service
+[Unit]
+Description=DC/OS Log service agent: DC/OS logging service
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+User=dcos_log
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-log-agent
+ExecStart=/opt/mesosphere/bin/dcos-log -config /opt/mesosphere/etc/dcos-log-config.json
+EOF
+
+cat <<EOF | tee $master_socket_service $slave_socket_service $slave_public_socket_service
+[Unit]
+Description=DC/OS Log socket: DC/OS logging socket
+[Socket]
+ListenStream=/run/dcos/dcos-log.sock
+EOF

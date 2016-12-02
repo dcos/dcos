@@ -59,6 +59,8 @@ bootstrappers = {
     'dcos-minuteman': noop,
     'dcos-navstar': noop,
     'dcos-spartan': noop,
+    'dcos-log-master': noop,
+    'dcos-log-agent': noop,
 }
 
 
