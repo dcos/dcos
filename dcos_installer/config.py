@@ -6,6 +6,7 @@ import yaml
 
 import gen
 import ssh.validate
+from gen.build_deploy.bash import onprem_source
 from pkgpanda.util import write_string
 
 log = logging.getLogger(__name__)
@@ -42,9 +43,6 @@ def normalize_config_validation(messages):
             validation[key] = 'Must set {}, no way to calculate value.'.format(key)
 
     return validation
-
-
-extra_args = {'provider': 'onprem'}
 
 
 def make_default_config_if_needed(config_path):
@@ -93,17 +91,18 @@ class Config():
     # TODO(cmaloney): Figure out a way for the installer being generated (Advanced AWS CF templates vs.
     # bash) to automatically set this in gen.generate rather than having to merge itself.
     def as_gen_format(self):
-        config = copy.copy(self._config)
-        config.update({'provider': 'onprem'})
-        return gen.stringify_configuration(config)
+        return gen.stringify_configuration(self._config)
 
     def do_validate(self, include_ssh):
         user_arguments = self.as_gen_format()
-        sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [])
-
+        extra_sources = [onprem_source]
+        extra_targets = []
         if include_ssh:
-            sources.append(ssh.validate.source)
-            targets.append(ssh.validate.get_target())
+            extra_sources.append(ssh.validate.source)
+            extra_targets.append(ssh.validate.get_target())
+
+        sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [], extra_sources)
+        targets = targets + extra_targets
 
         resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
         # TODO(cmaloney): kill this function and make the API return the structured
@@ -111,9 +110,6 @@ class Config():
         # format. This will be an  API incompatible change. The messages format was
         # specifically so that there wouldn't be this sort of API incompatibility.
         return normalize_config_validation(resolver.status_dict)
-
-    def do_gen_configure(self):
-        return gen.generate(self.as_gen_format())
 
     def get_yaml_str(self):
         return yaml.dump(self._config, default_flow_style=False, explicit_start=True)

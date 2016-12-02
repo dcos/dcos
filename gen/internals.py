@@ -3,9 +3,10 @@ import inspect
 import logging
 from contextlib import contextmanager
 from functools import partial, partialmethod
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from gen.exceptions import ValidationError
+from pkgpanda.build import hash_checkout
 
 
 log = logging.getLogger(__name__)
@@ -40,14 +41,35 @@ def validate_one_of(val: str, valid_values) -> None:
         raise AssertionError("Must be one of {}. Got '{}'.".format(options_string, val))
 
 
+def function_id(function: Callable):
+    return {
+        'name': function.__name__,
+        'parameters': get_function_parameters(function)
+    }
+
+
+def value_id(value: Union[str, Callable]) -> str:
+    if isinstance(value, str):
+        return value
+    else:
+        return function_id(value)
+
+
 class Setter:
 
     # NOTE: value may either be a function or a string.
-    def __init__(self, name: str, value: Union[str, Callable], is_optional: bool, conditions: list, is_user: bool):
+    def __init__(
+            self,
+            name: str,
+            value: Union[str, Callable],
+            is_optional: bool,
+            conditions: List[Tuple[str, str]],
+            is_user: bool):
         self.name = name
         self.is_optional = is_optional
         self.conditions = conditions
         self.is_user = is_user
+        self._value_id = hash_checkout(value_id(value))
 
         def get_value():
             return value
@@ -67,6 +89,16 @@ class Setter:
             ", user" if self.is_user else "",
             self.conditions,
             ", parameters {}".format(self.parameters))
+
+    def make_id(self):
+        return {
+            'name': self.name,
+            'value': self._value_id,
+            'is_optional': str(self.is_optional),
+            # convert tuple to list since tuple hashing isn't implemented.
+            'conditions': [[key, value] for (key, value) in self.conditions],
+            'is_user': str(self.is_user)
+        }
 
 
 class Scope:
@@ -225,6 +257,19 @@ class Source:
             self.remove_setters(entry)
 
         self.add_conditional_scope(entry, [])
+
+    def make_id(self):
+        # {key: [hash_checkout(setter.make_id() for setter in setters)]
+        #                 for key, setters in self.setters.items()}
+        setter_ids = list()
+        for setter_list in self.setters.values():
+            for setter in setter_list:
+                setter_ids.append(hash_checkout(setter.make_id()))
+        return {
+            'setters': setter_ids,
+            'validate': [hash_checkout(function_id(fn)) for fn in self.validate],
+            'is_user': self.is_user
+        }
 
 
 # NOTE: This exception should never escape the Resolver
@@ -595,7 +640,7 @@ class Resolver:
     @property
     def status_dict(self):
         assert self._resolved, "Can't retrieve status dictionary until configuration has been resolved"
-        if not self._errors:
+        if not self._errors and not self._unset:
             return {'status': 'ok'}
 
         # Defer multi-key validation errors and noramlize them to be single-key
@@ -630,7 +675,6 @@ class Resolver:
 
 
 def resolve_configuration(sources: List[Source], targets: List[Target], user_arguments: Dict[str, str]):
-
     # Make sure all user provided arguments are strings.
     # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
     # as they all have a gen specific string form.

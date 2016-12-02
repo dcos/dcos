@@ -317,8 +317,8 @@ class Template():
         def get_argument(name):
             try:
                 return arguments[name]
-            except KeyError:
-                raise UnsetParameter("Unset parameter {}".format(name), name)
+            except KeyError as ex:
+                raise UnsetParameter("Unset parameter {}".format(name), name) from ex
 
         def render_ast(ast):
             rendered = ""

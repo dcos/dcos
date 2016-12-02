@@ -16,6 +16,7 @@ RUN apt-get -qq update && apt-get -y install \
   git \
   gzip \
   libapr1-dev \
+  libc6-dev \
   libcurl4-openssl-dev \
   libnl-3-dev \
   libnl-genl-3-dev \
@@ -48,5 +49,20 @@ RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/gcc-nm-4.8 /usr/bin/gcc-nm && \
   ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
   ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
+
+ENV GOLANG_VERSION 1.7.3
+ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
+ENV GOLANG_DOWNLOAD_SHA256 508028aac0654e993564b6e2014bf2d4a9751e3b286661b0b0040046cf18028e
+
+RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
+  && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
+  && tar -C /usr/local -xzf golang.tar.gz \
+  && rm golang.tar.gz
+
+# Set GOPATH to expected pkgpanda package path for DC/OS
+ENV GOPATH /pkg
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 
 RUN pip install awscli

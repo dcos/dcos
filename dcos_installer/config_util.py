@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 
 
 def do_configure(config):
-    gen_out = config.do_gen_configure()
+    gen_out = gen.generate(config.as_gen_format(), extra_sources=[gen.build_deploy.bash.onprem_source])
+
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 

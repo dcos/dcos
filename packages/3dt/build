@@ -1,5 +1,4 @@
 #!/bin/bash
-export GOPATH=$GOPATH:/pkg
 mkdir -p /pkg/src/github.com/dcos
 # Create the GOPATH for the go tool to work properly
 mv /pkg/src/3dt /pkg/src/github.com/dcos/

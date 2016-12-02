@@ -1,5 +1,4 @@
 {
-  "docker": "golang:1.6",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-oauth.git",

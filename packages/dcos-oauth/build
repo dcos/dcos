@@ -1,6 +1,5 @@
 #!/bin/bash -xe
 
-export GOPATH=/pkg:$GOPATH
 mkdir -p /pkg/src/github.com/dcos
 mv /pkg/src/dcos-oauth /pkg/src/github.com/dcos/
 cd /pkg/src/github.com/dcos/dcos-oauth
