@@ -4,9 +4,8 @@ import retrying
 LATENCY = 60
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_metrics_ping(cluster):
-    """ Test that the metrics service is up.
+def test_metrics_agents_ping(cluster):
+    """ Test that the metrics service is up on masters.
     """
     for agent in cluster.slaves:
         response = cluster.metrics.get('ping', node=agent)
@@ -21,6 +20,8 @@ def test_metrics_ping(cluster):
         'from public agent.'
         assert response.json()['ok'], 'Metrics /ping is not ok on public agent, got:\n{}'.format(response.content)
 
+
+def test_metrics_masters_ping(cluster):
     for master in cluster.masters:
         response = cluster.metrics.get('ping', node=master)
         assert response.status_code == 200, 'Got non-200 status code {}'.format(response.content)
@@ -64,30 +65,33 @@ def test_metrics_node(cluster):
 
         assert response.status_code == 200, 'Got non-200 status code '
         'from private agent for /node.'
+        '\nResponse: {}'.format(response.content)
 
         assert expected_datapoint_response(response.json()), 'Private agent did not '
         'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.json())
+        'Got {}'.format(response.content)
 
     for agent in cluster.public_slaves:
         response = cluster.metrics.get('node', node=agent)
 
         assert response.status_code == 200, 'Got non-200 status code '
         'from public agent for /node.'
+        '\nResponse: {}'.format(response.content)
 
         assert expected_datapoint_response(response.json()), 'Public agent did not '
         'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.json())
+        'Got {}'.format(response.content)
 
     for master in cluster.masters:
         response = cluster.metrics.get('node', node=master)
 
         assert response.status_code == 200, 'Got non-200 status code '
         'from master host for /node.'
+        '\nResponse: {}'.format(response.content)
 
         assert expected_datapoint_response(response.json()), 'Master host did not '
         'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.json())
+        'Got {}'.format(response.content)
 
 
 def test_metrics_containers(cluster):
