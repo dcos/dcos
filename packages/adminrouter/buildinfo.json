@@ -8,9 +8,9 @@
       },
       "adminrouter": {
           "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "0f1e4d44701d5b9960da980f8136c03c98c96594",
-          "ref_origin": "master"
+          "git": "https://github.com/vespian/adminrouter.git",
+          "ref": "d8aa66b19632497cd7b3af17339654769103f668",
+          "ref_origin": "prozlach/DCOS-9269_standarizing_open_and_ee_ar_stage3"
       }
   }
 }
