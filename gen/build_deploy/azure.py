@@ -81,7 +81,7 @@ def transform(cloud_config_yaml_str):
     that ARM template parameters appear at the top level of the template and get
     substituted.
     '''
-    cc_json = json.dumps(yaml.load(cloud_config_yaml_str), sort_keys=True)
+    cc_json = json.dumps(yaml.safe_load(cloud_config_yaml_str), sort_keys=True)
     arm_list = ["[base64(concat('#cloud-config\n\n', "]
     # Find template parameters and seperate them out as seperate elements in a
     # json list.
@@ -151,11 +151,6 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     variant_cloudconfig = {}
     for variant, params in INSTANCE_GROUPS.items():
         cc_variant = deepcopy(cloud_config)
-
-        # TODO(cmaloney): Add the dcos-arm-signal service here
-        # cc_variant = results.utils.add_units(
-        #     cc_variant,
-        #     yaml.load(gen.template.parse_str(late_services).render(params)))
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['azure'])

@@ -218,7 +218,7 @@ def render_templates(template_dict, arguments):
                 assert len(templates) == 1
                 full_template = rendered_template
                 continue
-            template_data = yaml.load(rendered_template)
+            template_data = yaml.safe_load(rendered_template)
 
             if full_template:
                 full_template = merge_dictionaries(full_template, template_data)
