@@ -3,8 +3,8 @@
 import json
 import logging
 import re
-from collections import namedtuple
 from copy import deepcopy
+from typing import Tuple
 
 import botocore.exceptions
 import yaml
@@ -230,8 +230,6 @@ groups = {
 
 AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
 
-ResultTuple = namedtuple('ResultTuple', ['cloudformation', 'results'])
-
 
 def get_test_session(config=None):
     if config is None:
@@ -327,9 +325,10 @@ def _as_cf_artifact(filename, cloudformation):
     }
 
 
-def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
-    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), gen_out.cloudformation)
-    yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
+def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
+    cloudformation, results = bundle
+    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
+    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
 
 
 def gen_supporting_template():
@@ -346,7 +345,7 @@ def gen_supporting_template():
             cloudformation)
 
 
-def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
+def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
     extra_templates = [
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
@@ -403,7 +402,7 @@ def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
-    return ResultTuple(cloudformation, results)
+    return (cloudformation, results)
 
 
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
@@ -421,8 +420,8 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
 
-        def _as_artifact(filename, gen_out):
-            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
+        def _as_artifact(filename, bundle):
+            yield from _as_artifact_and_pkg(variant_prefix, filename, bundle)
 
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
@@ -430,11 +429,11 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 print('Building {} {} for num_masters = {}'.format(os_type, node_type, num_masters))
                 num_masters_source = Source()
                 num_masters_source.add_must('num_masters', str(num_masters))
-                bunch = make_advanced_bunch(arguments,
-                                            [node_source, local_source, num_masters_source],
-                                            template_name,
-                                            params)
-                yield from _as_artifact('{}.json'.format(master_tk), bunch)
+                bundle = make_advanced_bundle(arguments,
+                                              [node_source, local_source, num_masters_source],
+                                              template_name,
+                                              params)
+                yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
                 yield _as_cf_artifact(
@@ -443,15 +442,15 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         reproducible_artifact_path=reproducible_artifact_path,
-                        **bunch.results.arguments))
+                        **bundle[1].arguments))
         else:
             local_source.add_must('num_masters', '1')
             local_source.add_must('nat_ami_mapping', gen_ami_mapping({"natami"}))
-            bunch = make_advanced_bunch(arguments,
-                                        [node_source, local_source],
-                                        template_name,
-                                        params)
-            yield from _as_artifact('{}-{}'.format(os_type, template_name), bunch)
+            bundle = make_advanced_bundle(arguments,
+                                          [node_source, local_source],
+                                          template_name,
+                                          params)
+            yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
 aws_simple_source = Source({
@@ -519,7 +518,7 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
     with logger.scope("Validating CloudFormation"):
         validate_cf(cloudformation)
 
-    yield from _as_artifact_and_pkg(variant_prefix, filename, ResultTuple(cloudformation, results))
+    yield from _as_artifact_and_pkg(variant_prefix, filename, (cloudformation, results))
 
 
 button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_full_s3_url}/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa

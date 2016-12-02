@@ -165,10 +165,7 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
         variant_cloudconfig['slave'],
         variant_cloudconfig['slave_public'])
 
-    return {
-        'arm': arm,
-        'results': results
-    }
+    return (arm, results)
 
 
 def master_list_arm_json(num_masters, varietal):
@@ -227,22 +224,22 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     master_list_source.add_must('master_list', master_list_arm_json(num_masters, varietal))
 
     if varietal == 'dcos':
-        dcos_template = gen_templates(
+        arm, results = gen_templates(
             gen_arguments,
             'azuredeploy',
             extra_sources=[master_list_source, azure_dcos_source])
     elif varietal == 'acs':
-        dcos_template = gen_templates(
+        arm, results = gen_templates(
             gen_arguments,
             'acs',
             extra_sources=[master_list_source, azure_acs_source])
     else:
         raise ValueError("Unknown Azure varietal specified")
 
-    yield {'packages': util.cluster_to_extra_packages(dcos_template['results'].cluster_packages)}
+    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
     yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
-        'local_content': dcos_template['arm'],
+        'local_content': arm,
         'content_type': 'application/json; charset=utf-8'
     }
 
