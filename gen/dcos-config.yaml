@@ -383,23 +383,6 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-metrics-config.yaml
-    content: |
-      collector:
-        http_profiler: false
-
-        node:
-          poll_period: 15
-
-        mesos_agent:
-          port: 5051
-          poll_period: 15
-          request_protocol: http
-
-      producers:
-        http:
-          port: 9000
-
   - path: /etc/adminrouter.env
     content: |
       ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
