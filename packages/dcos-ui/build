@@ -4,6 +4,7 @@ cd "/pkg/src/dcos-ui"
 
 npm install -g npm@3.9.1
 
+npm run preinstall
 npm install
 
 echo "module.exports = {};" > ./src/js/config/Config.dev.js
