@@ -3,11 +3,6 @@ import subprocess
 import pytest
 
 
-@pytest.fixture(scope='module')
-def noauth_cluster(cluster):
-    return cluster.get_user_session(None)
-
-
 def auth_enabled():
     out = subprocess.check_output([
         '/bin/bash', '-c',
@@ -38,7 +33,7 @@ def test_adminrouter_access_control_enforcement(cluster, noauth_cluster):
 
     # Test authentication with auth cookie instead of Authorization header.
     authcookie = {
-        'dcos-acs-auth-cookie': cluster.web_auth_default_user.auth_cookie}
+        'dcos-acs-auth-cookie': cluster.auth_user.auth_cookie}
     r = noauth_cluster.get(
         '/service/marathon/',
         cookies=authcookie)

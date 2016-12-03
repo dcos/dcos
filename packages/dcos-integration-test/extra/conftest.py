@@ -49,3 +49,8 @@ def vip_apps(cluster):
 @pytest.fixture(scope='session')
 def cluster():
     return make_cluster_fixture()
+
+
+@pytest.fixture(scope='session')
+def noauth_cluster(cluster):
+    return cluster.get_user_session(None)
