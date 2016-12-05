@@ -3,7 +3,7 @@
     "single_source" : {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "1e264ece1a69837d0b5da5e397852424f9b4a3eb",
-      "ref_origin": "master"
+      "ref": "f78f384f6a339182c29111639009f64ec0f1dd19",
+      "ref_origin": "1.9.x"
     }
 }
