@@ -13,8 +13,6 @@ import gen
 import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
-import release
-import release.storage
 from gen.internals import Source
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
@@ -167,10 +165,7 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
         variant_cloudconfig['slave'],
         variant_cloudconfig['slave_public'])
 
-    return {
-        'arm': arm,
-        'results': results
-    }
+    return (arm, results)
 
 
 def master_list_arm_json(num_masters, varietal):
@@ -229,22 +224,22 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     master_list_source.add_must('master_list', master_list_arm_json(num_masters, varietal))
 
     if varietal == 'dcos':
-        dcos_template = gen_templates(
+        arm, results = gen_templates(
             gen_arguments,
             'azuredeploy',
             extra_sources=[master_list_source, azure_dcos_source])
     elif varietal == 'acs':
-        dcos_template = gen_templates(
+        arm, results = gen_templates(
             gen_arguments,
             'acs',
             extra_sources=[master_list_source, azure_acs_source])
     else:
         raise ValueError("Unknown Azure varietal specified")
 
-    yield {'packages': util.cluster_to_extra_packages(dcos_template['results'].cluster_packages)}
+    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
     yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
-        'local_content': dcos_template['arm'],
+        'local_content': arm,
         'content_type': 'application/json; charset=utf-8'
     }
 
@@ -261,24 +256,29 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
 
     yield {
         'channel_path': 'azure.html',
-        'local_content': gen_buttons(build_name, reproducible_artifact_path, tag, commit),
+        'local_content': gen_buttons(
+            build_name,
+            reproducible_artifact_path,
+            tag,
+            commit,
+            next(iter(variant_arguments.values()))['azure_download_url']),
         'content_type': 'text/html; charset=utf-8'
     }
 
 
-def gen_buttons(build_name, reproducible_artifact_path, tag, commit):
+def gen_buttons(build_name, reproducible_artifact_path, tag, commit, download_url):
     '''
     Generate the button page, that is, "Deploy a cluster to Azure" page
     '''
     dcos_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
-            download_url=get_download_url(),
+            download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
             arm_template_name='dcos-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
     acs_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
-            download_url=get_download_url(),
+            download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
             arm_template_name='acs-{}master.azuredeploy.json'.format(x)))
         for x in [1, 3, 5]]
@@ -298,29 +298,3 @@ def encode_url_as_param(s):
     s = s.encode('utf8')
     s = urllib.parse.quote_plus(s)
     return s
-
-
-def get_download_url():
-    assert release._config is not None
-    # TODO: HACK. Stashing and pulling the config from release/__init__.py
-    # is definitely not the right way to do this.
-    # See also gen/build_deploy/aws.py#get_cloudformation_s3_url
-
-    if 'storage' not in release._config:
-        raise RuntimeError("No storage section in configuration")
-
-    if 'azure' not in release._config['storage']:
-        # No azure storage, inject a fake url for now so if people want to use
-        # the azure templates they know to come look here.
-        return "https://AZURE NOT CONFIGURED, ADD A storage.azure section to " \
-            "dcos-release.config.yaml to use the Azure templates"
-
-    if 'download_url' not in release._config['storage']['azure']:
-        raise RuntimeError("No download_url section in azure configuration")
-
-    download_url = release._config['storage']['azure']['download_url']
-
-    if not download_url.endswith('/'):
-        raise RuntimeError("Azure download_url must end with a '/'")
-
-    return download_url

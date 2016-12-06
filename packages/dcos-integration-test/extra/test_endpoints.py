@@ -1,3 +1,4 @@
+import ipaddress
 import urllib.parse
 
 import bs4
@@ -141,3 +142,92 @@ def test_if_we_have_capabilities(cluster):
     )
     assert r.status_code == 200
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
+
+
+def test_if_overlay_master_is_up(cluster):
+    r = cluster.get('/mesos/overlay-master/state')
+    assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
+
+    # Make sure the `dcos` overlay has been configured.
+    json = r.json()
+
+    dcos_overlay_network = {
+        'vtep_subnet': '44.128.0.0/20',
+        'vtep_mac_oui': '70:B3:D5:00:00:00',
+        'overlays': [
+            {
+                'name': 'dcos',
+                'subnet': '9.0.0.0/8',
+                'prefix': 24
+            }
+        ]
+    }
+
+    assert json['network'] == dcos_overlay_network
+
+
+def test_if_overlay_master_agent_is_up(cluster):
+    r = cluster.get('/mesos/overlay-agent/overlay')
+    assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
+
+    # Make sure the `dcos` overlay has been configured.
+    json = r.json()
+
+    assert 'overlays' in json
+    assert len(json['overlays']) == 1
+
+    # Remove 'subnet' from the dict.
+    try:
+        subnet = json['overlays'][0].pop('subnet')
+        try:
+            allocated_subnet = ipaddress.ip_network(subnet)
+            assert allocated_subnet.prefixlen == 24
+            assert allocated_subnet.overlaps(ipaddress.ip_network('9.0.0.0/8')),\
+                "Allocated subnet: {}".format(allocated_subnet)
+
+        except ValueError as ex:
+            raise AssertionError("Could not convert subnet(" + subnet + ") network address: " + str(ex)) from ex
+
+    except KeyError as ex:
+        raise AssertionError("Could not find key 'subnet':" + str(ex)) from ex
+
+    # Remove 'backend' from the dict.
+    try:
+        backend = json['overlays'][0].pop('backend')
+        # Make sure the backend has the right VNI.
+        vxlan = backend.pop('vxlan')
+
+        # Verify the VTEP IP is allocated from the right subnet.
+        vtep_ip = vxlan.pop('vtep_ip')
+        assert vtep_ip.startswith('44.128')
+        assert vtep_ip.endswith('/20')
+
+        # Verify OUI of the VTEP MAC.
+        vtep_mac = vxlan.pop('vtep_mac')
+        assert vtep_mac.startswith('70:b3:d5:')
+
+        expected_vxlan = {
+            'vni': 1024,
+            'vtep_name': 'vtep1024'
+        }
+        assert vxlan == expected_vxlan
+
+    except KeyError as ex:
+        raise AssertionError("Could not find key :" + str(ex)) from ex
+
+    # We can now compare the remainder of the overlay configured on
+    # the Master.
+    dcos_overlay_network = [
+        {
+            'info': {
+                'name': 'dcos',
+                'subnet': '9.0.0.0/8',
+                'prefix': 24
+            },
+            'state': {
+                'status': 'STATUS_OK'
+            }
+        }
+    ]
+
+    assert json['overlays'] == dcos_overlay_network

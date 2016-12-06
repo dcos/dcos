@@ -599,8 +599,6 @@ def mock_make_tar(result_filename, folder):
 def test_make_channel_artifacts(monkeypatch):
     logging.basicConfig(level=logging.DEBUG)
     monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
-    monkeypatch.setattr('gen.build_deploy.aws.get_cloudformation_s3_url', mock_get_cf_s3_url)
-    monkeypatch.setattr('gen.build_deploy.azure.get_download_url', mock_get_azure_download_url)
     monkeypatch.setattr('pkgpanda.util.make_tar.__code__', mock_make_tar.__code__)
 
     metadata = {
@@ -651,7 +649,9 @@ def test_make_channel_artifacts(monkeypatch):
             'aws': 'https://aws.example.com/',
             'azure': 'https://azure.example.com/'
         },
-        'repository_url': 'https://aws.example.com/r_path'
+        'repository_url': 'https://aws.example.com/r_path',
+        'cloudformation_s3_url_full': 'https://s3.foobar.com/biz/r_path/channel/commit/sha-1',
+        'azure_download_url': 'https://azure.example.com'
     }
 
     channel_artifacts = release.make_channel_artifacts(metadata)

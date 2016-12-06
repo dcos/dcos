@@ -3,8 +3,8 @@
 import json
 import logging
 import re
-from collections import namedtuple
 from copy import deepcopy
+from typing import Tuple
 
 import botocore.exceptions
 import yaml
@@ -230,8 +230,6 @@ groups = {
 
 AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
 
-ResultTuple = namedtuple('ResultTuple', ['cloudformation', 'results'])
-
 
 def get_test_session(config=None):
     if config is None:
@@ -262,21 +260,6 @@ def gen_ami_mapping(mappings):
             final[region][final_key] = amis[map_entry]
 
     return json.dumps(final, indent=4, sort_keys=True)
-
-
-def get_cloudformation_s3_url():
-    assert release._config is not None
-    # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-    # is definitely not the right way to do this.
-
-    if 'options' not in release._config:
-        raise RuntimeError("No options section in configuration")
-
-    if 'cloudformation_s3_url' not in release._config['options']:
-        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release._config['options']['cloudformation_s3_url']
 
 
 def transform(line):
@@ -342,9 +325,10 @@ def _as_cf_artifact(filename, cloudformation):
     }
 
 
-def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
-    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), gen_out.cloudformation)
-    yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
+def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
+    cloudformation, results = bundle
+    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
+    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
 
 
 def gen_supporting_template():
@@ -361,7 +345,7 @@ def gen_supporting_template():
             cloudformation)
 
 
-def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
+def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
     extra_templates = [
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
@@ -388,7 +372,9 @@ def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
         arguments=variant_args,
         extra_templates=extra_templates,
         cc_package_files=cc_package_files,
-        extra_sources=extra_sources + [aws_base_source])
+        extra_sources=extra_sources + [aws_base_source],
+        # TODO(cmaloney): Merge this with dcos_installer/backend.py::get_aws_advanced_target()
+        extra_targets=[gen.internals.Target(variables={'cloudformation_s3_url_full'})])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -416,24 +402,10 @@ def make_advanced_bunch(variant_args, extra_sources, template_name, cc_params):
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
-    return ResultTuple(cloudformation, results)
-
-
-def get_s3_url_prefix(arguments, reproducible_artifact_path) -> str:
-    assert reproducible_artifact_path, "reproducible_artifact_path must not be empty"
-    if 'cloudformation_s3_url' in arguments:
-        # Caller is `dcos_generate_config.sh --aws-cloudformation`
-        url = arguments['cloudformation_s3_url'] + '/cloudformation'
-        return url
-    else:
-        # Caller is release create
-        url = get_cloudformation_s3_url() + '/{}/cloudformation'.format(reproducible_artifact_path)
-        return url
+    return (cloudformation, results)
 
 
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
-    cloudformation_full_s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
-
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
         # without noticing (such as exhibitor_storage_backend)
@@ -448,8 +420,8 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
 
-        def _as_artifact(filename, gen_out):
-            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
+        def _as_artifact(filename, bundle):
+            yield from _as_artifact_and_pkg(variant_prefix, filename, bundle)
 
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
@@ -457,11 +429,11 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 print('Building {} {} for num_masters = {}'.format(os_type, node_type, num_masters))
                 num_masters_source = Source()
                 num_masters_source.add_must('num_masters', str(num_masters))
-                bunch = make_advanced_bunch(arguments,
-                                            [node_source, local_source, num_masters_source],
-                                            template_name,
-                                            params)
-                yield from _as_artifact('{}.json'.format(master_tk), bunch)
+                bundle = make_advanced_bundle(arguments,
+                                              [node_source, local_source, num_masters_source],
+                                              template_name,
+                                              params)
+                yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
                 yield _as_cf_artifact(
@@ -470,16 +442,15 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         reproducible_artifact_path=reproducible_artifact_path,
-                        cloudformation_full_s3_url=cloudformation_full_s3_url,
-                        **bunch.results.arguments))
+                        **bundle[1].arguments))
         else:
             local_source.add_must('num_masters', '1')
             local_source.add_must('nat_ami_mapping', gen_ami_mapping({"natami"}))
-            bunch = make_advanced_bunch(arguments,
-                                        [node_source, local_source],
-                                        template_name,
-                                        params)
-            yield from _as_artifact('{}-{}'.format(os_type, template_name), bunch)
+            bundle = make_advanced_bundle(arguments,
+                                          [node_source, local_source],
+                                          template_name,
+                                          params)
+            yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
 aws_simple_source = Source({
@@ -547,7 +518,7 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
     with logger.scope("Validating CloudFormation"):
         validate_cf(cloudformation)
 
-    yield from _as_artifact_and_pkg(variant_prefix, filename, ResultTuple(cloudformation, results))
+    yield from _as_artifact_and_pkg(variant_prefix, filename, (cloudformation, results))
 
 
 button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_full_s3_url}/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
@@ -571,7 +542,7 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arg
         button_line = ""
         for variant, arguments in variant_arguments.items():
             variant_prefix = pkgpanda.util.variant_prefix(variant)
-            s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
+            s3_url = arguments['cloudformation_s3_url_full']
             button_line += region_line_template.format(
                 region_name=region['name'],
                 region_id=region['id'],

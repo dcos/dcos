@@ -407,12 +407,24 @@ def make_channel_artifacts(metadata):
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
         with logger.scope("Creating {} deploy tools".format(module.__name__)):
+            # TODO(cmaloney): Cleanup by just having this make and pass another source.
+            module_specific_variant_arguments = copy.deepcopy(variant_arguments)
+            for arg_dict in module_specific_variant_arguments.values():
+                if module.__name__ == 'gen.build_deploy.aws':
+                    arg_dict['cloudformation_s3_url_full'] = metadata['cloudformation_s3_url_full']
+                elif module.__name__ == 'gen.build_deploy.azure':
+                    arg_dict['azure_download_url'] = metadata['azure_download_url']
+                elif module.__name__ == 'gen.build_deploy.bash':
+                    pass
+                else:
+                    raise NotImplementedError("Unknown how to add args to deploy tool: {}".format(module.__name__))
+
             for built_resource in module.do_create(
                     tag=metadata['tag'],
                     build_name=metadata['build_name'],
                     reproducible_artifact_path=metadata['reproducible_artifact_path'],
                     commit=metadata['commit'],
-                    variant_arguments=variant_arguments,
+                    variant_arguments=module_specific_variant_arguments,
                     all_bootstraps=metadata["all_bootstraps"]):
 
                 assert isinstance(built_resource, dict), built_resource
@@ -543,7 +555,32 @@ def do_build_packages(cache_repository_url):
     return result
 
 
-def set_repository_metadata(repository, metadata, storage_providers, preferred_provider):
+def get_azure_download_url(config) -> str:
+    # TODO: HACK. Stashing and pulling the config from release/__init__.py
+    # is definitely not the right way to do this.
+    # See also gen/build_deploy/aws.py#get_cloudformation_s3_url
+
+    if 'storage' not in config:
+        raise RuntimeError("No storage section in configuration")
+
+    if 'azure' not in config['storage']:
+        # No azure storage, inject a fake url for now so if people want to use
+        # the azure templates they know to come look here.
+        return "https://AZURE NOT CONFIGURED, ADD A storage.azure section to " \
+            "dcos-release.config.yaml to use the Azure templates"
+
+    if 'download_url' not in config['storage']['azure']:
+        raise RuntimeError("No download_url section in azure configuration")
+
+    download_url = config['storage']['azure']['download_url']
+
+    if not download_url.endswith('/'):
+        raise RuntimeError("Azure download_url must end with a '/'")
+
+    return download_url
+
+
+def set_repository_metadata(repository, metadata, storage_providers, preferred_provider, config) -> None:
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
     metadata['build_name'] = repository.path_channel_prefix[:-1]
@@ -552,8 +589,17 @@ def set_repository_metadata(repository, metadata, storage_providers, preferred_p
     for name, store in storage_providers.items():
         metadata['storage_urls'][name] = store.url
 
-    # Explicitly returning none since we modify in place
-    return None
+    if 'options' not in config:
+        raise RuntimeError("No options section in configuration")
+
+    if 'cloudformation_s3_url' not in config['options']:
+        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
+
+    # TODO(cmaloney): get_session shouldn't live in release.storage
+    metadata['cloudformation_s3_url_full'] = config['options']['cloudformation_s3_url'] + \
+        '/{}/cloudformation'.format(metadata['reproducible_artifact_path'])
+
+    metadata['azure_download_url'] = get_azure_download_url(config)
 
 
 def call_matching_arguments(function, arguments, allow_unused=False):
@@ -710,7 +756,8 @@ class ReleaseManager():
         self.fetch_key_artifacts(metadata)
 
         repository = Repository(destination_repository, destination_channel, 'commit/{}'.format(metadata['commit']))
-        set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
+        set_repository_metadata(
+            repository, metadata, self.__storage_providers, self.__preferred_provider, self.__config)
         assert 'tag' in metadata
         del metadata['channel_artifacts']
 
@@ -757,7 +804,8 @@ class ReleaseManager():
             assert bootstrap_active_packages <= set(info['packages'])
 
         repository = Repository(repository_path, channel, 'commit/{}'.format(metadata['commit']))
-        set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
+        set_repository_metadata(
+            repository, metadata, self.__storage_providers, self.__preferred_provider, self.__config)
         metadata['tag'] = tag
         assert 'channel_artifacts' not in metadata
 
@@ -834,8 +882,8 @@ def main():
         sys.exit(1)
 
     try:
-        # TODO(cmaloney): HACK. This is so we can get to the config for aws
-        # inside gen/build_deploy/aws.py
+        # TODO(cmaloney): HACK. This is so we can get to the config for aws and azure template
+        # testing inside gen/build_deploy/{aws,azure}.py
         global _config
         config = load_config(options.config)
         _config = config

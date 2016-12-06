@@ -19,7 +19,7 @@ import os.path
 import textwrap
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
-from typing import Dict, List
+from typing import List
 
 import yaml
 
@@ -365,13 +365,27 @@ def validate(
         cc_package_files=list(),
         extra_sources=list()):
     sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates, extra_sources)
-    return gen.internals.resolve_configuration(sources, targets, arguments).status_dict
+    return gen.internals.resolve_configuration(sources, targets).status_dict
+
+
+def user_arguments_to_source(user_arguments) -> gen.internals.Source:
+    """Convert all user arguments to be a gen.internals.Source"""
+
+    # Make sure all user provided arguments are strings.
+    # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
+    # as they all have a gen specific string form.
+    gen.internals.validate_arguments_strings(user_arguments)
+
+    user_source = gen.internals.Source(is_user=True)
+    for name, value in user_arguments.items():
+        user_source.add_must(name, value)
+    return user_source
 
 
 # TODO(cmaloney): This function should disolve away like the ssh one is and just become a big
 # static dictonary or pass in / construct on the fly at the various template callsites.
 def get_dcosconfig_source_target_and_templates(
-        user_arguments: Dict[str, str],
+        user_arguments: dict,
         extra_templates: List[str],
         extra_sources: List[gen.internals.Source]):
     log.info("Generating configuration files...")
@@ -408,7 +422,7 @@ def get_dcosconfig_source_target_and_templates(
     def add_builtin(name, value):
         base_source.add_must(name, json_prettyprint(value))
 
-    sources = [base_source] + extra_sources
+    sources = [base_source, user_arguments_to_source(user_arguments)] + extra_sources
 
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
@@ -434,7 +448,8 @@ def generate(
         arguments,
         extra_templates=list(),
         cc_package_files=list(),
-        extra_sources=list()):
+        extra_sources=list(),
+        extra_targets=list()):
     # To maintain the old API where we passed arguments rather than the new name.
     user_arguments = arguments
     arguments = None
@@ -443,7 +458,7 @@ def generate(
         user_arguments, extra_templates, extra_sources)
 
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
-    resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
+    resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
     status = resolver.status_dict
 
     if status['status'] == 'errors':
