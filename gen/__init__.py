@@ -19,6 +19,7 @@ import os.path
 import textwrap
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
+from typing import List
 
 import yaml
 
@@ -27,6 +28,7 @@ import gen.internals
 import gen.template
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
+from pkgpanda.build import hash_checkout
 from pkgpanda.util import json_prettyprint, load_string, make_tar, write_json
 
 # List of all roles all templates should have.
@@ -216,7 +218,7 @@ def render_templates(template_dict, arguments):
                 assert len(templates) == 1
                 full_template = rendered_template
                 continue
-            template_data = yaml.load(rendered_template)
+            template_data = yaml.safe_load(rendered_template)
 
             if full_template:
                 full_template = merge_dictionaries(full_template, template_data)
@@ -360,14 +362,32 @@ def validate_all_arguments_match_parameters(parameters, setters, arguments):
 def validate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list()):
-    sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates)
-    return gen.internals.resolve_configuration(sources, targets, arguments).status_dict
+        cc_package_files=list(),
+        extra_sources=list()):
+    sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates, extra_sources)
+    return gen.internals.resolve_configuration(sources, targets).status_dict
+
+
+def user_arguments_to_source(user_arguments) -> gen.internals.Source:
+    """Convert all user arguments to be a gen.internals.Source"""
+
+    # Make sure all user provided arguments are strings.
+    # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
+    # as they all have a gen specific string form.
+    gen.internals.validate_arguments_strings(user_arguments)
+
+    user_source = gen.internals.Source(is_user=True)
+    for name, value in user_arguments.items():
+        user_source.add_must(name, value)
+    return user_source
 
 
 # TODO(cmaloney): This function should disolve away like the ssh one is and just become a big
 # static dictonary or pass in / construct on the fly at the various template callsites.
-def get_dcosconfig_source_target_and_templates(user_arguments, extra_templates: list):
+def get_dcosconfig_source_target_and_templates(
+        user_arguments: dict,
+        extra_templates: List[str],
+        extra_sources: List[gen.internals.Source]):
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
@@ -402,6 +422,8 @@ def get_dcosconfig_source_target_and_templates(user_arguments, extra_templates: 
     def add_builtin(name, value):
         base_source.add_must(name, json_prettyprint(value))
 
+    sources = [base_source, user_arguments_to_source(user_arguments)] + extra_sources
+
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
@@ -415,28 +437,34 @@ def get_dcosconfig_source_target_and_templates(user_arguments, extra_templates: 
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
     add_builtin('expanded_config', temporary_str)
 
-    return [base_source], targets, templates
+    # Note: must come last so the hash of the "base_source" this is beign added to contains all the
+    # variables but this.
+    add_builtin('sources_id', hash_checkout([hash_checkout(source.make_id()) for source in sources]))
+
+    return sources, targets, templates
 
 
 def generate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list()):
+        cc_package_files=list(),
+        extra_sources=list(),
+        extra_targets=list()):
     # To maintain the old API where we passed arguments rather than the new name.
     user_arguments = arguments
     arguments = None
 
-    sources, targets, templates = get_dcosconfig_source_target_and_templates(user_arguments, extra_templates)
+    sources, targets, templates = get_dcosconfig_source_target_and_templates(
+        user_arguments, extra_templates, extra_sources)
 
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
-    resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
+    resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
     status = resolver.status_dict
 
     if status['status'] == 'errors':
         raise ValidationError(errors=status['errors'], unset=status['unset'])
 
     argument_dict = {k: v.value for k, v in resolver.arguments.items()}
-    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
@@ -445,6 +473,7 @@ def generate(
     # Explicitly / manaully setup so that it'll fit where we want it.
     # TODO(cmaloney): Make this late-bound by gen.internals
     argument_dict['expanded_config'] = textwrap.indent(json_prettyprint(argument_dict), prefix='  ' * 3)
+    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # Fill in the template parameters
     # TODO(cmaloney): render_templates should ideally take the template targets.

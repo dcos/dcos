@@ -9,8 +9,7 @@ from subprocess import check_output
 
 import yaml
 
-import gen.aws.calc
-import gen.azure.calc
+import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
 from pkgpanda.build import hash_checkout
@@ -217,7 +216,7 @@ def calculate_use_mesos_hooks(mesos_hooks):
 
 
 def validate_oauth_enabled(oauth_enabled):
-    # Should correspond with oauth_enabled in gen/azure/calc.py
+    # Should correspond with oauth_enabled in Azure
     if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
         return
     validate_true_false(oauth_enabled)
@@ -305,11 +304,11 @@ def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
 
 
-def calculate_config_id(dcos_image_commit, user_arguments, template_filenames):
+def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
     return hash_checkout({
         "commit": dcos_image_commit,
-        "user_arguments": json.loads(user_arguments),
-        "template_filenames": json.loads(template_filenames)})
+        "template_filenames": json.loads(template_filenames),
+        "sources_id": sources_id})
 
 
 def calculate_cluster_packages(package_names, config_id):
@@ -574,19 +573,6 @@ entry = {
             'static': {
                 'must': {'num_masters': calc_num_masters}
             }
-        },
-        'provider': {
-            'onprem': {
-                'default': {
-                    'resolvers': '["8.8.8.8", "8.8.4.4"]',
-                    'ip_detect_filename': 'genconf/ip-detect',
-                    'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
-                    'enable_docker_gc': 'false',
-                },
-            },
-            'azure': gen.azure.calc.entry,
-            'aws': gen.aws.calc.entry,
-            'other': {}
         },
         'rexray_config_preset': {
             '': {},

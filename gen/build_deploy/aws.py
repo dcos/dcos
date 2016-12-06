@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from copy import deepcopy
+from typing import Tuple
 
 import botocore.exceptions
 import yaml
@@ -15,7 +16,46 @@ import gen.build_deploy.util as util
 import pkgpanda.util
 import release
 import release.storage
+from gen.internals import Source
 from pkgpanda.util import logger
+
+
+def get_ip_detect(name):
+    return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
+
+
+def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
+    return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
+
+
+aws_base_source = Source(entry={
+    'default': {
+        'resolvers': '["169.254.169.253"]',
+        'num_private_slaves': '5',
+        'num_public_slaves': '1',
+        'os_type': '',
+        'aws_masters_have_public_ip': 'true',
+        'enable_docker_gc': 'true'
+    },
+    'must': {
+        'aws_region': '{ "Ref" : "AWS::Region" }',
+        'ip_detect_contents': get_ip_detect('aws'),
+        'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'exhibitor_explicit_keys': 'false',
+        'cluster_name': '{ "Ref" : "AWS::StackName" }',
+        'master_discovery': 'master_http_loadbalancer',
+        # The cloud_config template variables pertaining to "cloudformation.json"
+        'master_cloud_config': '{{ master_cloud_config }}',
+        'agent_private_cloud_config': '{{ slave_cloud_config }}',
+        'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
+        'master_external_loadbalancer': '{ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }',
+        # template variable for the generating advanced template cloud configs
+        'cloud_config': '{{ cloud_config }}',
+        'oauth_available': 'true',
+        'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
+        'rexray_config_preset': 'aws'
+    }
+})
 
 aws_region_names = [
     {
@@ -154,33 +194,38 @@ cf_instance_groups = {
     }
 }
 
+# TODO(cmaloney): this and cf_instance_groups should be the _same_ dictionary
+# this just being accessing the report-name key.
+aws_advanced_report_names = {
+    'master': 'MasterServerGroup',
+    'pub-agent': 'PublicAgentServerGroup',
+    'priv-agent': 'PrivateAgentServerGroup'
+}
+
 groups = {
     'master': (
-        'master', {
-            'report_name': 'MasterServerGroup',
+        'master', Source(entry={'must': {
             's3_bucket': '{ "Ref" : "ExhibitorS3Bucket" }',
             's3_prefix': '{ "Ref" : "AWS::StackName" }',
             'exhibitor_storage_backend': 'aws_s3',
             'master_role': '{ "Ref" : "MasterRole" }',
             'agent_role': '',
             'exhibitor_address': '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }',
-        }),
+        }})),
     'pub-agent': (
-        'slave_public', {
-            'report_name': 'PublicAgentServerGroup',
+        'slave_public', Source(entry={'must': {
             'master_role': '',
             'agent_role': '{ "Ref" : "PublicAgentRole" }',
             'exhibitor_storage_backend': 'agent_only_group_no_exhibitor',
             'exhibitor_address': '{ "Ref" : "InternalMasterLoadBalancerDnsName" }',
-        }),
+        }})),
     'priv-agent': (
-        'slave', {
-            'report_name': 'PrivateAgentServerGroup',
+        'slave', Source(entry={'must': {
             'master_role': '',
             'agent_role': '{ "Ref" : "PrivateAgentRole" }',
             'exhibitor_storage_backend': 'agent_only_group_no_exhibitor',
             'exhibitor_address': '{ "Ref" : "InternalMasterLoadBalancerDnsName" }',
-        })
+        }}))
 }
 
 AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
@@ -215,21 +260,6 @@ def gen_ami_mapping(mappings):
             final[region][final_key] = amis[map_entry]
 
     return json.dumps(final, indent=4, sort_keys=True)
-
-
-def get_cloudformation_s3_url():
-    assert release._config is not None
-    # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-    # is definitely not the right way to do this.
-
-    if 'options' not in release._config:
-        raise RuntimeError("No options section in configuration")
-
-    if 'cloudformation_s3_url' not in release._config['options']:
-        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release._config['options']['cloudformation_s3_url']
 
 
 def transform(line):
@@ -295,9 +325,10 @@ def _as_cf_artifact(filename, cloudformation):
     }
 
 
-def _as_artifact_and_pkg(variant_prefix, filename, gen_out):
-    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), gen_out.cloudformation)
-    yield {'packages': util.cluster_to_extra_packages(gen_out.results.cluster_packages)}
+def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
+    cloudformation, results = bundle
+    yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
+    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
 
 
 def gen_supporting_template():
@@ -314,7 +345,7 @@ def gen_supporting_template():
             cloudformation)
 
 
-def make_advanced_bunch(variant_args, template_name, cc_params):
+def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
     extra_templates = [
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
@@ -340,7 +371,10 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     results = gen.generate(
         arguments=variant_args,
         extra_templates=extra_templates,
-        cc_package_files=cc_package_files)
+        cc_package_files=cc_package_files,
+        extra_sources=extra_sources + [aws_base_source],
+        # TODO(cmaloney): Merge this with dcos_installer/backend.py::get_aws_advanced_target()
+        extra_targets=[gen.internals.Target(variables={'cloudformation_s3_url_full'})])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -350,7 +384,7 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     cc_variant = deepcopy(cloud_config)
     cc_variant = results.utils.add_units(
         cc_variant,
-        yaml.load(gen.template.parse_str(late_services).render(cc_params)),
+        yaml.safe_load(gen.template.parse_str(late_services).render(cc_params)),
         cloud_init_implementation)
 
     # Add roles
@@ -368,54 +402,38 @@ def make_advanced_bunch(variant_args, template_name, cc_params):
     print("Validating CloudFormation: {}".format(template_name))
     validate_cf(cloudformation)
 
-    return gen.Bunch({
-        'cloudformation': cloudformation,
-        'results': results
-    })
-
-
-def get_s3_url_prefix(arguments, reproducible_artifact_path) -> str:
-    assert reproducible_artifact_path, "reproducible_artifact_path must not be empty"
-    if 'cloudformation_s3_url' in arguments:
-        # Caller is `dcos_generate_config.sh --aws-cloudformation`
-        url = arguments['cloudformation_s3_url'] + '/cloudformation'
-        return url
-    else:
-        # Caller is release create
-        url = get_cloudformation_s3_url() + '/{}/cloudformation'.format(reproducible_artifact_path)
-        return url
+    return (cloudformation, results)
 
 
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
-    cloudformation_full_s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
-
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
         # without noticing (such as exhibitor_storage_backend)
-        node_template_id, node_args = groups[node_type]
-        node_args = deepcopy(node_args)
-        node_args.update(arguments)
-        node_args['os_type'] = os_type
-        node_args['region_to_ami_mapping'] = gen_ami_mapping({"coreos", "el7"})
+        node_template_id, node_source = groups[node_type]
+        local_source = Source()
+        local_source.add_must('os_type', os_type)
+        local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7"}))
         params = deepcopy(cf_instance_groups[node_template_id])
-        params['report_name'] = node_args.pop('report_name')
+        params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
         params['node_type'] = node_type
         template_key = 'advanced-{}'.format(node_type)
         template_name = template_key + '.json'
 
-        def _as_artifact(filename, gen_out):
-            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
+        def _as_artifact(filename, bundle):
+            yield from _as_artifact_and_pkg(variant_prefix, filename, bundle)
 
         if node_type == 'master':
             for num_masters in [1, 3, 5, 7]:
                 master_tk = '{}-{}-{}'.format(os_type, template_key, num_masters)
                 print('Building {} {} for num_masters = {}'.format(os_type, node_type, num_masters))
-                node_args['num_masters'] = str(num_masters)
-                bunch = make_advanced_bunch(node_args,
-                                            template_name,
-                                            params)
-                yield from _as_artifact('{}.json'.format(master_tk), bunch)
+                num_masters_source = Source()
+                num_masters_source.add_must('num_masters', str(num_masters))
+                bundle = make_advanced_bundle(arguments,
+                                              [node_source, local_source, num_masters_source],
+                                              template_name,
+                                              params)
+                yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
                 yield _as_cf_artifact(
@@ -424,18 +442,32 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                         resource_string("gen", "aws/templates/advanced/zen.json").decode(),
                         variant_prefix=variant_prefix,
                         reproducible_artifact_path=reproducible_artifact_path,
-                        cloudformation_full_s3_url=cloudformation_full_s3_url,
-                        **bunch.results.arguments))
+                        **bundle[1].arguments))
         else:
-            node_args['num_masters'] = "1"
-            node_args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
-            bunch = make_advanced_bunch(node_args,
-                                        template_name,
-                                        params)
-            yield from _as_artifact('{}-{}'.format(os_type, template_name), bunch)
+            local_source.add_must('num_masters', '1')
+            local_source.add_must('nat_ami_mapping', gen_ami_mapping({"natami"}))
+            bundle = make_advanced_bundle(arguments,
+                                          [node_source, local_source],
+                                          template_name,
+                                          params)
+            yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
-def gen_templates(arguments):
+aws_simple_source = Source({
+    'must': {
+        'exhibitor_address': '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }',
+        's3_bucket': '{ "Ref" : "ExhibitorS3Bucket" }',
+        'exhibitor_storage_backend': 'aws_s3',
+        'master_role': '{ "Ref" : "MasterRole" }',
+        'agent_role': '{ "Ref" : "SlaveRole" }',
+        's3_prefix': '{ "Ref" : "AWS::StackName" }',
+        'region_to_ami_mapping': gen_ami_mapping({"stable"}),
+        'nat_ami_mapping': gen_ami_mapping({"natami"})
+    }
+})
+
+
+def gen_simple_template(variant_prefix, filename, arguments, extra_source):
     results = gen.generate(
         arguments=arguments,
         extra_templates=[
@@ -450,7 +482,8 @@ def gen_templates(arguments):
             '/etc/dns_config',
             '/etc/exhibitor',
             '/etc/mesos-master-provider',
-            '/etc/extra_master_addresses'])
+            '/etc/extra_master_addresses'],
+        extra_sources=[aws_base_source, aws_simple_source, extra_source])
 
     cloud_config = results.templates['cloud-config.yaml']
 
@@ -465,7 +498,7 @@ def gen_templates(arguments):
         # Specialize the dcos-cfn-signal service
         cc_variant = results.utils.add_units(
             cc_variant,
-            yaml.load(gen.template.parse_str(late_services).render(params)))
+            yaml.safe_load(gen.template.parse_str(late_services).render(params)))
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])
@@ -485,10 +518,7 @@ def gen_templates(arguments):
     with logger.scope("Validating CloudFormation"):
         validate_cf(cloudformation)
 
-    return gen.Bunch({
-        'cloudformation': cloudformation,
-        'results': results
-    })
+    yield from _as_artifact_and_pkg(variant_prefix, filename, (cloudformation, results))
 
 
 button_template = "<a href='https://console.aws.amazon.com/cloudformation/home?region={region_id}#/stacks/new?templateURL={cloudformation_full_s3_url}/{template_name}.cloudformation.json'><img src='https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png' alt='Launch stack button'></a>"  # noqa
@@ -512,7 +542,7 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, variant_arg
         button_line = ""
         for variant, arguments in variant_arguments.items():
             variant_prefix = pkgpanda.util.variant_prefix(variant)
-            s3_url = get_s3_url_prefix(arguments, reproducible_artifact_path)
+            s3_url = arguments['cloudformation_s3_url_full']
             button_line += region_line_template.format(
                 region_name=region['name'],
                 region_id=region['id'],
@@ -536,32 +566,22 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
     # Generate the single-master and multi-master templates.
 
     for bootstrap_variant, variant_base_args in variant_arguments.items():
-        # Setup base arguments
-        args = deepcopy(variant_base_args)
-        args['exhibitor_address'] = '{ "Fn::GetAtt" : [ "InternalMasterLoadBalancer", "DNSName" ] }'
-        args['s3_bucket'] = '{ "Ref" : "ExhibitorS3Bucket" }'
-        args['s3_prefix'] = '{ "Ref" : "AWS::StackName" }'
-        args['exhibitor_storage_backend'] = 'aws_s3'
-        args['master_role'] = '{ "Ref" : "MasterRole" }'
-        args['agent_role'] = '{ "Ref" : "SlaveRole" }'
-        args['region_to_ami_mapping'] = gen_ami_mapping({"stable"})
-        args['nat_ami_mapping'] = gen_ami_mapping({"natami"})
-
         variant_prefix = pkgpanda.util.variant_prefix(bootstrap_variant)
 
-        def make(gen_args, filename):
-            gen_out = gen_templates(gen_args)
-            yield from _as_artifact_and_pkg(variant_prefix, filename, gen_out)
+        def make(num_masters, filename):
+            num_masters_source = Source()
+            num_masters_source.add_must('num_masters', str(num_masters))
+            yield from gen_simple_template(
+                variant_prefix,
+                filename,
+                variant_base_args,
+                num_masters_source)
 
         # Single master templates
-        single_args = deepcopy(args)
-        single_args['num_masters'] = "1"
-        yield from make(single_args, 'single-master.cloudformation.json')
+        yield from make(1, 'single-master.cloudformation.json')
 
         # Multi master templates
-        multi_args = deepcopy(args)
-        multi_args['num_masters'] = "3"
-        yield from make(multi_args, 'multi-master.cloudformation.json')
+        yield from make(3, 'multi-master.cloudformation.json')
 
         # Advanced templates
         for os_type in ['coreos', 'el7']:

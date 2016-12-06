@@ -11,6 +11,7 @@ import requests
 import yaml
 from retrying import retry
 
+from pkgpanda.util import load_yaml
 from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnelled
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
@@ -164,8 +165,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         if zk_host:
             payload['exhibitor_zk_hosts'] = zk_host
         if add_config_path:
-            with open(add_config_path, 'r') as fh:
-                add_config = yaml.load(fh)
+            add_config = load_yaml(add_config_path)
             payload.update(add_config)
         response = requests.post(self.url + '/api/v1/configure', headers=headers, data=json.dumps(payload))
         assert response.status_code == 200, "{} {}".format(response.status_code, response.content)
@@ -323,8 +323,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
         else:
             test_config['exhibitor_storage_backend'] = 'static'
         if add_config_path:
-            with open(add_config_path, 'r') as fh:
-                add_config = yaml.load(fh)
+            add_config = load_yaml(add_config_path)
             test_config.update(add_config)
         with open('config.yaml', 'w') as config_fh:
             config_fh.write(yaml.dump(test_config))

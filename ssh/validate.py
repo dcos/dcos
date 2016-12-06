@@ -68,7 +68,8 @@ def get_target():
 # and the couple places that need this can just make a trivial call directly.
 def validate_config(user_arguments):
     user_arguments = gen.stringify_configuration(user_arguments)
-    messages = gen.internals.resolve_configuration([source], [get_target()], user_arguments).status_dict
+    user_source = gen.user_arguments_to_source(user_arguments)
+    messages = gen.internals.resolve_configuration([source, user_source], [get_target()]).status_dict
     if messages['status'] == 'ok':
         return {}
 

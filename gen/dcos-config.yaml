@@ -315,6 +315,10 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
+  - path: /etc/dcos-log-config.json
+    content: |
+      {
+      }
 {% switch use_mesos_hooks %}
 {% case "true" %}
       MESOS_HOOKS={{ mesos_hooks }}

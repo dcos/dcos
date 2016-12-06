@@ -14,6 +14,7 @@ from subprocess import check_call
 
 import requests
 import teamcity
+import yaml
 from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
@@ -125,6 +126,18 @@ def load_json(filename):
             return json.load(f)
     except ValueError as ex:
         raise ValueError("Invalid JSON in {0}: {1}".format(filename, ex)) from ex
+
+
+class YamlParseError(Exception):
+    pass
+
+
+def load_yaml(filename):
+    try:
+        with open(filename) as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as ex:
+        raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
 
 
 def make_file(name):

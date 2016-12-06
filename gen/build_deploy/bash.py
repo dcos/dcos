@@ -10,7 +10,23 @@ import py
 import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.util
+from gen.calc import calculate_environment_variable
+from gen.internals import Source
 from pkgpanda.util import logger
+
+
+onprem_source = Source(entry={
+    'default': {
+        'resolvers': '["8.8.8.8", "8.8.4.4"]',
+        'ip_detect_filename': 'genconf/ip-detect',
+        'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
+        'enable_docker_gc': 'false',
+    },
+    'must': {
+        'provider': 'onprem'
+    }
+})
+
 
 file_template = """mkdir -p `dirname {filename}`
 cat <<'EOF' > "{filename}"

@@ -1,6 +1,5 @@
 {
   "requires": ["exhibitor"],
-  "docker": "golang:1.7",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/3dt.git",

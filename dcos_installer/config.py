@@ -6,7 +6,8 @@ import yaml
 
 import gen
 import ssh.validate
-from pkgpanda.util import write_string
+from gen.build_deploy.bash import onprem_source
+from pkgpanda.util import load_yaml, write_string, YamlParseError
 
 log = logging.getLogger(__name__)
 
@@ -44,9 +45,6 @@ def normalize_config_validation(messages):
     return validation
 
 
-extra_args = {'provider': 'onprem'}
-
-
 def make_default_config_if_needed(config_path):
     if os.path.exists(config_path):
         return
@@ -75,14 +73,15 @@ class Config():
             return {}
 
         try:
-            with open(self.config_path) as f:
-                return yaml.load(f)
+            return load_yaml(self.config_path)
         except FileNotFoundError as ex:
             raise NoConfigError(
                 "No config file found at {}. See the DC/OS documentation for the "
                 "available configuration options. You can also use the GUI web installer (--web),"
                 "which provides a guided configuration and installation for simple "
                 "deployments.".format(self.config_path)) from ex
+        except YamlParseError as ex:
+            raise NoConfigError("Unable to load configuration file. {}".format(ex)) from ex
 
     def update(self, updates):
         # TODO(cmaloney): check that the updates are all for valid keys, keep
@@ -93,27 +92,25 @@ class Config():
     # TODO(cmaloney): Figure out a way for the installer being generated (Advanced AWS CF templates vs.
     # bash) to automatically set this in gen.generate rather than having to merge itself.
     def as_gen_format(self):
-        config = copy.copy(self._config)
-        config.update({'provider': 'onprem'})
-        return gen.stringify_configuration(config)
+        return gen.stringify_configuration(self._config)
 
     def do_validate(self, include_ssh):
         user_arguments = self.as_gen_format()
-        sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [])
-
+        extra_sources = [onprem_source]
+        extra_targets = []
         if include_ssh:
-            sources.append(ssh.validate.source)
-            targets.append(ssh.validate.get_target())
+            extra_sources.append(ssh.validate.source)
+            extra_targets.append(ssh.validate.get_target())
 
-        resolver = gen.internals.resolve_configuration(sources, targets, user_arguments)
+        sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [], extra_sources)
+        targets = targets + extra_targets
+
+        resolver = gen.internals.resolve_configuration(sources, targets)
         # TODO(cmaloney): kill this function and make the API return the structured
         # results api as was always intended rather than the flattened / lossy other
         # format. This will be an  API incompatible change. The messages format was
         # specifically so that there wouldn't be this sort of API incompatibility.
         return normalize_config_validation(resolver.status_dict)
-
-    def do_gen_configure(self):
-        return gen.generate(self.as_gen_format())
 
     def get_yaml_str(self):
         return yaml.dump(self._config, default_flow_style=False, explicit_start=True)
