@@ -232,6 +232,20 @@ def validate_oauth_enabled(oauth_enabled):
     validate_true_false(oauth_enabled)
 
 
+def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError:
+        # TODO(cmaloney): This is not the right form to do this
+        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
+
+    overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
+
+    if dcos_overlay_network_default_name not in overlay_names:
+        assert False, "Default overlay network name does not reference a defined overlay network: {}".format(
+            dcos_overlay_network_default_name)
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -533,6 +547,8 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_default_name, dcos_overlay_network:
+            validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
         lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
