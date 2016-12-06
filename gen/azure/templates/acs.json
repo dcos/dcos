@@ -77,8 +77,6 @@
     },
     "agentVMSize": {
       "allowedValues": [
-        "Standard_A0",
-        "Standard_A1",
         "Standard_A2",
         "Standard_A3",
         "Standard_A4",
@@ -343,12 +341,6 @@
     "osImageVersion": "[variables('linuxVersion')]",
     "virtualNetworkName": "[concat(variables('orchestratorName'), '-vnet-', variables('nameSuffix'))]",
     "vmSizesMap": {
-      "Standard_A0": {
-        "storageAccountType": "Standard_LRS"
-      },
-      "Standard_A1": {
-        "storageAccountType": "Standard_LRS"
-      },
       "Standard_A10": {
         "storageAccountType": "Standard_LRS"
       },
@@ -494,7 +486,6 @@
     "agentPrivateAddressPrefix": "10.32.0.0/11",
     "agentPublicSubnetName": "[concat(variables('orchestratorName'), '-agentPublicSubnet')]",
     "agentPrivateSubnetName": "[concat(variables('orchestratorName'), '-agentPrivateSubnet')]",
-    "storageAccountType": "Standard_LRS",
     "storageAccountPrefixes": [
       "0","6","c","i","o","u","1","7","d","j","p","v",
       "2","8","e","k","q","w","3","9","f","l","r","x",
@@ -589,7 +580,7 @@
     "enableNewStorageAccountNaming": "[parameters('enableNewStorageAccountNaming')]",
     "masterSizes": [
       "Standard_D2",
-      "Standard_A1"
+      "Standard_A2"
     ]
 {% switch oauth_available %}
 {% case "true" %}
