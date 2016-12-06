@@ -3,7 +3,7 @@ import inspect
 import logging
 from contextlib import contextmanager
 from functools import partial, partialmethod
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 from gen.exceptions import ValidationError
 from pkgpanda.build import hash_checkout
@@ -271,7 +271,7 @@ class Source:
 # NOTE: This exception should never escape the Resolver
 class CalculatorError(Exception):
 
-    def __init__(self, message: str, chain: Optional[list]):
+    def __init__(self, message: str, chain: list = None):
         if chain is None:
             chain = list()
         self.message = message
