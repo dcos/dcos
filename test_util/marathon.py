@@ -225,7 +225,7 @@ class Marathon(ApiClient):
         timeout = 120
 
         r = self.post('v2/pods', json=pod_definition)
-        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
@@ -267,7 +267,7 @@ class Marathon(ApiClient):
                         retry_on_exception=lambda x: False)
         def _destroy_pod_complete(deployment_id):
             r = self.get('v2/deployments')
-            assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+            assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
@@ -277,7 +277,7 @@ class Marathon(ApiClient):
             return True
 
         r = self.delete('v2/pods' + pod_id)
-        assert r.ok, 'status_code: {} body: {}'.format(r.status_code, r.body)
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
 
         try:
             _destroy_pod_complete(r.headers['Marathon-Deployment-Id'])
