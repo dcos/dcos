@@ -31,7 +31,7 @@ def test_log_text(cluster):
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 lines
-        lines = filter(lambda x: x != '', response.content.decode().split('\n'))
+        lines = filter(lambda x: x != '', response.content.decode('utf-8', 'ignore').split('\n'))
         assert len(list(lines)) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
@@ -46,7 +46,7 @@ def test_log_server_sent_events(cluster):
     for node in cluster.masters + cluster.all_slaves:
         response = cluster.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
-        validate_sse_entry(response.content.decode())
+        validate_sse_entry(response.content.decode('utf-8', 'ignore'))
 
 
 def test_stream(cluster):
@@ -57,7 +57,7 @@ def test_stream(cluster):
         lines = response.iter_lines()
         sse_id = next(lines)
         assert sse_id, 'First line must be id. Got {}'.format(sse_id)
-        data = next(lines).decode()
+        data = next(lines).decode('utf-8', 'ignore')
         validate_sse_entry(data)
 
 
@@ -71,5 +71,5 @@ def test_log_proxy(cluster):
     for slave_id in slaves_ids:
         response = cluster.get('/system/v1/agent/{}/logs/v1/range/?skip_prev=10'.format(slave_id))
         check_response_ok(response, {'Content-Type': 'text/plain'})
-        lines = filter(lambda x: x != '', response.content.decode().split('\n'))
+        lines = filter(lambda x: x != '', response.content.decode('utf-8', 'ignore').split('\n'))
         assert len(list(lines)) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
