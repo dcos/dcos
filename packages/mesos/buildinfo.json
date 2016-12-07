@@ -1,5 +1,5 @@
 {
-  "requires": ["openssl", "libevent", "curl"],
+  "requires": ["openssl", "libevent", "curl", "boost-libs"],
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
