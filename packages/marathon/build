@@ -23,13 +23,11 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
-EnvironmentFile=-/var/lib/dcos/marathon/optional.flags.marathon
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
-ExecStartPre=-/bin/bash -c '[ -n "\$MARATHON_DEFAULT_NETWORK_NAME" ] && echo OPTFLAG_DEFAULT_NETWORK_NAME=\\"--default_network_name \$MARATHON_DEFAULT_NETWORK_NAME\\" > /var/lib/dcos/marathon/optional.flags.marathon'
 ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
     -jar "$PKG_PATH/usr/marathon.jar" \\
@@ -46,5 +44,5 @@ ExecStart=/opt/mesosphere/bin/java \\
     --mesos_leader_ui_url "/mesos" \\
     --enable_features "vips,task_killing,external_volumes,gpu_resources" \\
     --mesos_authentication_principal "dcos_marathon" \\
-    --mesos_user "root" \$OPTFLAG_DEFAULT_NETWORK_NAME
+    --mesos_user "root"
 EOF
