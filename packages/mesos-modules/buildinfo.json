@@ -1,5 +1,5 @@
 {
-  "requires": ["mesos"],
+  "requires": ["mesos", "boost-libs"],
     "single_source" : {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-mesos-modules.git",
