@@ -405,6 +405,10 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         ('slave', 'agent', cluster.agents),
         ('slave_public', 'public agent', cluster.public_agents),
     ]
+    logging.info('\n'.join(
+        ['Upgrade plan:'] +
+        ['{} ({})'.format(host, role_name) for _, role_name, hosts in upgrade_ordering for host in hosts]
+    ))
     for role, role_name, hosts in upgrade_ordering:
         logging.info('Upgrading {} nodes: {}'.format(role_name, repr(hosts)))
         for host in hosts:
