@@ -77,9 +77,6 @@ def test_if_marathon_app_can_be_debugged(cluster):
     }
     logging.info('Making POST call to %s with: %s', agent_v1_url, attach_out_data)
     r = post(agent_v1_url, headers, attach_out_data, stream=True)
-    for chunk in r.iter_content():
-        logging.info('Chunk: %s', chunk)
-        break
     # TODO: verify some output
     r.close()
 
@@ -91,10 +88,16 @@ def test_if_marathon_app_can_be_debugged(cluster):
     lncs_data = {'type': 'LAUNCH_NESTED_CONTAINER_SESSION', 'launch_nested_container_session': {}}
     lncs_data['launch_nested_container_session']['command'] = {'value': 'echo echo'}
     lncs_data['launch_nested_container_session']['container_id'] = nested_container_id
-    # logging.info('Creating nested container session: %s', nested_container_id)
-    # r = post(agent_v1_url, lncs_data)
+    logging.info('Creating nested container session: %s', nested_container_id)
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json+recordio',
+        'connection': 'keep-alive'
+    }
+    r = post(agent_v1_url, headers, lncs_data, stream=True)
     # TODO: verify more of the response contents?
     # TODO: verify some output
+    r.close()
 
     # Attach to input stream of debug container
     attach_in_data = {'type': 'ATTACH_CONTAINER_INPUT', 'attach_container_input': {}}
@@ -102,5 +105,6 @@ def test_if_marathon_app_can_be_debugged(cluster):
     attach_in_data['attach_container_input']['container_id'] = nested_container_id
     # r = post(agent_v1_url, attach_in_data)
     # TODO: input something and verify it
+    # r.close()
 
     cluster.marathon.destroy_app(test_app_id)
