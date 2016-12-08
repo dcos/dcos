@@ -9,13 +9,9 @@ import gen
 true_false_msg = "Must be one of 'true', 'false'. Got 'foo'."
 
 
-def validate_helper(arguments):
-    return gen.validate(arguments=arguments)
-
-
 @pytest.fixture
-def default_arguments():
-    return copy.deepcopy({
+def make_arguments(new_arguments):
+    arguments = copy.deepcopy({
         'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
         'bootstrap_id': '123',
         'exhibitor_zk_path': '/dcos',
@@ -31,23 +27,30 @@ def default_arguments():
         'oauth_available': 'true',
         'oauth_enabled': 'true',
         'enable_docker_gc': 'false'})
-
-
-def validate_error(new_arguments, key, message):
-    arguments = default_arguments()
     arguments.update(new_arguments)
-    expected = {
+    return arguments
+
+
+def validate_error(new_arguments, key, message, unset=None):
+    assert gen.validate(arguments=make_arguments(new_arguments)) == {
         'status': 'errors',
-        'errors': {
-            key: {
-                'message': message
-            }
-        },
-        'unset': set(),
+        'errors': {key: {'message': message}},
+        'unset': set() if unset is None else unset,
     }
-    validated = validate_helper(arguments)
-    assert validated['status'] == 'errors'
-    assert validated == expected
+
+
+def validate_error_multikey(new_arguments, keys, message, unset=None):
+    assert gen.validate(arguments=make_arguments(new_arguments)) == {
+        'status': 'errors',
+        'errors': {key: {'message': message} for key in keys},
+        'unset': set() if unset is None else unset,
+    }
+
+
+def validate_ok(new_arguments):
+    assert gen.validate(arguments=make_arguments(new_arguments)) == {
+        'status': 'ok',
+    }
 
 
 def test_invalid_telemetry_enabled():
@@ -134,5 +137,39 @@ def test_cluster_docker_credentials():
         {'cluster_docker_credentials_dcos_owned': 'foo'},
         'cluster_docker_credentials_dcos_owned',
         true_false_msg)
+
+
+def test_exhibitor_storage_master_discovery():
+    msg_master_discovery = "When master_discovery is not static, exhibitor_storage_backend must be " \
+        "non-static. Having a variable list of master which are discovered by agents using the " \
+        "master_discovery method but also having a fixed known at install time static list of " \
+        "master ips doesn't `master_http_load_balancer` then exhibitor_storage_backend must not " \
+        "be static."
+
+    validate_ok({
+        'exhibitor_storage_backend': 'static',
+        'master_discovery': 'static'})
+    validate_ok({
+        'exhibitor_storage_backend': 'aws_s3',
+        'master_discovery': 'master_http_loadbalancer',
+        'aws_region': 'foo',
+        'exhibitor_address': 'http://foobar',
+        'exhibitor_explicit_keys': 'false',
+        'num_masters': '5',
+        's3_bucket': 'baz',
+        's3_prefix': 'mofo'})
+    validate_ok({
+        'exhibitor_storage_backend': 'aws_s3',
+        'master_discovery': 'static',
+        'exhibitor_explicit_keys': 'false',
+        's3_bucket': 'foo',
+        'aws_region': 'bar',
+        's3_prefix': 'baz'})
+    validate_error_multikey(
+        {'exhibitor_storage_backend': 'static',
+         'master_discovery': 'master_http_loadbalancer'},
+        ['exhibitor_storage_backend', 'master_discovery'],
+        msg_master_discovery,
+        unset={'exhibitor_address', 'num_masters'})
 
 # TODO(cmaloney): Add tests that specific config leads to specific files in specific places at install time.

@@ -426,6 +426,15 @@ def calculate_set(parameter):
         return 'true'
 
 
+def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_storage_backend):
+    if master_discovery != 'static':
+        assert exhibitor_storage_backend != 'static', "When master_discovery is not static, " \
+            "exhibitor_storage_backend must be non-static. Having a variable list of master which " \
+            "are discovered by agents using the master_discovery method but also having a fixed " \
+            "known at install time static list of master ips doesn't " \
+            "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
+
+
 __logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
 
 
@@ -460,7 +469,8 @@ entry = {
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
         lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
-        lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip)
+        lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
+        validate_exhibitor_storage_master_discovery
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
