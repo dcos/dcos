@@ -21,7 +21,6 @@ def test_if_marathon_app_can_be_debugged(cluster):
     def find_container_id(state, app_id):
         if 'frameworks' in state:
             for framework in state['frameworks']:
-                # TODO: Skip anything that's not Marathon
                 if 'tasks' in framework:
                     for task in framework['tasks']:
                         if 'id' in task and app_id in task['id']:
@@ -35,7 +34,6 @@ def test_if_marathon_app_can_be_debugged(cluster):
     def find_agent_id(state, app_id):
         if 'frameworks' in state:
             for framework in state['frameworks']:
-                # TODO: Skip anything that's not Marathon
                 if 'tasks' in framework:
                     for task in framework['tasks']:
                         if 'id' in task and app_id in task['id']:
@@ -73,7 +71,7 @@ def test_if_marathon_app_can_be_debugged(cluster):
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json+recordio',
-        'connection': 'keep-alive'
+        'Connection': 'keep-alive'
     }
     logging.info('Making POST call to %s with: %s', agent_v1_url, attach_out_data)
     r = post(agent_v1_url, headers, attach_out_data, stream=True)
@@ -92,10 +90,9 @@ def test_if_marathon_app_can_be_debugged(cluster):
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json+recordio',
-        'connection': 'keep-alive'
+        'Connection': 'keep-alive'
     }
     r = post(agent_v1_url, headers, lncs_data, stream=True)
-    # TODO: verify more of the response contents?
     # TODO: verify some output
     r.close()
 
@@ -103,8 +100,14 @@ def test_if_marathon_app_can_be_debugged(cluster):
     attach_in_data = {'type': 'ATTACH_CONTAINER_INPUT', 'attach_container_input': {}}
     attach_in_data['attach_container_input']['type'] = 'CONTAINER_ID'
     attach_in_data['attach_container_input']['container_id'] = nested_container_id
-    # r = post(agent_v1_url, attach_in_data)
+    headers = {
+        'Content-Type': 'application/json+recordio',
+        'Accept': 'application/json',
+        'Connection': 'keep-alive',
+        'Transfer-Encoding': 'chunked'
+    }
+    r = post(agent_v1_url, headers, attach_in_data)
     # TODO: input something and verify it
-    # r.close()
+    r.close()
 
     cluster.marathon.destroy_app(test_app_id)
