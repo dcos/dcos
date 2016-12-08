@@ -138,10 +138,14 @@ def get_task_url(cluster, task_name, stream=False):
 
             assert 'framework_id' in task, 'Missing `framework_id` in task. Got {}'.format(state_response_json)
             assert 'executor_id' in task, 'Missing `executor_id` in task. Got {}'.format(state_response_json)
+            assert 'id' in task, 'Missing `id` in task. Got {}'.format(state_response_json)
             assert 'slave_id' in task, 'Missing `slave_id` in task. Got {}'.format(state_response_json)
 
             framework_id = task['framework_id']
+            # if task['executor_id'] is empty, we should use task['id']
             executor_id = task['executor_id']
+            if not executor_id:
+                executor_id = task['id']
             slave_id = task['slave_id']
 
             statuses = task.get('statuses')
