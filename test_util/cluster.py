@@ -2,6 +2,7 @@ import itertools
 import json
 import logging
 import os
+import random
 import stat
 from contextlib import contextmanager
 from subprocess import CalledProcessError
@@ -216,43 +217,6 @@ class Cluster:
                 ).decode('utf-8')
             )
 
-    def zk_mode(self, host):
-        """Return the mode of the ZooKeeper instance on host."""
-        with self.ssher.tunnel(host) as tunnel:
-            stat_out = tunnel.remote_cmd([
-                'echo', 'stat', '|', '/opt/mesosphere/bin/toybox', 'nc', 'localhost', '2181'
-            ])
-        for message in (l.strip().split(b':', 2) for l in stat_out.split(b'\n')):
-            if message[0] != b'Mode':
-                continue
-            mode = message[1].strip()
-            if mode not in (b'leader', b'follower', b'standalone'):
-                raise Exception('Unexpected ZooKeeper mode {} on host {}'.format(mode, host))
-            return mode.decode('utf-8')
-        raise Exception('ZooKeeper mode not found on host {}'.format(host))
-
-    def master_zk_modes(self):
-        """Return (master, zk_mode(master)) for each master."""
-        master_modes = [(master, self.zk_mode(master)) for master in self.masters]
-
-        # Validate modes.
-        modes = [m[1] for m in master_modes]
-        if len(modes) == 1 and modes != ['standalone']:
-            raise Exception(
-                'The mode for a standalone ZooKeeper must be standalone. modes: {}'.format(repr(master_modes))
-            )
-        elif len(modes) > 1:
-            if any(mode not in ('leader', 'follower') for mode in modes):
-                raise Exception(
-                    'All ZooKeepers in an ensemble must be a leader or follower. modes: {}'.format(repr(master_modes))
-                )
-            if modes.count('leader') != 1:
-                raise Exception(
-                    'There must be exactly one leader in a ZooKeeper ensemble. modes: {}'.format(repr(master_modes))
-                )
-
-        return master_modes
-
 
 def run_docker_container_daemon(tunnel, container_name, image, docker_run_args=None):
     """Run a Docker container with the given name on the host at tunnel."""
@@ -372,14 +336,6 @@ def install_dcos(
 
 def upgrade_dcos(cluster, installer_url, add_config_path=None):
 
-    def master_upgrade_order(cluster):
-        """Return a list of masters with the ZooKeeper leader last."""
-        return [master_zk_mode[0] for master_zk_mode in sorted(
-            cluster.master_zk_modes(),
-            # False < True
-            key=lambda host_zk_mode: host_zk_mode[1] == 'leader',
-        )]
-
     def upgrade_host(tunnel, role, bootstrap_url):
         # Download the install script for the new DC/OS.
         tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
@@ -444,10 +400,15 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         run_bootstrap_nginx(bootstrap_host_tunnel, cluster.ssher.home_dir)
 
     upgrade_ordering = [
-        ('master', 'master', master_upgrade_order(cluster)),
+        # Upgrade masters in a random order.
+        ('master', 'master', random.sample(cluster.masters, len(cluster.masters))),
         ('slave', 'agent', cluster.agents),
         ('slave_public', 'public agent', cluster.public_agents),
     ]
+    logging.info('\n'.join(
+        ['Upgrade plan:'] +
+        ['{} ({})'.format(host, role_name) for _, role_name, hosts in upgrade_ordering for host in hosts]
+    ))
     for role, role_name, hosts in upgrade_ordering:
         logging.info('Upgrading {} nodes: {}'.format(role_name, repr(hosts)))
         for host in hosts:
