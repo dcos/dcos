@@ -7,14 +7,14 @@ from test_util.marathon import get_test_app
 
 
 def test_if_marathon_app_can_be_debugged(cluster):
-    def post(url, data):
-        r = requests.post(url, json=data)
+    def post(url, headers, data, stream=False):
+        r = requests.post(url, headers=headers, json=data, stream=stream)
         logging.info(
-            'Got %s with POST request to %s with %s. Response: \n%s',
+            'Got %s with POST request to %s with headers %s and data %s.',
             r.status_code,
             url,
-            data,
-            r.text
+            headers,
+            data
         )
         assert r.status_code == 200
 
@@ -70,43 +70,37 @@ def test_if_marathon_app_can_be_debugged(cluster):
     container_id_data = {'value': '%s' % container_id}
     attach_out_data = {'type': 'ATTACH_CONTAINER_OUTPUT', 'attach_container_output': {}}
     attach_out_data['attach_container_output']['container_id'] = container_id_data
+    headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json+recordio',
+            'connection': 'keep-alive'
+            }
     logging.info('Making POST call to %s with: %s', agent_v1_url, attach_out_data)
-    # r = post(agent_v1_url, attach_out_data)
-    # logging.info('For %s call, got %s response: \n%s', attach_out_data['type'], r.status_code, r.text)
-    # assert r.status_code == 200
+    r = post(agent_v1_url, headers, attach_out_data, stream=True)
+    for chunk in r.iter_content():
+        logging.info('Chunk: %s', chunk)
+        break
     # TODO: verify some output
+    r.close()
 
     # Prepare nested container id
     nested_container_id = {'value': 'debug-%s' % str(uuid.uuid4())}
     nested_container_id['parent'] = container_id_data
-    logging.info('Creating nested container session: %s', nested_container_id)
 
-    # Prepare POST json with nested_container_id for each call
+    # Launch debug session and attach to output stream of debug container
     lncs_data = {'type': 'LAUNCH_NESTED_CONTAINER_SESSION', 'launch_nested_container_session': {}}
     lncs_data['launch_nested_container_session']['command'] = {'value': 'echo echo'}
     lncs_data['launch_nested_container_session']['container_id'] = nested_container_id
-    attach_in_data = {'type': 'ATTACH_CONTAINER_INPUT', 'attach_container_input': {}}
-    attach_in_data['attach_container_input']['type'] = 'CONTAINER_ID'
-    attach_in_data['attach_container_input']['container_id'] = nested_container_id
-    # attach_out_data = {'type': 'ATTACH_CONTAINER_OUTPUT', 'attach_container_output': {}}
-    attach_out_data['attach_container_output']['container_id'] = nested_container_id
-
-    # Launch debug session
-    r = post(agent_v1_url, lncs_data)
-    logging.info('For %s call, got %s response: \n%s', lncs_data['type'], r.status_code, r.text)
-    assert r.status_code == 200
+    # logging.info('Creating nested container session: %s', nested_container_id)
+    # r = post(agent_v1_url, lncs_data)
     # TODO: verify more of the response contents?
-
-    # Attach to output stream of debug container
-    # r = post(agent_v1_url, attach_out_data)
-    # logging.info('For %s call, got %s response: \n%s', attach_out_data['type'], r.status_code, r.text)
-    # assert r.status_code == 200
     # TODO: verify some output
 
     # Attach to input stream of debug container
+    attach_in_data = {'type': 'ATTACH_CONTAINER_INPUT', 'attach_container_input': {}}
+    attach_in_data['attach_container_input']['type'] = 'CONTAINER_ID'
+    attach_in_data['attach_container_input']['container_id'] = nested_container_id
     # r = post(agent_v1_url, attach_in_data)
-    # logging.info('For %s call, got %s response: \n%s', attach_in_data['type'], r.status_code, r.text)
-    # assert r.status_code == 200
     # TODO: input something and verify it
 
     cluster.marathon.destroy_app(test_app_id)
