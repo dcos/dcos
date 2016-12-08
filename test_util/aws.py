@@ -363,6 +363,7 @@ CF_OS_SSH_INFO = {
     'coreos': SSH_INFO['coreos']
 }
 
+
 OS_AMIS = {
     'cent-os-7': {'ap-northeast-1': 'ami-965345f8',
                   'ap-southeast-1': 'ami-332de750',
