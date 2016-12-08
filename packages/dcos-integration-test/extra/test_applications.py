@@ -13,9 +13,9 @@ def test_if_marathon_app_can_be_deployed(cluster):
     Please test_server.py for more details.
 
     This is done by assigning an unique UUID to each app and passing it to the
-    docker container as an env variable. After successfull deployment, the
+    docker container as an env variable. After successful deployment, the
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
-    the one assigned to test - test succeds.
+    the one assigned to test - test succeeds.
     """
     cluster.marathon.deploy_test_app_and_check(*get_test_app())
 
