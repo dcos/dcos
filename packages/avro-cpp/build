@@ -1,0 +1,25 @@
+#!/bin/bash
+
+export CPPFLAGS=-I/opt/mesosphere/include
+export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+
+pushd /pkg/src/avro-cpp
+mkdir -p build
+pushd build
+
+# configure build with cmake
+# see https://cmake.org/cmake/help/v3.0/module/FindBoost.html
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$PKG_PATH \
+  -DBOOST_ROOT=/opt/mesosphere/ \
+  ..
+
+# build/unittest
+make -j$NUM_CORES
+make test
+# install lib to $PKG_PATH/...
+make install
+
+popd
+popd

@@ -1,0 +1,23 @@
+{
+  "libraries": [
+  {
+    "file": "/opt/mesosphere/lib/libmetrics-module.so",
+    "modules": [{
+        "name": "com_mesosphere_MetricsIsolatorModule",
+        "parameters": [
+            {"key": "container_limit_amount_kbytes", "value": "10240"},
+            {"key": "container_limit_period_secs", "value": "60"},
+            {"key": "listen_interface", "value": "spartan"},
+            {"key": "listen_port_mode", "value": "ephemeral"},
+            {"key": "output_collector_enabled", "value": "true"},
+            {"key": "output_collector_ip", "value": "127.0.0.1"},
+            {"key": "output_collector_port", "value": "8124"},
+            {"key": "output_collector_chunking", "value": "true"},
+            {"key": "output_collector_chunk_size_datapoints", "value": "100"},
+            {"key": "output_collector_chunk_timeout_seconds", "value": "10"},
+            {"key": "state_path_dir",
+             "value": "/var/run/mesos/isolators/com_mesosphere_MetricsIsolatorModule/"}
+        ]
+    }]
+  }]
+}
