@@ -71,10 +71,10 @@ def test_if_marathon_app_can_be_debugged(cluster):
     attach_out_data = {'type': 'ATTACH_CONTAINER_OUTPUT', 'attach_container_output': {}}
     attach_out_data['attach_container_output']['container_id'] = container_id_data
     headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json+recordio',
-            'connection': 'keep-alive'
-            }
+        'Content-Type': 'application/json',
+        'Accept': 'application/json+recordio',
+        'connection': 'keep-alive'
+    }
     logging.info('Making POST call to %s with: %s', agent_v1_url, attach_out_data)
     r = post(agent_v1_url, headers, attach_out_data, stream=True)
     for chunk in r.iter_content():
