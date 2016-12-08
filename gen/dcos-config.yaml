@@ -159,6 +159,52 @@ package:
   - path: /etc/mesos-slave-modules/dummy.json
     content: |
       {}
+  - path: /etc/mesos-master-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  - path: /etc/mesos-slave-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/log/mesos/mesos-agent.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
 {% switch dcos_overlay_enable %}
 {% case "true" %}
   - path: /etc/mesos-master-modules/overlay_master_modules.json
@@ -219,6 +265,29 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/mesos-slave-modules/journal_logger_modules.json
+    content: |
+      {
+        "libraries": [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
+            "modules": [
+              {
+                "name": "com_mesosphere_mesos_JournaldLogger",
+                "parameters": [
+                  {
+                    "key": "companion_dir",
+                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
+                  }, {
+                    "key": "libprocess_num_worker_threads",
+                    "value": "2"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
 {% switch dcos_remove_dockercfg_enable %}
 {% case "true" %}
   - path: /etc/mesos-slave-modules/remove_dockercfg_slave_modules.json
@@ -297,7 +366,7 @@ package:
       MESOS_CONTAINERIZERS=docker,mesos
       MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
-      MESOS_CONTAINER_LOGGER={{ mesos_container_logger }}
+      MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
       MESOS_ISOLATION={{ mesos_isolation }}
       MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
       MESOS_IMAGE_PROVIDERS=docker
@@ -314,6 +383,7 @@ package:
       MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
+      MESOS_IO_SWITCHBOARD_ENABLE_SERVER=true
       GLOG_drop_log_memory=false
   - path: /etc/dcos-log-config.json
     content: |
@@ -383,6 +453,10 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc/cosmos.env
+    content: |
+      COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG={{ cosmos_staged_package_storage_uri_flag }}
+      COSMOS_PACKAGE_STORAGE_URI_FLAG={{ cosmos_package_storage_uri_flag }}
   - path: /etc/adminrouter.env
     content: |
       ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}

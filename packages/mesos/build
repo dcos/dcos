@@ -16,6 +16,7 @@ LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/m
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
+  --with-boost=/opt/mesosphere/active/boost-libs \
   --sbindir="$PKG_PATH/bin"
 make -j$NUM_CORES
 
@@ -66,7 +67,3 @@ chmod +x "$disk_resource_script"
 tee_stderr_script="$PKG_PATH/bin/tee_stderr"
 cp /pkg/extra/tee_stderr "$tee_stderr_script"
 chmod +x "$tee_stderr_script"
-
-# Install slave modules.
-mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
-cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"
