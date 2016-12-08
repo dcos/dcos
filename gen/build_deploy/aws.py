@@ -51,7 +51,6 @@ aws_base_source = Source(entry={
         'master_external_loadbalancer': '{ "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] }',
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
-        'oauth_available': 'true',
         'oauth_enabled': '{ "Ref" : "OAuthEnabled" }',
         'rexray_config_preset': 'aws'
     }
