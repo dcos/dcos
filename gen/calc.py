@@ -493,7 +493,6 @@ entry = {
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
-        'mesos_container_logger': __logrotate_slave_module_name,
         'mesos_log_retention_mb': '4000',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
