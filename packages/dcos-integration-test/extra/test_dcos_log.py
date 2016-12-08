@@ -89,7 +89,7 @@ def test_task_logs(cluster):
         "cmd": "echo STDOUT_LOG; echo STDERR_LOG >&2;sleep 999"
     }
 
-    with cluster.marathon.deploy_and_cleanup(task_definition):
+    with cluster.marathon.deploy_and_cleanup(task_definition, check_health=False):
         url = get_task_url(cluster, task_id)
         task_stdout_response = cluster.get('{}?filter=STREAM:STDOUT'.format(url))
         check_response_ok(task_stdout_response, {})
@@ -166,6 +166,12 @@ def get_task_url(cluster, task_name, stream=False):
                 container_id_field = container_id_field['parent']
             container_id = '.'.join(reversed(container_ids))
             assert container_id
+
+    # validate all required fields
+    assert slave_id, 'Missing slave_id'
+    assert framework_id, 'Missing framework_id'
+    assert executor_id, 'Missing executor_id'
+    assert container_id, 'Missing container_id'
 
     endpoint_type = 'range'
     if stream:
