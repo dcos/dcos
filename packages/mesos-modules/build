@@ -7,9 +7,9 @@ popd
 source /opt/mesosphere/environment.export
 
 # Add the 3rdparty directories.
-export CPPFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
+export CPPFLAGS='-I/opt/mesosphere/active/boost-libs/include -I/opt/mesosphere/lib/mesos/3rdparty/include'
 export CFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
-export LDFLAGS=-L/opt/mesosphere/lib/mesos/3rdparty/lib
+export LDFLAGS='-L/opt/mesosphere/active/boost-libs/lib -L/opt/mesosphere/lib/mesos/3rdparty/lib'
 
 mkdir -p build
 pushd build
