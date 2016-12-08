@@ -119,6 +119,8 @@ def test_signal_service(cluster):
         'adminrouter-reload-service',
         'adminrouter-reload-timer',
         'cosmos-service',
+        'metrics-master-service',
+        'metrics-master-socket',
         'exhibitor-service',
         'history-service',
         'log-master-service',
@@ -150,6 +152,8 @@ def test_signal_service(cluster):
     all_slave_units = [
         'docker-gc-service',
         'docker-gc-timer',
+        'metrics-agent-service',
+        'metrics-agent-socket',
         '3dt-socket',
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',
