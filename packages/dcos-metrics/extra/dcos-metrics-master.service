@@ -7,4 +7,4 @@ PermissionsStartOnly=True
 User=dcos_metrics
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-master
-ExecStart=/opt/mesosphere/bin/dcos-metrics -config /opt/mesosphere/etc/dcos-metrics-config.yaml -role master
+ExecStart=/opt/mesosphere/bin/dcos-metrics -role master
