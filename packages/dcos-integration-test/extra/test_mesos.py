@@ -17,6 +17,7 @@ def test_if_marathon_app_can_be_debugged(cluster):
             data
         )
         assert r.status_code == 200
+        return r
 
     def find_container_id(state, app_id):
         if 'frameworks' in state:
@@ -100,14 +101,15 @@ def test_if_marathon_app_can_be_debugged(cluster):
     attach_in_data = {'type': 'ATTACH_CONTAINER_INPUT', 'attach_container_input': {}}
     attach_in_data['attach_container_input']['type'] = 'CONTAINER_ID'
     attach_in_data['attach_container_input']['container_id'] = nested_container_id
+    # TODO Wrap data in recordio and stream as a request
     headers = {
         'Content-Type': 'application/json+recordio',
         'Accept': 'application/json',
         'Connection': 'keep-alive',
         'Transfer-Encoding': 'chunked'
     }
-    r = post(agent_v1_url, headers, attach_in_data)
+    # r = post(agent_v1_url, headers, attach_in_data)
     # TODO: input something and verify it
-    r.close()
+    # r.close()
 
     cluster.marathon.destroy_app(test_app_id)
