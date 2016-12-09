@@ -18,7 +18,7 @@ cp -r boost $PKG_PATH/include/
 rm -rf $PKG_PATH/include/boost/phoenix $PKG_PATH/include/boost/fusion $PKG_PATH/include/boost/spirit
 
 # Build the following shared libraries.
-./b2 --with-filesystem --with-iostreams --with-program_options --with-system -s NO_BZIP2=1
+./b2 --with-filesystem --with-iostreams --with-program_options --with-system -j $NUM_CORES -s NO_BZIP2=1
 
 # Move lib dir into pkg
 mv -v stage/lib $PKG_PATH
