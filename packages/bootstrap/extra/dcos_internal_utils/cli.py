@@ -47,6 +47,8 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
+    'dcos-metrics-master': noop,
+    'dcos-metrics-agent': noop,
     'dcos-3dt': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,

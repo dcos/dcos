@@ -362,7 +362,8 @@ def calculate_config_yaml(user_arguments):
 
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
-                 'docker/runtime,docker/volume,volume/sandbox_path')
+                 'docker/runtime,docker/volume,volume/sandbox_path,'
+                 'com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators
@@ -435,9 +436,6 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
-__logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
-
-
 entry = {
     'validate': [
         validate_num_masters,
@@ -492,7 +490,6 @@ entry = {
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
-        'mesos_container_logger': __logrotate_slave_module_name,
         'mesos_log_retention_mb': '4000',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
