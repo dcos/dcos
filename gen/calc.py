@@ -638,6 +638,7 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
+        'ui_telemetry_metadata': '{"openBuild": true}',
         'minuteman_forward_metrics': 'false',
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
