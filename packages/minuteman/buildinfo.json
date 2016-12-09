@@ -4,15 +4,8 @@
     "minuteman": {
       "kind": "git",
       "git": "https://github.com/dcos/minuteman.git",
-      "ref": "54b665a30deb8ee7c3230140273e580d98826ad7",
+      "ref": "4df6b25adff9429497be2ccf2651e178e9ab4b92",
       "ref_origin": "master"
     }
-  },
-  "sysctl": {
-      "dcos-minuteman": {
-          "net.netfilter.nf_conntrack_tcp_be_liberal": "1",
-          "net.netfilter.ip_conntrack_tcp_be_liberal": "1",
-          "net.ipv4.netfilter.ip_conntrack_tcp_be_liberal": "1"
-      }
   }
 }
