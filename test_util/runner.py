@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Module for running integration tests inside of a remote cluster
-Note: ssh_user must be able to use docker without sudo priveleges
+Note: ssh_user must be able to use docker without sudo privileges
 """
 import logging
 import sys

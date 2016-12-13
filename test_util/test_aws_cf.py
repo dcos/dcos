@@ -117,7 +117,7 @@ def main():
         pytest_cmd=options.pytest_cmd,
     )
     if result == 0:
-        log.info('Test successsful! Deleting CloudFormation...')
+        log.info('Test successful! Deleting CloudFormation.')
         cf.delete()
     else:
         logging.warning('Test exited with an error')

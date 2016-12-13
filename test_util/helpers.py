@@ -47,8 +47,17 @@ class DcosUser:
 
 class ApiClient:
 
-    def __init__(self, default_host_url, api_base, default_headers=None,
-                 ca_cert_path=None, get_node_url=None):
+    def __init__(self, default_host_url, api_base, default_headers=None, ca_cert_path=None, get_node_url=None):
+        """Client that facilitates HTTP request with a host in the cluster.
+
+        Args:
+
+            default_host_url:   host url to make the request. For e.g, it could be master.
+            api_base:           base url of the api request. For e.g. /marathon
+            default_headers:    headers specified for the request.
+            ca_cert_path:       path to ca cert.
+            get_node_url:       callback to get the node url
+        """
         self.default_host_url = default_host_url
         self.api_base = api_base
         if default_headers is None:
@@ -88,7 +97,7 @@ class ApiClient:
         request_url = path_join(host_url, path)
         headers.update(kwargs.pop('headers', {}))
         logging.info('Request method {}: {}'.format(method, request_url))
-        logging.debug('Reqeust kwargs: {}'.format(kwargs))
+        logging.debug('Request kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
         return requests.request(method, request_url, headers=headers, **kwargs)
 
@@ -106,7 +115,6 @@ class ApiClient:
     options = functools.partialmethod(api_request, 'options')
     head = functools.partialmethod(api_request, 'head')
     patch = functools.partialmethod(api_request, 'patch')
-    delete = functools.partialmethod(api_request, 'delete')
 
 
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
@@ -175,7 +183,7 @@ def wait_for_len(fetch_fn, target_count, timeout):
 
 
 def session_tempfile(data):
-    """Writes bites to a named temp file and returns its path
+    """Writes bytes to a named temp file and returns its path
     the temp file will be removed when the interpreter exits
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
