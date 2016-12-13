@@ -16,6 +16,7 @@ LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/m
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
+  --with-boost=/opt/mesosphere/active/boost-libs \
   --sbindir="$PKG_PATH/bin"
 make -j$NUM_CORES
 

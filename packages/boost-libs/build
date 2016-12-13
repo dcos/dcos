@@ -1,0 +1,25 @@
+#!/bin/bash
+
+export CPPFLAGS=-I/opt/mesosphere/include
+export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+export LD_LIBRARY_PATH=/opt/mesosphere/lib
+
+# Use a version of boost that has all the headers.
+# The boost tarball used by Mesos is a minimum set,
+# which is insufficient to compile some modules.
+pushd /pkg/src/boost-libs
+./bootstrap.sh
+
+# Copy all the headers.
+mkdir -p $PKG_PATH/include/
+cp -r boost $PKG_PATH/include/
+
+# Remove some bits of boost that even modules do not need.
+rm -rf $PKG_PATH/include/boost/phoenix $PKG_PATH/include/boost/fusion $PKG_PATH/include/boost/spirit
+
+# Build the following shared libraries.
+./b2 --with-filesystem --with-iostreams --with-program_options --with-system -j $NUM_CORES -s NO_BZIP2=1
+
+# Move lib dir into pkg
+mv -v stage/lib $PKG_PATH
+popd

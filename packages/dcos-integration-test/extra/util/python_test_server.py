@@ -9,6 +9,7 @@ import subprocess
 import sys
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 
 import requests
 
@@ -283,6 +284,13 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_error(404, 'Not found', 'Endpoint is not supported')
 
 
+# We use a HTTPServer with the ThreadingMixIn in order to handle stalled HTTP requess. Without this, the behaviour
+# is to handle requests serially. If a connection is severed, this can result in the server hanging for the TCP
+# timeout before answering another requests...leading to failures.
+class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
+    pass
+
+
 def _verify_environment():
     """Verify that the enviroment is sane and can be used by the test_server"""
     if TEST_UUID_VARNAME not in os.environ:
@@ -300,7 +308,7 @@ def start_http_server(listen_port):
 
     logging.info("HTTP server is starting, port: "
                  "{}, test-UUID: '{}'".format(listen_port, os.environ[TEST_UUID_VARNAME]))
-    test_server = HTTPServer(('', listen_port), TestHTTPRequestHandler)
+    test_server = ThreadingSimpleServer(('', listen_port), TestHTTPRequestHandler)
 
     def sigterm_handler(_signo, _stack_frame):
         test_server.server_close()
