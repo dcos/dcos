@@ -28,19 +28,79 @@ DCOS_PYTEST_CMD: string(default='py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
     CI_FLAGS is ignored.
 
 """
-
+import collections
+import datetime
 import logging
 import os
 import random
 import string
 import sys
+import uuid
 
 import test_util.aws
 import test_util.cluster
-
+from test_util.cluster_api import ClusterApi
+from test_util.helpers import CI_AUTH_JSON, DcosUser
+from test_util.marathon import TEST_APP_NAME_FMT
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
+
+
+def get_test_app():
+    app = {
+        "id": TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+        "cmd": "python3 -m http.server 8080",
+        "cpus": 0.5,
+        "mem": 32.0,
+        "instances": 1,
+        "container": {
+            "type": "DOCKER",
+            "docker": {
+                "image": "python:3",
+                "network": "BRIDGE",
+                "portMappings": [
+                    {"containerPort": 8080, "hostPort": 0}
+                ]
+            }
+        },
+        "healthChecks": [
+            {
+                "protocol": "HTTP",
+                "path": "/",
+                "portIndex": 0,
+                "gracePeriodSeconds": 5,
+                "intervalSeconds": 10,
+                "timeoutSeconds": 10,
+                "maxConsecutiveFailures": 3
+            }
+        ],
+    }
+    return app
+
+
+def get_task_info(apps, tasks):
+    idx = 0    # We have a single app and a task for this test.
+
+    try:
+        tasks_state = tasks["tasks"][idx]["state"]
+        health_check_interval = \
+            apps["apps"][idx]["healthChecks"][idx]["intervalSeconds"]
+        task_id = tasks["tasks"][idx]["id"]
+        last_success = tasks["tasks"][idx]["healthCheckResults"][idx]["lastSuccess"]
+    except IndexError as e:
+        logging.debug("Failed to get task detail: {exp}".format(exp=str(e)))
+        return None
+
+    TaskInfo = collections.namedtuple("TaskInfo", "state id health_check_interval last_success_time")
+
+    task_info = TaskInfo(
+        state=tasks_state,
+        id=task_id,
+        health_check_interval=datetime.timedelta(seconds=health_check_interval),
+        last_success_time=(datetime.datetime.strptime(last_success, "%Y-%m-%dT%H:%M:%S.%fZ")))
+
+    return task_info
 
 
 def main():
@@ -80,14 +140,57 @@ def main():
 
     # Use the CLI installer to set exhibitor_storage_backend = zookeeper.
     test_util.cluster.install_dcos(cluster, stable_installer_url, api=False)
+
+    master_list = [h.private_ip for h in cluster.masters]
+
+    cluster_api = ClusterApi(
+        'http://{ip}'.format(ip=cluster.masters[0].public_ip),
+        master_list,
+        master_list,
+        [h.private_ip for h in cluster.agents],
+        [h.private_ip for h in cluster.public_agents],
+        False,              # dns search set.
+        cluster.provider,
+        True,               # auth_enabled
+        "root",             # default_os_user
+        web_auth_default_user=DcosUser(CI_AUTH_JSON),
+        ca_cert_path=None)
+
+    cluster_api.wait_for_dcos()
+
+    # Deploy an app
+    cluster_api.marathon.deploy_app(get_test_app())
+
+    task_info_before_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
+                                             cluster_api.marathon.get('v2/tasks').json())
+
+    assert task_info_before_upgrade is not None, "Unable to get task details of the cluster."
+    assert task_info_before_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
+
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
+
     test_util.cluster.upgrade_dcos(cluster, installer_url)
 
+    task_info_after_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
+                                            cluster_api.marathon.get('v2/tasks').json())
+
+    assert task_info_after_upgrade is not None, "Unable to get the tasks details of the cluster."
+    assert task_info_after_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
+
+    assert task_info_before_upgrade.id == task_info_after_upgrade.id, \
+        "Task ID before and after the upgrade did not match."
+
+    # There has happened at least one health-check in the new cluster since the last health-check in the old cluster.
+    assert (task_info_after_upgrade.last_success_time >
+            task_info_before_upgrade.last_success_time + task_info_before_upgrade.health_check_interval), \
+        "Invalid health-check for the task in the upgraded cluster."
+
     result = test_util.cluster.run_integration_tests(cluster, pytest_cmd=pytest_cmd)
+
     if result == 0:
         log.info("Test successsful! Deleting VPC if provided in this run...")
         vpc.delete()
     else:
-        log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")
+        log.info("Test failed! VPC cluster will remain available for debugging for 2 hour after instantiation.")
     sys.exit(result)
