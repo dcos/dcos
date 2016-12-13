@@ -50,7 +50,7 @@ def get_test_app(custom_port=False):
     return app, test_uuid
 
 
-def get_test_app_in_docker(ip_per_container):
+def get_test_app_in_docker(ip_per_container=False):
     app, test_uuid = get_test_app(custom_port=True)
     assert 'portDefinitions' not in app
     app['cmd'] += '9080'  # Fixed port for inside bridge networking or IP per container
@@ -135,9 +135,9 @@ class Marathon(ApiClient):
         """Deploy an app to marathon
 
         This function deploys an an application and then waits for marathon to
-        aknowledge it's successfull creation or fails the test.
+        acknowledge it's successful creation or fails the test.
 
-        The wait for application is immediatelly aborted if Marathon returns
+        The wait for application is immediately aborted if Marathon returns
         nonempty 'lastTaskFailure' field. Otherwise it waits until all the
         instances reach tasksRunning and then tasksHealthy state.
 
@@ -181,18 +181,18 @@ class Marathon(ApiClient):
             check_tasks_running = (data['app']['tasksRunning'] == app_definition['instances'])
             check_tasks_healthy = (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
 
-            if (check_tasks_running and check_tasks_healthy):
+            if check_tasks_running and check_tasks_healthy:
                 res = [Endpoint(t['host'], t['ports'][0], t['ipAddresses'][0]['ipAddress'])
                        if len(t['ports']) is not 0
                        else Endpoint(t['host'], 0, t['ipAddresses'][0]['ipAddress'])
                        for t in data['app']['tasks']]
                 logging.info('Application deployed, running on {}'.format(res))
                 return res
-            elif (not check_tasks_running):
+            elif not check_tasks_running:
                 logging.info('Waiting for application to be deployed: '
                              'Not all instances are running: {}'.format(repr(data)))
                 return None
-            elif (not check_tasks_healthy):
+            elif not check_tasks_healthy:
                 logging.info('Waiting for application to be deployed: '
                              'Not all instances are healthy: {}'.format(repr(data)))
                 return None
@@ -210,7 +210,7 @@ class Marathon(ApiClient):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
-        aknowledge it's successfull creation or fails the test.
+        acknowledge it's successful creation or fails the test.
 
         It waits until all the instances reach tasksRunning and then tasksHealthy state.
 
@@ -256,7 +256,7 @@ class Marathon(ApiClient):
     def destroy_pod(self, pod_id, timeout=120):
         """Remove a marathon pod
 
-        Abort the test if the removal was unsuccesful.
+        Abort the test if the removal was unsuccessful.
 
         Args:
             pod_id: id of the pod to remove
@@ -288,10 +288,10 @@ class Marathon(ApiClient):
     def destroy_app(self, app_name, timeout=120):
         """Remove a marathon app
 
-        Abort the test if the removal was unsuccesful.
+        Abort the test if the removal was unsuccessful.
 
         Args:
-            app_name: name of the applicatoin to remove
+            app_name: name of the application to remove
             timeout: seconds to wait for destruction before failing test
         """
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,

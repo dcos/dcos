@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope='session')
 def dcos_launchpad(cluster):
-    """Interface for direct interation to dcos_launchpad hardware
+    """Interface for direct integration to dcos_launchpad hardware
     Currently only supports AWS CF with AWS VPC coming soon
     """
     if cluster.provider != 'aws':
@@ -43,7 +43,7 @@ def test_agent_failure(dcos_launchpad, cluster, vip_apps):
     agents = [i.instance_id for i in get_running_agents('PublicSlaveServerGroup') +
               get_running_agents('SlaveServerGroup')]
 
-    # Agents are in autoscaling groups, so they will automatically be replaced
+    # Agents are in auto-scaling groups, so they will automatically be replaced
     dcos_launchpad.boto_wrapper.client('ec2').terminate_instances(InstanceIds=agents)
     waiter = dcos_launchpad.boto_wrapper.client('ec2').get_waiter('instance_terminated')
     retry_boto_rate_limits(waiter.wait)(InstanceIds=agents)

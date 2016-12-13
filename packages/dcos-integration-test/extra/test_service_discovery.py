@@ -16,7 +16,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
     with information from mesos-dns and from containers themselves.
 
     This is achieved by deploying an application to marathon with two instances
-    , and ["hostname", "UNIQUE"] contraint set. This should result in containers
+    , and ["hostname", "UNIQUE"] constraint set. This should result in containers
     being deployed to two different slaves.
 
     The application being deployed is a simple http server written in python.
@@ -49,7 +49,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
     the session UUID as provided to it by Marathon. This data is then returned
     to TC agent in response to POST request issued earlier.
 
-    The test succeds if test UUIDs of the test server, reflector and the test
+    The test succeeds if test UUIDs of the test server, reflector and the test
     itself match and the IP of the test server matches the service point of that
     container as reported by Marathon.
     """
@@ -137,7 +137,7 @@ def test_if_search_is_working(cluster):
     Verifies that a marathon app running on the cluster can resolve names using
     searching the "search" the cluster was launched with (if any). It also tests
     that absolute searches still work, and search + things that aren't
-    subdomains fails properly.
+    sub-domains fails properly.
 
     The application being deployed is a simple http server written in python.
     Please check test_server.py for more details.
