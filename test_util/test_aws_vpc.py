@@ -222,7 +222,7 @@ def main():
     )
 
     if result == 0:
-        log.info("Test successsful! Deleting VPC if provided in this run...")
+        log.info("Test successful! Deleting VPC if provided in this run.")
         if vpc:
             vpc.delete()
     else:

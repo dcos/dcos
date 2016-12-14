@@ -261,7 +261,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 
 def calculate_oauth_available(oauth_enabled):
-    return oauth_enabled
+    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
+        return 'true'
+    elif oauth_enabled == 'false':
+        return 'false'
+    elif oauth_enabled == 'true':
+        return 'true'
+    else:
+        raise AssertionError("Invaild value for oauth_enabled: {}".format(oauth_enabled))
 
 
 def validate_num_masters(num_masters):
@@ -362,7 +369,8 @@ def calculate_config_yaml(user_arguments):
 
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
-                 'docker/runtime,docker/volume,volume/sandbox_path')
+                 'docker/runtime,docker/volume,volume/sandbox_path,'
+                 'com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators

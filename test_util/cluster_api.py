@@ -3,8 +3,6 @@ import logging
 import os
 from urllib.parse import urlparse
 
-import dns.exception
-import dns.resolver
 import requests
 import retrying
 
@@ -131,25 +129,6 @@ class ClusterApi(test_util.helpers.ApiClient):
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
                     retry_on_exception=lambda x: False)
-    def _wait_for_leader_election(self):
-        mesos_resolver = dns.resolver.Resolver()
-        mesos_resolver.nameservers = self.public_masters
-        mesos_resolver.port = 61053
-        try:
-            # Yeah, we can also put it in retry_on_exception, but
-            # this way we will loose debug messages
-            mesos_resolver.query('leader.mesos', 'A')
-        except dns.exception.DNSException as e:
-            msg = "Cannot resolve leader.mesos, error string: '{}', continuing to wait"
-            logging.info(msg.format(e))
-            return False
-        else:
-            logging.info("leader.mesos dns entry is UP!")
-            return True
-
-    @retrying.retry(wait_fixed=1000,
-                    retry_on_result=lambda ret: ret is False,
-                    retry_on_exception=lambda x: False)
     def _wait_for_adminrouter_up(self):
         try:
             # Yeah, we can also put it in retry_on_exception, but
@@ -207,7 +186,6 @@ class ClusterApi(test_util.helpers.ApiClient):
         assert r.status_code == 200
 
     def wait_for_dcos(self):
-        self._wait_for_leader_election()
         self._wait_for_adminrouter_up()
         if self.auth_enabled and self.web_auth_default_user:
             self._authenticate_default_user()
@@ -334,6 +312,10 @@ class ClusterApi(test_util.helpers.ApiClient):
     @property
     def logs(self):
         return self.get_client('/system/v1/logs')
+
+    @property
+    def metrics(self):
+        return self.get_client('/system/v1/metrics/v0')
 
     def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
         """Run a job on metronome and block until it returns success

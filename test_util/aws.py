@@ -42,7 +42,7 @@ class BotoWrapper():
         return self.session.resource(service_name=name, region_name=self.region)
 
     def create_key_pair(self, key_name):
-        """Retruns private key of newly generated pair
+        """Returns private key of newly generated pair
         """
         key = self.resource('ec2').KeyPair(key_name)
         return key.key_material
@@ -67,7 +67,7 @@ class BotoWrapper():
         return CfStack(name, self)
 
 
-class CfStack():
+class CfStack:
     def __init__(self, stack_name, boto_wrapper):
         self.boto_wrapper = boto_wrapper
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
@@ -140,7 +140,7 @@ class CfStack():
     @retry_boto_rate_limits
     def get_auto_scaling_instances(self, logical_id):
         """ Get instances in ASG with logical_id. If logical_id is None, all ASGs will be used
-        Will return instance objects as describd here:
+        Will return instance objects as described here:
         http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#instance
 
         Note: there is no ASG resource hence the need for this method

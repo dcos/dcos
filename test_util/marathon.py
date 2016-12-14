@@ -109,8 +109,7 @@ class Marathon(ApiClient):
         else:
             marathon_user = app.get('user', self.default_os_user)
         with self.deploy_and_cleanup(app) as service_points:
-            r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host,
-                                                             service_points[0].port))
+            r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host, service_points[0].port))
             if r.status_code != 200:
                 msg = "Test server replied with non-200 reply: '{0} {1}. "
                 msg += "Detailed explanation of the problem: {2}"
@@ -210,7 +209,7 @@ class Marathon(ApiClient):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
-        aknowledge it's successfull creation or fails the test.
+        acknowledge it's successful creation or fails the test.
 
         It waits until all the instances reach tasksRunning and then tasksHealthy state.
 

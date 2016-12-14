@@ -492,7 +492,8 @@ class Resolver:
             raise CalculatorError("{} must be calculated, but was explicitly set in the "
                                   "configuration. Remove it from the configuration.").format(resolvable.name)
         if len(feasible) > 1:
-            raise CalculatorError("Internal error: Multiple ways to set {}.".format(resolvable.name))
+            raise CalculatorError("Internal error: Multiple ways to set {}. setters: {}".format(
+                resolvable.name, feasible))
 
         setter = feasible[0]
 

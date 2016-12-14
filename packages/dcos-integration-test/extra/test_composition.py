@@ -3,6 +3,8 @@ import logging
 import os
 import subprocess
 
+import dns.exception
+import dns.resolver
 import kazoo.client
 import pytest
 import requests
@@ -11,6 +13,16 @@ import requests
 @pytest.mark.first
 def test_cluster_is_up(cluster):
     pass
+
+
+def test_leader_election(cluster):
+    mesos_resolver = dns.resolver.Resolver()
+    mesos_resolver.nameservers = cluster.public_masters
+    mesos_resolver.port = 61053
+    try:
+        mesos_resolver.query('leader.mesos', 'A')
+    except dns.exception.DNSException:
+        assert False, "Cannot resolve leader.mesos"
 
 
 def test_if_all_mesos_masters_have_registered(cluster):
@@ -119,6 +131,8 @@ def test_signal_service(cluster):
         'adminrouter-reload-service',
         'adminrouter-reload-timer',
         'cosmos-service',
+        'metrics-master-service',
+        'metrics-master-socket',
         'exhibitor-service',
         'history-service',
         'log-master-service',
@@ -150,6 +164,8 @@ def test_signal_service(cluster):
     all_slave_units = [
         'docker-gc-service',
         'docker-gc-timer',
+        'metrics-agent-service',
+        'metrics-agent-socket',
         '3dt-socket',
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',

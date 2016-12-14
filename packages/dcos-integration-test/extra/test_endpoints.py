@@ -167,18 +167,28 @@ def test_if_overlay_master_is_up(cluster):
 
 
 def test_if_overlay_master_agent_is_up(cluster):
-    r = cluster.get('/mesos/overlay-agent/overlay')
-    assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
+    master_response = cluster.get('/mesos/overlay-master/state')
+    assert master_response.ok,\
+        "status_code: {}, content: {}".format(master_response.status_code, master_response.content)
+
+    master_overlay_json = master_response.json()
+
+    agent_response = cluster.get('/mesos/overlay-agent/overlay')
+    assert agent_response.ok, "status_code: {}, content: {}".format(agent_response.status_code, agent_response.content)
 
     # Make sure the `dcos` overlay has been configured.
-    json = r.json()
+    agent_overlay_json = agent_response.json()
 
-    assert 'overlays' in json
-    assert len(json['overlays']) == 1
+    assert 'ip' in agent_overlay_json
+    agent_ip = agent_overlay_json['ip']
 
+    assert 'overlays' in agent_overlay_json
+    assert len(agent_overlay_json['overlays']) == 1
+
+    agent_dcos_overlay = agent_overlay_json['overlays'][0]
     # Remove 'subnet' from the dict.
     try:
-        subnet = json['overlays'][0].pop('subnet')
+        subnet = agent_dcos_overlay.pop('subnet')
         try:
             allocated_subnet = ipaddress.ip_network(subnet)
             assert allocated_subnet.prefixlen == 24
@@ -191,9 +201,40 @@ def test_if_overlay_master_agent_is_up(cluster):
     except KeyError as ex:
         raise AssertionError("Could not find key 'subnet':" + str(ex)) from ex
 
+    # Get the Mesos and Docker bridge configuration for this agent from
+    # Master.
+    agent_overlay = None
+    for agent in master_overlay_json['agents']:
+        assert 'ip' in agent
+        if agent['ip'] == agent_ip:
+            assert len(agent['overlays']) == 1
+            agent_overlay = agent['overlays'][0]
+
+    # Pop mesos and docker bridge if they have been configured on the
+    # Master for this agent.
+    if 'mesos_bridge' in agent_overlay:
+        try:
+            agent_dcos_overlay.pop('mesos_bridge')
+        except KeyError as ex:
+            raise AssertionError("Could not find expected 'mesos_bridge' in agent:" + str(ex)) from ex
+    else:
+        # Master didn't configure a `mesos-bridge` so shouldn't be
+        # seeing it in the agent as well.
+        assert 'mesos_bridge' not in agent_dcos_overlay
+
+    if 'docker_bridge' in agent_overlay:
+        try:
+            agent_dcos_overlay.pop('docker_bridge')
+        except KeyError as ex:
+            raise AssertionError("Could not find expected 'docker_bridge' in agent:" + str(ex)) from ex
+    else:
+        # Master didn't configure a `docker-bridge` so shouldn't be
+        # seeing it in the agent as well.
+        assert 'docker_bridge' not in agent_dcos_overlay
+
     # Remove 'backend' from the dict.
     try:
-        backend = json['overlays'][0].pop('backend')
+        backend = agent_dcos_overlay.pop('backend')
         # Make sure the backend has the right VNI.
         vxlan = backend.pop('vxlan')
 
@@ -230,4 +271,4 @@ def test_if_overlay_master_agent_is_up(cluster):
         }
     ]
 
-    assert json['overlays'] == dcos_overlay_network
+    assert agent_overlay_json['overlays'] == dcos_overlay_network

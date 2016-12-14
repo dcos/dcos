@@ -1,0 +1,4 @@
+[Unit]
+Description=Metrics Master Socket: Socket for DC/OS Metrics Master Service
+[Socket]
+ListenStream=/run/dcos/dcos-metrics-master.sock

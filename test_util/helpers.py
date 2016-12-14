@@ -17,6 +17,20 @@ Host = namedtuple('Host', ['private_ip', 'public_ip'])
 SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
 
 
+# Token valid until 2036 for user albert@bekstil.net
+#    {
+#        "email": "albert@bekstil.net",
+#        "email_verified": true,
+#        "iss": "https://dcos.auth0.com/",
+#        "sub": "google-oauth2|109964499011108905050",
+#        "aud": "3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m",
+#        "exp": 2090884974,
+#        "iat": 1460164974
+#    }
+
+CI_AUTH_JSON = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}     # noqa
+
+
 def path_join(p1, p2):
     return '{}/{}'.format(p1.rstrip('/'), p2.lstrip('/'))
 
@@ -47,8 +61,17 @@ class DcosUser:
 
 class ApiClient:
 
-    def __init__(self, default_host_url, api_base, default_headers=None,
-                 ca_cert_path=None, get_node_url=None):
+    def __init__(self, default_host_url, api_base, default_headers=None, ca_cert_path=None, get_node_url=None):
+        """Client that facilitates HTTP request with a host in the cluster.
+
+        Args:
+
+            default_host_url:   host url to make the request. For e.g, it could be master.
+            api_base:           base url of the api request. For e.g. /marathon
+            default_headers:    headers specified for the request.
+            ca_cert_path:       path to ca cert.
+            get_node_url:       callback to get the node url
+        """
         self.default_host_url = default_host_url
         self.api_base = api_base
         if default_headers is None:
@@ -88,7 +111,7 @@ class ApiClient:
         request_url = path_join(host_url, path)
         headers.update(kwargs.pop('headers', {}))
         logging.info('Request method {}: {}'.format(method, request_url))
-        logging.debug('Reqeust kwargs: {}'.format(kwargs))
+        logging.debug('Request kwargs: {}'.format(kwargs))
         logging.debug('Request headers: {}'.format(headers))
         return requests.request(method, request_url, headers=headers, **kwargs)
 
@@ -106,7 +129,6 @@ class ApiClient:
     options = functools.partialmethod(api_request, 'options')
     head = functools.partialmethod(api_request, 'head')
     patch = functools.partialmethod(api_request, 'patch')
-    delete = functools.partialmethod(api_request, 'delete')
 
 
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
@@ -175,7 +197,7 @@ def wait_for_len(fetch_fn, target_count, timeout):
 
 
 def session_tempfile(data):
-    """Writes bites to a named temp file and returns its path
+    """Writes bytes to a named temp file and returns its path
     the temp file will be removed when the interpreter exits
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:

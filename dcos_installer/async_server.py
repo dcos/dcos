@@ -8,7 +8,6 @@ import os
 import pkg_resources
 from aiohttp import web
 
-import dcos_installer
 import dcos_installer.action_lib
 import gen.calc
 import pkgpanda.util

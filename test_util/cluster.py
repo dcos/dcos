@@ -271,7 +271,7 @@ def install_dcos(
         installer = test_util.installer_api_test.DcosCliInstaller()
 
     if setup:
-        # Make the default user priveleged to use docker
+        # Make the default user privileged to use docker
         cluster.ssher.remote_cmd(
             [cluster.bootstrap_host],
             ['sudo', 'usermod', '-aG', 'docker', cluster.ssher.user],
@@ -430,7 +430,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
                 ) from exc
 
 
-def run_integration_tests(cluster, setup=True, **kwargs):
+def run_integration_tests(cluster, **kwargs):
     assert len(cluster.agents) >= 2 and len(cluster.public_agents) >= 1, (
         'Tests require 2 agents and 1 public agent. agents: {agents}, public_agents: {public_agents}'.format(
             agents=repr(cluster.agents),

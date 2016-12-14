@@ -53,7 +53,6 @@ azure_base_source = Source(entry={
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
         'oauth_enabled': "[[[variables('oauthEnabled')]]]",
-        'oauth_available': 'true'
     }
 })
 
