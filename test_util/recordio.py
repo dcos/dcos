@@ -123,16 +123,17 @@ class Decoder():
 
                 try:
                     self.length = int(self.buffer.decode("UTF-8"))
+                    assert self.length >= 0, "Negative record length '{length}'".format(length=self.length)
                 except Exception as exception:
                     self.state = self.FAILED
                     raise Exception("Failed to decode length '{buffer}': {error}"
-                                    .format(buffer=self.buffer, error=exception))
+                                    .format(buffer=self.buffer, error=exception)) from exception
 
                 self.buffer = bytes("", "UTF-8")
                 self.state = self.RECORD
 
                 # Note that for 0 length records, we immediately decode.
-                if self.length <= 0:
+                if self.length == 0:
                     records.append(self.deserialize(self.buffer))
                     self.state = self.HEADER
 
