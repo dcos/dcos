@@ -67,7 +67,3 @@ chmod +x "$disk_resource_script"
 tee_stderr_script="$PKG_PATH/bin/tee_stderr"
 cp /pkg/extra/tee_stderr "$tee_stderr_script"
 chmod +x "$tee_stderr_script"
-
-# Install slave modules.
-mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
-cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"

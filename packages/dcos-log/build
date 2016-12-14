@@ -24,6 +24,7 @@ cat <<EOF | tee $master_service
 [Unit]
 Description=DC/OS Log service master: DC/OS logging service
 [Service]
+PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 Restart=always
 StartLimitInterval=0
