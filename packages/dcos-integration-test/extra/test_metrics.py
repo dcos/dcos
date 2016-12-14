@@ -26,7 +26,6 @@ def test_metrics_masters_ping(cluster):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_metrics_node(cluster):
     """Test /system/metrics/api/v0/node endpoint returns
     correct metrics.
