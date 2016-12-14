@@ -113,16 +113,22 @@ def test_if_marathon_app_can_be_debugged(cluster):
         post(agent_v1_url, input_headers, data=input_streamer(nested_container_id))
 
         # Verify the streamed output from the launch session
+        meowed = False
         decoder = Decoder(lambda s: json.loads(s.decode("UTF-8")))
         for chunk in launch_output.iter_content():
             for r in decoder.decode(chunk):
                 if r['type'] == 'DATA':
                     logging.debug('Extracted data chunk: %s', r['data'])
                     assert r['data']['data'] == 'meow', 'Output did not match expected'
+                    meowed = True
+        assert meowed, 'Read launch output without seeing meow.'
 
+        meowed = False
         # Verify the message from the attached output stream
         for chunk in attached_output.iter_content():
             for r in decoder.decode(chunk):
                 if r['type'] == 'DATA':
                     logging.debug('Extracted data chunk: %s', r['data'])
                     assert r['data']['data'] == 'meow', 'Output did not match expected'
+                    meowed = True
+        assert meowed, 'Read output stream without seeing meow.'
