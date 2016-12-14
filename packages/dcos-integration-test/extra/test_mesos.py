@@ -67,18 +67,15 @@ def test_if_marathon_app_can_be_debugged(cluster):
                 if app_id in task['id']:
                     container_id = task['statuses'][0]['container_status']['container_id']['value']
                     agent_id = task['slave_id']
-        if container_id is None:
-            raise Exception('Container ID not found for instance of app_id {}'.format(app_id))
-        if agent_id is None:
-            raise Exception('Agent ID not found for instance of app_id {}'.format(app_id))
+        assert container_id is not None, 'Container ID not found for instance of app_id {}'.format(app_id)
+        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(app_id)
 
         # Find hostname and URL from agent_id
         agent_hostname = None
         for agent in state['slaves']:
             if agent['id'] == agent_id:
                 agent_hostname = agent['hostname']
-        if agent_hostname is None:
-            raise Exception('Agent hostname not found for agent_id {}'.format(agent_id))
+        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
         agent_v1_url = 'http://{}:{}/api/v1'.format(agent_hostname, 5051)
         logging.debug('Located %s with containerID %s on agent %s', app_id, container_id, agent_hostname)
 
