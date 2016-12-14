@@ -406,6 +406,10 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc/cosmos.env
+    content: |
+      COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG={{ cosmos_staged_package_storage_uri_flag }}
+      COSMOS_PACKAGE_STORAGE_URI_FLAG={{ cosmos_package_storage_uri_flag }}
   - path: /etc/adminrouter.env
     content: |
       ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
