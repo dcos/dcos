@@ -22,8 +22,8 @@ class RequestProcessingException(Exception):
     """Processing of the request has failed
 
     This exception is used to signal that processing of the request has failed
-    and that the client should be sent the response imediattelly. The response
-    that should be sent is decribed by class attributes.
+    and that the client should be sent the response immediately. The response
+    that should be sent is described by class attributes.
 
     Attributes:
         code: HTTP code that should be sent to client [int]
@@ -65,9 +65,9 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def _send_reply(self, data):
         """Send reply to client in JSON format
 
-        Send a successfull reply to the client, with reply data/body
+        Send a successful reply to the client, with reply data/body
         formatted/serialized as JSON. It also makes sure that headers are set
-        right and JSON is formated in human-readable form.
+        right and JSON is formatted in human-readable form.
 
         Args:
             data: free form data that should be serialized to JSON
@@ -171,7 +171,7 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
 
         This method queries external reflector for server's IP address. It's done
         by sending a 'GET /reflect' request to a test_server running on some
-        other messos slave. Please see the descripion of the '_handle_path_reflect'
+        other mesos slave. Please see the description of the '_handle_path_reflect'
         method for more details.
 
         Args:
@@ -214,10 +214,10 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                                              "valid JSON: {}".format(e))
 
     def _handle_path_your_ip(self):
-        """Resspond to requests for server's IP address as seen by other cluster memebers
+        """Responds to requests for server's IP address as seen by other cluster members
 
-        Determine the server's address by quering external reflector (basically
-        the same test_server, but different service endpoint), and repond to
+        Determine the server's address by querying external reflector (basically
+        the same test_server, but different service endpoint), and respond to
         client with JSON hash containing test UUID's of the server, reflector,
         and IP address as reported by the reflector
         """
@@ -250,19 +250,18 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):  # noqa: ignore=N802
         """Mini service router handling GET requests"""
-        # TODO(cmaloney): Alphabetize these.
-        if self.path == '/ping':
-            self._handle_path_ping()
-        elif self.path == '/test_uuid':
-            self._handle_path_uuid()
-        elif self.path == '/reflect':
-            self._handle_path_reflect()
-        elif self.path == '/dns_search':
+        if self.path == '/dns_search':
             self._handle_path_dns_search()
-        elif self.path == '/signal_test_cache':
-            self._handle_path_signal_test_cache(False)
         elif self.path == '/operating_environment':
             self._handle_operating_environment()
+        elif self.path == '/ping':
+            self._handle_path_ping()
+        elif self.path == '/reflect':
+            self._handle_path_reflect()
+        elif self.path == '/signal_test_cache':
+            self._handle_path_signal_test_cache(False)
+        elif self.path == '/test_uuid':
+            self._handle_path_uuid()
         else:
             self.send_error(404, 'Not found', 'Endpoint is not supported')
 
@@ -292,9 +291,9 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 
 def _verify_environment():
-    """Verify that the enviroment is sane and can be used by the test_server"""
+    """Verify that the environment is sane and can be used by the test_server"""
     if TEST_UUID_VARNAME not in os.environ:
-        logging.error("Uniq test ID is missing in env vars, aborting.")
+        logging.error("Unique test ID is missing in env vars, aborting.")
         sys.exit(1)
 
 
