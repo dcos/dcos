@@ -4,7 +4,7 @@ import requests
 
 
 def validate_json_entry(entry: dict):
-    required_fields = set(['fields', 'cursor', 'monotonic_timestamp', 'realtime_timestamp'])
+    required_fields = {'fields', 'cursor', 'monotonic_timestamp', 'realtime_timestamp'}
 
     assert set(entry.keys()) <= required_fields, (
         "Entry didn't have all required fields. Entry fields: {}, required fields:{}".format(entry, required_fields))
@@ -31,8 +31,8 @@ def test_log_text(cluster):
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 lines
-        lines = filter(lambda x: x != '', response.content.decode().split('\n'))
-        assert len(list(lines)) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+        lines = list(filter(lambda x: x != '', response.content.decode().split('\n')))
+        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
 def test_log_json(cluster):
@@ -71,5 +71,5 @@ def test_log_proxy(cluster):
     for slave_id in slaves_ids:
         response = cluster.get('/system/v1/agent/{}/logs/v1/range/?skip_prev=10'.format(slave_id))
         check_response_ok(response, {'Content-Type': 'text/plain'})
-        lines = filter(lambda x: x != '', response.content.decode().split('\n'))
-        assert len(list(lines)) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+        lines = list(filter(lambda x: x != '', response.content.decode().split('\n')))
+        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
