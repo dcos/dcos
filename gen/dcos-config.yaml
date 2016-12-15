@@ -343,6 +343,9 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
+  - path: /etc/dcos-log.env
+    content: |
+      DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
   - path: /etc/dcos-log-config.json
     content: |
       {
