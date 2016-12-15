@@ -1,0 +1,4 @@
+[Unit]
+Description=DC/OS Log socket: DC/OS logging socket
+[Socket]
+ListenStream=/run/dcos/dcos-log.sock
