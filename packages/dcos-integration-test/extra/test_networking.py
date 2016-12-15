@@ -1,9 +1,15 @@
 import logging
 
+from subprocess import check_call
+
 import requests
 import retrying
 
 from test_util.marathon import get_test_app, get_test_app_in_docker
+
+
+def test_edns0():
+    assert(check_call('/opt/mesosphere/active/dcos-integration-test/dns-test-prog') == 0)
 
 
 def ensure_routable(cmd, service_points, timeout=120):
