@@ -37,13 +37,17 @@ class Bootstrapper(object):
     def __exit__(self, type, value, tb):
         self.close()
 
-    def cluster_id(self, path):
+    def cluster_id(self, path, readonly=False):
         dirpath = os.path.dirname(os.path.abspath(path))
         log.info('Opening {} for locking'.format(dirpath))
         with utils.Directory(dirpath) as d:
             log.info('Taking exclusive lock on {}'.format(dirpath))
             with d.lock():
-                zkid = str(uuid.uuid4()).encode('ascii')
+                if readonly:
+                    zkid = None
+                else:
+                    zkid = str(uuid.uuid4()).encode('ascii')
+
                 zkid = self._consensus('/cluster-id', zkid, ANYONE_READ)
                 zkid = zkid.decode('ascii')
 
