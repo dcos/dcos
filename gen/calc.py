@@ -545,7 +545,8 @@ entry = {
         lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
         validate_exhibitor_storage_master_discovery,
-        validate_cosmos_config
+        validate_cosmos_config,
+        lambda enable_lb: validate_true_false(enable_lb)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -557,6 +558,7 @@ entry = {
         'oauth_available': calculate_oauth_available,
         'telemetry_enabled': 'true',
         'check_time': 'true',
+        'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
