@@ -28,8 +28,7 @@ import gen.internals
 import gen.template
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.build import hash_checkout
-from pkgpanda.util import json_prettyprint, load_string, make_tar, write_json
+from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, write_json
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}

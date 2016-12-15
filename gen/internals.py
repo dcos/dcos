@@ -6,7 +6,7 @@ from functools import partial, partialmethod
 from typing import Callable, List, Tuple, Union
 
 from gen.exceptions import ValidationError
-from pkgpanda.build import hash_checkout
+from pkgpanda.util import hash_checkout
 
 
 log = logging.getLogger(__name__)
