@@ -1,5 +1,4 @@
 import copy
-import hashlib
 import json
 import multiprocessing
 import os.path
@@ -11,7 +10,6 @@ from contextlib import contextmanager
 from os import chdir, getcwd, mkdir
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
-from typing import List
 
 import pkgpanda.build.constants
 import pkgpanda.build.src_fetchers
@@ -20,9 +18,10 @@ from pkgpanda import Install, PackageId, Repository
 from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
-from pkgpanda.util import (check_forbidden_services, download_atomic, load_json,
-                           load_string, logger, make_file, make_tar,
-                           rewrite_symlinks, write_json, write_string)
+from pkgpanda.util import (check_forbidden_services, download_atomic,
+                           hash_checkout, load_json, load_string, logger,
+                           make_file, make_tar, rewrite_symlinks, write_json,
+                           write_string)
 
 
 class BuildError(Exception):
@@ -408,47 +407,6 @@ def expand_require(require):
 
 def get_docker_id(docker_name):
     return check_output(["docker", "inspect", "-f", "{{ .Id }}", docker_name]).decode('utf-8').strip()
-
-
-def hash_str(s: str):
-    hasher = hashlib.sha1()
-    hasher.update(s.encode('utf-8'))
-    return hasher.hexdigest()
-
-
-def hash_int(i: int):
-    return hash_str(str(i))
-
-
-def hash_dict(d: dict):
-    item_hashes = []
-    for k in sorted(d.keys()):
-        assert isinstance(k, str)
-        item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
-    return hash_str(",".join(item_hashes))
-
-
-def hash_list(l: List[str]):
-    item_hashes = []
-    for item in sorted(l):
-        item_hashes.append(hash_checkout(item))
-    return hash_str(",".join(item_hashes))
-
-
-def hash_checkout(item):
-
-    if isinstance(item, str) or isinstance(item, bytes):
-        return hash_str(item)
-    elif isinstance(item, dict):
-        return hash_dict(item)
-    elif isinstance(item, list):
-        return hash_list(item)
-    elif isinstance(item, int):
-        return hash_int(item)
-    elif isinstance(item, set):
-        return hash_list(list(item))
-    else:
-        raise NotImplementedError("{} of type {}".format(item, type(item)))
 
 
 def hash_files_in_folder(directory):
