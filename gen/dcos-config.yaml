@@ -43,7 +43,7 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc/navstar-erl.env
     content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
+      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar enable_lb {{ enable_lb }}
   - path: /etc/minuteman-erl.env
     content: |
       ERL_FLAGS=-kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503
