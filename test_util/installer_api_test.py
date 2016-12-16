@@ -58,8 +58,8 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
     def ip_detect_script(preset_name):
         try:
             return pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(preset_name)).decode('utf-8')
-        except FileNotFoundError as exc:
-            raise Exception('IP-detect preset not found: {}'.format(preset_name)) from exc
+        except OSError as exc:
+            raise Exception('Failed to read ip-detect script preset {}: {}'.format(preset_name, exc)) from exc
 
     @abc.abstractmethod
     def genconf(self, expect_errors=False):

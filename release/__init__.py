@@ -887,8 +887,8 @@ def main():
         global _config
         config = load_config(options.config)
         _config = config
-    except FileNotFoundError:
-        print("ERROR: Release configuration file '{}' must exist.".format(options.config))
+    except OSError as ex:
+        print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
         sys.exit(1)
 
     release_manager = ReleaseManager(config, options.noop)

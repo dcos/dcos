@@ -80,6 +80,12 @@ class Config():
                 "available configuration options. You can also use the GUI web installer (--web),"
                 "which provides a guided configuration and installation for simple "
                 "deployments.".format(self.config_path)) from ex
+        except OSError as ex:
+            raise NoConfigError(
+                "Failed to open config file at {}: {}. See the DC/OS documentation to learn "
+                "how to create a config file. You can also use the GUI web installer (--web), "
+                "which provides a guided configuration and installation for simple "
+                "deployments.".format(self.config_path, ex)) from ex
         except YamlParseError as ex:
             raise NoConfigError("Unable to load configuration file. {}".format(ex)) from ex
 

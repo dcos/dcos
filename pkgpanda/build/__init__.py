@@ -516,8 +516,8 @@ def load_optional_json(filename):
             if text:
                 return json.loads(text)
             return {}
-    except FileNotFoundError:
-        raise BuildError("Didn't find expected JSON file: {}".format(filename))
+    except OSError as ex:
+        raise BuildError("Failed to open JSON file {}: {}".format(filename, ex))
     except ValueError as ex:
         raise BuildError("Unable to parse json in {}: {}".format(filename, ex))
 
