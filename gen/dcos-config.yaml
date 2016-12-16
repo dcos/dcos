@@ -1,4 +1,9 @@
 package:
+  - path: /etc/dcos-metrics-config.yaml
+    content: |
+  - path: /etc/dcos-metrics.env
+    content: |
+      DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
   - path: /pkginfo.json
     content: |
       {
@@ -338,6 +343,9 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
+  - path: /etc/dcos-log.env
+    content: |
+      DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
   - path: /etc/dcos-log-config.json
     content: |
       {
@@ -514,7 +522,7 @@ package:
       "oauth":{"enabled":false},
 {% endswitch %}
 {% endswitch %}
-      "tracking":{"enabled":{{ telemetry_enabled }}}}}}
+      "tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}}}}}
   - path: /etc_master/marathon
     content: |
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon

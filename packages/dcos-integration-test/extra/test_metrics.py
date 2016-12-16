@@ -27,41 +27,58 @@ def test_metrics_masters_ping(cluster):
 
 
 def test_metrics_node(cluster):
-    """Test /system/metrics/api/v0/node endpoint returns
-    correct metrics.
+    """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
+    metrics and metric metadata.
     """
     def expected_datapoint_response(response):
-        assert 'datapoints' in response, '"datapoints" dictionary not found in response,'
-        'got {}'.format(response)
+        """Enure that the "node" endpoint returns a "datapoints" dict.
+        """
+        assert 'datapoints' in response, '"datapoints" dictionary not found'
+        'in response, got {}'.format(response)
+        return True
+
+    def expected_dimension_response(response):
+        """Ensure that the "node" endpoint returns a dimensions dict that
+        contains a non-empty string for cluster_id.
+        """
+        assert 'dimensions' in response, '"dimensions" object not found in'
+        'response, got {}'.format(response)
+
+        assert 'cluster_id' in response['dimensions'], '"cluster_id" key not'
+        'found in dimensions, got {}'.format(response)
+
+        assert response['dimensions']['cluster_id'] != "", '"expected'
+        'cluster_id to contain a value, got {}'.format(
+            response['dimensions']['cluster_id'])
 
         return True
 
+    # private agents
     for agent in cluster.slaves:
         response = cluster.metrics.get('node', node=agent)
 
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
+        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
+            response.status_code, response.content)
+        assert expected_datapoint_response(response.json())
+        assert expected_dimension_response(response.json())
 
-        assert expected_datapoint_response(response.json()), 'Private agent did not '
-        'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.content)
-
+    # public agents
     for agent in cluster.public_slaves:
         response = cluster.metrics.get('node', node=agent)
 
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
+        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
+            response.status_code, response.content)
+        assert expected_datapoint_response(response.json())
+        assert expected_dimension_response(response.json())
 
-        assert expected_datapoint_response(response.json()), 'Public agent did not '
-        'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.content)
-
+    # masters
     for master in cluster.masters:
         response = cluster.metrics.get('node', node=master)
 
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
-
-        assert expected_datapoint_response(response.json()), 'Master host did not '
-        'return the expected metrics from .../node endpoint. '
-        'Got {}'.format(response.content)
+        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
+            response.status_code, response.content)
+        assert expected_datapoint_response(response.json())
+        assert expected_dimension_response(response.json())
 
 
 def test_metrics_containers(cluster):
