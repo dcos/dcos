@@ -81,6 +81,8 @@ def get_test_app():
 
 def get_task_info(apps, tasks):
     idx = 0    # We have a single app and a task for this test.
+    logging.info("marathon apps info {apps} ".format(apps=str(apps)))
+    logging.info("marathon tasks info {tasks}".format(tasks=str(tasks)))
 
     try:
         tasks_state = tasks["tasks"][idx]["state"]
