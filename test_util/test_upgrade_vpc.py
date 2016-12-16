@@ -72,7 +72,7 @@ def get_test_app():
                 "gracePeriodSeconds": 5,
                 "intervalSeconds": 10,
                 "timeoutSeconds": 10,
-                "maxConsecutiveFailures": 3
+                "maxConsecutiveFailures": -1
             }
         ],
     }
