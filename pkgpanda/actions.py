@@ -199,7 +199,7 @@ def _do_bootstrap(install, repository):
     # If the config can't be grabbed from any of them, fail.
     def fetcher(id, target):
         if repository_url is None:
-            raise ValidationError("ERROR: Non-local package {} but no repository url given.".format(repository_url))
+            raise ValidationError("ERROR: Non-local package {} but no repository url given.".format(id))
         return requests_fetcher(repository_url, id, target, os.getcwd())
 
     # Copy host/cluster-specific packages written to the filesystem manually
