@@ -235,23 +235,22 @@ def validate_oauth_enabled(oauth_enabled):
 def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except ValueError:
-        # TODO(cmaloney): This is not the right form to do this
-        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
 
     overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
 
-    if dcos_overlay_network_default_name not in overlay_names:
-        assert False, "Default overlay network name does not reference a defined overlay network: {}".format(
-            dcos_overlay_network_default_name)
+    assert dcos_overlay_network_default_name in overlay_names, (
+        "Default overlay network name does not reference a defined overlay network: {}".format(
+            dcos_overlay_network_default_name))
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except ValueError:
-        # TODO(cmaloney): This is not the right form to do this
-        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -260,10 +259,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         ipaddress.ip_network(overlay_network['vtep_subnet'])
     except ValueError as ex:
-        # TODO(cmaloney): This is incorrect currently.
-        assert False, (
-            "Incorrect value for vtep_subnet. Only IPv4 "
-            "values are allowed: {}".format(ex))
+        raise AssertionError(
+            "Incorrect value for vtep_subnet: {}."
+            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
 
     assert 'vtep_mac_oui' in overlay_network.keys(), (
         'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
@@ -274,14 +272,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         'We need at least one overlay network configuration {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
-        if (len(overlay['name']) > 13):
-            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        assert (len(overlay['name']) <= 13), (
+            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
         try:
             ipaddress.ip_network(overlay['subnet'])
         except ValueError as ex:
-            assert False, (
-                "Incorrect value for vtep_subnet. Only IPv4 "
-                "values are allowed: {}".format(ex))
+            raise AssertionError(
+                "Incorrect value for vtep_subnet {}."
+                " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
 
 
 def calculate_oauth_available(oauth_enabled):
