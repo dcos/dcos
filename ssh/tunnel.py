@@ -2,9 +2,9 @@
 Module for creating persistent SSH connections for use with synchronous
 commands. Typically, tunnels should be invoked as a context manager to
 ensure proper cleanup. E.G.:
-with Tunnel(*args, **kwargs) as tunnel:
-    tunnel.write_to_remote('/usr/local/usrpath/testfile.txt', 'test_file.txt')
-    tunnel.remote_cmd(['cat', 'test_file.txt'])
+with tunnel(*args, **kwargs) as my_tunnel:
+    my_tunnel.write_to_remote('/usr/local/usrpath/testfile.txt', 'test_file.txt')
+    my_tunnel.remote_cmd(['cat', 'test_file.txt'])
 """
 import logging
 import tempfile
@@ -56,7 +56,8 @@ class Tunnelled():
 
 @contextmanager
 def tunnel(user: str, key_path: str, host: str, port: int=22):
-    tunnel_socket = tempfile.NamedTemporaryFile()
+    # This will be cleaned up by SSH when the tunnel is closed
+    tunnel_socket = tempfile.NamedTemporaryFile(delete=False)
     target = user + '@' + host
 
     base_cmd = [
