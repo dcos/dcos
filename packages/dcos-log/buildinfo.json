@@ -2,7 +2,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-log.git",
-    "ref": "c2c3ce9ab8236cd4cb47bb62a1bf8464360c5871",
+    "ref": "86c5cb00c6942a9008b0c345c810137c93fa89b4",
     "ref_origin": "master"
   },
   "username": "dcos_log",
