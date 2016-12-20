@@ -17,8 +17,6 @@ log = logging.getLogger(__name__)
 def integration_test(
         tunnel, test_dir,
         dcos_dns, master_list, agent_list, public_agent_list,
-        provider,
-        test_dns_search=True,
         aws_access_key_id='', aws_secret_access_key='', region='', add_env=None,
         pytest_cmd='py.test -vv -s -rs'):
     """Runs integration test on host
@@ -28,8 +26,6 @@ def integration_test(
         dcos_dns: string representing IP of DCOS DNS host
         master_list: string of comma separated master addresses
         agent_list: string of comma separated agent addresses
-        test_dns_search: if set to True, test for deployed mesos DNS app
-        provider: (str) either onprem, aws, or azure
     Optional args:
         aws_access_key_id: needed for REXRAY tests
         aws_secret_access_key: needed for REXRAY tests
@@ -42,15 +38,12 @@ def integration_test(
         exit code corresponding to test_cmd run
 
     """
-    dns_search = 'true' if test_dns_search else 'false'
     test_env = [
         'DCOS_DNS_ADDRESS=http://' + dcos_dns,
         'MASTER_HOSTS=' + ','.join(master_list),
         'PUBLIC_MASTER_HOSTS=' + ','.join(master_list),
         'SLAVE_HOSTS=' + ','.join(agent_list),
         'PUBLIC_SLAVE_HOSTS=' + ','.join(public_agent_list),
-        'DCOS_PROVIDER=' + provider,
-        'DNS_SEARCH=' + dns_search,
         'AWS_ACCESS_KEY_ID=' + aws_access_key_id,
         'AWS_SECRET_ACCESS_KEY=' + aws_secret_access_key,
         'AWS_REGION=' + region]

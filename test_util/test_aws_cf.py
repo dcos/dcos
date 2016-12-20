@@ -112,7 +112,6 @@ def main():
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,
-        test_dns_search=False,
         add_env=options.add_env,
         pytest_cmd=options.pytest_cmd,
     )

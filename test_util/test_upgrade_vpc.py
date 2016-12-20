@@ -149,9 +149,6 @@ def main():
         master_list,
         [h.private_ip for h in cluster.agents],
         [h.private_ip for h in cluster.public_agents],
-        False,              # dns search set.
-        cluster.provider,
-        True,               # auth_enabled
         "root",             # default_os_user
         web_auth_default_user=DcosUser(CI_AUTH_JSON),
         ca_cert_path=None)
