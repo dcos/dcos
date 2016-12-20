@@ -62,9 +62,7 @@ def get_value(template_parameter):
 
 
 def get_test_config():
-    # Currently tests only pass with auth disabled, TEST_ADD_ENV_DCOS_AUTH_ENABLED=true
-    # can be set in the environment to override this
-    add_env = {'DCOS_AUTH_ENABLED': 'false'}
+    add_env = {}
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
@@ -184,8 +182,6 @@ def main():
                 master_list=ip_buckets['master'],
                 agent_list=ip_buckets['private'],
                 public_agent_list=ip_buckets['public'],
-                provider='azure',
-                test_dns_search=False,
                 add_env=get_test_config(),
                 pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True

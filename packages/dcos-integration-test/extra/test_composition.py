@@ -9,6 +9,8 @@ import kazoo.client
 import pytest
 import requests
 
+from test_helpers import dcos_config
+
 
 @pytest.mark.first
 def test_cluster_is_up(cluster):
@@ -112,7 +114,7 @@ def test_signal_service(cluster):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
-        'provider': cluster.provider,
+        'provider': dcos_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
         'customerKey': customer_key,

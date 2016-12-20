@@ -19,13 +19,13 @@ def dcos_launchpad(cluster):
     """Interface for direct integration to dcos_launchpad hardware
     Currently only supports AWS CF with AWS VPC coming soon
     """
-    if cluster.provider != 'aws':
+    if 'AWS_STACK_NAME' not in os.environ:
         # TODO(mellenburg): update when advanced templates are merged
-        pytest.skip('Must be AWS CF to run test')
+        pytest.skip('Must use a AWS Cloudformation to run test')
+    stack_name = os.environ['AWS_STACK_NAME']
+    aws_region = os.environ['AWS_REGION']
     aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
     aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-    aws_region = os.environ['AWS_REGION']
-    stack_name = os.environ['AWS_STACK_NAME']
     bw = test_util.aws.BotoWrapper(aws_region, aws_access_key_id, aws_secret_access_key)
     return test_util.aws.DcosCfSimple(stack_name, bw)
 
