@@ -24,7 +24,7 @@ def make_3dt_request(cluster):
         assert endpoint.startswith('/'), 'endpoint {} must start with /'.format(endpoint)
         endpoint = BASE_ENDPOINT_3DT + endpoint + '?cache=0'
         response = cluster.get(path=endpoint, node=ip)
-        assert response.ok
+        assert response.status_code == 200
         try:
             json_response = response.json()
             logging.info('Response: {}'.format(json_response))
