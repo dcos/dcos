@@ -84,24 +84,12 @@ def is_azure_addr(addr: str):
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure static master list and IP based static " \
-            "master list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     validate_ipv4_addresses(nodes_list)
 
 
 def validate_ip_port_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure resolver list and IP based static " \
-            "resolver list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     # Create a list of only ip addresses by spliting the port from the node. Use the resulting
     # ip_list to validate that it is an ipv4 address. If the port was specified, validate its
     # value is between 1 and 65535.
@@ -288,14 +276,7 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 
 def calculate_oauth_available(oauth_enabled):
-    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
-        return 'true'
-    elif oauth_enabled == 'false':
-        return 'false'
-    elif oauth_enabled == 'true':
-        return 'true'
-    else:
-        raise AssertionError("Invaild value for oauth_enabled: {}".format(oauth_enabled))
+    return oauth_enabled
 
 
 def validate_num_masters(num_masters):
@@ -544,6 +525,7 @@ entry = {
         validate_zk_path,
         validate_cluster_packages,
         validate_oauth_enabled,
+        lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
         validate_mesos_log_retention_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
