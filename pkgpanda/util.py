@@ -141,6 +141,11 @@ def load_yaml(filename):
         raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
 
 
+def write_yaml(filename, data, **kwargs):
+    with open(filename, "w+") as f:
+        return yaml.safe_dump(data, f, **kwargs)
+
+
 def make_file(name):
     with open(name, 'a'):
         pass

@@ -55,41 +55,43 @@ def validate_a(a):
     assert a == 'a_str'
 
 
-def test_resolve_simple():
-
-    test_source = Source({
-        'validate': [validate_a],
-        'default': {
-            'a': 'a_str',
-            'd': 'd_1',
-        },
-        'must': {
-            'b': 'b_str'
-        },
-        'conditional': {
-            'd': {
-                'd_1': {
-                    'must': {
-                        'd_1_b': 'd_1_b_str'
-                    }
-                },
-                'd_2': {
-                    'must': {
-                        'd_2_b': 'd_2_b_str'
-                    }
+test_source = Source({
+    'validate': [validate_a],
+    'default': {
+        'a': 'a_str',
+        'd': 'd_1',
+    },
+    'must': {
+        'b': 'b_str'
+    },
+    'conditional': {
+        'd': {
+            'd_1': {
+                'must': {
+                    'd_1_b': 'd_1_b_str'
+                }
+            },
+            'd_2': {
+                'must': {
+                    'd_2_b': 'd_2_b_str'
                 }
             }
         }
-    })
+    }
+})
 
-    def get_test_target():
-        return Target(
-            {'a', 'b', 'c'},
-            {'d': Scope(
-                'd', {
-                    'd_1': Target({'d_1_a', 'd_1_b'}),
-                    'd_2': Target({'d_2_a', 'd_2_b'})
-                })})
+
+def get_test_target():
+    return Target(
+        {'a', 'b', 'c'},
+        {'d': Scope(
+            'd', {
+                'd_1': Target({'d_1_a', 'd_1_b'}),
+                'd_2': Target({'d_2_a', 'd_2_b'})
+            })})
+
+
+def test_resolve_simple():
 
     test_user_source = Source(is_user=True)
     test_user_source.add_must('c', 'c_str')
@@ -105,3 +107,15 @@ def test_resolve_simple():
     resolver = gen.internals.resolve_configuration([test_source, test_partial_source], [get_test_target()])
     print(resolver)
     assert resolver.status_dict == {'status': 'errors', 'errors': {}, 'unset': {'c'}}
+
+
+def test_resolve_late():
+    test_late_source = Source()
+    test_late_source.add_must('c', gen.internals.Late('c_str'))
+    test_late_source.add_must('d_1_a', 'd_1_a_str')
+    resolver = gen.internals.resolve_configuration([test_source, test_late_source], [get_test_target()])
+
+    assert resolver.status_dict == {'status': 'ok'}
+    assert resolver.late == {'c'}
+
+    # TODO(cmaloney): Test resolved from late variables

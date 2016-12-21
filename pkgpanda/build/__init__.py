@@ -1,5 +1,4 @@
 import copy
-import hashlib
 import json
 import multiprocessing
 import os.path

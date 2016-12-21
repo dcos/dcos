@@ -43,14 +43,32 @@ def validate_one_of(val: str, valid_values) -> None:
 
 def function_id(function: Callable):
     return {
+        'type': 'function',
         'name': function.__name__,
         'parameters': get_function_parameters(function)
     }
 
 
-def value_id(value: Union[str, Callable]) -> str:
+class Late:
+    """A value which is going to be bound 'late' / is only known at cluster launch time."""
+
+    def __init__(self, expression):
+        self.expression = expression
+
+
+class LateBoundException(Exception):
+    pass
+
+
+def late_bound_raise():
+    raise LateBoundException()
+
+
+def value_id(value: Union[str, Callable, Late]) -> str:
     if isinstance(value, str):
         return value
+    elif isinstance(value, Late):
+        return {'type': 'late', 'expression': value.expression}
     else:
         return function_id(value)
 
@@ -61,7 +79,7 @@ class Setter:
     def __init__(
             self,
             name: str,
-            value: Union[str, Callable],
+            value: Union[str, Callable, Late],
             is_optional: bool,
             conditions: List[Tuple[str, str]],
             is_user: bool):
@@ -77,10 +95,17 @@ class Setter:
         if isinstance(value, str):
             self.calc = get_value
             self.parameters = set()
+            self.is_late = False
+        elif isinstance(value, Late):
+            self.calc = late_bound_raise
+            self.parameters = set()
+            self.is_late = True
+            self.late_expression = value.expression
         else:
             assert callable(value), "{} should be a string or callable. Got: {}".format(name, value)
             self.calc = value
             self.parameters = get_function_parameters(value)
+            self.is_late = False
 
     def __repr__(self):
         return "<Setter {}{}{}, conditions: {}{}>".format(
@@ -284,6 +309,13 @@ class SkipError(Exception):
     pass
 
 
+# has a deterministic chunk before and after the variable name so we can deterministically get out
+# the name
+LATE_BIND_PLACEHOLDER_START = 'LATE_BIND_PLACEHOLDER_START_'
+LATE_BIND_PLACEHOLDER_END = '_LATE_BIND_PLACEHOLDER_END'
+LATE_BIND_PLACEHOLDER = LATE_BIND_PLACEHOLDER_START + '{}' + LATE_BIND_PLACEHOLDER_END
+
+
 class Resolvable:
     """ Keeps track of the state of the resolution of a variable with a given name
 
@@ -292,9 +324,10 @@ class Resolvable:
     - Keeps track of what caused the resolvable to enter existence (it's cause)
     """
 
-    UNRESOLVED = 'unresolved'
     ERROR = 'error'
+    LATE = 'late'
     RESOLVED = 'resolved'
+    UNRESOLVED = 'unresolved'
 
     def __init__(self, name):
         self._state = Resolvable.UNRESOLVED
@@ -312,6 +345,10 @@ class Resolvable:
         return self._state == Resolvable.ERROR
 
     @property
+    def is_late(self):
+        return self._state == Resolvable.LATE
+
+    @property
     def is_resolved(self):
         return self._state == Resolvable.RESOLVED
 
@@ -326,10 +363,15 @@ class Resolvable:
         self._value = value
         self.setter = setter
 
+    def finalize_late(self):
+        self._state = Resolvable.LATE
+        self._value = LATE_BIND_PLACEHOLDER.format(self.name)
+
     @property
     def value(self):
-        assert self.is_resolved, "is_resolved() must return true for this function to " \
-            "be called. State: {}, is_resolved: {}".format(self._state, self.is_resolved)
+        assert self.is_resolved or self.is_late, "is_resolved() or is_late() must return true for " \
+            "this function to be called. State: {}, is_resolved: {}, is_late: {}".format(
+                self._state, self.is_resolved, self.is_late)
 
         return self._value
 
@@ -446,6 +488,7 @@ class Resolver:
 
         self._errors = dict()
         self._unset = set()
+        self._late = set()
 
         # The current stack of resolvables which are in the process of being resolved.
         self._eval_stack = list()
@@ -484,6 +527,20 @@ class Resolver:
             assert final_feasible, "Had multiple optionals and no musts. Template internal error: {!r}".format(feasible)
             feasible = final_feasible
 
+        # Filter out all feasible functions where the input is a "late" variable. This makes it so
+        # that things which use late binding (AWS templates) can have the value of something like
+        # master_external_loadbalancer late bound, but still have `has_master_external_loadbalancer`
+        # bound regularly which is critical for proper operation.
+        def has_no_late_parameters(setter) -> bool:
+            for parameter in setter.parameters:
+                self._ensure_finalized(self._arguments[parameter])
+                if self._arguments[parameter].is_late:
+                    return False
+            return True
+
+        if len(feasible) > 1:
+            feasible = list(filter(has_no_late_parameters, feasible))
+
         # TODO(cmaloney): As long as all paths to set the value evaluate to the same value then
         # having more than one way to calculate is fine. This is true of both multiple internal /
         # system setters, and having multiple user setters.
@@ -496,6 +553,12 @@ class Resolver:
                 resolvable.name, feasible))
 
         setter = feasible[0]
+
+        if not has_no_late_parameters(setter):
+            # The setter has late parameters, which means the parameter it's setting is late as
+            # well. Stash that it is late. Ideally would also stash the setter / ensure we use the
+            # exact same one when actually deploying.
+            raise LateBoundException()
 
         # Get values for the parameters of the setter than call it to calculate the value.
         kwargs = {}
@@ -543,6 +606,9 @@ class Resolver:
         with self._stack_layer(resolvable.name):
             try:
                 resolvable.finalize_value(*self._calculate(resolvable))
+            except LateBoundException as ex:
+                self._late.add(resolvable.name)
+                resolvable.finalize_late()
             except CalculatorError as ex:
                 resolvable.finalize_error(ex)
                 self._errors[resolvable.name] = ex.args[0]
@@ -602,7 +668,7 @@ class Resolver:
             if resolvable.is_error:
                 continue
 
-            assert resolvable.is_resolved, "uhhh: {}".format(resolvable)
+            assert resolvable.is_resolved or resolvable.is_late, "uhhh: {}".format(resolvable)
 
             # Must be in the cases since we add validation functions for all switches automatically.
             assert resolvable.value in sub_scope.cases
@@ -633,6 +699,11 @@ class Resolver:
     def arguments(self):
         assert self._resolved, "Can't get arguments until they've been resolved"
         return self._arguments
+
+    @property
+    def late(self):
+        assert self._resolved, "Can't get late arguments until the Resolver has been resolved"
+        return self._late
 
     @property
     def status_dict(self):
