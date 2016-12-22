@@ -1,7 +1,6 @@
 [Unit]
 Description=DC/OS Log service master: DC/OS logging service
 [Service]
-PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-log.env
 EnvironmentFile=-/opt/mesosphere/etc/dcos-log-extra.env
@@ -9,5 +8,4 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 User=dcos_log
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-log-master
 ExecStart=/opt/mesosphere/bin/dcos-log -config ${DCOS_LOG_CONFIG_PATH}
