@@ -30,7 +30,7 @@ def get_test_app(custom_port=False):
         },
         'healthChecks': [
             {
-                'protocol': 'HTTP',
+                'protocol': 'MESOS_HTTP',
                 'path': '/ping',
                 'portIndex': 0,
                 'gracePeriodSeconds': 5,

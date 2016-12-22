@@ -15,29 +15,18 @@ popd
 
 cp -r /pkg/src/navstar/_build/prod/rel/navstar ${PKG_PATH}
 
+
+
 service=${PKG_PATH}/dcos.target.wants/dcos-navstar.service
 mkdir -p $(dirname $service)
 
-cat <<EOF > $service
-[Unit]
-Description=Navstar: A distributed systems & network overlay orchestration engine
+navstar_service=${PKG_PATH}/dcos.target.wants/dcos-navstar.service
+mkdir -p $(dirname $navstar_service)
+cp /pkg/extra/dcos-navstar.service "$navstar_service"
 
-[Service]
-Restart=always
-StartLimitInterval=0
-RestartSec=5
-WorkingDirectory=${PKG_PATH}/navstar
-EnvironmentFile=/opt/mesosphere/etc/navstar-erl.env
-EnvironmentFile=/opt/mesosphere/etc/check_time.env
-EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/opt/mesosphere/etc/navstar.env
-EnvironmentFile=-/run/dcos/etc/navstar_auth.env
-ExecStartPre=/opt/mesosphere/bin/check-time
-ExecStartPre=/bin/ping -c1 ready.spartan
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-navstar
-ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/mnesia
-ExecStartPre=/usr/bin/env mkdir -p /var/lib/dcos/navstar/lashup
-ExecStart=${PKG_PATH}/navstar/bin/navstar-env foreground
-Environment=HOME=/opt/mesosphere
-EOF
+mkdir -p $PKG_PATH/bin
+
+setup_iptables="$PKG_PATH/bin/setup_iptables.sh"
+cp /pkg/extra/setup_iptables.sh "$setup_iptables"
+chmod +x "$setup_iptables"
 
