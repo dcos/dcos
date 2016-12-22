@@ -48,8 +48,8 @@ class BotoWrapper():
     def create_key_pair(self, key_name):
         """Returns private key of newly generated pair
         """
-        key = self.resource('ec2').KeyPair(key_name)
-        return key.key_material
+        key = self.client('ec2').create_key_pair(KeyName=key_name)
+        return key['KeyMaterial']
 
     def delete_key_pair(self, key_name):
         self.resource('ec2').KeyPair(key_name).delete()
