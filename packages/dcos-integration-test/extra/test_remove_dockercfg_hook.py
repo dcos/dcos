@@ -3,13 +3,6 @@ import uuid
 import pytest
 
 
-@pytest.fixture(scope='module')
-def auth_cluster(cluster):
-    if not cluster.dockercfg_hook_enabled:
-        pytest.skip("Skipped because not running against cluster with remove .dockercfg hook.")
-    return cluster
-
-
 def test_remove_dockercfg_hook(cluster):
     """Test that the remove .dockercfg hook is working properly.
 
@@ -17,6 +10,10 @@ def test_remove_dockercfg_hook(cluster):
     (downloaded as a uri via the Mesos fetcher) is removed from the task's sandbox.
 
     """
+
+    # Skip the test if the hook is disabled
+    if not cluster.dockercfg_hook_enabled:
+        return
 
     # Create a one-off job checking that the fetched .dockercfg file is not in the sandbox
     job = {
