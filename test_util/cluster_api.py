@@ -330,7 +330,7 @@ class ClusterApi(test_util.helpers.ApiClient):
         success = False
         try:
             success = wait_for_completion()
-        catch Exception as ex:
+        except Exception:
             return False
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
