@@ -39,14 +39,18 @@ INSTANCE_GROUPS = {
     }
 }
 
+def validate_provider(provider):
+    assert provider == 'azure'
 
 azure_base_source = Source(entry={
+    'validate': [
+        validate_provider
+    ],
     'default': {
         'platform': 'azure',
         'enable_docker_gc': 'true'
     },
     'must': {
-        'provider': 'azure',
         'resolvers': '["168.63.129.16"]',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
         'master_discovery': 'static',

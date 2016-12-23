@@ -27,8 +27,13 @@ def get_ip_detect(name):
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
     return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
 
+def validate_provider(provider):
+    assert provider == 'aws'
 
 aws_base_source = Source(entry={
+    'validate': [
+        validate_provider
+    ],
     'default': {
         'platform': 'aws',
         'resolvers': '["169.254.169.253"]',
@@ -39,7 +44,6 @@ aws_base_source = Source(entry={
         'enable_docker_gc': 'true'
     },
     'must': {
-        'provider': 'aws',
         'aws_region': '{ "Ref" : "AWS::Region" }',
         'ip_detect_contents': get_ip_detect('aws'),
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
