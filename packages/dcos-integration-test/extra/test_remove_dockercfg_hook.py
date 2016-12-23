@@ -1,6 +1,5 @@
+import logging
 import uuid
-
-import pytest
 
 
 def test_remove_dockercfg_hook(cluster):
