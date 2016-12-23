@@ -44,6 +44,7 @@ import sys
 import test_util.aws
 import test_util.cluster
 from gen.calc import calculate_environment_variable
+from pkgpanda.util import load_string
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -92,28 +93,26 @@ def check_environment():
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
-    add_env = {}
+    add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + options.ci_flags)
+            add_env.append(k.replace(prefix, '') + '=' + v)
+    options.test_cmd = os.getenv('DCOS_PYTEST_CMD', ' '.join(add_env) + ' py.test -vv -s -rs ' + options.ci_flags)
     return options
 
 
 def main():
     options = check_environment()
     cf, ssh_info = provide_cluster(options)
-    cluster = test_util.cluster.Cluster.from_cloudformation(cf, ssh_info, options.ssh_key_path)
+    cluster = test_util.cluster.Cluster.from_cloudformation(cf, ssh_info, load_string(options.ssh_key_path))
 
     result = test_util.cluster.run_integration_tests(
         cluster,
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,
-        add_env=options.add_env,
-        pytest_cmd=options.pytest_cmd,
+        test_cmd=options.test_cmd,
     )
     if result == 0:
         log.info('Test successful! Deleting CloudFormation.')
@@ -168,7 +167,7 @@ def provide_cluster(options):
         ssh_info = test_util.aws.SSH_INFO[options.host_os]
         stack_name = options.stack_name
     # Resiliency testing requires knowing the stack name
-    options.add_env['AWS_STACK_NAME'] = stack_name
+    options.test_cmd = 'AWS_STACK_NAME=' + stack_name + ' ' + options.test_cmd
     return cf, ssh_info
 
 

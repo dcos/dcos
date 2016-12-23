@@ -7,10 +7,14 @@ with tunnel(*args, **kwargs) as my_tunnel:
     my_tunnel.remote_cmd(['cat', 'test_file.txt'])
 """
 import logging
+import os
+import stat
 import tempfile
 from contextlib import contextmanager, ExitStack
 from subprocess import check_call, check_output, TimeoutExpired
 from typing import Optional
+
+from pkgpanda.util import write_string
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -55,41 +59,56 @@ class Tunnelled():
 
 
 @contextmanager
-def tunnel(user: str, key_path: str, host: str, port: int=22):
-    # This will be cleaned up by SSH when the tunnel is closed
-    tunnel_socket = tempfile.NamedTemporaryFile(delete=False)
-    target = user + '@' + host
-
-    base_cmd = [
-        '/usr/bin/ssh',
-        '-oConnectTimeout=10',
-        '-oControlMaster=auto',
-        '-oControlPath=' + tunnel_socket.name,
-        '-oStrictHostKeyChecking=no',
-        '-oUserKnownHostsFile=/dev/null',
-        '-oBatchMode=yes',
-        '-oPasswordAuthentication=no',
-        '-p', str(port)]
-
-    start_tunnel = base_cmd + ['-fnN', '-i', key_path, target]
-    logger.debug('Starting SSH tunnel: ' + ' '.join(start_tunnel))
-    check_call(start_tunnel)
-    logger.debug('SSH Tunnel established!')
-
-    yield Tunnelled(base_cmd, host, target)
-
-    close_tunnel = base_cmd + ['-O', 'exit', target]
-    logger.debug('Closing SSH Tunnel: ' + ' '.join(close_tunnel))
-    check_call(close_tunnel)
+def temp_data(key):
+    temp_dir = tempfile.mkdtemp()
+    socket_path = temp_dir + '/control_socket'
+    key_path = temp_dir + '/key'
+    write_string(key_path, key)
+    os.chmod(key_path, stat.S_IREAD | stat.S_IWRITE)
+    yield (socket_path, key_path)
+    os.remove(key_path)
+    # might have been deleted already if SSH exited correctly
+    if os.path.exists(socket_path):
+        os.remove(socket_path)
+    os.rmdir(temp_dir)
 
 
 @contextmanager
-def tunnel_collection(user, key_path, host_names: list):
+def tunnel(user: str, key: str, host: str, port: int=22):
+    target = user + '@' + host
+
+    with temp_data(key) as temp_paths:
+        base_cmd = [
+            '/usr/bin/ssh',
+            '-oConnectTimeout=10',
+            '-oControlMaster=auto',
+            '-oControlPath=' + temp_paths[0],
+            '-oStrictHostKeyChecking=no',
+            '-oUserKnownHostsFile=/dev/null',
+            '-oBatchMode=yes',
+            '-oPasswordAuthentication=no',
+            '-p', str(port)]
+
+        start_tunnel = base_cmd + ['-fnN', '-i', temp_paths[1], target]
+        logger.debug('Starting SSH tunnel: ' + ' '.join(start_tunnel))
+    # Test Code
+        check_call(start_tunnel)
+        logger.debug('SSH Tunnel established!')
+
+        yield Tunnelled(base_cmd, host, target)
+
+        close_tunnel = base_cmd + ['-O', 'exit', target]
+        logger.debug('Closing SSH Tunnel: ' + ' '.join(close_tunnel))
+        check_call(close_tunnel)
+
+
+@contextmanager
+def tunnel_collection(user, key, host_names: list):
     """Convenience collection of Tunnels so that users can keep
     multiple connections alive with a single self-closing context
     Args:
         user: user with access to host
-        key_path: local path w/ permissions to user@host
+        key: contents of private key
         host_names: list of locally resolvable hostname:port to tunnel to
     """
 
@@ -98,20 +117,6 @@ def tunnel_collection(user, key_path, host_names: list):
         tunnels = list()
         for host in host_names:
             ip, port = host.split(':')
-            tunnels.append(exit_stack.enter_context(tunnel(user, key_path, ip, port)))
+            tunnels.append(exit_stack.enter_context(tunnel(user, key, ip, port)))
         logger.debug('Successfully created TunnelCollection')
         yield tunnels
-
-
-def run_ssh_cmd(user, key_path, host, cmd, port=22, timeout=None):
-    """Convenience function to do a one-off SSH command
-    """
-    with tunnel(user, key_path, host, port=port) as t:
-        return t.remote_cmd(cmd, timeout=timeout)
-
-
-def run_scp_cmd(user, key_path, host, src, dst, port=22):
-    """Convenience function to do a one-off SSH copy
-    """
-    with tunnel(user, key_path, host, port=port) as t:
-        t.write_to_remote(src, dst)

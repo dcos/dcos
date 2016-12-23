@@ -61,13 +61,13 @@ def get_value(template_parameter):
     return(get_env_params()[template_parameter]['value'])
 
 
-def get_test_config():
-    add_env = {}
+def get_add_env():
+    add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    return add_env
+            add_env.append(k.replace(prefix, '') + '=' + v)
+    return ' '.join(add_env)
 
 
 def main():
@@ -174,16 +174,15 @@ def main():
 
         print('Detected IP configuration: {}'.format(ip_buckets))
 
-        with tunnel(get_value('linuxAdminUsername'), 'ssh_key', master_lb, port=2200) as t:
+        with tunnel(get_value('linuxAdminUsername'), pkgpanda.util.load_string('ssh_key'), master_lb, port=2200) as t:
             integration_test(
                 tunnel=t,
-                test_dir='/home/{}'.format(get_value('linuxAdminUsername')),
                 dcos_dns=ip_buckets['master'][0],
                 master_list=ip_buckets['master'],
                 agent_list=ip_buckets['private'],
                 public_agent_list=ip_buckets['public'],
-                add_env=get_test_config(),
-                pytest_cmd=os.getenv('DCOS_PYTEST_CMD', "py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
+                test_cmd=os.getenv(
+                    'DCOS_PYTEST_CMD', get_add_env() + " py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         traceback.print_exc()
