@@ -327,7 +327,12 @@ class ClusterApi(test_util.helpers.ApiClient):
         logging.info('Starting metronome job')
         r = self.metronome.post('jobs/{}/runs'.format(job_id))
         r.raise_for_status()
-        wait_for_completion()
+        success = False
+        try:
+            success = wait_for_completion()
+        catch Exception as ex:
+            return False
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
         r.raise_for_status()
+        return success
