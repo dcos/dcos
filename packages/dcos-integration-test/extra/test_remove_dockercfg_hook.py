@@ -13,6 +13,7 @@ def test_remove_dockercfg_hook(cluster):
 
     # Skip the test if the hook is disabled
     if not cluster.dockercfg_hook_enabled:
+        logging.info('Skipping test because dockercfg hook is disabled')
         return
 
     # Create a one-off job checking that the fetched .dockercfg file is not in the sandbox
@@ -24,3 +25,4 @@ def test_remove_dockercfg_hook(cluster):
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
     removed = cluster.metronome_one_off(job)
     assert removed, 'dockercfg was not removed from the sandbox'
+    logging.info('Completed test: dockercfg was successfully removed')
