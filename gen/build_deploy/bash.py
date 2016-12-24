@@ -317,10 +317,10 @@ function check_all() {
             if(client_version == server_version) {
                 version = client_version
             } else {
-                split(client_version, cv, ".")
-                split(server_version, sv, ".")
+                cv_length = split(client_version, cv, ".")
+                sv_length = split(server_version, sv, ".")
 
-                y = length(cv) > length(sv) ? length(cv) : length(sv)
+                y = cv_length > sv_length ? cv_length : sv_length
 
                 for(i = 1; i <= y; i++) {
                     if(cv[i] < sv[i]) {
