@@ -24,6 +24,10 @@ def template_by_instance_type(instance_type):
         return VPC_TEMPLATE_URL
 
 
+def param_dict_to_aws_format(user_parameters):
+    return [{'ParameterKey': k, 'ParameterValue': str(v)} for k, v in user_parameters.items()]
+
+
 @retry_boto_rate_limits
 def instances_to_hosts(instances):
     return [Host(i.private_ip_address, i.public_ip_address) for i in instances]
@@ -50,20 +54,21 @@ class BotoWrapper():
     def delete_key_pair(self, key_name):
         self.resource('ec2').KeyPair(key_name).delete()
 
-    def create_stack(self, name, template_url, user_parameters, deploy_timeout=60):
-        """Returns boto stack object
+    def create_stack(self, name, template_url, parameters, deploy_timeout=60):
+        """Pulls template and checks user params versus temlate params.
+        Does simple casting of strings or numbers
+        Starts stack creation if validation is successful
         """
         log.info('Requesting AWS CloudFormation...')
-        cf_parameters = []
-        for k, v in user_parameters.items():
-            cf_parameters.append({'ParameterKey': k, 'ParameterValue': v})
         self.resource('cloudformation').create_stack(
             StackName=name,
             TemplateURL=template_url,
             DisableRollback=True,
             TimeoutInMinutes=deploy_timeout,
             Capabilities=['CAPABILITY_IAM'],
-            Parameters=cf_parameters)
+            # this python API only accepts data in string format; cast as string here
+            # so that we may pass parameters directly from yaml (which parses numbers as non-strings)
+            Parameters=[{str(k): str(v) for k, v in p.items()} for p in parameters])
         return CfStack(name, self)
 
 
@@ -168,7 +173,7 @@ class DcosCfSimple(CfStack):
             'AdminLocation': admin_location,
             'PublicSlaveInstanceCount': str(public_agents),
             'SlaveInstanceCount': str(private_agents)}
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
         # Use stack_name as the binding identifier. At time of implementation,
         # stack.stack_name returns stack_id if Stack was created with ID
         return cls(stack.stack.stack_name, boto_wrapper), SSH_INFO['coreos']
@@ -248,13 +253,13 @@ class DcosCfAdvanced(CfStack):
             'Vpc': vpc,
             'InternetGateway': gateway,
             'MasterInstanceType': master_type,
-            'PublicAgentInstanceCount': str(public_agents),
+            'PublicAgentInstanceCount': public_agents,
             'PublicAgentInstanceType': public_agent_type,
             'PublicSubnet': public_subnet,
-            'PrivateAgentInstanceCount': str(private_agents),
+            'PrivateAgentInstanceCount': private_agents,
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
         try:
             os_string = template_url.split('/')[-1].split('.')[-2].split('-')[0]
             ssh_info = CF_OS_SSH_INFO[os_string]
@@ -308,10 +313,10 @@ class VpcCfStack(CfStack):
         parameters = {
             'KeyPair': key_pair_name,
             'AllowAccessFrom': admin_location,
-            'ClusterSize': str(instance_count),
-            'InstanceType': str(instance_type),
+            'ClusterSize': instance_count,
+            'InstanceType': instance_type,
             'AmiCode': ami_code}
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
         return cls(stack.stack.stack_name, boto_wrapper), OS_SSH_INFO[instance_os]
 
     def delete(self):
