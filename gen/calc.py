@@ -77,10 +77,6 @@ def validate_url(url: str):
         ) from ex
 
 
-def is_azure_addr(addr: str):
-    return addr.startswith('[[[reference(') and addr.endswith(').ipConfigurations[0].properties.privateIPAddress]]]')
-
-
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
@@ -216,13 +212,6 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "false"
     else:
         return "true"
-
-
-def validate_oauth_enabled(oauth_enabled):
-    # Should correspond with oauth_enabled in Azure
-    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
-        return
-    validate_true_false(oauth_enabled)
 
 
 def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
@@ -524,7 +513,7 @@ entry = {
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
-        validate_oauth_enabled,
+        lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
         validate_mesos_log_retention_mb,
