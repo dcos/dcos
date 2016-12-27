@@ -11,7 +11,7 @@ from test_util.marathon import get_test_app, get_test_app_in_docker
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
-def _service_discovery_test(cluster, docker_network_bridge):
+def _service_discovery_test(dcos_api_session, docker_network_bridge):
     """Service discovery integration test
 
     This test verifies if service discovery works, by comparing marathon data
@@ -26,7 +26,7 @@ def _service_discovery_test(cluster, docker_network_bridge):
 
     Next thing is comparing the service points provided by marathon with those
     reported by mesos-dns. The tricky part here is that may take some time for
-    mesos-dns to catch up with changes in the cluster.
+    mesos-dns to catch up with changes in the dcos_api_session.
 
     And finally, one of service points is verified in as-seen-by-other-containers
     fashion.
@@ -72,18 +72,18 @@ def _service_discovery_test(cluster, docker_network_bridge):
 
     app_definition['instances'] = 2
 
-    assert len(cluster.slaves) >= 2, "Test requires a minimum of two agents"
+    assert len(dcos_api_session.slaves) >= 2, "Test requires a minimum of two agents"
 
     app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 
-    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
         # Verify if Mesos-DNS agrees with Marathon:
         @retrying.retry(wait_fixed=1000,
                         stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _pool_for_mesos_dns():
-            r = cluster.get('/mesos_dns/v1/services/_{}._tcp.marathon.mesos'.format(
+            r = dcos_api_session.get('/mesos_dns/v1/services/_{}._tcp.marathon.mesos'.format(
                 app_definition['id'].lstrip('/')))
             assert r.status_code == 200
 
@@ -118,26 +118,26 @@ def _service_discovery_test(cluster, docker_network_bridge):
         r_data = r.json()
         assert r_data['reflector_uuid'] == test_uuid
         assert r_data['test_uuid'] == test_uuid
-        if len(cluster.slaves) >= 2:
+        if len(dcos_api_session.slaves) >= 2:
             # When len(slaves)==1, we are connecting through docker-proxy using
             # docker0 interface ip. This makes this assertion useless, so we skip
             # it and rely on matching test uuid between containers only.
             assert r_data['my_ip'] == service_points[0].host
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(dcos_api_session):
+    return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(dcos_api_session):
+    return _service_discovery_test(dcos_api_session, docker_network_bridge=False)
 
 
-def test_if_search_is_working(cluster):
+def test_if_search_is_working(dcos_api_session):
     """Test if custom set search is working.
 
-    Verifies that a marathon app running on the cluster can resolve names using
-    searching the "search" the cluster was launched with (if any). It also tests
+    Verifies that a marathon app running on the dcos_api_session can resolve names using
+    searching the "search" the dcos_api_session was launched with (if any). It also tests
     that absolute searches still work, and search + things that aren't
     sub-domains fails properly.
 
@@ -146,7 +146,7 @@ def test_if_search_is_working(cluster):
     """
     # Launch the app
     app_definition, test_uuid = get_test_app()
-    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
         # Get the status
         r = requests.get('http://{}:{}/dns_search'.format(service_points[0].host,
                                                           service_points[0].port))
@@ -162,12 +162,12 @@ def test_if_search_is_working(cluster):
 
         expected_error = {'error': '[Errno -2] Name or service not known'}
 
-        # Check that result matches expectations for this cluster
+        # Check that result matches expectations for this dcos_api_session
         if dcos_config['dns_search']:
-            assert r_data['search_hit_leader'] in cluster.masters
-            assert r_data['always_hit_leader'] in cluster.masters
+            assert r_data['search_hit_leader'] in dcos_api_session.masters
+            assert r_data['always_hit_leader'] in dcos_api_session.masters
             assert r_data['always_miss'] == expected_error
         else:  # No dns search, search hit should miss.
             assert r_data['search_hit_leader'] == expected_error
-            assert r_data['always_hit_leader'] in cluster.masters
+            assert r_data['always_hit_leader'] in dcos_api_session.masters
             assert r_data['always_miss'] == expected_error

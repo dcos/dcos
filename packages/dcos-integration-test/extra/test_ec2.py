@@ -6,14 +6,14 @@ import pytest
 
 
 @pytest.mark.ccm
-def test_move_external_volume_to_new_agent(cluster):
+def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
 
-    If the cluster has only one agent, the volume will be detached and
+    If the dcos_api_session has only one agent, the volume will be detached and
     reattached to the same agent.
 
     """
-    hosts = cluster.slaves[0], cluster.slaves[-1]
+    hosts = dcos_api_session.slaves[0], dcos_api_session.slaves[-1]
     test_uuid = uuid.uuid4().hex
     test_label = 'integration-test-move-external-volume-{}'.format(test_uuid)
     mesos_volume_path = 'volume'
@@ -76,9 +76,9 @@ def test_move_external_volume_to_new_agent(cluster):
     }
 
     try:
-        with cluster.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
             logging.info('Successfully wrote to volume')
-        with cluster.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
             logging.info('Successfully read from volume')
     finally:
         logging.info('Deleting volume: ' + test_label)
@@ -93,6 +93,6 @@ def test_move_external_volume_to_new_agent(cluster):
                 'disk': 0,
                 'cmd': delete_cmd}}
         try:
-            cluster.metronome_one_off(delete_job)
+            dcos_api_session.metronome_one_off(delete_job)
         except Exception as ex:
             raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
