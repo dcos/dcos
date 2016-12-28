@@ -531,6 +531,8 @@ class Resolver:
         # that things which use late binding (AWS templates) can have the value of something like
         # master_external_loadbalancer late bound, but still have `has_master_external_loadbalancer`
         # bound regularly which is critical for proper operation.
+        # TODO(branden): This doesn't actually work until we continue calculationg during bootstrap,
+        # after we have the final values for late-bound variables.
         def has_no_late_parameters(setter) -> bool:
             for parameter in setter.parameters:
                 self._ensure_finalized(self._arguments[parameter])

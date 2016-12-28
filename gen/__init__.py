@@ -540,13 +540,20 @@ def generate(
     resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
     status = resolver.status_dict
 
+    if status['status'] == 'errors':
+        raise ValidationError(errors=status['errors'], unset=status['unset'])
+
     # Gather out the late variables. The presence of late variables changes
     # whether or not a late package is created
     late_variables = dict()
+    # TODO(branden): Get the late vars and expressions from resolver.late
     for source in sources:
         for setter_list in source.setters.values():
             for setter in setter_list:
                 if not setter.is_late:
+                    continue
+
+                if setter.name not in resolver.late:
                     continue
 
                 # Skip late vars that aren't referenced by config.
@@ -557,9 +564,6 @@ def generate(
                 assert setter.name not in late_variables
 
                 late_variables[setter.name] = setter.late_expression
-
-    if status['status'] == 'errors':
-        raise ValidationError(errors=status['errors'], unset=status['unset'])
 
     argument_dict = {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
 
