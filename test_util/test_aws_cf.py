@@ -37,14 +37,13 @@ TEST_ADD_ENV_*: string (default=None)
 """
 import logging
 import os
-import random
-import string
 import sys
 
 import test_util.aws
 import test_util.cluster
 from gen.calc import calculate_environment_variable
 from pkgpanda.util import load_string
+from test_util.helpers import random_id
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -130,8 +129,7 @@ def provide_cluster(options):
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key)
     if not options.stack_name:
-        random_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        stack_name = 'CF-integration-test-{}'.format(random_id)
+        stack_name = 'CF-integration-test-{}'.format(random_id(10))
         log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
         # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
         if options.advanced:
