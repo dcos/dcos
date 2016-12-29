@@ -44,19 +44,13 @@ def integration_test(
         'AWS_SECRET_ACCESS_KEY=' + aws_secret_access_key,
         'AWS_REGION=' + region]
 
-    pytest_form = """'source /opt/mesosphere/environment.export &&
+    pytest_cmd = """'source /opt/mesosphere/environment.export &&
 cd /opt/mesosphere/active/dcos-integration-test &&
-{env} {cmd}'"""
-
-    preflight_cmd_str = pytest_form.format(env=' '.join(required_test_env), cmd='py.test --collect-only')
-    test_cmd_str = pytest_form.format(env=' '.join(required_test_env), cmd=test_cmd)
-
-    log.info('Running integration test setup check...')
-    tunnel.remote_cmd(['bash', '-c', preflight_cmd_str], stdout=sys.stdout.buffer)
+{env} {cmd}'""".format(env=' '.join(required_test_env), cmd=test_cmd)
 
     log.info('Running integration test...')
     try:
-        tunnel.remote_cmd(['bash', '-c', test_cmd_str], stdout=sys.stdout.buffer)
+        tunnel.remote_cmd(['bash', '-c', pytest_cmd], stdout=sys.stdout.buffer)
     except CalledProcessError as e:
         return e.returncode
     return 0
