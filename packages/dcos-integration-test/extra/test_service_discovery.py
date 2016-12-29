@@ -1,4 +1,7 @@
+import collections
 import logging
+
+import socket
 
 import pytest
 import requests
@@ -8,7 +11,7 @@ from test_helpers import dcos_config
 
 from test_util.marathon import get_test_app, get_test_app_in_docker
 
-MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
+DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
 def _service_discovery_test(dcos_api_session, docker_network_bridge):
@@ -79,7 +82,7 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
     with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
         # Verify if Mesos-DNS agrees with Marathon:
         @retrying.retry(wait_fixed=1000,
-                        stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT * 1000,
+                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _pool_for_mesos_dns():
@@ -99,7 +102,7 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
             r_data = _pool_for_mesos_dns()
         except retrying.RetryError:
             msg = "Mesos DNS has failed to update entries in {} seconds."
-            pytest.fail(msg.format(MESOS_DNS_ENTRY_UPDATE_TIMEOUT))
+            pytest.fail(msg.format(DNS_ENTRY_UPDATE_TIMEOUT))
 
         marathon_provided_servicepoints = sorted((x.host, x.port) for x in service_points)
         mesosdns_provided_servicepoints = sorted((x['ip'], int(x['port'])) for x in r_data)
@@ -125,8 +128,109 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
             assert r_data['my_ip'] == service_points[0].host
 
 
-def test_if_service_discovery_works_docker_bridged_network(dcos_api_session):
-    return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
+# There are several combinations we have to try of the way that Navstar DNS records are
+# generated:
+#
+# Containerizers:
+# -Mesos
+# -Docker
+#
+# Network type:
+# -Bridged
+# -Host
+# -Overlay
+#
+# Record type:
+# -Container IP
+# -Agent IP
+# -Auto IP
+#
+# More info can be found here: https://dcos.io/docs/1.8/usage/service-discovery/dns-overview/
+DNSAddresses = collections.namedtuple("DNSAddresses", ["container", "agent", "auto"])
+MarathonAddresses = collections.namedtuple("MarathonAddresses", ["host", "container"])
+
+
+def get_ipv4_addresses(hostname):
+    res = socket.getaddrinfo(hostname, 0, family=socket.AF_INET, type=socket.SOCK_STREAM)
+    return frozenset([sockaddr[0] for (family, type, proto, canonname, sockaddr) in res])
+
+
+def get_dns_addresses_by_app_name(app_name):
+    container_ip_name = '{}.marathon.containerip.dcos.thisdcos.directory'.format(app_name)
+    agent_ip_name = '{}.marathon.agentip.dcos.thisdcos.directory'.format(app_name)
+    auto_ip_name = '{}.marathon.auto.dcos.thisdcos.directory'.format(app_name)
+    container_ips = get_ipv4_addresses(container_ip_name)
+    agent_ips = get_ipv4_addresses(agent_ip_name)
+    auto_ips = get_ipv4_addresses(auto_ip_name)
+    return DNSAddresses(container_ips, agent_ips, auto_ips)
+
+
+def get_marathon_addresses_by_service_points(service_points):
+    marathon_host_addrs = frozenset([point.host for point in service_points])
+    marathon_ip_addrs = frozenset([point.ip for point in service_points])
+    return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
+
+
+def test_if_service_discovery_works_navstar_mesos_container_host_network(cluster):
+    app_definition, test_uuid = get_test_app()
+    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+        marathon_addrs = get_marathon_addresses_by_service_points(service_points)
+        assert marathon_addrs.host == marathon_addrs.container
+        all_marathon_addrs = marathon_addrs.host
+
+        @retrying.retry(wait_fixed=1000,
+                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
+                        retry_on_exception=lambda x: True)
+        def _ensure_dns_converged():
+            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
+            assert all_marathon_addrs == dns_addrs.agent
+            assert all_marathon_addrs == dns_addrs.auto
+            assert all_marathon_addrs == dns_addrs.container
+
+        _ensure_dns_converged()
+
+
+def test_if_service_discovery_works_navstar_mesos_container_overlay_network(cluster):
+    app_definition, test_uuid = get_test_app(ip_per_container=True, custom_port=True)
+    assert 'portDefinitions' not in app_definition  # Mesos cannot do port mapping yet
+    app_definition['cmd'] += '9080'
+
+    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+        marathon_addrs = get_marathon_addresses_by_service_points(service_points)
+        assert not frozenset.intersection(marathon_addrs.host, marathon_addrs.container)
+
+        @retrying.retry(wait_fixed=1000,
+                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
+                        retry_on_exception=lambda x: True)
+        def _ensure_dns_converged():
+            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
+            assert marathon_addrs.host == dns_addrs.agent
+            assert marathon_addrs.container == dns_addrs.auto
+            assert marathon_addrs.container == dns_addrs.container
+
+        _ensure_dns_converged()
+
+
+def test_if_service_discovery_works_navstar_docker_container_bridge_network(cluster):
+    app_definition, test_uuid = get_test_app_in_docker()
+    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+        marathon_addrs = get_marathon_addresses_by_service_points(service_points)
+        assert not frozenset.intersection(marathon_addrs.host, marathon_addrs.container)
+
+        @retrying.retry(wait_fixed=1000,
+                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
+                        retry_on_exception=lambda x: True)
+        def _ensure_dns_converged():
+            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
+            assert marathon_addrs.host == dns_addrs.agent
+            assert marathon_addrs.container == dns_addrs.auto
+            assert marathon_addrs.container == dns_addrs.container
+
+        _ensure_dns_converged()
+
+
+def test_if_service_discovery_works_docker_bridged_network(cluster):
+    return _service_discovery_test(cluster, docker_network_bridge=True)
 
 
 def test_if_service_discovery_works_docker_host_network(dcos_api_session):
