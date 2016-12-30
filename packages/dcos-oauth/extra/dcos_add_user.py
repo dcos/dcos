@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+
 from kazoo.client import KazooClient
 from kazoo.handlers.threading import SequentialThreadingHandler
 from kazoo.retry import KazooRetry

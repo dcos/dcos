@@ -4,6 +4,7 @@ import sys
 
 from flask import Flask, Response
 from flask.ext.compress import Compress
+
 from history.statebuffer import BufferCollection, BufferUpdater
 
 app = Flask(__name__)

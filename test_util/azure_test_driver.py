@@ -208,5 +208,6 @@ def run():
         print("ERROR: Azure test deployment failed", file=sys.stderr)
         sys.exit(2)
 
+
 if __name__ == '__main__':
     run()

@@ -120,6 +120,7 @@ class S3StorageProvider(AbstractStorageProvider):
         for obj in self._get_objects_with_prefix(path):
             obj.delete()
 
+
 factories = {
     "s3": S3StorageProvider
 }
