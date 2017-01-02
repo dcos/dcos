@@ -2,7 +2,6 @@
 
 import json
 import logging
-import re
 from copy import deepcopy
 from typing import Tuple
 
@@ -17,7 +16,7 @@ import pkgpanda.util
 import release
 import release.storage
 from gen.internals import Late, Source
-from pkgpanda.util import logger
+from pkgpanda.util import logger, split_by_token
 
 
 def get_ip_detect(name):
@@ -232,8 +231,6 @@ groups = {
         }}))
 }
 
-AWS_REF_REGEX = re.compile(r"(?P<before>.*)(?P<ref>{ .* })(?P<after>.*)")
-
 
 def get_test_session(config=None):
     if config is None:
@@ -267,19 +264,15 @@ def gen_ami_mapping(mappings):
 
 
 def transform(line):
-    m = AWS_REF_REGEX.search(line)
-    # no splitting necessary
-    if not m:
-        return "%s,\n" % (json.dumps(line + '\n'))
 
-    before = m.group('before')
-    ref = m.group('ref')
-    after = m.group('after')
+    def _jsonify_literals(parts):
+        for part, is_ref in parts:
+            if is_ref:
+                yield part
+            else:
+                yield json.dumps(part)
 
-    transformed_before = "%s" % (json.dumps(before))
-    transformed_ref = ref
-    transformed_after = "%s" % (json.dumps(after))
-    return "%s, %s, %s, %s,\n" % (transformed_before, transformed_ref, transformed_after, '"\\n"')
+    return ', '.join(_jsonify_literals(split_by_token('{ ', ' }', line))) + ', "\\n",\n'
 
 
 def render_cloudformation_transform(cf_template, transform_func=lambda x: x, **kwds):

@@ -14,13 +14,12 @@ import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
+from pkgpanda.util import split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
 
 ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
-
-TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
 DOWNLOAD_URL_TEMPLATE = ("{download_url}{reproducible_artifact_path}/azure/{arm_template_name}")
 
@@ -81,24 +80,21 @@ def transform(cloud_config_yaml_str):
     substituted.
     '''
     cc_json = json.dumps(yaml.safe_load(cloud_config_yaml_str), sort_keys=True)
-    arm_list = ["[base64(concat('#cloud-config\n\n', "]
-    # Find template parameters and seperate them out as seperate elements in a
-    # json list.
-    prev_end = 0
-    # TODO(JL) - Why does validate_cloud_config not operate on entire string?
-    for m in TEMPLATE_PATTERN.finditer(cc_json):
-        before = m.group('pre')
-        param = m.group('inject')
-        validate_cloud_config(before)
-        arm_list.append("'{}', {},".format(before, param))
-        prev_end = m.end()
 
-    # Add the last little bit
-    validate_cloud_config(cc_json[prev_end:])
-    arm_list.append("'{}'))]".format(cc_json[prev_end:]))
+    def _quote_literals(parts):
+        for part, is_param in parts:
+            if is_param:
+                yield part
+            else:
+                validate_cloud_config(part)
+                yield "'{}'".format(part)
 
-    # We're embedding this as a json string, so json encode it and return.
-    return json.dumps(''.join(arm_list))
+    # We're embedding this as a json string.
+    return json.dumps(
+        "[base64(concat('#cloud-config\n\n', " +
+        ", ".join(_quote_literals(split_by_token('[[[', ']]]', cc_json, strip_token_decoration=True))) +
+        "))]"
+    )
 
 
 def render_arm(
