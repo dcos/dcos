@@ -232,12 +232,25 @@ def validate_oauth_enabled(oauth_enabled):
     validate_true_false(oauth_enabled)
 
 
+def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
+    overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
+
+    assert dcos_overlay_network_default_name in overlay_names, (
+        "Default overlay network name does not reference a defined overlay network: {}".format(
+            dcos_overlay_network_default_name))
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except ValueError:
-        # TODO(cmaloney): This is not the right form to do this
-        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -246,10 +259,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         ipaddress.ip_network(overlay_network['vtep_subnet'])
     except ValueError as ex:
-        # TODO(cmaloney): This is incorrect currently.
-        assert False, (
-            "Incorrect value for vtep_subnet. Only IPv4 "
-            "values are allowed: {}".format(ex))
+        raise AssertionError(
+            "Incorrect value for vtep_subnet: {}."
+            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
 
     assert 'vtep_mac_oui' in overlay_network.keys(), (
         'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
@@ -260,14 +272,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         'We need at least one overlay network configuration {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
-        if (len(overlay['name']) > 13):
-            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        assert (len(overlay['name']) <= 13), (
+            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
         try:
             ipaddress.ip_network(overlay['subnet'])
         except ValueError as ex:
-            assert False, (
-                "Incorrect value for vtep_subnet. Only IPv4 "
-                "values are allowed: {}".format(ex))
+            raise AssertionError(
+                "Incorrect value for vtep_subnet {}."
+                " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
 
 
 def calculate_oauth_available(oauth_enabled):
@@ -512,6 +524,9 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+__dcos_overlay_network_default_name = 'dcos'
+
+
 entry = {
     'validate': [
         validate_num_masters,
@@ -530,6 +545,8 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_default_name, dcos_overlay_network:
+            validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
         lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
@@ -590,11 +607,12 @@ entry = {
             'vtep_subnet': '44.128.0.0/20',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
-                'name': 'dcos',
+                'name': __dcos_overlay_network_default_name,
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }]
         }),
+        'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
