@@ -490,7 +490,7 @@ class Resolver:
         # Must be calculated but user tried to provide.
         if len(feasible) == 2 and (feasible[0].is_user or feasible[1].is_user):
             raise CalculatorError("{} must be calculated, but was explicitly set in the "
-                                  "configuration. Remove it from the configuration.").format(resolvable.name)
+                                  "configuration. Remove it from the configuration.".format(resolvable.name))
         if len(feasible) > 1:
             raise CalculatorError("Internal error: Multiple ways to set {}. setters: {}".format(
                 resolvable.name, feasible))
