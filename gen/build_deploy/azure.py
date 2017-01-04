@@ -51,7 +51,6 @@ azure_base_source = Source(entry={
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
-        'oauth_available': 'true',
         'oauth_enabled': Late("[[[variables('oauthEnabled')]]]"),
         'adminrouter_auth_enabled': Late("[[[variables('oauthEnabled')]]]"),
     }
