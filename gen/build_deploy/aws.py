@@ -52,7 +52,6 @@ aws_base_source = Source(entry={
         'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
-        'oauth_available': 'true',
         'oauth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
         'adminrouter_auth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
         'rexray_config_preset': 'aws'

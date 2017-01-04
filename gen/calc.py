@@ -264,10 +264,6 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                 " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
 
 
-def calculate_oauth_available(oauth_enabled):
-    return oauth_enabled
-
-
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
 
@@ -548,7 +544,7 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
-        'oauth_available': calculate_oauth_available,
+        'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
         'enable_lb': 'true',
