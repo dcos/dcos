@@ -46,6 +46,7 @@ import random
 import string
 import sys
 import uuid
+from contextlib import contextmanager
 
 import test_util.aws
 import test_util.cluster
@@ -57,38 +58,6 @@ from test_util.marathon import TEST_APP_NAME_FMT
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
-
-
-def get_test_app():
-    app = {
-        "id": TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
-        "cmd": "python3 -m http.server 8080",
-        "cpus": 0.5,
-        "mem": 32.0,
-        "instances": 1,
-        "container": {
-            "type": "DOCKER",
-            "docker": {
-                "image": "python:3",
-                "network": "BRIDGE",
-                "portMappings": [
-                    {"containerPort": 8080, "hostPort": 0}
-                ]
-            }
-        },
-        "healthChecks": [
-            {
-                "protocol": "HTTP",
-                "path": "/",
-                "portIndex": 0,
-                "gracePeriodSeconds": 5,
-                "intervalSeconds": 10,
-                "timeoutSeconds": 10,
-                "maxConsecutiveFailures": 3
-            }
-        ],
-    }
-    return app
 
 
 def get_task_info(apps, tasks):
@@ -115,6 +84,63 @@ def get_task_info(apps, tasks):
         last_success_time=(datetime.datetime.strptime(last_success, "%Y-%m-%dT%H:%M:%S.%fZ")))
 
     return task_info
+
+
+@contextmanager
+def cluster_workload(cluster_api):
+    """Start a cluster workload on entry and verify its health on exit."""
+    # Deploy an app with a healthcheck.
+    cluster_api.marathon.deploy_app({
+        "id": TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+        "cmd": "python3 -m http.server 8080",
+        "cpus": 0.5,
+        "mem": 32.0,
+        "instances": 1,
+        "container": {
+            "type": "DOCKER",
+            "docker": {
+                "image": "python:3",
+                "network": "BRIDGE",
+                "portMappings": [
+                    {"containerPort": 8080, "hostPort": 0}
+                ]
+            }
+        },
+        "healthChecks": [
+            {
+                "protocol": "HTTP",
+                "path": "/",
+                "portIndex": 0,
+                "gracePeriodSeconds": 5,
+                "intervalSeconds": 10,
+                "timeoutSeconds": 10,
+                "maxConsecutiveFailures": 3
+            }
+        ],
+    })
+    cluster_api.marathon.ensure_deployments_complete()
+
+    task_info_start = get_task_info(cluster_api.marathon.get('v2/apps').json(),
+                                    cluster_api.marathon.get('v2/tasks').json())
+
+    assert task_info_start is not None, "Unable to get task details of the cluster."
+    assert task_info_start.state == "TASK_RUNNING", "Task is not in the running state."
+
+    yield
+
+    task_info_end = get_task_info(cluster_api.marathon.get('v2/apps').json(),
+                                  cluster_api.marathon.get('v2/tasks').json())
+
+    assert task_info_end is not None, "Unable to get the tasks details of the cluster."
+    assert task_info_end.state == "TASK_RUNNING", "Task is not in the running state."
+
+    assert task_info_start.id == task_info_end.id, \
+        "Task ID before and after the upgrade did not match."
+
+    # There has happened at least one health-check in the new cluster since the last health-check in the old cluster.
+    assert (task_info_end.last_success_time >
+            task_info_start.last_success_time + task_info_start.health_check_interval), \
+        "Invalid health-check for the task in the upgraded cluster."
 
 
 def main():
@@ -173,35 +199,11 @@ def main():
 
     cluster_api.wait_for_dcos()
 
-    # Deploy an app, and make sure deployments are completely done.
-    cluster_api.marathon.deploy_app(get_test_app())
-
-    cluster_api.marathon.ensure_deployments_complete()
-
-    task_info_before_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                             cluster_api.marathon.get('v2/tasks').json())
-
-    assert task_info_before_upgrade is not None, "Unable to get task details of the cluster."
-    assert task_info_before_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
-
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
-    test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
-
-    task_info_after_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                            cluster_api.marathon.get('v2/tasks').json())
-
-    assert task_info_after_upgrade is not None, "Unable to get the tasks details of the cluster."
-    assert task_info_after_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
-
-    assert task_info_before_upgrade.id == task_info_after_upgrade.id, \
-        "Task ID before and after the upgrade did not match."
-
-    # There has happened at least one health-check in the new cluster since the last health-check in the old cluster.
-    assert (task_info_after_upgrade.last_success_time >
-            task_info_before_upgrade.last_success_time + task_info_before_upgrade.health_check_interval), \
-        "Invalid health-check for the task in the upgraded cluster."
+    with cluster_workload(cluster_api):
+        test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
 
     result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
