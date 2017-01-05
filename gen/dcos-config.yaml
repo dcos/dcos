@@ -526,6 +526,11 @@ package:
   - path: /etc_master/marathon
     content: |
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
+{% switch dcos_overlay_enable %}
+{% case "true" %}
+      MARATHON_CMD_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
