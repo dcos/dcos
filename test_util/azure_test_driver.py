@@ -120,7 +120,11 @@ def main():
         print("Creating template deployment ...")
         deploy_poller = rmc.deployments.create_or_update(group_name, deployment_name, deployment_properties)
 
-        @retry(retry_on_exception=AssertionError, stop_max_attempt_number=45)
+        def retry_if_assertion_error(exception):
+            """Return True if we should retry (in this case when it's an AssertionError), False otherwise"""
+            return isinstance(exception, AssertionError)
+
+        @retry(retry_on_exception=retry_if_assertion_error, stop_max_attempt_number=45)
         def poll_deploy():
             res = deploy_poller.result(timeout=60)
             print("Current deploy state: {}".format(res.properties.provisioning_state))
