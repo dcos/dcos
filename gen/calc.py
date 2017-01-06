@@ -163,6 +163,11 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
 
 
+def validate_mesos_container_log_sink(mesos_container_log_sink):
+    assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
+        "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
+
+
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
     # Determine how many 256 MB log chunks can be fit into the given size.
     # We assume a 90% compression factor; logs are compressed after 2 rotations.
@@ -587,6 +592,7 @@ entry = {
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
+        'mesos_container_log_sink': 'journald+logrotate',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
