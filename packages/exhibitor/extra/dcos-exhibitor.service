@@ -1,5 +1,5 @@
 [Unit]
-Description=Exhibitor: Zookeeper Supervisor Service
+Description=Exhibitor: Zookeeper supervisor service
 [Service]
 User=dcos_exhibitor
 StandardOutput=journal

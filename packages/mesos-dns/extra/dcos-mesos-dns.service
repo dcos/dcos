@@ -1,5 +1,5 @@
 [Unit]
-Description=Mesos DNS: DNS based Service Discovery
+Description=Mesos DNS: domain name based service discovery
 [Service]
 User=dcos_mesos_dns
 PermissionsStartOnly=true

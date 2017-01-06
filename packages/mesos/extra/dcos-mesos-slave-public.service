@@ -1,5 +1,5 @@
 [Unit]
-Description=Mesos Agent Public: DC/OS Public Agent Service
+Description=Mesos Agent Public: distributed systems kernel public agent
 
 [Service]
 Restart=always

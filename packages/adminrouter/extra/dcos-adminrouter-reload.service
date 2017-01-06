@@ -1,5 +1,5 @@
 [Unit]
-Description=Admin Router Reloader: Reload admin router to get new DNS
+Description=Admin Router Reloader: reload admin router to pick up domain resolution changes
 
 [Service]
 Type=oneshot

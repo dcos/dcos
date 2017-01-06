@@ -1,5 +1,5 @@
 [Unit]
-Description=OAuth: OAuth Authentication Service
+Description=DC/OS Authentication: authenticates DC/OS users using OpenID Connect and Auth0
 
 [Service]
 User=dcos_oauth

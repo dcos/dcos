@@ -1,5 +1,5 @@
 [Unit]
-Description=Pkgpanda API socket: Package Management Service Socket
+Description=Pkgpanda API Socket: socket for Pkgpanda API
 
 [Socket]
 ListenStream=/run/dcos/pkgpanda-api.sock

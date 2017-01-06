@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS Log service master: DC/OS logging service
+Description=DC/OS Log Master: exposes component, container, and task logs
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-log.env

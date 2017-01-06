@@ -11,7 +11,7 @@ mkdir -p $(dirname "$cosmos_service")
 
 cat <<EOF > "$cosmos_service"
 [Unit]
-Description=Package Service: DC/OS Packaging API
+Description=Cosmos: installs and manages DC/OS packages from DC/OS package repositories, such as Mesosphere Universe
 
 [Service]
 Restart=always
