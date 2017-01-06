@@ -8,9 +8,8 @@ import uuid
 import azure.common.credentials
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources import ResourceManagementClient
-from azure.mgmt.resource.resources.models import (DeploymentMode,
-                                                  DeploymentProperties,
-                                                  ResourceGroup, TemplateLink)
+from azure.mgmt.resource.resources.models import DeploymentMode, DeploymentProperties, ResourceGroup, TemplateLink
+
 from retrying import retry
 
 import pkgpanda.util
@@ -19,10 +18,10 @@ from test_util.runner import integration_test
 
 
 def validate_env():
-    '''
+    """
     The following environment variables must be set to ensure the template can be deployed successfully and that
     parameters we rely on from a testing perspective are explicitly set and not relying on defaults which may change.
-    '''
+    """
     required = [
         'AZURE_PARAM_agentEndpointDNSNamePrefix',
         'AZURE_PARAM_linuxAdminUsername',
@@ -40,25 +39,29 @@ def validate_env():
 
 
 def get_env_params():
-    '''
-    Return ARM input template parameters populated based on environment variables. Parameters are set as follows:
+    """
+    Return Azure Resource Management input template parameters populated based on environment variables.
+
+    Parameters are set as follows:
+
       * AZURE_PARAM_key=value (value treated as a string)
       * AZURE_PARAM_INT_key=value (value treated as an int)
-    '''
+    """
     template_params = {}
     for env_key, env_val in os.environ.items():
         def extract_env_param(name, transform):
             if env_key.startswith(name):
                 template_params[env_key[len(name):]] = {'value': transform(env_val)}
                 return True
+
         if extract_env_param('AZURE_PARAM_INT_', int):
             continue
         extract_env_param('AZURE_PARAM_', lambda x: x)
-    return(template_params)
+    return template_params
 
 
 def get_value(template_parameter):
-    return(get_env_params()[template_parameter]['value'])
+    return get_env_params()[template_parameter]['value']
 
 
 def get_add_env():
@@ -79,9 +82,6 @@ def main():
         tenant=os.environ['AZURE_TENANT_ID'])
     subscription_id = os.environ['AZURE_SUBSCRIPTION_ID']
     template = TemplateLink(uri=os.environ['AZURE_TEMPLATE_URL'])
-    # tenant_id = os.environ.get('AZURE_TENANT_ID')
-    # client_id = os.environ.get('AZURE_CLIENT_ID')
-    # client_secret = os.environ.get('AZURE_CLIENT_SECRET')
     group_name = 'testing' + ''.join(random.choice('01234567890abcdef') for n in range(10))
     deployment_name = 'deployment{}'.format(uuid.uuid4().hex)
 
@@ -93,20 +93,16 @@ def main():
     print("Resource group name: {}".format(group_name))
     print("Deployment name: {}".format(deployment_name))
 
-    azure_cluster = {
-        'resource_group_name': group_name,
-        'deployment_name': deployment_name}
+    azure_cluster = {'resource_group_name': group_name, 'deployment_name': deployment_name}
+
     pkgpanda.util.write_json('azure-cluster.json', azure_cluster)
 
     # Create a new resource group
     print("Creating new resource group in location: {}".format(location))
     if rmc.resource_groups.check_existence(group_name):
         print("ERROR: Group name already exists / taken: {}".format(group_name))
-    rmc.resource_groups.create_or_update(
-        group_name,
-        ResourceGroup(location=location))
 
-    test_successful = False
+    rmc.resource_groups.create_or_update(group_name, ResourceGroup(location=location))
 
     try:
         deployment_properties = DeploymentProperties(
@@ -124,14 +120,13 @@ def main():
         print("Creating template deployment ...")
         deploy_poller = rmc.deployments.create_or_update(group_name, deployment_name, deployment_properties)
 
-        # Stop after 45 attempts (each one takes up to one minute)
-        @retry(stop_max_attempt_number=45)
+        @retry(retry_on_exception=AssertionError, stop_max_attempt_number=45)
         def poll_deploy():
             res = deploy_poller.result(timeout=60)
             print("Current deploy state: {}".format(res.properties.provisioning_state))
             assert deploy_poller.done(), "Not done deploying."
 
-        print("Waiting for template to deploy ...")
+        print("Waiting for template to deploy.")
         try:
             poll_deploy()
         except:
@@ -156,15 +151,15 @@ def main():
             'public': []}
 
         for resource in rmc.resource_groups.list_resources(
-                group_name, filter=("resourceType eq 'Microsoft.Network/networkInterfaces' or "
-                                    "resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'")):
+            group_name, filter=("resourceType eq 'Microsoft.Network/networkInterfaces' or "
+                                "resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'")):
             if resource.type == 'Microsoft.Network/networkInterfaces':
                 nics = [nmc.network_interfaces.get(group_name, resource.name)]
             elif resource.type == 'Microsoft.Compute/virtualMachineScaleSets':
                 nics = list(nmc.network_interfaces.list_virtual_machine_scale_set_network_interfaces(
-                            virtual_machine_scale_set_name=resource.name, resource_group_name=group_name))
+                    virtual_machine_scale_set_name=resource.name, resource_group_name=group_name))
             else:
-                raise('Unexpected resourceType: {}'.format(resource.type))
+                raise ('Unexpected resourceType: {}'.format(resource.type))
 
             for bucket_name in ip_buckets.keys():
                 if bucket_name in resource.name:
@@ -193,7 +188,6 @@ def main():
             print("Cluster must be cleaned up manually")
             print("Cluster details: {}".format(azure_cluster))
         else:
-            # Send a delete request
             # TODO(cmaloney): The old code had a retry around this:
             # @retry(wait_exponential_multiplier=1000, wait_exponential_max=60*1000, stop_max_delay=(30*60*1000))
             poller = rmc.resource_groups.delete(group_name)
