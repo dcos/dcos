@@ -31,7 +31,7 @@ Restart=always
 StartLimitInterval=0
 RestartSec=5
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
+ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
 EOF
 
 cat <<EOF | tee $master_service
@@ -45,7 +45,7 @@ RestartSec=5
 PermissionsStartOnly=True
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -pull -diagnostics-bundle-dir /var/lib/dcos/3dt/diag-bundles -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
+ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
 EOF
 
 cat <<EOF | tee $slave_socket_service $slave_public_socket_service
