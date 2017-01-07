@@ -18,7 +18,11 @@ cleanup_vagrant_leftovers() {
   set -e
 
   vagrant global-status --prune
+  rm -rf ~/.vagrant.d/data/machine-index
+  rm -rf ~/.vagrant.d/data/lock.dotlock.lock
+  rm -rf ~/.vagrant.d/data/fp-leases
   set -e
+
 }
 
 echo "Fetching dcos-vagrant"
