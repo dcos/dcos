@@ -9,7 +9,7 @@ mkdir -p $(dirname "$metronome_service")
 
 cat <<EOF > "$metronome_service"
 [Unit]
-Description=Metronome: job orchestration
+Description=Metronome (Jobs): job orchestration
 
 [Service]
 User=dcos_metronome

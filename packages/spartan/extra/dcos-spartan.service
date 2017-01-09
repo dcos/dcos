@@ -1,5 +1,5 @@
 [Unit]
-Description=Spartan: forwards DNS requests to multiple DNS servers
+Description=Spartan (DNS Forwarding): forwards DNS requests to multiple DNS servers
 
 [Service]
 Restart=always
