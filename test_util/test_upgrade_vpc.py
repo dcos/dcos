@@ -38,10 +38,9 @@ CONFIG_YAML_OVERRIDE_UPGRADE: file path(default=None)
     This value will be used when upgrading the cluster.
 
 """
-import collections
-import datetime
 import logging
 import os
+import pprint
 import random
 import string
 import sys
@@ -60,38 +59,25 @@ logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', 
 log = logging.getLogger(__name__)
 
 
-def get_task_info(apps, tasks):
-    idx = 0    # We have a single app and a task for this test.
 
-    logging.info("v2/apps json: {apps}".format(apps=apps))
-    logging.info("v2/tasks json: {tasks}".format(tasks=tasks))
 
-    try:
-        tasks_state = tasks["tasks"][idx]["state"]
-        health_check_interval = apps["apps"][idx]["healthChecks"][idx]["intervalSeconds"]
-        task_id = tasks["tasks"][idx]["id"]
-        last_success = tasks["tasks"][idx]["healthCheckResults"][idx]["lastSuccess"]
-    except IndexError as e:
-        logging.debug("Failed to get task detail: {exp}".format(exp=str(e)))
-        return None
-
-    TaskInfo = collections.namedtuple("TaskInfo", "state id health_check_interval last_success_time")
-
-    task_info = TaskInfo(
-        state=tasks_state,
-        id=task_id,
-        health_check_interval=datetime.timedelta(seconds=health_check_interval),
-        last_success_time=(datetime.datetime.strptime(last_success, "%Y-%m-%dT%H:%M:%S.%fZ")))
-
-    return task_info
 
 
 @contextmanager
 def cluster_workload(cluster_api):
     """Start a cluster workload on entry and verify its health on exit."""
+
+    def _app_tasks(app_id):
+        """Return a list of Mesos task IDs for app_id's running tasks."""
+        assert app_id.startswith('/')
+        response = cluster_api.marathon.get('/v2/apps' + app_id + '/tasks')
+        response.raise_for_status()
+        tasks = response.json()['tasks']
+        return sorted(task['id'] for task in tasks)
+
     # Deploy an app with a healthcheck.
     cluster_api.marathon.deploy_app({
-        "id": TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+        "id": '/' + TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
         "cmd": "python3 -m http.server 8080",
         "cpus": 0.5,
         "mem": 32.0,
@@ -112,35 +98,30 @@ def cluster_workload(cluster_api):
                 "path": "/",
                 "portIndex": 0,
                 "gracePeriodSeconds": 5,
-                "intervalSeconds": 10,
-                "timeoutSeconds": 10,
-                "maxConsecutiveFailures": 3
+                "intervalSeconds": 1,
+                "timeoutSeconds": 5,
+                "maxConsecutiveFailures": 1
             }
         ],
     })
     cluster_api.marathon.ensure_deployments_complete()
 
-    task_info_start = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                    cluster_api.marathon.get('v2/tasks').json())
+    test_apps = [healthcheck_app]
+    test_app_ids = [app['id'] for app in test_apps]
 
-    assert task_info_start is not None, "Unable to get task details of the cluster."
-    assert task_info_start.state == "TASK_RUNNING", "Task is not in the running state."
+    tasks_start = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    log.debug('Test app tasks at start:\n' + pprint.pformat(tasks_start))
+
+    for app in test_apps:
+        assert app['instances'] == len(tasks_start[app['id']])
 
     yield
 
-    task_info_end = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                  cluster_api.marathon.get('v2/tasks').json())
+    tasks_end = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    log.debug('Test app tasks at end:\n' + pprint.pformat(tasks_end))
 
-    assert task_info_end is not None, "Unable to get the tasks details of the cluster."
-    assert task_info_end.state == "TASK_RUNNING", "Task is not in the running state."
-
-    assert task_info_start.id == task_info_end.id, \
-        "Task ID before and after the upgrade did not match."
-
-    # There has happened at least one health-check in the new cluster since the last health-check in the old cluster.
-    assert (task_info_end.last_success_time >
-            task_info_start.last_success_time + task_info_start.health_check_interval), \
-        "Invalid health-check for the task in the upgraded cluster."
+    # Verify that the tasks we started are still running.
+    assert tasks_start == tasks_end
 
 
 def main():
