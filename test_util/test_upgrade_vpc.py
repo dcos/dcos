@@ -27,6 +27,16 @@ DCOS_PYTEST_CMD: string(default='py.test -rs -vv ' + os.getenv('CI_FLAGS', ''))
     The complete py.test command used to run integration tests. If provided,
     CI_FLAGS is ignored.
 
+CONFIG_YAML_OVERRIDE_INSTALL: file path(default=None)
+    If provided the file specified will be loaded as a config.yaml and all properties specified
+    in the file will override any previously defined values.
+    This value will be used for the initial install of the cluster.
+
+CONFIG_YAML_OVERRIDE_UPGRADE: file path(default=None)
+    If provided the file specified will be loaded as a config.yaml and all properties specified
+    in the file will override any previously defined values.
+    This value will be used when upgrading the cluster.
+
 """
 import collections
 import datetime
@@ -115,6 +125,9 @@ def main():
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
     installer_url = os.environ['INSTALLER_URL']
 
+    config_yaml_override_install = os.getenv('CONFIG_YAML_OVERRIDE_INSTALL')
+    config_yaml_override_upgrade = os.getenv('CONFIG_YAML_OVERRIDE_UPGRADE')
+
     vpc, ssh_info = test_util.aws.VpcCfStack.create(
         stack_name=stack_name,
         instance_type='m4.xlarge',
@@ -140,7 +153,8 @@ def main():
     )
 
     # Use the CLI installer to set exhibitor_storage_backend = zookeeper.
-    test_util.cluster.install_dcos(cluster, stable_installer_url, api=False)
+    test_util.cluster.install_dcos(cluster, stable_installer_url, api=False,
+                                   add_config_path=config_yaml_override_install)
 
     master_list = [h.private_ip for h in cluster.masters]
 
@@ -168,7 +182,7 @@ def main():
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
-    test_util.cluster.upgrade_dcos(cluster, installer_url)
+    test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
 
     task_info_after_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
                                             cluster_api.marathon.get('v2/tasks').json())
