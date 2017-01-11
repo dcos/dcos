@@ -39,8 +39,10 @@ INSTANCE_GROUPS = {
     }
 }
 
+
 def validate_provider(provider):
     assert provider == 'azure'
+
 
 azure_base_source = Source(entry={
     'validate': [
