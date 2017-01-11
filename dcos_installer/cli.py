@@ -83,21 +83,6 @@ def run_loop(action, options):
     return exitcode
 
 
-def tall_enough_to_ride():
-    choices_true = ['yes', 'y']
-    choices_false = ['no', 'n']
-    while True:
-        do_uninstall = input('This will uninstall DC/OS on your cluster. You may need to manually remove '
-                             '/var/lib/zookeeper in some cases after this completes, please see our documentation '
-                             'for details. Are you ABSOLUTELY sure you want to proceed? [ (y)es/(n)o ]: ')
-        if do_uninstall.lower() in choices_true:
-            return
-        elif do_uninstall.lower() in choices_false:
-            sys.exit(1)
-        else:
-            log.error('Choices are [y]es or [n]o. "{}" is not a choice'.format(do_uninstall))
-
-
 def log_warn_only():
     """Drop to warning level and down to get around gen.generate() log.info
     output"""
@@ -142,11 +127,6 @@ def do_validate_config(args):
     return 0
 
 
-def do_uninstall(*args, **kwargs):
-    tall_enough_to_ride()
-    return action_lib.uninstall_dcos(*args, **kwargs)
-
-
 dispatch_dict_simple = {
     'version': (do_version, None, 'Print the DC/OS version'),
     'web': (
@@ -183,11 +163,7 @@ dispatch_dict_aio = {
     'postflight': (
         action_lib.run_postflight,
         'EXECUTING POSTFLIGHT',
-        'Execute postflight checks on a series of nodes.'),
-    'uninstall': (
-        do_uninstall,
-        'EXECUTING UNINSTALL',
-        'Execute uninstall on target hosts.')
+        'Execute postflight checks on a series of nodes.')
 }
 
 
