@@ -1,5 +1,5 @@
 [Unit]
-Description=Spartan Watchdog: restarts Spartan when it is unhealthy
+Description=DNS Forwarder (Spartan) Watchdog: restarts Spartan when it is unhealthy
 
 [Service]
 Type=oneshot
