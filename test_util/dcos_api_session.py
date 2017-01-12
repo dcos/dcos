@@ -364,3 +364,28 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
         r.raise_for_status()
+
+    def mesos_sandbox_directory(self, slave_id, framework_id, task_id):
+        r = self.get('/agent/{}/state'.format(slave_id))
+        r.raise_for_status()
+        agent_state = r.json()
+
+        try:
+            framework = next(f for f in agent_state['frameworks'] if f['id'] == framework_id)
+        except StopIteration:
+            raise Exception('Framework {} not found on agent {}'.format(framework_id, slave_id))
+
+        try:
+            executor = next(e for e in framework['executors'] if e['id'] == task_id)
+        except StopIteration:
+            raise Exception('Executor {} not found on framework {} on agent {}'.format(task_id, framework_id, slave_id))
+
+        return executor['directory']
+
+    def mesos_sandbox_file(self, slave_id, framework_id, task_id, filename):
+        r = self.get(
+            '/agent/{}/files/download'.format(slave_id),
+            params={'path': self.mesos_sandbox_directory(slave_id, framework_id, task_id) + '/' + filename}
+        )
+        r.raise_for_status()
+        return r.text

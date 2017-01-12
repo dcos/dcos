@@ -246,3 +246,7 @@ def session_tempfile(data):
     # Attempt to remove the file upon normal interpreter exit.
     atexit.register(remove_file)
     return temp_path
+
+
+def marathon_app_id_to_mesos_dns_name(app_id):
+    return '-'.join(reversed(app_id.strip('/').split('/')))

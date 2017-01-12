@@ -47,37 +47,59 @@ import sys
 import uuid
 from contextlib import contextmanager
 
+import retrying
+
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
 from test_util.dcos_api_session import DcosApiSession, DcosUser
-from test_util.helpers import CI_CREDENTIALS
-from test_util.marathon import TEST_APP_NAME_FMT
+from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_name
 
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-
-
+TEST_APP_NAME_FMT = 'upgrade-{}'
 
 
 @contextmanager
 def cluster_workload(cluster_api):
     """Start a cluster workload on entry and verify its health on exit."""
 
-    def _app_tasks(app_id):
+    def app_task_ids(app_id):
         """Return a list of Mesos task IDs for app_id's running tasks."""
         assert app_id.startswith('/')
         response = cluster_api.marathon.get('/v2/apps' + app_id + '/tasks')
         response.raise_for_status()
         tasks = response.json()['tasks']
-        return sorted(task['id'] for task in tasks)
+        return [task['id'] for task in tasks]
 
-    # Deploy an app with a healthcheck.
-    cluster_api.marathon.deploy_app({
-        "id": '/' + TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+    def parse_dns_log(dns_log_content):
+        """Return a list of (timestamp, status) tuples from dns_log_content."""
+        dns_log = [line.strip().split(' ') for line in dns_log_content.strip().split('\n')]
+        if any(len(entry) != 2 or entry[1] not in ['SUCCESS', 'FAILURE'] for entry in dns_log):
+            message = 'Malformed DNS log.'
+            log.debug(message + ' DNS log content:\n' + dns_log_content)
+            raise Exception(message)
+        return dns_log
+
+    @retrying.retry(
+        wait_fixed=(1 * 1000),
+        stop_max_delay=(120 * 1000),
+        retry_on_result=lambda x: not x)
+    def wait_for_dns(hostname):
+        """Return True if Mesos-DNS has at least one entry for hostname."""
+        hosts = cluster_api.get('/mesos_dns/v1/hosts/' + hostname).json()
+        return any(h['host'] != '' and h['ip'] != '' for h in hosts)
+
+    test_id = uuid.uuid4().hex
+
+    # HTTP healthcheck app to make sure tasks are reachable during the upgrade.
+    # If a task fails its healthcheck, Marathon will terminate it and we'll
+    # notice it was killed when we check tasks on exit.
+    healthcheck_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('healthcheck-' + test_id),
         "cmd": "python3 -m http.server 8080",
         "cpus": 0.5,
         "mem": 32.0,
@@ -103,13 +125,60 @@ def cluster_workload(cluster_api):
                 "maxConsecutiveFailures": 1
             }
         ],
-    })
+    }
+
+    # DNS resolution app to make sure DNS is available during the upgrade.
+    # Periodically resolves the healthcheck app's domain name and logs whether
+    # it succeeded to a file in the Mesos sandbox.
+    dns_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('dns-' + test_id),
+        "cmd": """
+while true
+do
+    printf "%s " $(date --utc -Iseconds) >> $MESOS_SANDBOX/$DNS_LOG_FILENAME
+    if host -W $TIMEOUT_SECONDS $RESOLVE_NAME
+    then
+        echo SUCCESS >> $MESOS_SANDBOX/$DNS_LOG_FILENAME
+    else
+        echo FAILURE >> $MESOS_SANDBOX/$DNS_LOG_FILENAME
+    fi
+    sleep $INTERVAL_SECONDS
+done
+""",
+        "env": {
+            'RESOLVE_NAME': marathon_app_id_to_mesos_dns_name(healthcheck_app['id']) + '.marathon.mesos',
+            'DNS_LOG_FILENAME': 'dns_resolve_log.txt',
+            'INTERVAL_SECONDS': '1',
+            'TIMEOUT_SECONDS': '1',
+        },
+        "cpus": 0.5,
+        "mem": 32.0,
+        "instances": 1,
+        "container": {
+            "type": "DOCKER",
+            "docker": {
+                "image": "branden/bind-utils",
+                "network": "BRIDGE",
+            }
+        },
+        "dependencies": [healthcheck_app['id']],
+    }
+
+    # Deploy test apps.
+    # TODO(branden): We ought to be able to deploy these apps concurrently. See
+    # https://mesosphere.atlassian.net/browse/DCOS-13360.
+    cluster_api.marathon.deploy_app(healthcheck_app)
+    cluster_api.marathon.ensure_deployments_complete()
+    # This is a hack to make sure we don't deploy dns_app before the name it's
+    # trying to resolve is available.
+    wait_for_dns(dns_app['env']['RESOLVE_NAME'])
+    cluster_api.marathon.deploy_app(dns_app, check_health=False)
     cluster_api.marathon.ensure_deployments_complete()
 
-    test_apps = [healthcheck_app]
+    test_apps = [healthcheck_app, dns_app]
     test_app_ids = [app['id'] for app in test_apps]
 
-    tasks_start = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    tasks_start = {app_id: sorted(app_task_ids(app_id)) for app_id in test_app_ids}
     log.debug('Test app tasks at start:\n' + pprint.pformat(tasks_start))
 
     for app in test_apps:
@@ -117,11 +186,26 @@ def cluster_workload(cluster_api):
 
     yield
 
-    tasks_end = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    tasks_end = {app_id: sorted(app_task_ids(app_id)) for app_id in test_app_ids}
     log.debug('Test app tasks at end:\n' + pprint.pformat(tasks_end))
 
     # Verify that the tasks we started are still running.
     assert tasks_start == tasks_end
+
+    # Verify DNS didn't fail.
+    marathon_framework_id = cluster_api.marathon.get('/v2/info').json()['frameworkId']
+    dns_app_task = cluster_api.marathon.get('/v2/apps' + dns_app['id'] + '/tasks').json()['tasks'][0]
+    dns_log = parse_dns_log(cluster_api.mesos_sandbox_file(
+        dns_app_task['slaveId'],
+        marathon_framework_id,
+        dns_app_task['id'],
+        dns_app['env']['DNS_LOG_FILENAME'],
+    ))
+    dns_failure_times = [entry[0] for entry in dns_log if entry[1] != 'SUCCESS']
+    if len(dns_failure_times) > 0:
+        message = 'Failed to resolve Marathon app hostname {} at least once.'.format(dns_app['env']['RESOLVE_NAME'])
+        log.debug(message + ' Hostname failed to resolve at these times:\n' + '\n'.join(dns_failure_times))
+        raise Exception(message)
 
 
 def main():
