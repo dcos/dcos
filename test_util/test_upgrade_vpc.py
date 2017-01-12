@@ -47,20 +47,24 @@ import sys
 import uuid
 from contextlib import contextmanager
 
+import retrying
+
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import CI_AUTH_JSON, DcosUser
-from test_util.marathon import TEST_APP_NAME_FMT
 
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
+TEST_APP_NAME_FMT = 'upgrade-{}'
 
 
+def app_id_to_mesos_dns_name(app_id):
+    return '-'.join(reversed(app_id.strip('/').split('/')))
 
 
 @contextmanager
@@ -75,9 +79,22 @@ def cluster_workload(cluster_api):
         tasks = response.json()['tasks']
         return sorted(task['id'] for task in tasks)
 
-    # Deploy an app with a healthcheck.
-    cluster_api.marathon.deploy_app({
-        "id": '/' + TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+    @retrying.retry(
+        wait_fixed=(1 * 1000),
+        stop_max_delay=(120 * 1000),
+        retry_on_result=lambda x: not x)
+    def _wait_for_dns(hostname):
+        """Return True if Mesos-DNS has at least one entry for hostname."""
+        hosts = cluster_api.get('/mesos_dns/v1/hosts/' + hostname).json()
+        return any(h['host'] != '' and h['ip'] != '' for h in hosts)
+
+    test_id = uuid.uuid4().hex
+
+    # HTTP healthcheck app to make sure tasks are reachable during the upgrade.
+    # If a task fails its healthcheck, Marathon will terminate it and we'll
+    # notice it was killed when we check tasks on exit.
+    healthcheck_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('healthcheck-' + test_id),
         "cmd": "python3 -m http.server 8080",
         "cpus": 0.5,
         "mem": 32.0,
@@ -103,10 +120,57 @@ def cluster_workload(cluster_api):
                 "maxConsecutiveFailures": 1
             }
         ],
-    })
+    }
+
+    # DNS resolution app to make sure DNS is available during the upgrade.
+    # Periodically resolves the healthcheck app's domain name and dies if it
+    # fails.
+    dns_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('dns-' + test_id),
+        "cmd": """
+while true
+do
+    printf "%s " $(date --utc -Iseconds) >> $MESOS_SANDBOX/dns_resolve_log.txt
+    if host -W 1 $RESOLVE_NAME
+    then
+        echo SUCCESS >> $MESOS_SANDBOX/dns_resolve_log.txt
+    else
+        echo FAILURE >> $MESOS_SANDBOX/dns_resolve_log.txt
+    fi
+    sleep $INTERVAL_SECONDS
+done
+""",
+        "env": {
+            'RESOLVE_NAME': app_id_to_mesos_dns_name(healthcheck_app['id']) + '.marathon.mesos',
+            'INTERVAL_SECONDS': '1',
+        },
+        "cpus": 0.5,
+        "mem": 32.0,
+        "instances": 1,
+        "container": {
+            "type": "DOCKER",
+            "docker": {
+                "image": "mapitman/bind-utils",
+                "network": "BRIDGE",
+            }
+        },
+        "dependencies": [healthcheck_app['id']],
+    }
+
+    # Deploy test apps.
+    # TODO(branden): Define apps and deploy_app() such that we can deploy all
+    # test apps at once and then block on waiting for them all to finish
+    # deploying. Marathon ought to be responsible for deploying apps in the
+    # right order and knowing whether they're deployed and stable.
+    cluster_api.marathon.deploy_app(healthcheck_app)
+    cluster_api.marathon.ensure_deployments_complete()
+    # TODO(branden): This is a hack to make sure we don't deploy dns_app before
+    # the name it's trying to resolve is available.
+    _wait_for_dns(dns_app['env']['RESOLVE_NAME'])
+    cluster_api.marathon.deploy_app(dns_app, check_health=False)
     cluster_api.marathon.ensure_deployments_complete()
 
-    test_apps = [healthcheck_app]
+    test_apps = [healthcheck_app, dns_app]
     test_app_ids = [app['id'] for app in test_apps]
 
     tasks_start = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
@@ -122,6 +186,8 @@ def cluster_workload(cluster_api):
 
     # Verify that the tasks we started are still running.
     assert tasks_start == tasks_end
+
+    # TODO(branden): Verify DNS
 
 
 def main():
