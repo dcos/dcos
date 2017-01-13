@@ -1,21 +1,24 @@
-High level description including:
- - What does this change enable
- - What bugs does this change fix
- - High-Level how things changed
+# Overview
+Example: This PR enables foo to bar by fixing baz. By enabling foo, this PR also adds an update to adminrouter and Mesos, which is shown in the buildinfo.json bumps. 
 
 # Issues
+  - [ ] [DCOS-<number>](https://dcosjira.atlassian.net/browse/DCOS-<number>)
 
-[DCOS-<number>](https://dcosjira.atlassian.net/browse/DCOS-<number>)
-...
+# Test Coverage 
+- [ ] Test Results: <link>
+- [ ] Code Coverage: <link>
+```
+  # ... copy/paste test coverage output from run on bump in this PR
+```
 
-# Checklist
+# Submission Checklists
+## All PRs
+ - [ ] Integration Test
+   - Must fail if code is reverted but test is not
+ - [ ] Followed [Rules for Packages and Systemd](https://github.com/dcos/dcos/tree/master/docs)
 
- - [ ] Included a test which will fail if code is reverted but test is not
- - [ ] Followed relevant code rules [Rules for Packages and Systemd](https://github.com/dcos/dcos/tree/master/docs)
+## Component or Package Update
+ - [ ] Changelog: [Link](https://github.com/...) to git compare between SHA here and previous
+ 
 
-If this is a component/package update, include
-
- - [ ] Change Log from last: <link>
- - [ ] Test Results: <link>
- - [ ] Code Coverage: <link>
 
