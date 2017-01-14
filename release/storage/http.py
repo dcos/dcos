@@ -73,6 +73,7 @@ class HttpStorageProvider(AbstractStorageProvider):
     def read_only(self):
         return True
 
+
 factories = {
     'read': HttpStorageProvider
 }

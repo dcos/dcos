@@ -35,6 +35,7 @@ def invoke_detect_ip():
             "inet_aton exited with {}. {} is not a valid IPv4 address".format(e, ip))
         sys.exit(1)
 
+
 detected_ip = invoke_detect_ip()
 
 # Make the zk conf directory (exhibitor assumes the dir exists)
