@@ -449,7 +449,8 @@ def symlink_tree(src, dest):
             symlink_tree(src_path, dest_path)
         else:
             try:
-                os.symlink(src_path, dest_path)
+                if not os.path.exists(dest_path):
+                    os.symlink(src_path, dest_path)
             except FileNotFoundError as ex:
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
