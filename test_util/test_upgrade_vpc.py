@@ -71,6 +71,13 @@ def app_id_to_mesos_dns_name(app_id):
 def cluster_workload(cluster_api):
     """Start a cluster workload on entry and verify its health on exit."""
 
+    def _apps():
+        """Return a list of all appIds."""
+        response = cluster_api.marathon.get('/v2/apps')
+        response.raise_for_status()
+        apps = response.json()['apps']
+        return sorted(item['id'] for item in apps)
+
     def _app_tasks(app_id):
         """Return a list of Mesos task IDs for app_id's running tasks."""
         assert app_id.startswith('/')
@@ -78,6 +85,13 @@ def cluster_workload(cluster_api):
         response.raise_for_status()
         tasks = response.json()['tasks']
         return sorted(task['id'] for task in tasks)
+
+    def _info():
+        """Return the Marathon info."""
+        response = cluster_api.marathon.get('/v2/info')
+        response.raise_for_status()
+        info = response.json()
+        return info
 
     @retrying.retry(
         wait_fixed=(1 * 1000),
@@ -180,6 +194,12 @@ done
         assert app['instances'] == len(tasks_start[app['id']])
 
     yield
+
+    apps = _apps()
+    log.debug('all existent apps:\n' + pprint.pformat(apps))
+
+    info = _info()
+    log.debug('info about leading Marathon:\n' + pprint.pformat(info))
 
     tasks_end = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
     log.debug('Test app tasks at end:\n' + pprint.pformat(tasks_end))
