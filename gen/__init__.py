@@ -582,7 +582,6 @@ def generate(
     # put the regular files right back
     rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
-
     def make_package_filename(package_id, extension):
         return 'packages/{0}/{1}{2}'.format(
             package_id.name,
