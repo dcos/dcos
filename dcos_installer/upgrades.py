@@ -6,8 +6,7 @@ import subprocess
 import gen.build_deploy.util as util
 import gen.template
 from dcos_installer.constants import SERVE_DIR
-from pkgpanda.build import hash_str
-from pkgpanda.util import (if_exists, load_json, write_string)
+from pkgpanda.util import (if_exists, load_json, write_string, hash_str)
 
 
 node_upgrade_template = """
