@@ -63,9 +63,7 @@ function main() {
 
     pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
 
-    pkgpanda fetch --repository-url=https://downloads.dcos.io/dcos/testing {{ package_list }}
-
-    pkgpanda activate {{ cluster_packages }} {{ package_list }}
+    pkgpanda activate {{ cluster_packages }}
 
     # check if we are on a master node
     if [ -f /etc/mesosphere/roles/master ]; then
@@ -92,22 +90,12 @@ def generate_node_upgrade_script(gen_out, current_version, serve_dir=SERVE_DIR):
 
     bootstrap_url = gen_out.arguments['bootstrap_url']
 
-    # remove once i have late binding stuff
-    active_packages = serve_dir + '/bootstrap/' + gen_out.arguments['bootstrap_id'] + '.active.json'
-
     package_list = get_package_list(gen_out.cluster_packages)
-
-    packages_to_activate = []
-
-    active = if_exists(load_json, active_packages)
-    for package in active:
-        packages_to_activate.append(package)
 
     bash_script = gen.template.parse_str(node_upgrade_template).render({
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'bootstrap_url': bootstrap_url,
-        'package_list': (' '.join(packages_to_activate)),
         'cluster_packages': package_list,
         'dcos_version': current_version})
 
