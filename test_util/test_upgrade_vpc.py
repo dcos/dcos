@@ -178,10 +178,10 @@ def main():
 
     cluster_api.marathon.ensure_deployments_complete()
 
-    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(),cluster_api.marathon.get('v2/tasks').json()
+    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(), cluster_api.marathon.get('v2/tasks').json()
 
-    assert apps_json, "v2/apps was determined empty before upgrade!"
-    assert tasks_json, "v2/tasks was determined empty before upgrade!"
+    assert apps_json['apps'], "v2/apps was determined empty before upgrade!"
+    assert tasks_json['tasks'], "v2/tasks was determined empty before upgrade!"
 
     task_info_before_upgrade = get_task_info(apps=apps_json, tasks=tasks_json)
 
@@ -193,10 +193,10 @@ def main():
 
     test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
 
-    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(),cluster_api.marathon.get('v2/tasks').json()
+    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(), cluster_api.marathon.get('v2/tasks').json()
 
-    assert apps_json, "v2/apps was determined empty after upgrade!"
-    assert tasks_json, "v2/tasks was determined empty after upgrade!"
+    assert apps_json['apps'], "v2/apps was determined empty after upgrade!"
+    assert tasks_json['tasks'], "v2/tasks was determined empty after upgrade!"
 
     task_info_after_upgrade = get_task_info(apps=apps_json, tasks=tasks_json)
 
