@@ -164,7 +164,7 @@ class Marathon(ApiClient):
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
-        def _pool_for_marathon_app(app_id):
+        def _poll_marathon_for_app_deployment(app_id):
             Endpoint = collections.namedtuple("Endpoint", ["host", "port", "ip"])
             # Some of the counters need to be explicitly enabled now and/or in
             # future versions of Marathon:
@@ -204,10 +204,38 @@ class Marathon(ApiClient):
                 return None
 
         try:
-            return _pool_for_marathon_app(app_definition['id'])
+            return _poll_marathon_for_app_deployment(app_definition['id'])
         except retrying.RetryError:
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
+
+    def ensure_deployments_complete(self, timeout=120):
+        """
+        This method ensures that, there are no pending deployments
+
+        :return: True if all deployments are completed within time out. Raises an exception otherwise.
+        """
+
+        @retrying.retry(wait_fixed=1000, stop_max_delay=120 * 1000, retry_on_exception=lambda x: False)
+        def _get_deployments_json():
+            r = self.get('v2/deployments')
+            r.raise_for_status()
+            return r.json()
+
+        def retry_on_assertion_error(exception):
+            return isinstance(exception, AssertionError)
+
+        @retrying.retry(retry_on_exception=retry_on_assertion_error,
+                        stop_max_attempt_number=10,
+                        wait_fixed=timeout * 1000)
+        def ensure_deployment_is_finished():
+            deployments_json = _get_deployments_json()
+            assert not deployments_json, "No deployment should be happening."
+
+        try:
+            ensure_deployment_is_finished()
+        except retrying.RetryError:
+            raise Exception("Deployments were not completed within {timeout} seconds".format(timeout=timeout))
 
     def deploy_pod(self, pod_definition):
         """Deploy a pod to marathon

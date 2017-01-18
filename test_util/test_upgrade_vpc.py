@@ -54,6 +54,7 @@ from test_util.cluster_api import ClusterApi
 from test_util.helpers import CI_AUTH_JSON, DcosUser
 from test_util.marathon import TEST_APP_NAME_FMT
 
+
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
@@ -93,10 +94,12 @@ def get_test_app():
 def get_task_info(apps, tasks):
     idx = 0    # We have a single app and a task for this test.
 
+    logging.info("v2/apps json: {apps}".format(apps=apps))
+    logging.info("v2/tasks json: {tasks}".format(tasks=tasks))
+
     try:
         tasks_state = tasks["tasks"][idx]["state"]
-        health_check_interval = \
-            apps["apps"][idx]["healthChecks"][idx]["intervalSeconds"]
+        health_check_interval = apps["apps"][idx]["healthChecks"][idx]["intervalSeconds"]
         task_id = tasks["tasks"][idx]["id"]
         last_success = tasks["tasks"][idx]["healthCheckResults"][idx]["lastSuccess"]
     except IndexError as e:
@@ -170,8 +173,10 @@ def main():
 
     cluster_api.wait_for_dcos()
 
-    # Deploy an app
+    # Deploy an app, and make sure deployments are completely done.
     cluster_api.marathon.deploy_app(get_test_app())
+
+    cluster_api.marathon.ensure_deployments_complete()
 
     task_info_before_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
                                              cluster_api.marathon.get('v2/tasks').json())
@@ -201,7 +206,7 @@ def main():
     result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
     if result == 0:
-        log.info("Test successsful! Deleting VPC if provided in this run...")
+        log.info("Test successful! Deleting VPC if provided in this run.")
         vpc.delete()
     else:
         log.info("Test failed! VPC cluster will remain available for debugging for 2 hour after instantiation.")
