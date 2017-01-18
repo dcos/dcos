@@ -13,4 +13,5 @@ set -o errexit -o nounset -o pipefail
 pip install -U pip
 
 # Install the packages in editable mode to the virtual environment.
+pip install wheel
 pip install -e $PWD
