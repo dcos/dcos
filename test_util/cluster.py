@@ -320,7 +320,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
 
         # Remove the old DC/OS.
-        tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
+        tunnel.remote_cmd(['sudo', '/opt/mesosphere/bin/dcos-shell', 'pkgpanda', 'uninstall'])
         tunnel.remote_cmd(['sudo', 'rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'])
 
         # Install the new DC/OS.
