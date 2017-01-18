@@ -47,13 +47,12 @@ class PrettyPrint():
         self.success_hosts = [ip for ip in self.success_hosts if ip not in self.fail_hosts]
         return failed_data, success_data
 
-    def print_data(self):
-        print_header('OUTPUT FOR {}'.format(self.stage_name))
-        if len(self.failed_data) > 0:
-            for host in self.failed_data:
+    def _print_host_set(self, status, hosts):
+        if len(hosts) > 0:
+            for host in hosts:
                 for ip, data in host.items():
                     log = logging.getLogger(str(ip))
-                    log.error('====> {} FAILED'.format(ip))
+                    log.error('====> {} {}'.format(ip, status))
                     log.debug('     CODE:\n{}'.format(data['returncode']))
                     log.error('     TASK:\n{}'.format(' '.join(data['cmd'])))
                     log.error('     STDERR:')
@@ -62,18 +61,10 @@ class PrettyPrint():
                     self.color_preflight(host=ip, rc=data['returncode'], data_array=data['stdout'])
                     log.info('')
 
-        if len(self.success_data) > 0:
-            for host in self.success_data:
-                for ip, data in host.items():
-                    log = logging.getLogger(str(ip))
-                    log.debug('====> {} SUCCESS'.format(ip))
-                    log.debug('     CODE:{}'.format(data['returncode']))
-                    log.debug('     TASK:{}'.format(' '.join(data['cmd'])))
-                    log.debug('     STDERR:')
-                    self.color_preflight(host=ip, rc=data['returncode'], data_array=data['stderr'])
-                    log.debug('     STDOUT:')
-                    self.color_preflight(host=ip, rc=data['returncode'], data_array=data['stdout'])
-                    log.debug('')
+    def print_data(self):
+        print_header('OUTPUT FOR {}'.format(self.stage_name))
+        self._print_host_set("FAILED", self.failed_data)
+        self._print_host_set("PASSED", self.success_data)
 
     def print_summary(self):
         print_header('SUMMARY FOR {}'.format(self.stage_name))

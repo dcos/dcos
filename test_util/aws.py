@@ -234,18 +234,20 @@ class DcosCfAdvanced(CfStack):
             ec2.create_tags(Resources=[gateway], Tags=[{'Key': 'Name', 'Value': stack_name}])
         log.info('Using InternetGateway with ID: ' + gateway)
 
+        def _make_subnet(cidr, suffix):
+            subnet = ec2.create_subnet(VpcId=vpc, CidrBlock=cidr)['Subnet']['SubnetId']
+            ec2.create_tags(Resources=[private_subnet], Tags=[{'Key': 'Name', 'Value': stack_name + '-' + suffix}])
+            ec2.get_waiter('subnet_available').wait(SubnetIds=[subnet])
+            return subnet
+
         if not private_subnet:
             log.info('Creating new PrivateSubnet...')
-            private_subnet = ec2.create_subnet(VpcId=vpc, CidrBlock=private_subnet_cidr)['Subnet']['SubnetId']
-            ec2.create_tags(Resources=[private_subnet], Tags=[{'Key': 'Name', 'Value': stack_name + '-private'}])
-            ec2.get_waiter('subnet_available').wait(SubnetIds=[private_subnet])
+            private_subnet = _make_subnet(private_subnet_cidr, 'private')
         log.info('Using PrivateSubnet with ID: ' + private_subnet)
 
         if not public_subnet:
             log.info('Creating new PublicSubnet...')
-            public_subnet = ec2.create_subnet(VpcId=vpc, CidrBlock=public_subnet_cidr)['Subnet']['SubnetId']
-            ec2.create_tags(Resources=[public_subnet], Tags=[{'Key': 'Name', 'Value': stack_name + '-public'}])
-            ec2.get_waiter('subnet_available').wait(SubnetIds=[public_subnet])
+            public_subnet = _make_subnet(public_subnet_cidr, 'public')
         log.info('Using PublicSubnet with ID: ' + public_subnet)
 
         parameters = {
