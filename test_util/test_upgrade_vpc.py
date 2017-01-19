@@ -38,30 +38,77 @@ CONFIG_YAML_OVERRIDE_UPGRADE: file path(default=None)
     This value will be used when upgrading the cluster.
 
 """
-import collections
-import datetime
 import logging
 import os
+import pprint
 import random
 import string
 import sys
 import uuid
+from contextlib import contextmanager
+
+import retrying
 
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
 from test_util.cluster_api import ClusterApi
 from test_util.helpers import CI_AUTH_JSON, DcosUser
-from test_util.marathon import TEST_APP_NAME_FMT
 
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def get_test_app():
-    app = {
-        "id": TEST_APP_NAME_FMT.format(uuid.uuid4().hex),
+TEST_APP_NAME_FMT = 'upgrade-{}'
+
+
+def app_id_to_mesos_dns_name(app_id):
+    return '-'.join(reversed(app_id.strip('/').split('/')))
+
+
+@contextmanager
+def cluster_workload(cluster_api):
+    """Start a cluster workload on entry and verify its health on exit."""
+
+    def _apps():
+        """Return a list of all appIds."""
+        response = cluster_api.marathon.get('/v2/apps')
+        response.raise_for_status()
+        apps = response.json()['apps']
+        return sorted(item['id'] for item in apps)
+
+    def _app_tasks(app_id):
+        """Return a list of Mesos task IDs for app_id's running tasks."""
+        assert app_id.startswith('/')
+        response = cluster_api.marathon.get('/v2/apps' + app_id + '/tasks')
+        response.raise_for_status()
+        tasks = response.json()['tasks']
+        return sorted(task['id'] for task in tasks)
+
+    def _info():
+        """Return the Marathon info."""
+        response = cluster_api.marathon.get('/v2/info')
+        response.raise_for_status()
+        info = response.json()
+        return info
+
+    @retrying.retry(
+        wait_fixed=(1 * 1000),
+        stop_max_delay=(120 * 1000),
+        retry_on_result=lambda x: not x)
+    def _wait_for_dns(hostname):
+        """Return True if Mesos-DNS has at least one entry for hostname."""
+        hosts = cluster_api.get('/mesos_dns/v1/hosts/' + hostname).json()
+        return any(h['host'] != '' and h['ip'] != '' for h in hosts)
+
+    test_id = uuid.uuid4().hex
+
+    # HTTP healthcheck app to make sure tasks are reachable during the upgrade.
+    # If a task fails its healthcheck, Marathon will terminate it and we'll
+    # notice it was killed when we check tasks on exit.
+    healthcheck_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('healthcheck-' + test_id),
         "cmd": "python3 -m http.server 8080",
         "cpus": 0.5,
         "mem": 32.0,
@@ -82,39 +129,85 @@ def get_test_app():
                 "path": "/",
                 "portIndex": 0,
                 "gracePeriodSeconds": 5,
-                "intervalSeconds": 10,
-                "timeoutSeconds": 10,
-                "maxConsecutiveFailures": 3
+                "intervalSeconds": 1,
+                "timeoutSeconds": 5,
+                "maxConsecutiveFailures": 1
             }
         ],
     }
-    return app
 
+    # DNS resolution app to make sure DNS is available during the upgrade.
+    # Periodically resolves the healthcheck app's domain name and dies if it
+    # fails.
+    dns_app = {
+        "id": '/' + TEST_APP_NAME_FMT.format('dns-' + test_id),
+        "cmd": """
+while true
+do
+    printf "%s " $(date --utc -Iseconds) >> $MESOS_SANDBOX/dns_resolve_log.txt
+    if host -W 1 $RESOLVE_NAME
+    then
+        echo SUCCESS >> $MESOS_SANDBOX/dns_resolve_log.txt
+    else
+        echo FAILURE >> $MESOS_SANDBOX/dns_resolve_log.txt
+    fi
+    sleep $INTERVAL_SECONDS
+done
+""",
+        "env": {
+            'RESOLVE_NAME': app_id_to_mesos_dns_name(healthcheck_app['id']) + '.marathon.mesos',
+            'INTERVAL_SECONDS': '1',
+        },
+        "cpus": 0.5,
+        "mem": 32.0,
+        "instances": 1,
+        "container": {
+            "type": "DOCKER",
+            "docker": {
+                "image": "mapitman/bind-utils",
+                "network": "BRIDGE",
+            }
+        },
+        "dependencies": [healthcheck_app['id']],
+    }
 
-def get_task_info(apps, tasks):
-    idx = 0    # We have a single app and a task for this test.
+    # Deploy test apps.
+    # TODO(branden): Define apps and deploy_app() such that we can deploy all
+    # test apps at once and then block on waiting for them all to finish
+    # deploying. Marathon ought to be responsible for deploying apps in the
+    # right order and knowing whether they're deployed and stable.
+    cluster_api.marathon.deploy_app(healthcheck_app)
+    cluster_api.marathon.ensure_deployments_complete()
+    # TODO(branden): This is a hack to make sure we don't deploy dns_app before
+    # the name it's trying to resolve is available.
+    _wait_for_dns(dns_app['env']['RESOLVE_NAME'])
+    cluster_api.marathon.deploy_app(dns_app, check_health=False)
+    cluster_api.marathon.ensure_deployments_complete()
 
-    logging.info("v2/apps json: {apps}".format(apps=apps))
-    logging.info("v2/tasks json: {tasks}".format(tasks=tasks))
+    test_apps = [healthcheck_app, dns_app]
+    test_app_ids = [app['id'] for app in test_apps]
 
-    try:
-        tasks_state = tasks["tasks"][idx]["state"]
-        health_check_interval = apps["apps"][idx]["healthChecks"][idx]["intervalSeconds"]
-        task_id = tasks["tasks"][idx]["id"]
-        last_success = tasks["tasks"][idx]["healthCheckResults"][idx]["lastSuccess"]
-    except IndexError as e:
-        logging.debug("Failed to get task detail: {exp}".format(exp=str(e)))
-        return None
+    tasks_start = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    log.debug('Test app tasks at start:\n' + pprint.pformat(tasks_start))
 
-    TaskInfo = collections.namedtuple("TaskInfo", "state id health_check_interval last_success_time")
+    for app in test_apps:
+        assert app['instances'] == len(tasks_start[app['id']])
 
-    task_info = TaskInfo(
-        state=tasks_state,
-        id=task_id,
-        health_check_interval=datetime.timedelta(seconds=health_check_interval),
-        last_success_time=(datetime.datetime.strptime(last_success, "%Y-%m-%dT%H:%M:%S.%fZ")))
+    yield
 
-    return task_info
+    apps = _apps()
+    log.debug('all existent apps:\n' + pprint.pformat(apps))
+
+    info = _info()
+    log.debug('info about leading Marathon:\n' + pprint.pformat(info))
+
+    tasks_end = {app_id: _app_tasks(app_id) for app_id in test_app_ids}
+    log.debug('Test app tasks at end:\n' + pprint.pformat(tasks_end))
+
+    # Verify that the tasks we started are still running.
+    assert tasks_start == tasks_end
+
+    # TODO(branden): Verify DNS
 
 
 def main():
@@ -173,35 +266,11 @@ def main():
 
     cluster_api.wait_for_dcos()
 
-    # Deploy an app, and make sure deployments are completely done.
-    cluster_api.marathon.deploy_app(get_test_app())
-
-    cluster_api.marathon.ensure_deployments_complete()
-
-    task_info_before_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                             cluster_api.marathon.get('v2/tasks').json())
-
-    assert task_info_before_upgrade is not None, "Unable to get task details of the cluster."
-    assert task_info_before_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
-
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
-    test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
-
-    task_info_after_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                            cluster_api.marathon.get('v2/tasks').json())
-
-    assert task_info_after_upgrade is not None, "Unable to get the tasks details of the cluster."
-    assert task_info_after_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
-
-    assert task_info_before_upgrade.id == task_info_after_upgrade.id, \
-        "Task ID before and after the upgrade did not match."
-
-    # There has happened at least one health-check in the new cluster since the last health-check in the old cluster.
-    assert (task_info_after_upgrade.last_success_time >
-            task_info_before_upgrade.last_success_time + task_info_before_upgrade.health_check_interval), \
-        "Invalid health-check for the task in the upgraded cluster."
+    with cluster_workload(cluster_api):
+        test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
 
     result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
