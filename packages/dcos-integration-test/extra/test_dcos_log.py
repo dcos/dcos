@@ -118,8 +118,16 @@ def test_pod_logs(cluster):
 
     with cluster.marathon.deploy_pod_and_cleanup(pod_definition):
         url = get_task_url(cluster, pod_id)
+        url_parts = url.split('/')
+
         check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', cluster)
         check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', cluster)
+
+        # check app logs download
+        # the very last part in url is container_id
+        response = cluster.get(url + '/download?limit=10&postfix=stdout')
+        log_file_name = 'task-{}-stdout.log.gz'.format(url_parts[-1])
+        check_response_ok(response, {'Content-Disposition': 'attachment; filename={}'.format(log_file_name)})
 
 
 @retrying.retry(wait_fixed=1000, stop_max_delay=3000)
