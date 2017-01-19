@@ -186,6 +186,9 @@ done
 
     yield
 
+    if not cluster_api.marathon.get('/v2/apps').json()['apps']:
+        raise Exception('No Marathon apps running!')
+
     tasks_end = {app_id: sorted(app_task_ids(app_id)) for app_id in test_app_ids}
     log.debug('Test app tasks at end:\n' + pprint.pformat(tasks_end))
 
