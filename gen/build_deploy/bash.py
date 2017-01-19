@@ -12,6 +12,7 @@ import gen.template
 import pkgpanda.util
 from gen.calc import calculate_environment_variable
 from gen.internals import Source
+from pkgpanda.build.src_fetchers import GitLocalSrcFetcher
 from pkgpanda.util import logger
 
 
@@ -654,12 +655,18 @@ def make_installer_docker(variant, bootstrap_id, installer_bootstrap_id):
 def make_dcos_launch():
     # NOTE: this needs to be kept in sync with build_dcos_launch.sh
     work_dir = py.path.local.mkdtemp()
+    # the tree will not be in the working dir if run from downstream
+    tree_src = './'
+    if os.path.exists('ext/upstream'):
+        tree_src = './ext/upstream'
+    src_info = {'kind': 'git_local', 'rel_path': tree_src}
+    this_tree = GitLocalSrcFetcher(src_info, None, os.getcwd())
+    this_tree.checkout_to(str(work_dir))
+    # put the launch spec into the root of the tree before running pyinstaller
     work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string(__name__, 'bash/dcos-launch.spec'))
-    work_dir.join('test_util').ensure(dir=True)
-    work_dir.join('test_util').join('launch.py').write(pkg_resources.resource_string('test_util', 'launch.py'))
     with work_dir.as_cwd():
-        subprocess.check_call(['pyinstaller', 'dcos-launch.spec'])
-    subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), "dcos-launch"])
+        subprocess.check_call(['pyinstaller', '--log-level=DEBUG', 'dcos-launch.spec'])
+    subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), 'dcos-launch'])
     work_dir.remove()
 
     return "dcos-launch"

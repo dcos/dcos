@@ -27,7 +27,6 @@ def make_3dt_request(cluster):
         assert response.status_code == 200
         try:
             json_response = response.json()
-            logging.info('Response: {}'.format(json_response))
         except ValueError:
             logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
             raise
@@ -124,12 +123,10 @@ def validate_node(nodes):
     required_fields = ['host_ip', 'health', 'role']
 
     for node in nodes:
-        logging.info('check node reponse: {}'.format(node))
-        assert len(node) == len(required_fields), 'node should have the following fields: {}'.format(
-            ', '.join(required_fields)
-        )
+        assert len(node) == len(required_fields), 'node should have the following fields: {}. Actual: {}'.format(
+            ', '.join(required_fields), node)
         for required_field in required_fields:
-            assert required_field in node, '{} must be in node'.format(required_field)
+            assert required_field in node, '{} must be in node. Actual: {}'.format(required_field, node)
 
         # host_ip, health, role fields cannot be empty
         assert node['health'] in [0, 1], 'health must be 0 or 1'
@@ -162,7 +159,6 @@ def test_3dt_nodes_node(cluster, make_3dt_request):
         # get a list of nodes
         response = make_3dt_request(master, '/nodes')
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
-        logging.info('received the following nodes: {}'.format(nodes))
 
         for node in nodes:
             node_response = make_3dt_request(master, '/nodes/{}'.format(node))
@@ -175,12 +171,10 @@ def validate_units(units):
     required_fields = ['id', 'name', 'health', 'description']
 
     for unit in units:
-        logging.info('validating unit {}'.format(unit))
-        assert len(unit) == len(required_fields), 'a unit must have the following fields: {}'.format(
-            ', '.join(required_fields)
-        )
+        assert len(unit) == len(required_fields), 'a unit must have the following fields: {}. Actual: {}'.format(
+            ', '.join(required_fields), unit)
         for required_field in required_fields:
-            assert required_field in unit, 'unit response must have field: {}'.format(required_field)
+            assert required_field in unit, 'unit response must have field: {}. Actual: {}'.format(required_field, unit)
 
         # a unit must have all 3 fields not empty
         assert unit['id'], 'id field cannot be empty'
@@ -191,14 +185,12 @@ def validate_units(units):
 
 def validate_unit(unit):
     assert isinstance(unit, dict), 'input argument must be a dict'
-    logging.info('validating unit: {}'.format(unit))
 
     required_fields = ['id', 'health', 'output', 'description', 'help', 'name']
-    assert len(unit) == len(required_fields), 'unit must have the following fields: {}'.format(
-        ', '.join(required_fields)
-    )
+    assert len(unit) == len(required_fields), 'unit must have the following fields: {}. Actual: {}'.format(
+        ', '.join(required_fields), unit)
     for required_field in required_fields:
-        assert required_field in unit, '{} must be in a unit'.format(required_field)
+        assert required_field in unit, '{} must be in a unit. Actual: {}'.format(required_field, unit)
 
     # id, name, health, description, help should not be empty
     assert unit['id'], 'id field cannot be empty'
@@ -216,13 +208,10 @@ def test_3dt_nodes_node_units(cluster, make_3dt_request):
         # get a list of nodes
         response = make_3dt_request(master, '/nodes')
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
-        logging.info('received the following nodes: {}'.format(nodes))
 
         for node in nodes:
-            node_response = make_3dt_request(master, '/nodes/{}'.format(node))
-            logging.info('node reponse: {}'.format(node_response))
+            make_3dt_request(master, '/nodes/{}'.format(node))
             units_response = make_3dt_request(master, '/nodes/{}/units'.format(node))
-            logging.info('units reponse: {}'.format(units_response))
 
             assert len(units_response) == 1, 'unit response should have only 1 field `units`'
             assert 'units' in units_response
@@ -239,7 +228,6 @@ def test_3dt_nodes_node_units_unit(cluster, make_3dt_request):
         for node in nodes:
             units_response = make_3dt_request(master, '/nodes/{}/units'.format(node))
             unit_ids = list(map(lambda unit: unit['id'], units_response['units']))
-            logging.info('unit ids: {}'.format(unit_ids))
 
             for unit_id in unit_ids:
                 validate_unit(
@@ -263,8 +251,6 @@ def test_3dt_units(cluster, make_3dt_request):
         for unit in node_response['units']:
             all_units.add(unit['id'])
 
-    logging.info('Master units: {}'.format(all_units))
-
     # test against masters
     for master in cluster.masters:
         units_response = make_3dt_request(master, '/units')
@@ -273,8 +259,7 @@ def test_3dt_units(cluster, make_3dt_request):
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         logging.info('collected units: {}'.format(pulled_units))
         assert set(pulled_units) == all_units, 'not all units have been collected by 3dt puller, missing: {}'.format(
-            set(pulled_units).symmetric_difference(all_units)
-        )
+            set(pulled_units).symmetric_difference(all_units))
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
@@ -333,7 +318,6 @@ def make_nodes_ip_map(cluster, make_3dt_request):
         detected_ip = make_3dt_request(node, '/')['ip']
         node_private_public_ip_map[detected_ip] = node
 
-    logging.info('detected ips: {}'.format(node_private_public_ip_map))
     return node_private_public_ip_map
 
 
@@ -365,7 +349,6 @@ def test_3dt_units_unit_nodes(cluster, make_3dt_request):
         master_nodes_response = make_3dt_request(master, '/units/dcos-mesos-master.service/nodes')
 
         master_nodes = get_nodes_from_response(master_nodes_response)
-        logging.info('master_nodes: {}'.format(master_nodes))
 
         assert len(master_nodes) == len(cluster.masters), '{} != {}'.format(master_nodes, cluster.masters)
         assert set(master_nodes) == set(cluster.masters), 'a list of difference: {}'.format(
@@ -375,7 +358,6 @@ def test_3dt_units_unit_nodes(cluster, make_3dt_request):
         agent_nodes_response = make_3dt_request(master, '/units/dcos-mesos-slave.service/nodes')
 
         agent_nodes = get_nodes_from_response(agent_nodes_response)
-        logging.info('agent_nodes: {}'.format(agent_nodes))
 
         assert len(agent_nodes) == len(cluster.slaves), '{} != {}'.format(agent_nodes, cluster.slaves)
 
@@ -389,17 +371,14 @@ def test_3dt_units_unit_nodes_node(cluster, make_3dt_request):
     for master in cluster.masters:
         units_response = make_3dt_request(master, '/units')
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
-        logging.info('pulled units: {}'.format(pulled_units))
         for unit in pulled_units:
             nodes_response = make_3dt_request(master, '/units/{}/nodes'.format(unit))
             pulled_nodes = list(map(lambda node: node['host_ip'], nodes_response['nodes']))
             logging.info('pulled nodes: {}'.format(pulled_nodes))
             for node in pulled_nodes:
                 node_response = make_3dt_request(master, '/units/{}/nodes/{}'.format(unit, node))
-                logging.info('node response: {}'.format(node_response))
-                assert len(node_response) == len(required_node_fields), 'required fields: {}'.format(
-                    ', '.format(required_node_fields)
-                )
+                assert len(node_response) == len(required_node_fields), 'required fields: {}. Actual: {}'.format(
+                    ', '.format(required_node_fields, node_response))
 
                 for required_node_field in required_node_fields:
                     assert required_node_field in node_response, 'field {} must be set'.format(required_node_field)
@@ -439,7 +418,6 @@ def test_3dt_report(cluster, make_3dt_request):
 def _get_bundle_list(cluster):
     list_url = '/system/health/v1/report/diagnostics/list/all'
     response = cluster.get(path=list_url).json()
-    logging.info('GET {}, response: {}'.format(list_url, response))
 
     bundles = []
     for _, bundle_list in response.items():
@@ -457,7 +435,6 @@ def test_3dt_bundle_create(cluster):
     # start the diagnostics bundle job
     create_url = '/system/health/v1/report/diagnostics/create'
     create_response = cluster.post(path=create_url, json={"nodes": ["all"]}).json()
-    logging.info('POST {}, response: {}'.format(create_url, create_response))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
     status_url = '/system/health/v1/report/diagnostics/status/all'
