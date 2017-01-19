@@ -1,6 +1,5 @@
 """Generates a bash script for installing by hand or light config management integration"""
 
-import json
 import os
 import subprocess
 import tempfile
@@ -12,7 +11,6 @@ import gen.build_deploy.util as util
 import gen.template
 import pkgpanda
 import pkgpanda.util
-from dcos_installer.constants import ARTIFACT_DIR as INSTALLER_ARTIFACT_DIR
 from gen.calc import calculate_environment_variable
 from gen.internals import Source
 from pkgpanda.build.src_fetchers import GitLocalSrcFetcher
@@ -28,7 +26,6 @@ onprem_source = Source(entry={
     },
     'must': {
         'provider': 'onprem',
-        'package_ids': lambda: json.dumps(installer_latest_complete_artifact()['packages']),
     }
 })
 
