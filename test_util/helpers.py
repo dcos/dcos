@@ -248,5 +248,15 @@ def session_tempfile(data):
     return temp_path
 
 
-def marathon_app_id_to_mesos_dns_name(app_id):
+def marathon_app_id_to_mesos_dns_subdomain(app_id):
+    """Return app_id's subdomain as it would appear in a Mesos DNS A record.
+
+    >>> marathon_app_id_to_mesos_dns_subdomain('/app-1')
+    'app-1'
+    >>> marathon_app_id_to_mesos_dns_subdomain('app-1')
+    'app-1'
+    >>> marathon_app_id_to_mesos_dns_subdomain('/group-1/app-1')
+    'app-1-group-1'
+
+    """
     return '-'.join(reversed(app_id.strip('/').split('/')))

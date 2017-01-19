@@ -53,7 +53,7 @@ import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
 from test_util.dcos_api_session import DcosApiSession, DcosUser
-from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_name
+from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_subdomain
 
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
@@ -146,7 +146,7 @@ do
 done
 """,
         "env": {
-            'RESOLVE_NAME': marathon_app_id_to_mesos_dns_name(healthcheck_app['id']) + '.marathon.mesos',
+            'RESOLVE_NAME': marathon_app_id_to_mesos_dns_subdomain(healthcheck_app['id']) + '.marathon.mesos',
             'DNS_LOG_FILENAME': 'dns_resolve_log.txt',
             'INTERVAL_SECONDS': '1',
             'TIMEOUT_SECONDS': '1',
