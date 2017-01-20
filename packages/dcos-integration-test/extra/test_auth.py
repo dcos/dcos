@@ -14,8 +14,8 @@ def auth_enabled():
 
 @pytest.mark.skipif(not auth_enabled(),
                     reason='Can only test adminrouter enforcement if auth is enabled')
-def test_adminrouter_access_control_enforcement(cluster, noauth_cluster):
-    r = noauth_cluster.get('/acs/api/v1')
+def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_session):
+    r = noauth_api_session.get('/acs/api/v1')
     assert r.status_code == 401
     assert r.headers['WWW-Authenticate'] in ('acsjwt', 'oauthjwt')
     # Make sure that this is UI's error page body,
@@ -26,26 +26,26 @@ def test_adminrouter_access_control_enforcement(cluster, noauth_cluster):
     # Verify that certain locations are forbidden to access
     # when not authed, but are reachable as superuser.
     for path in ('/mesos_dns/v1/config', '/service/marathon/', '/mesos/'):
-        r = noauth_cluster.get(path)
+        r = noauth_api_session.get(path)
         assert r.status_code == 401
-        r = cluster.get(path)
+        r = dcos_api_session.get(path)
         assert r.status_code == 200
 
     # Test authentication with auth cookie instead of Authorization header.
     authcookie = {
-        'dcos-acs-auth-cookie': cluster.auth_user.auth_cookie}
-    r = noauth_cluster.get(
+        'dcos-acs-auth-cookie': dcos_api_session.auth_user.auth_cookie}
+    r = noauth_api_session.get(
         '/service/marathon/',
         cookies=authcookie)
     assert r.status_code == 200
 
 
-def test_logout(cluster):
+def test_logout(dcos_api_session):
     """Test logout endpoint. It's a soft logout, instructing
     the user agent to delete the authentication cookie, i.e. this test
     does not have side effects on other tests.
     """
-    r = cluster.get('/acs/api/v1/auth/logout')
+    r = dcos_api_session.get('/acs/api/v1/auth/logout')
     cookieheader = r.headers['set-cookie']
     assert 'dcos-acs-auth-cookie=;' in cookieheader or 'dcos-acs-auth-cookie="";' in cookieheader
     assert 'expires' in cookieheader.lower()

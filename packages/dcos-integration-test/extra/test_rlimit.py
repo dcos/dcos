@@ -2,7 +2,7 @@ import subprocess
 import uuid
 
 
-def test_if_rlimits_can_be_used(cluster):
+def test_if_rlimits_can_be_used(dcos_api_session):
     """This test verifies that rlimits can be used.
 
     Since marathon does not support rlimits yet we use `mesos-execute` as

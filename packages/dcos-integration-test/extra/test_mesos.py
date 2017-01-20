@@ -46,14 +46,14 @@ def input_streamer(nested_container_id):
     yield encoder.encode(message)
 
 
-def test_if_marathon_app_can_be_debugged(cluster):
+def test_if_marathon_app_can_be_debugged(dcos_api_session):
     # Launch a basic marathon app (no image), so we can debug into it!
     # Cannot use deploy_and_cleanup because we must attach to a running app/task/container.
     app, test_uuid = get_test_app()
     app_id = 'integration-test-{}'.format(test_uuid)
-    with cluster.marathon.deploy_and_cleanup(app):
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
-        master_state_url = 'http://{}:{}/state'.format(cluster.masters[0], 5050)
+        master_state_url = 'http://{}:{}/state'.format(dcos_api_session.masters[0], 5050)
         r = requests.get(master_state_url)
         logging.debug('Got %s with request for %s. Response: \n%s', r.status_code, master_state_url, r.text)
         assert r.status_code == 200
