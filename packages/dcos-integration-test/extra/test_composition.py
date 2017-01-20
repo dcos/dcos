@@ -61,10 +61,10 @@ def test_if_all_exhibitors_are_in_sync(cluster):
 def test_mesos_agent_role_assignment(cluster):
     state_endpoint = '/state.json'
     for agent in cluster.public_slaves:
-        r = cluster.get(path=state_endpoint, node=agent, port=5051)
+        r = cluster.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == 'slave_public'
     for agent in cluster.slaves:
-        r = cluster.get(path=state_endpoint, node=agent, port=5051)
+        r = cluster.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == '*'
 
 

@@ -6,37 +6,26 @@ import os
 import tempfile
 import zipfile
 
-import pytest
 import retrying
 
-BASE_ENDPOINT_3DT = '/system/health/v1'
 # Expected latency for all 3dt units to refresh after postflight
 LATENCY = 60
 
 
-@pytest.fixture
-def make_3dt_request(cluster):
-    """
-    returns a function that performs authenticated connections to 3DT on the appropriate port
-    and appends ?cache=0 to all endpoints
-    """
-    def make_request(ip, endpoint):
-        assert endpoint.startswith('/'), 'endpoint {} must start with /'.format(endpoint)
-        endpoint = BASE_ENDPOINT_3DT + endpoint + '?cache=0'
-        response = cluster.get(path=endpoint, node=ip)
-        assert response.status_code == 200
-        try:
-            json_response = response.json()
-        except ValueError:
-            logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
-            raise
-        assert len(json_response) > 0, 'Empty JSON returned from 3DT request'
-        return json_response
-    return make_request
+def check_json(response):
+    response.raise_for_status()
+    try:
+        json_response = response.json()
+        logging.debug('Response: {}'.format(json_response))
+    except ValueError:
+        logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
+        raise
+    assert len(json_response) > 0, 'Empty JSON returned from 3DT request'
+    return json_response
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_health(cluster, make_3dt_request):
+def test_3dt_health(cluster):
     """
     test health endpoint /system/health/v1
     """
@@ -46,7 +35,7 @@ def test_3dt_health(cluster, make_3dt_request):
 
     # Check all masters 3DT instances on base port since this is extra-cluster request (outside localhost)
     for host in cluster.masters:
-        response = make_3dt_request(host, '/')
+        response = check_json(cluster.health.get('/', node=host))
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
@@ -82,7 +71,7 @@ def test_3dt_health(cluster, make_3dt_request):
 
     # Check all agents running 3DT behind agent-adminrouter on 61001
     for host in cluster.slaves:
-        response = make_3dt_request(host, '/')
+        response = check_json(cluster.health.get('/', node=host))
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
             ', '.join(required_fields)
         )
@@ -135,12 +124,12 @@ def validate_node(nodes):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_nodes(cluster, make_3dt_request):
+def test_3dt_nodes(cluster):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
     for master in cluster.masters:
-        response = make_3dt_request(master, '/nodes')
+        response = check_json(cluster.health.get('nodes', node=master))
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
@@ -151,17 +140,17 @@ def test_3dt_nodes(cluster, make_3dt_request):
         validate_node(response['nodes'])
 
 
-def test_3dt_nodes_node(cluster, make_3dt_request):
+def test_3dt_nodes_node(cluster):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
     """
     for master in cluster.masters:
         # get a list of nodes
-        response = make_3dt_request(master, '/nodes')
+        response = check_json(cluster.health.get('/nodes', node=master))
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
 
         for node in nodes:
-            node_response = make_3dt_request(master, '/nodes/{}'.format(node))
+            node_response = check_json(cluster.health.get('/nodes/{}'.format(node), node=master))
             validate_node([node_response])
 
 
@@ -200,60 +189,59 @@ def validate_unit(unit):
     assert unit['help'], 'help field cannot be empty'
 
 
-def test_3dt_nodes_node_units(cluster, make_3dt_request):
+def test_3dt_nodes_node_units(cluster):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
     """
     for master in cluster.masters:
         # get a list of nodes
-        response = make_3dt_request(master, '/nodes')
+        response = check_json(cluster.health.get('/nodes', node=master))
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
 
         for node in nodes:
-            make_3dt_request(master, '/nodes/{}'.format(node))
-            units_response = make_3dt_request(master, '/nodes/{}/units'.format(node))
+            units_response = check_json(cluster.health.get('/nodes/{}/units'.format(node), node=master))
 
             assert len(units_response) == 1, 'unit response should have only 1 field `units`'
             assert 'units' in units_response
             validate_units(units_response['units'])
 
 
-def test_3dt_nodes_node_units_unit(cluster, make_3dt_request):
+def test_3dt_nodes_node_units_unit(cluster):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
     """
     for master in cluster.masters:
-        response = make_3dt_request(master, '/nodes')
+        response = check_json(cluster.health.get('/nodes', node=master))
         nodes = list(map(lambda node: node['host_ip'], response['nodes']))
         for node in nodes:
-            units_response = make_3dt_request(master, '/nodes/{}/units'.format(node))
+            units_response = check_json(cluster.health.get('/nodes/{}/units'.format(node), node=master))
             unit_ids = list(map(lambda unit: unit['id'], units_response['units']))
 
             for unit_id in unit_ids:
                 validate_unit(
-                    make_3dt_request(master, '/nodes/{}/units/{}'.format(node, unit_id)))
+                    check_json(cluster.health.get('/nodes/{}/units/{}'.format(node, unit_id), node=master)))
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units(cluster, make_3dt_request):
+def test_3dt_units(cluster):
     """
     test a list of collected units, endpoint /system/health/v1/units
     """
     # get all unique unit names
     all_units = set()
     for node in cluster.masters:
-        node_response = make_3dt_request(node, '/')
+        node_response = check_json(cluster.health.get('/', node=node))
         for unit in node_response['units']:
             all_units.add(unit['id'])
 
     for node in cluster.all_slaves:
-        node_response = make_3dt_request(node, '/')
+        node_response = check_json(cluster.health.get('/', node=node))
         for unit in node_response['units']:
             all_units.add(unit['id'])
 
     # test against masters
     for master in cluster.masters:
-        units_response = make_3dt_request(master, '/units')
+        units_response = check_json(cluster.health.get('/units', node=master))
         validate_units(units_response['units'])
 
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
@@ -263,14 +251,14 @@ def test_3dt_units(cluster, make_3dt_request):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_systemd_units_health(cluster, make_3dt_request):
+def test_systemd_units_health(cluster):
     """
     test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
     meaning it focuses on making sure the cluster is healthy, rather then testing 3dt itself.
     """
     unhealthy_output = []
     assert cluster.masters, "Must have at least 1 master node"
-    report_response = make_3dt_request(cluster.masters[0], '/report')
+    report_response = check_json(cluster.health.get('report', node=cluster.masters[0]))
     assert 'Units' in report_response, "Missing `Units` field in response"
     for unit_name, unit_props in report_response['Units'].items():
         assert 'Health' in unit_props, "Unit {} missing `Health` field".format(unit_name)
@@ -293,43 +281,43 @@ def test_systemd_units_health(cluster, make_3dt_request):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-def test_3dt_units_unit(cluster, make_3dt_request):
+def test_3dt_units_unit(cluster):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
     """
     for master in cluster.masters:
-        units_response = make_3dt_request(master, '/units')
+        units_response = check_json(cluster.health.get('/units', node=master))
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         for unit in pulled_units:
-            unit_response = make_3dt_request(master, '/units/{}'.format(unit))
+            unit_response = check_json(cluster.health.get('/units/{}'.format(unit), node=master))
             validate_units([unit_response])
 
 
-def make_nodes_ip_map(cluster, make_3dt_request):
+def make_nodes_ip_map(cluster):
     """
     a helper function to make a map detected_ip -> external_ip
     """
     node_private_public_ip_map = {}
     for node in cluster.masters:
-        detected_ip = make_3dt_request(node, '/')['ip']
+        detected_ip = check_json(cluster.health.get('/', node=node))['ip']
         node_private_public_ip_map[detected_ip] = node
 
     for node in cluster.all_slaves:
-        detected_ip = make_3dt_request(node, '/')['ip']
+        detected_ip = check_json(cluster.health.get('/', node=node))['ip']
         node_private_public_ip_map[detected_ip] = node
 
     return node_private_public_ip_map
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units_unit_nodes(cluster, make_3dt_request):
+def test_3dt_units_unit_nodes(cluster):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
     def get_nodes_from_response(response):
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
-        nodes_ip_map = make_nodes_ip_map(cluster, make_3dt_request)
+        nodes_ip_map = make_nodes_ip_map(cluster)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
@@ -339,14 +327,14 @@ def test_3dt_units_unit_nodes(cluster, make_3dt_request):
         return nodes
 
     for master in cluster.masters:
-        units_response = make_3dt_request(master, '/units')
+        units_response = check_json(cluster.health.get('/units', node=master))
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         for unit in pulled_units:
-            nodes_response = make_3dt_request(master, '/units/{}/nodes'.format(unit))
+            nodes_response = check_json(cluster.health.get('/units/{}/nodes'.format(unit), node=master))
             validate_node(nodes_response['nodes'])
 
         # make sure dcos-mesos-master.service has master nodes and dcos-mesos-slave.service has agent nodes
-        master_nodes_response = make_3dt_request(master, '/units/dcos-mesos-master.service/nodes')
+        master_nodes_response = check_json(cluster.health.get('/units/dcos-mesos-master.service/nodes', node=master))
 
         master_nodes = get_nodes_from_response(master_nodes_response)
 
@@ -355,30 +343,31 @@ def test_3dt_units_unit_nodes(cluster, make_3dt_request):
             set(master_nodes).symmetric_difference(set(cluster.masters))
         )
 
-        agent_nodes_response = make_3dt_request(master, '/units/dcos-mesos-slave.service/nodes')
+        agent_nodes_response = check_json(cluster.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
 
         agent_nodes = get_nodes_from_response(agent_nodes_response)
 
         assert len(agent_nodes) == len(cluster.slaves), '{} != {}'.format(agent_nodes, cluster.slaves)
 
 
-def test_3dt_units_unit_nodes_node(cluster, make_3dt_request):
+def test_3dt_units_unit_nodes_node(cluster):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
     """
     required_node_fields = ['host_ip', 'health', 'role', 'output', 'help']
 
     for master in cluster.masters:
-        units_response = make_3dt_request(master, '/units')
+        units_response = check_json(cluster.health.get('/units', node=master))
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         for unit in pulled_units:
-            nodes_response = make_3dt_request(master, '/units/{}/nodes'.format(unit))
+            nodes_response = check_json(cluster.health.get('/units/{}/nodes'.format(unit), node=master))
             pulled_nodes = list(map(lambda node: node['host_ip'], nodes_response['nodes']))
             logging.info('pulled nodes: {}'.format(pulled_nodes))
             for node in pulled_nodes:
-                node_response = make_3dt_request(master, '/units/{}/nodes/{}'.format(unit, node))
-                assert len(node_response) == len(required_node_fields), 'required fields: {}. Actual: {}'.format(
-                    ', '.format(required_node_fields, node_response))
+                node_response = check_json(cluster.health.get('/units/{}/nodes/{}'.format(unit, node), node=master))
+                assert len(node_response) == len(required_node_fields), 'required fields: {}'.format(
+                    ', '.format(required_node_fields)
+                )
 
                 for required_node_field in required_node_fields:
                     assert required_node_field in node_response, 'field {} must be set'.format(required_node_field)
@@ -390,24 +379,24 @@ def test_3dt_units_unit_nodes_node(cluster, make_3dt_request):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-def test_3dt_selftest(cluster, make_3dt_request):
+def test_3dt_selftest(cluster):
     """
     test invokes 3dt `self test` functionality
     """
     for node in cluster.masters:
-        response = make_3dt_request(node, '/selftest/info')
+        response = check_json(cluster.health.get('/selftest/info', node=node))
         for test_name, attrs in response.items():
             assert 'Success' in attrs, 'Field `Success` does not exist'
             assert 'ErrorMessage' in attrs, 'Field `ErrorMessage` does not exist'
             assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
 
 
-def test_3dt_report(cluster, make_3dt_request):
+def test_3dt_report(cluster):
     """
     test 3dt report endpoint /system/health/v1/report
     """
     for master in cluster.masters:
-        report_response = make_3dt_request(master, '/report')
+        report_response = check_json(cluster.health.get('report', node=master))
         assert 'Units' in report_response
         assert len(report_response['Units']) > 0
 
@@ -416,9 +405,7 @@ def test_3dt_report(cluster, make_3dt_request):
 
 
 def _get_bundle_list(cluster):
-    list_url = '/system/health/v1/report/diagnostics/list/all'
-    response = cluster.get(path=list_url).json()
-
+    response = check_json(cluster.health.get('report/diagnostics/list/all'))
     bundles = []
     for _, bundle_list in response.items():
         if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
@@ -431,13 +418,10 @@ def test_3dt_bundle_create(cluster):
     """
     test bundle create functionality
     """
-
     # start the diagnostics bundle job
-    create_url = '/system/health/v1/report/diagnostics/create'
-    create_response = cluster.post(path=create_url, json={"nodes": ["all"]}).json()
+    create_response = check_json(cluster.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
-    status_url = '/system/health/v1/report/diagnostics/status/all'
 
     class NotCriticalException(Exception):
         """Exception should be raised to continue retry loop"""
@@ -450,7 +434,7 @@ def test_3dt_bundle_create(cluster):
     @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
                     retry_on_exception=lambda e: isinstance(e, NotCriticalException))
     def wait_for_job():
-        response = cluster.get(path=status_url).json()
+        response = check_json(cluster.health.get('report/diagnostics/status/all'))
 
         # find if the job is still running
         job_running = False
@@ -559,11 +543,10 @@ def test_3dt_bundle_download_and_extract(cluster):
         return _health_report
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        download_base_url = '/system/health/v1/report/diagnostics/serve'
         for bundle in bundles:
             bundle_full_location = os.path.join(tmp_dir, bundle)
             with open(bundle_full_location, 'wb') as f:
-                r = cluster.get(path=os.path.join(download_base_url, bundle), stream=True)
+                r = cluster.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True)
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
 
@@ -629,9 +612,8 @@ def test_3dt_bundle_download_and_extract(cluster):
 def test_bundle_delete(cluster):
     bundles = _get_bundle_list(cluster)
     assert bundles, 'no bundles found'
-    delete_base_url = '/system/health/v1/report/diagnostics/delete'
     for bundle in bundles:
-        cluster.post(os.path.join(delete_base_url, bundle))
+        cluster.health.post(os.path.join('report/diagnostics/delete', bundle))
 
     bundles = _get_bundle_list(cluster)
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
@@ -639,7 +621,7 @@ def test_bundle_delete(cluster):
 
 def test_diagnostics_bundle_status(cluster):
     # validate diagnostics job status response
-    diagnostics_bundle_status = cluster.get(path='/system/health/v1/report/diagnostics/status/all').json()
+    diagnostics_bundle_status = check_json(cluster.health.get('report/diagnostics/status/all'))
     required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
                               'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
                               'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',

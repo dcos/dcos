@@ -177,13 +177,13 @@ def test_octarine_srv(cluster, timeout=30):
 
 def test_pkgpanda_api(cluster):
 
-    def get_and_validate_package_ids(node, path):
-        r = cluster.get(node=node, path=path)
+    def get_and_validate_package_ids(path, node):
+        r = cluster.get(path, node=node)
         assert r.status_code == 200
         package_ids = r.json()
         assert isinstance(package_ids, list)
         for package_id in package_ids:
-            r = cluster.get(node=node, path=path + package_id)
+            r = cluster.get(path + package_id, node=node)
             assert r.status_code == 200
             name, version = package_id.split('--')
             assert r.json() == {'id': package_id, 'name': name, 'version': version}
@@ -207,8 +207,8 @@ def test_pkgpanda_api(cluster):
                 assert package == buildinfo_package
 
     for node in cluster.masters + cluster.all_slaves:
-        package_ids = get_and_validate_package_ids(node, '/pkgpanda/repository/')
-        active_package_ids = get_and_validate_package_ids(node, '/pkgpanda/active/')
+        package_ids = get_and_validate_package_ids('pkgpanda/repository/', node)
+        active_package_ids = get_and_validate_package_ids('pkgpanda/active/', node)
 
         assert set(active_package_ids) <= set(package_ids)
         assert_packages_match_active_buildinfo(active_package_ids)
