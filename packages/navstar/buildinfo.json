@@ -7,5 +7,12 @@
       "ref": "7ce1152238058de2b561eb1493c97bc19e3d24b2",
       "ref_origin": "minuteman-1.8"
     }
+  },
+  "sysctl": {
+      "dcos-navstar": {
+          "net.netfilter.nf_conntrack_tcp_be_liberal": "1",
+          "net.netfilter.ip_conntrack_tcp_be_liberal": "1",
+          "net.ipv4.netfilter.ip_conntrack_tcp_be_liberal": "1"
+      }
   }
 }
