@@ -84,7 +84,7 @@ def get_test_app():
                 "gracePeriodSeconds": 5,
                 "intervalSeconds": 10,
                 "timeoutSeconds": 10,
-                "maxConsecutiveFailures": 3
+                "maxConsecutiveFailures": -1
             }
         ],
     }
@@ -93,6 +93,8 @@ def get_test_app():
 
 def get_task_info(apps, tasks):
     idx = 0    # We have a single app and a task for this test.
+    logging.info("marathon apps info {apps} ".format(apps=str(apps)))
+    logging.info("marathon tasks info {tasks}".format(tasks=str(tasks)))
 
     logging.info("v2/apps json: {apps}".format(apps=apps))
     logging.info("v2/tasks json: {tasks}".format(tasks=tasks))
