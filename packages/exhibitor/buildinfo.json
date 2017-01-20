@@ -3,9 +3,9 @@
   "sources": {
     "exhibitor": {
       "kind": "git",
-      "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "7d39834f55988e21f2d7ce2c0b67847cb4a55dab",
-      "ref_origin": "master"
+      "git": "https://github.com/gpaul/exhibitor-1.git",
+      "ref": "7a57fb182366e9a25f5dfe476491f6bd6485c521",
+      "ref_origin": "gpaul/store-config-on-startup"
     },
     "zookeeper": {
       "kind": "url_extract",

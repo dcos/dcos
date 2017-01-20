@@ -1,4 +1,5 @@
 #!/opt/mesosphere/bin/python
+import json
 import os
 import socket
 import sys
@@ -65,6 +66,8 @@ if os.path.exists('/opt/mesosphere/etc/exhibitor_web.xml') and \
     ])
 
 zookeeper_cluster_size = int(open('/opt/mesosphere/etc/master_count').read().strip())
+zookeeper_nodes = json.loads(open('/opt/mesosphere/etc/master_list').read().strip())
+zookeeper_nodes_str = ",".join(["%d:%s" % (i + 1, node) for i, node in enumerate(zookeeper_nodes)])
 
 check_ms = 30000
 if zookeeper_cluster_size == 1:
@@ -94,8 +97,10 @@ zoo-cfg-extra=tickTime\=2000&initLimit\=10&syncLimit\=5&quorumListenOnAllIPs\=tr
 auto-manage-instances-settling-period-ms=0
 auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
+servers-spec={zookeeper_nodes_str}
 """.format(
     zookeeper_cluster_size=zookeeper_cluster_size,
+    zookeeper_nodes_str=zookeeper_nodes_str,
     check_ms=check_ms
 ))
 
