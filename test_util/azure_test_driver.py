@@ -181,7 +181,7 @@ def main():
                 agent_list=ip_buckets['private'],
                 public_agent_list=ip_buckets['public'],
                 test_cmd=os.getenv(
-                    'DCOS_PYTEST_CMD', get_add_env() + " py.test -vv -s -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
+                    'DCOS_PYTEST_CMD', get_add_env() + " py.test -vv -rs -m 'not ccm' ") + os.getenv('CI_FLAGS', ''))
         test_successful = True
     except Exception as ex:
         traceback.print_exc()
