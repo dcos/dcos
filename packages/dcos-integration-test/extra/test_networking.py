@@ -35,9 +35,7 @@ def ensure_routable(cmd, service_points, timeout=120):
                 retry_on_exception=lambda x: True)
 def test_if_overlay_ok(dcos_api_session):
     def _check_overlay(hostname, port):
-        uri = 'http://{}:{}/overlay-agent/overlay'.format(hostname, port)
-        resp = requests.get(uri).json()
-        overlays = resp['overlays']
+        overlays = dcos_api_session.get('overlay-agent/overlay', host=hostname, port=port).json()['overlays']
         assert len(overlays) > 0
         for overlay in overlays:
             assert overlay['state']['status'] == 'STATUS_OK'
