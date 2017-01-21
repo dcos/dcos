@@ -14,6 +14,7 @@ mkdir -p build
 pushd build
 /pkg/src/mesos-modules/configure \
      --with-mesos=/opt/mesosphere/active/mesos \
+     --with-openssl=/opt/mesosphere/active/openssl \
      --with-glog=/opt/mesosphere/lib/mesos/3rdparty/include/glog \
      --prefix="$PKG_PATH"
 
