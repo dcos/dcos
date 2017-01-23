@@ -50,8 +50,8 @@ import uuid
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
-from test_util.cluster_api import ClusterApi
-from test_util.helpers import CI_AUTH_JSON, DcosUser
+from test_util.dcos_api_session import DcosApiSession, DcosUser
+from test_util.helpers import CI_CREDENTIALS
 from test_util.marathon import TEST_APP_NAME_FMT
 
 
@@ -161,15 +161,14 @@ def main():
 
     master_list = [h.private_ip for h in cluster.masters]
 
-    cluster_api = ClusterApi(
+    cluster_api = DcosApiSession(
         'http://{ip}'.format(ip=cluster.masters[0].public_ip),
         master_list,
         master_list,
         [h.private_ip for h in cluster.agents],
         [h.private_ip for h in cluster.public_agents],
-        "root",             # default_os_user
-        web_auth_default_user=DcosUser(CI_AUTH_JSON),
-        ca_cert_path=None)
+        "root",  # default_os_user
+        auth_user=DcosUser(CI_CREDENTIALS))
 
     cluster_api.wait_for_dcos()
 

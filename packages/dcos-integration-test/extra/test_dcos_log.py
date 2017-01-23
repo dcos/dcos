@@ -27,9 +27,9 @@ def check_response_ok(response: requests.models.Response, headers: dict):
             'Request {} header {} must be {}. All headers {}'.format(response.url, name, value, response.headers))
 
 
-def test_log_text(cluster):
-    for node in cluster.masters + cluster.all_slaves:
-        response = cluster.logs.get('v1/range/?limit=10', node=node)
+def test_log_text(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v1/range/?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 lines
@@ -37,24 +37,24 @@ def test_log_text(cluster):
         assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
-def test_log_json(cluster):
-    for node in cluster.masters + cluster.all_slaves:
-        response = cluster.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
+def test_log_json(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
         check_response_ok(response, {'Content-Type': 'application/json'})
         validate_json_entry(response.json())
 
 
-def test_log_server_sent_events(cluster):
-    for node in cluster.masters + cluster.all_slaves:
-        response = cluster.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
+def test_log_server_sent_events(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         validate_sse_entry(response.text)
 
 
-def test_stream(cluster):
-    for node in cluster.masters + cluster.all_slaves:
-        response = cluster.logs.get('v1/stream/?skip_prev=1', node=node, stream=True,
-                                    headers={'Accept': 'text/event-stream'})
+def test_stream(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v1/stream/?skip_prev=1', node=node, stream=True,
+                                             headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         lines = response.iter_lines()
         sse_id = next(lines)
@@ -63,21 +63,21 @@ def test_stream(cluster):
         validate_sse_entry(data)
 
 
-def test_log_proxy(cluster):
-    r = cluster.get('/mesos/master/slaves')
+def test_log_proxy(dcos_api_session):
+    r = dcos_api_session.get('/mesos/master/slaves')
     check_response_ok(r, {})
 
     data = r.json()
-    slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in cluster.all_slaves)
+    slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in dcos_api_session.all_slaves)
 
     for slave_id in slaves_ids:
-        response = cluster.get('/system/v1/agent/{}/logs/v1/range/?skip_prev=10&limit=10'.format(slave_id))
+        response = dcos_api_session.get('/system/v1/agent/{}/logs/v1/range/?skip_prev=10&limit=10'.format(slave_id))
         check_response_ok(response, {'Content-Type': 'text/plain'})
         lines = list(filter(lambda x: x != '', response.text.split('\n')))
         assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
-def test_task_logs(cluster):
+def test_task_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
 
     task_id = "integration-test-task-logs-{}".format(test_uuid)
@@ -90,13 +90,13 @@ def test_task_logs(cluster):
         "cmd": "echo STDOUT_LOG; echo STDERR_LOG >&2;sleep 999"
     }
 
-    with cluster.marathon.deploy_and_cleanup(task_definition, check_health=False):
-        url = get_task_url(cluster, task_id)
-        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', cluster)
-        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', cluster)
+    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=False):
+        url = get_task_url(dcos_api_session, task_id)
+        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
+        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
 
 
-def test_pod_logs(cluster):
+def test_pod_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
 
     pod_id = 'integration-test-pod-logs-{}'.format(test_uuid)
@@ -116,28 +116,28 @@ def test_pod_logs(cluster):
         'networks': [{'mode': 'host'}]
     }
 
-    with cluster.marathon.deploy_pod_and_cleanup(pod_definition):
-        url = get_task_url(cluster, pod_id)
-        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', cluster)
-        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', cluster)
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
+        url = get_task_url(dcos_api_session, pod_id)
+        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
+        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
 
 
 @retrying.retry(wait_fixed=1000, stop_max_delay=3000)
-def check_log_entry(log_line, url, cluster):
-    response = cluster.get(url)
+def check_log_entry(log_line, url, dcos_api_session):
+    response = dcos_api_session.get(url)
     check_response_ok(response, {})
     assert log_line in response.text, 'Missing {} in output {}'.format(log_line, response.text)
 
 
-def get_task_url(cluster, task_name, stream=False):
+def get_task_url(dcos_api_session, task_name, stream=False):
     """ The function returns a logging URL for a given task
 
-    :param cluster: cluster fixture
+    :param dcos_api_session: dcos_api_session fixture
     :param task_name: task name
     :param stream: use range or stream endpoint
     :return: url to get the logs for a task
     """
-    state_response = cluster.get('/mesos/state')
+    state_response = dcos_api_session.get('/mesos/state')
     check_response_ok(state_response, {})
 
     framework_id = None
