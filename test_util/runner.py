@@ -44,9 +44,9 @@ def integration_test(
         'AWS_SECRET_ACCESS_KEY=' + aws_secret_access_key,
         'AWS_REGION=' + region]
 
-    pytest_cmd = """'source /opt/mesosphere/environment.export &&
+    pytest_cmd = """ "source /opt/mesosphere/environment.export &&
 cd /opt/mesosphere/active/dcos-integration-test &&
-{env} {cmd}'""".format(env=' '.join(required_test_env), cmd=test_cmd)
+{env} {cmd}" """.format(env=' '.join(required_test_env), cmd=test_cmd)
 
     log.info('Running integration test...')
     try:
