@@ -177,22 +177,30 @@ def main():
 
     cluster_api.marathon.ensure_deployments_complete()
 
-    task_info_before_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                             cluster_api.marathon.get('v2/tasks').json())
+    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(), cluster_api.marathon.get('v2/tasks').json()
 
-    assert task_info_before_upgrade is not None, "Unable to get task details of the cluster."
-    assert task_info_before_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
+    assert apps_json['apps'], "v2/apps was determined empty before upgrade!"
+    assert tasks_json['tasks'], "v2/tasks was determined empty before upgrade!"
+
+    task_info_before_upgrade = get_task_info(apps=apps_json, tasks=tasks_json)
+
+    assert task_info_before_upgrade is not None, "Unable to get task details of the cluster before upgrade!"
+    assert task_info_before_upgrade.state == "TASK_RUNNING", "Task is not in the running state before upgrade!"
 
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
     test_util.cluster.upgrade_dcos(cluster, installer_url, add_config_path=config_yaml_override_upgrade)
 
-    task_info_after_upgrade = get_task_info(cluster_api.marathon.get('v2/apps').json(),
-                                            cluster_api.marathon.get('v2/tasks').json())
+    apps_json, tasks_json = cluster_api.marathon.get('v2/apps').json(), cluster_api.marathon.get('v2/tasks').json()
 
-    assert task_info_after_upgrade is not None, "Unable to get the tasks details of the cluster."
-    assert task_info_after_upgrade.state == "TASK_RUNNING", "Task is not in the running state."
+    assert apps_json['apps'], "v2/apps was determined empty after upgrade!"
+    assert tasks_json['tasks'], "v2/tasks was determined empty after upgrade!"
+
+    task_info_after_upgrade = get_task_info(apps=apps_json, tasks=tasks_json)
+
+    assert task_info_after_upgrade is not None, "Unable to get the tasks details of the cluster after upgrade!"
+    assert task_info_after_upgrade.state == "TASK_RUNNING", "Task is not in the running state after upgrade!"
 
     assert task_info_before_upgrade.id == task_info_after_upgrade.id, \
         "Task ID before and after the upgrade did not match."
