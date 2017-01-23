@@ -3,6 +3,7 @@ import copy
 import logging
 import uuid
 from contextlib import contextmanager
+from subprocess import check_output
 
 import requests
 import retrying
@@ -161,6 +162,11 @@ class Marathon(ApiClient):
         logging.info('Response from marathon: {}'.format(repr(r.json())))
         r.raise_for_status()
 
+        debug_output = check_output('curl -vvL http://registry-1.docker.io/v2/debian/manifests/jessie'.split())
+        logging.info(debug_output)
+        debug_output = check_output('curl -vvL http://www.google.com'.split())
+        logging.info(debug_output)
+
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
@@ -258,6 +264,11 @@ class Marathon(ApiClient):
         r = self.post('v2/pods', json=pod_definition)
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
         logging.info('Response from marathon: {}'.format(repr(r.json())))
+
+        debug_output = check_output('curl -vvL http://registry-1.docker.io/v2/debian/manifests/jessie'.split())
+        logging.info(debug_output)
+        debug_output = check_output('curl -vvL http://www.google.com'.split())
+        logging.info(debug_output)
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
