@@ -123,7 +123,7 @@ def main():
     num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
     stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
-    test_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + os.getenv('CI_FLAGS', ''))
+    test_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + os.getenv('CI_FLAGS', ''))
 
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
     installer_url = os.environ['INSTALLER_URL']
