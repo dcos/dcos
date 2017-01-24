@@ -167,7 +167,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -200,7 +200,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
