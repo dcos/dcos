@@ -1,5 +1,5 @@
 [Unit]
-Description=Generate resolv.conf: configures network name resolution (systemd-resolved)
+Description=Generate resolv.conf: configures network name resolution
 
 [Service]
 Type=oneshot
