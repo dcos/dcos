@@ -38,6 +38,7 @@ def invoke_detect_ip():
 
 detected_ip = invoke_detect_ip()
 
+#
 # Make the zk conf directory (exhibitor assumes the dir exists)
 check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhibitor/zookeeper/transactions'])
 
