@@ -35,13 +35,13 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     "HTTP",
     "MESOS_HTTP",
 ])
-def test_if_ucr_app_can_be_deployed(cluster, healthcheck):
+def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     """Marathon app inside ucr deployment integration test.
 
     Verifies that a marathon docker app inside of a ucr container can be
     deployed and accessed as expected.
     """
-    cluster.marathon.deploy_test_app_and_check(*get_test_app_in_ucr(healthcheck))
+    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_ucr(healthcheck))
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
