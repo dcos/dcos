@@ -1,6 +1,8 @@
 import uuid
 
-from test_util.marathon import get_test_app, get_test_app_in_docker
+import pytest
+
+from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
 
 
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
