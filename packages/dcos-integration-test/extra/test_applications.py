@@ -29,6 +29,10 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
+def test_failure(dcos_api_session):
+    assert False
+
+
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer
 
