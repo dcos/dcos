@@ -83,7 +83,7 @@ def get_test_app_in_ucr(healthcheck='HTTP'):
     app, test_uuid = get_test_app(custom_port=True)
     assert 'portDefinitions' not in app
     # UCR does NOT support portmappings host only.  must use $PORT0
-    app['cmd'] = '$PORT0'
+    app['cmd'] += '$PORT0'
     app['container'] = {
         'type': 'MESOS',
         'docker': {
