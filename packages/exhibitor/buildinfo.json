@@ -3,9 +3,9 @@
   "sources": {
     "exhibitor": {
       "kind": "git",
-      "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "7d39834f55988e21f2d7ce2c0b67847cb4a55dab",
-      "ref_origin": "master"
+      "git": "https://github.com/alberts/exhibitor-1.git",
+      "ref": "be213f16b2d17378079b97f9fec75de93d3609f7",
+      "ref_origin": "hacks"
     },
     "zookeeper": {
       "kind": "url_extract",
