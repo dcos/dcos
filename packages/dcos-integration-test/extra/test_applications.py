@@ -29,6 +29,19 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
+@pytest.mark.parametrize("healthcheck", [
+    "HTTP",
+    "MESOS_HTTP",
+])
+def test_if_ucr_app_can_be_deployed(cluster, healthcheck):
+    """Marathon app inside ucr deployment integration test.
+
+    Verifies that a marathon docker app inside of a ucr container can be
+    deployed and accessed as expected.
+    """
+    cluster.marathon.deploy_test_app_and_check(*get_test_app_in_ucr(healthcheck))
+
+
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer
 
