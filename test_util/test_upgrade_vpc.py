@@ -209,7 +209,8 @@ done
         message = 'Failed to resolve Marathon app hostname {} at least once.'.format(dns_app['env']['RESOLVE_NAME'])
         log.debug(message + ' Hostname failed to resolve at these times:\n' + '\n'.join(dns_failure_times))
         # Skip raising an exception on DNS failure so that other tests can run.
-        # DNS failure is being tracked at TODO(branden) <insert ticket here>.
+        # DNS failure is being tracked at
+        # https://mesosphere.atlassian.net/browse/DCOS-13426.
         #raise Exception(message)  # noqa
 
 
