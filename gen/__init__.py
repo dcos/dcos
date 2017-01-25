@@ -12,6 +12,7 @@ Operates strictly:
 """
 
 import importlib.machinery
+import itertools
 import json
 import logging as log
 import os
@@ -497,6 +498,18 @@ def generate(
     cc_package_files, dcos_config_files = extract_files_with_path(rendered_templates['dcos-config.yaml']['package'],
                                                                   cc_package_files)
     rendered_templates['dcos-config.yaml'] = {'package': dcos_config_files}
+
+    # Add late-binding bootstrap config.
+    rendered_templates['cloud-config.yaml']['root'].append({
+        'path': '/etc/mesosphere/setup-flags/config.json',
+        'permissions': '0644',
+        'owner': 'root',
+        'content': json.dumps(
+            {param: arguments.get(param, '') for param in set(
+                itertools.chain.from_iterable(t.parameters for t in targets)
+            )}
+        ),
+    })
 
     # Add a empty pkginfo.json to the cc_package_files.
     # Also assert there isn't one already (can only write out a file once).
