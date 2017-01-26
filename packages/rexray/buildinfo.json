@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/rexray.git",
-    "ref": "7454cbaca89a015c6eff1f38d9279baf98a06f26",
-    "ref_origin": "new-aws-go-sdk"
+    "ref": "7a5c745d117156a57429bb48514576b684588235",
+    "ref_origin": "v0.3.3-dcos"
   }
 }
