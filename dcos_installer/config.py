@@ -77,7 +77,7 @@ class Config():
         except FileNotFoundError as ex:
             raise NoConfigError(
                 "No config file found at {}. See the DC/OS documentation for the "
-                "available configuration options. You can also use the GUI web installer (--web),"
+                "available configuration options. You can also use the GUI web installer (--web), "
                 "which provides a guided configuration and installation for simple "
                 "deployments.".format(self.config_path)) from ex
         except OSError as ex:
