@@ -11,6 +11,7 @@ from test_util.helpers import ApiClientSession, path_join
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
+log = logging.getLogger(__name__)
 
 
 def get_test_app(custom_port=False):
@@ -173,7 +174,7 @@ class Marathon(ApiClientSession):
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
         r = self.post('v2/apps', json=app_definition)
-        logging.info('Response from marathon: {}'.format(repr(r.json())))
+        log.info('Response from marathon: {}'.format(repr(r.json())))
         r.raise_for_status()
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
@@ -204,18 +205,18 @@ class Marathon(ApiClientSession):
                        if len(t['ports']) is not 0
                        else Endpoint(t['host'], 0, t['ipAddresses'][0]['ipAddress'])
                        for t in data['app']['tasks']]
-                logging.info('Application deployed, running on {}'.format(res))
+                log.info('Application deployed, running on {}'.format(res))
                 return res
             elif not check_tasks_running:
-                logging.info('Waiting for application to be deployed: '
-                             'Not all instances are running: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: '
+                         'Not all instances are running: {}'.format(repr(data)))
                 return None
             elif not check_tasks_healthy:
-                logging.info('Waiting for application to be deployed: '
-                             'Not all instances are healthy: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: '
+                         'Not all instances are healthy: {}'.format(repr(data)))
                 return None
             else:
-                logging.info('Waiting for application to be deployed: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: {}'.format(repr(data)))
                 return None
 
         try:
@@ -272,7 +273,7 @@ class Marathon(ApiClientSession):
 
         r = self.post('v2/pods', json=pod_definition)
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
-        logging.info('Response from marathon: {}'.format(repr(r.json())))
+        log.info('Response from marathon: {}'.format(repr(r.json())))
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
@@ -283,14 +284,14 @@ class Marathon(ApiClientSession):
             r = self.get('v2/deployments')
             data = r.json()
             if len(data) > 0:
-                logging.info('Waiting for pod to be deployed %r', data)
+                log.info('Waiting for pod to be deployed %r', data)
                 return False
             # deployment complete
             r = self.get('v2/pods' + pod_id)
             r.raise_for_status()
             data = r.json()
             if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
-                logging.info('Pod is still scaling. Continuing to wait...')
+                log.info('Pod is still scaling. Continuing to wait...')
                 return False
             return data
         try:
@@ -317,9 +318,9 @@ class Marathon(ApiClientSession):
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
-                    logging.info('Waiting for pod to be destroyed')
+                    log.info('Waiting for pod to be destroyed')
                     return False
-            logging.info('Pod destroyed')
+            log.info('Pod destroyed')
             return True
 
         r = self.delete('v2/pods' + pod_id)
@@ -349,9 +350,9 @@ class Marathon(ApiClientSession):
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
-                    logging.info('Waiting for application to be destroyed')
+                    log.info('Waiting for application to be destroyed')
                     return False
-            logging.info('Application destroyed')
+            log.info('Application destroyed')
             return True
 
         r = self.delete(path_join('v2/apps', app_name))
