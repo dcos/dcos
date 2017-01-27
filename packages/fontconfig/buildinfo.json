@@ -1,0 +1,8 @@
+{
+    "requires": ["freetype", "libxml2"],
+    "single_source" : {
+	"kind": "url_extract",
+	"url": "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.12.1.tar.bz2",
+	"sha1": "30d832b754fb10a3b70ebac750a38a0275438ad8"
+    }
+}
