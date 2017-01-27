@@ -1,4 +1,5 @@
 import copy
+import enum
 import inspect
 import logging
 from contextlib import contextmanager
@@ -324,13 +325,19 @@ class Resolvable:
     - Keeps track of what caused the resolvable to enter existence (it's cause)
     """
 
-    ERROR = 'error'
-    LATE = 'late'
-    RESOLVED = 'resolved'
-    UNRESOLVED = 'unresolved'
+    @enum.unique
+    class State(enum.Enum):
+        ERROR = 'error'
+        LATE = 'late'
+        RESOLVED = 'resolved'
+        UNRESOLVED = 'unresolved'
+
+        # The string representation of a state is that of its value.
+        def __str__(self):
+            return str(self.value)
 
     def __init__(self, name):
-        self._state = Resolvable.UNRESOLVED
+        self._state = self.State.UNRESOLVED
         self.name = name
         self.error = None
         self.setter = None
@@ -338,33 +345,33 @@ class Resolvable:
 
     @property
     def is_finalized(self):
-        return self._state != Resolvable.UNRESOLVED
+        return self._state != self.State.UNRESOLVED
 
     @property
     def is_error(self):
-        return self._state == Resolvable.ERROR
+        return self._state == self.State.ERROR
 
     @property
     def is_late(self):
-        return self._state == Resolvable.LATE
+        return self._state == self.State.LATE
 
     @property
     def is_resolved(self):
-        return self._state == Resolvable.RESOLVED
+        return self._state == self.State.RESOLVED
 
     def finalize_error(self, error):
-        assert self._state == Resolvable.UNRESOLVED
-        self._state = Resolvable.ERROR
+        assert self._state == self.State.UNRESOLVED
+        self._state = self.State.ERROR
         self.error = error
 
     def finalize_value(self, value: str, setter: Setter):
-        assert self._state == Resolvable.UNRESOLVED
-        self._state = Resolvable.RESOLVED
+        assert self._state == self.State.UNRESOLVED
+        self._state = self.State.RESOLVED
         self._value = value
         self.setter = setter
 
     def finalize_late(self):
-        self._state = Resolvable.LATE
+        self._state = self.State.LATE
         self._value = LATE_BIND_PLACEHOLDER.format(self.name)
 
     @property
