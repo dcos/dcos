@@ -4,6 +4,7 @@ Description=Signal: DC/OS Telemetry and Tracking Service
 Type=simple
 Restart=on-failure
 RestartSec=20
+LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_signal
 EnvironmentFile=/opt/mesosphere/environment
