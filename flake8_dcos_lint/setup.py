@@ -16,7 +16,7 @@ setup(
     description='flake8 plugin for custom dcos checks',
     py_modules=["check_rules", "checker"],
     install_requires=[
-        'pycodestyle',
+        'pycodestyle==2.2.0',
         'flake8',
         'flake8-import-order==0.9.2',
         'pep8-naming'
