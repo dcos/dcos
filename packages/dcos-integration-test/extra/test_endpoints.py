@@ -2,6 +2,7 @@ import ipaddress
 import urllib.parse
 
 import bs4
+import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
