@@ -7,6 +7,7 @@ StandardError=journal
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 # Run in new mount namespace to create custom resolv.conf.
 MountFlags=private
 RuntimeDirectory=dcos_exhibitor

@@ -3,6 +3,7 @@ Description=Metrics Master Service: DC/OS Metrics Master Service for Host Level 
 [Service]
 Restart=always
 RestartSec=5
+LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_metrics
 EnvironmentFile=/opt/mesosphere/environment

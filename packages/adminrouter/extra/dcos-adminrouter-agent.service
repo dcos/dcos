@@ -5,6 +5,7 @@ Description=Admin Router Agent: A high performance web server and a reverse prox
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 Type=forking
 PIDFile=$PKG_PATH/nginx/logs/nginx.pid
