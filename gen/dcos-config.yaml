@@ -85,7 +85,8 @@ package:
         "timeout": 5,
         "listener": "0.0.0.0",
         "email": "root.mesos-dns.mesos",
-        "IPSources": {{ mesos_dns_ip_sources }}
+        "IPSources": {{ mesos_dns_ip_sources }},
+        "SetTruncateBit": false
       }
   - path: /etc_master/minuteman.config.d/master.config
     content: |
