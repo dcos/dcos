@@ -325,3 +325,6 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def postflight(self, expect_errors=False):
         self.run_cli_cmd('--postflight', expect_errors=expect_errors)
+
+    def generate_node_upgrade_script(self, expect_errors=False):
+        self.run_cli_cmd("--generate-node-upgrade-script 1.8.7", expect_errors=expect_errors)

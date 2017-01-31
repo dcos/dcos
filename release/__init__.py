@@ -250,39 +250,58 @@ class Repository():
         }
 
 
-def get_package_artifact(package_id_str):
+def make_package_filename(package_id_str):
     package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    extension = '.tar.xz'
+    if package_id.version == 'setup':
+        extension = '.dcos_config'
+    return 'packages/{}/{}{}'.format(package_id.name, package_id_str, extension)
+
+
+def get_package_artifact(package_id_str):
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': 'packages/cache/' + package_filename}
 
 
 def get_gen_package_artifact(package_id_str):
-    package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': package_filename}
 
 
-def make_bootstrap_artifacts(bootstrap_id, variant_name, artifact_prefix):
+def make_bootstrap_artifacts(bootstrap_id, package_ids, variant_name, artifact_prefix):
     bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    active_filename = "{}.active.json".format(bootstrap_id)
+    active_local_path = artifact_prefix + '/bootstrap/' + active_filename
+    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
+    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
+
+    # Assert that the bootstrap active packages are in the package list.
+    with open(active_local_path) as f:
+        missing_packages = set(json.load(f)) - set(package_ids)
+    assert len(missing_packages) == 0, (
+        'variant {} has bootstrap packages missing from the package list: {}'.format(
+            pkgpanda.util.variant_name(variant_name),
+            missing_packages,
+        )
+    )
+
     yield {
         'reproducible_path': 'bootstrap/' + bootstrap_filename,
         'local_path': artifact_prefix + '/bootstrap/' + bootstrap_filename
     }
-    active_filename = "{}.active.json".format(bootstrap_id)
     yield {
         'reproducible_path': 'bootstrap/' + active_filename,
-        'local_path': artifact_prefix + '/bootstrap/' + active_filename
+        'local_path': active_local_path
     }
-    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
     yield {
         'channel_path': latest_filename,
         'local_path': artifact_prefix + '/bootstrap/' + latest_filename
     }
-    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
     yield {
         'channel_path': latest_complete_filename,
         'local_path': artifact_prefix + '/complete/' + latest_complete_filename
@@ -332,7 +351,7 @@ def make_stable_artifacts(cache_repository_url):
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        for file in make_bootstrap_artifacts(info['bootstrap'], name, 'packages/cache'):
+        for file in make_bootstrap_artifacts(info['bootstrap'], info['packages'], name, 'packages/cache'):
             add_file(file)
 
         # Add all the packages which haven't been added yet
@@ -391,18 +410,19 @@ def make_channel_artifacts(metadata):
 
         variant_arguments = dict()
 
-        for bootstrap_name, bootstrap_id in metadata['bootstrap_dict'].items():
-            variant_arguments[bootstrap_name] = copy.deepcopy({
+        for variant, variant_info in metadata['complete_dict'].items():
+            variant_arguments[variant] = copy.deepcopy({
                 'bootstrap_url': bootstrap_url,
                 'provider': name,
-                'bootstrap_id': bootstrap_id,
-                'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
+                'bootstrap_id': variant_info['bootstrap'],
+                'bootstrap_variant': pkgpanda.util.variant_prefix(variant),
+                'package_ids': json.dumps(variant_info['packages'])
             })
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
                 mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-                variant_arguments[bootstrap_name].update(mod.provider_template_defaults)
+                variant_arguments[variant].update(mod.provider_template_defaults)
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
@@ -425,7 +445,7 @@ def make_channel_artifacts(metadata):
                     reproducible_artifact_path=metadata['reproducible_artifact_path'],
                     commit=metadata['commit'],
                     variant_arguments=module_specific_variant_arguments,
-                    all_bootstraps=metadata["all_bootstraps"]):
+                    all_completes=metadata['all_completes']):
 
                 assert isinstance(built_resource, dict), built_resource
 

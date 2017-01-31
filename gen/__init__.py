@@ -28,8 +28,7 @@ import gen.internals
 import gen.template
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.build import hash_checkout
-from pkgpanda.util import json_prettyprint, load_string, make_tar, write_json
+from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, split_by_token, write_json, write_yaml
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -306,20 +305,59 @@ def do_gen_package(config, package_filename):
     log.info("Package filename: %s", package_filename)
 
 
-def extract_files_with_path(start_files, paths):
+def render_late_content(content, late_values):
+
+    def _dereference_placeholders(parts):
+        for part, is_placeholder in parts:
+            if is_placeholder:
+                if part not in late_values:
+                    log.debug('Found placeholder for unknown value "{}" in late config: {}'.format(part, repr(content)))
+                    raise Exception('Bad late config file: Found placeholder for unknown value "{}"'.format(part))
+                yield late_values[part]
+            else:
+                yield part
+
+    return ''.join(_dereference_placeholders(split_by_token(
+        gen.internals.LATE_BIND_PLACEHOLDER_START,
+        gen.internals.LATE_BIND_PLACEHOLDER_END,
+        content,
+        strip_token_decoration=True,
+    )))
+
+
+def _late_bind_placeholder_in(string):
+    return gen.internals.LATE_BIND_PLACEHOLDER_START in string or gen.internals.LATE_BIND_PLACEHOLDER_END in string
+
+
+def resolve_late_package(config, late_values):
+    resolved_config = {
+        'package': [
+            {k: render_late_content(v, late_values) if k == 'content' else v for k, v in file_info.items()}
+            for file_info in config['package']
+        ]
+    }
+
+    assert not any(
+        _late_bind_placeholder_in(v) for file_info in resolved_config['package'] for v in file_info.values()
+    ), 'Resolved late package must not contain late value placeholder: {}'.format(resolved_config)
+
+    return resolved_config
+
+
+def extract_files_containing_late_variables(start_files):
     found_files = []
-    found_file_paths = []
     left_files = []
 
     for file_info in deepcopy(start_files):
-        if file_info['path'] in paths:
-            found_file_paths.append(file_info['path'])
+        assert not any(_late_bind_placeholder_in(v) for k, v in file_info.items() if k != 'content'), (
+            'File info must not contain late config placeholder in fields other than content: {}'.format(file_info)
+        )
+
+        if _late_bind_placeholder_in(file_info['content']):
             found_files.append(file_info)
         else:
             left_files.append(file_info)
 
-    # Assert all files were found. If not it was a programmer error of some form.
-    assert set(found_file_paths) == set(paths)
     # All files still belong somewhere
     assert len(found_files) + len(left_files) == len(start_files)
 
@@ -362,7 +400,6 @@ def validate_all_arguments_match_parameters(parameters, setters, arguments):
 def validate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list(),
         extra_sources=list()):
     sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates, extra_sources)
     return gen.internals.resolve_configuration(sources, targets).status_dict
@@ -391,7 +428,7 @@ def get_dcosconfig_source_target_and_templates(
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
-    package_names = ['dcos-config', 'dcos-metadata']
+    config_package_names = ['dcos-config', 'dcos-metadata']
     template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
@@ -427,7 +464,7 @@ def get_dcosconfig_source_target_and_templates(
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
-    add_builtin('package_names', list(package_names))
+    add_builtin('config_package_names', list(config_package_names))
     # TODO(cmaloney): user_arguments needs to be a temporary_str since we need to only include used
     # arguments inside of it.
     add_builtin('user_arguments', user_arguments)
@@ -444,10 +481,29 @@ def get_dcosconfig_source_target_and_templates(
     return sources, targets, templates
 
 
+def build_late_package(late_files, config_id, provider):
+    if not late_files:
+        return None
+
+    # Add a empty pkginfo.json to the late package after validating there
+    # isn't already one.
+    for file_info in late_files:
+        assert file_info['path'] != '/pkginfo.json'
+        assert file_info['path'].startswith('/')
+
+    late_files.append({
+        "path": "/pkginfo.json",
+        "content": "{}"})
+
+    return {
+        'package': late_files,
+        'name': 'dcos-provider-{}-{}--setup'.format(config_id, provider)
+    }
+
+
 def generate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list(),
         extra_sources=list(),
         extra_targets=list()):
     # To maintain the old API where we passed arguments rather than the new name.
@@ -464,7 +520,29 @@ def generate(
     if status['status'] == 'errors':
         raise ValidationError(errors=status['errors'], unset=status['unset'])
 
-    argument_dict = {k: v.value for k, v in resolver.arguments.items()}
+    # Gather out the late variables. The presence of late variables changes
+    # whether or not a late package is created
+    late_variables = dict()
+    # TODO(branden): Get the late vars and expressions from resolver.late
+    for source in sources:
+        for setter_list in source.setters.values():
+            for setter in setter_list:
+                if not setter.is_late:
+                    continue
+
+                if setter.name not in resolver.late:
+                    continue
+
+                # Skip late vars that aren't referenced by config.
+                if not resolver.arguments[setter.name].is_finalized:
+                    continue
+
+                # Validate a late variable should only have one source.
+                assert setter.name not in late_variables
+
+                late_variables[setter.name] = setter.late_expression
+
+    argument_dict = {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
@@ -472,7 +550,12 @@ def generate(
     # of all arguments would want to include itself).
     # Explicitly / manaully setup so that it'll fit where we want it.
     # TODO(cmaloney): Make this late-bound by gen.internals
-    argument_dict['expanded_config'] = textwrap.indent(json_prettyprint(argument_dict), prefix='  ' * 3)
+    argument_dict['expanded_config'] = textwrap.indent(
+        json_prettyprint(
+            {k: v for k, v in argument_dict.items() if not v.startswith(gen.internals.LATE_BIND_PLACEHOLDER_START)}
+        ),
+        prefix='  ' * 3,
+    )
     log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # Fill in the template parameters
@@ -492,46 +575,70 @@ def generate(
             log.debug("validating template file %s", name)
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
-    # Extract cc_package_files out of the dcos-config template and put them into
-    # the cloud-config package.
-    cc_package_files, dcos_config_files = extract_files_with_path(rendered_templates['dcos-config.yaml']['package'],
-                                                                  cc_package_files)
-    rendered_templates['dcos-config.yaml'] = {'package': dcos_config_files}
+    # Find all files which contain late bind variables and turn them into a "late bind package"
+    # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
+    late_files, regular_files = extract_files_containing_late_variables(
+        rendered_templates['dcos-config.yaml']['package'])
+    # put the regular files right back
+    rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
-    # Add a empty pkginfo.json to the cc_package_files.
-    # Also assert there isn't one already (can only write out a file once).
-    for item in cc_package_files:
-        assert item['path'] != '/pkginfo.json'
-
-    # If there aren't any files for a cloud-config package don't make one start
-    # existing adding a pkginfo.json
-    if len(cc_package_files) > 0:
-        cc_package_files.append({
-            "path": "/pkginfo.json",
-            "content": "{}"})
-
-    for item in cc_package_files:
-        assert item['path'].startswith('/')
-        item['path'] = '/etc/mesosphere/setup-packages/dcos-provider-{}--setup'.format(
-            argument_dict['provider']) + item['path']
-        rendered_templates['cloud-config.yaml']['root'].append(item)
-
-    cluster_package_info = {}
+    def make_package_filename(package_id, extension):
+        return 'packages/{0}/{1}{2}'.format(
+            package_id.name,
+            repr(package_id),
+            extension)
 
     # Render all the cluster packages
+    cluster_package_info = {}
+
+    # Prepare late binding config, if any.
+    late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
+    if late_variables:
+        # Render the late binding package. This package will be downloaded onto
+        # each cluster node during bootstrap and rendered into the final config
+        # using the values from the late config file.
+        late_package_id = PackageId(late_package['name'])
+        late_package_filename = make_package_filename(late_package_id, '.dcos_config')
+        os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
+        write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
+        cluster_package_info[late_package_id.name] = {
+            'id': late_package['name'],
+            'filename': late_package_filename
+        }
+
+        # Add the late config file to cloud config. The expressions in
+        # late_variables will be resolved by the service handling the cloud
+        # config (e.g. Amazon CloudFormation). The rendered late config file
+        # on a cluster node's filesystem will contain the final values.
+        rendered_templates['cloud-config.yaml']['root'].append({
+            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+            'permissions': '0644',
+            'owner': 'root',
+            # TODO(cmaloney): don't prettyprint to save bytes.
+            # NOTE: Use yaml here simply to make avoiding painful escaping and
+            # unescaping easier.
+            'content': render_yaml({
+                'late_bound_package_id': late_package['name'],
+                'bound_values': late_variables
+            })})
+
+    cluster_package_info = {}
+    # Generate cluster_packages.
+
     for package_id_str in json.loads(argument_dict['cluster_packages']):
         package_id = PackageId(package_id_str)
-        package_filename = 'packages/{}/{}.tar.xz'.format(
-            package_id.name,
-            package_id_str)
-
-        # Build the package
-        do_gen_package(rendered_templates[package_id.name + '.yaml'], package_filename)
+        package_filename = make_package_filename(package_id, '.tar.xz')
 
         cluster_package_info[package_id.name] = {
             'id': package_id_str,
             'filename': package_filename
         }
+
+    # Render config packages.
+    config_package_ids = json.loads(argument_dict['config_package_ids'])
+    for package_id_str in config_package_ids:
+        package_id = PackageId(package_id_str)
+        do_gen_package(rendered_templates[package_id.name + '.yaml'], cluster_package_info[package_id.name]['filename'])
 
     # Convert cloud-config to just contain write_files rather than root
     cc = rendered_templates['cloud-config.yaml']
@@ -559,6 +666,7 @@ def generate(
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
+        'config_package_ids': config_package_ids,
         'templates': rendered_templates,
         'utils': utils
     })

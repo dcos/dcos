@@ -1,3 +1,4 @@
+import json
 import logging
 
 import gen
@@ -13,7 +14,8 @@ def test_error_during_calc(monkeypatch):
     logger.setLevel(logging.DEBUG)
     assert gen.validate({
         'ip_detect_filename': 'not-a-existing-file',
-        'bootstrap_variant': ''
+        'bootstrap_variant': '',
+        'package_ids': json.dumps([]),
     }, extra_sources=[onprem_source]) == {
         'status': 'errors',
         'errors': {
@@ -40,6 +42,7 @@ def test_error_during_validate(monkeypatch):
         'master_discovery': 'static',
         'cluster_name': 'foobar',
         'master_list': '["127.0.0.1"]',
+        'package_ids': json.dumps([]),
     }, extra_sources=[onprem_source]) == {
         'status': 'errors',
         'errors': {

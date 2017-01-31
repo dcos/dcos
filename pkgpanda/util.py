@@ -1,6 +1,7 @@
 import hashlib
 import http.server
 import json
+import logging
 import os
 import re
 import shutil
@@ -11,6 +12,7 @@ from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
+from typing import List
 
 import requests
 import teamcity
@@ -138,6 +140,11 @@ def load_yaml(filename):
             return yaml.safe_load(f)
     except yaml.YAMLError as ex:
         raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
+
+
+def write_yaml(filename, data, **kwargs):
+    with open(filename, "w+") as f:
+        return yaml.safe_dump(data, f, **kwargs)
 
 
 def make_file(name):
@@ -366,3 +373,115 @@ class PrintLogger:
 
 
 logger = MessageLogger()
+
+
+def hash_str(s: str):
+    hasher = hashlib.sha1()
+    hasher.update(s.encode('utf-8'))
+    return hasher.hexdigest()
+
+
+def hash_int(i: int):
+    return hash_str(str(i))
+
+
+def hash_dict(d: dict):
+    item_hashes = []
+    for k in sorted(d.keys()):
+        assert isinstance(k, str)
+        item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_list(l: List[str]):
+    item_hashes = []
+    for item in sorted(l):
+        item_hashes.append(hash_checkout(item))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_checkout(item):
+
+    if isinstance(item, str) or isinstance(item, bytes):
+        return hash_str(item)
+    elif isinstance(item, dict):
+        return hash_dict(item)
+    elif isinstance(item, list):
+        return hash_list(item)
+    elif isinstance(item, int):
+        return hash_int(item)
+    elif isinstance(item, set):
+        return hash_list(list(item))
+    else:
+        raise NotImplementedError("{} of type {}".format(item, type(item)))
+
+
+def split_by_token(token_prefix, token_suffix, string, strip_token_decoration=False):
+    """Yield a sequence of (substring, is_token) pairs comprising the string.
+
+    The string is split by token boundary, where a token is a substring that
+    begins with the token prefix and ends with the token suffix. is_token is
+    True if the substring is a token. If strip_token_decoration is True, tokens
+    are yielded without their prefix and suffix. Each token prefix must have a
+    matching suffix, and vice versa. Tokens may not be nested.
+
+    >>> list(split_by_token('{', '}', 'some text {token} some more text'))
+    [('some text ', False), ('{token}', True), (' some more text', False)]
+    >>> list(split_by_token('{', '}', 'some text {token} some more text', strip_token_decoration=True))
+    [('some text ', False), ('token', True), (' some more text', False)]
+
+    """
+
+    def _next_substring(superstring, substring, start):
+        idx = superstring.find(substring, start)
+        if idx < 0:
+            return None
+        return idx, idx + len(substring)
+
+    def _raise_exception_if_suffix_in(substring):
+        if token_suffix in substring:
+            logging.debug("Token suffix found without matching prefix in string: {}".format(repr(string)))
+            raise Exception("Token suffix found without matching prefix")
+
+    if len(token_prefix) == 0:
+        raise ValueError('Token prefix must be a nonzero length string')
+    if len(token_suffix) == 0:
+        raise ValueError('Token suffix must be a nonzero length string')
+
+    if string == '':
+        yield string, False
+
+    num_chars_consumed = 0
+    while num_chars_consumed < len(string):
+        # Find the next token.
+        token_start = _next_substring(string, token_prefix, num_chars_consumed)
+        if not token_start:
+            # No token found. Yield the rest of the string and return.
+            remainder = string[num_chars_consumed:]
+            _raise_exception_if_suffix_in(remainder)
+            yield remainder, False
+            return
+
+        # Yield the string preceding the token, if any.
+        if token_start[0] > num_chars_consumed:
+            preceding_string = string[num_chars_consumed:token_start[0]]
+            _raise_exception_if_suffix_in(preceding_string)
+            yield preceding_string, False
+
+        # Find the end of the token.
+        token_end = _next_substring(string, token_suffix, token_start[1])
+        if not token_end or token_prefix in string[token_start[1]:token_end[0]]:
+            # Can't find a closing suffix, or found two consecutive prefixes without a suffix between them.
+            logging.debug("Token prefix found without matching suffix in string: {}".format(repr(string)))
+            raise Exception("Token prefix found without matching suffix")
+
+        # Yield the token.
+        if strip_token_decoration:
+            # Omit the token's prefix and suffix.
+            yield string[token_start[1]:token_end[0]], True
+        else:
+            # Yield the entire token.
+            yield string[token_start[0]:token_end[1]], True
+
+        # Update the chars consumed count for the next iteration.
+        num_chars_consumed = token_end[1]
