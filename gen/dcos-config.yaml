@@ -873,3 +873,16 @@ package:
   - path: /etc_master/dcos-history.env
     content: |
       STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
+  - path: /etc_master/adminrouter-listen-open.conf
+    content: |
+      listen 80 default_server;
+      listen 443 ssl default_server;
+
+      ssl_certificate common/snakeoil.crt;
+      ssl_certificate_key common/snakeoil.key;
+  - path: /etc_slave/adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;
+  - path: /etc_slave_public/adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;
