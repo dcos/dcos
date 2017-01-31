@@ -37,6 +37,7 @@ import os
 import random
 import string
 import sys
+import time
 
 import test_util.aws
 import test_util.cluster
@@ -83,7 +84,9 @@ def main():
     )
 
     # Use the CLI installer to set exhibitor_storage_backend = zookeeper.
-    test_util.cluster.install_dcos(cluster, stable_installer_url, api=False)
+    test_util.cluster.install_dcos(cluster, stable_installer_url, api=False, install_prereqs=False)
+    print('Sleeping for 5 minutes...')
+    time.sleep(5 * 60)  # Hack: wait for cluster to converge
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
     test_util.cluster.upgrade_dcos(cluster, installer_url)
