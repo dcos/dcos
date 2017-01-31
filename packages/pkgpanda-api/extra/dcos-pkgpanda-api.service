@@ -1,7 +1,6 @@
 [Unit]
 Description=Pkgpanda API: Package Management Service
 
-
 [Service]
 Type=simple
 StandardOutput=journal
@@ -11,19 +10,7 @@ RestartSec=5
 LimitNOFILE=16384
 Environment=PKGPANDA_HTTP_CONFIG=${PKG_PATH}/etc/pkgpanda-api.conf.py
 EnvironmentFile=/opt/mesosphere/environment
-ExecStart=/opt/mesosphere/bin/gunicorn --worker-class=sync \
-    --workers=1 \
-    --threads=10 \
-    --bind=unix:/run/dcos/pkgpanda-api.sock \
-    --timeout=10 \
-    --graceful-timeout=30 \
-    --name Pkgpanda\ API \
-    --access-logfile - \
-    --access-logformat '%({X-Forwarded-For}i)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" (%(L)s s)' \
-    --error-logfile - \
-    --log-level=info \
-    pkgpanda.http:app
-
+ExecStart=${PKG_PATH}/pkgpanda-api/bin/pkgpanda-api.sh
 
 # Allow pkgpanda-api to upgrade itself gracefully.
 # When a pkgpanda-api worker stops pkgpanda-api, the master process receives
