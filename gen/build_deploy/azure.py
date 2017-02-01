@@ -40,8 +40,16 @@ INSTANCE_GROUPS = {
 }
 
 
+def validate_provider(provider):
+    assert provider == 'azure'
+
+
 azure_base_source = Source(entry={
+    'validate': [
+        validate_provider
+    ],
     'default': {
+        'platform': 'azure',
         'enable_docker_gc': 'true'
     },
     'must': {

@@ -21,10 +21,17 @@ class InstallerAnalytics():
 
         # Set customer key here rather than __init__ since we want the most up to date config
         # and config may change between __init__ and here.
-        customer_key = Config(CONFIG_PATH).hacky_default_get('customer_key', None)
+        config = Config(CONFIG_PATH)
+        customer_key = config.hacky_default_get('customer_key', None)
+
+        # provider is always onprem when the cli installer is used
+        provider = "onprem"
+        # platform defaults to provider value, if not specified
+        platform = config.hacky_default_get('platform', provider)
 
         analytics.track(user_id=customer_key, anonymous_id=self.uuid, event="installer", properties={
-            "provider": "onprem",
+            "platform": platform,
+            "provider": provider,
             "source": "installer",
             "variant": os.environ["BOOTSTRAP_VARIANT"],
             "install_id": self.uuid,

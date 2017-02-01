@@ -100,7 +100,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect, rexray_config=None, rexray_config_preset=None,
+            ip_detect, platform=None, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
@@ -108,10 +108,11 @@ class DcosApiInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv4 addresses to be used as public agents
-            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            ip_detect (str):  name of preset IP-detect script
+            platform (str): name of the infrastructure platform
             rexray_config: complete contents of REX-Ray config file. Must be a
                 JSON-serializable object.
             rexray_config_preset (str): name of preset REX-Ray config
@@ -132,6 +133,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
             'ip_detect_script': self.ip_detect_script(ip_detect)}
+        if platform:
+            payload['platform'] = platform
         if rexray_config:
             payload['rexray_config'] = rexray_config
         if rexray_config_preset:
@@ -251,7 +254,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect, rexray_config=None, rexray_config_preset=None,
+            ip_detect, platform=None, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None,
             bootstrap_url='file:///opt/dcos_install_tmp'):
         """Runs configuration generation.
@@ -260,10 +263,11 @@ class DcosCliInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv$ addresses to be used as public agents
-            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            ip_detect (str):  name of preset IP-detect script
+            platform (str): name of the infrastructure platform
             rexray_config: complete contents of REX-Ray config file. Must be a
                 JSON-serializable object.
             rexray_config_preset (str): name of preset REX-Ray config
@@ -286,6 +290,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'agent_list': agent_list,
             'public_agent_list': public_agent_list,
             'process_timeout': MAX_STAGE_TIME}
+        if platform:
+            test_config['platform'] = platform
         if rexray_config:
             test_config['rexray_config'] = rexray_config
         if rexray_config_preset:

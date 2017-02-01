@@ -28,8 +28,16 @@ def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
     return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
 
 
+def validate_provider(provider):
+    assert provider == 'aws'
+
+
 aws_base_source = Source(entry={
+    'validate': [
+        validate_provider
+    ],
     'default': {
+        'platform': 'aws',
         'resolvers': '["169.254.169.253"]',
         'num_private_slaves': '5',
         'num_public_slaves': '1',
@@ -55,6 +63,7 @@ aws_base_source = Source(entry={
         'rexray_config_preset': 'aws'
     }
 })
+
 
 aws_region_names = [
     {
