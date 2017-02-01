@@ -79,6 +79,28 @@ def get_test_app_in_docker(ip_per_container=False):
     return app, test_uuid
 
 
+def get_test_app_in_ucr(healthcheck='HTTP'):
+    app, test_uuid = get_test_app(custom_port=True)
+    assert 'portDefinitions' not in app
+    # UCR does NOT support portmappings host only.  must use $PORT0
+    app['cmd'] += '$PORT0'
+    app['container'] = {
+        'type': 'MESOS',
+        'docker': {
+            'image': 'debian:jessie'
+        },
+        'volumes': [{
+            'containerPath': '/opt/mesosphere',
+            'hostPath': '/opt/mesosphere',
+            'mode': 'RO'
+        }]
+    }
+    # currently UCR does NOT support bridge mode or port mappings
+    # UCR supports host mode
+    app['healthChecks'][0]['protocol'] = healthcheck
+    return app, test_uuid
+
+
 class Marathon(ApiClientSession):
     def __init__(self, default_url, default_os_user='root', session=None):
         super().__init__(default_url)
