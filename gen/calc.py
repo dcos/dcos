@@ -13,7 +13,7 @@ import yaml
 import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
-from pkgpanda.build import hash_checkout
+from pkgpanda.util import hash_checkout
 
 
 def type_str(value):
