@@ -476,6 +476,235 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc_master/3dt_config_open.json
+    content: |
+      {
+        "role": "master",
+        "pull": true,
+        "diagnostics-bundle-dir": "/var/lib/dcos/3dt/diag-bundles",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc_slave/3dt_config_open.json
+    content: |
+      {
+        "role": "agent",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc_slave_public/3dt_config_open.json
+    content: |
+      {
+        "role": "agent_public",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc/endpoints_config_open.json
+    content: |
+        {
+          "HTTPEndpoints": [
+              {
+                  "Port": 5050,
+                  "Uri": "/__processes__",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/flags",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/frameworks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/schedule",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/roles",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/slaves",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state-summary",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/metrics/snapshot",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/registrar(1)/registry",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/system/stats.json",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/metrics",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/apps",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/deployments",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/eventSubscriptions",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/groups",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/info",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/leader",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/queue",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/list",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/log",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/config/get-state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/__processes__",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/metrics/snapshot",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/slave/flags",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/slave/state",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/system/stats.json",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/config",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/last",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/minute",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/hour",
+                  "Role": ["master"]
+              }
+          ],
+          "LocalFiles": [
+              {
+                  "Location": "/opt/mesosphere/active.buildinfo.full.json"
+              }
+          ],
+          "LocalCommands": [
+              {
+                  "Command": ["dmesg"]
+              }
+          ]
+        }
   - path: /etc/cosmos.env
     content: |
       COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG={{ cosmos_staged_package_storage_uri_flag }}
