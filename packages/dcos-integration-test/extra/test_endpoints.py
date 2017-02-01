@@ -320,15 +320,15 @@ def test_if_cosmos_is_only_available_locally(dcos_api_session):
     # over non-lo interfaces
     msg = "Cosmos reachable from non-lo interface"
     with pytest.raises(ConnectionError, message=msg):
-        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=7070)
+        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=7070, scheme='http')
     with pytest.raises(ConnectionError, message=msg):
-        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=9990)
+        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=9990, scheme='http')
 
     # One should be able to connect to the cosmos HTTP and admin ports at
     # 127.0.0.1:7070 and 127.0.0.1:9990.
     # Getting HTTP error codes shows that we made it all the way to
     # cosmos which is exactly what we're testing.
-    r = dcos_api_session.get('/', host="127.0.0.1", port=7070)
+    r = dcos_api_session.get('/', host="127.0.0.1", port=7070, scheme='http')
     assert r.status_code == 404
-    r = dcos_api_session.get('/', host="127.0.0.1", port=9990)
+    r = dcos_api_session.get('/', host="127.0.0.1", port=9990, scheme='http')
     assert r.status_code == 404
