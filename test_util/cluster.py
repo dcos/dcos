@@ -141,7 +141,7 @@ class Cluster:
         num_agents,
         num_public_agents,
     ):
-        hosts = vpc.get_vpc_host_ips()
+        hosts = vpc.get_host_ips()
         logging.info('AWS provided VPC info: ' + repr(hosts))
 
         vpc_cluster = cls.from_hosts(

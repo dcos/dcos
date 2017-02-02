@@ -33,7 +33,7 @@ from docopt import docopt
 import ssh.tunnel
 import test_util.runner
 from pkgpanda.util import json_prettyprint, load_json, load_string, load_yaml, write_json, YamlParseError
-from test_util.aws import BotoWrapper, DcosCfSimple
+from test_util.aws import BotoWrapper, DcosCfStack
 
 
 class LauncherError(Exception):
@@ -203,7 +203,7 @@ class AwsCloudformationLauncher(AbstractLauncher):
         NOTE: only supports Simple Cloudformation currently
         """
         try:
-            return DcosCfSimple(info['stack_name'], self.boto_wrapper)
+            return DcosCfStack(info['stack_name'], self.boto_wrapper)
         except Exception as ex:
             raise LauncherError('StackNotFound', '{} is not accessible'.format(info['stack_name'])) from ex
 

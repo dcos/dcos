@@ -172,7 +172,7 @@ def main():
             admin_location='0.0.0.0/0',
             key_pair_name='default',
             boto_wrapper=bw)
-        vpc.wait_for_stack_creation()
+        vpc.wait_for_complete()
 
         cluster = test_util.cluster.Cluster.from_vpc(
             vpc,
