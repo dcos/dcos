@@ -132,3 +132,17 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
                     assert r['data']['data'] == 'meow', 'Output did not match expected'
                     meowed = True
         assert meowed, 'Read output stream without seeing meow.'
+
+
+def test_files_api(dcos_api_session):
+    app, test_uuid = get_test_app()
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
+        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+
+        for required_sandbox_file in ('stdout', 'stderr'):
+            content = dcos_api_session.mesos_sandbox_file(
+                app_task['slaveId'], marathon_framework_id, app_task['id'], required_sandbox_file)
+
+            assert content, 'File {} should not be empty'.format(required_sandbox_file)

@@ -6,6 +6,8 @@ import os
 import tempfile
 import zipfile
 
+import pytest
+
 import retrying
 
 # Expected latency for all 3dt units to refresh after postflight
@@ -496,6 +498,27 @@ def test_3dt_bundle_download_and_extract(dcos_api_session):
     """
     test bundle download and validate zip file
     """
+    _download_bundle_from_master(dcos_api_session, 0)
+
+
+def test_3dt_bundle_download_and_extract_from_another_master(dcos_api_session):
+    """
+    test bundle download and validate zip file
+    """
+    if len(dcos_api_session.masters) < 3:
+        pytest.skip('Test requires at least 3 master nodes')
+
+    _download_bundle_from_master(dcos_api_session, 1)
+
+
+def _download_bundle_from_master(dcos_api_session, master_index):
+    """ Download DC/OS diagnostics bundle from a master
+
+    :param dcos_api_session: dcos_api_session fixture
+    :param master_index: master index from dcos_api_session.masters array
+    """
+    assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
+        master_index + 1, len(dcos_api_session.masters))
 
     bundles = _get_bundle_list(dcos_api_session)
     assert bundles
@@ -551,7 +574,9 @@ def test_3dt_bundle_download_and_extract(dcos_api_session):
         for bundle in bundles:
             bundle_full_location = os.path.join(tmp_dir, bundle)
             with open(bundle_full_location, 'wb') as f:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True)
+                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
+                                                node=dcos_api_session.masters[master_index])
+
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
 

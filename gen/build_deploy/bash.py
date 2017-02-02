@@ -18,6 +18,7 @@ from pkgpanda.util import logger
 
 onprem_source = Source(entry={
     'default': {
+        'platform': 'onprem',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),

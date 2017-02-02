@@ -250,17 +250,23 @@ class Repository():
         }
 
 
-def get_package_artifact(package_id_str):
+def make_package_filename(package_id_str):
     package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    extension = '.tar.xz'
+    if package_id.version == 'setup':
+        extension = '.dcos_config'
+    return 'packages/{}/{}{}'.format(package_id.name, package_id_str, extension)
+
+
+def get_package_artifact(package_id_str):
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': 'packages/cache/' + package_filename}
 
 
 def get_gen_package_artifact(package_id_str):
-    package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': package_filename}
@@ -887,8 +893,8 @@ def main():
         global _config
         config = load_config(options.config)
         _config = config
-    except FileNotFoundError:
-        print("ERROR: Release configuration file '{}' must exist.".format(options.config))
+    except OSError as ex:
+        print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
         sys.exit(1)
 
     release_manager = ReleaseManager(config, options.noop)

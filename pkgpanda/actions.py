@@ -1,15 +1,16 @@
 import logging
 import os
 import sys
-from functools import partial
+import tempfile
 from subprocess import CalledProcessError, check_call
 
+from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
-from pkgpanda.util import (extract_tarball, if_exists, load_json, load_string,
-                           write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
+                           load_string, load_yaml, write_string)
 
 DCOS_TARGET_CONTENTS = """[Install]
 WantedBy=multi-user.target
@@ -195,36 +196,51 @@ def _do_bootstrap(install, repository):
     # the host (cloud-init).
     repository_url = if_exists(load_string, install.get_config_filename("setup-flags/repository-url"))
 
-    # TODO(cmaloney): If there is 1+ master, grab the active config from a master.
-    # If the config can't be grabbed from any of them, fail.
     def fetcher(id, target):
         if repository_url is None:
-            raise ValidationError("ERROR: Non-local package {} but no repository url given.".format(repository_url))
+            raise ValidationError("ERROR: Non-local package {} but no repository url given.".format(id))
         return requests_fetcher(repository_url, id, target, os.getcwd())
 
-    # Copy host/cluster-specific packages written to the filesystem manually
-    # from the setup-packages folder into the repository. Do not overwrite or
-    # merge existing packages, hard fail instead.
-    setup_packages_to_activate = []
     setup_pkg_dir = install.get_config_filename("setup-packages")
-    copy_fetcher = partial(_copy_fetcher, setup_pkg_dir)
     if os.path.exists(setup_pkg_dir):
-        for pkg_id_str in os.listdir(setup_pkg_dir):
-            print("Installing setup package: {}".format(pkg_id_str))
-            if not PackageId.is_id(pkg_id_str):
-                raise ValidationError("Invalid package id in setup package: {}".format(pkg_id_str))
-            pkg_id = PackageId(pkg_id_str)
-            if pkg_id.version != "setup":
-                raise ValidationError(
-                    "Setup packages (those in `{0}`) must have the version setup. "
-                    "Bad package: {1}".format(setup_pkg_dir, pkg_id_str))
+        raise ValidationError(
+            "setup-packages is no longer supported. It's functionality has been replaced with late "
+            "binding packages. Found setup packages dir: {}".format(setup_pkg_dir))
 
-            # Make sure there is no existing package
-            if repository.has_package(pkg_id_str):
-                print("WARNING: Ignoring already installed package {}".format(pkg_id_str))
+    setup_packages_to_activate = []
 
-            repository.add(copy_fetcher, pkg_id_str)
-            setup_packages_to_activate.append(pkg_id_str)
+    # If the host has late config values, build the late config package from them.
+    late_config = if_exists(load_yaml, install.get_config_filename("setup-flags/late-config.yaml"))
+    if late_config:
+        pkg_id_str = late_config['late_bound_package_id']
+        late_values = late_config['bound_values']
+        print("Binding late config to late package {}".format(pkg_id_str))
+        print("Bound values: {}".format(late_values))
+
+        if not PackageId.is_id(pkg_id_str):
+            raise ValidationError("Invalid late package id: {}".format(pkg_id_str))
+        pkg_id = PackageId(pkg_id_str)
+        if pkg_id.version != "setup":
+            raise ValidationError("Late package must have the version setup. Bad package: {}".format(pkg_id_str))
+
+        # Collect the late config package.
+        with tempfile.NamedTemporaryFile() as f:
+            download(
+                f.name,
+                repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
+                os.getcwd(),
+            )
+            late_package = load_yaml(f.name)
+
+        # Resolve the late package using the bound late config values.
+        final_late_package = resolve_late_package(late_package, late_values)
+
+        # Render the package onto the filesystem and add it to the package
+        # repository.
+        with tempfile.NamedTemporaryFile() as f:
+            do_gen_package(final_late_package, f.name)
+            repository.add(lambda _, target: extract_tarball(f.name, target), pkg_id_str)
+        setup_packages_to_activate.append(pkg_id_str)
 
     # If active.json is set on the host, use that as the set of packages to
     # activate. Otherwise just use the set of currently active packages (those
@@ -272,11 +288,6 @@ def _do_bootstrap(install, repository):
 
     print("Activating packages")
     install.activate(repository.load_packages(to_activate))
-
-
-def _copy_fetcher(setup_pkg_dir, id_, target):
-    src_pkg_path = os.path.join(setup_pkg_dir, id_) + "/"
-    check_call(["cp", "-rp", src_pkg_path, target])
 
 
 def _apply_sysctl(setting, service):
