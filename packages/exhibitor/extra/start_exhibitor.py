@@ -41,6 +41,11 @@ detected_ip = invoke_detect_ip()
 # Make the zk conf directory (exhibitor assumes the dir exists)
 check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhibitor/zookeeper/transactions'])
 
+# On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
+# libraries to a path we control instead. See DCOS-11056
+jna_tmpdir = '/var/lib/dcos/exhibitor/tmp'
+check_call(['mkdir', '-p', jna_tmpdir])
+
 # TODO(cmaloney): Move exhibitor_defaults to a temp runtime conf dir.
 # Base for building up the command line
 exhibitor_cmdline = [
@@ -49,7 +54,7 @@ exhibitor_cmdline = [
     '-Djava.util.prefs.userRoot=/var/lib/dcos/exhibitor/',
     '-Duser.home=/var/lib/dcos/exhibitor/',
     '-Duser.dir=/var/lib/dcos/exhibitor/',
-    '-Djna.tmpdir=/run/dcos_exhibitor',
+    '-Djna.tmpdir=%s' % jna_tmpdir,
     '-jar', '$PKG_PATH/usr/exhibitor/exhibitor.jar',
     '--port', '8181',
     '--defaultconfig', '/run/dcos_exhibitor/exhibitor_defaults.conf',
