@@ -148,7 +148,7 @@ package:
         {
           "allocate_subnet": true,
           "mesos_bridge": false,
-          "docker_bridge": true,
+          "docker_bridge": false,
           "overlay_mtu": {{ dcos_overlay_mtu }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
@@ -167,7 +167,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -200,7 +200,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-overlay-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
