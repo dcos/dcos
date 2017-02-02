@@ -11,8 +11,9 @@ LimitNOFILE=16384
 # Run in new mount namespace to create custom resolv.conf.
 MountFlags=private
 RuntimeDirectory=dcos_exhibitor
-# Make ZooKeeper not write JNA libraries to /tmp, which can be noexec
-Environment=SERVER_JVMFLAGS=-Djna.tmpdir=/run/dcos_exhibitor
+# On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
+# libraries to a path we control instead. See DCOS-11056
+Environment=SERVER_JVMFLAGS=-Djna.tmpdir=/var/lib/dcos/exhibitor/tmp
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
