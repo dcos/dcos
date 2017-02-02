@@ -4,8 +4,8 @@
     "spartan": {
       "kind": "git",
       "git": "https://github.com/dcos/spartan.git",
-      "ref": "baefef9e613ed489d208bf273f8bdfdf8efef7b5",
-      "ref_origin": "master"
+      "ref": "945d7cec7c80dec3591775fa1d4fddbdffd7cd8c",
+      "ref_origin": "DCOS-10809-upgrade-dns-failure"
     }
   }
 }
