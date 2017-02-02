@@ -17,6 +17,7 @@ Description=Package Service: DC/OS Packaging API
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
