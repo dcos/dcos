@@ -12,7 +12,8 @@ def test_verify_units():
             cmd = subprocess.run(
                 ["/usr/bin/systemd-analyze", "verify", "--no-pager", file],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                universal_newlines=True)
             # systemd-analyze returns 0 even if there were warnings, so we
             # assert that the command output was empty.
             if cmd.stdout:
@@ -59,7 +60,7 @@ def test_verify_units():
                             return False
                     return True
 
-                for line in cmd.stdout.decode("utf-8").split("\n"):
+                for line in cmd.stdout.split("\n"):
                     if not _check_line(line):
                         pytest.fail("Invalid systemd unit: " + line)
 
