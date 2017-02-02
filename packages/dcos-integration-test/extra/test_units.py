@@ -35,12 +35,27 @@ def test_verify_units():
                     # complain that it is an unknown directive.
                     ignore_new_directives = ["TasksMax"]
                     for directive in ignore_new_directives:
-                        if directive not in line:
-                            # since this line contains 'dcos-' and the error is
-                            # not for one of the directives that we specifically
-                            # ignore in order to be future-proof we return False
-                            # to signal that in truth this line complains of
-                            # a systemd configuration error.
+                        # When systemd does not understand a directive it
+                        # prints a line with the following format:
+                        #
+                        #    [/etc/systemd/system/foo.service:5] Unknown lvalue 'EExecStat' in section 'Service'
+                        #
+                        # We ignore such errors when the lvalue is one of the
+                        # well-known directives that got added to newer
+                        # versions of systemd.
+                        unknown_lvalue_err = "Unknown lvalue '%s'" % directive
+                        if unknown_lvalue_err in line:
+                            # This version of systemd does not understand this
+                            # directive. It got added in newer versions.
+                            # As systemd ignores directives it does not
+                            # understand this is not a problem and we simply
+                            # ignore this error.
+                            pass
+                        else:
+                            # Whatever problem systemd-analyze sees in this
+                            # line is more significant than a simple
+                            # 'unknown lvalue' complaint. We treat it as a
+                            # valid issue and fail.
                             return False
                     return True
 
