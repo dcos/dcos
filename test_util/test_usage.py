@@ -4,6 +4,7 @@ import pytest
 import requests
 
 from test_util.dcos_api_session import DcosApiSession, DcosUser, get_args_from_env
+from test_util.helpers import lazy_property
 
 
 class MockResponse:
@@ -70,3 +71,34 @@ def test_dcos_client_api(mock_dcos_client):
     cluster.head('')
     cluster.patch('')
     cluster.options('')
+
+
+class LazyClass:
+    def __init__(self):
+        self.property_called = {}
+
+    def _raise_if_called_twice(self, name):
+        """ This property can only be called once, as such it can only be a lazy property
+        or else multiple calls will raise an error
+        """
+        if self.property_called.get(name):
+            raise AssertionError('This is a lazy property and should only be evaluated exactly once')
+        self.property_called[name] = True
+        return name
+
+    @property
+    def bar(self):
+        self._raise_if_called_twice('bar')
+
+    @lazy_property
+    def foo(self):
+        self._raise_if_called_twice('foo')
+
+
+def test_lazy_property():
+    c = LazyClass()
+    c.bar  # will work because its the first call
+    with pytest.raises(AssertionError):
+        c.bar  # will fail because its a standard property
+    c.foo  # will work because its the first call
+    c.foo  # will work because function is ignored on second call
