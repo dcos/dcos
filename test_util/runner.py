@@ -6,9 +6,6 @@ import logging
 import sys
 from subprocess import CalledProcessError
 
-
-LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

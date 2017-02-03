@@ -16,8 +16,6 @@ from typing import Optional
 
 from pkgpanda.util import write_string
 
-LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

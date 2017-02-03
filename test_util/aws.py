@@ -7,10 +7,8 @@ import retrying
 
 from test_util.helpers import Host, retry_boto_rate_limits, SshInfo
 
-LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
 # AWS verbosity in debug mode overwhelms meaningful logging
-logging.getLogger('botocore').setLevel(logging.INFO)
+
 log = logging.getLogger(__name__)
 
 VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'

@@ -9,7 +9,7 @@ import ssh.tunnel
 import test_util
 from pkgpanda.util import load_json
 from test_util.helpers import Host
-from test_util.launch import get_launcher, LauncherError, main
+from test_util.launch_cli import get_launcher, LauncherError, main
 
 MOCK_SSH_KEY_DATA = 'ssh_key_data'
 MOCK_KEY_NAME = 'my_key_name'

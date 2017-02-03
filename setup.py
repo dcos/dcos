@@ -68,7 +68,7 @@ setup(
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main',
-            'dcos-launch=test_util.launch:main',
+            'dcos-launch=test_util.launch_cli:main',
             'dcos-exhibitor-migrate-status=dcos_installer.exhibitor_migrate:status',
             'dcos-exhibitor-migrate-perform=dcos_installer.exhibitor_migrate:perform',
         ],
@@ -101,9 +101,6 @@ setup(
         'pkgpanda': [
             'docker/dcos-builder/Dockerfile'
         ],
-        'test_util': [
-            'launch.py'
-        ]
     },
     zip_safe=False
 )
