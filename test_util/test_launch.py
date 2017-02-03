@@ -16,9 +16,10 @@ MOCK_KEY_NAME = 'my_key_name'
 MOCK_VPC_ID = 'vpc-foo-bar'
 MOCK_SUBNET_ID = 'subnet-foo-bar'
 MOCK_GATEWAY_ID = 'gateway-foo-bar'
+MOCK_STACK_ID = 'this-is-a-important-test-stack::deadbeefdeadbeef'
 
 
-def magic_fn(output):
+def stub(output):
     def accept_any_args(*args, **kwargs):
         return output
     return accept_any_args
@@ -93,7 +94,7 @@ def mocked_context(*args, **kwargs):
 @pytest.fixture
 def mocked_test_runner(monkeypatch):
     monkeypatch.setattr(ssh.tunnel, 'tunnel', mocked_context)
-    monkeypatch.setattr(test_util.runner, 'integration_test', magic_fn(0))
+    monkeypatch.setattr(test_util.runner, 'integration_test', stub(0))
 
 
 @pytest.fixture
@@ -103,29 +104,34 @@ def mocked_ssh_key_path(tmpdir):
     return str(ssh_key_path)
 
 
+class MockStack:
+    def __init__(self):
+        self.stack_id = MOCK_STACK_ID
+
+
 @pytest.fixture
 def mocked_aws_cf_simple_backend(monkeypatch, mocked_test_runner):
     """Does not include SSH key mocking
     """
-    monkeypatch.setattr(test_util.aws.DcosCfStack, '__init__', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.DcosCfStack, '__init__', stub(None))
     monkeypatch.setattr(
         test_util.launch, 'fetch_stack', lambda stack_name, bw: test_util.aws.DcosCfStack(stack_name, bw))
     # mock create
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_stack', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_stack', stub(MockStack()))
     # mock wait
-    monkeypatch.setattr(test_util.aws.CfStack, 'wait_for_complete', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.CfStack, 'wait_for_complete', stub(None))
     # mock describe
     monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_master_ips',
-                        magic_fn([Host('127.0.0.1', '12.34.56')]))
+                        stub([Host('127.0.0.1', '12.34.56')]))
     monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_private_agent_ips',
-                        magic_fn([Host('127.0.0.1', None)]))
+                        stub([Host('127.0.0.1', None)]))
     monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_public_agent_ips',
-                        magic_fn([Host('127.0.0.1', '12.34.56')]))
+                        stub([Host('127.0.0.1', '12.34.56')]))
     # mock delete
-    monkeypatch.setattr(test_util.aws.DcosCfStack, 'delete', magic_fn(None))
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_key_pair', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.DcosCfStack, 'delete', stub(None))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_key_pair', stub(None))
     # mock config
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_key_pair', magic_fn(MOCK_SSH_KEY_DATA))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_key_pair', stub(MOCK_SSH_KEY_DATA))
 
 
 @pytest.fixture
@@ -161,38 +167,38 @@ def test_aws_cf_simple(capsys, tmpdir, mocked_aws_cf_simple):
     info, desc = check_success(capsys, tmpdir, mocked_aws_cf_simple)
     # check AWS specific info
     assert info['type'] == 'cloudformation'
-    assert 'stack_name' in info
+    assert 'stack_id' in info
     assert 'region' in info['provider']
     assert 'access_key_id' in info['provider']
     assert 'secret_access_key' in info['provider']
     assert info['ssh']['private_key'] == MOCK_SSH_KEY_DATA
     assert info['ssh']['user'] == 'core'
     # check that description is updated with info
-    assert 'stack_name' in desc
+    assert 'stack_id' in desc
 
 
 @pytest.fixture
 def mocked_aws_zen_cf(monkeypatch, mocked_aws_cf_simple_backend):
-    monkeypatch.setattr(test_util.aws.DcosZenCfStack, '__init__', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.DcosZenCfStack, '__init__', stub(None))
     monkeypatch.setattr(
         test_util.launch, 'fetch_stack', lambda stack_name, bw: test_util.aws.DcosZenCfStack(stack_name, bw))
     # mock create
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_vpc_tagged', magic_fn(MOCK_VPC_ID))
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_internet_gateway_tagged', magic_fn(MOCK_GATEWAY_ID))
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_subnet_tagged', magic_fn(MOCK_SUBNET_ID))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_vpc_tagged', stub(MOCK_VPC_ID))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_internet_gateway_tagged', stub(MOCK_GATEWAY_ID))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_subnet_tagged', stub(MOCK_SUBNET_ID))
     # mock delete
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_subnet', magic_fn(None))
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_vpc', magic_fn(None))
-    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_internet_gateway', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_subnet', stub(None))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_vpc', stub(None))
+    monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_internet_gateway', stub(None))
     # mock describe
     monkeypatch.setattr(test_util.aws.DcosZenCfStack, 'get_master_ips',
-                        magic_fn([Host('127.0.0.1', '12.34.56')]))
+                        stub([Host('127.0.0.1', '12.34.56')]))
     monkeypatch.setattr(test_util.aws.DcosZenCfStack, 'get_private_agent_ips',
-                        magic_fn([Host('127.0.0.1', None)]))
+                        stub([Host('127.0.0.1', None)]))
     monkeypatch.setattr(test_util.aws.DcosZenCfStack, 'get_public_agent_ips',
-                        magic_fn([Host('127.0.0.1', '12.34.56')]))
+                        stub([Host('127.0.0.1', '12.34.56')]))
     # mock delete
-    monkeypatch.setattr(test_util.aws.DcosZenCfStack, 'delete', magic_fn(None))
+    monkeypatch.setattr(test_util.aws.DcosZenCfStack, 'delete', stub(None))
 
 
 def test_aws_zen_cf(capsys, tmpdir, mocked_aws_zen_cf):
@@ -213,7 +219,7 @@ ssh_info:
     info, desc = check_success(capsys, tmpdir, config)
     # check AWS specific info
     assert info['type'] == 'cloudformation'
-    assert 'stack_name' in info
+    assert 'stack_id' in info
     assert 'region' in info['provider']
     assert 'access_key_id' in info['provider']
     assert 'secret_access_key' in info['provider']
@@ -221,7 +227,7 @@ ssh_info:
     assert info['ssh']['private_key'] == MOCK_SSH_KEY_DATA
     assert info['ssh']['user'] == 'core'
     # check that description is updated with info
-    assert 'stack_name' in desc
+    assert 'stack_id' in desc
     # check that zen helper did its job
     assert info['temp_resources']['vpc'] == MOCK_VPC_ID
     assert info['temp_resources']['gateway'] == MOCK_GATEWAY_ID
@@ -257,7 +263,7 @@ parameters:
     info, desc = check_success(capsys, tmpdir, config)
     # check AWS specific info
     assert info['type'] == 'cloudformation'
-    assert 'stack_name' in info
+    assert 'stack_id' in info
     assert 'region' in info['provider']
     assert 'access_key_id' in info['provider']
     assert 'secret_access_key' in info['provider']
@@ -265,7 +271,7 @@ parameters:
     assert info['ssh']['private_key'] == MOCK_SSH_KEY_DATA
     assert info['ssh']['user'] == 'core'
     # check that description is updated with info
-    assert 'stack_name' in desc
+    assert 'stack_id' in desc
 
 
 def test_no_files_specified(tmpdir, mocked_aws_cf_simple):

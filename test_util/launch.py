@@ -108,14 +108,14 @@ class AwsCloudformationLauncher(AbstractLauncher):
         if config.get('zen_helper', False):
             temp_resources.update(self.provide_network_prereqs(config))
         try:
-            self.boto_wrapper.create_stack(
+            stack = self.boto_wrapper.create_stack(
                 config['stack_name'], config['template_url'], config['parameters'])
         except Exception as ex:
             self.delete_temp_resources(temp_resources)
             raise LauncherError('ProviderError', None) from ex
         return {
             'type': 'cloudformation',
-            'stack_name': config['stack_name'],
+            'stack_id': stack.stack_id,
             'provider': {
                 'region': config['provider_info']['region'],
                 'access_key_id': config['provider_info']['access_key_id'],
@@ -124,6 +124,14 @@ class AwsCloudformationLauncher(AbstractLauncher):
             'temp_resources': temp_resources}
 
     def provide_network_prereqs(self, config):
+        """ Loops through parameters given to AWS CF templates to determine if
+        the keywords for Zen template prerequisites are met. If not met, they
+        will be provided (must be done in correct order) and added to the info
+        JSON as 'temp_resources'
+
+        TODO: change config format to provide key-value parameters as a simple
+          dict-like object rather than this boilerplate list
+        """
         parameters = config.get('parameters', list())
         vpc_found = False
         gateway_found = False
@@ -179,6 +187,8 @@ class AwsCloudformationLauncher(AbstractLauncher):
         stack = self.get_stack(info)
         stack.delete()
         if len(info['temp_resources']) > 0:
+            # must wait for stack to be deleted before removing
+            # network resources on which it depends
             stack.wait_for_complete()
             self.delete_temp_resources(info['temp_resources'])
 
@@ -207,6 +217,7 @@ class AwsCloudformationLauncher(AbstractLauncher):
         'private_key_path'
 
         Thus, there are 4 possible allowable scenarios:
+        ### Result: nothing generated, testing possible ###
         ---
         parameters:
           - ParameterKey: KeyName
@@ -214,21 +225,20 @@ class AwsCloudformationLauncher(AbstractLauncher):
         ssh_info:
           user: foo
           private_key_path: path_to_my_key
-        ### Result: nothing generated, testing possible ###
 
+        ### Result: key generated, testing possible ###
         ---
         ssh_info:
           user: foo
-        ### Result: key generated, testing possible ###
 
+        ### Result: nothing generated, testing not possible
         ---
         parameters:
           - ParameterKey: KeyName
             ParameterValue: my_key_name
-        ### Result: nothing generated, testing not possible
 
-        ---
         ### Result: key generated, testing not possible
+        ---
         """
         temp_resources = {}
         key_name = None
@@ -261,7 +271,7 @@ class AwsCloudformationLauncher(AbstractLauncher):
 
     def get_stack(self, info):
         try:
-            return fetch_stack(info['stack_name'], self.boto_wrapper)
+            return fetch_stack(info['stack_id'], self.boto_wrapper)
         except Exception as ex:
             raise LauncherError('StackNotFound', None) from ex
 
