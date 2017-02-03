@@ -75,6 +75,7 @@ master_list:
   - 192.168.65.95
   - 192.168.65.101
 oauth_enabled: 'false'
+platform: vagrant-virtualbox
 EOF
 
 cleanup_vagrant_leftovers

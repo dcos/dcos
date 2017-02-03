@@ -11,6 +11,7 @@ from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
+from typing import List
 
 import requests
 import teamcity
@@ -138,6 +139,11 @@ def load_yaml(filename):
             return yaml.safe_load(f)
     except yaml.YAMLError as ex:
         raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
+
+
+def write_yaml(filename, data, **kwargs):
+    with open(filename, "w+") as f:
+        return yaml.safe_dump(data, f, **kwargs)
 
 
 def make_file(name):
@@ -366,3 +372,44 @@ class PrintLogger:
 
 
 logger = MessageLogger()
+
+
+def hash_str(s: str):
+    hasher = hashlib.sha1()
+    hasher.update(s.encode('utf-8'))
+    return hasher.hexdigest()
+
+
+def hash_int(i: int):
+    return hash_str(str(i))
+
+
+def hash_dict(d: dict):
+    item_hashes = []
+    for k in sorted(d.keys()):
+        assert isinstance(k, str)
+        item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_list(l: List[str]):
+    item_hashes = []
+    for item in sorted(l):
+        item_hashes.append(hash_checkout(item))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_checkout(item):
+
+    if isinstance(item, str) or isinstance(item, bytes):
+        return hash_str(item)
+    elif isinstance(item, dict):
+        return hash_dict(item)
+    elif isinstance(item, list):
+        return hash_list(item)
+    elif isinstance(item, int):
+        return hash_int(item)
+    elif isinstance(item, set):
+        return hash_list(list(item))
+    else:
+        raise NotImplementedError("{} of type {}".format(item, type(item)))

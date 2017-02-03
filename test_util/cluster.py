@@ -73,6 +73,11 @@ class Cluster:
         self.public_agents = public_agents
         self.bootstrap_host = bootstrap_host
 
+        # Cluster object is currently aws-specific. These default values are passed to genconf.
+        self.ip_detect = 'aws'
+        self.platform = 'aws'
+        self.rexray_config_preset = 'aws'
+
         assert all(h.private_ip for h in self.hosts), (
             'All cluster hosts require a private IP. hosts: {}'.format(repr(self.hosts))
         )
@@ -289,11 +294,13 @@ def install_dcos(
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect='aws',
+            ip_detect=cluster.ip_detect,
+            platform=cluster.platform,
             ssh_user=cluster.ssher.user,
             ssh_key=cluster.ssher.key,
             add_config_path=add_config_path,
-            rexray_config_preset='aws')
+            rexray_config_preset=cluster.rexray_config_preset,
+        )
 
         logging.info("Running Preflight...")
         if install_prereqs:
@@ -358,11 +365,12 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect='aws',
+            ip_detect=cluster.ip_detect,
+            platform=cluster.platform,
             ssh_user=cluster.ssher.user,
             ssh_key=cluster.ssher.key,
             add_config_path=add_config_path,
-            rexray_config_preset='aws',
+            rexray_config_preset=cluster.rexray_config_preset,
         )
         # Remove docker (and associated journald) restart from the install
         # script. This prevents Docker-containerized tasks from being killed
