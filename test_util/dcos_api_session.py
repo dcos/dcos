@@ -110,7 +110,6 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         self.slaves = sorted(slaves)
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves + public_slaves)
-        self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
         self.default_os_user = default_os_user
         self.auth_user = auth_user
 

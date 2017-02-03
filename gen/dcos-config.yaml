@@ -370,7 +370,7 @@ package:
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
       MESOS_WORK_DIR=/var/lib/dcos/mesos/master
-      MESOS_ZK=zk://127.0.0.1:2181/mesos
+      MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
       MESOS_HOSTNAME_LOOKUP=false
