@@ -407,9 +407,20 @@ package:
   - path: /etc/dcos-log.env
     content: |
       DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
-  - path: /etc/dcos-log-config.json
+  - path: /etc_master/dcos-log-config.json
     content: |
       {
+        "role": "master"
+      }
+  - path: /etc_slave/dcos-log-config.json
+    content: |
+      {
+        "role": "agent"
+      }
+  - path: /etc_slave_public/dcos-log-config.json
+    content: |
+      {
+        "role": "agent_public"
       }
 {% switch use_mesos_hooks %}
 {% case "true" %}
