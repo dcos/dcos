@@ -4,9 +4,9 @@ export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.5/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
 # Install wheels.
-for package in analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
-    azure-mgmt-network azure-storage beautifulsoup4 certifi docutils enum34 keyring msrest \
-    msrestazure py requests-oauthlib webob; do
+for package in aiohttp_debugtoolbar aiohttp_jinja2 analytics-python azure-nspkg azure-common \
+    azure-mgmt-nspkg azure-mgmt-network azure-storage beautifulsoup4 certifi docutils enum34 \
+    keyring msrest msrestazure py requests-oauthlib webob; do
   pip3 install --no-deps --no-index --target="$LIB_INSTALL_DIR" /pkg/src/$package/*.whl
 done
 

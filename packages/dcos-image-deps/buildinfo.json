@@ -21,6 +21,16 @@
       "url": "https://pypi.python.org/packages/55/9d/38fb3cb174f4723b50a3f0593e18a51418c9a73a7857fdcaee46b83ff1c4/aiohttp-0.22.5.tar.gz",
       "sha1": "d391ae04d2aa97be14ef7de13e7ee2b9939ce8b4"
     },
+    "aiohttp_debugtoolbar": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/dc/ab/295a2b71ba2bae78ae3b24c5aff8dace979def7fb192fafdbc1fc7ffe688/aiohttp_debugtoolbar-0.1.2-py3-none-any.whl",
+      "sha1": "630ece58391ce1f0d6ebeb2be8cc46bd29670c8c"
+    },
+    "aiohttp_jinja2": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/72/9c/7c3c91b0134b188eba9093e340777764133b0425ddf7d4979948b01ab06d/aiohttp_jinja2-0.8.0-py3-none-any.whl",
+      "sha1": "1da4edce12a8f0dfffd4216be2410cb2ed6fa51b"
+    },
     "analytics-python": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/39/db/ba6ce2c3f13dd046eec3a7767a7d10607c15dc8b23d68bc125ad577f924f/analytics_python-1.2.3-py2.py3-none-any.whl",
