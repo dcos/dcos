@@ -103,14 +103,14 @@ def mocked_aws_cf_simple_backend(monkeypatch, mocked_test_runner):
     # mock wait
     monkeypatch.setattr(test_util.aws.CfStack, 'get_stack_details', lambda _: {'StackStatus': 'CREATE_COMPLETE'})
     # mock describe
-    monkeypatch.setattr(test_util.aws.DcosCfSimple, 'get_master_ips',
+    monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_master_ips',
                         lambda _: [Host('127.0.0.1', '12.34.56')])
-    monkeypatch.setattr(test_util.aws.DcosCfSimple, 'get_private_agent_ips',
+    monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_private_agent_ips',
                         lambda _: [Host('127.0.0.1', None)])
-    monkeypatch.setattr(test_util.aws.DcosCfSimple, 'get_public_agent_ips',
+    monkeypatch.setattr(test_util.aws.DcosCfStack, 'get_public_agent_ips',
                         lambda _: [Host('127.0.0.1', '12.34.56')])
     # mock delete
-    monkeypatch.setattr(test_util.aws.DcosCfSimple, 'delete', lambda _: None)
+    monkeypatch.setattr(test_util.aws.DcosCfStack, 'delete', lambda _: None)
     monkeypatch.setattr(test_util.aws.BotoWrapper, 'delete_key_pair', lambda *args: None)
     # mock config
     monkeypatch.setattr(test_util.aws.BotoWrapper, 'create_key_pair', lambda *args: MOCK_SSH_KEY_DATA)

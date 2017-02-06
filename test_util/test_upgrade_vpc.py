@@ -240,7 +240,7 @@ def main():
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
         ),
     )
-    vpc.wait_for_stack_creation()
+    vpc.wait_for_complete()
     cluster = test_util.cluster.Cluster.from_vpc(
         vpc,
         ssh_info,
