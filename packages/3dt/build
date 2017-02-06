@@ -30,6 +30,7 @@ EnvironmentFile=/opt/mesosphere/environment
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 User=dcos_3dt
 ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
 EOF
@@ -42,6 +43,7 @@ EnvironmentFile=/opt/mesosphere/environment
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 PermissionsStartOnly=True
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
