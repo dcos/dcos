@@ -24,11 +24,6 @@ from botocore.exceptions import ClientError
 
 from test_util.helpers import Host, retry_boto_rate_limits, SshInfo
 
-# AWS verbosity in debug mode overwhelms meaningful logging
-logging.getLogger('botocore').setLevel(logging.INFO)
-logging.getLogger('boto3').setLevel(logging.INFO)
-logging.getLogger('boto3.resources.action').setLevel(logging.WARNING)
-logging.getLogger('botocore.vendored.requests.packages.urllib3').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'

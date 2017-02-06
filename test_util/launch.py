@@ -1,39 +1,17 @@
-"""DC/OS Launch
-
-Usage:
-  dcos-launch create [--config-path=<path> --info-path=<path>]
-  dcos-launch wait [--info-path=<path>]
-  dcos-launch describe [--info-path=<path>]
-  dcos-launch pytest [--info-path=<path> --env=<envlist>] [--] [<pytest_extras>]...
-  dcos-launch delete [--info-path=<path>]
-
-Commands:
-  create    Reads the file given by --config-path, creates the cluster described therein
-            and finally dumps a JSON file to the path given in --info-path which can then
-            be used with the wait, describe, and delete calls.
-  wait      Block until the cluster is up and running.
-  describe  Return additional information about the composition of the cluster.
-  pytest    Runs integration test suite on cluster. Can optionally supply options and arguments to pytest
-  delete    Destroying the provided cluster deployment.
-
-Options:
-  --config-path=<path>  Path for config to create cluster from [default: config.yaml].
-  --info-path=<path>    JSON file output by create and consumed by wait, describe,
-                        and delete [default: cluster_info.json].
-  --env=<envlist>       Specifies a comma-delimited list of environment variables to be
-                        passed from the local environment into the test environment.
+""" Utilities to provide a turn-key deployments of DC/OS clusters, wait
+for their deployment to finish, describe the cluster topology, run the
+integration tests, and finally delete the cluster.
 """
 import abc
 import copy
-import os
-import sys
-
-from docopt import docopt
+import logging
 
 import ssh.tunnel
 import test_util.runner
-from pkgpanda.util import json_prettyprint, load_json, load_string, load_yaml, write_json, YamlParseError
+from pkgpanda.util import load_string
 from test_util.aws import BotoWrapper, fetch_stack
+
+log = logging.getLogger(__name__)
 
 
 def check_keys(user_dict, key_list):
@@ -93,6 +71,7 @@ class AbstractLauncher(metaclass=abc.ABCMeta):
 class AwsCloudformationLauncher(AbstractLauncher):
     def __init__(self, boto_wrapper):
         self.boto_wrapper = boto_wrapper
+        log.debug('Using AWS Cloudformation Launcher')
 
     def create(self, config):
         """
@@ -292,61 +271,3 @@ def convert_host_list(host_list):
     """ Makes Host tuples more readable when using describe
     """
     return [{'private_ip': h.private_ip, 'public_ip': h.public_ip} for h in host_list]
-
-
-def do_main(args):
-    if args['create']:
-        info_path = args['--info-path']
-        if os.path.exists(info_path):
-            raise LauncherError('InputConflict', 'Target info path already exists!')
-        config = load_yaml(args['--config-path'])
-        check_keys(config, ['type', 'provider_info', 'this_is_a_temporary_config_format_do_not_put_in_production'])
-        write_json(info_path, get_launcher(config['type'], config['provider_info']).create(config))
-        return 0
-
-    info = load_json(args['--info-path'])
-    check_keys(info, ['type', 'provider'])
-    launcher = get_launcher(info['type'], info['provider'])
-
-    if args['wait']:
-        launcher.wait(info)
-        print('Cluster is ready!')
-        return 0
-
-    if args['describe']:
-        print(json_prettyprint(launcher.describe(info)))
-        return 0
-
-    if args['pytest']:
-        test_cmd = 'py.test'
-        if args['--env'] is not None:
-            if '=' in args['--env']:
-                # User is attempting to do an assigment with the option
-                raise LauncherError('OptionError', "The '--env' option can only pass through environment variables "
-                                    "from the current environment. Set variables according to the shell being used.")
-            var_list = args['--env'].split(',')
-            check_keys(os.environ, var_list)
-            test_cmd = ' '.join(['{}={}'.format(e, os.environ[e]) for e in var_list]) + ' ' + test_cmd
-        if len(args['<pytest_extras>']) > 0:
-            test_cmd += ' ' + ' '.join(args['<pytest_extras>'])
-        launcher.test(info, test_cmd)
-        return 0
-
-    if args['delete']:
-        launcher.delete(info)
-        return 0
-
-
-def main(argv=None):
-    args = docopt(__doc__, argv=argv, version='DC/OS Launch v.0.1')
-
-    try:
-        return do_main(args)
-    except (LauncherError, YamlParseError) as ex:
-        print('DC/OS Launch encountered an error!')
-        print(repr(ex))
-        return 1
-
-
-if __name__ == '__main__':
-    sys.exit(main())
