@@ -20,6 +20,7 @@ import time
 
 import boto3
 import retrying
+from botocore.exceptions import ClientError
 
 from test_util.helpers import Host, retry_boto_rate_limits, SshInfo
 
@@ -93,7 +94,7 @@ class BotoWrapper():
         Starts stack creation if validation is successful
         """
         log.info('Requesting AWS CloudFormation: {}'.format(name))
-        self.resource('cloudformation').create_stack(
+        return self.resource('cloudformation').create_stack(
             StackName=name,
             TemplateURL=template_url,
             DisableRollback=True,
@@ -102,7 +103,6 @@ class BotoWrapper():
             # this python API only accepts data in string format; cast as string here
             # so that we may pass parameters directly from yaml (which parses numbers as non-strings)
             Parameters=[{str(k): str(v) for k, v in p.items()} for p in parameters])
-        return CfStack(name, self)
 
     def create_vpc_tagged(self, cidr, name_tag):
         ec2 = self.client('ec2')
@@ -255,8 +255,9 @@ class CleanupS3BucketMixin:
         try:
             bucket = self.boto_wrapper.resource('s3').Bucket(
                 self.stack.Resource('ExhibitorS3Bucket').physical_resource_id)
-        except:
+        except ClientError:
             log.exception('Bucket could not be fetched')
+            log.warning('S3 bucket not found when expected during delete, moving on...')
             return
         log.info('Starting bucket {} deletion'.format(bucket))
         all_objects = list(bucket.objects.all())
@@ -289,7 +290,7 @@ class DcosCfStack(CleanupS3BucketMixin, CfStack):
         stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
         # Use stack_name as the binding identifier. At time of implementation,
         # stack.stack_name returns stack_id if Stack was created with ID
-        return cls(stack.stack.stack_name, boto_wrapper), SSH_INFO['coreos']
+        return cls(stack.stack_id, boto_wrapper), SSH_INFO['coreos']
 
     @property
     def master_instances(self):
@@ -358,25 +359,35 @@ class DcosZenCfStack(CfStack):
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
         stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
+        os_string = None
         try:
             os_string = template_url.split('/')[-1].split('.')[-2].split('-')[0]
             ssh_info = CF_OS_SSH_INFO[os_string]
         except (KeyError, IndexError):
-            log.exception('Unexpected template URL: {}'.format(template_url))
-            if os_string:
-                log.exception('No SSH info for OS string: {}'.format(os_string))
+            log.critical('Unexpected template URL: {}'.format(template_url))
+            if os_string is not None:
+                log.critical('No SSH info for OS string: {}'.format(os_string))
             raise
-        return cls(stack.stack.stack_name, boto_wrapper), ssh_info
+        return cls(stack.stack_id, boto_wrapper), ssh_info
 
-    def __init__(self, stack_name, boto_wrapper):
-        super().__init__(stack_name, boto_wrapper)
-        self.master_stack = MasterStack(
+    @property
+    def master_stack(self):
+        return MasterStack(
             self.stack.Resource('MasterStack').physical_resource_id, self.boto_wrapper)
-        self.private_agent_stack = PrivateAgentStack(
+
+    @property
+    def private_agent_stack(self):
+        return PrivateAgentStack(
             self.stack.Resource('PrivateAgentStack').physical_resource_id, self.boto_wrapper)
-        self.public_agent_stack = PublicAgentStack(
+
+    @property
+    def public_agent_stack(self):
+        return PublicAgentStack(
             self.stack.Resource('PublicAgentStack').physical_resource_id, self.boto_wrapper)
-        self.infrastructure = CfStack(self.stack.Resource('Infrastructure').physical_resource_id, self.boto_wrapper)
+
+    @property
+    def infrastructure(self):
+        return CfStack(self.stack.Resource('Infrastructure').physical_resource_id, self.boto_wrapper)
 
     def delete(self):
         log.info('Starting deletion of Zen CF stack')
@@ -427,7 +438,7 @@ class VpcCfStack(CfStack):
             'InstanceType': instance_type,
             'AmiCode': ami_code}
         stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
-        return cls(stack.stack.stack_name, boto_wrapper), OS_SSH_INFO[instance_os]
+        return cls(stack.stack_id, boto_wrapper), OS_SSH_INFO[instance_os]
 
     def delete(self):
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
