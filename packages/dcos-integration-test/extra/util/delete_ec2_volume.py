@@ -9,6 +9,8 @@ import botocore
 import requests
 import retrying
 
+from test_util.helpers import retry_boto_rate_limits
+
 
 @contextlib.contextmanager
 def _remove_env_vars(*env_vars):
@@ -27,6 +29,7 @@ def _remove_env_vars(*env_vars):
         os.environ.update(environ)
 
 
+@retry_boto_rate_limits
 def delete_ec2_volume(name, timeout=300):
     """Delete an EC2 EBS volume by its "Name" tag
 

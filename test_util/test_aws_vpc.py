@@ -58,14 +58,12 @@ TEST_ADD_ENV_*: string (default=None)
 """
 import logging
 import os
-import random
-import string
 import sys
 
 import test_util.aws
 import test_util.cluster
-
 from pkgpanda.util import load_string
+from test_util.helpers import random_id
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -151,8 +149,7 @@ def main():
     ssh_key = load_string(options.ssh_key_path)
     if options.host_list is None:
         log.info('VPC_HOSTS not provided, requesting new VPC ...')
-        random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        unique_cluster_id = "installer-test-{}".format(random_identifier)
+        unique_cluster_id = "installer-test-{}".format(random_id(10))
         log.info("Spinning up AWS VPC with ID: {}".format(unique_cluster_id))
         if options.test_install_prereqs:
             os_name = "cent-os-7"
