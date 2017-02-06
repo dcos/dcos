@@ -10,8 +10,6 @@ def test_if_default_systctls_are_set(dcos_api_session):
     The job then examines the default sysctls, and returns a failure if another
     value is found."""
 
-    name = 'test-sysctl-{}'.format(uuid.uuid4().hex)
-
     test_command = ('test "$(/usr/sbin/sysctl vm.swappiness)" = '
                     '"vm.swappiness = 1"'
                     ' && test "$(/usr/sbin/sysctl vm.max_map_count)" = '
@@ -20,18 +18,22 @@ def test_if_default_systctls_are_set(dcos_api_session):
     argv = [
         '/opt/mesosphere/bin/mesos-execute',
         '--master=leader.mesos:5050',
-        '--name={}'.format(name),
         '--command={}'.format(test_command),
         '--shell=true',
         '--env={"LC_ALL":"C"}']
 
-    output = subprocess.check_output(
-        argv,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True)
+    def run_and_check(argv):
+        name = 'test-sysctl-{}'.format(uuid.uuid4().hex)
+        output = subprocess.check_output(
+            argv + ['--name={}'.format(name)],
+            stderr=subprocess.STDOUT,
+            universal_newlines=True)
 
-    expected_output = \
-        "Received status update TASK_FINISHED for task '{name}'".format(
-            name=name)
+        expected_output = \
+            "Received status update TASK_FINISHED for task '{name}'".format(
+                name=name)
 
-    assert expected_output in output
+        assert expected_output in output
+
+    run_and_check(argv)
+    run_and_check(argv + ['--role=slave_public'])
