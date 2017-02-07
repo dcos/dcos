@@ -4,7 +4,7 @@ mkdir -p "$PKG_PATH/lib/"
 mkdir -p "$PKG_PATH/usr/"
 
 cp -rp /pkg/src/cosmos/cosmos-*-one-jar.jar "${PKG_PATH}/usr/cosmos.jar"
-sudo chmod -R o+r "${PKG_PATH}/usr"
+chmod -R o+r "${PKG_PATH}/usr"
 
 cosmos_service="${PKG_PATH}/dcos.target.wants_master/dcos-cosmos.service"
 mkdir -p $(dirname "$cosmos_service")
@@ -12,18 +12,25 @@ mkdir -p $(dirname "$cosmos_service")
 cat <<EOF > "$cosmos_service"
 [Unit]
 Description=Package Service: DC/OS Packaging API
-After=dcos-mesos-master.service
-After=dcos-gen-resolvconf.service
 
 [Service]
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
-EnvironmentFile=-/var/lib/dcos/environment.proxy
-ExecStartPre=/bin/ping -c1 ready.spartan
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
+EnvironmentFile=/opt/mesosphere/etc/cosmos.env
+ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
-ExecStart=/opt/mesosphere/bin/java -Xmx2G -classpath ${PKG_PATH}/usr/cosmos.jar com.simontuffs.onejar.Boot -com.mesosphere.cosmos.dataDir=/var/lib/dcos/cosmos
+ExecStart=/opt/mesosphere/bin/java \\
+    -Xmx2G \\
+    -classpath ${PKG_PATH}/usr/cosmos.jar \\
+    com.simontuffs.onejar.Boot \\
+    -admin.port=127.0.0.1:9990 \\
+    -io.github.benwhitehead.finch.httpInterface=127.0.0.1:7070 \\
+    \${COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG} \\
+    \${COSMOS_PACKAGE_STORAGE_URI_FLAG}
 EOF

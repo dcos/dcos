@@ -16,10 +16,14 @@ User=dcos_metronome
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/metronome
 EnvironmentFile=-/run/dcos/etc/metronome/service.env
+ExecStartPre=/opt/mesosphere/bin/check-time
+ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome
 ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/metronome'
 ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'

@@ -9,6 +9,11 @@ rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib}
 
 mkdir -p "$PKG_PATH/bin"
 ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
+# zkCli.sh expects zkEnv.sh to be in the same directory.
+ln -s "$PKG_PATH/usr/zookeeper/bin/zkEnv.sh" "$PKG_PATH/bin/zkEnv.sh"
+
+# Explicitly set JAVA_HOME to our java package
+export JAVA_HOME="$(find /opt/mesosphere/packages -type d -name java--*)/usr/java"
 
 # Exhibitor
 

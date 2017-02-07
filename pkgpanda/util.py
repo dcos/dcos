@@ -1,16 +1,31 @@
 import hashlib
+import http.server
 import json
 import os
 import re
 import shutil
+import socketserver
 import subprocess
+from contextlib import contextmanager, ExitStack
 from itertools import chain
+from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
+from typing import List
 
 import requests
+import teamcity
+import yaml
+from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
+
+
+json_prettyprint_args = {
+    "sort_keys": True,
+    "indent": 2,
+    "separators": (',', ':')
+}
 
 
 def variant_str(variant):
@@ -114,6 +129,23 @@ def load_json(filename):
         raise ValueError("Invalid JSON in {0}: {1}".format(filename, ex)) from ex
 
 
+class YamlParseError(Exception):
+    pass
+
+
+def load_yaml(filename):
+    try:
+        with open(filename) as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as ex:
+        raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
+
+
+def write_yaml(filename, data, **kwargs):
+    with open(filename, "w+") as f:
+        return yaml.safe_dump(data, f, **kwargs)
+
+
 def make_file(name):
     with open(name, 'a'):
         pass
@@ -121,7 +153,7 @@ def make_file(name):
 
 def write_json(filename, data):
     with open(filename, "w+") as f:
-        return json.dump(data, f, indent=2, sort_keys=True)
+        return json.dump(data, f, **json_prettyprint_args)
 
 
 def write_string(filename, data):
@@ -132,6 +164,10 @@ def write_string(filename, data):
 def load_string(filename):
     with open(filename) as f:
         return f.read().strip()
+
+
+def json_prettyprint(data):
+    return json.dumps(data, **json_prettyprint_args)
 
 
 def if_exists(fn, *args, **kwargs):
@@ -193,7 +229,7 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                 # Rewrite old_prefix to new_prefix if present.
                 target = os.readlink(full_path)
                 if target.startswith(old_prefix):
-                    new_target = os.path.join(new_prefix, target[len(old_prefix)+1:].lstrip('/'))
+                    new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
                     # Remove the old link and write a new one.
                     os.remove(full_path)
                     os.symlink(new_target, full_path)
@@ -239,3 +275,141 @@ def run(cmd, *args, **kwargs):
 
     assert len(stderr) == 0
     return stdout.decode('utf-8')
+
+
+def launch_server(directory):
+    os.chdir("resources/repo")
+    httpd = socketserver.TCPServer(
+        ("", 8000),
+        http.server.SimpleHTTPRequestHandler)
+    httpd.serve_forever()
+
+
+class TestRepo:
+
+    def __init__(self, repo_dir):
+        self.__dir = repo_dir
+
+    def __enter__(self):
+        self.__server = Process(target=launch_server, args=(self.__dir))
+        self.__server.start()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.__server.join()
+
+
+def resources_test_dir(path):
+    assert not path.startswith('/')
+    return "pkgpanda/test_resources/{}".format(path)
+
+
+class MessageLogger:
+    """Abstraction over TeamCity Build Messages
+
+    When pkgpanda is ran in a TeamCity environment additional meta-messages will be output to stdout
+    such that TeamCity can provide improved status reporting, log line highlighting, and failure
+    reporting. When pkgpanda is ran in an environment other than TeamCity all meta-messages will
+    silently be omitted.
+
+    TeamCity docs: https://confluence.jetbrains.com/display/TCD10/Build+Script+Interaction+with+TeamCity
+    """
+    def __init__(self):
+        self.loggers = []
+        if teamcity.is_running_under_teamcity():
+            self.loggers.append(TeamcityServiceMessages())
+        else:
+            self.loggers.append(PrintLogger())
+
+    def _custom_message(self, text, status, error_details='', flow_id=None):
+        for log in self.loggers:
+            log.customMessage(text, status, errorDetails=error_details, flowId=flow_id)
+
+    @contextmanager
+    def _block(self, log, name, flow_id):
+        log.blockOpened(name, flowId=flow_id)
+        log.progressMessage(name)
+        yield
+        log.blockClosed(name, flowId=flow_id)
+
+    @contextmanager
+    def scope(self, name, flow_id=None):
+        """
+        Creates a new scope for TeamCity messages. This method is intended to be called in a ``with`` statement
+
+        :param name: The name of the scope
+        :param flow_id: Optional flow id that can be used if ``name`` can be non-unique
+        """
+        with ExitStack() as stack:
+            for log in self.loggers:
+                stack.enter_context(self._block(log, name, flow_id))
+            yield
+
+    def normal(self, text, flow_id=None):
+        self._custom_message(text=text, status='NORMAL', flow_id=flow_id)
+
+    def warning(self, text, flow_id=None):
+        self._custom_message(text=text, status='WARNING', flow_id=flow_id)
+
+    def error(self, text, flow_id=None, error_details=''):
+        self._custom_message(text=text, status='ERROR', flow_id=flow_id, error_details=error_details)
+
+    def failure(self, text, flow_id=None):
+        self._custom_message(text=text, status='FAILURE', flow_id=flow_id)
+
+
+class PrintLogger:
+    def customMessage(self, text, status, errorDetails='', flowId=None):  # noqa: N802, N803
+        print("{}: {} {}".format(status, text, errorDetails))
+
+    def progressMessage(self, message):  # noqa: N802, N803
+        pass
+
+    def blockOpened(self, name, flowId=None):  # noqa: N802, N803
+        print("starting: {}".format(name))
+
+    def blockClosed(self, name, flowId=None):  # noqa: N802, N803
+        print("completed: {}".format(name))
+
+
+logger = MessageLogger()
+
+
+def hash_str(s: str):
+    hasher = hashlib.sha1()
+    hasher.update(s.encode('utf-8'))
+    return hasher.hexdigest()
+
+
+def hash_int(i: int):
+    return hash_str(str(i))
+
+
+def hash_dict(d: dict):
+    item_hashes = []
+    for k in sorted(d.keys()):
+        assert isinstance(k, str)
+        item_hashes.append("{0}={1}".format(k, hash_checkout(d[k])))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_list(l: List[str]):
+    item_hashes = []
+    for item in sorted(l):
+        item_hashes.append(hash_checkout(item))
+    return hash_str(",".join(item_hashes))
+
+
+def hash_checkout(item):
+
+    if isinstance(item, str) or isinstance(item, bytes):
+        return hash_str(item)
+    elif isinstance(item, dict):
+        return hash_dict(item)
+    elif isinstance(item, list):
+        return hash_list(item)
+    elif isinstance(item, int):
+        return hash_int(item)
+    elif isinstance(item, set):
+        return hash_list(list(item))
+    else:
+        raise NotImplementedError("{} of type {}".format(item, type(item)))

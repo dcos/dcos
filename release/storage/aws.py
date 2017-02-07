@@ -1,3 +1,5 @@
+from typing import Optional
+
 import boto3
 import botocore
 
@@ -26,16 +28,23 @@ class S3StorageProvider(AbstractStorageProvider):
 
     def __init__(self, bucket, object_prefix, download_url, boto3_profile=None, region_name=None,
                  access_key_id=None, secret_access_key=None):
-        assert not object_prefix.startswith('/')
-        assert not object_prefix.endswith('/')
+        if object_prefix is not None:
+            assert object_prefix and not object_prefix.startswith('/') and not object_prefix.endswith('/')
 
         self.__session = get_session(boto3_profile, region_name, access_key_id, secret_access_key)
         self.__bucket = self.__session.resource('s3').Bucket(bucket)
         self.__object_prefix = object_prefix
         self.__url = download_url
 
+    @property
+    def object_prefix(self):
+        if self.__object_prefix is None:
+            return ''
+        return self.__object_prefix + '/'
+
     def _get_path(self, name):
-        return self.__object_prefix + '/' + name
+
+        return self.object_prefix + name
 
     def _get_objects_with_prefix(self, prefix):
         return self.__bucket.objects.filter(Prefix=self._get_path(prefix))
@@ -66,11 +75,11 @@ class S3StorageProvider(AbstractStorageProvider):
         new_object.copy_from(CopySource=old_path)
 
     def upload(self,
-               destination_path,
-               blob=None,
-               local_path=None,
-               no_cache=None,
-               content_type=None):
+               destination_path: str,
+               blob: Optional[bytes]=None,
+               local_path: Optional[str]=None,
+               no_cache: bool=False,
+               content_type: Optional[str]=None):
         extra_args = {}
         if no_cache:
             extra_args['CacheControl'] = 'no-cache'
@@ -95,7 +104,7 @@ class S3StorageProvider(AbstractStorageProvider):
             return False
 
     def list_recursive(self, path):
-        prefix_len = len(self.__object_prefix + '/')
+        prefix_len = len(self.object_prefix)
         names = set()
         for object_summary in self._get_objects_with_prefix(path):
             name = object_summary.key
@@ -112,6 +121,7 @@ class S3StorageProvider(AbstractStorageProvider):
     def remove_recursive(self, path):
         for obj in self._get_objects_with_prefix(path):
             obj.delete()
+
 
 factories = {
     "s3": S3StorageProvider

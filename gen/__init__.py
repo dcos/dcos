@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Helps build config packages for installer-specific templates.
 
 Takes in a bunch of configuration files, as well as functions to calculate the values/strings which
@@ -13,22 +12,23 @@ Operates strictly:
 """
 
 import importlib.machinery
-import inspect
 import json
 import logging as log
 import os
 import os.path
 import textwrap
 from copy import copy, deepcopy
-from subprocess import check_call
 from tempfile import TemporaryDirectory
+from typing import List
 
 import yaml
 
 import gen.calc
+import gen.internals
 import gen.template
+from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.util import load_string, make_tar
+from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, write_json, write_yaml
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -39,12 +39,44 @@ CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_s
 PACKAGE_KEYS = {'package', 'root'}
 
 
+def stringify_configuration(configuration: dict):
+    """Create a stringified version of the complete installer configuration
+    to send to gen.generate()"""
+    gen_config = {}
+    for key, value in configuration.items():
+        if isinstance(value, list) or isinstance(value, dict):
+            log.debug("Caught %s for genconf configuration, transforming to JSON string: %s", type(value), value)
+            value = json.dumps(value)
+
+        elif isinstance(value, bool):
+            if value:
+                value = 'true'
+            else:
+                value = 'false'
+
+        elif isinstance(value, int):
+            log.debug("Caught int for genconf configuration, transforming to string: %s", value)
+            value = str(value)
+
+        elif isinstance(value, str):
+            pass
+
+        else:
+            log.error("Invalid type for value of %s in config. Got %s, only can handle list, dict, "
+                      "int, bool, and str", key, type(value))
+            raise Exception()
+
+        gen_config[key] = value
+
+    log.debug('Stringified configuration: \n{}'.format(gen_config))
+    return gen_config
+
+
 def add_roles(cloudconfig, roles):
     for role in roles:
         cloudconfig['write_files'].append({
             "path": role_template.format(role),
-            "content": ""
-            })
+            "content": ""})
 
     return cloudconfig
 
@@ -147,45 +179,7 @@ def merge_dictionaries(base, additions):
                 base_copy[k] |= v
                 continue
 
-            # Unknwon types
-            raise ValueError("Can't merge type {} into type {}".format(type(v), type(base_copy[k])))
-        except ValueError as ex:
-            raise ValueError("{} inside key {}".format(ex, k)) from ex
-    return base_copy
-
-
-# Recursively merge to python dictionaries.
-# If both base and addition contain the same key, that key's value will be
-# merged if it is a dictionary.
-# This is unlike the python dict.update() method which just overwrites matching
-# keys.
-def merge_replace_append_dictionaries(base, additions):
-    base_copy = base.copy()
-    for k, v in additions.items():
-        try:
-            if k not in base:
-                base_copy[k] = v
-                continue
-            if isinstance(v, dict) and isinstance(base_copy[k], dict):
-                base_copy[k] = merge_replace_append_dictionaries(base_copy.get(k, dict()), v)
-                continue
-
-            # Append arrays
-            if isinstance(v, list) and isinstance(base_copy[k], list):
-                base_copy[k].extend(v)
-                continue
-
-            # Merge sets
-            if isinstance(v, set) and isinstance(base_copy[k], set):
-                base_copy[k] |= v
-                continue
-
-            # Overwrite if the new one is a string
-            if isinstance(v, str):
-                base_copy[k] = v
-                continue
-
-            # Unknwon types
+            # Unknown types
             raise ValueError("Can't merge type {} into type {}".format(type(v), type(base_copy[k])))
         except ValueError as ex:
             raise ValueError("{} inside key {}".format(ex, k)) from ex
@@ -223,7 +217,7 @@ def render_templates(template_dict, arguments):
                 assert len(templates) == 1
                 full_template = rendered_template
                 continue
-            template_data = yaml.load(rendered_template)
+            template_data = yaml.safe_load(rendered_template)
 
             if full_template:
                 full_template = merge_dictionaries(full_template, template_data)
@@ -235,188 +229,20 @@ def render_templates(template_dict, arguments):
     return rendered_templates
 
 
-# Load all the un-bound variables in the templates which need to be given values
-# in order to convert the templates to go from jinja -> final template. These
-# are effectively the set of DC/OS parameters.
-def get_parameters(template_dict):
-    parameters = {'variables': set(), 'sub_scopes': dict()}
+# Collect the un-bound / un-set variables from all the given templates to build
+# the schema / configuration target. The templates and their structure serve
+# as the schema for what configuration a user must provide.
+def target_from_templates(template_dict):
+    # NOTE: the individual yaml template targets are merged into one target
+    # since we never want to target just one template at a time for now (they
+    # all merge into one config package).
+    target = gen.internals.Target()
     templates = load_templates(template_dict)
     for template_list in templates.values():
         for template in template_list:
-            parameters = merge_dictionaries(parameters, template.get_scoped_arguments())
+            target += template.target_from_ast()
 
-    return parameters
-
-
-def get_function_parameters(function):
-    return set(inspect.signature(function).parameters)
-
-
-class CalculatorError(Exception):
-    def __init__(self, message, chain=[]):
-        assert isinstance(message, str)
-        assert isinstance(chain, list)
-        self.message = message
-        self.chain = chain
-        super().__init__(message)
-
-
-# Depth first search argument calculator. Detects cycles, as well as unmet
-# dependencies.
-# TODO(cmaloney): Separate chain / path building when unwinding from the root
-#                 error messages.
-class DFSArgumentCalculator():
-    def __init__(self, setters, validate_fns):
-        self._setters = setters
-        self._arguments = dict()
-        self.__in_progress = set()
-        self._errors = dict()
-        self._unset = set()
-
-        # Re-arrange the validation functions so we can more easily access them by
-        # argument name.
-        self._validate_by_arg = dict()
-        for fn in validate_fns:
-            parameters = get_function_parameters(fn)
-            assert len(parameters) == 1, "Validate functions must take exactly one parameter currently."
-            # Get out the one and only parameter's name. This will break really badly
-            # if functions have more than one parameter (We'll call for
-            # each parameter with only one parameter)
-            for parameter in parameters:
-                assert parameter not in self._validate_by_arg, \
-                    "Only one validation function per parameter is currently allowed."
-                self._validate_by_arg[parameter] = fn
-
-    def _calculate_argument(self, name):
-        # Filter out any setters which have predicates / conditions which are
-        # satisfiably false.
-        def all_conditions_met(setter):
-            for condition_name, condition_value in setter.conditions:
-                try:
-                    if self._get(condition_name) != condition_value:
-                        return False
-                except CalculatorError as ex:
-                    raise CalculatorError(
-                        ex.message,
-                        ex.chain + ['trying to test condition {}={}'.format(condition_name, condition_value)]) from ex
-            return True
-
-        # Find the right setter to calculate the argument.
-        feasible = list(filter(all_conditions_met, self._setters.get(name, list())))
-
-        if len(feasible) == 0:
-            self._unset.add(name)
-            raise CalculatorError("no way to set")
-
-        # Filtier out all optional setters if there is more than one way to set.
-        if len(feasible) > 1:
-            feasible = list(filter(lambda setter: not setter.is_optional, feasible))
-
-        assert len(feasible) > 0, "Had multiple optionals. Template internal error."
-
-        # Must be calculated but user tried to provide.
-        if len(feasible) == 2 and (feasible[0].is_user or feasible[1].is_user):
-            self._errors[name] = ("{} must be calculated, but was explicitly set in the "
-                                  "configuration. Remove it from the configuration.").format(name)
-            raise CalculatorError("{} must be calculated but set twice".format(name))
-
-        if len(feasible) > 1:
-            self._errors[name] = "Internal error: Multiple ways to set {}.".format(name)
-            raise CalculatorError("multiple ways to set",
-                                  ["options: {}".format(feasible)])
-
-        setter = feasible[0]
-
-        # Get values for the parameters, then call. the setter function.
-        kwargs = {}
-        for parameter in setter.parameters:
-            kwargs[parameter] = self._get(parameter)
-
-        try:
-            value = setter.calc(**kwargs)
-        except AssertionError as ex:
-            self._errors[name] = ex.args[0]
-            raise CalculatorError("assertion while calc")
-
-        if name in self._validate_by_arg:
-            try:
-                self._validate_by_arg[name](value)
-            except AssertionError as ex:
-                self._errors[name] = ex.args[0]
-                raise CalculatorError("assertion while validate")
-
-        return value
-
-    def _get(self, name):
-        if name in self._arguments:
-            if self._arguments[name] is None:
-                raise CalculatorError("No way to set", [name])
-            return self._arguments[name]
-
-        # Detect cycles by checking if we're in the middle of calculating the
-        # argument being asked for
-        if name in self.__in_progress:
-            raise CalculatorError("Internal error. cycle detected. re-encountered {}".format(name))
-
-        self.__in_progress.add(name)
-        try:
-            self._arguments[name] = self._calculate_argument(name)
-            return self._arguments[name]
-        except CalculatorError as ex:
-            self._arguments[name] = None
-            raise CalculatorError(ex.message, ex.chain + ['while calculating {}'.format(name)]) from ex
-        except:
-            self._arguments[name] = None
-            raise
-        finally:
-            self.__in_progress.remove(name)
-
-    # Force calculation of all arguments by accessing the arguments in this
-    # scope and recursively all sub-scopes.
-    def calculate(self, scope, throw_on_error=True):
-        def evaluate_var(name):
-            try:
-                self._get(name)
-            except CalculatorError as ex:
-                log.debug("Error calculating %s: %s. Chain: %s", name, ex.message, ex.chain)
-
-        for name in scope.get('variables', set()):
-            evaluate_var(name)
-
-        for name, sub_scope in scope.get('sub_scopes', 'dict').items():
-            if name not in self._arguments:
-                evaluate_var(name)
-
-            # If the internal arg is None, there was an error, don't check if it
-            # is a legal choice.
-            if self._arguments[name] is None:
-                continue
-
-            choice = self._get(name)
-
-            if choice not in sub_scope:
-                self._errors[name] = "Invalid choice {}. Must choose one of {}".format(
-                    choice, ", ".join(sorted(sub_scope.keys())))
-                continue
-
-            self.calculate(sub_scope[choice], throw_on_error=False)
-
-        if throw_on_error and (len(self._errors) or len(self._unset)):
-            raise ValidationError(self._errors, self._unset)
-
-        return self._arguments
-
-
-json_prettyprint_args = {
-    "sort_keys": True,
-    "indent": 2,
-    "separators": (',', ':')
-}
-
-
-def write_json(filename, data):
-    with open(filename, "w+") as f:
-        return json.dump(data, f, **json_prettyprint_args)
+    return [target]
 
 
 def write_to_non_taken(base_filename, json):
@@ -472,73 +298,93 @@ def do_gen_package(config, package_filename):
             os.makedirs(os.path.dirname(package_filename), exist_ok=True)
 
         # Make the package top level directory readable by users other than the owner (root).
-        check_call(['chmod', 'go+rx', tmpdir])
+        os.chmod(tmpdir, 0o755)
 
         make_tar(package_filename, tmpdir)
 
     log.info("Package filename: %s", package_filename)
 
 
-def validate_arguments_strings(arguments):
-    errors = dict()
-    # Validate that all keys and vlaues of arguments are strings
-    for k, v in arguments.items():
-        if not isinstance(k, str):
-            errors[''] = "All keys in arguments must be strings. '{}' isn't.".format(k)
-        if not isinstance(v, str):
-            errors[k] = ("All values in arguments must be strings. Value for argument {} isn't. " +
-                         "Given value: {}").format(k, v)
-    if len(errors):
-        raise ValidationError(errors, set())
+def render_late_content(content, late_values):
+    # TODO(branden): Unit tests
+
+    def _next_substring(string_, substring, start=0):
+        idx = string_.find(substring, start)
+        if idx < 0:
+            return None
+        return idx, idx + len(substring)
+
+    def _interpolate_values(string_):
+        if not string_:
+            return
+
+        # Find the next placeholder.
+        placeholder_start = _next_substring(string_, gen.internals.LATE_BIND_PLACEHOLDER_START)
+        if not placeholder_start:
+            # No placeholder found in the string.
+            yield string_
+            return
+
+        # Yield the string preceding the placeholder, if any.
+        if placeholder_start[0] > 0:
+            yield string_[:placeholder_start[0]]
+
+        # Find the end of the placeholder.
+        placeholder_end = _next_substring(string_, gen.internals.LATE_BIND_PLACEHOLDER_END, placeholder_start[1])
+        if not placeholder_end:
+            log.debug("Can't find end of placeholder in string: {}".format(repr(string_)))
+            raise Exception("Bad late config file: Can't find end of placeholder")
+
+        # Extract the name between the start and end and yield its value.
+        name = string_[placeholder_start[1]:placeholder_end[0]]
+        if name not in late_values:
+            log.debug('Found placeholder for unknown value "{}" in string: {}'.format(name, repr(string_)))
+            raise Exception('Bad late config file: Found placeholder for unknown value "{}"'.format(name))
+        yield late_values[name]
+
+        # Interpolate values into the rest of the string.
+        yield from _interpolate_values(string_[placeholder_end[1]:])
+
+    return ''.join(_interpolate_values(content))
 
 
-def extract_files_with_path(start_files, paths):
+def _late_bind_placeholder_in(string_):
+    return gen.internals.LATE_BIND_PLACEHOLDER_START in string_ or gen.internals.LATE_BIND_PLACEHOLDER_END in string_
+
+
+def resolve_late_package(config, late_values):
+    resolved_config = {
+        'package': [
+            {k: render_late_content(v, late_values) if k == 'content' else v for k, v in file_info.items()}
+            for file_info in config['package']
+        ]
+    }
+
+    assert not any(
+        _late_bind_placeholder_in(v) for file_info in resolved_config['package'] for v in file_info.values()
+    ), 'Resolved late package must not contain late value placeholder: {}'.format(resolved_config)
+
+    return resolved_config
+
+
+def extract_files_containing_late_variables(start_files):
     found_files = []
-    found_file_paths = []
     left_files = []
 
     for file_info in deepcopy(start_files):
-        if file_info['path'] in paths:
-            found_file_paths.append(file_info['path'])
+        assert not any(_late_bind_placeholder_in(v) for k, v in file_info.items() if k != 'content'), (
+            'File info must not contain late config placeholder in fields other than content: {}'.format(file_info)
+        )
+
+        if _late_bind_placeholder_in(file_info['content']):
             found_files.append(file_info)
         else:
             left_files.append(file_info)
 
-    # Assert all files were found. If not it was a programmer error of some form.
-    assert set(found_file_paths) == set(paths)
     # All files still belong somewhere
     assert len(found_files) + len(left_files) == len(start_files)
 
     return found_files, left_files
-
-
-class Setter():
-    # NOTE: value may either be a function or a string.
-    def __init__(self, name, value, is_optional, conditions, is_user):
-        assert isinstance(conditions, list)
-        self.name = name
-        self.is_optional = is_optional
-        self.conditions = conditions
-        self.is_user = is_user
-
-        def get_value():
-            return value
-
-        if isinstance(value, str):
-            self.calc = get_value
-            self.parameters = set()
-        else:
-            assert callable(value), "{} should be a string or callable. Got: {}".format(name, value)
-            self.calc = value
-            self.parameters = get_function_parameters(value)
-
-    def __repr__(self):
-        return "<Setter {}{}{}, conditions: {}{}>".format(
-            self.name,
-            ", optional" if self.is_optional else "",
-            ", user" if self.is_user else "",
-            self.conditions,
-            ", parameters {}".format(self.parameters))
 
 
 # Validate all arguments passed in actually correspond to parameters to
@@ -552,19 +398,6 @@ def flatten_parameters(scoped_parameters):
             flat |= flatten_parameters(sub_scope)
 
     return flat
-
-
-class ValidationError(Exception):
-    def __init__(self, errors, unset):
-        self.errors = errors
-        self.unset = unset
-        super().__init__(str(errors), str(unset))
-
-    def __str__(self):
-        return "<ValidationError errors: {}; unset: {}".format(self.errors, self.unset)
-
-    def __repr__(self):
-        return "<ValidationError errors: {}; unset: {}".format(self.errors, self.unset)
 
 
 def validate_all_arguments_match_parameters(parameters, setters, arguments):
@@ -590,44 +423,32 @@ def validate_all_arguments_match_parameters(parameters, setters, arguments):
 def validate(
         arguments,
         extra_templates=list(),
-        cc_package_files=list()):
-    try:
-        generate(
-                arguments=arguments,
-                extra_templates=extra_templates,
-                cc_package_files=cc_package_files,
-                validate_only=True)
-        return {'status': 'ok'}
-    except ValidationError as ex:
-        messages = {}
-        for key, msg in ex.errors.items():
-            messages[key] = {'message': msg}
-
-        return {
-            'status': 'errors',
-            'errors': messages,
-            'unset': ex.unset
-        }
+        extra_sources=list()):
+    sources, targets, _ = get_dcosconfig_source_target_and_templates(arguments, extra_templates, extra_sources)
+    return gen.internals.resolve_configuration(sources, targets).status_dict
 
 
-def generate(
-        arguments,
-        extra_templates=list(),
-        cc_package_files=list(),
-        validate_only=False):
-    log.info("Generating configuration files...")
-
-    assert isinstance(extra_templates, list)
-
-    # To maintain the old API where we passed arguments rather than the new name.
-    user_arguments = arguments
-    arguments = None
-
-    setters = dict()
-    validate = list()
+def user_arguments_to_source(user_arguments) -> gen.internals.Source:
+    """Convert all user arguments to be a gen.internals.Source"""
 
     # Make sure all user provided arguments are strings.
-    validate_arguments_strings(user_arguments)
+    # TODO(cmaloney): Loosen this restriction  / allow arbitrary types as long
+    # as they all have a gen specific string form.
+    gen.internals.validate_arguments_strings(user_arguments)
+
+    user_source = gen.internals.Source(is_user=True)
+    for name, value in user_arguments.items():
+        user_source.add_must(name, value)
+    return user_source
+
+
+# TODO(cmaloney): This function should disolve away like the ssh one is and just become a big
+# static dictonary or pass in / construct on the fly at the various template callsites.
+def get_dcosconfig_source_target_and_templates(
+        user_arguments: dict,
+        extra_templates: List[str],
+        extra_sources: List[gen.internals.Source]):
+    log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
     package_names = ['dcos-config', 'dcos-metadata']
@@ -635,43 +456,6 @@ def generate(
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
-
-    def add_setter(name, value, is_optional, conditions, is_user, replace_existing):
-        if replace_existing:
-            if name in setters:
-                del setters[name]
-        setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, is_user))
-
-    def add_conditional_scope(scope, conditions, replace_existing):
-        nonlocal validate
-
-        # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
-        # that one takes functions and one takes strings. Simplify to just 'can', 'must'.
-        assert scope.keys() <= {'validate', 'default', 'must', 'conditional'}
-
-        validate += scope.get('validate', list())
-
-        for name, fn in scope.get('must', dict()).items():
-            add_setter(name, fn, False, conditions, False, replace_existing)
-
-        for name, fn in scope.get('default', dict()).items():
-            add_setter(name, fn, True, conditions, False, replace_existing)
-
-        for name, cond_options in scope.get('conditional', dict()).items():
-            for value, sub_scope in cond_options.items():
-                add_conditional_scope(sub_scope, conditions + [(name, value)], replace_existing=replace_existing)
-
-    add_conditional_scope(gen.calc.entry, [], replace_existing=False)
-
-    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
-    if os.path.exists('gen_extra/calc.py'):
-        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-        add_conditional_scope(mod.entry, [], replace_existing=True)
-
-    # Add in all user arguments as setters.
-    # Happens last so that they are never overwritten with replace_existing=True
-    for name, value in user_arguments.items():
-        add_setter(name, value, False, [], True, False)
 
     # Re-arrange templates to be indexed by common name. Only allow multiple for one key if the key
     # is yaml (ends in .yaml).
@@ -684,19 +468,28 @@ def generate(
         if len(templates[key]) > 1 and not key.endswith('.yaml'):
             raise Exception(
                 "Internal Error: Only know how to merge YAML templates at this point in time. "
-                "Can't merge template {} in template_list {}".format(name, templates[key]))
+                "Can't merge template {} in template_list {}".format(filename, templates[key]))
 
-    mandatory_parameters = get_parameters(templates)
+    targets = target_from_templates(templates)
+    base_source = gen.internals.Source(is_user=False)
+    base_source.add_entry(gen.calc.entry, replace_existing=False)
 
-    validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
+    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
+    if os.path.exists('gen_extra/calc.py'):
+        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+        base_source.add_entry(mod.entry, replace_existing=True)
 
     def add_builtin(name, value):
-        add_setter(name, json.dumps(value, **json_prettyprint_args), False, [], False, False)
+        base_source.add_must(name, json_prettyprint(value))
 
-    # TODO(cmaloney): Hash the contents of all teh templates rather than using the list of filenames
+    sources = [base_source, user_arguments_to_source(user_arguments)] + extra_sources
+
+    # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
     add_builtin('package_names', list(package_names))
+    # TODO(cmaloney): user_arguments needs to be a temporary_str since we need to only include used
+    # arguments inside of it.
     add_builtin('user_arguments', user_arguments)
 
     # Add a builtin for expanded_config, so that we won't get unset argument errors. The temporary
@@ -704,27 +497,93 @@ def generate(
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
     add_builtin('expanded_config', temporary_str)
 
-    # Calculate the remaining arguments.
-    arguments = DFSArgumentCalculator(setters, validate).calculate(mandatory_parameters)
+    # Note: must come last so the hash of the "base_source" this is beign added to contains all the
+    # variables but this.
+    add_builtin('sources_id', hash_checkout([hash_checkout(source.make_id()) for source in sources]))
 
-    # Validate all new / calculated arguments are strings.
-    validate_arguments_strings(arguments)
+    return sources, targets, templates
 
-    log.info("Final arguments:" + json.dumps(arguments, **json_prettyprint_args))
+
+def build_late_package(late_files, config_id, provider):
+    if not late_files:
+        return None
+
+    # Add a empty pkginfo.json to the late package after validating there
+    # isn't already one.
+    for file_info in late_files:
+        assert file_info['path'] != '/pkginfo.json'
+        assert file_info['path'].startswith('/')
+
+    late_files.append({
+        "path": "/pkginfo.json",
+        "content": "{}"})
+
+    return {
+        'package': late_files,
+        'name': 'dcos-provider-{}-{}--setup'.format(config_id, provider)
+    }
+
+
+def generate(
+        arguments,
+        extra_templates=list(),
+        extra_sources=list(),
+        extra_targets=list()):
+    # To maintain the old API where we passed arguments rather than the new name.
+    user_arguments = arguments
+    arguments = None
+
+    sources, targets, templates = get_dcosconfig_source_target_and_templates(
+        user_arguments, extra_templates, extra_sources)
+
+    # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
+    resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
+    status = resolver.status_dict
+
+    if status['status'] == 'errors':
+        raise ValidationError(errors=status['errors'], unset=status['unset'])
+
+    # Gather out the late variables. The presence of late variables changes
+    # whether or not a late package is created
+    late_variables = dict()
+    # TODO(branden): Get the late vars and expressions from resolver.late
+    for source in sources:
+        for setter_list in source.setters.values():
+            for setter in setter_list:
+                if not setter.is_late:
+                    continue
+
+                if setter.name not in resolver.late:
+                    continue
+
+                # Skip late vars that aren't referenced by config.
+                if not resolver.arguments[setter.name].is_finalized:
+                    continue
+
+                # Validate a late variable should only have one source.
+                assert setter.name not in late_variables
+
+                late_variables[setter.name] = setter.late_expression
+
+    argument_dict = {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
     # calculated. Can't be calculated because that would have an infinite recursion problem (the set
     # of all arguments would want to include itself).
     # Explicitly / manaully setup so that it'll fit where we want it.
-    arguments['expanded_config'] = textwrap.indent(json.dumps(arguments, **json_prettyprint_args),
-                                                   prefix='  ' * 3)
-
-    if validate_only:
-        return
+    # TODO(cmaloney): Make this late-bound by gen.internals
+    argument_dict['expanded_config'] = textwrap.indent(
+        json_prettyprint(
+            {k: v for k, v in argument_dict.items() if not v.startswith(gen.internals.LATE_BIND_PLACEHOLDER_START)}
+        ),
+        prefix='  ' * 3,
+    )
+    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # Fill in the template parameters
-    rendered_templates = render_templates(templates, arguments)
+    # TODO(cmaloney): render_templates should ideally take the template targets.
+    rendered_templates = render_templates(templates, argument_dict)
 
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
@@ -739,38 +598,57 @@ def generate(
             log.debug("validating template file %s", name)
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
-    # Extract cc_package_files out of the dcos-config template and put them into
-    # the cloud-config package.
-    cc_package_files, dcos_config_files = extract_files_with_path(rendered_templates['dcos-config.yaml']['package'],
-                                                                  cc_package_files)
-    rendered_templates['dcos-config.yaml'] = {'package': dcos_config_files}
+    # Find all files which contain late bind variables and turn them into a "late bind package"
+    # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
+    late_files, regular_files = extract_files_containing_late_variables(
+        rendered_templates['dcos-config.yaml']['package'])
+    # put the regular files right back
+    rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
-    # Add a empty pkginfo.json to the cc_package_files.
-    # Also assert there isn't one already (can only write out a file once).
-    for item in cc_package_files:
-        assert item['path'] != '/pkginfo.json'
-
-    # If there aren't any files for a cloud-config package don't make one start
-    # existing adding a pkginfo.json
-    if len(cc_package_files) > 0:
-        cc_package_files.append({
-            "path": "/pkginfo.json",
-            "content": "{}"})
-
-    for item in cc_package_files:
-        assert item['path'].startswith('/')
-        item['path'] = '/etc/mesosphere/setup-packages/dcos-provider-{}--setup'.format(
-            arguments['provider']) + item['path']
-        rendered_templates['cloud-config.yaml']['root'].append(item)
-
-    cluster_package_info = {}
+    def make_package_filename(package_id, extension):
+        return 'packages/{0}/{1}{2}'.format(
+            package_id.name,
+            repr(package_id),
+            extension)
 
     # Render all the cluster packages
-    for package_id_str in json.loads(arguments['cluster_packages']):
+    cluster_package_info = {}
+
+    # Prepare late binding config, if any.
+    late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
+    if late_variables:
+        # Render the late binding package. This package will be downloaded onto
+        # each cluster node during bootstrap and rendered into the final config
+        # using the values from the late config file.
+        late_package_id = PackageId(late_package['name'])
+        late_package_filename = make_package_filename(late_package_id, '.dcos_config')
+        os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
+        write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
+        cluster_package_info[late_package_id.name] = {
+            'id': late_package['name'],
+            'filename': late_package_filename
+        }
+
+        # Add the late config file to cloud config. The expressions in
+        # late_variables will be resolved by the service handling the cloud
+        # config (e.g. Amazon CloudFormation). The rendered late config file
+        # on a cluster node's filesystem will contain the final values.
+        rendered_templates['cloud-config.yaml']['root'].append({
+            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+            'permissions': '0644',
+            'owner': 'root',
+            # TODO(cmaloney): don't prettyprint to save bytes.
+            # NOTE: Use yaml here simply to make avoiding painful escaping and
+            # unescaping easier.
+            'content': render_yaml({
+                'late_bound_package_id': late_package['name'],
+                'bound_values': late_variables
+            })})
+
+    # Render the rest of the packages.
+    for package_id_str in json.loads(argument_dict['cluster_packages']):
         package_id = PackageId(package_id_str)
-        package_filename = 'packages/{}/{}.tar.xz'.format(
-            package_id.name,
-            package_id_str)
+        package_filename = make_package_filename(package_id, '.tar.xz')
 
         # Build the package
         do_gen_package(rendered_templates[package_id.name + '.yaml'], package_filename)
@@ -804,7 +682,7 @@ def generate(
     utils.add_services = add_services
 
     return Bunch({
-        'arguments': arguments,
+        'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
         'templates': rendered_templates,
         'utils': utils

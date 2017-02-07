@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Simple python templating system. Works on yaml files which are also jinja-style templates.
 # Scans the jinja for the structure, and outputs an AST of the possible option combinations.
 # That graph could be fed into something like an argument prompter to get
@@ -17,8 +15,11 @@
 #   switch <identifier>
 #   case <string>:
 #   endswith
+from typing import Optional, Tuple
 
 from pkg_resources import resource_string
+
+import gen.internals
 
 identifier_valid_characters = 'abcdefghijklmnopqrstuvwxyz_0123456789'
 
@@ -38,8 +39,7 @@ class SyntaxError(Exception):
 
 class Tokenizer():
 
-    def __init__(self, corpus):
-        assert isinstance(corpus, str)
+    def __init__(self, corpus: str):
         self.__corpus = corpus
         self.__to_lex = corpus
 
@@ -258,10 +258,8 @@ class Tokenizer():
 
 class Switch():
 
-    def __init__(self, identifier, cases):
-        assert isinstance(identifier, str)
+    def __init__(self, identifier: str, cases: dict):
         self.identifier = identifier
-        assert isinstance(cases, dict)
         self.cases = cases
 
     def __repr__(self):
@@ -272,12 +270,9 @@ class Switch():
 
 
 class For():
-    def __init__(self, new_var, iterable, body):
-        assert isinstance(new_var, str)
+    def __init__(self, new_var: str, iterable: str, body: list):
         self.new_var = new_var
-        assert isinstance(iterable, str)
         self.iterable = iterable
-        assert isinstance(body, list)
         self.body = body
 
     def __repr__(self):
@@ -289,12 +284,9 @@ class For():
 
 class Replacement():
 
-    def __init__(self, identifier_and_filter):
+    def __init__(self, identifier_and_filter: Tuple[str, Optional[str]]):
         self.identifier = identifier_and_filter[0]
         self.filter = identifier_and_filter[1]
-
-        assert(isinstance(self.identifier, str))
-        assert(isinstance(self.filter, str) or self.filter is None)
 
     def __repr__(self):
         return "<replacement {}{}>".format(
@@ -317,18 +309,16 @@ class UnsetMarker():
 
 class Template():
 
-    def __init__(self, ast):
-        assert isinstance(ast, list)
+    def __init__(self, ast: list):
         self.ast = ast
 
-    def render(self, arguments, filters={}):
-        assert isinstance(arguments, dict)
+    def render(self, arguments: dict, filters: dict={}):
 
         def get_argument(name):
             try:
                 return arguments[name]
-            except KeyError:
-                raise UnsetParameter("Unset parameter {}".format(name), name)
+            except KeyError as ex:
+                raise UnsetParameter("Unset parameter {}".format(name), name) from ex
 
         def render_ast(ast):
             rendered = ""
@@ -380,32 +370,28 @@ class Template():
 
         return render_ast(self.ast)
 
-    def get_scoped_arguments(self):
+    def target_from_ast(self):
         def variables_from_ast(ast, blacklist):
-            variables = set()
-            sub_scopes = dict()
+            target = gen.internals.Target()
             for chunk in ast:
                 if isinstance(chunk, Switch):
-                    sub_scopes[chunk.identifier] = dict()
+                    scope = gen.internals.Scope(chunk.identifier)
                     for value, sub_ast in chunk.cases.items():
-                        sub_scopes[chunk.identifier][value] = variables_from_ast(sub_ast, blacklist)
+                        scope.add_case(value, variables_from_ast(sub_ast, blacklist))
+                    target.add_scope(scope)
+
                 elif isinstance(chunk, Replacement):
                     if chunk.identifier not in blacklist:
-                        variables.add(chunk.identifier)
+                        target.add_variable(chunk.identifier)
                 elif isinstance(chunk, For):
-                    additions = variables_from_ast(chunk.body, blacklist | {chunk.new_var})
-                    variables |= additions['variables']
-                    # TODO(cmaloney): Recursively merge sub_scope dictionaries.
-                    sub_scopes.update(sub_scopes)
+                    target += variables_from_ast(chunk.body, blacklist | {chunk.new_var})
                 elif isinstance(chunk, str):
                     continue
                 else:
                     raise NotImplementedError(
                         "Unknown chunk type {}".format(type(chunk)))
-            return {
-                'variables': variables,
-                'sub_scopes': sub_scopes
-            }
+            return target
+
         return variables_from_ast(self.ast, set())
 
     def get_filters(self):
@@ -431,7 +417,7 @@ class Template():
         return filters
 
     def __repr__(self):
-        return "<template {}>".format(self.__ast)
+        return "<template {}>".format(self.ast)
 
     def __eq__(self, other):
         return isinstance(other, Template) and self.ast == other.ast

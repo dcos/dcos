@@ -31,9 +31,9 @@ This repo contains the release and package building tools necessary to produce i
 | --------- | -------- |
 | *docker*             | Locally defined docker containers packages are built in
 | *docs*               | Documentation
-| *ext/dcos-installer* | Backend for Web, SSH, and some bits of the Advanced installer. To be merged into the top codebase once the code is cleaned up
+| *dcos_installer*     | Backend for Web, SSH, and some bits of the Advanced installer. Code is being cleaned up
 | *gen*                | Python library for rendering yaml config files for various platforms into packages, with utilities to do things like make "late binding" config set by CloudFormation
-| *gen/installer*      | Code to take a build and transform it into a particular platform installer (Bash / command line, AWS, Azure, etc.)
+| *gen/build_deploy*   | Code to take a build and transform it into a particular platform deployment tool (Bash / command line, AWS, Azure, etc.)
 | *packages*           | Packages which make up DC/OS (Mesos, Marathon, AdminRouter, etc). These packages are built by pkgpanda, and combined into a "bootstrap" tarball for deployment.
 | *pkgpanda*           | DC/OS baseline/host package management system. Tools for building, deploying, upgrading, and bundling packages together which live on the root filesystem of a machine / underneath Mesos.
 | *pytest*             | Misc. tests. Should be moved to live next to the appropriate code
@@ -53,14 +53,14 @@ All code in this repository is Python 3
   1. git 1.8.5+
   1. Docker
     - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
-  1. Python 3.4
+  1. Python 3.5
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
     - Ubuntu 16.04 LTS:
       - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
       - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev`
-      - Install Python 3.4.5: `pyenv install 3.4.5`
-      - Create DC/OS virtualenv: `pyenv virtualenv 3.4.5 dcos`
+      - Install Python 3.5.2: `pyenv install 3.5.2`
+      - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
       - Activate environment: `pyenv activate dcos`
   1. Over 10GB of free disk space
   1. _Optional_ pxz (speeds up package and bootstrap compression)
@@ -159,3 +159,4 @@ Lots of docs are still being written. If you have immediate questions please ask
  - Add general theory of stuff that goes in here.
  - PR (guidelines, testing)
  - How to make different sorts of common changes
+

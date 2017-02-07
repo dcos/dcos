@@ -1,0 +1,37 @@
+#!/bin/bash
+# variant: {variant}
+set -o errexit -o nounset -o pipefail
+
+# preflight checks
+docker version >/dev/null 2>&1 || {{ echo >&2 "docker should be installed and running. Aborting."; exit 1; }}
+
+backout(){{
+    if [ -f "{genconf_tar}" ]; then
+        rm {genconf_tar}
+    fi
+    exit 1
+}}
+trap 'backout' INT
+# extract payload and load into docker if not extracted
+if [ ! -f "{genconf_tar}" ]
+then
+    echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
+    sed '0,/^#EOF#$/d' $0 | tar xv
+    docker load -i {genconf_tar}
+fi
+trap - INT
+
+if [ ! -d genconf/state ]; then
+    mkdir -p genconf/state
+fi
+
+PORT=${{PORT:-9000}}
+DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
+
+if [ "$DCOS_INSTALLER_DAEMONIZE" == "true" ]; then
+    docker run --name={genconf_tar} -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+else
+    trap 'docker kill {genconf_tar}' HUP QUIT INT TERM
+    docker run --rm --name={genconf_tar} -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+fi
+exit $?

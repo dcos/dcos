@@ -27,7 +27,7 @@ git -C ext/dcos-image checkout -qf `git rev-parse --verify HEAD^{commit}`
 popd
 
 # Install the latest version of pip
-pip install pip==8.1.2
+pip install -U pip
 
 # We have wheel as a dependency since we use it to build the wheels
 pip install wheel

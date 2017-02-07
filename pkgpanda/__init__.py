@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 See `docs/package_concepts.md` for the package layout.
 
@@ -19,10 +17,13 @@ import pwd
 import re
 import shutil
 import tempfile
+from collections import Iterable
 from itertools import chain
 from subprocess import CalledProcessError, check_call, check_output
+from typing import Union
 
-from pkgpanda.constants import RESERVED_UNIT_NAMES
+from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
+                                RESERVED_UNIT_NAMES)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
@@ -31,9 +32,11 @@ from pkgpanda.util import (download, extract_tarball, if_exists, load_json, writ
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
 
 reserved_env_vars = ["LD_LIBRARY_PATH", "PATH"]
+
 env_header = """# Pkgpanda provided environment variables
 LD_LIBRARY_PATH={0}/lib
 PATH={0}/bin:/usr/bin:/bin:/sbin\n\n"""
+
 env_export_header = """# Pkgpanda provided environment variables
 export LD_LIBRARY_PATH={0}/lib
 export PATH="{0}/bin:$PATH"\n\n"""
@@ -81,7 +84,7 @@ class Systemd:
 class PackageId:
 
     @staticmethod
-    def parse(id):
+    def parse(id: str):
         parts = id.split('--')
         if len(parts) != 2:
             raise ValidationError(
@@ -118,7 +121,6 @@ class PackageId:
                 "Invalid package version {0}. Must match the regex {1}".format(version, version_regex))
 
     def __init__(self, id):
-        assert isinstance(id, str)
         self.name, self.version = PackageId.parse(id)
 
     def __repr__(self):
@@ -127,7 +129,7 @@ class PackageId:
 
 class Package:
 
-    def __init__(self, path, id, pkginfo):
+    def __init__(self, path, id: Union[PackageId, str], pkginfo):
         if isinstance(id, str):
             id = PackageId(id)
         self.__id = id
@@ -137,6 +139,10 @@ class Package:
     @property
     def environment(self):
         return self.__pkginfo.get('environment', dict())
+
+    @property
+    def sysctl(self):
+        return self.__pkginfo.get('sysctl', dict())
 
     @property
     def check_dir(self):
@@ -182,12 +188,13 @@ class Package:
         return str(self.__id)
 
 
-def expand_require(require):
+def expand_require(require: Union[str, dict]):
     name = None
     variant = None
     if isinstance(require, str):
         name = require
-    elif isinstance(require, dict):
+    else:
+        assert isinstance(require, dict)
         if 'name' not in require or 'variant' not in require:
             raise ValidationError(
                 "When specifying a dependency in requires by dictionary to " +
@@ -231,6 +238,7 @@ def validate_compatible(packages, roles):
 
     # Environment variables in packages, mapping from variable to package.
     environment = dict()
+    sysctl_map = dict()
 
     for package in packages:
 
@@ -260,6 +268,19 @@ def validate_compatible(packages, roles):
                     "Repeated environment variable {0}. In both packages {1} and {2}.".format(
                         k, v, package))
             environment[k] = package
+
+        # No conflicting sysctl values.
+        for service_name, sysctl_settings in package.sysctl.items():
+            for sysctl_var, sysctl_value in sysctl_settings.items():
+                if sysctl_var in sysctl_map and sysctl_map[sysctl_var] != sysctl_value:
+                    raise ValueError(
+                        "Conflicting sysctl setting {sysctl_var}={sysctl_value}"
+                        " present in the service {service}".format(
+                            sysctl_var=sysctl_var,
+                            sysctl_value=sysctl_value,
+                            service=service_name))
+
+                sysctl_map[sysctl_var] = sysctl_value
 
     # TODO(cmaloney): More complete validation
     #  - There are no repeated file/folder in the well_known_dirs
@@ -323,7 +344,7 @@ class Repository:
         return self.__packages
 
     # Load the given package
-    def load(self, id):
+    def load(self, id: str):
 
         # Validate the package id.
         PackageId(id)
@@ -335,7 +356,7 @@ class Repository:
         filename = os.path.join(path, "pkginfo.json")
         try:
             pkginfo = load_json(filename)
-        except FileNotFoundError as ex:
+        except OSError as ex:
             raise PackageError("No / unreadable pkginfo.json in {0}: {1}".format(id, ex.strerror)) from ex
 
         if not isinstance(pkginfo, dict):
@@ -343,7 +364,7 @@ class Repository:
 
         return Package(path, id, pkginfo)
 
-    def load_packages(self, ids):
+    def load_packages(self, ids: Iterable):
         packages = set()
         for id in ids:
             packages.add(self.load(id))
@@ -446,8 +467,7 @@ class UserManagement:
     referenced / used.
     """
 
-    def __init__(self, manage_users, add_users):
-        assert isinstance(manage_users, bool)
+    def __init__(self, manage_users: bool, add_users: bool):
         self._manage_users = manage_users
         self._add_users = add_users
         self._users = set()
@@ -569,6 +589,7 @@ class Install:
             manage_users=False,
             add_users=False,
             manage_state_dir=False):
+
         assert type(rooted_systemd) == bool
         assert type(fake_path) == bool
         self.__root = os.path.abspath(root)
@@ -578,6 +599,7 @@ class Install:
                 self.__systemd_dir = "{}/dcos.target.wants".format(root)
             else:
                 self.__systemd_dir = "/etc/systemd/system/dcos.target.wants"
+
         self.__manage_systemd = manage_systemd
         self.__block_systemd = block_systemd
 
@@ -597,6 +619,9 @@ class Install:
         self.__manage_users = manage_users
         self.__add_users = add_users
         self.__manage_state_dir = manage_state_dir
+
+    def _get_dcos_configuration_template(self):
+        return {"sysctl": {}}
 
     def get_active_dir(self):
         return os.path.join(self.__root, "active")
@@ -643,8 +668,8 @@ class Install:
                 "active",
                 "active.buildinfo.full.json"
             ]))
-
     # Builds new working directories for the new active set, then swaps it into place as atomically as possible.
+
     def activate(self, packages):
         # Ensure the new set is reasonable.
         validate_compatible(packages, self.__roles)
@@ -671,7 +696,6 @@ class Install:
         for name in new_dirs:
             os.makedirs(name)
 
-        # Fill in all the new contents
         def symlink_all(src, dest):
             if not os.path.isdir(src):
                 return
@@ -684,8 +708,25 @@ class Install:
 
         active_buildinfo_full = {}
 
+        dcos_service_configuration = self._get_dcos_configuration_template()
+
         # Building up the set of users
         sysusers = UserManagement(self.__manage_users, self.__add_users)
+
+        def _get_service_files(_dir):
+            service_files = []
+            for root, directories, filenames in os.walk(_dir):
+                for filename in filter(lambda name: name.endswith(".service"), filenames):
+                    service_files.append(os.path.join(root, filename))
+            return service_files
+
+        def _get_service_names(_dir):
+            service_files = list(map(os.path.basename, _get_service_files(_dir)))
+
+            if not service_files:
+                return []
+
+            return list(map(lambda name: os.path.splitext(name)[0], service_files))
 
         # Add the folders, config in each package.
         for package in packages:
@@ -714,10 +755,9 @@ class Install:
                     raise ValidationError("Two packages are trying to install the same file {0} or "
                                           "two roles in the set of roles {1} are causing a package "
                                           "to try activating multiple versions of the same file. "
-                                          "One of the package files is {2}.".format(
-                                            ex.dest,
-                                            self.__roles,
-                                            ex.src))
+                                          "One of the package files is {2}.".format(ex.dest,
+                                                                                    self.__roles,
+                                                                                    ex.src))
 
             # Add to the active folder
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
@@ -760,6 +800,20 @@ class Install:
                         uid = sysusers.get_uid(package.username)
                         check_call(['chown', '-R', str(uid), state_dir_path])
 
+            if package.sysctl:
+                service_names = _get_service_names(package.path)
+
+                if not service_names:
+                    raise ValueError("service name required for sysctl could not be determined for {package}".format(
+                        package=package.id))
+
+                for service in service_names:
+                    if service in package.sysctl:
+                        dcos_service_configuration["sysctl"][service] = package.sysctl[service]
+
+        dcos_service_configuration_file = os.path.join(self._make_abs("etc.new"), DCOS_SERVICE_CONFIGURATION_FILE)
+        write_json(dcos_service_configuration_file, dcos_service_configuration)
+
         # Write out the new environment file.
         new_env = self._make_abs("environment.new")
         write_string(new_env, env_contents)
@@ -789,10 +843,10 @@ class Install:
             raise ValueError("Unexpected state to recover from {}".format(state))
 
         return True, ""
-
     # Does an atomic(ish) upgrade swap with support for recovering if
     # only part of the swap happens before a reboot.
     # TODO(cmaloney): Implement recovery properly.
+
     def swap_active(self, extension, archive=True):
         active_names = self.get_active_names()
         state_filename = self._make_abs("install_progress")

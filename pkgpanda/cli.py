@@ -32,7 +32,7 @@ from subprocess import CalledProcessError, check_call
 
 from docopt import docopt
 
-from pkgpanda import Install, PackageId, Repository, actions, constants
+from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
 
 
@@ -142,6 +142,7 @@ def main():
         manage_users=True,
         add_users=not os.path.exists('/etc/mesosphere/manual_host_users'),
         manage_state_dir=True)
+
     repository = Repository(os.path.abspath(arguments['--repository']))
 
     try:

@@ -11,7 +11,7 @@ def get_advanced_templates():
 setup(
     name='dcos_image',
     version='0.1',
-    description='DC/OS packaging, management, install utilities',
+    description='DC/OS cluster configuration, assembly, and launch, and maintenance code',
     url='https://dcos.io',
     author='Mesosphere, Inc.',
     author_email='help@dcos.io',
@@ -20,13 +20,12 @@ setup(
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
     packages=[
+        'dcos_installer',
         'gen',
-        'gen.aws',
-        'gen.azure',
-        'gen.installer',
+        'gen.build_deploy',
         'pkgpanda',
         'pkgpanda.build',
         'pkgpanda.http',
@@ -35,7 +34,11 @@ setup(
         'ssh',
         'test_util'],
     install_requires=[
+        'aiohttp==0.22.5',
+        'analytics-python',
+        'coloredlogs',
         'Flask',
+        'flask-compress',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',
@@ -47,16 +50,27 @@ setup(
         'coloredlogs',
         'docopt',
         'passlib',
+        'py',
+        'pyinstaller==3.2',
         'pyyaml',
         'requests==2.10.0',
         'retrying',
-        'keyring==9.1'],  # FIXME: pin keyring to prevent dbus dep
+        'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
+        'teamcity-messages'],
     entry_points={
         'console_scripts': [
             'release=release:main',
-            'ccm-deploy-test=test_util.test_installer_ccm:main',
+            # Note: This test does not touch CCM, but this is here for backward compatible CI
+            'ccm-deploy-test=test_util.test_aws_vpc:main',
+            'test-aws-cf-deploy=test_util.test_aws_cf:main',
+            'test-upgrade-vpc=test_util.test_upgrade_vpc:main',
+            'test-azure-rm-deploy=test_util.test_azure:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
+            'dcos_installer=dcos_installer.cli:main',
+            'dcos-launch=test_util.launch_cli:main',
+            'dcos-exhibitor-migrate-status=dcos_installer.exhibitor_migrate:status',
+            'dcos-exhibitor-migrate-perform=dcos_installer.exhibitor_migrate:perform',
         ],
     },
     package_data={
@@ -77,9 +91,10 @@ setup(
             'azure/templates/acs.json',
             'azure/templates/azure.html',
             'azure/templates/azuredeploy.json',
-            'installer/bash/dcos_generate_config.sh.in',
-            'installer/bash/Dockerfile.in',
-            'installer/bash/installer_internal_wrapper.in',
+            'build_deploy/bash/dcos_generate_config.sh.in',
+            'build_deploy/bash/Dockerfile.in',
+            'build_deploy/bash/installer_internal_wrapper.in',
+            'build_deploy/bash/dcos-launch.spec',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),

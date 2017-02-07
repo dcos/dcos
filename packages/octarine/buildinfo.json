@@ -1,9 +1,9 @@
 {
-  "docker": "golang:1.6",
+  "docker": "golang:1.7",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/octarine.git",
-    "ref": "c792e3d7f4729de7d4532b9f347f3690513d2d5e",
+    "ref": "abd003681cf65e984f12168d6120cfd48c179fc6",
     "ref_origin": "master"
   }
 }

@@ -18,7 +18,7 @@ setup(
     author_email='support@mesosphere.io',
     classifiers=[
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4'],
+        'Programming Language :: Python :: 3.5'],
     entry_points={
         'console_scripts': [
             'bootstrap=dcos_internal_utils.cli:main'

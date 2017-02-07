@@ -1,10 +1,9 @@
 {
   "requires": ["exhibitor"],
-  "docker": "golang:1.6",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/3dt.git",
-    "ref": "fe52c8fa44ad3c89478f64942e20064a5d8b92e7",
+    "ref": "0c0ffc7d66e6396d64723ad26f7615164edfe3ce",
     "ref_origin": "master"
   },
   "username": "dcos_3dt",

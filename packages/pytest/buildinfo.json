@@ -1,15 +1,8 @@
 {
-  "requires": ["python"],
-  "sources": {
-    "pytest": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/f0/ee/6e2522c968339dca7d9abfd5e71312abeeb5ee902e09b4daf44f07b2f907/pytest-2.9.2.tar.gz",
-      "sha1": "586675a7ce39cd33e16b34cc539240b38c10d5e8"
-    },
-    "teamcity-messages": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/69/0f/7ba789bcc0ad43b7d88582722b2dbeb0595d5f9b66e55fbc3e01bb771459/teamcity-messages-1.19.tar.gz",
-      "sha1": "6b7fe243a3db67577f3b5b3134850256e3df5aa2"
-    }
+  "requires": ["python", "teamcity-messages"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/a0/2f/076c816e2402c4911ccee4b93ba0475145b7cffd0320ca8efa0add7c469c/pytest-3.0.3.tar.gz",
+    "sha1": "e7fb899ecac031a84e66f991289203d3c1f7c6cb"
   }
 }

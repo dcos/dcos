@@ -53,6 +53,17 @@
       "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
       "AllowedPattern": "(default|ami-[a-f0-9]{8})"
     }
+{% switch oauth_available %}
+{% case "true" %}
+    ,
+    "OAuthEnabled": {
+      "Description": "\nEnable OAuth authentication",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["true", "false"]
+    }
+{% case "false" %}
+{% endswitch %}
   },
   "Conditions": {
     "UseCustomAMI": {
@@ -66,51 +77,16 @@
           ]
         }
       ]
+    },
+    "RegionIsUsGovWest1" : {
+      "Fn::Equals" : [
+        { "Ref" : "AWS::Region" },
+        "us-gov-west-1"
+      ]
     }
   },
   "Mappings": {
-    "RegionToAmi": {
-      "ap-northeast-1": {
-        "coreos": "ami-965899f7",
-        "el7": "ami-abf535ca"
-      },
-      "ap-southeast-1": {
-        "coreos": "ami-3120fe52",
-        "el7": "ami-c47ba5a7"
-      },
-      "ap-southeast-2": {
-        "coreos": "ami-b1291dd2",
-        "el7": "ami-bc2f1bdf"
-      },
-      "eu-central-1": {
-        "coreos": "ami-3ae31555",
-        "el7": "ami-d934c2b6"
-      },
-      "eu-west-1": {
-        "coreos": "ami-b7cba3c4",
-        "el7": "ami-dabdd6a9"
-      },
-      "sa-east-1": {
-        "coreos": "ami-61e3750d",
-        "el7": "ami-ac980ec0"
-      },
-      "us-east-1": {
-        "coreos": "ami-6d138f7a",
-        "el7": "ami-44f66853"
-      },
-      "us-gov-west-1": {
-        "coreos": "ami-b712acd6",
-        "el7": ""
-      },
-      "us-west-1": {
-        "coreos": "ami-ee57148e",
-        "el7": "ami-a883c0c8"
-      },
-      "us-west-2": {
-        "coreos": "ami-dc6ba3bc",
-        "el7": "ami-a4dd16c4"
-      }
-    },
+    "RegionToAmi": {{ region_to_ami_mapping }},
     "Parameters": {
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -161,8 +137,21 @@
                 "s3:PutObjectAcl"
               ],
               "Resource": [
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }, "/*"]]},
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }]]}
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" },
+                    "/*"
+                  ]
+                ] },
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" }
+                  ]
+                ] }
               ]
             },
             {
@@ -303,7 +292,7 @@
             "InstanceProtocol" : "HTTP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
@@ -330,7 +319,7 @@
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",

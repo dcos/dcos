@@ -1,0 +1,14 @@
+[Unit]
+Description=Metrics Agent Service: DC/OS Metrics Agent Service for Application, Container and Host Level Metrics.
+[Service]
+Restart=always
+RestartSec=5
+LimitNOFILE=16384
+PermissionsStartOnly=True
+User=dcos_metrics
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-metrics.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-metrics-extra.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-agent
+ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
+ExecStart=/opt/mesosphere/bin/dcos-metrics -role agent -config ${DCOS_METRICS_CONFIG_PATH}

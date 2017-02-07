@@ -6,14 +6,14 @@ import pytest
 
 
 @pytest.mark.ccm
-def test_move_external_volume_to_new_agent(cluster):
+def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
 
-    If the cluster has only one agent, the volume will be detached and
+    If the dcos_api_session has only one agent, the volume will be detached and
     reattached to the same agent.
 
     """
-    hosts = cluster.slaves[0], cluster.slaves[-1]
+    hosts = dcos_api_session.slaves[0], dcos_api_session.slaves[-1]
     test_uuid = uuid.uuid4().hex
     test_label = 'integration-test-move-external-volume-{}'.format(test_uuid)
     mesos_volume_path = 'volume'
@@ -76,26 +76,23 @@ def test_move_external_volume_to_new_agent(cluster):
     }
 
     try:
-        cluster.deploy_marathon_app(write_app, **deploy_kwargs)
-        cluster.destroy_marathon_app(write_app['id'])
-
-        cluster.deploy_marathon_app(read_app, **deploy_kwargs)
-        cluster.destroy_marathon_app(read_app['id'])
+        with dcos_api_session.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
+            logging.info('Successfully wrote to volume')
+        with dcos_api_session.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
+            logging.info('Successfully read from volume')
     finally:
-        logging.info('Deleting volume: '+test_label)
-        delete_cmd = """#!/bin/bash
-source /opt/mesosphere/environment.export
-python /opt/mesosphere/active/dcos-integration-test/delete_ec2_volume.py {}
-""".format(test_label)
+        logging.info('Deleting volume: ' + test_label)
+        delete_cmd = \
+            "/opt/mesosphere/bin/dcos-shell python " \
+            "/opt/mesosphere/active/dcos-integration-test/util/delete_ec2_volume.py {}".format(test_label)
         delete_job = {
-                'id': 'delete-volume-'+test_uuid,
-                'run': {
-                    'cpus': .1,
-                    'mem': 128,
-                    'disk': 0,
-                    'cmd': delete_cmd}
-                }
+            'id': 'delete-volume-' + test_uuid,
+            'run': {
+                'cpus': .1,
+                'mem': 128,
+                'disk': 0,
+                'cmd': delete_cmd}}
         try:
-            cluster.metronome_one_off(delete_job)
+            dcos_api_session.metronome_one_off(delete_job)
         except Exception as ex:
             raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex

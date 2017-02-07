@@ -1,11 +1,6 @@
 {
   "requires": [
-      "boto",
       "dcos-image-deps",
-      "dnspython",
       "pytest",
-      "python",
-      "python-requests",
-      "python-retrying",
-      "python-kazoo"]
+      "python"]
 }

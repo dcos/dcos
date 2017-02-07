@@ -7,10 +7,10 @@ import os
 import random
 import sys
 
-
 from dcos_internal_utils import bootstrap
 from dcos_internal_utils import exhibitor
 
+from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +35,16 @@ def dcos_signal(b, opts):
 
 
 @check_root
+def dcos_metrics_master(b, opts):
+    b.cluster_id('/var/lib/dcos/cluster-id')
+
+
+@check_root
+def dcos_metrics_agent(b, opts):
+    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+
+
+@check_root
 def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
@@ -47,6 +57,8 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
+    'dcos-metrics-master': dcos_metrics_master,
+    'dcos-metrics-agent': dcos_metrics_agent,
     'dcos-3dt': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,
@@ -86,6 +98,7 @@ def main():
         if service not in bootstrappers:
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
+        apply_service_configuration(service)
         log.debug('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 

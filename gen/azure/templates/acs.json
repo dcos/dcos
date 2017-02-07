@@ -77,8 +77,6 @@
     },
     "agentVMSize": {
       "allowedValues": [
-        "Standard_A0",
-        "Standard_A1",
         "Standard_A2",
         "Standard_A3",
         "Standard_A4",
@@ -343,12 +341,6 @@
     "osImageVersion": "[variables('linuxVersion')]",
     "virtualNetworkName": "[concat(variables('orchestratorName'), '-vnet-', variables('nameSuffix'))]",
     "vmSizesMap": {
-      "Standard_A0": {
-        "storageAccountType": "Standard_LRS"
-      },
-      "Standard_A1": {
-        "storageAccountType": "Standard_LRS"
-      },
       "Standard_A10": {
         "storageAccountType": "Standard_LRS"
       },
@@ -494,7 +486,6 @@
     "agentPrivateAddressPrefix": "10.32.0.0/11",
     "agentPublicSubnetName": "[concat(variables('orchestratorName'), '-agentPublicSubnet')]",
     "agentPrivateSubnetName": "[concat(variables('orchestratorName'), '-agentPrivateSubnet')]",
-    "storageAccountType": "Standard_LRS",
     "storageAccountPrefixes": [
       "0","6","c","i","o","u","1","7","d","j","p","v",
       "2","8","e","k","q","w","3","9","f","l","r","x",
@@ -507,6 +498,7 @@
     "agentStoragePublicAccountName": "[concat(variables('storageAccountBaseName'), 'agntpub')]",
     "agentStoragePrivateAccountName": "[concat(variables('storageAccountBaseName'), 'agntpri')]",
     "masterStorageAccountName": "[concat(variables('storageAccountBaseName'), 'mstr0')]",
+    "masterStorageAccountExhibitorName": "[concat(variables('storageAccountBaseName'), 'exhb0')]",
     "omsStorageAccount": "none",
     "omsStorageAccountKey": "none",
     "clusterInstallParameters": "[concat(variables('masterCount'), ' ',variables('masterVMNamePrefix'), ' ',variables('masterFirstAddr'), ' ',variables('swarmEnabled'),' ',variables('marathonEnabled'),' ',variables('chronosEnabled'),' ',variables('omsStorageAccount'),' ',variables('omsStorageAccountKey'),' ', variables('adminUsername'),' ',variables('postInstallScriptURI'))]",
@@ -527,11 +519,45 @@
     "masterFirstAddr": 5,
     "masterAvailabilitySet": "[concat(variables('orchestratorName'), '-master-availabilitySet-', variables('nameSuffix'))]",
     "masterLbName": "[concat(variables('orchestratorName'), '-master-lb-', variables('nameSuffix'))]",
+    "masterSshInboundNatRuleNamePrefix": "[concat(variables('masterLbName'),'/SSH-',variables('masterVMNamePrefix'))]",
+    "masterSshPort22InboundNatRuleNamePrefix": "[concat(variables('masterLbName'),'/SSHPort22-',variables('masterVMNamePrefix'))]",
     "masterVMSize": "[variables('masterSizes')[variables('isValidation')]]",
     "masterLbID": "[resourceId('Microsoft.Network/loadBalancers',variables('masterLbName'))]",
     "masterLbIPConfigName": "[concat(variables('orchestratorName'), '-master-lbFrontEnd-', variables('nameSuffix'))]",
     "masterLbIPConfigID": "[concat(variables('masterLbID'),'/frontendIPConfigurations/', variables('masterLbIPConfigName'))]",
     "masterLbBackendPoolName": "[concat(variables('orchestratorName'), '-master-pool-', variables('nameSuffix'))]",
+    "masterSshInboundNatRuleIdPrefix": "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'))]",
+    "masterSshPort22InboundNatRuleIdPrefix": "[concat(variables('masterLbID'),'/inboundNatRules/SSHPort22-',variables('masterVMNamePrefix'))]",
+    "masterLbInboundNatRules":[
+      [
+        {
+          "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'0')]"
+        },
+        {
+          "id": "[concat(variables('masterSshPort22InboundNatRuleIdPrefix'),'0')]"
+        }
+      ],
+      [
+        {
+          "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'1')]"
+        }
+      ],
+      [
+        {
+          "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'2')]"
+        }
+      ],
+      [
+        {
+          "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'3')]"
+        }
+      ],
+      [
+        {
+          "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'4')]"
+        }
+      ]
+    ],
     "masterCustomScript": "[concat('/bin/bash -c \"/bin/bash /opt/azure/containers/configure-mesos-cluster.sh ',variables('clusterInstallParameters'),' >> /var/log/azure/cluster-bootstrap.log 2>&1\"')]",
     "agentPublicNSGName": "[concat(variables('orchestratorName'), '-agent-public-nsg-', variables('nameSuffix'))]",
     "agentPublicNSGID": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('agentPublicNSGName'))]",
@@ -554,7 +580,7 @@
     "enableNewStorageAccountNaming": "[parameters('enableNewStorageAccountNaming')]",
     "masterSizes": [
       "Standard_D2",
-      "Standard_A1"
+      "Standard_A2"
     ]
 {% switch oauth_available %}
 {% case "true" %}
@@ -578,6 +604,18 @@
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('masterStorageAccountExhibitorName')]",
+      "apiVersion": "[variables('apiVersionStorage')]",
+      "location": "[variables('storageLocation')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('masterPublicIPAddressName'))]"
+      ],
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('diagnosticsStorageAccountName')]",
       "apiVersion": "[variables('apiVersionStorage')]",
       "location": "[variables('storageLocation')]",
@@ -585,7 +623,7 @@
         "[concat('Microsoft.Network/publicIPAddresses/', variables('masterPublicIPAddressName'))]"
       ],
       "properties": {
-        "accountType": "[variables('vmSizesMap')[variables('masterVMSize')].storageAccountType]"
+        "accountType": "Standard_LRS"
       }
     },
     {
@@ -701,6 +739,24 @@
     },
     {
       "apiVersion": "[variables('apiVersionDefault')]",
+      "dependsOn": [
+        "[variables('masterLbID')]"
+      ],
+      "location": "[resourceGroup().location]",
+      "name": "[concat(variables('masterSshPort22InboundNatRuleNamePrefix'), '0')]",
+      "properties": {
+        "backendPort": 2222,
+        "enableFloatingIP": false,
+        "frontendIPConfiguration": {
+          "id": "[variables('masterLbIPConfigID')]"
+        },
+        "frontendPort": "22",
+        "protocol": "tcp"
+      },
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules"
+    },
+    {
+      "apiVersion": "[variables('apiVersionDefault')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('masterNSGName')]",
       "location": "[resourceGroup().location]",
@@ -717,6 +773,20 @@
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 200,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "sshPort22",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2222",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 201,
               "direction": "Inbound"
             }
           }
@@ -814,11 +884,7 @@
                   "id": "[concat(variables('masterLbID'), '/backendAddressPools/', variables('masterLbBackendPoolName'))]"
                 }
               ],
-              "loadBalancerInboundNatRules": [
-                {
-                  "id": "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'),copyIndex())]"
-                }
-              ]
+              "loadBalancerInboundNatRules": "[variables('masterLbInboundNatRules')[copyIndex()]]"
             }
           }
         ]
@@ -837,6 +903,7 @@
         "[concat('Microsoft.Network/networkInterfaces/', variables('masterVMNamePrefix'), 'nic-', copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/',variables('masterAvailabilitySet'))]",
         "[variables('masterStorageAccountName')]",
+        "[variables('masterStorageAccountExhibitorName')]",
         "[variables('diagnosticsStorageAccountName')]"
       ],
       "properties": {

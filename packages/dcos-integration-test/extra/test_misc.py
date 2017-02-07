@@ -1,13 +1,13 @@
 # Various tests that don't fit into the other categories and don't make their own really.
 import json
-import yaml
+
+from pkgpanda.util import load_yaml
 
 
 # Test that user config is loadable
 # TODO(cmaloney): Validate it contains some settings we expact.
 def test_load_user_config():
-    with open("/opt/mesosphere/etc/user.config.yaml", "r") as f:
-        user_config = yaml.load(f)
+    user_config = load_yaml("/opt/mesosphere/etc/user.config.yaml")
 
     # Calculated parameters shouldn't be in the user config
     assert 'master_quorum' not in user_config

@@ -1,0 +1,28 @@
+#!/bin/bash
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-log /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/dcos-log
+
+make install
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-log-master.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log-agent.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log-agent.service
+
+master_socket_service=${PKG_PATH}/dcos.target.wants_master/dcos-log-master.socket
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-log-agent.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-log-agent.socket
+
+mkdir -p $(dirname $master_service)
+mkdir -p $(dirname $slave_service)
+mkdir -p $(dirname $slave_public_service)
+
+cp /pkg/extra/dcos-log-master.service "$master_service"
+cp /pkg/extra/dcos-log-agent.service "$slave_service" 
+cp /pkg/extra/dcos-log-agent.service "$slave_public_service"
+cp /pkg/extra/dcos-log.socket "$master_socket_service"
+cp /pkg/extra/dcos-log.socket "$slave_socket_service"
+cp /pkg/extra/dcos-log.socket "$slave_public_socket_service"

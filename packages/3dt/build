@@ -1,5 +1,4 @@
 #!/bin/bash
-export GOPATH=$GOPATH:/pkg
 mkdir -p /pkg/src/github.com/dcos
 # Create the GOPATH for the go tool to work properly
 mv /pkg/src/3dt /pkg/src/github.com/dcos/
@@ -31,8 +30,9 @@ EnvironmentFile=/opt/mesosphere/environment
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
+ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
 EOF
 
 cat <<EOF | tee $master_service
@@ -43,10 +43,11 @@ EnvironmentFile=/opt/mesosphere/environment
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 PermissionsStartOnly=True
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
 User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt -pull -diagnostics-bundle-dir /var/lib/dcos/3dt/diag-bundles -endpoint-config ${PKG_PATH}/endpoints_config.json -agent-port 61001
+ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
 EOF
 
 cat <<EOF | tee $slave_socket_service $slave_public_socket_service

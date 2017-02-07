@@ -16,12 +16,19 @@ LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/m
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
+  --with-boost=/opt/mesosphere/active/boost-libs \
   --sbindir="$PKG_PATH/bin"
-# TODO(cmaloney): -j8 is almost certainly wrong.
-make -j8
+make -j$NUM_CORES
 
 make install
+
 cp src/java/target/mesos-*.jar "$libdir"
+
+# This is copied during `make install` as per the configure flag
+# `--enable-install-module-dependencies`.  Modules that have their
+# own protobufs may wish to use this during their builds.
+ln -s "$PKG_PATH/lib/mesos/3rdparty/bin/protoc" "$PKG_PATH/bin/protoc"
+
 popd
 popd
 
@@ -55,7 +62,3 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_sl
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
-
-# Install slave modules.
-mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
-cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"

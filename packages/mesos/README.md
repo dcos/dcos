@@ -1,9 +1,6 @@
-<H2>Patches to cherry-pick from mesosphere/mesos on top of open source Apache Mesos 0.28 or later:</h2>
-<li>[4f6515e6a92370a2bcd4cd1f45ef08056f45c88a] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
-<li>[cfbce38cd810e221b3fd1318fdb554857ef64a1d] Changed agent_host to expect a relative path.
-<li>[23f157a4bffad38b2829bf544e24f8d490cd7b5d] Set LIBPROCESS_IP into docker container.
-
-<H2>Patches to cherry-pick from mesosphere/mesos on top of open source Apache Mesos 1.0:</h2>
-<li>[377bb78a1ca109447201f9d0909afcd91fdc8fda] Removed `O_SYNC` from StatusUpdateManager. (landing in 1.1.0)
-<li>[e8c81c1c5684079890dae24e0dce2806aff507a7] Added flag in logrotate module to control number of libprocess threads. (landing in 1.1.0)
-<li>[e444edd6e7d45eb842fe223ac484a4bc4c1a327a] Allowed all flags load methods to specify a prefix. (landing in 1.1.0)
+<H2>Patches to cherry-pick on top of open source Apache Mesos before building in DC/OS</h2>
+These commits can be found in the repository at <a href="https://github.com/mesosphere/mesos/">https://github.com/mesosphere/mesos/</a>:
+<li>[a29f006abd7b1aa43baf436f61369c5ceb9cdafc] Set LIBPROCESS_IP into docker container.
+<li>[66987805d083d16d60dcc4a92b788172224134f7] Changed agent_host to expect a relative path.
+<li>[6dedb08f58f6a4db4bbe3f42da7aee224b10a716] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
+<li>[d6ac65e7631b6fcbe3fcedb60086f6f91e59cd28] Revert "Fixed the broken metrics information of master in WebUI."

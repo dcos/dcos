@@ -2,9 +2,9 @@
   "requires": ["openssl", "ncurses"],
   "sources": {
     "erlang": {
-      "kind": "url_extract",
-      "url": "https://downloads.mesosphere.com/pkgpanda-artifact-cache/otp_src_19.0.tar.gz",
-      "sha1": "3be958b529de4be19d77eb77f587a76210b43bfd"
+        "kind": "url_extract",
+        "url": "https://downloads.dcos.io/pkgpanda-artifact-cache/otp_src_19.1.tar.gz",
+        "sha1": "7e8aeeb1cdbe86f1385bbe1aa74754b28073b836"
     }
   },
   "username": "dcos_epmd"

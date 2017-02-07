@@ -4,8 +4,8 @@ import sys
 
 import requests
 
-from pkgpanda.util import load_string, write_string
 from dcos_internal_utils import utils
+from pkgpanda.util import load_string, write_string
 
 log = logging.getLogger(__name__)
 

@@ -87,7 +87,6 @@
         "SecurityGroups" : [ { "Ref" : "PublicAgentSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "PublicAgentInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
-        {{ aws_public_agent_spot_price }}
         "InstanceType" : { "Ref" : "PublicAgentInstanceType" },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ cloud_config }}
@@ -189,6 +188,17 @@
       "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
       "AllowedPattern": "(default|ami-[a-f0-9]{8})"
     }
+{% switch oauth_available %}
+{% case "true" %}
+    ,
+    "OAuthEnabled": {
+      "Description": "\nEnable OAuth authentication",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["true", "false"]
+    }
+{% case "false" %}
+{% endswitch %}
   },
   "Conditions": {
     "UseCustomAMI": {
@@ -215,77 +225,8 @@
         "default": "PT60M"
       }
     },
-    "NATAmi": {
-      "us-west-2": {
-        "default": "ami-bb69128b"
-      },
-      "sa-east-1": {
-        "default": "ami-b972dba4"
-      },
-      "ap-northeast-1": {
-        "default": "ami-55c29e54"
-      },
-      "us-east-1": {
-        "default": "ami-4c9e4b24"
-      },
-      "ap-southeast-1": {
-        "default": "ami-b082dae2"
-      },
-      "eu-central-1": {
-        "default": "ami-204c7a3d"
-      },
-      "us-west-1": {
-        "default": "ami-2b2b296e"
-      },
-      "eu-west-1": {
-        "default": "ami-3760b040"
-      },
-      "ap-southeast-2": {
-        "default": "ami-996402a3"
-      }
-    },
-    "RegionToAmi": {
-      "ap-northeast-1": {
-        "coreos": "ami-965899f7",
-        "el7": "ami-abf535ca"
-      },
-      "ap-southeast-1": {
-        "coreos": "ami-3120fe52",
-        "el7": "ami-c47ba5a7"
-      },
-      "ap-southeast-2": {
-        "coreos": "ami-b1291dd2",
-        "el7": "ami-bc2f1bdf"
-      },
-      "eu-central-1": {
-        "coreos": "ami-3ae31555",
-        "el7": "ami-d934c2b6"
-      },
-      "eu-west-1": {
-        "coreos": "ami-b7cba3c4",
-        "el7": "ami-dabdd6a9"
-      },
-      "sa-east-1": {
-        "coreos": "ami-61e3750d",
-        "el7": "ami-ac980ec0"
-      },
-      "us-east-1": {
-        "coreos": "ami-6d138f7a",
-        "el7": "ami-44f66853"
-      },
-      "us-gov-west-1": {
-        "coreos": "ami-b712acd6",
-        "el7": ""
-      },
-      "us-west-1": {
-        "coreos": "ami-ee57148e",
-        "el7": "ami-a883c0c8"
-      },
-      "us-west-2": {
-        "coreos": "ami-dc6ba3bc",
-        "el7": "ami-a4dd16c4"
-      }
-    }
+    "NATAmi": {{ nat_ami_mapping }},
+    "RegionToAmi": {{ region_to_ami_mapping }}
   },
   "Description": "DC/OS AWS Advanced Public Agent Template"
 }

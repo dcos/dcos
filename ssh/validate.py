@@ -1,16 +1,11 @@
 import os
-import socket
 import stat
 
-
-def validate_ssh_user(ssh_user):
-    assert ssh_user, 'ssh_user must be set'
-    assert isinstance(ssh_user, str), 'ssh_user must be a string'
+import gen
+from gen.internals import Source, Target
 
 
 def validate_ssh_key_path(ssh_key_path):
-    assert isinstance(ssh_key_path, str), 'ssh_key_path must be a string'
-    assert ssh_key_path, 'ssh_key_path must be set'
     assert os.path.isfile(ssh_key_path), 'could not find ssh private key: {}'.format(ssh_key_path)
     assert stat.S_IMODE(
         os.stat(ssh_key_path).st_mode) & (stat.S_IRWXG + stat.S_IRWXO) == 0, (
@@ -21,105 +16,66 @@ def validate_ssh_key_path(ssh_key_path):
                                               'are not allowed. Use a key without a passphrase.')
 
 
-def validate_ssh_port(ssh_port):
-    # Validate ssh port between 1 - 32000
-    assert isinstance(ssh_port, int), 'ssh port should be integer'
-    assert 1 <= ssh_port <= 32000, 'ssh port should be int between 1 - 32000'
-
-
-def validate_hosts_list(nodes_list, name):
-    assert nodes_list, name + ' must be set'
-    assert isinstance(nodes_list, list), name + ' must be a list'
-    check_duplicates(nodes_list)
-    check_ipv4_addrs(nodes_list)
-
-
-def validate_master_agent_lists(master_list, agent_list, public_agent_list):
-    validate_hosts_list(master_list, 'master_list')
-
-    # Require only master_list
-    if agent_list:
-        compare_lists(master_list, agent_list)
-
-    if public_agent_list:
-        compare_lists(master_list, public_agent_list)
-
-
-def check_duplicates(arg_list):
-    assert isinstance(arg_list, list), 'only lists can be verified for duplicates'
-    dups = list(filter(lambda x: arg_list.count(x) > 1, arg_list))
-    assert not dups, 'List cannot contain duplicates: {}'.format(', '.join(set(dups)))
-
-
-def compare_lists(first_list, second_list):
-    assert isinstance(first_list, list), 'can compare only lists'
-    assert isinstance(second_list, list), 'can compare only lists'
+def compare_lists(first_json: str, second_json: str):
+    first_list = gen.calc.validate_json_list(first_json)
+    second_list = gen.calc.validate_json_list(second_json)
     dups = set(first_list) & set(second_list)
     assert not dups, 'master_list and agent_list cannot contain duplicates {}'.format(', '.join(dups))
 
 
-def check_ipv4_addrs(ips):
-    assert isinstance(ips, list)
-    invalid_ips = []
-    for ip in ips:
-        try:
-            socket.inet_pton(socket.AF_INET, str(ip))
-        except OSError:
-            invalid_ips.append(ip)
-    assert not invalid_ips, ('Only IPv4 values are allowed. The following are invalid IPv4 addresses: '
-                             '{}'.format(', '.join(invalid_ips)))
+def validate_agent_lists(agent_list, public_agent_list):
+    compare_lists(agent_list, public_agent_list)
 
 
-def validate_optional_agent(agent_list, public_agent_list):
-    if agent_list:
-        validate_hosts_list(agent_list, 'agent_list')
-
-    if public_agent_list:
-        validate_hosts_list(public_agent_list, 'public_agent_list')
-
-    if agent_list and public_agent_list:
-        compare_lists(agent_list, public_agent_list)
-
-
-def run_validate_config_chunk(key_validate_fn_map, config, keys_required):
-    assert isinstance(keys_required, bool)
-    errors = {}
-    for ssh_key, validate_func in key_validate_fn_map.items():
-        if ssh_key not in config:
-            if keys_required:
-                errors[ssh_key] = 'required parameter {} was not provided'.format(ssh_key)
-            continue
-        try:
-            validate_func(config[ssh_key])
-        except AssertionError as err:
-            errors[ssh_key] = str(err)
-    return errors
-
-
-def validate_ssh_parallelism(value):
-    assert isinstance(value, int), 'ssh_parallelism must be integer'
-    assert 0 < value <= 100, 'ssh_parallelism must be within the range 1..100'
-
-
-def validate_config(config):
-    assert isinstance(config, dict)
-    ssh_keys_checks_map_required = {
-        'ssh_user': validate_ssh_user,
-        'ssh_port': validate_ssh_port,
-        'ssh_key_path': validate_ssh_key_path,
-        'master_list': lambda master_list: validate_master_agent_lists(
-            master_list,
-            config.get('agent_list', []),
-            config.get('public_agent_list', []))
+source = Source({
+    'validate': [
+        lambda agent_list: gen.calc.validate_ip_list(agent_list),
+        lambda public_agent_list: gen.calc.validate_ip_list(public_agent_list),
+        lambda master_list: gen.calc.validate_ip_list(master_list),
+        # master list shouldn't contain anything in either agent lists
+        lambda master_list, agent_list: compare_lists(master_list, agent_list),
+        lambda master_list, public_agent_list: compare_lists(master_list, public_agent_list),
+        # the agent lists shouldn't contain any common items
+        lambda agent_list, public_agent_list: compare_lists(agent_list, public_agent_list),
+        validate_ssh_key_path,
+        lambda ssh_port: gen.calc.validate_int_in_range(ssh_port, 1, 32000),
+        lambda ssh_parallelism: gen.calc.validate_int_in_range(ssh_parallelism, 1, 100)
+    ],
+    'default': {
+        'ssh_key_path': 'genconf/ssh_key',
+        'agent_list': '[]',
+        'public_agent_list': '[]',
+        'ssh_port': '22',
+        'process_timeout': '120',
+        'ssh_parallelism': '20'
     }
-    ssh_keys_checks_map_optional = {
-        'agent_list': lambda agent_list: validate_optional_agent(agent_list, config.get('public_agent_list')),
-        'public_agent_list': lambda public_agent_list: validate_optional_agent(
-            config.get('agent_list'),
-            public_agent_list),
-        'ssh_parallelism': validate_ssh_parallelism
-    }
+})
 
-    errors = run_validate_config_chunk(ssh_keys_checks_map_required, config, True)
-    errors.update(run_validate_config_chunk(ssh_keys_checks_map_optional, config, False))
-    return errors
+
+def get_target():
+    return Target({
+        'ssh_user',
+        'ssh_port',
+        'ssh_key_path',
+        'master_list',
+        'agent_list',
+        'public_agent_list',
+        'ssh_parallelism',
+        'process_timeout'})
+
+
+# TODO(cmaloney): Work this API, callers until this result remapping is unnecessary
+# and the couple places that need this can just make a trivial call directly.
+def validate_config(user_arguments):
+    user_arguments = gen.stringify_configuration(user_arguments)
+    user_source = gen.user_arguments_to_source(user_arguments)
+    messages = gen.internals.resolve_configuration([source, user_source], [get_target()]).status_dict
+    if messages['status'] == 'ok':
+        return {}
+
+    # Re-format to the expected format
+    # TODO(cmaloney): Make the unnecessary
+    final_errors = dict()
+    for name, message_blob in messages['errors'].items():
+        final_errors[name] = message_blob['message']
+    return final_errors

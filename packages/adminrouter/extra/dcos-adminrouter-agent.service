@@ -1,11 +1,11 @@
 [Unit]
 Description=Admin Router Agent: A high performance web server and a reverse proxy server
-After=dcos-gen-resolvconf.service
 
 [Service]
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 Type=forking
 PIDFile=$PKG_PATH/nginx/logs/nginx.pid
@@ -17,6 +17,6 @@ EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.agent.conf
-ExecReload=/usr/bin/kill -HUP \$MAINPID
+ExecReload=/usr/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed

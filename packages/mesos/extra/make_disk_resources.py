@@ -125,7 +125,7 @@ def main(output_env_file):
     @type output_env_file: str, filename to write resources
     '''
     if os.path.exists(output_env_file):
-        print('Voume discovery assumed to be completed because {} exists'.format(output_env_file))
+        print('Volume discovery assumed to be completed because {} exists'.format(output_env_file))
         return
 
     mounts_dfree = list(get_mounts_and_freespace(find_mounts_matching(MOUNT_PATTERN)))
@@ -146,9 +146,7 @@ def main(output_env_file):
     # write contents to a temporary file
     tmp_file = '{}.tmp'.format(output_env_file)
     with open(tmp_file, 'w') as env_file:
-        env_file.write(RESOURCES_TEMPLATE_HEADER.format(
-                prog=PROG, dt=datetime.now()
-            ))
+        env_file.write(RESOURCES_TEMPLATE_HEADER.format(prog=PROG, dt=datetime.now()))
         if disk_resources:
             msg = 'Creating updated environment artifact file : {}'
             env_resources = os.environ.get('MESOS_RESOURCES', '[]')

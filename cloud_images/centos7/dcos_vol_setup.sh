@@ -5,18 +5,23 @@ export device=${1:-}
 export mount_location=${2:-}
 
 function usage {
-cat <<USAGE
- USAGE: $(basename "$0") <device> <mount_location>
+cat <<EOUSAGE
+USAGE: $(basename "$0") <device> <mount_location>
 
-  This script will partition, format, and persistently mount the device to the specified location.
-  It is intended to run as an early systemd unit (local-fs-pre.target) on AWS to set up EBS volumes.
-  It will only execute if <device> is not yet partitioned.
+ This script will format, and persistently mount the device to the specified
+ location. It is intended to run as an early systemd unit (local-fs-pre.target)
+ on AWS to set up EBS volumes.
 
- EXAMPLES:
+ If <mount_location> is /var/log the script will migrate existing data to the
+ new filesystem.
 
-  $(basename "$0") /dev/xvde /dcos/volume1
+ It will only execute if <device> doesn't already contain a filesystem.
 
-USAGE
+EXAMPLES:
+
+ $(basename "$0") /dev/xvde /dcos/volume1
+
+EOUSAGE
 }
 
 for i in "$@"
@@ -35,25 +40,45 @@ function main {
     exit 1
   fi
 
-  partition=${device}1
-  if [[ ! -b "$partition" ]]
+  echo -n "Waiting for $device to come online"
+  until test -b "$device"; do sleep 1; echo -n .; done
+  echo
+  local formated
+  mkfs.xfs $device > /dev/null 2>&1 && formated=true || formated=false
+  if [ "$formated" = true ]
   then
-    echo "Partition $partition not detected: creating partitions"
-    parted -s -a optimal "$device" -- \
-      mklabel gpt \
-      mkpart primary xfs 1 -1
-    partprobe "$device"
-    echo "Formatting: $partition"
-    mkfs.xfs "$partition" >/dev/null
-    echo "Setting up partition mount"
+    echo "Setting up device mount"
     mkdir -p "$mount_location"
-    fstab="$partition $mount_location xfs defaults,nofail 0 2"
+    fstab="$device $mount_location xfs defaults 0 2"
     echo "Adding entry to fstab: $fstab"
     echo "$fstab" >> /etc/fstab
-    echo "Mounting: $partition to $mount_location"
-    mount -a
+    if [ "$mount_location" = "/var/log" ]; then
+      echo "Preparing $device by migrating logs from $mount_location"
+      mkdir -p /var/log-prep
+      mount $device /var/log-prep
+      mkdir -p /var/log-prep/journal
+      systemctl is-active chronyd > /dev/null && systemctl stop chronyd || :
+      systemctl is-active tuned > /dev/null && systemctl stop tuned || :
+      # rsyslog shouldn't be active but in case it is stop it as well
+      systemctl is-active rsyslog > /dev/null && systemctl stop rsyslog || :
+      cp -a /var/log/. /var/log-prep/
+      umount /var/log-prep
+      rmdir /var/log-prep
+      rm -rf /var/log
+      mkdir -p /var/log
+      echo -n "Mounting: $device to $mount_location"
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      echo
+      systemctl restart systemd-journald || :
+      systemctl is-enabled tuned > /dev/null && systemctl start tuned || :
+      systemctl is-enabled chronyd > /dev/null && systemctl start chronyd || :
+    else
+      echo -n "Mounting: $device to $mount_location"
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      echo
+    fi
   else
-    echo "Partition $partition detected: no action taken"
+    echo "Device $device contains a filesystem: no action taken"
     exit
   fi
 }

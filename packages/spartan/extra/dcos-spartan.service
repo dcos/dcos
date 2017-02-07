@@ -1,12 +1,13 @@
 [Unit]
 Description=DNS Dispatcher: An RFC5625 Compliant DNS Forwarder
-After=dcos-epmd.service
 
 [Service]
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=32000:32000
 WorkingDirectory=/opt/mesosphere/active/spartan/spartan
+EnvironmentFile=/opt/mesosphere/etc/spartan-erl.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/dns_search_config

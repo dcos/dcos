@@ -4,11 +4,6 @@ root:
     owner: root
     content: |
       {{ bootstrap_url }}
-  - path: /etc/mesosphere/setup-flags/bootstrap-id
-    permissions: "0644"
-    owner: root
-    content: |
-      BOOTSTRAP_ID={{ bootstrap_id }}
   - path: /etc/mesosphere/setup-flags/cluster-packages.json
     permissions: "0644"
     owner: root
@@ -20,6 +15,20 @@ root:
     content: |
       [Journal]
       MaxLevelConsole=warning
+      RateLimitInterval=1s
+      RateLimitBurst=20000
   - path: /etc/rexray/config.yml
     permissions: "0644"
     content: {{ rexray_config_contents }}
+{% switch cluster_docker_credentials_dcos_owned %}
+{% case "true" %}
+{% case "false" %}
+{% switch cluster_docker_credentials_write_to_etc %}
+{% case "true" %}
+  - path: /etc/mesosphere/docker_credentials
+    permissions: "0600"
+    content: |
+        {{ cluster_docker_credentials }}
+{% case "false" %}
+{% endswitch %}
+{% endswitch %}

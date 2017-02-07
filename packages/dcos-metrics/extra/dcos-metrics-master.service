@@ -1,0 +1,14 @@
+[Unit]
+Description=Metrics Master Service: DC/OS Metrics Master Service for Host Level Metrics.
+[Service]
+Restart=always
+RestartSec=5
+LimitNOFILE=16384
+PermissionsStartOnly=True
+User=dcos_metrics
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-metrics.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-metrics-extra.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-master
+ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
+ExecStart=/opt/mesosphere/bin/dcos-metrics -role master -config ${DCOS_METRICS_CONFIG_PATH}

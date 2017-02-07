@@ -1,15 +1,16 @@
 #!/bin/bash
 source /opt/mesosphere/environment.export
-export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.4/site-packages"
+export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.5/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
 # Install wheels.
-for package in aiohttp_jinja2 analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
+for package in analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
     azure-mgmt-network azure-storage beautifulsoup4 certifi docutils enum34 keyring msrest \
     msrestazure py requests-oauthlib webob; do
   pip3 install --no-deps --no-index --target="$LIB_INSTALL_DIR" /pkg/src/$package/*.whl
 done
 
-for package in aiohttp chardet coloredlogs docker-py humanfriendly oauthlib waitress websocket-client; do
+for package in aiohttp chardet coloredlogs docker-py humanfriendly multidict oauthlib pyinstaller \
+    waitress websocket-client; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package
 done

@@ -2,6 +2,7 @@
   "requires": [
       "dcos-image",
       "python",
-      "python-gunicorn"
+      "python-gunicorn",
+      "teamcity-messages"
   ]
 }

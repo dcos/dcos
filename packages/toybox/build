@@ -3,7 +3,7 @@ set -x
 
 export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/ncurses/include -I/opt/mesosphere/active/openssl/include"
 export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/active/ncurses/lib -Wl,-rpath=/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/lib"
-export CXXFLAGS=CFLAGS
+export CPPFLAGS=${CFLAGS}
 
 mkdir -p $PKG_PATH/bin
 

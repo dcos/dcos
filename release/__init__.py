@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """DC/OS release management
 
 1. Build and upload a DC/OS release to a release URL
 2. Move a latest version of a release from one place to another
 
-Co-ordinates across all gen installers.
+Co-ordinates across all gen.build_deploy
 """
 
 import argparse
@@ -12,19 +11,21 @@ import copy
 import importlib
 import inspect
 import json
+import logging
 import os.path
 import subprocess
 import sys
 from distutils.version import LooseVersion
+from typing import Optional
 
 import pkg_resources
-import yaml
 
-import gen.installer.util as util
+import gen.build_deploy.util as util
 import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+from pkgpanda.util import logger
 
 provider_names = ['aws', 'azure', 'bash']
 
@@ -62,8 +63,7 @@ def expand_env_vars(config):
 
 
 def load_config(filename):
-    with open(filename) as config_file:
-        return expand_env_vars(yaml.load(config_file))
+    return expand_env_vars(pkgpanda.util.load_yaml(filename))
 
 
 def strip_locals(data):
@@ -118,7 +118,7 @@ def from_json(json_str):
 
 
 def load_providers():
-    return {name: importlib.import_module("gen.installer." + name)
+    return {name: importlib.import_module("gen.build_deploy." + name)
             for name in provider_names}
 
 
@@ -128,21 +128,20 @@ def load_providers():
 # have all the logic about channels and repositories.
 class Repository():
 
-    def __init__(self, repository_path, channel_name, commit):
+    def __init__(self, repository_path, channel_name: Optional[str], unique_id):
         if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
         assert not repository_path.endswith('/')
         if channel_name is not None:
-            assert isinstance(channel_name, str)
             assert len(channel_name) > 0, "For an empty channel name pass None"
             assert not channel_name.startswith('/')
             assert not channel_name.endswith('/')
-        assert '/' not in commit
+        assert not unique_id.startswith('/') and not unique_id.endswith('/')
 
         self.__repository_path = repository_path
         self.__channel_name = channel_name
-        self.__commit = commit
+        self.__unique_id = unique_id
 
     @property
     def path_prefix(self):
@@ -153,8 +152,8 @@ class Repository():
         return self.path_prefix + self.channel_prefix
 
     @property
-    def path_channel_commit_prefix(self):
-        return self.path_channel_prefix + 'commit/' + self.__commit + '/'
+    def reproducible_artifact_path(self):
+        return self.path_channel_prefix + self.__unique_id + '/'
 
     @property
     def channel_prefix(self):
@@ -218,7 +217,7 @@ class Repository():
                     return action
 
             assert artifact.keys() <= {'reproducible_path', 'channel_path', 'content_type',
-                                       'local_path', 'local_content', 'local_copy_from'}
+                                       'local_path', 'local_content', 'local_copy_from'}, artifact
 
             action_count = 0
             if 'reproducible_path' in artifact:
@@ -228,7 +227,7 @@ class Repository():
             if 'channel_path' in artifact:
                 channel_path = artifact['channel_path']
                 action_count += 2
-                stage1.append(add_dest(self.path_channel_commit_prefix + channel_path, False))
+                stage1.append(add_dest(self.reproducible_artifact_path + channel_path, False))
                 stage2.append(add_dest(self.path_channel_prefix + channel_path, False))
 
             # Must have done at least one thing with the artifact (reproducible_path or channel_path).
@@ -243,7 +242,7 @@ class Repository():
             'channel_path': 'metadata.json',
             'content_type': 'application/json; charset=utf-8',
             'local_content': to_json(strip_locals(metadata))
-            }, False)
+        }, False)
 
         return {
             'stage1': stage1,
@@ -251,20 +250,49 @@ class Repository():
         }
 
 
-def get_package_artifact(package_id_str):
+def make_package_filename(package_id_str):
     package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    extension = '.tar.xz'
+    if package_id.version == 'setup':
+        extension = '.dcos_config'
+    return 'packages/{}/{}{}'.format(package_id.name, package_id_str, extension)
+
+
+def get_package_artifact(package_id_str):
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': 'packages/cache/' + package_filename}
 
 
 def get_gen_package_artifact(package_id_str):
-    package_id = pkgpanda.PackageId(package_id_str)
-    package_filename = 'packages/{}/{}.tar.xz'.format(package_id.name, package_id_str)
+    package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': package_filename}
+
+
+def make_bootstrap_artifacts(bootstrap_id, variant_name, artifact_prefix):
+    bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
+    yield {
+        'reproducible_path': 'bootstrap/' + bootstrap_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + bootstrap_filename
+    }
+    active_filename = "{}.active.json".format(bootstrap_id)
+    yield {
+        'reproducible_path': 'bootstrap/' + active_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + active_filename
+    }
+    latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(variant_name))
+    yield {
+        'channel_path': latest_filename,
+        'local_path': artifact_prefix + '/bootstrap/' + latest_filename
+    }
+    latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(variant_name))
+    yield {
+        'channel_path': latest_complete_filename,
+        'local_path': artifact_prefix + '/complete/' + latest_complete_filename
+    }
 
 
 def make_stable_artifacts(cache_repository_url):
@@ -276,11 +304,12 @@ def make_stable_artifacts(cache_repository_url):
 
     # TODO(cmaloney): Rather than guessing / reverse-engineering all these paths
     # have do_build_packages get them directly from pkgpanda
-    try:
-        all_completes = do_build_packages(cache_repository_url)
-    except pkgpanda.build.BuildError as ex:
-        print("ERROR Building packages:", ex, file=sys.stderr)
-        raise
+    with logger.scope("Building packages"):
+        try:
+            all_completes = do_build_packages(cache_repository_url)
+        except pkgpanda.build.BuildError as ex:
+            logger.error("Failure building package(s): {}".format(ex))
+            raise
 
     # The installer is a built bootstrap, but not a DC/OS variant. We use
     # iteration over the complete_dict to enumerate all variants a whole lot,
@@ -309,26 +338,8 @@ def make_stable_artifacts(cache_repository_url):
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        bootstrap_filename = "{}.bootstrap.tar.xz".format(info['bootstrap'])
-        add_file({
-            'reproducible_path': 'bootstrap/' + bootstrap_filename,
-            'local_path': 'packages/cache/bootstrap/' + bootstrap_filename
-            })
-        active_filename = "{}.active.json".format(info['bootstrap'])
-        add_file({
-            'reproducible_path': 'bootstrap/' + active_filename,
-            'local_path': 'packages/cache/bootstrap/' + active_filename
-            })
-        latest_filename = "{}bootstrap.latest".format(pkgpanda.util.variant_prefix(name))
-        add_file({
-            'channel_path': latest_filename,
-            'local_path': 'packages/cache/bootstrap/' + latest_filename
-            })
-        latest_complete_filename = "{}complete.latest.json".format(pkgpanda.util.variant_prefix(name))
-        add_file({
-            'channel_path': latest_complete_filename,
-            'local_path': 'packages/cache/complete/' + latest_complete_filename
-            })
+        for file in make_bootstrap_artifacts(info['bootstrap'], name, 'packages/cache'):
+            add_file(file)
 
         # Add all the packages which haven't been added yet
         for package_id in sorted(info['packages']):
@@ -338,6 +349,15 @@ def make_stable_artifacts(cache_repository_url):
     metadata['packages'] = list(sorted(metadata['packages']))
 
     return metadata
+
+
+def built_resource_to_artifacts(built_resource: dict):
+    # Type switch
+    if 'packages' in built_resource:
+        return [get_gen_package_artifact(package) for package in built_resource['packages']]
+    else:
+        assert 'packages' not in built_resource
+        return [built_resource]
 
 
 # Generate provider templates against the bootstrap id, capturing the
@@ -355,6 +375,15 @@ def make_stable_artifacts(cache_repository_url):
 #       }]}}
 def make_channel_artifacts(metadata):
     artifacts = []
+
+    # Set logging to debug so we get gen error messages, since those are
+    # logging.DEBUG currently to not show up when people are using `--genconf`
+    # and friends.
+    # TODO(cmaloney): Remove this and make the core bits of gen, code log at
+    # the proper info / warning / etc. level.
+    log = logging.getLogger()
+    original_log_level = log.getEffectiveLevel()
+    log.setLevel(logging.DEBUG)
 
     provider_data = {}
     providers = load_providers()
@@ -374,7 +403,7 @@ def make_channel_artifacts(metadata):
                 'provider': name,
                 'bootstrap_id': bootstrap_id,
                 'bootstrap_variant': pkgpanda.util.variant_prefix(bootstrap_name)
-                })
+            })
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
@@ -383,22 +412,41 @@ def make_channel_artifacts(metadata):
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
-        provider_data = module.do_create(
-            tag=metadata['tag'],
-            repo_channel_path=metadata['repo_channel_path'],
-            channel_commit_path=metadata['channel_commit_path'],
-            commit=metadata['commit'],
-            variant_arguments=variant_arguments,
-            all_bootstraps=metadata["all_bootstraps"])
+        with logger.scope("Creating {} deploy tools".format(module.__name__)):
+            # TODO(cmaloney): Cleanup by just having this make and pass another source.
+            module_specific_variant_arguments = copy.deepcopy(variant_arguments)
+            for arg_dict in module_specific_variant_arguments.values():
+                if module.__name__ == 'gen.build_deploy.aws':
+                    arg_dict['cloudformation_s3_url_full'] = metadata['cloudformation_s3_url_full']
+                elif module.__name__ == 'gen.build_deploy.azure':
+                    arg_dict['azure_download_url'] = metadata['azure_download_url']
+                elif module.__name__ == 'gen.build_deploy.bash':
+                    pass
+                else:
+                    raise NotImplementedError("Unknown how to add args to deploy tool: {}".format(module.__name__))
 
-        # Translate provider data to artifacts
-        assert provider_data.keys() <= {'packages', 'artifacts'}
+            for built_resource in module.do_create(
+                    tag=metadata['tag'],
+                    build_name=metadata['build_name'],
+                    reproducible_artifact_path=metadata['reproducible_artifact_path'],
+                    commit=metadata['commit'],
+                    variant_arguments=module_specific_variant_arguments,
+                    all_bootstraps=metadata["all_bootstraps"]):
 
-        for package in provider_data.get('packages', set()):
-            artifacts.append(get_gen_package_artifact(package))
+                assert isinstance(built_resource, dict), built_resource
 
-        # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
-        artifacts += provider_data.get('artifacts', list())
+                # Type switch
+                if 'packages' in built_resource:
+                    for package in built_resource['packages']:
+                        artifacts.append(get_gen_package_artifact(package))
+                else:
+                    assert 'packages' not in built_resource
+                    artifacts.append(built_resource)
+
+            # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
+            artifacts += provider_data.get('artifacts', list())
+
+    log.setLevel(original_log_level)
 
     return artifacts
 
@@ -410,7 +458,12 @@ def make_abs(path):
 
 
 def do_build_docker(name, path):
-    path_sha = pkgpanda.build.hash_folder(path)
+    with logger.scope("dcos/dcos-builder ({})".format(name)):
+        return _do_build_docker(name, path)
+
+
+def _do_build_docker(name, path):
+    path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
     print("Attempting to pull docker:", container_name)
@@ -439,14 +492,20 @@ def do_build_docker(name, path):
         try:
             subprocess.check_call(['docker', 'push', container_name])
         except subprocess.CalledProcessError:
-            print("NOTICE: docker push of dcos-builder failed. This means it will be very difficult "
-                  "for this build to be reproduced (others will have a different / non-identical "
-                  "base docker for most packages.")
+            logger.warning("docker push of dcos-builder failed. This means it will be very difficult "
+                           "for this build to be reproduced (others will have a different / non-identical "
+                           "base docker for most packages.")
             pass
 
     # mark as latest so it will be used when building packages
     # extract the docker client version string
-    docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[1].split()[1]
+    try:
+        docker_version = subprocess.check_output(['docker', 'version', '-f', '{{.Client.Version}}']).decode()
+    except subprocess.CalledProcessError:
+        # If the above command fails then we know we have an older version of docker
+        # Older versions of docker spit out an entirely different format
+        docker_version = subprocess.check_output(['docker', 'version']).decode().split("\n")[0].split()[2]
+
     # only use force tag if using docker version 1.9 or earlier
     container_name_t = 'dcos/dcos-builder:{}_dockerdir-latest'.format(name)
     if LooseVersion(docker_version) < LooseVersion('1.10'):
@@ -502,17 +561,51 @@ def do_build_packages(cache_repository_url):
     return result
 
 
-def set_repository_metadata(repository, metadata, storage_providers, preferred_provider):
+def get_azure_download_url(config) -> str:
+    # TODO: HACK. Stashing and pulling the config from release/__init__.py
+    # is definitely not the right way to do this.
+    # See also gen/build_deploy/aws.py#get_cloudformation_s3_url
+
+    if 'storage' not in config:
+        raise RuntimeError("No storage section in configuration")
+
+    if 'azure' not in config['storage']:
+        # No azure storage, inject a fake url for now so if people want to use
+        # the azure templates they know to come look here.
+        return "https://AZURE NOT CONFIGURED, ADD A storage.azure section to " \
+            "dcos-release.config.yaml to use the Azure templates"
+
+    if 'download_url' not in config['storage']['azure']:
+        raise RuntimeError("No download_url section in azure configuration")
+
+    download_url = config['storage']['azure']['download_url']
+
+    if not download_url.endswith('/'):
+        raise RuntimeError("Azure download_url must end with a '/'")
+
+    return download_url
+
+
+def set_repository_metadata(repository, metadata, storage_providers, preferred_provider, config) -> None:
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
-    metadata['repo_channel_path'] = repository.path_channel_prefix[:-1]
-    metadata['channel_commit_path'] = repository.path_channel_commit_prefix[:-1]
+    metadata['build_name'] = repository.path_channel_prefix[:-1]
+    metadata['reproducible_artifact_path'] = repository.reproducible_artifact_path[:-1]
     metadata['storage_urls'] = {}
     for name, store in storage_providers.items():
         metadata['storage_urls'][name] = store.url
 
-    # Explicitly returning none since we modify in place
-    return None
+    if 'options' not in config:
+        raise RuntimeError("No options section in configuration")
+
+    if 'cloudformation_s3_url' not in config['options']:
+        raise RuntimeError("No options.cloudformation_s3_url section in configuration")
+
+    # TODO(cmaloney): get_session shouldn't live in release.storage
+    metadata['cloudformation_s3_url_full'] = config['options']['cloudformation_s3_url'] + \
+        '/{}/cloudformation'.format(metadata['reproducible_artifact_path'])
+
+    metadata['azure_download_url'] = get_azure_download_url(config)
 
 
 def call_matching_arguments(function, arguments, allow_unused=False):
@@ -557,6 +650,23 @@ def get_storage_provider_factory(kind):
         raise ConfigError("Storage provider {} has no kind {}".format(provider, name))
 
     return module.factories[name]
+
+
+def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> None:
+    assert storage_commands.keys() == {'stage1', 'stage2'}
+
+    for stage in ['stage1', 'stage2']:
+        commands = storage_commands[stage]
+        for provider_name, provider in storage_providers.items():
+            for artifact in commands:
+                path = artifact['args']['destination_path']
+                # If it is only supposed to be if the artifact does not exist, check for existence
+                # and skip if it exists.
+                if artifact['if_not_exists'] and provider.exists(path):
+                    print("Store to", provider_name, "artifact", path, "skipped because it already exists")
+                    continue
+                print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
+                getattr(provider, artifact['method'])(**artifact['args'])
 
 
 # Two stages of uploading artifacts. First puts all the artifacts into their places / uploads
@@ -607,15 +717,24 @@ class ReleaseManager():
         return from_json(self.__preferred_provider.fetch(src_channel + '/metadata.json').decode())
 
     def fetch_key_artifacts(self, metadata):
-        assert metadata['channel_commit_path'][-1] != '/'
+        assert metadata['reproducible_artifact_path'][-1] != '/'
         assert metadata['repository_path'][-1] != '/'
 
         def fetch_artifact(artifact):
             print("Fetching core artifact if it doesn't exist: ", artifact)
             if 'channel_path' in artifact:
                 assert artifact['channel_path'][0] != '/'
-                src_path = metadata['channel_commit_path'] + '/' + artifact['channel_path']
-                self.__preferred_provider.download(src_path, artifact['channel_path'])
+                src_path = metadata['reproducible_artifact_path'] + '/' + artifact['channel_path']
+                # TODO(cmaloney): This is very hacky but for now the only ones of these we have
+                # are all bootstrap related... The actual local path needs to be better represented
+                # in the metadata uploaded. The destination upload paths and the temporary local
+                # paths need to be made identical.
+                dest_path = artifact['channel_path']
+                if artifact['channel_path'].endswith('complete.latest.json'):
+                    dest_path = 'packages/cache/complete/' + dest_path
+                else:
+                    dest_path = 'packages/cache/bootstrap/' + dest_path
+                self.__preferred_provider.download(src_path, dest_path)
                 artifact['local_copy_from'] = src_path
                 artifact['local_path'] = artifact['channel_path']
             if 'reproducible_path' in artifact:
@@ -642,8 +761,9 @@ class ReleaseManager():
 
         self.fetch_key_artifacts(metadata)
 
-        repository = Repository(destination_repository, destination_channel, metadata['commit'])
-        set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
+        repository = Repository(destination_repository, destination_channel, 'commit/{}'.format(metadata['commit']))
+        set_repository_metadata(
+            repository, metadata, self.__storage_providers, self.__preferred_provider, self.__config)
         assert 'tag' in metadata
         del metadata['channel_artifacts']
 
@@ -677,10 +797,21 @@ class ReleaseManager():
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
+        assert 'complete_dict' in metadata
         assert 'commit' in metadata
 
-        repository = Repository(repository_path, channel, metadata['commit'])
-        set_repository_metadata(repository, metadata, self.__storage_providers, self.__preferred_provider)
+        # Assert that each variant's bootstrap's active packages are included in its complete package list.
+        # TODO(branden): Make the complete package list available in the installer (for
+        # dcos_installer.backend.do_aws_cf_configure()) and move this assertion to make_bootstrap_artifacts().
+        for info in metadata['all_completes'].values():
+            bootstrap_active_packages = set(
+                pkgpanda.util.load_json('packages/cache/bootstrap/{}.active.json'.format(info['bootstrap']))
+            )
+            assert bootstrap_active_packages <= set(info['packages'])
+
+        repository = Repository(repository_path, channel, 'commit/{}'.format(metadata['commit']))
+        set_repository_metadata(
+            repository, metadata, self.__storage_providers, self.__preferred_provider, self.__config)
         metadata['tag'] = tag
         assert 'channel_artifacts' not in metadata
 
@@ -697,19 +828,9 @@ class ReleaseManager():
         if self.__noop:
             return
 
-        # TODO(cmaloney): Use a multiprocessing map to do all storage providers in parallel.
-        for stage in ['stage1', 'stage2']:
-            commands = storage_commands[stage]
-            for provider_name, provider in self.__storage_providers.items():
-                for artifact in commands:
-                    path = artifact['args']['destination_path']
-                    # If it is only supposed to be if the artifact does not exist, check for existence
-                    # and skip if it exists.
-                    if artifact['if_not_exists'] and provider.exists(path):
-                        print("Store to", provider_name, "artifact", path, "skipped because it already exists")
-                        continue
-                    print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
-                    getattr(provider, artifact['method'])(**artifact['args'])
+        with logger.scope("Uploading artifacts"):
+            apply_storage_commands(self.__storage_providers, storage_commands)
+
 
 _config = None
 
@@ -767,13 +888,13 @@ def main():
         sys.exit(1)
 
     try:
-        # TODO(cmaloney): HACK. This is so we can get to the config for aws
-        # inside gen/installer/aws.py
+        # TODO(cmaloney): HACK. This is so we can get to the config for aws and azure template
+        # testing inside gen/build_deploy/{aws,azure}.py
         global _config
         config = load_config(options.config)
         _config = config
-    except FileNotFoundError:
-        print("ERROR: Release configuration file '{}' must exist.".format(options.config))
+    except OSError as ex:
+        print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
         sys.exit(1)
 
     release_manager = ReleaseManager(config, options.noop)

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-import history.server
+import history.server_util
 import history.statebuffer
 from history.statebuffer import FETCH_PERIOD, FILE_EXT
 
@@ -25,7 +25,7 @@ def history_service(monkeypatch, tmpdir):
         nonlocal update_counter
         nonlocal start_time
         nonlocal mock_data
-        data = str(datetime.now())+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+        data = str(datetime.now()) + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
         mock_data.append(data)
         delta_t = update_counter * FETCH_PERIOD
         timestamp = start_time + timedelta(seconds=delta_t)
@@ -37,12 +37,12 @@ def history_service(monkeypatch, tmpdir):
     def mock_headers():
         return {'Authorization': 'test'}
 
-    monkeypatch.setattr(history.server, 'add_headers_cb', mock_headers)
+    monkeypatch.setattr(history.server_util, 'add_headers_cb', mock_headers)
 
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     start_time = datetime.now()
-    history.server.state_buffer = sb  # connect mock to app
-    test_app = history.server.app
+    history.server_util.state_buffer = sb  # connect mock to app
+    test_app = history.server_util.test()
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
     updater = history.statebuffer.BufferUpdater(sb, None)
@@ -74,17 +74,17 @@ def test_endpoint_minute(history_service):
 
 
 def test_endpoint_hour(history_service):
-    history_service[1](30*60*2)  # 2 hours of data
+    history_service[1](30 * 60 * 2)  # 2 hours of data
     resp = history_service[0].get("/history/hour")
     # first update and every update on the minute will be used for hourly buffer
-    filtered_history = [history_service[2][i] for i in range(0, 30*60*2, 30)]
+    filtered_history = [history_service[2][i] for i in range(0, 30 * 60 * 2, 30)]
     # only the last hour of data should be returned
     filtered_history = filtered_history[-60:]
     assert resp.data.decode() == '[' + ','.join(filtered_history) + ']'
 
 
 def test_file_trimming(history_service):
-    history_service[1](30*60*2)  # 2 hours of data
+    history_service[1](30 * 60 * 2)  # 2 hours of data
     assert len(os.listdir(history_service[3].buffers['minute'].path)) == 30
     assert len(os.listdir(history_service[3].buffers['hour'].path)) == 60
 
@@ -99,7 +99,7 @@ def test_data_recovery(monkeypatch, tmpdir):
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     minute_path = sb.buffers['minute'].path
     # make really old data that should be trimmed
-    past_time = datetime.now()-timedelta(seconds=60*FETCH_PERIOD)
+    past_time = datetime.now() - timedelta(seconds=60 * FETCH_PERIOD)
     for _ in range(50):
         with open(os.path.join(minute_path, "{}{}".format(past_time.isoformat(), FILE_EXT)), 'w') as fh:
             fh.write('2_old')
@@ -108,7 +108,7 @@ def test_data_recovery(monkeypatch, tmpdir):
     with open(os.path.join(minute_path, "{}{}".format(past_time.isoformat(), FILE_EXT)), 'w') as fh:
         fh.write('foo')
     # Test gaps between backup files
-    past_time += timedelta(seconds=3*FETCH_PERIOD)
+    past_time += timedelta(seconds=3 * FETCH_PERIOD)
     with open(os.path.join(minute_path, "{}{}".format(past_time.isoformat(), FILE_EXT)), 'w') as fh:
         fh.write('qux')
     # Test no gaps between backup files
@@ -121,15 +121,15 @@ def test_data_recovery(monkeypatch, tmpdir):
     # set start_time after instantiation to guarantee update on first write
     sb = history.statebuffer.BufferCollection(tmpdir.strpath)
     start_time = datetime.now()
-    history.server.state_buffer = sb
-    test_app = history.server.app
+    history.server_util.state_buffer = sb
+    test_app = history.server_util.test()
     test_app.config.update(dict(TESTING=True, DEBUG=True))
     test_client = test_app.test_client()
     updater = history.statebuffer.BufferUpdater(sb, None)
     updater.update()
     resp = test_client.get("/history/minute")
     # recovery data w/gap + 8 FF updates + first real update
-    exp_resp = ['foo', '{}', '{}', 'qux', 'bar'] + (['{}']*5) + ['baz']
+    exp_resp = ['foo', '{}', '{}', 'qux', 'bar'] + (['{}'] * 5) + ['baz']
     resp_data = resp.data.decode()[1:-1].split(',')[-11:]
     assert resp_data == exp_resp
     # also check that all the previous data is '2old'

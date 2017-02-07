@@ -1,17 +1,39 @@
 import json
+import logging
 import os
 import subprocess
-import logging
-import time
 
+import dns.exception
+import dns.resolver
 import kazoo.client
+import pytest
 import requests
 
+from test_helpers import dcos_config
 
-def test_if_all_mesos_masters_have_registered(cluster):
+from pkgpanda.util import load_json, load_string
+
+
+@pytest.mark.first
+def test_dcos_cluster_is_up(dcos_api_session):
+    pass
+
+
+def test_leader_election(dcos_api_session):
+    mesos_resolver = dns.resolver.Resolver()
+    mesos_resolver.nameservers = dcos_api_session.public_masters
+    mesos_resolver.port = 61053
+    try:
+        mesos_resolver.query('leader.mesos', 'A')
+    except dns.exception.DNSException:
+        assert False, "Cannot resolve leader.mesos"
+
+
+def test_if_all_mesos_masters_have_registered(dcos_api_session):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
-    zk = kazoo.client.KazooClient(hosts=cluster.zk_hostports, read_only=True)
+    zk_hostports = 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'
+    zk = kazoo.client.KazooClient(hosts=zk_hostports, read_only=True)
     master_ips = []
 
     zk.start()
@@ -22,16 +44,16 @@ def test_if_all_mesos_masters_have_registered(cluster):
         master_ips.append(master['address']['ip'])
     zk.stop()
 
-    assert sorted(master_ips) == cluster.masters
+    assert sorted(master_ips) == dcos_api_session.masters
 
 
-def test_if_all_exhibitors_are_in_sync(cluster):
-    r = cluster.get('/exhibitor/exhibitor/v1/cluster/status')
+def test_if_all_exhibitors_are_in_sync(dcos_api_session):
+    r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
 
     correct_data = sorted(r.json(), key=lambda k: k['hostname'])
 
-    for zk_ip in cluster.public_masters:
+    for zk_ip in dcos_api_session.public_masters:
         resp = requests.get('http://{}:8181/exhibitor/v1/cluster/status'.format(zk_ip))
         assert resp.status_code == 200
 
@@ -39,41 +61,39 @@ def test_if_all_exhibitors_are_in_sync(cluster):
         assert correct_data == tested_data
 
 
-def test_mesos_agent_role_assignment(cluster):
-    state_url = cluster.scheme + '://{}:5051/state.json'
-    headers = cluster._suheader(False)
-    for agent in cluster.public_slaves:
-        r = requests.get(state_url.format(agent), headers=headers)
+def test_mesos_agent_role_assignment(dcos_api_session):
+    state_endpoint = '/state.json'
+    for agent in dcos_api_session.public_slaves:
+        r = dcos_api_session.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == 'slave_public'
-    for agent in cluster.slaves:
-        r = requests.get(state_url.format(agent), headers=headers)
+    for agent in dcos_api_session.slaves:
+        r = dcos_api_session.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == '*'
 
 
-def test_signal_service(cluster):
+def test_signal_service(dcos_api_session):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
     # This is due to caching done by 3DT / Signal service
     # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
-    time.sleep(61)
-    dcos_version = os.getenv("DCOS_VERSION", "")
-    signal_config = open('/opt/mesosphere/etc/dcos-signal-config.json', 'r')
-    signal_config_data = json.loads(signal_config.read())
+    dcos_version = os.environ["DCOS_VERSION"]
+    signal_config_data = load_json('/opt/mesosphere/etc/dcos-signal-config.json')
     customer_key = signal_config_data.get('customer_key', '')
-    cluster_id_file = open('/var/lib/dcos/cluster-id')
-    cluster_id = cluster_id_file.read().strip()
+    enabled = signal_config_data.get('enabled', 'false')
+    cluster_id = load_string('/var/lib/dcos/cluster-id').strip()
 
-    subprocess.call(["/usr/bin/logger", "3dt-testing-starting-now"])
-    print("Version: ", dcos_version)
-    print("Customer Key: ", customer_key)
-    print("Cluster ID: ", cluster_id)
+    if enabled == 'false':
+        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
 
-    raw_data = cluster.get('/system/health/v1/report')
+    logging.info("Version: ", dcos_version)
+    logging.info("Customer Key: ", customer_key)
+    logging.info("Cluster ID: ", cluster_id)
+
+    direct_report = dcos_api_session.get('/system/health/v1/report?cache=0')
     signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
     r_data = json.loads(signal_results)
-    subprocess.call(["/usr/bin/logger", "3dt-testing-ending-now"])
 
     exp_data = {
         'diagnostics': {
@@ -95,7 +115,8 @@ def test_signal_service(cluster):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
-        'provider': cluster.provider,
+        'platform': dcos_config['platform'],
+        'provider': dcos_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
         'customerKey': customer_key,
@@ -114,8 +135,12 @@ def test_signal_service(cluster):
         'adminrouter-reload-service',
         'adminrouter-reload-timer',
         'cosmos-service',
+        'metrics-master-service',
+        'metrics-master-socket',
         'exhibitor-service',
         'history-service',
+        'log-master-service',
+        'log-master-socket',
         'logrotate-master-service',
         'logrotate-master-timer',
         'marathon-service',
@@ -128,7 +153,6 @@ def test_signal_service(cluster):
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'minuteman-service',
         'navstar-service',
         'pkgpanda-api-service',
         'pkgpanda-api-socket',
@@ -141,10 +165,16 @@ def test_signal_service(cluster):
     public_slave_units = [
         'mesos-slave-public-service']
     all_slave_units = [
+        'docker-gc-service',
+        'docker-gc-timer',
+        'metrics-agent-service',
+        'metrics-agent-socket',
         '3dt-socket',
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',
         'adminrouter-agent-reload-timer',
+        'log-agent-service',
+        'log-agent-socket',
         'logrotate-agent-service',
         'logrotate-agent-timer',
         'rexray-service']
@@ -152,20 +182,22 @@ def test_signal_service(cluster):
     master_units.append('oauth-service')
 
     for unit in master_units:
-        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.masters)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(dcos_api_session.masters)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_node_units:
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(
-            cluster.all_slaves+cluster.masters)
+            dcos_api_session.all_slaves + dcos_api_session.masters)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in slave_units:
-        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(dcos_api_session.slaves)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in public_slave_units:
-        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.public_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] \
+            = len(dcos_api_session.public_slaves)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
     for unit in all_slave_units:
-        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] = len(cluster.all_slaves)
+        exp_data['diagnostics']['properties']["health-unit-dcos-{}-total".format(unit)] \
+            = len(dcos_api_session.all_slaves)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
     def check_signal_data():
@@ -181,5 +213,5 @@ def test_signal_service(cluster):
     try:
         check_signal_data()
     except AssertionError as err:
-        logging.info('System report: {}'.format(raw_data.json()))
+        logging.info('System report: {}'.format(direct_report.json()))
         raise err

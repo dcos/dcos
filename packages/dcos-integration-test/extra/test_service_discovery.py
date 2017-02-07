@@ -4,17 +4,21 @@ import pytest
 import requests
 import retrying
 
+from test_helpers import dcos_config
+
+from test_util.marathon import get_test_app, get_test_app_in_docker
+
 MESOS_DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
-def _service_discovery_test(cluster, docker_network_bridge=True):
+def _service_discovery_test(dcos_api_session, docker_network_bridge):
     """Service discovery integration test
 
     This test verifies if service discovery works, by comparing marathon data
     with information from mesos-dns and from containers themselves.
 
     This is achieved by deploying an application to marathon with two instances
-    , and ["hostname", "UNIQUE"] contraint set. This should result in containers
+    , and ["hostname", "UNIQUE"] constraint set. This should result in containers
     being deployed to two different slaves.
 
     The application being deployed is a simple http server written in python.
@@ -22,7 +26,7 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
 
     Next thing is comparing the service points provided by marathon with those
     reported by mesos-dns. The tricky part here is that may take some time for
-    mesos-dns to catch up with changes in the cluster.
+    mesos-dns to catch up with changes in the dcos_api_session.
 
     And finally, one of service points is verified in as-seen-by-other-containers
     fashion.
@@ -47,117 +51,123 @@ def _service_discovery_test(cluster, docker_network_bridge=True):
     the session UUID as provided to it by Marathon. This data is then returned
     to TC agent in response to POST request issued earlier.
 
-    The test succeds if test UUIDs of the test server, reflector and the test
+    The test succeeds if test UUIDs of the test server, reflector and the test
     itself match and the IP of the test server matches the service point of that
     container as reported by Marathon.
     """
-    app_definition, test_uuid = cluster.get_base_testapp_definition(docker_network_bridge=docker_network_bridge)
+
+    # TODO(cmaloney): For non docker network bridge we should just do a mesos container.
+    app_definition, test_uuid = get_test_app_in_docker(ip_per_container=False)
+
+    if not docker_network_bridge:
+        # TODO(cmaloney): This is very hacky to make PORT0 on the end instead of 9080...
+        app_definition['cmd'] = app_definition['cmd'][:-4] + '$PORT0'
+        app_definition['container']['docker']['network'] = 'HOST'
+        del app_definition['container']['docker']['portMappings']
+        app_definition['portDefinitions'] = [{
+            "protocol": "tcp",
+            "port": 0,
+            "name": "test"
+        }]
+
     app_definition['instances'] = 2
 
-    if len(cluster.slaves) >= 2:
-        app_definition["constraints"] = [["hostname", "UNIQUE"], ]
+    assert len(dcos_api_session.slaves) >= 2, "Test requires a minimum of two agents"
 
-    service_points = cluster.deploy_marathon_app(app_definition)
+    app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 
-    # Verify if Mesos-DNS agrees with Marathon:
-    @retrying.retry(wait_fixed=1000,
-                    stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT*1000,
-                    retry_on_result=lambda ret: ret is None,
-                    retry_on_exception=lambda x: False)
-    def _pool_for_mesos_dns():
-        r = cluster.get('/mesos_dns/v1/services/_{}._tcp.marathon.mesos'.format(
-                        app_definition['id'].lstrip('/')))
-        assert r.status_code == 200
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
+        # Verify if Mesos-DNS agrees with Marathon:
+        @retrying.retry(wait_fixed=1000,
+                        stop_max_delay=MESOS_DNS_ENTRY_UPDATE_TIMEOUT * 1000,
+                        retry_on_result=lambda ret: ret is None,
+                        retry_on_exception=lambda x: False)
+        def _pool_for_mesos_dns():
+            r = dcos_api_session.get('/mesos_dns/v1/services/_{}._tcp.marathon.mesos'.format(
+                app_definition['id'].lstrip('/')))
+            assert r.status_code == 200
+
+            r_data = r.json()
+            if r_data == [{'host': '', 'port': '', 'service': '', 'ip': ''}] or len(r_data) < len(service_points):
+                logging.info("Waiting for Mesos-DNS to update entries")
+                return None
+            else:
+                logging.info("Mesos-DNS entries have been updated!")
+                return r_data
+
+        try:
+            r_data = _pool_for_mesos_dns()
+        except retrying.RetryError:
+            msg = "Mesos DNS has failed to update entries in {} seconds."
+            pytest.fail(msg.format(MESOS_DNS_ENTRY_UPDATE_TIMEOUT))
+
+        marathon_provided_servicepoints = sorted((x.host, x.port) for x in service_points)
+        mesosdns_provided_servicepoints = sorted((x['ip'], int(x['port'])) for x in r_data)
+        assert marathon_provided_servicepoints == mesosdns_provided_servicepoints
+
+        # Verify if containers themselves confirm what Marathon says:
+        payload = {"reflector_ip": service_points[1].host,
+                   "reflector_port": service_points[1].port}
+        r = requests.post('http://{}:{}/your_ip'.format(
+            service_points[0].host, service_points[0].port), payload)
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{status_code} {reason}. "
+            msg += "Detailed explanation of the problem: {text}"
+            pytest.fail(msg.format(status_code=r.status_code, reason=r.reason, text=r.text))
 
         r_data = r.json()
-        if r_data == [{'host': '', 'port': '', 'service': '', 'ip': ''}] or \
-                len(r_data) < len(service_points):
-            logging.info("Waiting for Mesos-DNS to update entries")
-            return None
-        else:
-            logging.info("Mesos-DNS entries have been updated!")
-            return r_data
-
-    try:
-        r_data = _pool_for_mesos_dns()
-    except retrying.RetryError:
-        msg = "Mesos DNS has failed to update entries in {} seconds."
-        pytest.fail(msg.format(MESOS_DNS_ENTRY_UPDATE_TIMEOUT))
-
-    marathon_provided_servicepoints = sorted((x.host, x.port) for x in service_points)
-    mesosdns_provided_servicepoints = sorted((x['ip'], int(x['port'])) for x in r_data)
-    assert marathon_provided_servicepoints == mesosdns_provided_servicepoints
-
-    # Verify if containers themselves confirm what Marathon says:
-    payload = {"reflector_ip": service_points[1].host,
-               "reflector_port": service_points[1].port}
-    r = requests.post('http://{}:{}/your_ip'.format(service_points[0].host,
-                                                    service_points[0].port),
-                      payload)
-    if r.status_code != 200:
-        msg = "Test server replied with non-200 reply: '{status_code} {reason}. "
-        msg += "Detailed explanation of the problem: {text}"
-        pytest.fail(msg.format(status_code=r.status_code, reason=r.reason,
-                               text=r.text))
-
-    r_data = r.json()
-    assert r_data['reflector_uuid'] == test_uuid
-    assert r_data['test_uuid'] == test_uuid
-    if len(cluster.slaves) >= 2:
-        # When len(slaves)==1, we are connecting through docker-proxy using
-        # docker0 interface ip. This makes this assertion useless, so we skip
-        # it and rely on matching test uuid between containers only.
-        assert r_data['my_ip'] == service_points[0].host
-
-    cluster.destroy_marathon_app(app_definition['id'])
+        assert r_data['reflector_uuid'] == test_uuid
+        assert r_data['test_uuid'] == test_uuid
+        if len(dcos_api_session.slaves) >= 2:
+            # When len(slaves)==1, we are connecting through docker-proxy using
+            # docker0 interface ip. This makes this assertion useless, so we skip
+            # it and rely on matching test uuid between containers only.
+            assert r_data['my_ip'] == service_points[0].host
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_if_service_discovery_works_docker_bridged_network(dcos_api_session):
+    return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=False)
+def test_if_service_discovery_works_docker_host_network(dcos_api_session):
+    return _service_discovery_test(dcos_api_session, docker_network_bridge=False)
 
 
-def test_if_search_is_working(cluster):
+def test_if_search_is_working(dcos_api_session):
     """Test if custom set search is working.
 
-    Verifies that a marathon app running on the cluster can resolve names using
-    searching the "search" the cluster was launched with (if any). It also tests
+    Verifies that a marathon app running on the dcos_api_session can resolve names using
+    searching the "search" the dcos_api_session was launched with (if any). It also tests
     that absolute searches still work, and search + things that aren't
-    subdomains fails properly.
+    sub-domains fails properly.
 
     The application being deployed is a simple http server written in python.
     Please check test_server.py for more details.
     """
     # Launch the app
-    app_definition, test_uuid = cluster.get_base_testapp_definition()
-    service_points = cluster.deploy_marathon_app(app_definition)
+    app_definition, test_uuid = get_test_app()
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
+        # Get the status
+        r = requests.get('http://{}:{}/dns_search'.format(service_points[0].host,
+                                                          service_points[0].port))
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            pytest.fail(msg.format(r.status_code, r.reason, r.text))
 
-    # Get the status
-    r = requests.get('http://{}:{}/dns_search'.format(service_points[0].host,
-                                                      service_points[0].port))
-    if r.status_code != 200:
-        msg = "Test server replied with non-200 reply: '{0} {1}. "
-        msg += "Detailed explanation of the problem: {2}"
-        pytest.fail(msg.format(r.status_code, r.reason, r.text))
+        r_data = r.json()
 
-    r_data = r.json()
+        # Make sure we hit the app we expected
+        assert r_data['test_uuid'] == test_uuid
 
-    # Make sure we hit the app we expected
-    assert r_data['test_uuid'] == test_uuid
+        expected_error = {'error': '[Errno -2] Name or service not known'}
 
-    expected_error = {'error': '[Errno -2] Name or service not known'}
-
-    # Check that result matches expectations for this cluster
-    if cluster.dns_search_set:
-        assert r_data['search_hit_leader'] in cluster.masters
-        assert r_data['always_hit_leader'] in cluster.masters
-        assert r_data['always_miss'] == expected_error
-    else:  # No dns search, search hit should miss.
-        assert r_data['search_hit_leader'] == expected_error
-        assert r_data['always_hit_leader'] in cluster.masters
-        assert r_data['always_miss'] == expected_error
-
-    cluster.destroy_marathon_app(app_definition['id'])
+        # Check that result matches expectations for this dcos_api_session
+        if dcos_config['dns_search']:
+            assert r_data['search_hit_leader'] in dcos_api_session.masters
+            assert r_data['always_hit_leader'] in dcos_api_session.masters
+            assert r_data['always_miss'] == expected_error
+        else:  # No dns search, search hit should miss.
+            assert r_data['search_hit_leader'] == expected_error
+            assert r_data['always_hit_leader'] in dcos_api_session.masters
+            assert r_data['always_miss'] == expected_error

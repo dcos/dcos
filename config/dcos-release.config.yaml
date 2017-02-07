@@ -4,13 +4,13 @@ storage:
     bucket: downloads.dcos.io
     object_prefix: dcos
     download_url: https://downloads.dcos.io/dcos/
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    access_key_id: $AWS_PROD_ACCESS_KEY_ID
+    secret_access_key: $AWS_PROD_SECRET_ACCESS_KEY
     region_name: us-west-2
   azure:
     kind: azure_block_blob
-    account_name: $AZURE_STORAGE_ACCOUNT
-    account_key: $AZURE_STORAGE_ACCESS_KEY
+    account_name: $AZURE_PROD_STORAGE_ACCOUNT
+    account_key: $AZURE_PROD_STORAGE_ACCESS_KEY
     container: dcos
     download_url: https://dcosio.azureedge.net/dcos/
 testing:

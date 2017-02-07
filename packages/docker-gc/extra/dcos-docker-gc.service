@@ -1,0 +1,14 @@
+[Unit]
+Description=Docker GC: Periodically Garbate Collect Docker Containers using spotify/docker-gc
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=20
+LimitNOFILE=16384
+User=dcos_docker_gc
+ConditionPathExists=/opt/mesosphere/etc/docker_gc_enabled
+EnvironmentFile=/opt/mesosphere/environment
+Environment=STATE_DIR=/var/lib/dcos/docker-gc
+Environment=PID_DIR=/var/lib/dcos/docker-gc
+Environment=LOG_TO_SYSLOG=1
+ExecStart=$PKG_PATH/docker-gc

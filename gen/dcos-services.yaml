@@ -13,7 +13,7 @@
     StandardOutput=journal+console
     StandardError=journal+console
     ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
-    ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
+    ExecStart=/usr/bin/ln -sf /opt/mesosphere/bin/add_dcos_path.sh /etc/profile.d/dcos.sh
 - name: dcos-download.service
   content: |
     [Unit]
@@ -22,14 +22,13 @@
     Wants=network-online.target
     ConditionPathExists=!/opt/mesosphere/
     [Service]
-    EnvironmentFile=/etc/mesosphere/setup-flags/bootstrap-id
     Type=oneshot
     StandardOutput=journal+console
     StandardError=journal+console
-    ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/${BOOTSTRAP_ID}.bootstrap.tar.xz
+    ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/{{ bootstrap_id }}.bootstrap.tar.xz
     ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
-    ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
-    ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
+    ExecStart=/usr/bin/tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
+    ExecStartPost=-/usr/bin/rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
 - name: dcos-setup.service
   command: start
   no_block: true

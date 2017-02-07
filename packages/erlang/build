@@ -3,11 +3,11 @@ set -x
 
 export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/ncurses/include -I/opt/mesosphere/active/openssl/include"
 export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/active/ncurses/lib -Wl,-rpath=/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/lib"
-export CXXFLAGS=CFLAGS
+export CPPFLAGS=${CFLAGS}
 
 pushd /pkg/src/erlang
 ./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --enable-dirty-schedulers --disable-hipe --enable-kernel-poll
-make -j8
+make -j$NUM_CORES
 make install
 popd
 
@@ -22,6 +22,7 @@ User=dcos_epmd
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=${PKG_PATH}/bin/epmd -port 61420

@@ -1,8 +1,9 @@
 import pytest
 
 import gen.template
-from gen.template import (For, Replacement, Switch, Tokenizer, UnsetParameter,
-                          parse_str)
+from gen.internals import Scope, Target
+from gen.template import For, parse_str, Replacement, Switch, Tokenizer, UnsetParameter
+
 
 just_text = "foo"
 more_complex_text = "foo {"
@@ -58,10 +59,10 @@ def test_lex():
             ])
 
     assert(get_tokens("{% for foo in bar %}{{ foo }}{% endfor %}") == [
-            ('for', ('foo', 'bar')),
-            ('replacement', ('foo', None)),
-            ('endfor', None),
-            ('eof', None)])
+        ('for', ('foo', 'bar')),
+        ('replacement', ('foo', None)),
+        ('endfor', None),
+        ('eof', None)])
 
     with pytest.raises(gen.template.SyntaxError):
         get_tokens("{{ test |}}")
@@ -102,38 +103,23 @@ def test_parse():
     assert parse_str("{% for foo in bar %}{{ foo }}{% endfor %}").ast == [For("foo", "bar", [Replacement('foo')])]
 
 
-def test_get_variables():
-    assert(parse_str("a").get_scoped_arguments() ==
-           {'variables': set(), 'sub_scopes': dict()})
-    assert(parse_str("{{ a }}").get_scoped_arguments() ==
-           {'variables': {"a"}, 'sub_scopes': dict()})
-    assert(parse_str("{{ a | foo }}").get_scoped_arguments() ==
-           {'variables': {"a"}, 'sub_scopes': dict()})
-    assert(parse_str("a{{ a }}b{{ c }}").get_scoped_arguments() ==
-           {'variables': {"a", "c"}, 'sub_scopes': dict()})
-    assert(parse_str("a{{ a }}b{{ a }}c{{ c | baz }}").get_scoped_arguments() ==
-           {'variables': {"a", "c"}, 'sub_scopes': dict()})
-    assert(parse_str("a{{ a }}b{{ a | bar }}c{{ c }}").get_scoped_arguments() ==
-           {'variables': {"a", "c"}, 'sub_scopes': dict()})
-    assert(parse_str("{{ a }}{% switch b %}{% case \"c\" %}{{ d }}{% endswitch %}{{ e }}").get_scoped_arguments() == {
-        'variables': {'a', 'e'},
-        'sub_scopes': {
-            'b': {
-                'c': {
-                    'variables': {'d'},
-                    'sub_scopes': {}
-                }
+def test_target_from_ast():
+    assert parse_str("a").target_from_ast() == Target()
 
-            }
-        }
-    })
+    assert parse_str("{{ a }}").target_from_ast() == Target({'a'})
+    assert parse_str("{{ a | foo }}").target_from_ast() == Target({'a'})
+    assert parse_str("a{{ a }}b{{ c }}").target_from_ast() == Target({'a', 'c'})
+    assert parse_str("a{{ a }}b{{ a }}c{{ c | baz }}").target_from_ast() == Target({'a', 'c'})
+    assert parse_str("a{{ a }}b{{ a | bar }}c{{ c }}").target_from_ast() == Target({'a', 'c'})
+    assert(parse_str("{{ a }}{% switch b %}{% case \"c\" %}{{ d }}{% endswitch %}{{ e }}").target_from_ast() ==
+           Target({'a', 'e'}, {'b': Scope('b', {'c': Target({'d'})})}))
 
-    assert (parse_str("{% for foo in bar %}{{ foo }}{{ bar }}{{ baz }}{% endfor %}").get_scoped_arguments() ==
-            {'variables': {'bar', 'baz'}, 'sub_scopes': dict()})
+    assert (parse_str("{% for foo in bar %}{{ foo }}{{ bar }}{{ baz }}{% endfor %}").target_from_ast() ==
+            Target({'bar', 'baz'}))
 
     # TODO(cmaloney): Disallow reusing a for new variable as a general variable.
-    assert (parse_str("{% for foo in bar %}{{ foo }}{{ bar }}{{ baz }}{% endfor %}{{ foo }}").get_scoped_arguments() ==
-            {'variables': {'foo', 'bar', 'baz'}, 'sub_scopes': dict()})
+    assert (parse_str("{% for foo in bar %}{{ foo }}{{ bar }}{{ baz }}{% endfor %}{{ foo }}").target_from_ast() ==
+            Target({'foo', 'bar', 'baz'}))
 
 
 def test_get_filters():

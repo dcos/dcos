@@ -1,3 +1,4 @@
+import collections
 import ipaddress
 import json
 import os
@@ -5,20 +6,104 @@ import socket
 import textwrap
 from math import floor
 from subprocess import check_output
+from urllib.parse import urlparse
 
 import yaml
 
-import gen.aws.calc
-import gen.azure.calc
+import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
-from pkgpanda.build import hash_checkout
+from pkgpanda.util import hash_checkout
 
 
-def calculate_bootstrap_variant():
-    variant = os.getenv('BOOTSTRAP_VARIANT')
-    assert variant is not None, "BOOTSTRAP_VARIANT must be set"
-    return variant
+def type_str(value):
+    return type(value).__name__
+
+
+def check_duplicates(items: list):
+    counter = collections.Counter(items)
+    duplicates = dict(filter(lambda x: x[1] > 1, counter.items()))
+    assert not duplicates, 'List cannot contain duplicates: {}'.format(
+        ', '.join('{} appears {} times'.format(*item) for item in duplicates.items()))
+
+
+def validate_true_false(val) -> None:
+    gen.internals.validate_one_of(val, ['true', 'false'])
+
+
+def validate_int_in_range(value, low, high):
+    try:
+        int_value = int(value)
+    except ValueError as ex:
+        raise AssertionError('Must be an integer but got a {}: {}'.format(type_str(value), value)) from ex
+
+    # Only a lower bound
+    if high is None:
+        assert low <= int_value, 'Must be above {}'.format(low)
+    else:
+        assert low <= int_value <= high, 'Must be between {} and {} inclusive'.format(low, high)
+
+
+def validate_json_list(value):
+    try:
+        items = json.loads(value)
+    except ValueError as ex:
+        raise AssertionError("Must be a JSON formatted list, but couldn't be parsed the given "
+                             "value `{}` as one because of: {}".format(value, ex)) from ex
+    assert isinstance(items, list), "Must be a JSON list. Got a {}".format(type_str(items))
+
+    non_str = list(filter(lambda x: not isinstance(x, str), items))
+    assert not non_str, "Items in list must be strings, got invalid values: {}".format(
+        ", ".join("{} type {}".format(elem, type_str(elem)) for elem in non_str))
+    return items
+
+
+def validate_ipv4_addresses(ips: list):
+    def try_parse_ip(ip):
+        try:
+            return socket.inet_pton(socket.AF_INET, ip)
+        except OSError:
+            return None
+    invalid_ips = list(filter(lambda ip: try_parse_ip(ip) is None, ips))
+    assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
+
+
+def validate_url(url: str):
+    try:
+        urlparse(url)
+    except ValueError as ex:
+        raise AssertionError(
+            "Couldn't parse given value `{}` as an URL".format(url)
+        ) from ex
+
+
+def validate_ip_list(json_str: str):
+    nodes_list = validate_json_list(json_str)
+    check_duplicates(nodes_list)
+    validate_ipv4_addresses(nodes_list)
+
+
+def validate_ip_port_list(json_str: str):
+    nodes_list = validate_json_list(json_str)
+    check_duplicates(nodes_list)
+    # Create a list of only ip addresses by spliting the port from the node. Use the resulting
+    # ip_list to validate that it is an ipv4 address. If the port was specified, validate its
+    # value is between 1 and 65535.
+    ip_list = []
+    for node in nodes_list:
+        ip, separator, port = node.rpartition(':')
+        if not separator:
+            ip = node
+        else:
+            validate_int_in_range(port, 1, 65535)
+        ip_list.append(ip)
+    validate_ipv4_addresses(ip_list)
+
+
+def calculate_environment_variable(name):
+    value = os.getenv(name)
+    assert value is not None, "{} must be a set environment variable".format(name)
+    return value
 
 
 def calulate_dcos_image_commit():
@@ -27,8 +112,7 @@ def calulate_dcos_image_commit():
     if dcos_image_commit is None:
         dcos_image_commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
-    if dcos_image_commit is None:
-        raise "Unable to set dcos_image_commit from teamcity or git."
+    assert dcos_image_commit is not None, "Unable to set dcos_image_commit from teamcity or git."
 
     return dcos_image_commit
 
@@ -37,7 +121,6 @@ def calculate_resolvers_str(resolvers):
     # Validation because accidentally slicing a string instead of indexing a
     # list of resolvers then finding out at cluster launch is painful.
     resolvers = json.loads(resolvers)
-    assert isinstance(resolvers, list)
     return ",".join(resolvers)
 
 
@@ -60,8 +143,32 @@ def calculate_mesos_dns_resolvers_str(resolvers):
         return '"externalOn": false'
 
 
+def validate_mesos_log_retention_mb(mesos_log_retention_mb):
+    assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
+
+
+def validate_mesos_container_log_sink(mesos_container_log_sink):
+    assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
+        "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
+
+
+def calculate_mesos_log_retention_count(mesos_log_retention_mb):
+    # Determine how many 256 MB log chunks can be fit into the given size.
+    # We assume a 90% compression factor; logs are compressed after 2 rotations.
+    # We return the number of times the log can be rotated by logrotate;
+    # this is one less than the total number of log file retained.
+    return str(int(1 + (int(mesos_log_retention_mb) - 512) / 256 * 10))
+
+
+def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
+    # We allow some maximum number of temporary/random files in the
+    # Mesos log directory.  This maximum takes into account the number
+    # of rotated logs that stay in the archive subdirectory.
+    return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
 def calculate_ip_detect_contents(ip_detect_filename):
-    assert os.path.exists(ip_detect_filename), "ip-detect script: {} must exist".format(ip_detect_filename)
+    assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
@@ -76,8 +183,14 @@ def calculate_rexray_config_contents(rexray_config):
     )
 
 
-def validate_rexray_config(rexray_config):
-    assert isinstance(json.loads(rexray_config), dict), 'Must be a mapping.'
+def validate_json_dictionary(data):
+    # TODO(cmaloney): Pull validate_json() out.
+    try:
+        loaded = json.loads(data)
+        assert isinstance(loaded, dict), "Must be a JSON dictionary. Got a {}".format(type_str(loaded))
+        return loaded
+    except ValueError as ex:
+        raise AssertionError("Must be valid JSON. Got: {}".format(data)) from ex
 
 
 def calculate_gen_resolvconf_search(dns_search):
@@ -101,33 +214,25 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_telemetry_enabled(telemetry_enabled):
-    can_be = ['true', 'false']
-    assert telemetry_enabled in can_be, 'Must be one of {}. Got {}.'.format(can_be, telemetry_enabled)
+def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
 
+    overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
 
-def validate_oauth_enabled(oauth_enabled):
-    # Should correspond with oauth_enabled in gen/azure/calc.py
-    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
-        return
-    can_be = ['true', 'false']
-    assert oauth_enabled in can_be, 'Must be one of {}. Got {}'.format(can_be, oauth_enabled)
-
-
-def validate_dcos_overlay_enable(dcos_overlay_enable):
-    can_be = ['true', 'false']
-    assert dcos_overlay_enable in can_be, 'Must be one of {}. Got {}.'.format(can_be, dcos_overlay_enable)
-
-
-def validate_dcos_overlay_mtu(dcos_overlay_mtu):
-    assert int(dcos_overlay_mtu) >= 552, 'Linux allows a minimum MTU of 552 bytes'
+    assert dcos_overlay_network_default_name in overlay_names, (
+        "Default overlay network name does not reference a defined overlay network: {}".format(
+            dcos_overlay_network_default_name))
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except ValueError:
-        assert False, "Provided input was not valid JSON: "+dcos_overlay_network
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -136,9 +241,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         ipaddress.ip_network(overlay_network['vtep_subnet'])
     except ValueError as ex:
-        assert False, (
-            "Incorrect value for vtep_subnet. Only IPv4 "
-            "values are allowed: {}".format(ex))
+        raise AssertionError(
+            "Incorrect value for vtep_subnet: {}."
+            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
 
     assert 'vtep_mac_oui' in overlay_network.keys(), (
         'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
@@ -149,24 +254,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         'We need at least one overlay network configuration {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
-        if (len(overlay['name']) > 13):
-            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        assert (len(overlay['name']) <= 13), (
+            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
         try:
             ipaddress.ip_network(overlay['subnet'])
         except ValueError as ex:
-            assert False, (
-                "Incorrect value for vtep_subnet. Only IPv4 "
-                "values are allowed: {}".format(ex))
-
-
-def validate_dcos_remove_dockercfg_enable(dcos_remove_dockercfg_enable):
-    can_be = ['true', 'false']
-    assert dcos_remove_dockercfg_enable in can_be, (
-       'Must be one of {}. Got {}.'.format(can_be, dcos_remove_dockercfg_enable))
-
-
-def calculate_oauth_available(oauth_enabled):
-    return oauth_enabled
+            raise AssertionError(
+                "Incorrect value for vtep_subnet {}."
+                " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
 
 
 def validate_num_masters(num_masters):
@@ -193,79 +288,27 @@ def validate_dns_search(dns_search):
     assert len(dns_search.split()) <= 6, "Must contain no more than 6 domains"
 
 
-def validate_json_list(json_list):
-    try:
-        list_data = json.loads(json_list)
-
-        assert type(list_data) is list, "Must be a JSON list. Got a {}".format(type(list_data))
-    except ValueError:
-        assert False, "Provided input was not valid JSON: "+json_list
-
-    return list_data
-
-
-def validate_host_list(host_list):
-    host_list = validate_json_list(host_list)
-    azure_format_check = []
-    validate_duplicates(host_list)
-    for host in host_list:
-        assert isinstance(host, str), 'Host must be of type string, got {}'.format(type(host))
-        if host.startswith('[[[reference(') and host.endswith(').ipConfigurations[0].properties.privateIPAddress]]]'):  # noqa
-            azure_format_check.append(True)
-        else:
-            azure_format_check.append(False)
-    if all(azure_format_check):
-        return host_list
-    assert not any(azure_format_check), "Azure static master list and IP based static master list cannot be mixed. Use "
-    "either all Azure IP references or IPv4 addresses."
-    return validate_ipv4_addrs(host_list)
-
-
-def validate_ipv4_addrs(ips):
-    assert isinstance(ips, list)
-    invalid_ips = []
-    for ip in ips:
-        try:
-            socket.inet_pton(socket.AF_INET, str(ip))
-        except OSError:
-            invalid_ips.append(ip)
-    assert not len(invalid_ips), 'Only IPv4 values are allowed. The following are invalid IPv4 addresses: {}'.format(
-                                 ', '.join(invalid_ips))
-    return ips
-
-
-def validate_duplicates(input_list):
-    assert isinstance(input_list, list)
-    dups = list(filter(lambda x: input_list.count(x) > 1, input_list))
-    assert len(dups) == 0, "List cannot contain duplicates: {}".format(", ".join(dups))
-
-
 def validate_master_list(master_list):
-    return validate_host_list(master_list)
+    return validate_ip_list(master_list)
 
 
 def validate_resolvers(resolvers):
-    return validate_host_list(resolvers)
+    return validate_ip_port_list(resolvers)
 
 
 def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
     return validate_json_list(mesos_dns_ip_sources)
 
 
-def validate_master_dns_bindall(master_dns_bindall):
-    can_be = ['true', 'false']
-    assert master_dns_bindall in can_be, 'Must be one of {}. Got {}.'.format(can_be, master_dns_bindall)
-
-
 def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
 
 
-def calculate_config_id(dcos_image_commit, user_arguments, template_filenames):
+def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
     return hash_checkout({
         "commit": dcos_image_commit,
-        "user_arguments": json.loads(user_arguments),
-        "template_filenames": json.loads(template_filenames)})
+        "template_filenames": json.loads(template_filenames),
+        "sources_id": sources_id})
 
 
 def calculate_cluster_packages(package_names, config_id):
@@ -287,6 +330,11 @@ def validate_cluster_packages(cluster_packages):
             raise AssertionError(str(ex)) from ex
 
 
+def calculate_no_proxy(no_proxy):
+    user_proxy_config = validate_json_list(no_proxy)
+    return ",".join(['*.mesos,127.0.0.1,localhost'] + user_proxy_config)
+
+
 def validate_zk_hosts(exhibitor_zk_hosts):
     # TODO(malnick) Add validation of IPv4 address and port to this
     assert not exhibitor_zk_hosts.startswith('zk://'), "Must be of the form `host:port,host:port', not start with zk://"
@@ -299,7 +347,7 @@ def validate_zk_path(exhibitor_zk_path):
 def calculate_exhibitor_static_ensemble(master_list):
     masters = json.loads(master_list)
     masters.sort()
-    return ','.join(['%d:%s' % (i+1, m) for i, m in enumerate(masters)])
+    return ','.join(['%d:%s' % (i + 1, m) for i, m in enumerate(masters)])
 
 
 def calculate_adminrouter_auth_enabled(oauth_enabled):
@@ -312,12 +360,142 @@ def calculate_config_yaml(user_arguments):
         prefix='  ' * 3)
 
 
+def calculate_mesos_isolation(enable_gpu_isolation):
+    isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
+                 'docker/runtime,docker/volume,volume/sandbox_path,posix/rlimits,'
+                 'com_mesosphere_MetricsIsolatorModule')
+    if enable_gpu_isolation == 'true':
+        isolators += ',cgroups/devices,gpu/nvidia'
+    return isolators
+
+
 def validate_os_type(os_type):
-    can_be = ['coreos', 'el7']
-    assert os_type in can_be, 'Must be one of {}. Got {}'.format(can_be, os_type)
+    gen.internals.validate_one_of(os_type, ['coreos', 'el7'])
 
 
-__logrotate_slave_module_name = 'org_apache_mesos_LogrotateContainerLogger'
+def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
+    # Must be non_empty
+    assert bootstrap_tmp_dir, "Must not be empty"
+
+    # Should not start or end with `/`
+    assert bootstrap_tmp_dir[0] != '/' and bootstrap_tmp_dir[-1] != 0, \
+        "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
+
+
+def calculate_minuteman_min_named_ip_erltuple(minuteman_min_named_ip):
+    return ip_to_erltuple(minuteman_min_named_ip)
+
+
+def calculate_minuteman_max_named_ip_erltuple(minuteman_max_named_ip):
+    return ip_to_erltuple(minuteman_max_named_ip)
+
+
+def ip_to_erltuple(ip):
+    return '{' + ip.replace('.', ',') + '}'
+
+
+def validate_minuteman_min_named_ip(minuteman_min_named_ip):
+    validate_ipv4_addresses([minuteman_min_named_ip])
+
+
+def validate_minuteman_max_named_ip(minuteman_max_named_ip):
+    validate_ipv4_addresses([minuteman_max_named_ip])
+
+
+def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
+    if cluster_docker_credentials == "{}":
+        return "false"
+    else:
+        return "true"
+
+
+def calculate_cluster_docker_credentials_path(cluster_docker_credentials_dcos_owned):
+    return {
+        'true': '/opt/mesosphere/etc/docker_credentials',
+        'false': '/etc/mesosphere/docker_credentials'
+    }[cluster_docker_credentials_dcos_owned]
+
+
+def calculate_cluster_docker_registry_enabled(cluster_docker_registry_url):
+    return 'false' if cluster_docker_registry_url == '' else 'true'
+
+
+def validate_cosmos_config(cosmos_config):
+    """The schema for this configuration is.
+    {
+      "schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+        "staged_package_storage_uri": {
+          "type": "string"
+        },
+        "package_storage_uri": {
+          "type": "string"
+        }
+      }
+    }
+    """
+
+    config = validate_json_dictionary(cosmos_config)
+    expects = ['staged_package_storage_uri', 'package_storage_uri']
+    found = list(filter(lambda value: value in config, expects))
+
+    if len(found) == 0:
+        # User didn't specify any configuration; nothing to do
+        pass
+    elif len(found) == 1:
+        # User specified one parameter but not the other; fail
+        raise AssertionError(
+            'cosmos_config must be a dictionary containing both {}, or must '
+            'be left empty. Found only {}'.format(' '.join(expects), found)
+        )
+    else:
+        # User specified both parameters; make sure they are URLs
+        for value in found:
+            validate_url(config[value])
+
+
+def calculate_cosmos_staged_package_storage_uri_flag(cosmos_config):
+    config = validate_json_dictionary(cosmos_config)
+    if 'staged_package_storage_uri' in config:
+        return (
+            '-com.mesosphere.cosmos.stagedPackageStorageUri={}'.format(
+                config['staged_package_storage_uri']
+            )
+        )
+    else:
+        return ''
+
+
+def calculate_cosmos_package_storage_uri_flag(cosmos_config):
+    config = validate_json_dictionary(cosmos_config)
+    if 'package_storage_uri' in config:
+        return (
+            '-com.mesosphere.cosmos.packageStorageUri={}'.format(
+                config['package_storage_uri']
+            )
+        )
+    else:
+        return ''
+
+
+def calculate_set(parameter):
+    if parameter == '':
+        return 'false'
+    else:
+        return 'true'
+
+
+def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_storage_backend):
+    if master_discovery != 'static':
+        assert exhibitor_storage_backend != 'static', "When master_discovery is not static, " \
+            "exhibitor_storage_backend must be non-static. Having a variable list of master which " \
+            "are discovered by agents using the master_discovery method but also having a fixed " \
+            "known at install time static list of master ips doesn't " \
+            "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
+
+
+__dcos_overlay_network_default_name = 'dcos'
 
 
 entry = {
@@ -331,23 +509,45 @@ entry = {
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
-        validate_oauth_enabled,
+        lambda oauth_enabled: validate_true_false(oauth_enabled),
+        lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
-        validate_telemetry_enabled,
-        validate_master_dns_bindall,
+        validate_mesos_log_retention_mb,
+        lambda telemetry_enabled: validate_true_false(telemetry_enabled),
+        lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
-        validate_dcos_overlay_enable,
-        validate_dcos_overlay_mtu,
-        validate_dcos_remove_dockercfg_enable,
-        validate_rexray_config],
+        lambda dcos_overlay_network_default_name, dcos_overlay_network:
+            validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
+        lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
+        lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
+        lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
+        lambda dcos_remove_dockercfg_enable: validate_true_false(dcos_remove_dockercfg_enable),
+        lambda rexray_config: validate_json_dictionary(rexray_config),
+        lambda check_time: validate_true_false(check_time),
+        lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
+        validate_minuteman_min_named_ip,
+        validate_minuteman_max_named_ip,
+        lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
+        lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
+        lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
+        lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
+        lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
+        validate_exhibitor_storage_master_discovery,
+        validate_cosmos_config,
+        lambda enable_lb: validate_true_false(enable_lb)
+    ],
     'default': {
-        'bootstrap_variant': calculate_bootstrap_variant,
+        'bootstrap_tmp_dir': 'tmp',
+        'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
-        'oauth_available': calculate_oauth_available,
+        'oauth_available': 'true',
         'telemetry_enabled': 'true',
+        'check_time': 'true',
+        'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
@@ -357,7 +557,9 @@ entry = {
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
-        'mesos_container_logger': __logrotate_slave_module_name,
+        'master_external_loadbalancer': '',
+        'mesos_log_retention_mb': '4000',
+        'mesos_container_log_sink': 'journald+logrotate',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -371,19 +573,23 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
-        'dcos_overlay_network': '{                      \
-            "vtep_subnet": "44.128.0.0/20",             \
-            "vtep_mac_oui": "70:B3:D5:00:00:00",        \
-            "overlays": [                               \
-              {                                         \
-                "name": "dcos",                         \
-                "subnet": "9.0.0.0/8",                  \
-                "prefix": 24                            \
-              }                                         \
-            ]}',
+        'dcos_overlay_network': json.dumps({
+            'vtep_subnet': '44.128.0.0/20',
+            'vtep_mac_oui': '70:B3:D5:00:00:00',
+            'overlays': [{
+                'name': __dcos_overlay_network_default_name,
+                'subnet': '9.0.0.0/8',
+                'prefix': 24
+            }]
+        }),
+        'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_remove_dockercfg_enable': "false",
+        'minuteman_min_named_ip': '11.0.0.0',
+        'minuteman_max_named_ip': '11.255.255.255',
+        'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
             # Disabled. REX-Ray will start but not register as a volume driver.
@@ -398,7 +604,14 @@ entry = {
                     }
                 }
             }
-        })
+        }),
+        'enable_gpu_isolation': 'false',
+        'cluster_docker_registry_url': '',
+        'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
+        'cluster_docker_credentials_write_to_etc': 'false',
+        'cluster_docker_credentials_enabled': 'false',
+        'cluster_docker_credentials': "{}",
+        'cosmos_config': '{}'
     },
     'must': {
         'custom_auth': 'false',
@@ -406,7 +619,9 @@ entry = {
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
-        'dcos_version': '1.8-dev',
+        'mesos_log_retention_count': calculate_mesos_log_retention_count,
+        'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'dcos_version': '1.9-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'cluster_packages': calculate_cluster_packages,
@@ -416,12 +631,24 @@ entry = {
         'ui_external_links': 'false',
         'ui_networking': 'false',
         'ui_organization': 'false',
+        'ui_telemetry_metadata': '{"openBuild": true}',
         'minuteman_forward_metrics': 'false',
-        'mesos_isolation': 'cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume',
+        'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
+        'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
+        'mesos_isolation': calculate_mesos_isolation,
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
-        'rexray_config_contents': calculate_rexray_config_contents
+        'rexray_config_contents': calculate_rexray_config_contents,
+        'no_proxy_final': calculate_no_proxy,
+        'cluster_docker_credentials_path': calculate_cluster_docker_credentials_path,
+        'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
+        'has_master_external_loadbalancer':
+            lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer),
+        'cosmos_staged_package_storage_uri_flag':
+            calculate_cosmos_staged_package_storage_uri_flag,
+        'cosmos_package_storage_uri_flag':
+            calculate_cosmos_package_storage_uri_flag
     },
     'conditional': {
         'master_discovery': {
@@ -429,16 +656,6 @@ entry = {
             'static': {
                 'must': {'num_masters': calc_num_masters}
             }
-        },
-        'provider': {
-            'onprem': {
-                'default': {
-                    'resolvers': '["8.8.8.8", "8.8.4.4"]'
-                },
-            },
-            'azure': gen.azure.calc.entry,
-            'aws': gen.aws.calc.entry,
-            'other': {}
         },
         'rexray_config_preset': {
             '': {},

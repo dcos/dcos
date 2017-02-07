@@ -4,7 +4,7 @@ mkdir -p "$PKG_PATH/usr/"
 
 cp -rp /pkg/src/marathon/target/scala-2.11/marathon-assembly-*.jar "$PKG_PATH/usr/marathon.jar"
 
-sudo chmod -R o+r "$PKG_PATH/usr"
+chmod -R o+r "$PKG_PATH/usr"
 
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
@@ -18,6 +18,7 @@ User=dcos_marathon
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
@@ -42,7 +43,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     --revive_offers_for_new_apps \\
     --zk_compression \\
     --mesos_leader_ui_url "/mesos" \\
-    --enable_features "vips,task_killing,external_volumes" \\
+    --enable_features "vips,task_killing,external_volumes,gpu_resources" \\
     --mesos_authentication_principal "dcos_marathon" \\
     --mesos_user "root"
 EOF

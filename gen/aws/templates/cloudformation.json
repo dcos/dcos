@@ -45,67 +45,8 @@
 {% endswitch %}
   },
   "Mappings": {
-    "RegionToAmi": {
-      "ap-northeast-1": {
-        "stable": "ami-965899f7"
-      },
-      "ap-southeast-1": {
-        "stable": "ami-3120fe52"
-      },
-      "ap-southeast-2": {
-        "stable": "ami-b1291dd2"
-      },
-      "eu-central-1": {
-        "stable": "ami-3ae31555"
-      },
-      "eu-west-1": {
-        "stable": "ami-b7cba3c4"
-      },
-      "sa-east-1": {
-        "stable": "ami-61e3750d"
-      },
-      "us-east-1": {
-        "stable": "ami-6d138f7a"
-      },
-      "us-gov-west-1": {
-        "stable": "ami-b712acd6"
-      },
-      "us-west-1": {
-        "stable": "ami-ee57148e"
-      },
-      "us-west-2": {
-        "stable": "ami-dc6ba3bc"
-      }
-    },
-    "NATAmi" : {
-      "ap-northeast-1": {
-          "default": "ami-55c29e54"
-      },
-      "ap-southeast-1": {
-          "default": "ami-b082dae2"
-      },
-      "ap-southeast-2": {
-          "default": "ami-996402a3"
-      },
-      "eu-central-1": {
-          "default": "ami-204c7a3d"
-      },
-      "eu-west-1": {
-          "default": "ami-3760b040"
-      },
-      "sa-east-1": {
-          "default": "ami-b972dba4"
-      },
-      "us-east-1": {
-          "default": "ami-4c9e4b24"
-      },
-      "us-west-1": {
-          "default": "ami-2b2b296e"
-      },
-      "us-west-2": {
-          "default": "ami-bb69128b"
-      }
-    },
+    "RegionToAmi": {{ region_to_ami_mapping }},
+    "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
       "MasterInstanceType": {
         "default": "m3.xlarge"
@@ -132,7 +73,13 @@
   },
 
   "Conditions" : {
-    "RegionIsUsEast1": { "Fn::Equals": [ { "Ref": "AWS::Region" }, "us-east-1" ] }
+    "RegionIsUsEast1": { "Fn::Equals": [ { "Ref": "AWS::Region" }, "us-east-1" ] },
+    "RegionIsUsGovWest1" : {
+      "Fn::Equals" : [
+        { "Ref" : "AWS::Region" },
+        "us-gov-west-1"
+      ]
+    }
   },
 
   "Resources" : {
@@ -444,8 +391,21 @@
                 "s3:PutObjectAcl"
               ],
               "Resource": [
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }, "/*"]]},
-                { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ExhibitorS3Bucket" }]]}
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" },
+                    "/*"
+                  ]
+                ] },
+                { "Fn::Join" : [
+                  "",
+                  [
+                    { "Fn::If" : [ "RegionIsUsGovWest1", "arn:aws-us-gov:s3:::", "arn:aws:s3:::" ] },
+                    { "Ref" : "ExhibitorS3Bucket" }
+                  ]
+                ] }
               ]
             },
             {
@@ -584,7 +544,6 @@
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        {{ aws_master_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "MasterInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join": ["", [
           {{ master_cloud_config }}
@@ -669,7 +628,7 @@
             "InstanceProtocol" : "HTTP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
@@ -697,7 +656,7 @@
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {
-          "Target" : "HTTP:5050/health",
+          "Target" : "TCP:5050",
           "HealthyThreshold" : "2",
           "UnhealthyThreshold" : "2",
           "Interval" : "30",
@@ -769,7 +728,6 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
         "AssociatePublicIpAddress" : "false",
-        {{ aws_private_agent_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "SlaveInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_private_cloud_config }}
@@ -814,7 +772,6 @@
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
         "EbsOptimized": "true",
-        {{ aws_public_agent_spot_price }}
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "PublicSlaveInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_public_cloud_config }}

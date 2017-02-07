@@ -15,8 +15,8 @@ from os.path import basename, normpath
 
 from docopt import docopt
 
+import pkgpanda.build
 import pkgpanda.build.constants
-from pkgpanda.build import (BuildError, PackageStore, build_package_variants, build_tree)
 
 
 def main():
@@ -26,15 +26,15 @@ def main():
 
         # Make a local repository for build dependencies
         if arguments['tree']:
-            package_store = PackageStore(getcwd(), arguments['--repository-url'])
-            build_tree(package_store, arguments['--mkbootstrap'], arguments['<variant>'])
+            package_store = pkgpanda.build.PackageStore(getcwd(), arguments['--repository-url'])
+            pkgpanda.build.build_tree(package_store, arguments['--mkbootstrap'], arguments['<variant>'])
             sys.exit(0)
 
         # Package name is the folder name.
         name = basename(getcwd())
 
         # Package store is always the parent directory
-        package_store = PackageStore(normpath(getcwd() + '/../'), arguments['--repository-url'])
+        package_store = pkgpanda.build.PackageStore(normpath(getcwd() + '/../'), arguments['--repository-url'])
 
         # Check that the folder is a package folder (the name was found by the package store as a
         # valid package with 1+ variants).
@@ -43,7 +43,7 @@ def main():
             sys.exit(1)
 
         # No command -> build package.
-        pkg_dict = build_package_variants(
+        pkg_dict = pkgpanda.build.build_package_variants(
             package_store,
             name,
             not arguments['--dont-clean-after-build'],
@@ -56,9 +56,10 @@ def main():
             print(k + ':' + v)
 
         sys.exit(0)
-    except BuildError as ex:
+    except pkgpanda.build.BuildError as ex:
         print("ERROR: {}".format(ex))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

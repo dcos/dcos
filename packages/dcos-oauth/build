@@ -1,6 +1,5 @@
 #!/bin/bash -xe
 
-export GOPATH=/pkg:$GOPATH
 mkdir -p /pkg/src/github.com/dcos
 mv /pkg/src/dcos-oauth /pkg/src/github.com/dcos/
 cd /pkg/src/github.com/dcos/dcos-oauth
@@ -14,3 +13,5 @@ service="$PKG_PATH/dcos.target.wants_master/dcos-oauth.service"
 mkdir -p "$(dirname "$service")"
 
 cp /pkg/extra/dcos-oauth.service "$service"
+cp /pkg/extra/dcos_add_user.py "$PKG_PATH/bin/"
+chmod +x "$PKG_PATH/bin/dcos_add_user.py"
