@@ -5,6 +5,8 @@ import copy
 import functools
 import logging
 import os
+import random
+import string
 import tempfile
 import time
 from collections import namedtuple
@@ -215,22 +217,6 @@ def wait_for_pong(url, timeout):
     ping_app()
 
 
-def wait_for_len(fetch_fn, target_count, timeout):
-    """Will call fetch_fn every 10s, get len() on the result and repeat until it is
-    equal to target count or timeout (in seconds) has been reached
-    """
-    @retrying.retry(wait_fixed=10000, stop_max_delay=timeout * 1000,
-                    retry_on_result=lambda res: res is False,
-                    retry_on_exception=lambda ex: False)
-    def check_for_match():
-        items = fetch_fn()
-        count = len(items)
-        logging.info('Waiting for len()=={}. Current count: {}. Items: {}'.format(target_count, count, repr(items)))
-        if count != target_count:
-            return False
-    check_for_match()
-
-
 def session_tempfile(data):
     """Writes bytes to a named temp file and returns its path
     the temp file will be removed when the interpreter exits
@@ -260,3 +246,19 @@ def marathon_app_id_to_mesos_dns_subdomain(app_id):
 
     """
     return '-'.join(reversed(app_id.strip('/').split('/')))
+
+
+def lazy_property(property_fn):
+    cache_name = '__{}_cached'.format(property_fn.__name__)
+
+    @property
+    @functools.wraps(property_fn)
+    def _lazy_prop(self):
+        if not hasattr(self, cache_name):
+            setattr(self, cache_name, property_fn(self))
+        return getattr(self, cache_name)
+    return _lazy_prop
+
+
+def random_id(n):
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(n))

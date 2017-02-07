@@ -17,6 +17,7 @@ Description=Package Service: DC/OS Packaging API
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_cosmos
 EnvironmentFile=/opt/mesosphere/environment
@@ -28,6 +29,8 @@ ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
     -classpath ${PKG_PATH}/usr/cosmos.jar \\
     com.simontuffs.onejar.Boot \\
+    -admin.port=127.0.0.1:9990 \\
+    -io.github.benwhitehead.finch.httpInterface=127.0.0.1:7070 \\
     \${COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG} \\
     \${COSMOS_PACKAGE_STORAGE_URI_FLAG}
 EOF

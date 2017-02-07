@@ -23,7 +23,7 @@ retry_policy = KazooRetry(
 
 parser = argparse.ArgumentParser()
 parser.add_argument('email')
-parser.add_argument('--zk', default='127.0.0.1:2181')
+parser.add_argument('--zk', default='zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
 
 args = parser.parse_args()
 email = args.email

@@ -32,7 +32,8 @@ def test_leader_election(dcos_api_session):
 def test_if_all_mesos_masters_have_registered(dcos_api_session):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
-    zk = kazoo.client.KazooClient(hosts=dcos_api_session.zk_hostports, read_only=True)
+    zk_hostports = 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'
+    zk = kazoo.client.KazooClient(hosts=zk_hostports, read_only=True)
     master_ips = []
 
     zk.start()
@@ -114,6 +115,7 @@ def test_signal_service(dcos_api_session):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
+        'platform': dcos_config['platform'],
         'provider': dcos_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,

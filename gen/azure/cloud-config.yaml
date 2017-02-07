@@ -19,6 +19,7 @@ root:
       Restart=always
       StartLimitInterval=0
       RestartSec=15
+      LimitNOFILE=16384
       ExecStartPre=-/sbin/ip link del docker0
       ExecStart=
       ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay

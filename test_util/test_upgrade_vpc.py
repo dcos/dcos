@@ -41,8 +41,6 @@ CONFIG_YAML_OVERRIDE_UPGRADE: file path(default=None)
 import logging
 import os
 import pprint
-import random
-import string
 import sys
 import uuid
 from contextlib import contextmanager
@@ -53,7 +51,7 @@ import test_util.aws
 import test_util.cluster
 from pkgpanda.util import load_string
 from test_util.dcos_api_session import DcosApiSession, DcosUser
-from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_subdomain
+from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_subdomain, random_id
 
 
 logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', level=logging.DEBUG)
@@ -218,7 +216,7 @@ def main():
     num_masters = int(os.getenv('MASTERS', '3'))
     num_agents = int(os.getenv('AGENTS', '2'))
     num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
-    stack_name = 'upgrade-test-' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+    stack_name = 'upgrade-test-' + random_id(10)
 
     test_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -rs ' + os.getenv('CI_FLAGS', ''))
 
@@ -242,7 +240,7 @@ def main():
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
         ),
     )
-    vpc.wait_for_stack_creation()
+    vpc.wait_for_complete()
     cluster = test_util.cluster.Cluster.from_vpc(
         vpc,
         ssh_info,

@@ -22,6 +22,7 @@ User=dcos_epmd
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=${PKG_PATH}/bin/epmd -port 61420
