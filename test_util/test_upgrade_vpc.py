@@ -183,6 +183,18 @@ class VpcClusterUpgradeTest:
         tasks = response.json()['tasks']
         return [task['id'] for task in tasks]
 
+    @staticmethod
+    def get_master_task_state(dcos_api, task_id):
+        """Returns the JSON blob associated with the task from /master/state."""
+        response = dcos_api.get('/mesos/master/state')
+        response.raise_for_status()
+        master_state = response.json()
+
+        for framework in master_state['frameworks']:
+            for task in framework['tasks']:
+                if task_id in task['id']:
+                    return task
+
     def parse_dns_log(self, dns_log_content):
         """Return a list of (timestamp, status) tuples from dns_log_content."""
         dns_log = [line.strip().split(' ') for line in dns_log_content.strip().split('\n')]
@@ -235,6 +247,13 @@ class VpcClusterUpgradeTest:
             for app in test_apps:
                 assert app['instances'] == len(self.tasks_start[app['id']])
 
+            # Save the master's state of the task to compare with
+            # the master's view after the upgrade.
+            # See this issue for why we check for a difference:
+            # https://issues.apache.org/jira/browse/MESOS-1718
+            self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[0])
+            log.debug('Test app state at start:\n' + pprint.pformat(self.task_state_start))
+
     def verify_apps_state(self, dcos_api: DcosApiSession, dns_app: dict):
         with logger.scope("verify apps state"):
 
@@ -248,6 +267,15 @@ class VpcClusterUpgradeTest:
                     self.teamcity_msg.testFailed(
                         "test_upgrade_vpc.marathon_app_tasks_survive_upgrade",
                         details="expected: {}\nactual:   {}".format(self.tasks_start, tasks_end))
+
+            def test_task_state_remains_consistent():
+                # Verify that the "state" of the task does not change.
+                task_state_end = get_master_task_state(dcos_api, self.tasks_start[0])
+                log.debug('Test app state at end:\n' + pprint.pformat(task_state_end))
+                if not self.task_state_start == task_state_end:
+                    self.teamcity_msg.testFailed(
+                        "test_upgrade_vpc.test_task_state_remains_consistent",
+                        details="expected: {}\nactual:   {}".format(self.task_state_start, task_state_end))
 
             def test_app_dns_survive_upgrade():
                 # Verify DNS didn't fail.
@@ -268,6 +296,7 @@ class VpcClusterUpgradeTest:
                     self.teamcity_msg.testFailed("test_upgrade_vpc.test_app_dns_survive_upgrade", details=err_msg)
 
             self.log_test("test_upgrade_vpc.marathon_app_tasks_survive_upgrade", marathon_app_tasks_survive_upgrade)
+            self.log_test("test_upgrade_vpc.test_task_state_remains_consistent", test_task_state_remains_consistent)
             self.log_test("test_upgrade_vpc.test_app_dns_survive_upgrade", test_app_dns_survive_upgrade)
 
     def run_test(self) -> int:
