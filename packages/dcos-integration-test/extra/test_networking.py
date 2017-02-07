@@ -16,7 +16,7 @@ from test_util.marathon import get_test_app, get_test_app_in_docker
 
 log = logging.getLogger(__name__)
 timeout = 500
-maxthreads = 15
+maxthreads = 8
 
 
 def lb_enabled():
