@@ -100,17 +100,14 @@ auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
 ))
 
 write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """
-log4j.rootLogger=INFO, journal, console
+log4j.rootLogger=INFO, journal
 
-log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppender
+log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppenderWithLayout
 log4j.appender.journal.logStacktrace=true
 log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
-
-log4j.appender.console=org.apache.log4j.ConsoleAppender
-log4j.appender.console.Threshold=INFO
-log4j.appender.console.layout=org.apache.log4j.PatternLayout
-log4j.appender.console.layout.ConversionPattern=%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L] - %m%n
+log4j.appender.journal.layout=org.apache.log4j.PatternLayout
+log4j.appender.journal.layout.ConversionPattern=%-5p [%t:%C{1}@%L] - %m%n
 """)
 
 # Add backend specific arguments

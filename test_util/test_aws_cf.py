@@ -133,7 +133,7 @@ def provide_cluster(options):
         log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
         # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
         if options.advanced:
-            cf, ssh_info = test_util.aws.DcosCfAdvanced.create(
+            cf, ssh_info = test_util.aws.DcosZenCfStack.create(
                 stack_name=stack_name,
                 boto_wrapper=bw,
                 template_url=options.template_url,
@@ -148,7 +148,7 @@ def provide_cluster(options):
                 private_subnet=options.private_subnet,
                 public_subnet=options.public_subnet)
         else:
-            cf, ssh_info = test_util.aws.DcosCfSimple.create(
+            cf, ssh_info = test_util.aws.DcosCfStack.create(
                 stack_name=stack_name,
                 template_url=options.template_url,
                 private_agents=options.agents,
@@ -156,12 +156,12 @@ def provide_cluster(options):
                 admin_location='0.0.0.0/0',
                 key_pair_name='default',
                 boto_wrapper=bw)
-        cf.wait_for_stack_creation(wait_before_poll_min=5)
+        cf.wait_for_complete(wait_before_poll_min=5)
     else:
         if options.advanced:
-            cf = test_util.aws.DcosCfAdvanced(options.stack_name, bw)
+            cf = test_util.aws.DcosZenCfStack(options.stack_name, bw)
         else:
-            cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
+            cf = test_util.aws.DcosCfStack(options.stack_name, bw)
         ssh_info = test_util.aws.SSH_INFO[options.host_os]
         stack_name = options.stack_name
     # Resiliency testing requires knowing the stack name

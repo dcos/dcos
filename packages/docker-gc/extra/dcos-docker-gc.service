@@ -4,6 +4,7 @@ Description=Docker GC: Periodically Garbate Collect Docker Containers using spot
 Type=simple
 Restart=on-failure
 RestartSec=20
+LimitNOFILE=16384
 User=dcos_docker_gc
 ConditionPathExists=/opt/mesosphere/etc/docker_gc_enabled
 EnvironmentFile=/opt/mesosphere/environment
