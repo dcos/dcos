@@ -710,6 +710,23 @@ package:
           "LocalFiles": [
               {
                   "Location": "/opt/mesosphere/active.buildinfo.full.json"
+              },
+              {
+                  "Location": "/opt/mesosphere/etc/dcos-version.json"
+              },
+              {
+                  "Location": "/opt/mesosphere/etc/expanded.config.json"
+              },
+              {
+                  "Location": "/opt/mesosphere/etc/user.config.yaml"
+              },
+              {
+                  "Location": "/var/lib/dcos/exhibitor/zookeeper/snapshot/myid",
+                  "Role": ["master"]
+              },
+              {
+                  "Location": "/var/lib/dcos/exhibitor/conf/zoo.cfg",
+                  "Role": ["master"]
               }
           ],
           "LocalCommands": [
