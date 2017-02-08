@@ -43,7 +43,7 @@ check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhib
 
 # On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
 # libraries to a path we control instead. See DCOS-11056
-jna_tmpdir = '/var/lib/dcos/exhibitor/tmp'
+jna_tmpdir = get_var_assert_set('JNA_TMP_DIR')
 check_call(['mkdir', '-p', jna_tmpdir])
 
 # TODO(cmaloney): Move exhibitor_defaults to a temp runtime conf dir.
