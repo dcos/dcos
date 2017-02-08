@@ -16,6 +16,7 @@ import json
 import logging as log
 import os
 import os.path
+import pprint
 import textwrap
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
@@ -541,6 +542,7 @@ def generate(
                 assert setter.name not in late_variables
 
                 late_variables[setter.name] = setter.late_expression
+    log.debug('Late variables:\n{}'.format(pprint.pformat(late_variables)))
 
     argument_dict = {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
 
@@ -601,6 +603,7 @@ def generate(
         late_package_filename = make_package_filename(late_package_id, '.dcos_config')
         os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
         write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
+        log.info('Package filename: {}'.format(late_package_filename))
         cluster_package_info[late_package_id.name] = {
             'id': late_package['name'],
             'filename': late_package_filename
