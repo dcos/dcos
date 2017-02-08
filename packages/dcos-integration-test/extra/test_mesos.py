@@ -87,8 +87,8 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
         # Launch debug session and attach to output stream of debug container
         output_headers = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json+recordio',
-            'Connection': 'keep-alive'
+            'Accept': 'application/recordio',
+            'Message-Accept': 'application/json'
         }
         lncs_data = {
             'type': 'LAUNCH_NESTED_CONTAINER_SESSION',
@@ -105,9 +105,9 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
 
         # Attach to input stream of debug container and stream a message
         input_headers = {
-            'Content-Type': 'application/json+recordio',
+            'Content-Type': 'application/recordio',
+            'Message-Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Connection': 'keep-alive',
             'Transfer-Encoding': 'chunked'
         }
         post(agent_v1_url, input_headers, data=input_streamer(nested_container_id))
