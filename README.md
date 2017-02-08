@@ -1,12 +1,11 @@
 # DC/OS - The Datacenter Operating System
 
-The easiest way to run microservices, big data, and containers in production.
+The easiest way to run microservices and containers in production.
 
 # What is DC/OS?
 
-Like traditional operating systems, DC/OS is system software that manages computer hardware and software resources and provides common services for computer programs.
+DC/OS is a distributed operating system based on the Apache Mesos distributed systems kernel. It enables the management of multiple machines as if they were a single computer. It automates resource management, schedules process placement, facilitates inter-process communication, and simplifies the installation and management of distributed services.
 
-Unlike traditional operating systems, DC/OS spans multiple machines within a network, aggregating their resources to maximize utilization by distributed applications.
 
 To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
 
