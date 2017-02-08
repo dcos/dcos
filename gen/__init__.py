@@ -28,7 +28,7 @@ import gen.internals
 import gen.template
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, write_json, write_yaml
+from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, split_by_token, write_json, write_yaml
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -306,46 +306,23 @@ def do_gen_package(config, package_filename):
 
 
 def render_late_content(content, late_values):
-    # TODO(branden): Unit tests
 
-    def _next_substring(string_, substring, start=0):
-        idx = string_.find(substring, start)
-        if idx < 0:
-            return None
-        return idx, idx + len(substring)
+    def _dereference_placeholders(parts):
+        for part, is_placeholder in parts:
+            if is_placeholder:
+                if part not in late_values:
+                    log.debug('Found placeholder for unknown value "{}" in late config: {}'.format(part, repr(content)))
+                    raise Exception('Bad late config file: Found placeholder for unknown value "{}"'.format(part))
+                yield late_values[part]
+            else:
+                yield part
 
-    def _interpolate_values(string_):
-        if not string_:
-            return
-
-        # Find the next placeholder.
-        placeholder_start = _next_substring(string_, gen.internals.LATE_BIND_PLACEHOLDER_START)
-        if not placeholder_start:
-            # No placeholder found in the string.
-            yield string_
-            return
-
-        # Yield the string preceding the placeholder, if any.
-        if placeholder_start[0] > 0:
-            yield string_[:placeholder_start[0]]
-
-        # Find the end of the placeholder.
-        placeholder_end = _next_substring(string_, gen.internals.LATE_BIND_PLACEHOLDER_END, placeholder_start[1])
-        if not placeholder_end:
-            log.debug("Can't find end of placeholder in string: {}".format(repr(string_)))
-            raise Exception("Bad late config file: Can't find end of placeholder")
-
-        # Extract the name between the start and end and yield its value.
-        name = string_[placeholder_start[1]:placeholder_end[0]]
-        if name not in late_values:
-            log.debug('Found placeholder for unknown value "{}" in string: {}'.format(name, repr(string_)))
-            raise Exception('Bad late config file: Found placeholder for unknown value "{}"'.format(name))
-        yield late_values[name]
-
-        # Interpolate values into the rest of the string.
-        yield from _interpolate_values(string_[placeholder_end[1]:])
-
-    return ''.join(_interpolate_values(content))
+    return ''.join(_dereference_placeholders(split_by_token(
+        gen.internals.LATE_BIND_PLACEHOLDER_START,
+        gen.internals.LATE_BIND_PLACEHOLDER_END,
+        content,
+        strip_token_decoration=True,
+    )))
 
 
 def _late_bind_placeholder_in(string_):

@@ -118,8 +118,14 @@ def test_pod_logs(dcos_api_session):
 
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         url = get_task_url(dcos_api_session, pod_id)
+        container_id = url.split('/')[-1]
+
         check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
         check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
+
+        response = dcos_api_session.get(url + '/download', query='limit=10&postfix=stdout')
+        log_file_name = 'task-{}-stdout.log.gz'.format(container_id)
+        check_response_ok(response, {'Content-Disposition': 'attachment; filename={}'.format(log_file_name)})
 
 
 @retrying.retry(wait_fixed=1000, stop_max_delay=3000)
