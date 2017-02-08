@@ -21,6 +21,7 @@ from botocore.exceptions import ClientError, WaiterError
 
 Host = namedtuple('Host', ['private_ip', 'public_ip'])
 SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
+log = logging.getLogger(__name__)
 
 
 # Token valid until 2036 for user albert@bekstil.net
@@ -136,7 +137,7 @@ class ApiClientSession:
             fragment=fragment,
             port=port))
 
-        logging.info('Request method {}: {}'.format(method, request_url))
+        log.info('Request method {}: {}'.format(method, request_url))
         r = self.session.request(method, request_url, **kwargs)
         self.session.cookies.clear()
         return r
@@ -191,8 +192,8 @@ def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
                 else:
                     raise
                 if error_code in ['Throttling', 'RequestLimitExceeded']:
-                    logging.warn('AWS API Limiting error: {}'.format(error_code))
-                    logging.warn('Sleeping for {} seconds before retrying'.format(local_wait))
+                    log.warn('AWS API Limiting error: {}'.format(error_code))
+                    log.warn('Sleeping for {} seconds before retrying'.format(local_wait))
                     time_to_next = next_time - time.time()
                     if time_to_next > 0:
                         time.sleep(time_to_next)
@@ -212,7 +213,7 @@ def wait_for_pong(url, timeout):
     """
     @retrying.retry(wait_fixed=3000, stop_max_delay=timeout * 1000)
     def ping_app():
-        logging.info('Attempting to ping test application')
+        log.info('Attempting to ping test application')
         r = requests.get('http://{}/ping'.format(url), timeout=10)
         r.raise_for_status()
         assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
@@ -271,7 +272,7 @@ def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
     try:
         strategy = response['uiConfiguration']['plugins']['mesos']['logging-strategy']
     except Exception:
-        logging.error('Unable to find logging strategy')
+        log.error('Unable to find logging strategy')
         raise
     if not strategy.startswith('journald'):
         pytest.skip('Skipping a test since journald logging is disabled')

@@ -290,7 +290,9 @@ class Marathon(ApiClientSession):
             r = self.get('v2/pods' + pod_id)
             r.raise_for_status()
             data = r.json()
-            if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
+            if ('scaling' in data.keys() and
+                'scaling' in pod_definition.keys() and
+                    int(data['scaling']['instances']) != pod_definition['scaling']['instances']):
                 log.info('Pod is still scaling. Continuing to wait...')
                 return False
             return data
