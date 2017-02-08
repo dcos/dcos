@@ -45,6 +45,7 @@
 {% endswitch %}
   },
   "Mappings": {
+    "ClusterPackagesJson": { "default": { "default": {{ cluster_packages_json_var }} } },
     "RegionToAmi": {{ region_to_ami_mapping }},
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {

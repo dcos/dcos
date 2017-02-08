@@ -4,6 +4,9 @@
     "DcosImageCommit": "unset",
     "TemplateGenerationDate": "unset"
     },
+    "Mappings": {
+        "ClusterPackagesJson": { "default": { "default": {{ cluster_packages_json_var }} } }
+    },
     "Parameters": {
         "KeyName": {
           "Type": "AWS::EC2::KeyPair::KeyName",
