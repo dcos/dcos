@@ -220,6 +220,7 @@
     "TemplateGenerationDate": "unset"
   },
   "Mappings": {
+    "ClusterPackagesJson": { "default": { "default": {{ cluster_packages_json_var }} } },
     "Parameters": {
       "StackCreationTimeout": {
         "default": "PT60M"

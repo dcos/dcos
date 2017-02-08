@@ -547,6 +547,7 @@ entry = {
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
+        'cluster_packages_json': lambda cluster_packages: cluster_packages,
         'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
