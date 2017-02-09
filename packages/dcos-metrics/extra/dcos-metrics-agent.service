@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS Metrics Agent: exposes application, container and host level metrics
+Description=DC/OS Metrics Agent: exposes application, container and host metrics
 [Service]
 Restart=always
 RestartSec=5
