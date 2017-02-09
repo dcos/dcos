@@ -3,7 +3,7 @@
     "kind": "git",
     "git": "https://github.com/dcos/dcos-log.git",
     "ref": "3a59910b0aca6d4f12de80b89916b76be8bf2562",
-    "ref_origin": "mnaboka/add-sse-heade"
+    "ref_origin": "mnaboka/add-sse-header"
   },
   "username": "dcos_log",
   "group": "systemd-journal"
