@@ -360,8 +360,15 @@ if ([ x$dist == 'xcoreos' ]); then
   exit 0
 fi
 
-if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ]); then
-  echo "$dist is not supported. Only RHEL and CentOS are supported" >&2
+if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ] && [ x$dist != 'xol' ]); then
+  echo "$dist is not supported. Only RHEL, CentOS and Oracle Enterprise Linux are supported" >&2
+  exit 0
+fi
+
+kernel_version=`uname -r`
+
+if ([ x$dist != 'xol' ] && [ kernel_version == *"uek"* ]); then
+  echo "Unbreakable Enterprise Kernel is not supported on Oracle Enterprise Linux. Switch to the other Kernel" >&2
   exit 0
 fi
 
