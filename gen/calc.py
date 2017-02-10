@@ -609,7 +609,7 @@ entry = {
                 }
             }
         }),
-        'enable_gpu_isolation': 'false',
+        'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
         'cluster_docker_credentials_write_to_etc': 'false',
