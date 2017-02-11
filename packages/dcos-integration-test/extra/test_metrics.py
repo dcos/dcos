@@ -35,6 +35,18 @@ def test_metrics_node(dcos_api_session):
         """
         assert 'datapoints' in response, '"datapoints" dictionary not found'
         'in response, got {}'.format(response)
+
+        for dp in response['datapoints']:
+            assert 'name' in dp, '"name" parameter should not be empty, got {}'.format(dp)
+            if 'filesystem' in dp['name']:
+                assert 'tags' in dp, '"tags" key not found, got {}'.format(dp)
+
+                assert 'path' in dp['tags'], ('"path" tag not found for filesystem metric, '
+                                              'got {}'.format(dp))
+
+                assert len(dp['tags']['path']) > 0, ('"path" tag should not be empty for '
+                                                     'filesystem metrics, got {}'.format(dp))
+
         return True
 
     def expected_dimension_response(response):
