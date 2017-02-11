@@ -49,6 +49,7 @@ exhibitor_cmdline = [
     '-Djava.util.prefs.userRoot=/var/lib/dcos/exhibitor/',
     '-Duser.home=/var/lib/dcos/exhibitor/',
     '-Duser.dir=/var/lib/dcos/exhibitor/',
+    '-Djna.tmpdir=/run/dcos_exhibitor',
     '-jar', '$PKG_PATH/usr/exhibitor/exhibitor.jar',
     '--port', '8181',
     '--defaultconfig', '/run/dcos_exhibitor/exhibitor_defaults.conf',
