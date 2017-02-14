@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS Log Agent: exposes component, container, and task logs
+Description=DC/OS Log Agent: exposes agent node, component, and container (task) logs
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-log.env
