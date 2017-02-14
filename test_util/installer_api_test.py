@@ -250,7 +250,9 @@ class DcosCliInstaller(AbstractDcosInstaller):
                 # expected behavior
                 pass
         else:
-            print(self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME))
+            output = self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
+            print(output)
+            return output
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
@@ -331,3 +333,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def postflight(self, expect_errors=False):
         self.run_cli_cmd('--postflight', expect_errors=expect_errors)
+
+    def generate_node_upgrade_script(self, version, expect_errors=False):
+        # tunnel run_cmd calls check_output which returns the output hence returning this
+        return self.run_cli_cmd("--generate-node-upgrade-script " + version, expect_errors=expect_errors)
