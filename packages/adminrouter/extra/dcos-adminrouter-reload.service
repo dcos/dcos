@@ -1,5 +1,5 @@
 [Unit]
-Description=Admin Router Reloader: reload admin router to pick up domain resolution changes
+Description=Admin Router Reloader: reloads Admin Router to pick up domain resolution changes
 
 [Service]
 Type=oneshot

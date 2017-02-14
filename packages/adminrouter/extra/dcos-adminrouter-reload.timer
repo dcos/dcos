@@ -1,5 +1,5 @@
 [Unit]
-Description=Admin Router Reloader Timer: periodically reload admin router to pick up domain resolution changes
+Description=Admin Router Reloader Timer: periodically reloads Admin Router to pick up domain resolution changes
 [Timer]
 OnBootSec=5sec
 OnUnitActiveSec=30s
