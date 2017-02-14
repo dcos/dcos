@@ -152,6 +152,7 @@ class VpcClusterUpgradeTest:
                  config_yaml_override_install: str, config_yaml_override_upgrade: str,
                  dcos_api_session_factory_install: VpcClusterUpgradeTestDcosApiSessionFactory,
                  dcos_api_session_factory_upgrade: VpcClusterUpgradeTestDcosApiSessionFactory):
+
         self.dcos_api_session_factory_install = dcos_api_session_factory_install
         self.dcos_api_session_factory_upgrade = dcos_api_session_factory_upgrade
         self.num_masters = num_masters
