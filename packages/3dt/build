@@ -37,7 +37,7 @@ EOF
 
 cat <<EOF | tee $master_service
 [Unit]
-Description=DC/OS Diagnostics (3DT) Master: exposes system, node, and component health
+Description=DC/OS Diagnostics (3DT) Master: aggregates and exposes component health
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 Restart=always
