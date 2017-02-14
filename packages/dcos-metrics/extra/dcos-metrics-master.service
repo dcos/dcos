@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS Metrics Master: exposes host level metrics
+Description=DC/OS Metrics Master: exposes node metrics
 [Service]
 Restart=always
 RestartSec=5
