@@ -48,6 +48,10 @@ def test_set_arg_parser():
     assert parser.password is None
     assert parser.action == 'set-superuser-password'
 
+    parser = parse_args(['--generate-node-upgrade-script', 'fake'])
+    assert parser.installed_version == 'fake'
+    assert parser.action == 'generate-node-upgrade-script'
+
     # Can't do two at once
     with pytest.raises(SystemExit):
         parse_args(['--validate', '--hash-password', 'foo'])
