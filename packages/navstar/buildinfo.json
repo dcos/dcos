@@ -4,8 +4,15 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "4ef753e175a93adc597827aa28a836e43b8ccf3d",
-      "ref_origin": "master"
+      "ref": "d35cb3981f5d4cea93cb39b4e14119ae6aa99fbc",
+      "ref_origin": "minuteman-1.8"
     }
+  },
+  "sysctl": {
+      "dcos-navstar": {
+          "net.netfilter.nf_conntrack_tcp_be_liberal": "1",
+          "net.netfilter.ip_conntrack_tcp_be_liberal": "1",
+          "net.ipv4.netfilter.ip_conntrack_tcp_be_liberal": "1"
+      }
   }
 }
