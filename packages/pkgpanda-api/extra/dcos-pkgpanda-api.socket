@@ -1,5 +1,5 @@
 [Unit]
-Description=Pkgpanda API socket: Package Management Service Socket
+Description=DC/OS Component Package Manager (Pkgpanda) Socket: socket for DC/OS Component Package Manager
 
 [Socket]
 ListenStream=/run/dcos/pkgpanda-api.sock

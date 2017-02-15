@@ -1,5 +1,5 @@
 [Unit]
-Description=Metrics Agent Service: DC/OS Metrics Agent Service for Application, Container and Host Level Metrics.
+Description=DC/OS Metrics Agent: exposes node, container, and application metrics
 [Service]
 Restart=always
 RestartSec=5

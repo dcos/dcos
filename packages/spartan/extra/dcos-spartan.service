@@ -1,5 +1,5 @@
 [Unit]
-Description=DNS Dispatcher: An RFC5625 Compliant DNS Forwarder
+Description=DNS Forwarder (Spartan): forwards DNS requests to multiple DNS servers
 
 [Service]
 Restart=always

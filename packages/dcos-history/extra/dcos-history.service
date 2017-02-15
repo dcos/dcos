@@ -1,5 +1,5 @@
 [Unit]
-Description=Mesos History: DC/OS Resource Metrics History Service/API
+Description=DC/OS History: caches and exposes historical system state
 [Service]
 User=dcos_history
 PermissionsStartOnly=True

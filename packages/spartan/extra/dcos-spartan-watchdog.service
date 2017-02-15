@@ -1,5 +1,5 @@
 [Unit]
-Description=DNS Dispatcher Watchdog: Make sure spartan is running
+Description=DNS Forwarder (Spartan) Watchdog: restarts Spartan when it is unhealthy
 
 [Service]
 Type=oneshot

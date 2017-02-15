@@ -11,7 +11,7 @@ mkdir -p $(dirname "$marathon_service")
 
 cat <<EOF > "$marathon_service"
 [Unit]
-Description=Marathon: DC/OS Init System
+Description=Marathon: container orchestration engine
 
 [Service]
 User=dcos_marathon

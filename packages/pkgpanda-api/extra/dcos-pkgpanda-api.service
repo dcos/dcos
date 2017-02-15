@@ -1,5 +1,5 @@
 [Unit]
-Description=Pkgpanda API: Package Management Service
+Description=DC/OS Component Package Manager (Pkgpanda): installs and manages DC/OS components
 
 
 [Service]

@@ -1,5 +1,5 @@
 [Unit]
-Description=Docker GC Timer: Timer to trigger periodic `docker-gc`
+Description=Docker GC Timer: timer to periodically trigger Docker GC
 [Timer]
 OnBootSec=45sec
 OnCalendar=hourly
