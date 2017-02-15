@@ -252,7 +252,6 @@ class VpcClusterUpgradeTest:
             # See this issue for why we check for a difference:
             # https://issues.apache.org/jira/browse/MESOS-1718
             self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[0])
-            log.debug('Test app state at start:\n' + pprint.pformat(self.task_state_start))
 
     def verify_apps_state(self, dcos_api: DcosApiSession, dns_app: dict):
         with logger.scope("verify apps state"):
@@ -268,13 +267,12 @@ class VpcClusterUpgradeTest:
                         "test_upgrade_vpc.marathon_app_tasks_survive_upgrade",
                         details="expected: {}\nactual:   {}".format(self.tasks_start, tasks_end))
 
-            def test_task_state_remains_consistent():
+            def test_mesos_task_state_remains_consistent():
                 # Verify that the "state" of the task does not change.
-                task_state_end = get_master_task_state(dcos_api, self.tasks_start[0])
-                log.debug('Test app state at end:\n' + pprint.pformat(task_state_end))
+                task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[0])
                 if not self.task_state_start == task_state_end:
                     self.teamcity_msg.testFailed(
-                        "test_upgrade_vpc.test_task_state_remains_consistent",
+                        "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
                         details="expected: {}\nactual:   {}".format(self.task_state_start, task_state_end))
 
             def test_app_dns_survive_upgrade():
@@ -296,7 +294,10 @@ class VpcClusterUpgradeTest:
                     self.teamcity_msg.testFailed("test_upgrade_vpc.test_app_dns_survive_upgrade", details=err_msg)
 
             self.log_test("test_upgrade_vpc.marathon_app_tasks_survive_upgrade", marathon_app_tasks_survive_upgrade)
-            self.log_test("test_upgrade_vpc.test_task_state_remains_consistent", test_task_state_remains_consistent)
+            self.log_test(
+                "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
+                test_mesos_task_state_remains_consistent
+            )
             self.log_test("test_upgrade_vpc.test_app_dns_survive_upgrade", test_app_dns_survive_upgrade)
 
     def run_test(self) -> int:
