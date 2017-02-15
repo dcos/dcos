@@ -378,7 +378,7 @@ class DcosApiSessionFactory(VpcClusterUpgradeTestDcosApiSessionFactory):
 
 def main():
     num_masters = int(os.getenv('MASTERS', '3'))
-    num_agents = int(os.getenv('AGENTS', '1'))
+    num_agents = int(os.getenv('AGENTS', '2'))
     num_public_agents = int(os.getenv('PUBLIC_AGENTS', '1'))
 
     stable_installer_url = os.environ['STABLE_INSTALLER_URL']
