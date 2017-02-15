@@ -20,7 +20,7 @@ def make_serve_dir(gen_out):
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
     # Get bootstrap from artifacts
-    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
+    fetch_artifacts(gen_out.arguments['bootstrap_id'], gen_out.cluster_packages, gen_out.config_package_ids)
     # Write some package metadata
     pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 

@@ -68,7 +68,7 @@ def test_set_superuser_password(tmpdir):
         assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
 
 
-def test_generate_node_upgrade_script(tmpdir):
+def test_generate_node_upgrade_script(tmpdir, monkeypatch):
     upgrade_config = """
 ---
 # The name of your DC/OS cluster. Visable in the DC/OS user interface.
@@ -83,8 +83,9 @@ process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 master_list: ['10.0.0.1', '10.0.0.2', '10.0.0.5']
 """
-
-    create_fake_build_artifacts(upgrade_config, tmpdir)
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', '')
+    create_config(upgrade_config, tmpdir)
+    create_fake_build_artifacts(tmpdir)
 
     output = subprocess.check_output(['dcos_installer', '--generate-node-upgrade-script', 'fake'], cwd=str(tmpdir))
     assert output.decode('utf-8').splitlines()[-1].split("Node upgrade script URL: ", 1)[1]\
