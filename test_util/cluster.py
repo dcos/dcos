@@ -320,18 +320,14 @@ def install_dcos(
         installer.postflight()
 
 
-def upgrade_dcos(cluster, installer_url, add_config_path=None):
+def upgrade_dcos(cluster, installer_url, version, add_config_path=None):
 
-    def upgrade_host(tunnel, role, bootstrap_url):
-        # Download the install script for the new DC/OS.
-        tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
+    def upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path):
+        # Download the upgrade script for the new DC/OS.
+        tunnel.remote_cmd(curl_cmd + ['--remote-name', upgrade_script_path])
 
-        # Remove the old DC/OS.
-        tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
-        tunnel.remote_cmd(['sudo', 'rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'])
-
-        # Install the new DC/OS.
-        tunnel.remote_cmd(['sudo', 'bash', 'dcos_install.sh', '-d', role])
+        # Upgrade to the new DC/OS.
+        tunnel.remote_cmd(['sudo', 'bash', 'dcos_node_upgrade.sh'])
 
     @retry(
         wait_fixed=(1000 * 5),
@@ -372,6 +368,11 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             add_config_path=add_config_path,
             rexray_config_preset=cluster.rexray_config_preset,
         )
+
+        # Generate node upgrade script
+        output = installer.generate_node_upgrade_script(version)
+        upgrade_script_path = output.decode('utf-8').splitlines()[-1].split("Node upgrade script URL: ", 1)[1]
+
         # Remove docker (and associated journald) restart from the install
         # script. This prevents Docker-containerized tasks from being killed
         # during agent upgrades.
@@ -399,7 +400,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         for host in hosts:
             logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
             with cluster.ssher.tunnel(host) as tunnel:
-                upgrade_host(tunnel, role, bootstrap_url)
+                upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
 
             wait_metric = {
                 'master': 'registrar/log/recovered',

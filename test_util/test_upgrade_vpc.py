@@ -318,6 +318,7 @@ class VpcClusterUpgradeTest:
 
             dcos_api_install.wait_for_dcos()
 
+        installed_version = dcos_api_install.get_version()
         healthcheck_app = create_marathon_healthcheck_app(healthcheck_app_id)
         dns_app = create_marathon_dns_app(dns_app_id, healthcheck_app_id)
 
@@ -325,7 +326,7 @@ class VpcClusterUpgradeTest:
 
         with logger.scope("upgrade cluster"):
             test_util.cluster.upgrade_dcos(cluster, self.installer_url,
-                                           add_config_path=self.config_yaml_override_upgrade)
+                                           installed_version, add_config_path=self.config_yaml_override_upgrade)
             with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
                 bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 

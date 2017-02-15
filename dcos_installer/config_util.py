@@ -11,15 +11,16 @@ from dcos_installer.constants import ARTIFACT_DIR, CLUSTER_PACKAGES_PATH, SERVE_
 log = logging.getLogger(__name__)
 
 
-def do_configure(config):
-    gen_out = gen.generate(config.as_gen_format(), extra_sources=[gen.build_deploy.bash.onprem_source])
+def onprem_generate(config):
+    return gen.generate(config.as_gen_format(), extra_sources=[gen.build_deploy.bash.onprem_source])
 
+
+def make_serve_dir(gen_out):
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
-    # Get bootstrap and packages from artifacts
-    # TODO(cmaloney): Switch to use a local storage provider like do_aws_configure does.
-    fetch_artifacts(gen_out.arguments['bootstrap_id'], gen_out.cluster_packages, gen_out.config_package_ids)
+    # Get bootstrap from artifacts
+    fetch_bootstrap(gen_out.arguments['bootstrap_id'])
     # Write some package metadata
     pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 
@@ -30,6 +31,11 @@ def parent_dirs(filename):
     for directory in filename.split('/')[:-1]:
         dirs.append(directory)
         yield '/'.join(dirs)
+
+
+def do_configure(config):
+    gen_out = onprem_generate(config)
+    make_serve_dir(gen_out)
 
 
 def do_move_atomic(src_dir, dest_dir, filenames):
