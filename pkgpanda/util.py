@@ -36,6 +36,13 @@ def variant_str(variant):
     return variant
 
 
+def variant_object(variant_str):
+    """Return a variant object from its string representation."""
+    if variant_str == '':
+        return None
+    return variant_str
+
+
 def variant_name(variant):
     """Return a human-readable string representation of variant."""
     if variant is None:
