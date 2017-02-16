@@ -96,9 +96,9 @@ class AzureWrapper:
     def create_deployment_properties(self, template_url, parameters):
         """ Pulls the targeted template, checks parameter specs and casts
         user provided parameters to the appropriate type. Assertion is raised
-        if there are unused parameters
+        if there are unused parameters or invalid casting
         """
-        user_parameters = copy.copy(parameters)
+        user_parameters = copy.deepcopy(parameters)
         type_cast_map = {
             'string': str,
             'secureString': str,
@@ -132,16 +132,39 @@ class AzureWrapper:
 
 
 class DcosAzureResourceGroup:
+    """ An abstraction for cleanly handling the life cycle of a DC/OS template
+    deployment. Operations include: create, wait, describe host IPs, and delete
+    """
     def __init__(self, group_name, azure_wrapper):
         self.group_name = group_name
         self.azure_wrapper = azure_wrapper
 
     @classmethod
     def deploy_acs_template(
-            cls, azure_wrapper, template_url, group_name,
+            cls, azure_wrapper: AzureWrapper, template_url: str, group_name: str,
             public_key, master_prefix, agent_prefix, admin_name, oauth_enabled,
             vm_size, agent_count, name_suffix, vm_diagnostics_enabled):
         """ Creates a new resource group and deploys a ACS DC/OS template to it
+        using a subset of parameters for a simple deployment. To see a full
+        listing of parameters, including description and formatting, go to:
+        gen/azure/templates/acs.json in this repository.
+
+        Args:
+            azure_wrapper: see above
+            template_url: Azure-accessible location for the desired ACS template
+            group_name: name used for the new resource group that will be created
+                for this template deployment
+
+        Args that wrap template parameters:
+            public_key -> sshRSAPublicKey
+            master_prefix -> masterEndpointDNSNamePrefix
+            agent_prefix -> agentEndpointDNSNamePrefix
+            admin_name -> linuxAdminUsername
+            vm_size -> agentVMSize
+            agent_count -> agentCount
+            name_suffix -> nameSuffix
+            oauth_enabled -> oauthEnabled
+            vm_diagnostics_enabled -> enableVMDiagnostics
         """
         assert master_prefix != agent_prefix, 'Master and agents must have unique prefixs'
         validate_hostname_prefix(master_prefix)
