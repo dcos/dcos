@@ -1,5 +1,5 @@
 [Unit]
-Description=Signal: DC/OS Telemetry and Tracking Service
+Description=DC/OS Signal: reports cluster telemetry and analytics to help improve DC/OS
 [Service]
 Type=simple
 Restart=on-failure

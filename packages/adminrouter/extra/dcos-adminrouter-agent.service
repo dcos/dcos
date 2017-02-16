@@ -1,5 +1,5 @@
 [Unit]
-Description=Admin Router Agent: A high performance web server and a reverse proxy server
+Description=Admin Router Agent: exposes a unified control plane proxy for components and services using NGINX
 
 [Service]
 Restart=always

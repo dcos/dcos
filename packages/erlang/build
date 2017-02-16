@@ -15,7 +15,7 @@ service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
 mkdir -p $(dirname $service)
 cat <<EOF > $service
 [Unit]
-Description=Erlang Port Mapping Daemon: DC/OS Erlang Port Mapping Daemon
+Description=Erlang Port Mapping Daemon (EPMD): facilitates communication between distributed Erlang programs
 
 [Service]
 User=dcos_epmd

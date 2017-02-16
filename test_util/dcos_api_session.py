@@ -388,3 +388,9 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         )
         r.raise_for_status()
         return r.text
+
+    def get_version(self):
+        version_metadata = self.get('/dcos-metadata/dcos-version.json')
+        version_metadata.raise_for_status()
+        data = version_metadata.json()
+        return data["version"]

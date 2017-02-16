@@ -1,5 +1,5 @@
 [Unit]
-Description=Docker GC: Periodically Garbate Collect Docker Containers using spotify/docker-gc
+Description=Docker GC: periodically garbage collects Docker containers and images
 [Service]
 Type=simple
 Restart=on-failure

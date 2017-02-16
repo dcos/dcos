@@ -12,9 +12,6 @@ AGENTS: integer (default=2)
 PUBLIC_AGENTS: integer (default=1)
     The number of public agents to create from a newly created VPC.
 
-DCOS_SSH_KEY_PATH: string (default='default_ssh_key')
-    Use to set specific ssh key path. Otherwise, script will expect key at default_ssh_key
-
 INSTALLER_URL: Installer URL for the DC/OS release under test.
 
 STABLE_INSTALLER_URL: Installer URL for the latest stable DC/OS release.
@@ -51,7 +48,7 @@ from teamcity.messages import TeamcityServiceMessages
 
 import test_util.aws
 import test_util.cluster
-from pkgpanda.util import load_string, logger
+from pkgpanda.util import logger, write_string
 from test_util.dcos_api_session import DcosApiSession, DcosUser
 from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_subdomain, random_id
 
@@ -148,7 +145,7 @@ class VpcClusterUpgradeTest:
                  num_masters: int, num_agents: int, num_public_agents: int,
                  stable_installer_url: str, installer_url: str,
                  aws_region: str, aws_access_key_id: str, aws_secret_access_key: str,
-                 ssh_key: str, default_os_user: str,
+                 default_os_user: str,
                  config_yaml_override_install: str, config_yaml_override_upgrade: str,
                  dcos_api_session_factory_install: VpcClusterUpgradeTestDcosApiSessionFactory,
                  dcos_api_session_factory_upgrade: VpcClusterUpgradeTestDcosApiSessionFactory):
@@ -162,7 +159,6 @@ class VpcClusterUpgradeTest:
         self.aws_region = aws_region
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.ssh_key = ssh_key
         self.default_os_user = default_os_user
         self.config_yaml_override_install = config_yaml_override_install
         self.config_yaml_override_upgrade = config_yaml_override_upgrade
@@ -271,13 +267,19 @@ class VpcClusterUpgradeTest:
             self.log_test("test_upgrade_vpc.test_app_dns_survive_upgrade", test_app_dns_survive_upgrade)
 
     def run_test(self) -> int:
-        stack_name = 'upgrade-test-' + random_id(10)
+        stack_name = 'dcos-ci-test-upgrade-' + random_id(10)
 
         test_id = uuid.uuid4().hex
         healthcheck_app_id = TEST_APP_NAME_FMT.format('healthcheck-' + test_id)
         dns_app_id = TEST_APP_NAME_FMT.format('dns-' + test_id)
 
         with logger.scope("create vpc cf stack '{}'".format(stack_name)):
+            bw = test_util.aws.BotoWrapper(
+                region=self.aws_region,
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key)
+            ssh_key = bw.create_key_pair(stack_name)
+            write_string('ssh_key', ssh_key)
             vpc, ssh_info = test_util.aws.VpcCfStack.create(
                 stack_name=stack_name,
                 instance_type='m4.xlarge',
@@ -285,19 +287,15 @@ class VpcClusterUpgradeTest:
                 # An instance for each cluster node plus the bootstrap.
                 instance_count=(self.num_masters + self.num_agents + self.num_public_agents + 1),
                 admin_location='0.0.0.0/0',
-                key_pair_name='default',
-                boto_wrapper=test_util.aws.BotoWrapper(
-                    region=self.aws_region,
-                    aws_access_key_id=self.aws_access_key_id,
-                    aws_secret_access_key=self.aws_secret_access_key,
-                ),
+                key_pair_name=stack_name,
+                boto_wrapper=bw
             )
             vpc.wait_for_complete()
 
         cluster = test_util.cluster.Cluster.from_vpc(
             vpc,
             ssh_info,
-            ssh_key=self.ssh_key,
+            ssh_key=ssh_key,
             num_masters=self.num_masters,
             num_agents=self.num_agents,
             num_public_agents=self.num_public_agents,
@@ -320,6 +318,7 @@ class VpcClusterUpgradeTest:
 
             dcos_api_install.wait_for_dcos()
 
+        installed_version = dcos_api_install.get_version()
         healthcheck_app = create_marathon_healthcheck_app(healthcheck_app_id)
         dns_app = create_marathon_dns_app(dns_app_id, healthcheck_app_id)
 
@@ -327,7 +326,7 @@ class VpcClusterUpgradeTest:
 
         with logger.scope("upgrade cluster"):
             test_util.cluster.upgrade_dcos(cluster, self.installer_url,
-                                           add_config_path=self.config_yaml_override_upgrade)
+                                           installed_version, add_config_path=self.config_yaml_override_upgrade)
             with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
                 bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
@@ -361,6 +360,7 @@ class VpcClusterUpgradeTest:
         if result == 0:
             self.log.info("Test successful! Deleting VPC if provided in this run.")
             vpc.delete()
+            bw.delete_key_pair(stack_name)
         else:
             self.log.info("Test failed! VPC cluster will remain available for "
                           "debugging for 2 hour after instantiation.")
@@ -385,7 +385,6 @@ def main():
     aws_region = os.getenv('DEFAULT_AWS_REGION', 'eu-central-1')
     aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-    ssh_key = load_string(os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key'))
 
     config_yaml_override_install = os.getenv('CONFIG_YAML_OVERRIDE_INSTALL')
     config_yaml_override_upgrade = os.getenv('CONFIG_YAML_OVERRIDE_UPGRADE')
@@ -394,7 +393,7 @@ def main():
     test = VpcClusterUpgradeTest(num_masters, num_agents, num_public_agents,
                                  stable_installer_url, installer_url,
                                  aws_region, aws_access_key_id, aws_secret_access_key,
-                                 ssh_key, "root",
+                                 "root",
                                  config_yaml_override_install, config_yaml_override_upgrade,
                                  dcos_api_session_factory, dcos_api_session_factory)
     status = test.run_test()

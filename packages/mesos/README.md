@@ -4,3 +4,4 @@ These commits can be found in the repository at <a href="https://github.com/meso
 <li>[5720037ac5921b675d59b670ecf6ea24cfbdf317] Changed agent_host to expect a relative path.
 <li>[38d4c3022e22eb98006ad50c3e9c5e115d5f14e3] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
 <li>[ffea5a593c030dbdfced57942a2ca5c6e447fcf3] Revert "Fixed the broken metrics information of master in WebUI."
+<li>[abe6e6390612f523a3106192d719982c70c31f3e] Fixed fetcher to not pick up environment variables it should not see.

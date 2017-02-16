@@ -1,5 +1,5 @@
 [Unit]
-Description=Mesos Master: DC/OS Mesos Master Service
+Description=Mesos Master: distributed systems kernel
 [Service]
 Restart=always
 StartLimitInterval=0

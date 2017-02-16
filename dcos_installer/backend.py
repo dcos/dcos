@@ -2,6 +2,7 @@
 Glue code for logic around calling associated backend
 libraries to support the dcos installer.
 """
+import json
 import logging
 
 import boto3
@@ -13,7 +14,7 @@ import gen.calc
 import release
 import release.storage.aws
 import release.storage.local
-from dcos_installer import config_util
+from dcos_installer import config_util, upgrade
 from dcos_installer.config import Config, normalize_config_validation
 from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
 
@@ -25,6 +26,17 @@ def print_messages(messages):
         log.error('{}: {}'.format(key, error))
 
 
+def validate_gen(config):
+    """ Returns True on success
+    """
+    validate = config.do_validate(include_ssh=False)
+    if len(validate) > 0:
+        for key, error in validate.items():
+            log.error('{}: {}'.format(key, error))
+        return False
+    return True
+
+
 def do_configure(config_path=CONFIG_PATH):
     """Returns error code
 
@@ -33,13 +45,32 @@ def do_configure(config_path=CONFIG_PATH):
     """
     config = Config(config_path)
 
-    validate_gen = config.do_validate(include_ssh=False)
-    if len(validate_gen) > 0:
-        for key, error in validate_gen.items():
-            log.error('{}: {}'.format(key, error))
+    validation = validate_gen(config)
+
+    if not validation:
         return 1
 
     config_util.do_configure(config)
+
+    return 0
+
+
+def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_PATH):
+
+    if installed_cluster_version is None:
+        print('Must provide the version of the cluster upgrading from')
+        return 1
+
+    config = Config(config_path)
+    validation = validate_gen(config)
+    if not validation:
+        return 1
+    gen_out = config_util.onprem_generate(config)
+    config_util.make_serve_dir(gen_out)
+
+    # generate the upgrade script
+    upgrade.generate_node_upgrade_script(gen_out, installed_cluster_version)
+
     return 0
 
 
@@ -184,6 +215,9 @@ aws_advanced_source = gen.internals.Source({
     },
     'must': {
         'provider': 'aws',
+        'package_ids': lambda bootstrap_variant: json.dumps(
+            config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
+        ),
         'cloudformation_s3_url': calculate_cloudformation_s3_url,
         'cloudformation_s3_url_full': calculate_cloudformation_s3_url_full,
         'bootstrap_url': calculate_base_repository_url,
@@ -215,7 +249,8 @@ def get_aws_advanced_target():
             'provider',
             'bootstrap_url',
             'bootstrap_variant',
-            'reproducible_artifact_path'},
+            'reproducible_artifact_path',
+            'package_ids'},
         sub_scopes={
             'aws_template_upload': gen.internals.Scope(
                 name='aws_template_upload',
@@ -273,6 +308,7 @@ def do_aws_cf_configure():
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
+    gen_config['package_ids'] = full_config['package_ids']
     gen_config['cloudformation_s3_url_full'] = full_config['cloudformation_s3_url_full']
 
     # Convert the bootstrap_Variant string we have back to a bootstrap_id as used internally by all
@@ -286,10 +322,15 @@ def do_aws_cf_configure():
             reproducible_artifact_path=full_config['reproducible_artifact_path'],
             variant_arguments={bootstrap_variant: gen_config},
             commit=full_config['dcos_image_commit'],
-            all_bootstraps=None)):
+            all_completes=None)):
         artifacts += release.built_resource_to_artifacts(built_resource)
 
-    artifacts += list(release.make_bootstrap_artifacts(full_config['bootstrap_id'], bootstrap_variant, 'artifacts'))
+    artifacts += list(release.make_bootstrap_artifacts(
+        full_config['bootstrap_id'],
+        json.loads(full_config['package_ids']),
+        bootstrap_variant,
+        'artifacts',
+    ))
 
     # Upload all the artifacts to the config-id path and then print out what
     # the path that should be used is, as well as saving a local json file for
