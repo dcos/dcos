@@ -395,6 +395,7 @@ package:
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
       MESOS_CGROUPS_ENABLE_CFS=true

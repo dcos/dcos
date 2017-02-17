@@ -77,6 +77,9 @@ from test_util.runner import integration_test
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
+logging.getLogger("msrest").setLevel(logging.INFO)
+logging.getLogger("requests_oauthlib").setLevel(logging.INFO)
+logging.getLogger("requests.packages").setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -110,10 +113,10 @@ def check_environment():
     options.agent_prefix = os.getenv('AZURE_AGENT_PREFIX', 'test' + random_id(10).lower())
     options.master_prefix = os.getenv('AZURE_MASTER_PREFIX', 'test' + random_id(10).lower())
     options.vm_size = os.getenv('AZURE_VM_SIZE', 'Standard_D2')
-    options.num_agents = int(os.getenv('AGENTS', '2'))
+    options.num_agents = os.getenv('AGENTS', '2')
     options.name_suffix = os.getenv('AZURE_DCOS_SUFFIX', '12345')
-    options.oauth_enabled = os.getenv('AZURE_OAUTH_ENABLED', 'false') == 'true'
-    options.vm_diagnostics_enabled = os.getenv('AZURE_VM_DIAGNOSTICS_ENABLED', 'true') == 'true'
+    options.oauth_enabled = os.getenv('AZURE_OAUTH_ENABLED', 'false')
+    options.vm_diagnostics_enabled = os.getenv('AZURE_VM_DIAGNOSTICS_ENABLED', 'true')
     options.azure_cleanup = os.getenv('AZURE_CLEANUP', 'true') == 'true'
     options.ci_flags = os.getenv('CI_FLAGS', '')
 
@@ -130,14 +133,14 @@ def check_environment():
 def main():
     options = check_environment()
     aw = AzureWrapper(
+        options.location,
         options.subscription_id,
         options.client_id,
         options.client_secret,
         options.tenant_id)
     dcos_resource_group = DcosAzureResourceGroup.deploy_acs_template(
         azure_wrapper=aw,
-        template_uri=options.template_url,
-        location=options.location,
+        template_url=options.template_url,
         group_name=options.name,
         public_key=options.public_ssh_key,
         master_prefix=options.master_prefix,
