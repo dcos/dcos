@@ -8,9 +8,9 @@
       },
       "adminrouter": {
           "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "b687a27301a2cc00e11a7f68eccaedf20ce7dd6e",
-          "ref_origin": "master"
+          "git": "https://github.com/malnick/adminrouter.git",
+          "ref": "91fa13b18707e98b43f9abec3993542935f30154",
+          "ref_origin": "malnick/fix-agent-route"
       }
   }
 }
