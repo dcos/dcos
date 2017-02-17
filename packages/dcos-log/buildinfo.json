@@ -2,8 +2,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-log.git",
-    "ref": "ebb738bc3f7db16285ac9d3e4009f07c192476ee",
-    "ref_origin": "master"
+    "ref": "3a59910b0aca6d4f12de80b89916b76be8bf2562",
+    "ref_origin": "mnaboka/add-sse-header"
   },
   "username": "dcos_log",
   "group": "systemd-journal"
