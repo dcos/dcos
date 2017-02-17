@@ -2,9 +2,10 @@
   "requires": ["openssl", "ncurses"],
   "sources": {
     "erlang": {
-        "kind": "url_extract",
-        "url": "https://downloads.dcos.io/pkgpanda-artifact-cache/otp_src_19.1.tar.gz",
-        "sha1": "7e8aeeb1cdbe86f1385bbe1aa74754b28073b836"
+      "kind": "git",
+      "git": "https://github.com/dcos/otp.git",
+      "ref": "aa315e1cf1b79ab782e5b4c944595495ebf4e2f4",
+      "ref_origin": "maint-19"
     }
   },
   "username": "dcos_epmd"
