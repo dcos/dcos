@@ -22,6 +22,7 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-navstar
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-minuteman
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/mnesia
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/lashup
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/minuteman/dets
 ExecStartPre=/usr/bin/env modprobe dummy
 ExecStartPre=-/usr/bin/env ip link add minuteman type dummy
 ExecStartPre=/usr/bin/env ip link set minuteman up
