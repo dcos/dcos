@@ -200,7 +200,6 @@ def test_vip(dcos_api_session, reduce_logging):
     addrs = [['1.1.1.{}:{}', '1.1.1.{}:{}'],
              ['/namedvip{}:{}', 'namedvip{}.marathon.l4lb.thisdcos.directory:{}']]
     # tests
-    # UCR doesn't support BRIDGE mode
     permutations = [[c, vi, va, sh, vn, pn]
                     for c in ['NONE', 'UCR', 'DOCKER']
                     for [vi, va] in addrs
@@ -216,6 +215,7 @@ def test_vip(dcos_api_session, reduce_logging):
     # skip certain tests
     for r in tests:
         if r.container is 'UCR' or r.container is 'NONE':
+            # UCR/Mesos do not support BRIDGE mode
             if r.vipnet is 'BRIDGE' or r.proxynet is 'BRIDGE':
                 r.notes = "bridge networks are not supported by mesos runtime"
                 failed_tests.remove(r)
