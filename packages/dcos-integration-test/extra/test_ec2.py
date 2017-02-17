@@ -48,7 +48,8 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
     def get_volume(volume_label):
         def _get_current_aws_region():
             try:
-                return requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text.strip()[:-1]
+                zone_url = 'http://169.254.169.254/latest/meta-data/placement/availability-zone'
+                return requests.get(zone_url).text.strip()[:-1]
             except requests.RequestException as ex:
                 logging.warning("Can't get AWS region from instance metadata: {}".format(ex))
                 return None
@@ -81,11 +82,13 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
             _delete_vol(volume)
         except retrying.RetryError as ex:
             raise Exception('Could not delete volume within {} seconds'.format(timeout)) from ex
-        
+
     @retry_boto_rate_limits
     def wait_for_volume_state(volume_label, state):
         """Wait for the volume corresponding to volume_label to report state."""
+        # wait 10 seconds between attempts
         delay = 10
+
         @retrying.retry(wait_fixed=delay * 1000, stop_max_delay=timeout * 1000,
                         retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError),
                         retry_on_result=lambda res: res is False)
