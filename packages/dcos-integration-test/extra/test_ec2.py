@@ -69,10 +69,14 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
     })
     read_app['container']['volumes'][0]['containerPath'] = docker_volume_path
 
+    # Volume operations can take several minutes.
+    timeout = 600
+
     deploy_kwargs = {
         'check_health': False,
         # A volume might fail to attach because EC2. We can tolerate that and retry.
         'ignore_failed_tasks': True,
+        'timeout': timeout
     }
 
     try:
@@ -93,6 +97,8 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
                 'disk': 0,
                 'cmd': delete_cmd}}
         try:
-            dcos_api_session.metronome_one_off(delete_job)
+            # We use a metronome job to work around the `aws-deploy` integration tests where the master doesn't have
+            # volume permissions so all volume actions need to be performed from the agents.
+            dcos_api_session.metronome_one_off(delete_job, timeout=timeout)
         except Exception as ex:
             raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
