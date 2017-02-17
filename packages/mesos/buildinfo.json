@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/aeyakovenko/mesos",
-    "ref": "22424322e0ee4fc45e546595325c3e9e707adff8",
+    "ref": "b7e33ba6bd92c322b10158e745a3fd6009127a78",
     "ref_origin" : "vfork"
   },
   "environment": {
