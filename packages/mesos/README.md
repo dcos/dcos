@@ -6,3 +6,4 @@ These commits can be found in the repository at <a href="https://github.com/meso
 <li>[3d042bae0431da237d2c109525ea81fe8eb9943c] Revert "Fixed the broken metrics information of master in WebUI."
 <li>[7fdf195b5f3bb4d4a0bd155d1663a96f9eaf4da1] Fixed fetcher to not pick up environment variables it should not see.
 <li>[dc01a78680410d7fe49e096508b64e94d991471c] Updated mesos containerizer to ignore GPU isolator creation failure.
+<li>[e619e9ff2cd7e6cf0397660bd4cbfb9a5549ecbe] Fixed a bug around executor not able to use reserved resources.
