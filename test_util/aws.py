@@ -424,6 +424,7 @@ class VpcCfStack(CfStack):
     @classmethod
     def create(cls, stack_name, instance_type, instance_os, instance_count,
                admin_location, key_pair_name, boto_wrapper):
+
         ami_code = OS_AMIS[instance_os][boto_wrapper.region]
         template_url = template_by_instance_type(instance_type)
         parameters = {

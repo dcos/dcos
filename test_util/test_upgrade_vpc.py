@@ -149,6 +149,7 @@ class VpcClusterUpgradeTest:
                  config_yaml_override_install: str, config_yaml_override_upgrade: str,
                  dcos_api_session_factory_install: VpcClusterUpgradeTestDcosApiSessionFactory,
                  dcos_api_session_factory_upgrade: VpcClusterUpgradeTestDcosApiSessionFactory):
+
         self.dcos_api_session_factory_install = dcos_api_session_factory_install
         self.dcos_api_session_factory_upgrade = dcos_api_session_factory_upgrade
         self.num_masters = num_masters
@@ -384,7 +385,7 @@ class VpcClusterUpgradeTest:
             for k, v in os.environ.items():
                 if k.startswith(prefix):
                     add_env.append(k.replace(prefix, '') + '=' + v)
-            test_cmd = ' '.join(add_env) + 'py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
+            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
             result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
         if result == 0:
