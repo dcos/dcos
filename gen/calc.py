@@ -563,7 +563,7 @@ entry = {
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
-        'mesos_container_log_sink': 'journald+logrotate',
+        'mesos_container_log_sink': 'logrotate',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
