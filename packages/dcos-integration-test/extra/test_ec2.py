@@ -1,8 +1,33 @@
+import contextlib
 import copy
 import logging
+import os
 import uuid
 
+import boto3
+import botocore
 import pytest
+import requests
+import retrying
+
+from test_util.helpers import retry_boto_rate_limits
+
+
+@contextlib.contextmanager
+def _remove_env_vars(*env_vars):
+    environ = dict(os.environ)
+
+    for env_var in env_vars:
+        try:
+            del os.environ[env_var]
+        except KeyError:
+            pass
+
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(environ)
 
 
 @pytest.mark.ccm
@@ -13,6 +38,74 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
     reattached to the same agent.
 
     """
+
+    # Volume operations on EC2 can take a really long time.
+    # We set the timeout to 10 mins to account for this.
+    # For now, we expect no volume operation to take more than 10 minutes.
+    timeout = 600
+
+    @retry_boto_rate_limits
+    def get_volume(volume_label):
+        def _get_current_aws_region():
+            try:
+                zone_url = 'http://169.254.169.254/latest/meta-data/placement/availability-zone'
+                return requests.get(zone_url).text.strip()[:-1]
+            except requests.RequestException as ex:
+                logging.warning("Can't get AWS region from instance metadata: {}".format(ex))
+                return None
+
+        # Remove AWS environment variables to force boto to use IAM credentials.
+        with _remove_env_vars('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'):
+            volumes = list(boto3.session.Session(
+                # We assume we're running these tests from a cluster node, so we
+                # can assume the region for the instance on which we're running is
+                # the same region in which any volumes were created.
+                region_name=_get_current_aws_region(),
+            ).resource('ec2').volumes.filter(Filters=[{'Name': 'tag:Name', 'Values': [volume_label]}]))
+
+        if len(volumes) == 0:
+            raise Exception('no volumes found with label {}'.format(volume_label))
+        elif len(volumes) > 1:
+            raise Exception('multiple volumes found with label {}'.format(volume_label))
+        return volumes[0]
+
+    @retry_boto_rate_limits
+    def delete_volume(volume_label):
+        """Delete the volume corresponding to volume_label."""
+        @retrying.retry(wait_fixed=30 * 1000, stop_max_delay=timeout * 1000,
+                        retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError))
+        def _delete_vol(volume):
+            volume.delete()  # Raises ClientError if the volume is still attached.
+
+        volume = get_volume(volume_label)
+        try:
+            _delete_vol(volume)
+        except retrying.RetryError as ex:
+            raise Exception('Could not delete volume within {} seconds'.format(timeout)) from ex
+
+    @retry_boto_rate_limits
+    def wait_for_volume_state(volume_label, state):
+        """Wait for the volume corresponding to volume_label to report state."""
+        # wait 10 seconds between attempts
+        delay = 10
+
+        @retrying.retry(wait_fixed=delay * 1000, stop_max_delay=timeout * 1000,
+                        retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError),
+                        retry_on_result=lambda res: res is False)
+        def _wait_for_state(state):
+            volume = get_volume(volume_label)
+            if volume.state == state:
+                logging.info('volume state is {}'.format(state))
+                return True
+            else:
+                logging.info('volume state is {} != {}, waiting 10s'.format(volume.state, state))
+                return False
+
+        try:
+            _wait_for_state(state)
+        except retrying.RetryError as ex:
+            raise Exception('Waited {} seconds for volume to become {} before giving up'.format(timeout, state))
+
     hosts = dcos_api_session.slaves[0], dcos_api_session.slaves[-1]
     test_uuid = uuid.uuid4().hex
     test_label = 'integration-test-move-external-volume-{}'.format(test_uuid)
@@ -73,26 +166,19 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         'check_health': False,
         # A volume might fail to attach because EC2. We can tolerate that and retry.
         'ignore_failed_tasks': True,
+        'timeout': timeout
     }
 
     try:
         with dcos_api_session.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
             logging.info('Successfully wrote to volume')
+        wait_for_volume_state(test_label, "available")
         with dcos_api_session.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
             logging.info('Successfully read from volume')
+        wait_for_volume_state(test_label, "available")
     finally:
         logging.info('Deleting volume: ' + test_label)
-        delete_cmd = \
-            "/opt/mesosphere/bin/dcos-shell python " \
-            "/opt/mesosphere/active/dcos-integration-test/util/delete_ec2_volume.py {}".format(test_label)
-        delete_job = {
-            'id': 'delete-volume-' + test_uuid,
-            'run': {
-                'cpus': .1,
-                'mem': 128,
-                'disk': 0,
-                'cmd': delete_cmd}}
         try:
-            dcos_api_session.metronome_one_off(delete_job)
+            delete_volume(test_label)
         except Exception as ex:
             raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
