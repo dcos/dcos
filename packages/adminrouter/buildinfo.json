@@ -8,9 +8,9 @@
       },
       "adminrouter": {
           "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "89a3099470325346193321d31409681c213de7ac",
-          "ref_origin": "master"
+          "git": "https://github.com/mhrabovcin/adminrouter.git",
+          "ref": "f87afc7989e737b2dbd8ce16d3f74fff6bbf4a23",
+          "ref_origin": "dns-resolve"
       }
   }
 }

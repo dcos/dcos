@@ -1,7 +1,0 @@
-[Unit]
-Description=Admin Router Reloader: reloads Admin Router to pick up domain resolution changes
-
-[Service]
-Type=oneshot
-EnvironmentFile=/opt/mesosphere/environment
-ExecStart=-$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.agent.conf -s reload

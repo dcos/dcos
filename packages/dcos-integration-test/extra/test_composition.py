@@ -132,8 +132,6 @@ def test_signal_service(dcos_api_session):
     # Insert all the diagnostics data programmatically
     master_units = [
         'adminrouter-service',
-        'adminrouter-reload-service',
-        'adminrouter-reload-timer',
         'cosmos-service',
         'metrics-master-service',
         'metrics-master-socket',
@@ -171,8 +169,6 @@ def test_signal_service(dcos_api_session):
         'metrics-agent-socket',
         '3dt-socket',
         'adminrouter-agent-service',
-        'adminrouter-agent-reload-service',
-        'adminrouter-agent-reload-timer',
         'log-agent-service',
         'log-agent-socket',
         'logrotate-agent-service',
