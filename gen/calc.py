@@ -1,3 +1,22 @@
+""" This module contains the logic for specifying and validating the top-level
+DC/OS configuration from user arguments
+
+The data structure called 'entry' is what defines which validation checks
+should be run, how arguments should be calculated, which arguments should have
+set defaults, which arguments should be user specified, and how some arguments
+should be calculated.
+
+Notes:
+validate_* function: the arguments it takes will define the arguments which the
+    function is evaluated against. All validations are performed at once
+
+argument calculation functions: like validation function, the arguments specified
+    will be pulled from the Source or user arguments. These function can be used
+    for both 'default' and 'must'
+
+
+See gen.internals for more on how the nuts and bolts of this process works
+"""
 import collections
 import ipaddress
 import json
