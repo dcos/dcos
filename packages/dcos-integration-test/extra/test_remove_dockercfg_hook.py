@@ -1,6 +1,8 @@
 import logging
 import uuid
 
+import pytest
+
 
 def test_remove_dockercfg_hook(dcos_api_session):
     """Test that the remove .dockercfg hook is working properly.
@@ -12,8 +14,7 @@ def test_remove_dockercfg_hook(dcos_api_session):
 
     # Skip the test if the hook is disabled
     if not dcos_api_session.dockercfg_hook_enabled:
-        logging.info('Skipping test because dockercfg hook is disabled')
-        return
+        pytest.skip('Test requires dockercfg hook to be enabled')
 
     # Create a one-off job checking that the fetched .dockercfg file is not in the sandbox
     job = {
