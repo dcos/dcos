@@ -2,7 +2,7 @@ import logging
 import uuid
 
 
-def test_remove_dockercfg_hook(cluster):
+def test_remove_dockercfg_hook(dcos_api_session):
     """Test that the remove .dockercfg hook is working properly.
 
     If the hook is enabled, the test expects that the .dockercfg file
@@ -11,7 +11,7 @@ def test_remove_dockercfg_hook(cluster):
     """
 
     # Skip the test if the hook is disabled
-    if not cluster.dockercfg_hook_enabled:
+    if not dcos_api_session.dockercfg_hook_enabled:
         logging.info('Skipping test because dockercfg hook is disabled')
         return
 
@@ -22,6 +22,6 @@ def test_remove_dockercfg_hook(cluster):
             'cpus': 0.1, 'mem': 32,
             'cmd': "test ! -f .dockercfg",
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
-    removed = cluster.metronome_one_off(job)
+    removed = dcos_api_session.metronome_one_off(job)
     assert removed, 'dockercfg was not removed from the sandbox'
     logging.info('Completed test: dockercfg was successfully removed')
