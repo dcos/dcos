@@ -9,7 +9,7 @@ import retrying
 
 from test_helpers import dcos_config
 
-from test_util.marathon import get_test_app, get_test_app_in_docker
+from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
 
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
@@ -128,8 +128,7 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
             assert r_data['my_ip'] == service_points[0].host
 
 
-# There are several combinations we have to try of the way that Navstar DNS records are
-# generated:
+# There are several combinations of Service Discovery Options we have to try:
 #
 # Containerizers:
 # -Mesos
@@ -139,6 +138,7 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
 # -Bridged
 # -Host
 # -Overlay
+# -Overlay with Port Mapping
 #
 # Record type:
 # -Container IP
@@ -146,6 +146,11 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
 # -Auto IP
 #
 # More info can be found here: https://dcos.io/docs/1.8/usage/service-discovery/dns-overview/
+
+DNSHost = 0
+DNSPortMap = 1
+DNSOverlay = 2
+
 DNSAddresses = collections.namedtuple("DNSAddresses", ["container", "agent", "auto"])
 MarathonAddresses = collections.namedtuple("MarathonAddresses", ["host", "container"])
 
@@ -158,7 +163,7 @@ def get_ipv4_addresses(hostname):
 def get_dns_addresses_by_app_name(app_name):
     container_ip_name = '{}.marathon.containerip.dcos.thisdcos.directory'.format(app_name)
     agent_ip_name = '{}.marathon.agentip.dcos.thisdcos.directory'.format(app_name)
-    auto_ip_name = '{}.marathon.auto.dcos.thisdcos.directory'.format(app_name)
+    auto_ip_name = '{}.marathon.autoip.dcos.thisdcos.directory'.format(app_name)
     container_ips = get_ipv4_addresses(container_ip_name)
     agent_ips = get_ipv4_addresses(agent_ip_name)
     auto_ips = get_ipv4_addresses(auto_ip_name)
@@ -171,66 +176,128 @@ def get_marathon_addresses_by_service_points(service_points):
     return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
 
 
-def test_if_service_discovery_works_navstar_mesos_container_host_network(cluster):
-    app_definition, test_uuid = get_test_app()
-    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
+def replace_marathon_cmd_port(app_definition, port_str):
+    new_app = app_definition.copy()
+
+    cmd_list = new_app['cmd'].split()[:-1]
+    cmd_list.append(port_str)
+    mesos_cmd = ' '.join(cmd_list)
+    new_app['cmd'] = mesos_cmd
+    return new_app
+
+
+def assert_service_discovery(dcos_api_session, app_definition, net_types):
+    """
+    net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
+    """
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition) as service_points:
         marathon_addrs = get_marathon_addresses_by_service_points(service_points)
-        assert marathon_addrs.host == marathon_addrs.container
-        all_marathon_addrs = marathon_addrs.host
+
+        if DNSHost in net_types:
+            assert marathon_addrs.host == marathon_addrs.container
+        else:
+            assert not frozenset.intersection(marathon_addrs.host, marathon_addrs.container)
 
         @retrying.retry(wait_fixed=1000,
                         stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                         retry_on_exception=lambda x: True)
         def _ensure_dns_converged():
-            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
-            assert all_marathon_addrs == dns_addrs.agent
-            assert all_marathon_addrs == dns_addrs.auto
-            assert all_marathon_addrs == dns_addrs.container
+            app_name = app_definition['id']
+            dns_addrs = get_dns_addresses_by_app_name(app_name)
+
+            asserted = False
+            if len(net_types) == 2:
+                if (DNSOverlay in net_types) and (DNSPortMap in net_types):
+                    assert marathon_addrs.host == dns_addrs.agent
+                    assert marathon_addrs.host == dns_addrs.auto
+                    assert marathon_addrs.container == dns_addrs.container
+                    asserted = True
+            if len(net_types) == 1:
+                if DNSOverlay in net_types:
+                    assert marathon_addrs.host == dns_addrs.agent
+                    assert marathon_addrs.container == dns_addrs.auto
+                    assert marathon_addrs.container == dns_addrs.container
+                    asserted = True
+                if DNSPortMap in net_types:
+                    assert marathon_addrs.host == dns_addrs.agent
+                    assert marathon_addrs.host == dns_addrs.auto
+                    assert marathon_addrs.container == dns_addrs.container
+                    asserted = True
+                if DNSHost in net_types:
+                    assert marathon_addrs.host == dns_addrs.agent
+                    assert marathon_addrs.host == dns_addrs.auto
+                    assert marathon_addrs.host == dns_addrs.container
+                    asserted = True
+            if not asserted:
+                raise AssertionError("Not a valid navstar DNS combo")
 
         _ensure_dns_converged()
 
 
-def test_if_service_discovery_works_navstar_mesos_container_overlay_network(cluster):
-    app_definition, test_uuid = get_test_app(ip_per_container=True, custom_port=True)
-    assert 'portDefinitions' not in app_definition  # Mesos cannot do port mapping yet
-    app_definition['cmd'] += '9080'
+def test_service_discovery_mesos_host(dcos_api_session):
+    app_definition, test_uuid = get_test_app_in_ucr()
 
-    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
-        marathon_addrs = get_marathon_addresses_by_service_points(service_points)
-        assert not frozenset.intersection(marathon_addrs.host, marathon_addrs.container)
-
-        @retrying.retry(wait_fixed=1000,
-                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
-                        retry_on_exception=lambda x: True)
-        def _ensure_dns_converged():
-            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
-            assert marathon_addrs.host == dns_addrs.agent
-            assert marathon_addrs.container == dns_addrs.auto
-            assert marathon_addrs.container == dns_addrs.container
-
-        _ensure_dns_converged()
+    assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
-def test_if_service_discovery_works_navstar_docker_container_bridge_network(cluster):
+def test_service_discovery_mesos_overlay(dcos_api_session):
+    port = 9080
+    app_definition, test_uuid = get_test_app_in_ucr(healthcheck='MESOS_HTTP')
+
+    app_definition['ipAddress'] = {
+        'networkName': 'dcos',
+        'discovery': {
+            'ports': [{
+                'protocol': 'tcp',
+                'name': 'test',
+                'number': port,
+            }]
+        }
+    }
+    if 'portIndex' in app_definition['healthChecks'][0]:
+        del app_definition['healthChecks'][0]['portIndex']
+    app_definition['healthChecks'][0]['port'] = port
+    app_definition = replace_marathon_cmd_port(app_definition, str(port))
+
+    assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
+
+
+def test_service_discovery_docker_host(dcos_api_session):
     app_definition, test_uuid = get_test_app_in_docker()
-    with cluster.marathon.deploy_and_cleanup(app_definition) as service_points:
-        marathon_addrs = get_marathon_addresses_by_service_points(service_points)
-        assert not frozenset.intersection(marathon_addrs.host, marathon_addrs.container)
+    app_definition['container']['docker']['network'] = 'HOST'
+    del app_definition['container']['docker']['portMappings']
+    app_definition = replace_marathon_cmd_port(app_definition, "$PORT0")
 
-        @retrying.retry(wait_fixed=1000,
-                        stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
-                        retry_on_exception=lambda x: True)
-        def _ensure_dns_converged():
-            dns_addrs = get_dns_addresses_by_app_name(test_uuid)
-            assert marathon_addrs.host == dns_addrs.agent
-            assert marathon_addrs.container == dns_addrs.auto
-            assert marathon_addrs.container == dns_addrs.container
-
-        _ensure_dns_converged()
+    assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
-def test_if_service_discovery_works_docker_bridged_network(cluster):
-    return _service_discovery_test(cluster, docker_network_bridge=True)
+def test_service_discovery_docker_bridge(dcos_api_session):
+    app_definition, test_uuid = get_test_app_in_docker()
+    app_definition['container']['docker']['network'] = 'BRIDGE'
+
+    assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
+
+
+def test_service_discovery_docker_overlay(dcos_api_session):
+    app_definition, test_uuid = get_test_app_in_docker()
+    app_definition['container']['docker']['network'] = 'USER'
+    app_definition['ipAddress'] = {'networkName': 'dcos'}
+    del app_definition['container']['docker']['portMappings'][0]['hostPort']
+
+    assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
+
+
+def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
+    app_definition, test_uuid = get_test_app_in_docker()
+    app_definition['container']['docker']['network'] = 'USER'
+    app_definition['ipAddress'] = {'networkName': 'dcos'}
+
+    assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay, DNSPortMap])
+
+
+def test_if_service_discovery_works_docker_bridged_network(dcos_api_session):
+    return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
 def test_if_service_discovery_works_docker_host_network(dcos_api_session):

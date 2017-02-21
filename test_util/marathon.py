@@ -14,7 +14,7 @@ REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
 log = logging.getLogger(__name__)
 
 
-def get_test_app(ip_per_container=False, custom_port=False):
+def get_test_app(custom_port=False):
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
         'id': TEST_APP_NAME_FMT.format(test_uuid),
@@ -47,13 +47,11 @@ def get_test_app(ip_per_container=False, custom_port=False):
             "port": 0,
             "name": "test"
         }]
-    if ip_per_container:
-        app['ipAddress'] = {'networkName': 'dcos'}
     return app, test_uuid
 
 
 def get_test_app_in_docker(ip_per_container=False):
-    app, test_uuid = get_test_app(ip_per_container=ip_per_container, custom_port=True)
+    app, test_uuid = get_test_app(custom_port=True)
     assert 'portDefinitions' not in app
     app['cmd'] += '9080'  # Fixed port for inside bridge networking or IP per container
     app['container'] = {
@@ -76,6 +74,7 @@ def get_test_app_in_docker(ip_per_container=False):
     }
     if ip_per_container:
         app['container']['docker']['network'] = 'USER'
+        app['ipAddress'] = {'networkName': 'dcos'}
     else:
         app['container']['docker']['network'] = 'BRIDGE'
     return app, test_uuid
