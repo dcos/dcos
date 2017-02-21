@@ -13,14 +13,13 @@ import gen
 import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
-from gen.internals import Source
+from gen.internals import Late, Source
+from pkgpanda.util import split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
 
 ILLEGAL_ARM_CHARS_PATTERN = re.compile("[']")
-
-TEMPLATE_PATTERN = re.compile('(?P<pre>.*?)\[\[\[(?P<inject>.*?)\]\]\]')
 
 DOWNLOAD_URL_TEMPLATE = ("{download_url}{reproducible_artifact_path}/azure/{arm_template_name}")
 
@@ -40,8 +39,16 @@ INSTANCE_GROUPS = {
 }
 
 
+def validate_provider(provider):
+    assert provider == 'azure'
+
+
 azure_base_source = Source(entry={
+    'validate': [
+        validate_provider
+    ],
     'default': {
+        'platform': 'azure',
         'enable_docker_gc': 'true'
     },
     'must': {
@@ -52,7 +59,17 @@ azure_base_source = Source(entry={
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
-        'oauth_enabled': "[[[variables('oauthEnabled')]]]",
+    },
+    'conditional': {
+        'oauth_available': {
+            'true': {
+                'must': {
+                    'oauth_enabled': Late("[[[variables('oauthEnabled')]]]"),
+                    'adminrouter_auth_enabled': Late("[[[variables('oauthEnabled')]]]"),
+                }
+            },
+            'false': {},
+        }
     }
 })
 
@@ -79,24 +96,21 @@ def transform(cloud_config_yaml_str):
     substituted.
     '''
     cc_json = json.dumps(yaml.safe_load(cloud_config_yaml_str), sort_keys=True)
-    arm_list = ["[base64(concat('#cloud-config\n\n', "]
-    # Find template parameters and seperate them out as seperate elements in a
-    # json list.
-    prev_end = 0
-    # TODO(JL) - Why does validate_cloud_config not operate on entire string?
-    for m in TEMPLATE_PATTERN.finditer(cc_json):
-        before = m.group('pre')
-        param = m.group('inject')
-        validate_cloud_config(before)
-        arm_list.append("'{}', {},".format(before, param))
-        prev_end = m.end()
 
-    # Add the last little bit
-    validate_cloud_config(cc_json[prev_end:])
-    arm_list.append("'{}'))]".format(cc_json[prev_end:]))
+    def _quote_literals(parts):
+        for part, is_param in parts:
+            if is_param:
+                yield part
+            else:
+                validate_cloud_config(part)
+                yield "'{}'".format(part)
 
-    # We're embedding this as a json string, so json encode it and return.
-    return json.dumps(''.join(arm_list))
+    # We're embedding this as a json string.
+    return json.dumps(
+        "[base64(concat('#cloud-config\n\n', " +
+        ", ".join(_quote_literals(split_by_token('[[[', ']]]', cc_json, strip_token_decoration=True))) +
+        "))]"
+    )
 
 
 def render_arm(
@@ -130,13 +144,6 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     results = gen.generate(
         arguments=gen_arguments,
         extra_templates=['azure/cloud-config.yaml', 'azure/templates/' + arm_template + '.json'],
-        cc_package_files=[
-            '/etc/exhibitor',
-            '/etc/exhibitor.properties',
-            '/etc/adminrouter.env',
-            '/etc/ui-config.json',
-            '/etc/mesos-master-provider',
-            '/etc/master_list'],
         extra_sources=[azure_base_source] + extra_sources)
 
     cloud_config = results.templates['cloud-config.yaml']
@@ -187,11 +194,12 @@ def master_list_arm_json(num_masters, varietal):
 
 azure_dcos_source = Source({
     'must': {
-        'exhibitor_azure_prefix': "[[[variables('uniqueName')]]]",
-        'exhibitor_azure_account_name': "[[[variables('storageAccountName')]]]",
-        'exhibitor_azure_account_key': ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                        "variables('storageAccountName')), '2015-05-01-preview').key1]]]"),
-        'cluster_name': "[[[variables('uniqueName')]]]"
+        'exhibitor_azure_prefix': Late("[[[variables('uniqueName')]]]"),
+        'exhibitor_azure_account_name': Late("[[[variables('storageAccountName')]]]"),
+        'exhibitor_azure_account_key': Late(
+            "[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
+            "variables('storageAccountName')), '2015-05-01-preview').key1]]]"),
+        'cluster_name': Late("[[[variables('uniqueName')]]]")
     }
 })
 
@@ -199,11 +207,12 @@ azure_acs_source = Source({
     'must': {
         'ui_tracking': 'false',
         'telemetry_enabled': 'false',
-        'exhibitor_azure_prefix': "[[[variables('masterPublicIPAddressName')]]]",
-        'exhibitor_azure_account_name': "[[[variables('masterStorageAccountExhibitorName')]]]",
-        'exhibitor_azure_account_key': ("[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
-                                        "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]"),
-        'cluster_name': "[[[variables('masterPublicIPAddressName')]]]",
+        'exhibitor_azure_prefix': Late("[[[variables('masterPublicIPAddressName')]]]"),
+        'exhibitor_azure_account_name': Late("[[[variables('masterStorageAccountExhibitorName')]]]"),
+        'exhibitor_azure_account_key': Late(
+            "[[[listKeys(resourceId('Microsoft.Storage/storageAccounts', "
+            "variables('masterStorageAccountExhibitorName')), '2015-06-15').key1]]]"),
+        'cluster_name': Late("[[[variables('masterPublicIPAddressName')]]]"),
         'bootstrap_tmp_dir': "/var/tmp"
     }
 })
@@ -220,7 +229,8 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     '''
 
     master_list_source = Source()
-    master_list_source.add_must('master_list', master_list_arm_json(num_masters, varietal))
+    master_list_source.add_must('master_list', Late(master_list_arm_json(num_masters, varietal)))
+    master_list_source.add_must('num_masters', str(num_masters))
 
     if varietal == 'dcos':
         arm, results = gen_templates(
@@ -235,7 +245,9 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     else:
         raise ValueError("Unknown Azure varietal specified")
 
-    yield {'packages': util.cluster_to_extra_packages(results.cluster_packages)}
+    yield {'packages': results.config_package_ids}
+    if results.late_package_id:
+        yield {'packages': [results.late_package_id]}
     yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
         'local_content': arm,
@@ -243,7 +255,7 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     }
 
 
-def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_bootstraps):
+def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):
     for arm_t in ['dcos', 'acs']:
         for num_masters in [1, 3, 5]:
             for bootstrap_name, gen_arguments in variant_arguments.items():

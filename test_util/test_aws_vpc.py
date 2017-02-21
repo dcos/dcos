@@ -3,11 +3,6 @@
 
 The following environment variables control test procedure:
 
-VPC_HOSTS: comma-delimeted string of colon-delimited public:private IP pairs (default=None)
-    Example: VPC_HOSTS=1.2.3.4:2.2.3.4,1.2.3.5:2.2.3.5,...
-    If provided, ssh_key must be in current working directory and hosts must
-    be accessible using ssh -i ssh_key centos@IP
-
 HOST_SETUP: true or false (default=true)
     If true, test will attempt to download the installer from INSTALLER_URL, start the bootstap
     ZK (if required), and setup the integration_test.py requirements (setup test runner, test
@@ -22,9 +17,6 @@ AGENTS: integer (default=2)
 
 PUBLIC_AGENTS: integer (default=1)
     The number of public agents to create from VPC_HOSTS or a newly created VPC.
-
-DCOS_SSH_KEY_PATH: string (default='default_ssh_key')
-    Use to set specific ssh key path. Otherwise, script will expect key at default_ssh_key
 
 INSTALLER_URL: URL that curl can grab the installer from (default=None)
     This option is only used if HOST_SETUP=true. See above.
@@ -58,12 +50,12 @@ TEST_ADD_ENV_*: string (default=None)
 """
 import logging
 import os
-import random
-import string
 import sys
 
 import test_util.aws
 import test_util.cluster
+from pkgpanda.util import write_string
+from test_util.helpers import random_id
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -84,13 +76,6 @@ def check_environment():
             or do not conform
     """
     options = type('Options', (object,), {})()
-
-    if 'VPC_HOSTS' in os.environ:
-        options.host_list = [
-            test_util.aws.Host(*host_str.split(':')) for host_str in os.environ['VPC_HOSTS'].split(',')
-        ]
-    else:
-        options.host_list = None
 
     if 'HOST_SETUP' in os.environ:
         assert os.environ['HOST_SETUP'] in ['true', 'false']
@@ -126,71 +111,54 @@ def check_environment():
     options.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     options.instance_type = os.environ.get('DCOS_AWS_INSTANCE_TYPE', 'm4.xlarge')
 
-    options.ssh_key_path = os.environ.get('DCOS_SSH_KEY_PATH', 'default_ssh_key')
-
     options.add_config_path = os.getenv('TEST_ADD_CONFIG')
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
-    add_env = {}
+    add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
-
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + options.ci_flags)
+            add_env.append(k.replace(prefix, '') + '=' + v)
+    options.test_cmd = os.getenv('DCOS_PYTEST_CMD', ' '.join(add_env) + ' py.test -vv -rs ' + options.ci_flags)
     return options
 
 
 def main():
     options = check_environment()
 
-    cluster = None
-    vpc = None
-    if options.host_list is None:
-        log.info('VPC_HOSTS not provided, requesting new VPC ...')
-        random_identifier = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        unique_cluster_id = "installer-test-{}".format(random_identifier)
-        log.info("Spinning up AWS VPC with ID: {}".format(unique_cluster_id))
-        if options.test_install_prereqs:
-            os_name = "cent-os-7"
-        else:
-            os_name = "cent-os-7-dcos-prereqs"
-        # TODO(mellenburg): Switch to using generated keys
-        bw = test_util.aws.BotoWrapper(
-            region=DEFAULT_AWS_REGION,
-            aws_access_key_id=options.aws_access_key_id,
-            aws_secret_access_key=options.aws_secret_access_key)
-        vpc, ssh_info = test_util.aws.VpcCfStack.create(
-            stack_name=unique_cluster_id,
-            instance_type=options.instance_type,
-            instance_os=os_name,
-            # An instance for each cluster node plus the bootstrap.
-            instance_count=(options.masters + options.agents + options.public_agents + 1),
-            admin_location='0.0.0.0/0',
-            key_pair_name='default',
-            boto_wrapper=bw)
-        vpc.wait_for_stack_creation()
-
-        cluster = test_util.cluster.Cluster.from_vpc(
-            vpc,
-            ssh_info,
-            ssh_key_path=options.ssh_key_path,
-            num_masters=options.masters,
-            num_agents=options.agents,
-            num_public_agents=options.public_agents,
-        )
+    unique_cluster_id = "dcos-ci-test-onprem-{}".format(random_id(10))
+    log.info("Spinning up AWS VPC with ID: {}".format(unique_cluster_id))
+    if options.test_install_prereqs:
+        os_name = "cent-os-7"
     else:
-        # Assume an existing onprem CentOS cluster.
-        cluster = test_util.cluster.Cluster.from_hosts(
-            ssh_info=test_util.aws.SSH_INFO['centos'],
-            ssh_key_path=options.ssh_key_path,
-            hosts=options.host_list,
-            num_masters=options.masters,
-            num_agents=options.agents,
-            num_public_agents=options.public_agents,
-        )
+        os_name = "cent-os-7-dcos-prereqs"
+    bw = test_util.aws.BotoWrapper(
+        region=DEFAULT_AWS_REGION,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key)
+    ssh_key = bw.create_key_pair(unique_cluster_id)
+    # Drop the key to disk so CI can cache it as an artifact
+    write_string('ssh_key', ssh_key)
+    vpc, ssh_info = test_util.aws.VpcCfStack.create(
+        stack_name=unique_cluster_id,
+        instance_type=options.instance_type,
+        instance_os=os_name,
+        # An instance for each cluster node plus the bootstrap.
+        instance_count=(options.masters + options.agents + options.public_agents + 1),
+        admin_location='0.0.0.0/0',
+        key_pair_name=unique_cluster_id,
+        boto_wrapper=bw)
+    vpc.wait_for_complete()
+
+    cluster = test_util.cluster.Cluster.from_vpc(
+        vpc,
+        ssh_info,
+        ssh_key=ssh_key,
+        num_masters=options.masters,
+        num_agents=options.agents,
+        num_public_agents=options.public_agents,
+    )
 
     test_util.cluster.install_dcos(
         cluster,
@@ -206,8 +174,8 @@ def main():
 
     if options.test_install_prereqs and options.test_install_prereqs_only:
         # install_dcos() exited after running prereqs, so we're done.
-        if vpc:
-            vpc.delete()
+        vpc.delete()
+        bw.delete_key_pair(unique_cluster_id)
         sys.exit(0)
 
     result = test_util.cluster.run_integration_tests(
@@ -216,14 +184,13 @@ def main():
         region=DEFAULT_AWS_REGION,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,
-        add_env=options.add_env,
-        pytest_cmd=options.pytest_cmd,
+        test_cmd=options.test_cmd,
     )
 
     if result == 0:
         log.info("Test successful! Deleting VPC if provided in this run.")
-        if vpc:
-            vpc.delete()
+        vpc.delete()
+        bw.delete_key_pair(unique_cluster_id)
     else:
         log.info("Test failed! VPC will remain for debugging 1 hour from instantiation")
     if options.ci_flags:

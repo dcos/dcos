@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS Log service master: DC/OS logging service
+Description=DC/OS Log Master: exposes master node and component logs
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-log.env
@@ -7,5 +7,6 @@ EnvironmentFile=-/opt/mesosphere/etc/dcos-log-extra.env
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 User=dcos_log
 ExecStart=/opt/mesosphere/bin/dcos-log -config ${DCOS_LOG_CONFIG_PATH}

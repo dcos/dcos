@@ -83,21 +83,6 @@ def run_loop(action, options):
     return exitcode
 
 
-def tall_enough_to_ride():
-    choices_true = ['yes', 'y']
-    choices_false = ['no', 'n']
-    while True:
-        do_uninstall = input('This will uninstall DC/OS on your cluster. You may need to manually remove '
-                             '/var/lib/zookeeper in some cases after this completes, please see our documentation '
-                             'for details. Are you ABSOLUTELY sure you want to proceed? [ (y)es/(n)o ]: ')
-        if do_uninstall.lower() in choices_true:
-            return
-        elif do_uninstall.lower() in choices_false:
-            sys.exit(1)
-        else:
-            log.error('Choices are [y]es or [n]o. "{}" is not a choice'.format(do_uninstall))
-
-
 def log_warn_only():
     """Drop to warning level and down to get around gen.generate() log.info
     output"""
@@ -142,11 +127,6 @@ def do_validate_config(args):
     return 0
 
 
-def do_uninstall(*args, **kwargs):
-    tall_enough_to_ride()
-    return action_lib.uninstall_dcos(*args, **kwargs)
-
-
 dispatch_dict_simple = {
     'version': (do_version, None, 'Print the DC/OS version'),
     'web': (
@@ -183,11 +163,7 @@ dispatch_dict_aio = {
     'postflight': (
         action_lib.run_postflight,
         'EXECUTING POSTFLIGHT',
-        'Execute postflight checks on a series of nodes.'),
-    'uninstall': (
-        do_uninstall,
-        'EXECUTING UNINSTALL',
-        'Execute uninstall on target hosts.')
+        'Execute postflight checks on a series of nodes.')
 }
 
 
@@ -226,6 +202,10 @@ def dispatch(args):
         sys.stdout.buffer.write(byte_str + b'\n')
         sys.exit(0)
 
+    if args.action == 'generate-node-upgrade-script':
+        status = backend.generate_node_upgrade_script(args.installed_cluster_version)
+        sys.exit(status)
+
     if args.action in dispatch_dict_simple:
         action = dispatch_dict_simple[args.action]
         if action[1] is not None:
@@ -252,7 +232,7 @@ def dispatch(args):
     sys.exit(1)
 
 
-class PasswordAction(argparse.Action):
+class ArgsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         assert self.option_strings[0][:2] == '--'
         setattr(namespace, 'action', self.option_strings[0][2:])
@@ -269,7 +249,7 @@ def get_argument_parser():
 
     mutual_exc.add_argument(
         '--hash-password',
-        action=PasswordAction,
+        action=ArgsAction,
         dest='password',
         metavar='password',
         nargs='?',
@@ -278,11 +258,20 @@ def get_argument_parser():
 
     mutual_exc.add_argument(
         '--set-superuser-password',
-        action=PasswordAction,
+        action=ArgsAction,
         metavar='password',
         dest='password',
         nargs='?',
         help='Hash the given password and store it as the superuser password in config.yaml'
+    )
+
+    mutual_exc.add_argument(
+        '--generate-node-upgrade-script',
+        action=ArgsAction,
+        metavar='installed_cluster_version',
+        dest='installed_cluster_version',
+        nargs='?',
+        help='Generate a script that upgrades DC/OS nodes running installed_cluster_version'
     )
 
     parser.add_argument(

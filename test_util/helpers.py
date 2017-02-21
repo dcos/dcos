@@ -5,9 +5,13 @@ import copy
 import functools
 import logging
 import os
+import random
+import string
 import tempfile
 import time
 from collections import namedtuple
+from typing import Union
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 import retrying
@@ -28,107 +32,140 @@ SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
 #        "iat": 1460164974
 #    }
 
-CI_AUTH_JSON = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}     # noqa
+CI_CREDENTIALS = {'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UQkVOakZFTWtWQ09VRTRPRVpGTlRNMFJrWXlRa015Tnprd1JrSkVRemRCTWpBM1FqYzVOZyJ9.eyJlbWFpbCI6ImFsYmVydEBiZWtzdGlsLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2Rjb3MuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA5OTY0NDk5MDExMTA4OTA1MDUwIiwiYXVkIjoiM3lGNVRPU3pkbEk0NVExeHNweHplb0dCZTlmTnhtOW0iLCJleHAiOjIwOTA4ODQ5NzQsImlhdCI6MTQ2MDE2NDk3NH0.OxcoJJp06L1z2_41_p65FriEGkPzwFB_0pA9ULCvwvzJ8pJXw9hLbmsx-23aY2f-ydwJ7LSibL9i5NbQSR2riJWTcW4N7tLLCCMeFXKEK4hErN2hyxz71Fl765EjQSO5KD1A-HsOPr3ZZPoGTBjE0-EFtmXkSlHb1T2zd0Z8T5Z2-q96WkFoT6PiEdbrDA-e47LKtRmqsddnPZnp0xmMQdTr2MjpVgvqG7TlRvxDcYc-62rkwQXDNSWsW61FcKfQ-TRIZSf2GS9F9esDF4b5tRtrXcBNaorYa9ql0XAWH5W_ct4ylRNl3vwkYKWa4cmPvOqT5Wlj9Tf0af4lNO40PQ'}     # noqa
 
 
-def path_join(p1, p2):
+def path_join(p1: str, p2: str):
+    """Helper to ensure there is only one '/' between two strings"""
     return '{}/{}'.format(p1.rstrip('/'), p2.lstrip('/'))
 
 
-class DcosUser:
-    """A lightweight user representation."""
-    def __init__(self, auth_json):
-        self.auth_json = auth_json
-        self.auth_header = {}
-        self.auth_token = None
-        self.auth_cookie = None
+class Url:
+    """URL abstraction to allow convenient substitution of URL anatomy
+    without having to copy and dissect the entire original URL
+    """
+    def __init__(self, scheme: str, host: str, path: str, query: str,
+                 fragment: str, port: Union[str, int]):
+        """{scheme}://{host}:{port}/{path}?{query}#{fragment}
+        """
+        self.scheme = scheme
+        self.host = host
+        self.path = path
+        self.query = query
+        self.fragment = fragment
+        self.port = port
 
-    def authenticate(self, cluster):
-        logging.info('Attempting authentication')
-        # explicitly use a session with no user authentication for requesting auth headers
-        if cluster.web_auth_default_user:
-            post = cluster.get_user_session(None).post
+    @classmethod
+    def from_string(cls, url_str: str):
+        u = urlsplit(url_str)
+        if ':' in u.netloc:
+            host, port = u.netloc.split(':')
         else:
-            post = cluster.post
-        r = post('/acs/api/v1/auth/login', json=self.auth_json)
-        r.raise_for_status()
-        logging.info('Received authorization blob: {}'.format(r.json()))
-        self.auth_token = r.json()['token']
-        self.auth_header = {'Authorization': 'token={}'.format(self.auth_token)}
-        self.auth_cookie = r.cookies['dcos-acs-auth-cookie']
-        logging.info('Authentication successful')
+            host = u.netloc
+            port = None
+        return cls(u.scheme, host, u.path, u.query, u.fragment, port)
+
+    @property
+    def netloc(self):
+        return '{}:{}'.format(self.host, self.port) if self.port else self.host
+
+    def __str__(self):
+        return urlunsplit((
+            self.scheme,
+            self.netloc,
+            self.path,
+            self.query if self.query else '',
+            self.fragment if self.fragment else ''))
+
+    def copy(self, scheme=None, host=None, path=None, query=None, fragment=None, port=None):
+        """return new Url with any component replaced
+        """
+        return Url(
+            scheme if scheme is not None else self.scheme,
+            host if host is not None else self.host,
+            path if path is not None else self.path,
+            query if query is not None else self.query,
+            fragment if fragment is not None else self.fragment,
+            port if port is not None else self.port)
 
 
-class ApiClient:
+class ApiClientSession:
+    """This class functions like the requests.session interface but adds
+    a default Url and a request wrapper. This class only differs from requests.Session
+    in that the cookies are cleared after each request (but not purged from the response)
+    so that the request state may be more well-defined betweens tests sharing this object
+    """
+    def __init__(self, default_url: Url):
+        """
+        Args:
+            default_url: Url object to wihch requests can be made
+        """
+        self.default_url = default_url
+        self.session = requests.Session()
 
-    def __init__(self, default_host_url, api_base, default_headers=None, ca_cert_path=None, get_node_url=None):
-        """Client that facilitates HTTP request with a host in the cluster.
+    def api_request(self, method, path_extension, *, scheme=None, host=None, query=None,
+                    fragment=None, port=None, **kwargs):
+        """ Direct wrapper for requests.session.request. This method is kept deliberatly
+        simple so that child classes can alter this behavior without much copying
 
         Args:
+            method: the HTTP verb
+            path_extension: the extension to the path that is set as the default Url
+            scheme: scheme to be used instead of that included with self.default_url
+            host: host to be used instead of that included with self.default_url
+            query: query to be used instead of that included with self.default_url
+            fragment: fragment to be used instead of that included with self.default_url
+            port: port to be used instead of that included with self.default_url
 
-            default_host_url:   host url to make the request. For e.g, it could be master.
-            api_base:           base url of the api request. For e.g. /marathon
-            default_headers:    headers specified for the request.
-            ca_cert_path:       path to ca cert.
-            get_node_url:       callback to get the node url
+        Keyword Args:
+            **kwargs: anything that can be passed to requests.request
+
+        Returns:
+            requests.Response
         """
-        self.default_host_url = default_host_url
-        self.api_base = api_base
-        if default_headers is None:
-            default_headers = dict()
-        self.default_headers = default_headers
-        self.ca_cert_path = ca_cert_path
-        self._get_node_url = get_node_url
 
-    def api_request(self, method, path, host_url=None, node=None, port=None, **kwargs):
-        """
-        Makes a request with default headers + user auth headers if necessary
-        If self.ca_cert_path is set, this method will pass it to requests
-        Args:
-            method: (str) name of method for requests.request
-            path: see get_url()
-            host_url: override the client's default host URL
-            node: if a get_node_url function is set, node and port will be passed to this function
-                instead of setting a host_url or using the default
-            port: can be used with node with get_node_url is set
-            **kwargs: any optional arguments to be passed to requests.request
-        """
-        headers = copy.copy(self.default_headers)
+        final_path = path_join(self.default_url.path, path_extension)
 
-        # allow kwarg to override verification so client can be used generically
-        if self.ca_cert_path and 'verify' not in kwargs:
-            kwargs['verify'] = self.ca_cert_path
+        request_url = str(self.default_url.copy(
+            scheme=scheme,
+            host=host,
+            path=final_path,
+            query=query,
+            fragment=fragment,
+            port=port))
 
-        if self.api_base:
-            path = path_join(self.api_base, path)
-
-        if node is not None:
-            assert host_url is None, 'Cannot set both node ({}) and host_url ({})'.format(node, host_url)
-            assert self._get_node_url is not None, 'get_node_url function must be supplied'
-            host_url = self._get_node_url(node, port=port)
-        else:
-            host_url = host_url if host_url else self.default_host_url
-        request_url = path_join(host_url, path)
-        headers.update(kwargs.pop('headers', {}))
         logging.info('Request method {}: {}'.format(method, request_url))
-        logging.debug('Request kwargs: {}'.format(kwargs))
-        logging.debug('Request headers: {}'.format(headers))
-        return requests.request(method, request_url, headers=headers, **kwargs)
+        r = self.session.request(method, request_url, **kwargs)
+        self.session.cookies.clear()
+        return r
 
-    def get_client(self, path, default_headers=None):
-        new_client = copy.deepcopy(self)
-        if default_headers is not None:
-            new_client.default_headers.update(default_headers)
-        new_client.api_base = path_join(self.api_base, path) if self.api_base is not None else path
-        return new_client
+    @functools.wraps(api_request)
+    def get(self, *args, **kwargs):
+        return self.api_request('GET', *args, **kwargs)
 
-    get = functools.partialmethod(api_request, 'get')
-    post = functools.partialmethod(api_request, 'post')
-    put = functools.partialmethod(api_request, 'put')
-    delete = functools.partialmethod(api_request, 'delete')
-    options = functools.partialmethod(api_request, 'options')
-    head = functools.partialmethod(api_request, 'head')
-    patch = functools.partialmethod(api_request, 'patch')
+    @functools.wraps(api_request)
+    def post(self, *args, **kwargs):
+        return self.api_request('POST', *args, **kwargs)
+
+    @functools.wraps(api_request)
+    def put(self, *args, **kwargs):
+        return self.api_request('PUT', *args, **kwargs)
+
+    @functools.wraps(api_request)
+    def patch(self, *args, **kwargs):
+        return self.api_request('PATCH', *args, **kwargs)
+
+    @functools.wraps(api_request)
+    def delete(self, *args, **kwargs):
+        return self.api_request('DELETE', *args, **kwargs)
+
+    @functools.wraps(api_request)
+    def head(self, *args, **kwargs):
+        return self.api_request('HEAD', *args, **kwargs)
+
+    @functools.wraps(api_request)
+    def options(self, *args, **kwargs):
+        return self.api_request('OPTIONS', *args, **kwargs)
 
 
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
@@ -180,22 +217,6 @@ def wait_for_pong(url, timeout):
     ping_app()
 
 
-def wait_for_len(fetch_fn, target_count, timeout):
-    """Will call fetch_fn every 10s, get len() on the result and repeat until it is
-    equal to target count or timeout (in seconds) has been reached
-    """
-    @retrying.retry(wait_fixed=10000, stop_max_delay=timeout * 1000,
-                    retry_on_result=lambda res: res is False,
-                    retry_on_exception=lambda ex: False)
-    def check_for_match():
-        items = fetch_fn()
-        count = len(items)
-        logging.info('Waiting for len()=={}. Current count: {}. Items: {}'.format(target_count, count, repr(items)))
-        if count != target_count:
-            return False
-    check_for_match()
-
-
 def session_tempfile(data):
     """Writes bytes to a named temp file and returns its path
     the temp file will be removed when the interpreter exits
@@ -211,3 +232,33 @@ def session_tempfile(data):
     # Attempt to remove the file upon normal interpreter exit.
     atexit.register(remove_file)
     return temp_path
+
+
+def marathon_app_id_to_mesos_dns_subdomain(app_id):
+    """Return app_id's subdomain as it would appear in a Mesos DNS A record.
+
+    >>> marathon_app_id_to_mesos_dns_subdomain('/app-1')
+    'app-1'
+    >>> marathon_app_id_to_mesos_dns_subdomain('app-1')
+    'app-1'
+    >>> marathon_app_id_to_mesos_dns_subdomain('/group-1/app-1')
+    'app-1-group-1'
+
+    """
+    return '-'.join(reversed(app_id.strip('/').split('/')))
+
+
+def lazy_property(property_fn):
+    cache_name = '__{}_cached'.format(property_fn.__name__)
+
+    @property
+    @functools.wraps(property_fn)
+    def _lazy_prop(self):
+        if not hasattr(self, cache_name):
+            setattr(self, cache_name, property_fn(self))
+        return getattr(self, cache_name)
+    return _lazy_prop
+
+
+def random_id(n):
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(n))

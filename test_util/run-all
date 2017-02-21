@@ -33,7 +33,7 @@ else
 fi
 
 # Pin to just the right dcos-vagrant commit
-git -C dcos-vagrant checkout -qf 7b0b56bde93b8f2b65bb9ec50cd8a0ca932033b2
+git -C dcos-vagrant checkout -qf 2b323c4c1942e3f6d484a7375e749929356a4417
 
 cp ../dcos_generate_config.sh dcos-vagrant/dcos_generate_config.sh
 
@@ -58,6 +58,7 @@ cp VagrantConfig.yaml.example VagrantConfig.yaml
 export DCOS_INSTALL_METHOD="ssh_pull"
 export DCOS_CONFIG_PATH="etc/3_master.yaml"
 export DCOS_PRIVATE_REGISTRY="true"
+export DCOS_GENERATE_CONFIG_PATH="dcos_generate_config.sh"
 cat <<EOF > "$DCOS_CONFIG_PATH"
 ---
 cluster_name: test_cluster
@@ -74,6 +75,7 @@ master_list:
   - 192.168.65.95
   - 192.168.65.101
 oauth_enabled: 'false'
+platform: vagrant-virtualbox
 EOF
 
 cleanup_vagrant_leftovers
@@ -94,7 +96,7 @@ export PUBLIC_SLAVE_HOSTS=192.168.65.60
 export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DCOS_DEFAULT_OS_USER=root
 cd /opt/mesosphere/active/dcos-integration-test
-/opt/mesosphere/bin/dcos-shell py.test -vv -s -rs -m "not ccm" ${CI_FLAGS:-}
+/opt/mesosphere/bin/dcos-shell py.test -vv -rs -m "not ccm" ${CI_FLAGS:-}
 EOF
 chmod +x test_wrapper.sh
 echo "Running integration test"

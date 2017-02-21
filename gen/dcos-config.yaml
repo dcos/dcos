@@ -90,7 +90,8 @@ package:
         "timeout": 5,
         "listener": "0.0.0.0",
         "email": "root.mesos-dns.mesos",
-        "IPSources": {{ mesos_dns_ip_sources }}
+        "IPSources": {{ mesos_dns_ip_sources }},
+        "SetTruncateBit": false
       }
   - path: /etc_master/minuteman.config.d/master.config
     content: |
@@ -164,6 +165,52 @@ package:
   - path: /etc/mesos-slave-modules/dummy.json
     content: |
       {}
+  - path: /etc/mesos-master-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+  - path: /etc/mesos-slave-modules/logsink.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_LogSink",
+                  "parameters" :
+                    [
+                      {
+                        "key": "output_file",
+                        "value" : "/var/log/mesos/mesos-agent.log"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
 {% switch dcos_overlay_enable %}
 {% case "true" %}
   - path: /etc/mesos-master-modules/overlay_master_modules.json
@@ -235,11 +282,26 @@ package:
                 "name": "com_mesosphere_mesos_JournaldLogger",
                 "parameters": [
                   {
+                    "key": "destination_type",
+                    "value": "{{ mesos_container_log_sink }}"
+                  }, {
                     "key": "companion_dir",
                     "value": "/opt/mesosphere/active/mesos-modules/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
+                  }, {
+                    "key": "logrotate_max_stdout_size",
+                    "value": "2MB"
+                  }, {
+                    "key": "logrotate_stdout_options",
+                    "value": "rotate 9"
+                  }, {
+                    "key": "logrotate_max_stderr_size",
+                    "value": "2MB"
+                  }, {
+                    "key": "logrotate_stderr_options",
+                    "value": "rotate 9"
                   }
                 ]
               }
@@ -309,7 +371,7 @@ package:
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
       MESOS_WORK_DIR=/var/lib/dcos/mesos/master
-      MESOS_ZK=zk://127.0.0.1:2181/mesos
+      MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
       MESOS_HOSTNAME_LOOKUP=false
@@ -333,6 +395,7 @@ package:
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
       MESOS_CGROUPS_ENABLE_CFS=true
@@ -346,9 +409,20 @@ package:
   - path: /etc/dcos-log.env
     content: |
       DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
-  - path: /etc/dcos-log-config.json
+  - path: /etc_master/dcos-log-config.json
     content: |
       {
+        "role": "master"
+      }
+  - path: /etc_slave/dcos-log-config.json
+    content: |
+      {
+        "role": "agent"
+      }
+  - path: /etc_slave_public/dcos-log-config.json
+    content: |
+      {
+        "role": "agent_public"
       }
 {% switch use_mesos_hooks %}
 {% case "true" %}
@@ -401,12 +475,13 @@ package:
   - path: /etc/dcos-signal-config.json
     content: |
       {
+        "gen_platform": "{{ platform }}",
         "gen_provider": "{{ provider }}",
         "diagnostics_urls": [
           "http://leader.mesos:1050/system/health/v1/report?cache=0"
         ],
         "cosmos_urls": [
-          "http://leader.mesos:7070/package/list"
+          "http://127.0.0.1:7070/package/list"
         ],
         "mesos_urls": [
           "http://leader.mesos:5050/frameworks",
@@ -414,6 +489,235 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc_master/3dt_config_open.json
+    content: |
+      {
+        "role": "master",
+        "pull": true,
+        "diagnostics-bundle-dir": "/var/lib/dcos/3dt/diag-bundles",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc_slave/3dt_config_open.json
+    content: |
+      {
+        "role": "agent",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc_slave_public/3dt_config_open.json
+    content: |
+      {
+        "role": "agent_public",
+        "endpoint-config": "/opt/mesosphere/etc/endpoints_config_open.json",
+        "agent-port": 61001
+      }
+  - path: /etc/endpoints_config_open.json
+    content: |
+        {
+          "HTTPEndpoints": [
+              {
+                  "Port": 5050,
+                  "Uri": "/__processes__",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/flags",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/frameworks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/schedule",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/roles",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/slaves",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state-summary",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/metrics/snapshot",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/registrar(1)/registry",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/system/stats.json",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/metrics",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/apps",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/deployments",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/eventSubscriptions",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/groups",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/info",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/leader",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/queue",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/list",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/log",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/config/get-state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/__processes__",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/metrics/snapshot",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/slave/flags",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/slave/state",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/system/stats.json",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/config",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/last",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/minute",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 15055,
+                  "Uri": "/history/hour",
+                  "Role": ["master"]
+              }
+          ],
+          "LocalFiles": [
+              {
+                  "Location": "/opt/mesosphere/active.buildinfo.full.json"
+              }
+          ],
+          "LocalCommands": [
+              {
+                  "Command": ["dmesg"]
+              }
+          ]
+        }
   - path: /etc/cosmos.env
     content: |
       COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG={{ cosmos_staged_package_storage_uri_flag }}
@@ -526,6 +830,12 @@ package:
   - path: /etc_master/marathon
     content: |
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
+      LIBPROCESS_PORT=15101
+{% switch dcos_overlay_enable %}
+{% case "true" %}
+      MARATHON_CMD_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
@@ -542,6 +852,7 @@ package:
       METRONOME_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
       METRONOME_MESOS_USER=root
+      LIBPROCESS_PORT=15201
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}
@@ -563,3 +874,16 @@ package:
   - path: /etc_master/dcos-history.env
     content: |
       STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
+  - path: /etc_master/adminrouter-listen-open.conf
+    content: |
+      listen 80 default_server;
+      listen 443 ssl default_server;
+
+      ssl_certificate common/snakeoil.crt;
+      ssl_certificate_key common/snakeoil.key;
+  - path: /etc_slave/adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;
+  - path: /etc_slave_public/adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;

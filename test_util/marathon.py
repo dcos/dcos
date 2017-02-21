@@ -7,11 +7,11 @@ from contextlib import contextmanager
 import requests
 import retrying
 
-from test_util.helpers import ApiClient, path_join
+from test_util.helpers import ApiClientSession, path_join
 
-DEFAULT_API_BASE = 'marathon'
 TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
+log = logging.getLogger(__name__)
 
 
 def get_test_app(custom_port=False):
@@ -80,18 +80,34 @@ def get_test_app_in_docker(ip_per_container=False):
     return app, test_uuid
 
 
-class Marathon(ApiClient):
-    def __init__(self, default_host_url, default_os_user='root', api_base=DEFAULT_API_BASE,
-                 get_node_url=None, default_headers=None, ca_cert_path=None):
-        if default_headers is None:
-            default_headers = dict()
-        default_headers.update(REQUIRED_HEADERS)
-        super().__init__(
-            default_host_url=default_host_url,
-            api_base=api_base,
-            default_headers=default_headers,
-            get_node_url=get_node_url,
-            ca_cert_path=ca_cert_path)
+def get_test_app_in_ucr(healthcheck='HTTP'):
+    app, test_uuid = get_test_app(custom_port=True)
+    assert 'portDefinitions' not in app
+    # UCR does NOT support portmappings host only.  must use $PORT0
+    app['cmd'] += '$PORT0'
+    app['container'] = {
+        'type': 'MESOS',
+        'docker': {
+            'image': 'debian:jessie'
+        },
+        'volumes': [{
+            'containerPath': '/opt/mesosphere',
+            'hostPath': '/opt/mesosphere',
+            'mode': 'RO'
+        }]
+    }
+    # currently UCR does NOT support bridge mode or port mappings
+    # UCR supports host mode
+    app['healthChecks'][0]['protocol'] = healthcheck
+    return app, test_uuid
+
+
+class Marathon(ApiClientSession):
+    def __init__(self, default_url, default_os_user='root', session=None):
+        super().__init__(default_url)
+        if session is not None:
+            self.session = session
+        self.session.headers.update(REQUIRED_HEADERS)
         self.default_os_user = default_os_user
 
     def deploy_test_app_and_check(self, app, test_uuid):
@@ -128,7 +144,11 @@ class Marathon(ApiClient):
                 msg += "Detailed explanation of the problem: {2}"
                 raise Exception(msg.format(r.status_code, r.reason, r.text))
 
-            assert r.json() == {'username': marathon_user}
+            json_uid = r.json()['uid']
+            if marathon_user == 'root':
+                assert json_uid == 0, "App running as root should have uid 0."
+            else:
+                assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
 
     def deploy_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
@@ -154,13 +174,13 @@ class Marathon(ApiClient):
                 [Endpoint(host='172.17.10.202', port=10464), Endpoint(host='172.17.10.201', port=1630)]
         """
         r = self.post('v2/apps', json=app_definition)
-        logging.info('Response from marathon: {}'.format(repr(r.json())))
+        log.info('Response from marathon: {}'.format(repr(r.json())))
         r.raise_for_status()
 
         @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
-        def _pool_for_marathon_app(app_id):
+        def _poll_marathon_for_app_deployment(app_id):
             Endpoint = collections.namedtuple("Endpoint", ["host", "port", "ip"])
             # Some of the counters need to be explicitly enabled now and/or in
             # future versions of Marathon:
@@ -185,25 +205,53 @@ class Marathon(ApiClient):
                        if len(t['ports']) is not 0
                        else Endpoint(t['host'], 0, t['ipAddresses'][0]['ipAddress'])
                        for t in data['app']['tasks']]
-                logging.info('Application deployed, running on {}'.format(res))
+                log.info('Application deployed, running on {}'.format(res))
                 return res
             elif not check_tasks_running:
-                logging.info('Waiting for application to be deployed: '
-                             'Not all instances are running: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: '
+                         'Not all instances are running: {}'.format(repr(data)))
                 return None
             elif not check_tasks_healthy:
-                logging.info('Waiting for application to be deployed: '
-                             'Not all instances are healthy: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: '
+                         'Not all instances are healthy: {}'.format(repr(data)))
                 return None
             else:
-                logging.info('Waiting for application to be deployed: {}'.format(repr(data)))
+                log.info('Waiting for application to be deployed: {}'.format(repr(data)))
                 return None
 
         try:
-            return _pool_for_marathon_app(app_definition['id'])
+            return _poll_marathon_for_app_deployment(app_definition['id'])
         except retrying.RetryError:
             raise Exception("Application deployment failed - operation was not "
                             "completed in {} seconds.".format(timeout))
+
+    def ensure_deployments_complete(self, timeout=120):
+        """
+        This method ensures that, there are no pending deployments
+
+        :return: True if all deployments are completed within time out. Raises an exception otherwise.
+        """
+
+        @retrying.retry(wait_fixed=1000, stop_max_delay=120 * 1000, retry_on_exception=lambda x: False)
+        def _get_deployments_json():
+            r = self.get('v2/deployments')
+            r.raise_for_status()
+            return r.json()
+
+        def retry_on_assertion_error(exception):
+            return isinstance(exception, AssertionError)
+
+        @retrying.retry(retry_on_exception=retry_on_assertion_error,
+                        stop_max_attempt_number=10,
+                        wait_fixed=timeout * 1000)
+        def ensure_deployment_is_finished():
+            deployments_json = _get_deployments_json()
+            assert not deployments_json, "No deployment should be happening."
+
+        try:
+            ensure_deployment_is_finished()
+        except retrying.RetryError:
+            raise Exception("Deployments were not completed within {timeout} seconds".format(timeout=timeout))
 
     def deploy_pod(self, pod_definition):
         """Deploy a pod to marathon
@@ -225,7 +273,7 @@ class Marathon(ApiClient):
 
         r = self.post('v2/pods', json=pod_definition)
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
-        logging.info('Response from marathon: {}'.format(repr(r.json())))
+        log.info('Response from marathon: {}'.format(repr(r.json())))
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
@@ -236,14 +284,14 @@ class Marathon(ApiClient):
             r = self.get('v2/deployments')
             data = r.json()
             if len(data) > 0:
-                logging.info('Waiting for pod to be deployed %r', data)
+                log.info('Waiting for pod to be deployed %r', data)
                 return False
             # deployment complete
             r = self.get('v2/pods' + pod_id)
             r.raise_for_status()
             data = r.json()
             if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
-                logging.info('Pod is still scaling. Continuing to wait...')
+                log.info('Pod is still scaling. Continuing to wait...')
                 return False
             return data
         try:
@@ -270,9 +318,9 @@ class Marathon(ApiClient):
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
-                    logging.info('Waiting for pod to be destroyed')
+                    log.info('Waiting for pod to be destroyed')
                     return False
-            logging.info('Pod destroyed')
+            log.info('Pod destroyed')
             return True
 
         r = self.delete('v2/pods' + pod_id)
@@ -302,9 +350,9 @@ class Marathon(ApiClient):
 
             for deployment in r.json():
                 if deployment_id == deployment.get('id'):
-                    logging.info('Waiting for application to be destroyed')
+                    log.info('Waiting for application to be destroyed')
                     return False
-            logging.info('Application destroyed')
+            log.info('Application destroyed')
             return True
 
         r = self.delete(path_join('v2/apps', app_name))

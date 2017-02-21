@@ -1,5 +1,5 @@
 [Unit]
-Description=Mesos Master: DC/OS Mesos Master Service
+Description=Mesos Master: distributed systems kernel
 [Service]
 Restart=always
 StartLimitInterval=0
@@ -17,4 +17,4 @@ EnvironmentFile=-/run/dcos/etc/mesos-master
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/bash -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 2 > $i; echo -n "$i: "; cat $i; done'
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-master
-ExecStart=$PKG_PATH/bin/tee_stderr $PKG_PATH/bin/mesos-master /var/lib/dcos/mesos/log/mesos-master.log
+ExecStart=$PKG_PATH/bin/mesos-master

@@ -322,6 +322,8 @@ exit $RETCODE"""
     return result
 
 
+# TODO: DCOS-250 (skumaran@mesosphere.com)- Create an comprehensive DC/OS uninstall strategy.
+# This routine is currently unused and unexposed.
 @asyncio.coroutine
 def uninstall_dcos(config, block=False, state_json_dir=None, async_delegate=None, options=None):
     targets = get_full_nodes_list(config)

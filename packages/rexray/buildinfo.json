@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/rexray.git",
-    "ref": "1816ee3868550e07b90f00f57bfd7f737235cd93",
+    "ref": "7a5c745d117156a57429bb48514576b684588235",
     "ref_origin": "v0.3.3-dcos"
   }
 }

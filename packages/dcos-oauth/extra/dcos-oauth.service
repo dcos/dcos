@@ -1,11 +1,12 @@
 [Unit]
-Description=OAuth: OAuth Authentication Service
+Description=DC/OS Authentication (OAuth): authenticates DC/OS users using OpenID Connect and Auth0
 
 [Service]
 User=dcos_oauth
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/proxy.env

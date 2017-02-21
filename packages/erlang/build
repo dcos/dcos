@@ -6,7 +6,7 @@ export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/op
 export CPPFLAGS=${CFLAGS}
 
 pushd /pkg/src/erlang
-./configure --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --enable-dirty-schedulers --disable-hipe --enable-kernel-poll
+./otp_build setup -a --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --enable-dirty-schedulers --disable-hipe --enable-kernel-poll
 make -j$NUM_CORES
 make install
 popd
@@ -15,13 +15,14 @@ service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
 mkdir -p $(dirname $service)
 cat <<EOF > $service
 [Unit]
-Description=Erlang Port Mapping Daemon: DC/OS Erlang Port Mapping Daemon
+Description=Erlang Port Mapping Daemon (EPMD): facilitates communication between distributed Erlang programs
 
 [Service]
 User=dcos_epmd
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=${PKG_PATH}/bin/epmd -port 61420

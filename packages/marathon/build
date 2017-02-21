@@ -11,13 +11,14 @@ mkdir -p $(dirname "$marathon_service")
 
 cat <<EOF > "$marathon_service"
 [Unit]
-Description=Marathon: DC/OS Init System
+Description=Marathon: container orchestration engine
 
 [Service]
 User=dcos_marathon
 Restart=always
 StartLimitInterval=0
 RestartSec=15
+LimitNOFILE=16384
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon

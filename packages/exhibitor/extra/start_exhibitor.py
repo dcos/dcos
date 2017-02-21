@@ -41,6 +41,11 @@ detected_ip = invoke_detect_ip()
 # Make the zk conf directory (exhibitor assumes the dir exists)
 check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhibitor/zookeeper/transactions'])
 
+# On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
+# libraries to a path we control instead. See DCOS-11056
+jna_tmpdir = get_var_assert_set('JNA_TMP_DIR')
+check_call(['mkdir', '-p', jna_tmpdir])
+
 # TODO(cmaloney): Move exhibitor_defaults to a temp runtime conf dir.
 # Base for building up the command line
 exhibitor_cmdline = [
@@ -49,6 +54,7 @@ exhibitor_cmdline = [
     '-Djava.util.prefs.userRoot=/var/lib/dcos/exhibitor/',
     '-Duser.home=/var/lib/dcos/exhibitor/',
     '-Duser.dir=/var/lib/dcos/exhibitor/',
+    '-Djna.tmpdir=%s' % jna_tmpdir,
     '-jar', '$PKG_PATH/usr/exhibitor/exhibitor.jar',
     '--port', '8181',
     '--defaultconfig', '/run/dcos_exhibitor/exhibitor_defaults.conf',
@@ -100,17 +106,14 @@ auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
 ))
 
 write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """
-log4j.rootLogger=INFO, journal, console
+log4j.rootLogger=INFO, journal
 
-log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppender
+log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppenderWithLayout
 log4j.appender.journal.logStacktrace=true
 log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
-
-log4j.appender.console=org.apache.log4j.ConsoleAppender
-log4j.appender.console.Threshold=INFO
-log4j.appender.console.layout=org.apache.log4j.PatternLayout
-log4j.appender.console.layout.ConversionPattern=%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L] - %m%n
+log4j.appender.journal.layout=org.apache.log4j.PatternLayout
+log4j.appender.journal.layout.ConversionPattern=%-5p [%t:%C{1}@%L] - %m%n
 """)
 
 # Add backend specific arguments

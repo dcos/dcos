@@ -32,8 +32,6 @@ def test_set_arg_parser():
     assert parser.action == 'deploy'
     parser = parse_args(['--validate-config'])
     assert parser.action == 'validate-config'
-    parser = parse_args(['--uninstall'])
-    assert parser.action == 'uninstall'
     parser = parse_args(['--hash-password', 'foo'])
     assert parser.password == 'foo'
     assert parser.action == 'hash-password'
@@ -49,6 +47,10 @@ def test_set_arg_parser():
     parser = parse_args(['--set-superuser-password'])
     assert parser.password is None
     assert parser.action == 'set-superuser-password'
+
+    parser = parse_args(['--generate-node-upgrade-script', 'fake'])
+    assert parser.installed_cluster_version == 'fake'
+    assert parser.action == 'generate-node-upgrade-script'
 
     # Can't do two at once
     with pytest.raises(SystemExit):

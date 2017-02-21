@@ -13,7 +13,7 @@ import yaml
 import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
-from pkgpanda.build import hash_checkout
+from pkgpanda.util import hash_checkout
 
 
 def type_str(value):
@@ -77,31 +77,15 @@ def validate_url(url: str):
         ) from ex
 
 
-def is_azure_addr(addr: str):
-    return addr.startswith('[[[reference(') and addr.endswith(').ipConfigurations[0].properties.privateIPAddress]]]')
-
-
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure static master list and IP based static " \
-            "master list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     validate_ipv4_addresses(nodes_list)
 
 
 def validate_ip_port_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
-    # Validate azure addresses which are a bit magical late binding stuff independently of just a
-    # list of static IPv4 addresses
-    if any(map(is_azure_addr, nodes_list)):
-        assert all(map(is_azure_addr, nodes_list)), "Azure resolver list and IP based static " \
-            "resolver list cannot be mixed. Use either all Azure IP references or IPv4 addresses."
-        return
     # Create a list of only ip addresses by spliting the port from the node. Use the resulting
     # ip_list to validate that it is an ipv4 address. If the port was specified, validate its
     # value is between 1 and 65535.
@@ -161,6 +145,11 @@ def calculate_mesos_dns_resolvers_str(resolvers):
 
 def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
+
+
+def validate_mesos_container_log_sink(mesos_container_log_sink):
+    assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
+        "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
 
 
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
@@ -225,19 +214,25 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_oauth_enabled(oauth_enabled):
-    # Should correspond with oauth_enabled in Azure
-    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
-        return
-    validate_true_false(oauth_enabled)
+def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
+    overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
+
+    assert dcos_overlay_network_default_name in overlay_names, (
+        "Default overlay network name does not reference a defined overlay network: {}".format(
+            dcos_overlay_network_default_name))
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
-    except ValueError:
-        # TODO(cmaloney): This is not the right form to do this
-        assert False, "Provided input was not valid JSON: {}".format(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+
     # Check the VTEP IP, VTEP MAC keys are present in the overlay
     # configuration
     assert 'vtep_subnet' in overlay_network.keys(), (
@@ -246,10 +241,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         ipaddress.ip_network(overlay_network['vtep_subnet'])
     except ValueError as ex:
-        # TODO(cmaloney): This is incorrect currently.
-        assert False, (
-            "Incorrect value for vtep_subnet. Only IPv4 "
-            "values are allowed: {}".format(ex))
+        raise AssertionError(
+            "Incorrect value for vtep_subnet: {}."
+            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
 
     assert 'vtep_mac_oui' in overlay_network.keys(), (
         'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
@@ -260,25 +254,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         'We need at least one overlay network configuration {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
-        if (len(overlay['name']) > 13):
-            assert False, "Overlay name cannot exceed 13 characters:{}".format(overlay['name'])
+        assert (len(overlay['name']) <= 13), (
+            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
         try:
             ipaddress.ip_network(overlay['subnet'])
         except ValueError as ex:
-            assert False, (
-                "Incorrect value for vtep_subnet. Only IPv4 "
-                "values are allowed: {}".format(ex))
-
-
-def calculate_oauth_available(oauth_enabled):
-    if oauth_enabled in ["[[[variables('oauthEnabled')]]]", '{ "Ref" : "OAuthEnabled" }']:
-        return 'true'
-    elif oauth_enabled == 'false':
-        return 'false'
-    elif oauth_enabled == 'true':
-        return 'true'
-    else:
-        raise AssertionError("Invaild value for oauth_enabled: {}".format(oauth_enabled))
+            raise AssertionError(
+                "Incorrect value for vtep_subnet {}."
+                " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
 
 
 def validate_num_masters(num_masters):
@@ -328,14 +311,17 @@ def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
         "sources_id": sources_id})
 
 
-def calculate_cluster_packages(package_names, config_id):
-    def get_package_id(package_name):
-        pkg_id_str = "{}--setup_{}".format(package_name, config_id)
+def calculate_config_package_ids(config_package_names, config_id):
+    def get_config_package_id(config_package_name):
+        pkg_id_str = "{}--setup_{}".format(config_package_name, config_id)
         # validate the pkg_id_str generated is a valid PackageId
         return pkg_id_str
 
-    cluster_package_ids = list(sorted(map(get_package_id, json.loads(package_names))))
-    return json.dumps(cluster_package_ids)
+    return json.dumps(list(sorted(map(get_config_package_id, json.loads(config_package_names)))))
+
+
+def calculate_cluster_packages(config_package_ids, package_ids):
+    return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
 
 
 def validate_cluster_packages(cluster_packages):
@@ -512,6 +498,9 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+__dcos_overlay_network_default_name = 'dcos'
+
+
 entry = {
     'validate': [
         validate_num_masters,
@@ -523,13 +512,16 @@ entry = {
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
-        validate_oauth_enabled,
+        lambda oauth_enabled: validate_true_false(oauth_enabled),
+        lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
         validate_mesos_log_retention_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_default_name, dcos_overlay_network:
+            validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
         lambda dcos_overlay_mtu: validate_int_in_range(dcos_overlay_mtu, 552, None),
         lambda dcos_overlay_config_attempts: validate_int_in_range(dcos_overlay_config_attempts, 0, 10),
@@ -555,9 +547,10 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'oauth_enabled': 'true',
-        'oauth_available': calculate_oauth_available,
+        'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
+        'cluster_packages_json': lambda cluster_packages: cluster_packages,
         'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
@@ -570,6 +563,7 @@ entry = {
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
+        'mesos_container_log_sink': 'journald+logrotate',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -590,11 +584,12 @@ entry = {
             'vtep_subnet': '44.128.0.0/20',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
-                'name': 'dcos',
+                'name': __dcos_overlay_network_default_name,
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }]
         }),
+        'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
@@ -614,7 +609,7 @@ entry = {
                 }
             }
         }),
-        'enable_gpu_isolation': 'false',
+        'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
         'cluster_docker_credentials_write_to_etc': 'false',
@@ -633,6 +628,7 @@ entry = {
         'dcos_version': '1.9-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
+        'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,

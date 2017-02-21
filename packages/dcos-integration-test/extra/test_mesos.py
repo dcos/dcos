@@ -46,14 +46,14 @@ def input_streamer(nested_container_id):
     yield encoder.encode(message)
 
 
-def test_if_marathon_app_can_be_debugged(cluster):
+def test_if_marathon_app_can_be_debugged(dcos_api_session):
     # Launch a basic marathon app (no image), so we can debug into it!
     # Cannot use deploy_and_cleanup because we must attach to a running app/task/container.
     app, test_uuid = get_test_app()
     app_id = 'integration-test-{}'.format(test_uuid)
-    with cluster.marathon.deploy_and_cleanup(app):
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
-        master_state_url = 'http://{}:{}/state'.format(cluster.masters[0], 5050)
+        master_state_url = 'http://{}:{}/state'.format(dcos_api_session.masters[0], 5050)
         r = requests.get(master_state_url)
         logging.debug('Got %s with request for %s. Response: \n%s', r.status_code, master_state_url, r.text)
         assert r.status_code == 200
@@ -87,8 +87,8 @@ def test_if_marathon_app_can_be_debugged(cluster):
         # Launch debug session and attach to output stream of debug container
         output_headers = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json+recordio',
-            'Connection': 'keep-alive'
+            'Accept': 'application/recordio',
+            'Message-Accept': 'application/json'
         }
         lncs_data = {
             'type': 'LAUNCH_NESTED_CONTAINER_SESSION',
@@ -105,9 +105,9 @@ def test_if_marathon_app_can_be_debugged(cluster):
 
         # Attach to input stream of debug container and stream a message
         input_headers = {
-            'Content-Type': 'application/json+recordio',
+            'Content-Type': 'application/recordio',
+            'Message-Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Connection': 'keep-alive',
             'Transfer-Encoding': 'chunked'
         }
         post(agent_v1_url, input_headers, data=input_streamer(nested_container_id))
@@ -132,3 +132,17 @@ def test_if_marathon_app_can_be_debugged(cluster):
                     assert r['data']['data'] == 'meow', 'Output did not match expected'
                     meowed = True
         assert meowed, 'Read output stream without seeing meow.'
+
+
+def test_files_api(dcos_api_session):
+    app, test_uuid = get_test_app()
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
+        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+
+        for required_sandbox_file in ('stdout', 'stderr'):
+            content = dcos_api_session.mesos_sandbox_file(
+                app_task['slaveId'], marathon_framework_id, app_task['id'], required_sandbox_file)
+
+            assert content, 'File {} should not be empty'.format(required_sandbox_file)

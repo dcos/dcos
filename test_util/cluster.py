@@ -1,9 +1,7 @@
 import itertools
 import json
 import logging
-import os
 import random
-import stat
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
@@ -35,28 +33,18 @@ curl_cmd = [
 
 class Ssher:
 
-    def __init__(self, user, home_dir, key_path):
+    def __init__(self, user, home_dir, key):
         self.user = user
         self.home_dir = home_dir
-        self.key_path = key_path
-
-        try:
-            os.chmod(self.key_path, stat.S_IREAD | stat.S_IWRITE)
-        except FileNotFoundError as exc:
-            raise Exception('SSH key not found at path {}'.format(self.key_path)) from exc
-        except OSError as exc:
-            raise Exception('Unable to set permissions on SSH key at {}: {}'.format(
-                self.key_path,
-                exc,
-            )) from exc
+        self.key = key
 
     def tunnel(self, host):
-        return tunnel(self.user, self.key_path, host.public_ip)
+        return tunnel(self.user, self.key, host.public_ip)
 
     @contextmanager
     def tunnels(self, hosts):
         hostports = [host.public_ip + ':22' for host in hosts]
-        with tunnel_collection(self.user, self.key_path, hostports) as tunnels:
+        with tunnel_collection(self.user, self.key, hostports) as tunnels:
             yield tunnels
 
     def remote_cmd(self, hosts, cmd):
@@ -70,7 +58,7 @@ class Cluster:
     def __init__(
         self,
         ssh_info,
-        ssh_key_path,
+        ssh_key,
         masters,
         agents,
         public_agents,
@@ -79,11 +67,16 @@ class Cluster:
         # Assert that this is a valid cluster.
         gen.calc.validate_num_masters(str(len(masters)))
 
-        self.ssher = Ssher(ssh_info.user, ssh_info.home_dir, ssh_key_path)
+        self.ssher = Ssher(ssh_info.user, ssh_info.home_dir, ssh_key)
         self.masters = masters
         self.agents = agents
         self.public_agents = public_agents
         self.bootstrap_host = bootstrap_host
+
+        # Cluster object is currently aws-specific. These default values are passed to genconf.
+        self.ip_detect = 'aws'
+        self.platform = 'aws'
+        self.rexray_config_preset = 'aws'
 
         assert all(h.private_ip for h in self.hosts), (
             'All cluster hosts require a private IP. hosts: {}'.format(repr(self.hosts))
@@ -100,7 +93,7 @@ class Cluster:
     def from_hosts(
         cls,
         ssh_info,
-        ssh_key_path,
+        ssh_key,
         hosts,
         num_masters,
         num_agents,
@@ -131,7 +124,7 @@ class Cluster:
 
         return cls(
             ssh_info=ssh_info,
-            ssh_key_path=ssh_key_path,
+            ssh_key=ssh_key,
             masters=masters,
             agents=agents,
             public_agents=public_agents,
@@ -143,17 +136,17 @@ class Cluster:
         cls,
         vpc,
         ssh_info,
-        ssh_key_path,
+        ssh_key,
         num_masters,
         num_agents,
         num_public_agents,
     ):
-        hosts = vpc.get_vpc_host_ips()
+        hosts = vpc.get_host_ips()
         logging.info('AWS provided VPC info: ' + repr(hosts))
 
         vpc_cluster = cls.from_hosts(
             ssh_info=ssh_info,
-            ssh_key_path=ssh_key_path,
+            ssh_key=ssh_key,
             hosts=hosts,
             num_masters=num_masters,
             num_agents=num_agents,
@@ -164,10 +157,10 @@ class Cluster:
         return vpc_cluster
 
     @classmethod
-    def from_cloudformation(cls, cf, ssh_info, ssh_key_path):
+    def from_cloudformation(cls, cf, ssh_info, ssh_key):
         return cls(
             ssh_info=ssh_info,
-            ssh_key_path=ssh_key_path,
+            ssh_key=ssh_key,
             masters=cf.get_master_ips(),
             agents=cf.get_private_agent_ips(),
             public_agents=cf.get_public_agent_ips(),
@@ -286,8 +279,6 @@ def install_dcos(
             if api:
                 installer.start_web_server()
 
-        with open(cluster.ssher.key_path, 'r') as key_fh:
-            ssh_key = key_fh.read()
         # Using static exhibitor is the only option in the GUI installer
         if api:
             logging.info('Installer API is selected, so configure for static backend')
@@ -303,11 +294,13 @@ def install_dcos(
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect='aws',
+            ip_detect=cluster.ip_detect,
+            platform=cluster.platform,
             ssh_user=cluster.ssher.user,
-            ssh_key=ssh_key,
+            ssh_key=cluster.ssher.key,
             add_config_path=add_config_path,
-            rexray_config_preset='aws')
+            rexray_config_preset=cluster.rexray_config_preset,
+        )
 
         logging.info("Running Preflight...")
         if install_prereqs:
@@ -327,18 +320,14 @@ def install_dcos(
         installer.postflight()
 
 
-def upgrade_dcos(cluster, installer_url, add_config_path=None):
+def upgrade_dcos(cluster, installer_url, version, add_config_path=None):
 
-    def upgrade_host(tunnel, role, bootstrap_url):
-        # Download the install script for the new DC/OS.
-        tunnel.remote_cmd(curl_cmd + ['--remote-name', bootstrap_url + '/dcos_install.sh'])
+    def upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path):
+        # Download the upgrade script for the new DC/OS.
+        tunnel.remote_cmd(curl_cmd + ['--remote-name', upgrade_script_path])
 
-        # Remove the old DC/OS.
-        tunnel.remote_cmd(['sudo', '-i', '/opt/mesosphere/bin/pkgpanda', 'uninstall'])
-        tunnel.remote_cmd(['sudo', 'rm', '-rf', '/opt/mesosphere', '/etc/mesosphere'])
-
-        # Install the new DC/OS.
-        tunnel.remote_cmd(['sudo', 'bash', 'dcos_install.sh', '-d', role])
+        # Upgrade to the new DC/OS.
+        tunnel.remote_cmd(['sudo', 'bash', 'dcos_node_upgrade.sh'])
 
     @retry(
         wait_fixed=(1000 * 5),
@@ -359,8 +348,6 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
     bootstrap_url = 'http://' + cluster.bootstrap_host.private_ip
 
     logging.info('Preparing bootstrap host for upgrade')
-    with open(cluster.ssher.key_path, 'r') as key_fh:
-        ssh_key = key_fh.read()
     installer = test_util.installer_api_test.DcosCliInstaller()
     with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
         installer.setup_remote(
@@ -374,12 +361,18 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],
             public_agent_list=[h.private_ip for h in cluster.public_agents],
-            ip_detect='aws',
+            ip_detect=cluster.ip_detect,
+            platform=cluster.platform,
             ssh_user=cluster.ssher.user,
-            ssh_key=ssh_key,
+            ssh_key=cluster.ssher.key,
             add_config_path=add_config_path,
-            rexray_config_preset='aws',
+            rexray_config_preset=cluster.rexray_config_preset,
         )
+
+        # Generate node upgrade script
+        output = installer.generate_node_upgrade_script(version)
+        upgrade_script_path = output.decode('utf-8').splitlines()[-1].split("Node upgrade script URL: ", 1)[1]
+
         # Remove docker (and associated journald) restart from the install
         # script. This prevents Docker-containerized tasks from being killed
         # during agent upgrades.
@@ -407,7 +400,7 @@ def upgrade_dcos(cluster, installer_url, add_config_path=None):
         for host in hosts:
             logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
             with cluster.ssher.tunnel(host) as tunnel:
-                upgrade_host(tunnel, role, bootstrap_url)
+                upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
 
             wait_metric = {
                 'master': 'registrar/log/recovered',
@@ -440,7 +433,6 @@ def run_integration_tests(cluster, **kwargs):
     with cluster.ssher.tunnel(test_host) as test_tunnel:
         return test_util.runner.integration_test(
             tunnel=test_tunnel,
-            test_dir=cluster.ssher.home_dir,
             dcos_dns=cluster.masters[0].private_ip,
             master_list=[h.private_ip for h in cluster.masters],
             agent_list=[h.private_ip for h in cluster.agents],

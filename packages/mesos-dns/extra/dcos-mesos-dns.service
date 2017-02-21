@@ -1,11 +1,12 @@
 [Unit]
-Description=Mesos DNS: DNS based Service Discovery
+Description=Mesos DNS: domain name based service discovery
 [Service]
 User=dcos_mesos_dns
 PermissionsStartOnly=true
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/mesos-dns.env
 EnvironmentFile=-/opt/mesosphere/etc/mesos-dns-extras.env

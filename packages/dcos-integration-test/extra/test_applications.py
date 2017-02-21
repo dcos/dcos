@@ -1,9 +1,11 @@
 import uuid
 
-from test_util.marathon import get_test_app, get_test_app_in_docker
+import pytest
+
+from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
 
 
-def test_if_marathon_app_can_be_deployed(cluster):
+def test_if_marathon_app_can_be_deployed(dcos_api_session):
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -17,19 +19,32 @@ def test_if_marathon_app_can_be_deployed(cluster):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeeds.
     """
-    cluster.marathon.deploy_test_app_and_check(*get_test_app())
+    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app())
 
 
-def test_if_docker_app_can_be_deployed(cluster):
+def test_if_docker_app_can_be_deployed(dcos_api_session):
     """Marathon app inside docker deployment integration test.
 
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected.
     """
-    cluster.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
+    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
 
 
-def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
+@pytest.mark.parametrize("healthcheck", [
+    "HTTP",
+    "MESOS_HTTP",
+])
+def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
+    """Marathon app inside ucr deployment integration test.
+
+    Verifies that a marathon docker app inside of a ucr container can be
+    deployed and accessed as expected.
+    """
+    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_ucr(healthcheck))
+
+
+def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon app using the Mesos containerizer with
@@ -56,10 +71,10 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(cluster):
             'mode': 'RO'
         }]
     }
-    cluster.marathon.deploy_test_app_and_check(app, test_uuid)
+    dcos_api_session.marathon.deploy_test_app_and_check(app, test_uuid)
 
 
-def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session):
     """Marathon pods deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon pods can be deployed.
@@ -89,12 +104,12 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(cluster):
         'networks': [{'mode': 'host'}]
     }
 
-    with cluster.marathon.deploy_pod_and_cleanup(pod_definition):
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
         pass
 
 
-def test_octarine_http(cluster, timeout=30):
+def test_octarine_http(dcos_api_session, timeout=30):
     """
     Test if we are able to send traffic through octarine.
     """
@@ -125,10 +140,10 @@ def test_octarine_http(cluster, timeout=30):
         }]
     }
 
-    cluster.marathon.deploy_and_cleanup(app_definition)
+    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
 
 
-def test_octarine_srv(cluster, timeout=30):
+def test_octarine_srv(dcos_api_session, timeout=30):
     """
     Test resolving SRV records through octarine.
     """
@@ -172,24 +187,24 @@ def test_octarine_srv(cluster, timeout=30):
         }]
     }
 
-    cluster.marathon.deploy_and_cleanup(app_definition)
+    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
 
 
-def test_pkgpanda_api(cluster):
+def test_pkgpanda_api(dcos_api_session):
 
-    def get_and_validate_package_ids(node, path):
-        r = cluster.get(node=node, path=path)
+    def get_and_validate_package_ids(path, node):
+        r = dcos_api_session.get(path, node=node)
         assert r.status_code == 200
         package_ids = r.json()
         assert isinstance(package_ids, list)
         for package_id in package_ids:
-            r = cluster.get(node=node, path=path + package_id)
+            r = dcos_api_session.get(path + package_id, node=node)
             assert r.status_code == 200
             name, version = package_id.split('--')
             assert r.json() == {'id': package_id, 'name': name, 'version': version}
         return package_ids
 
-    active_buildinfo = cluster.get('/pkgpanda/active.buildinfo.full.json').json()
+    active_buildinfo = dcos_api_session.get('/pkgpanda/active.buildinfo.full.json').json()
     active_buildinfo_packages = sorted(
         # Setup packages don't have a buildinfo.
         (package_name, info['package_version'] if info else None)
@@ -206,9 +221,9 @@ def test_pkgpanda_api(cluster):
             else:
                 assert package == buildinfo_package
 
-    for node in cluster.masters + cluster.all_slaves:
-        package_ids = get_and_validate_package_ids(node, '/pkgpanda/repository/')
-        active_package_ids = get_and_validate_package_ids(node, '/pkgpanda/active/')
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        package_ids = get_and_validate_package_ids('pkgpanda/repository/', node)
+        active_package_ids = get_and_validate_package_ids('pkgpanda/active/', node)
 
         assert set(active_package_ids) <= set(package_ids)
         assert_packages_match_active_buildinfo(active_package_ids)

@@ -29,7 +29,7 @@ def test_setup(tmpdir):
     expect_fs(
         "{0}/root".format(tmpdir),
         {
-            "active": ["env", "mesos", "mesos-config"],
+            "active": ["dcos-provider-abcdef-test", "mesos", "mesos-config"],
             "active.buildinfo.full.json": None,
             "bin": [
                 "mesos",
@@ -61,6 +61,12 @@ def test_setup(tmpdir):
     assert expected_dcos_service_configuration == load_json(
         "{tmpdir}/root/etc/dcos-service-configuration.json".format(tmpdir=tmpdir))
 
+    assert load_json('{0}/root/etc/some.json'.format(tmpdir)) == {
+        'cluster-specific-stuff': 'magic',
+        'foo': 'bar',
+        'baz': 'qux',
+    }
+
     # Introspection should work right
     active = set(check_output([
         "pkgpanda",
@@ -70,7 +76,11 @@ def test_setup(tmpdir):
         "--repository={}".format(repo_path),
         "--config-dir={}".format(resources_test_dir("etc-active"))]).decode().split())
 
-    assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
+    assert active == {
+        "dcos-provider-abcdef-test--setup",
+        "mesos--0.22.0",
+        "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8",
+    }
     tmpdir.join("root", "bootstrap").write("", ensure=True)
     # If we setup the same directory again we should get .old files.
     check_call(["pkgpanda",
@@ -86,7 +96,7 @@ def test_setup(tmpdir):
     expect_fs(
         "{0}/root".format(tmpdir),
         {
-            "active": ["env", "mesos", "mesos-config"],
+            "active": ["dcos-provider-abcdef-test", "mesos", "mesos-config"],
             "active.buildinfo.full.json.old": None,
             "active.buildinfo.full.json": None,
             "bin": [
@@ -101,7 +111,7 @@ def test_setup(tmpdir):
             "dcos.target.wants": ["dcos-mesos-master.service"],
             "environment": None,
             "environment.export": None,
-            "active.old": ["env", "mesos", "mesos-config"],
+            "active.old": ["dcos-provider-abcdef-test", "mesos", "mesos-config"],
             "bin.old": [
                 "mesos",
                 "mesos-dir",
@@ -125,7 +135,11 @@ def test_setup(tmpdir):
         "--repository={}".format(repo_path),
         "--config-dir={}".format(resources_test_dir("etc-active"))]).decode().split())
 
-    assert active == {"env--setup", "mesos--0.22.0", "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8"}
+    assert active == {
+        "dcos-provider-abcdef-test--setup",
+        "mesos--0.22.0",
+        "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8",
+    }
 
     # Touch some .new files so we can be sure that deactivate cleans those up as well.
     tmpdir.mkdir("root/bin.new")

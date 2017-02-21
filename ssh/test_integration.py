@@ -9,14 +9,13 @@ import tempfile
 import time
 import uuid
 from contextlib import contextmanager
-from functools import partial
 
 import pytest
 from retrying import retry
 
 import pkgpanda.util
 from ssh.runner import MultiRunner, Node
-from ssh.tunnel import run_scp_cmd, run_ssh_cmd, tunnel, tunnel_collection
+from ssh.tunnel import tunnel, tunnel_collection
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -36,6 +35,7 @@ class SshdManager():
         self.sshd_config_path = str(tmpdir.join('sshd_config'))
         self.key_path = str(tmpdir.join('host_key'))
         subprocess.check_call(['ssh-keygen', '-f', self.key_path, '-t', 'rsa', '-N', ''])
+        self.key = pkgpanda.util.load_string(self.key_path)
 
         config = [
             'Protocol 1,2',
@@ -339,7 +339,7 @@ def test_ssh_tunnel(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
         tunnel_args = {
             'user': getpass.getuser(),
-            'key_path': sshd_manager.key_path,
+            'key': sshd_manager.key,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
         with tunnel(**tunnel_args) as t:
@@ -350,20 +350,8 @@ def test_ssh_tunnel_collection(sshd_manager):
     with sshd_manager.run(10) as sshd_ports:
         tunnel_args = {
             'user': getpass.getuser(),
-            'key_path': sshd_manager.key_path,
+            'key': sshd_manager.key,
             'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
         with tunnel_collection(**tunnel_args) as tunnels:
             for t in tunnels:
                 tunnel_write_and_run(t.write_to_remote, t.remote_cmd)
-
-
-def test_ssh_one_offs(sshd_manager):
-    with sshd_manager.run(1) as sshd_ports:
-        ssh_args = {
-            'user': getpass.getuser(),
-            'key_path': sshd_manager.key_path,
-            'host': '127.0.0.1',
-            'port': sshd_ports[0]}
-        scp = partial(run_scp_cmd, **ssh_args)
-        ssh = partial(run_ssh_cmd, **ssh_args)
-        tunnel_write_and_run(scp, ssh)

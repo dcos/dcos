@@ -4,8 +4,13 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "52d6c144b334e23faa6237c1e06dbd125272f6c3",
+      "ref": "b643716d6882b2eb542919e8e1b47896fa1aaae5",
       "ref_origin": "master"
+    }
+  },
+  "sysctl": {
+    "dcos-navstar": {
+      "net.ipv4.vs.conntrack": "1"
     }
   }
 }

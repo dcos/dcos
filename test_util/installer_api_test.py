@@ -12,7 +12,7 @@ import yaml
 from retrying import retry
 
 from pkgpanda.util import load_yaml
-from ssh.tunnel import run_scp_cmd, run_ssh_cmd, Tunnelled
+from ssh.tunnel import Tunnelled
 
 MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
 
@@ -23,8 +23,7 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
         self.offline_mode = False
 
     def setup_remote(
-            self, tunnel: Optional[Tunnelled], installer_path, download_url,
-            host=None, ssh_user=None, ssh_key_path=None):
+            self, tunnel: Optional[Tunnelled], installer_path, download_url):
         """Creates a light, system-based ssh handler
         Args:
             tunnel: Tunneled instance to avoid recreating SSH connections.
@@ -32,35 +31,10 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
                 set and one-off connections will be made
             installer_path: (str) path on host to download installer to
             download_url: (str) URL that installer can be pulled from
-            host: (str) where the installer will be downloaded to
-            ssh_user: (str) user with access to host
-            ssh_key_path: (str) path to valid ssh key for ssh_user@host
         """
         self.installer_path = installer_path
-        if tunnel:
-            self.tunnel = tunnel
-            self.url = "http://{}:9000".format(tunnel.host)
-
-            def ssh(cmd):
-                return tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
-
-            def scp(src, dst):
-                return tunnel.write_to_remote(src, dst)
-
-        else:
-            assert ssh_user, 'ssh_user must be set if tunnel not set'
-            assert ssh_key_path, 'ssh_key_path must be set if tunnel not set'
-            assert host, 'host must be set if tunnel not set'
-            self.url = "http://{}:9000".format(host)
-
-            def ssh(cmd):
-                return run_ssh_cmd(ssh_user, ssh_key_path, host, cmd, timeout=MAX_STAGE_TIME)
-
-            def scp(src, dst):
-                return run_scp_cmd(ssh_user, ssh_key_path, host, src, dst)
-
-        self.ssh = ssh
-        self.scp = scp
+        self.tunnel = tunnel
+        self.url = "http://{}:9000".format(tunnel.host)
 
         @retry(wait_fixed=3000, stop_max_delay=300 * 1000)
         def download_dcos():
@@ -68,14 +42,14 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
             have been returning 403 for valid uploads for 10-15 minutes after CI finished build
             Therefore, give a five minute buffer to help stabilize CI
             """
-            self.ssh(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
-                      '--create-dirs', '-o', self.installer_path, download_url])
+            self.tunnel.remote_cmd(['curl', '-fLsSv', '--retry', '20', '-Y', '100000', '-y', '60',
+                                    '--create-dirs', '-o', self.installer_path, download_url])
 
         if download_url:
             download_dcos()
 
     def get_hashed_password(self, password):
-        p = self.ssh(["bash", self.installer_path, "--hash-password", password])
+        p = self.tunnel.remote_cmd(["bash", self.installer_path, "--hash-password", password])
         # password hash is last line output but output ends with newline
         passwd_hash = p.decode('utf-8').split('\n')[-2]
         return passwd_hash
@@ -84,8 +58,8 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
     def ip_detect_script(preset_name):
         try:
             return pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(preset_name)).decode('utf-8')
-        except FileNotFoundError as exc:
-            raise Exception('IP-detect preset not found: {}'.format(preset_name)) from exc
+        except OSError as exc:
+            raise Exception('Failed to read ip-detect script preset {}: {}'.format(preset_name, exc)) from exc
 
     @abc.abstractmethod
     def genconf(self, expect_errors=False):
@@ -114,7 +88,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
         cmd = ['DCOS_INSTALLER_DAEMONIZE=true', 'bash', self.installer_path, '--web']
         if self.offline_mode:
             cmd.append('--offline')
-        self.ssh(cmd)
+        self.tunnel.remote_cmd(cmd)
 
         @retry(wait_fixed=1000, stop_max_delay=10000)
         def wait_for_up():
@@ -126,7 +100,7 @@ class DcosApiInstaller(AbstractDcosInstaller):
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect, rexray_config=None, rexray_config_preset=None,
+            ip_detect, platform=None, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None):
         """Runs configuration generation.
 
@@ -134,10 +108,11 @@ class DcosApiInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv4 addresses to be used as public agents
-            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            ip_detect (str):  name of preset IP-detect script
+            platform (str): name of the infrastructure platform
             rexray_config: complete contents of REX-Ray config file. Must be a
                 JSON-serializable object.
             rexray_config_preset (str): name of preset REX-Ray config
@@ -158,6 +133,8 @@ class DcosApiInstaller(AbstractDcosInstaller):
             'ssh_user': ssh_user,
             'ssh_key': ssh_key,
             'ip_detect_script': self.ip_detect_script(ip_detect)}
+        if platform:
+            payload['platform'] = platform
         if rexray_config:
             payload['rexray_config'] = rexray_config
         if rexray_config_preset:
@@ -265,7 +242,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
         cmd = ['bash', self.installer_path, mode]
         if expect_errors:
             try:
-                output = self.ssh(cmd)
+                output = self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
                 err_msg = "{} succeeded when it should have failed".format(cmd)
                 print(output)
                 raise AssertionError(err_msg)
@@ -273,11 +250,13 @@ class DcosCliInstaller(AbstractDcosInstaller):
                 # expected behavior
                 pass
         else:
-            print(self.ssh(cmd))
+            output = self.tunnel.remote_cmd(cmd, timeout=MAX_STAGE_TIME)
+            print(output)
+            return output
 
     def genconf(
             self, master_list, agent_list, public_agent_list, ssh_user, ssh_key,
-            ip_detect, rexray_config=None, rexray_config_preset=None,
+            ip_detect, platform=None, rexray_config=None, rexray_config_preset=None,
             zk_host=None, expect_errors=False, add_config_path=None,
             bootstrap_url='file:///opt/dcos_install_tmp'):
         """Runs configuration generation.
@@ -286,10 +265,11 @@ class DcosCliInstaller(AbstractDcosInstaller):
             master_list: list of IPv4 addresses to be used as masters
             agent_list: list of IPv4 addresses to be used as agents
             public_agent_list: list of IPv$ addresses to be used as public agents
-            ip_detect (str):  name of preset IP-detect script
             ssh_user (str): name of SSH user that has access to targets
             ssh_key (str): complete public SSH key for ssh_user. Must already
                 be installed on tagets as authorized_key
+            ip_detect (str):  name of preset IP-detect script
+            platform (str): name of the infrastructure platform
             rexray_config: complete contents of REX-Ray config file. Must be a
                 JSON-serializable object.
             rexray_config_preset (str): name of preset REX-Ray config
@@ -312,6 +292,8 @@ class DcosCliInstaller(AbstractDcosInstaller):
             'agent_list': agent_list,
             'public_agent_list': public_agent_list,
             'process_timeout': MAX_STAGE_TIME}
+        if platform:
+            test_config['platform'] = platform
         if rexray_config:
             test_config['rexray_config'] = rexray_config
         if rexray_config_preset:
@@ -332,11 +314,11 @@ class DcosCliInstaller(AbstractDcosInstaller):
         with open('ssh_key', 'w') as key_fh:
             key_fh.write(ssh_key)
         remote_dir = os.path.dirname(self.installer_path)
-        self.ssh(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
-        self.scp('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
-        self.scp('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
-        self.scp('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
-        self.ssh(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
+        self.tunnel.remote_cmd(['mkdir', '-p', os.path.join(remote_dir, 'genconf')])
+        self.tunnel.write_to_remote('config.yaml', os.path.join(remote_dir, 'genconf/config.yaml'))
+        self.tunnel.write_to_remote('ip-detect', os.path.join(remote_dir, 'genconf/ip-detect'))
+        self.tunnel.write_to_remote('ssh_key', os.path.join(remote_dir, 'genconf/ssh_key'))
+        self.tunnel.remote_cmd(['chmod', '600', os.path.join(remote_dir, 'genconf/ssh_key')])
         self.run_cli_cmd('--genconf', expect_errors=expect_errors)
 
     def preflight(self, expect_errors=False):
@@ -351,3 +333,7 @@ class DcosCliInstaller(AbstractDcosInstaller):
 
     def postflight(self, expect_errors=False):
         self.run_cli_cmd('--postflight', expect_errors=expect_errors)
+
+    def generate_node_upgrade_script(self, version, expect_errors=False):
+        # tunnel run_cmd calls check_output which returns the output hence returning this
+        return self.run_cli_cmd("--generate-node-upgrade-script " + version, expect_errors=expect_errors)

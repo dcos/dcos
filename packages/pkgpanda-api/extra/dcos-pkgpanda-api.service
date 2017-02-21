@@ -1,5 +1,5 @@
 [Unit]
-Description=Pkgpanda API: Package Management Service
+Description=DC/OS Component Package Manager (Pkgpanda): installs and manages DC/OS components
 
 
 [Service]
@@ -8,6 +8,7 @@ StandardOutput=journal
 StandardError=journal
 Restart=always
 RestartSec=5
+LimitNOFILE=16384
 Environment=PKGPANDA_HTTP_CONFIG=${PKG_PATH}/etc/pkgpanda-api.conf.py
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=/opt/mesosphere/bin/gunicorn --worker-class=sync \

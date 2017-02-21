@@ -1,5 +1,5 @@
 [Unit]
-Description=Generate resolv.conf: Update systemd-resolved for MesosDNS
+Description=Generate resolv.conf: configures network name resolution
 
 [Service]
 Type=oneshot

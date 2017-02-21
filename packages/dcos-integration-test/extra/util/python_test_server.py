@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import getpass
 import json
 import logging
 import os
@@ -245,7 +244,7 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def _handle_operating_environment(self):
         """Gets basic operating environment info (such as running user)"""
         self._send_reply({
-            'username': getpass.getuser()
+            'uid': os.getuid()
         })
 
     def do_GET(self):  # noqa: ignore=N802

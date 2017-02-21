@@ -1,4 +1,4 @@
 [Unit]
-Description=Metrics Agent Socket: Socket for DC/OS Metrics Agent Service
+Description=DC/OS Metrics Agent Socket: socket for DC/OS Metrics Agent service
 [Socket]
 ListenStream=/run/dcos/dcos-metrics-agent.sock

@@ -12,17 +12,6 @@ PUBLIC_AGENTS: integer (default=1)
 DCOS_TEMPLATE_URL: string
     The template to be used for deployment testing
 
-DCOS_STACK_NAME: string
-    Instead of providing a template, supply the name (or id) of an already
-    existing cluster
-
-DCOS_SSH_KEY_PATH: string
-    path for the SSH key to be used with a preexiting cluster.
-    Defaults to 'default_ssh_key'
-
-DCOS_ADVANCED_TEMPLATE: boolean (default:false)
-    If true, then DCOS_STACK_NAME is for a DC/OS advanced stack
-
 DCOS_HOST_OS: 'coreos' or 'centos'
     This must be set only if you are attaching to an already provisioned
     DC/OS Advanced template cluster
@@ -37,13 +26,13 @@ TEST_ADD_ENV_*: string (default=None)
 """
 import logging
 import os
-import random
-import string
 import sys
 
 import test_util.aws
 import test_util.cluster
 from gen.calc import calculate_environment_variable
+from pkgpanda.util import write_string
+from test_util.helpers import random_id
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -73,103 +62,81 @@ def check_environment():
     options.host_os = os.getenv('DCOS_HOST_OS', 'coreos')
     options.agents = int(os.environ.get('AGENTS', '2'))
     options.public_agents = int(os.environ.get('PUBLIC_AGENTS', '1'))
-    options.ssh_key_path = os.getenv('DCOS_SSH_KEY_PATH', 'default_ssh_key')
 
     # Mandatory
-    options.stack_name = os.getenv('DCOS_STACK_NAME', None)
     options.template_url = os.getenv('DCOS_TEMPLATE_URL', None)
-    if not options.template_url:
-        assert options.stack_name is not None, 'if DCOS_TEMPLATE_URL is not provided, '\
-            'then DCOS_STACK_NAME must be specified'
-        advanced = os.getenv('DCOS_ADVANCED_TEMPLATE', None)
-        assert advanced is not None, 'if using DCOS_STACK_NAME, '\
-            'then DCOS_ADVANCED_TEMPLATE=[true/false] must be specified'
-        options.advanced = advanced == 'true'
-    else:
-        options.advanced = not options.template_url.endswith('single-master.cloudformation.json') and \
-            not options.template_url.endswith('multi-master.cloudformation.json')
+    options.advanced = not options.template_url.endswith('single-master.cloudformation.json') and \
+        not options.template_url.endswith('multi-master.cloudformation.json')
     # Required
     options.aws_access_key_id = calculate_environment_variable('AWS_ACCESS_KEY_ID')
     options.aws_secret_access_key = calculate_environment_variable('AWS_SECRET_ACCESS_KEY')
 
-    add_env = {}
+    add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
         if k.startswith(prefix):
-            add_env[k.replace(prefix, '')] = v
-    options.add_env = add_env
-    options.pytest_cmd = os.getenv('DCOS_PYTEST_CMD', 'py.test -vv -s -rs ' + options.ci_flags)
+            add_env.append(k.replace(prefix, '') + '=' + v)
+    options.test_cmd = os.getenv('DCOS_PYTEST_CMD', ' '.join(add_env) + ' py.test -vv -rs ' + options.ci_flags)
     return options
 
 
 def main():
     options = check_environment()
-    cf, ssh_info = provide_cluster(options)
-    cluster = test_util.cluster.Cluster.from_cloudformation(cf, ssh_info, options.ssh_key_path)
+    bw = test_util.aws.BotoWrapper(
+        region=options.aws_region,
+        aws_access_key_id=options.aws_access_key_id,
+        aws_secret_access_key=options.aws_secret_access_key)
+    stack_name = 'dcos-ci-test-cf-{}'.format(random_id(10))
+    ssh_key = bw.create_key_pair(stack_name)
+    write_string('ssh_key', ssh_key)
+    log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
+    if options.advanced:
+        cf, ssh_info = test_util.aws.DcosZenCfStack.create(
+            stack_name=stack_name,
+            boto_wrapper=bw,
+            template_url=options.template_url,
+            private_agents=options.agents,
+            public_agents=options.public_agents,
+            key_pair_name=stack_name,
+            private_agent_type='m3.xlarge',
+            public_agent_type='m3.xlarge',
+            master_type='m3.xlarge',
+            vpc=options.vpc,
+            gateway=options.gateway,
+            private_subnet=options.private_subnet,
+            public_subnet=options.public_subnet)
+    else:
+        cf, ssh_info = test_util.aws.DcosCfStack.create(
+            stack_name=stack_name,
+            template_url=options.template_url,
+            private_agents=options.agents,
+            public_agents=options.public_agents,
+            admin_location='0.0.0.0/0',
+            key_pair_name=stack_name,
+            boto_wrapper=bw)
+    cf.wait_for_complete(wait_before_poll_min=5)
+    # Resiliency testing requires knowing the stack name
+    options.test_cmd = 'AWS_STACK_NAME=' + stack_name + ' ' + options.test_cmd
+
+    # hidden hook where user can supply an ssh_key for a preexisting cluster
+    cluster = test_util.cluster.Cluster.from_cloudformation(cf, ssh_info, ssh_key)
 
     result = test_util.cluster.run_integration_tests(
         cluster,
         region=options.aws_region,
         aws_access_key_id=options.aws_access_key_id,
         aws_secret_access_key=options.aws_secret_access_key,
-        add_env=options.add_env,
-        pytest_cmd=options.pytest_cmd,
+        test_cmd=options.test_cmd,
     )
     if result == 0:
         log.info('Test successful! Deleting CloudFormation.')
         cf.delete()
+        bw.delete_key_pair(stack_name)
     else:
         logging.warning('Test exited with an error')
     if options.ci_flags:
         result = 0  # Wipe the return code so that tests can be muted in CI
     sys.exit(result)
-
-
-def provide_cluster(options):
-    bw = test_util.aws.BotoWrapper(
-        region=options.aws_region,
-        aws_access_key_id=options.aws_access_key_id,
-        aws_secret_access_key=options.aws_secret_access_key)
-    if not options.stack_name:
-        random_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        stack_name = 'CF-integration-test-{}'.format(random_id)
-        log.info('Spinning up AWS CloudFormation with ID: {}'.format(stack_name))
-        # TODO(mellenburg): use randomly generated keys this key is delivered by CI or user
-        if options.advanced:
-            cf, ssh_info = test_util.aws.DcosCfAdvanced.create(
-                stack_name=stack_name,
-                boto_wrapper=bw,
-                template_url=options.template_url,
-                private_agents=options.agents,
-                public_agents=options.public_agents,
-                key_pair_name='default',
-                private_agent_type='m3.xlarge',
-                public_agent_type='m3.xlarge',
-                master_type='m3.xlarge',
-                vpc=options.vpc,
-                gateway=options.gateway,
-                private_subnet=options.private_subnet,
-                public_subnet=options.public_subnet)
-        else:
-            cf, ssh_info = test_util.aws.DcosCfSimple.create(
-                stack_name=stack_name,
-                template_url=options.template_url,
-                private_agents=options.agents,
-                public_agents=options.public_agents,
-                admin_location='0.0.0.0/0',
-                key_pair_name='default',
-                boto_wrapper=bw)
-        cf.wait_for_stack_creation(wait_before_poll_min=5)
-    else:
-        if options.advanced:
-            cf = test_util.aws.DcosCfAdvanced(options.stack_name, bw)
-        else:
-            cf = test_util.aws.DcosCfSimple(options.stack_name, bw)
-        ssh_info = test_util.aws.SSH_INFO[options.host_os]
-        stack_name = options.stack_name
-    # Resiliency testing requires knowing the stack name
-    options.add_env['AWS_STACK_NAME'] = stack_name
-    return cf, ssh_info
 
 
 if __name__ == '__main__':

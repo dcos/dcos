@@ -356,7 +356,7 @@ class Repository:
         filename = os.path.join(path, "pkginfo.json")
         try:
             pkginfo = load_json(filename)
-        except FileNotFoundError as ex:
+        except OSError as ex:
             raise PackageError("No / unreadable pkginfo.json in {0}: {1}".format(id, ex.strerror)) from ex
 
         if not isinstance(pkginfo, dict):

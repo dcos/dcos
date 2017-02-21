@@ -1,4 +1,5 @@
 import copy
+import json
 
 import pkg_resources
 import pytest
@@ -14,8 +15,10 @@ def make_arguments(new_arguments):
     arguments = copy.deepcopy({
         'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
         'bootstrap_id': '123',
+        'package_ids': json.dumps(['package--version']),
         'exhibitor_zk_path': '/dcos',
         'master_discovery': 'static',
+        'platform': 'aws',
         'provider': 'onprem',
         'exhibitor_zk_hosts': '52.37.205.237:2181',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
@@ -171,5 +174,22 @@ def test_exhibitor_storage_master_discovery():
         ['exhibitor_storage_backend', 'master_discovery'],
         msg_master_discovery,
         unset={'exhibitor_address', 'num_masters'})
+
+
+def test_validate_default_overlay_network_name():
+    msg = "Default overlay network name does not reference a defined overlay network: foo"
+    validate_error_multikey(
+        {'dcos_overlay_network': json.dumps({
+            'vtep_subnet': '44.128.0.0/20',
+            'vtep_mac_oui': '70:B3:D5:00:00:00',
+            'overlays': [{
+                'name': 'bar',
+                'subnet': '1.1.1.0/24',
+                'prefix': 24
+            }],
+        }), 'dcos_overlay_network_default_name': 'foo'},
+        ['dcos_overlay_network_default_name', 'dcos_overlay_network'],
+        msg)
+
 
 # TODO(cmaloney): Add tests that specific config leads to specific files in specific places at install time.

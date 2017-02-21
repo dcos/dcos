@@ -1,17 +1,21 @@
+""" Utilities for interacting with a DC/OS instance via REST API
+
+Most DC/OS deployments will have auth enabled, so this module includes
+DcosUser and DcosAuth to be attached to a DcosApiSession. Additionally,
+it is sometimes necessary to query specific nodes within a DC/OS cluster,
+so there is ARNodeApiClientMixin to allow querying nodes without boilerplate
+to set the correct port and scheme.
+"""
 import copy
 import logging
 import os
-from urllib.parse import urlparse
+from typing import Optional
 
 import requests
 import retrying
 
-import test_util.helpers
 import test_util.marathon
-
-ADMINROUTER_PORT_MAPPING = {
-    'master': {'http': 80, 'https': 443},
-    'agent': {'http': 61001, 'https': 61002}}
+from test_util.helpers import ApiClientSession, Url
 
 
 def get_args_from_env():
@@ -31,11 +35,108 @@ def get_args_from_env():
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
         'dockercfg_hook_enabled': os.getenv('DOCKERCFG_HOOK', 'false'),
-        'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root'),
-        'ca_cert_path': os.getenv('DCOS_CA_CERT_PATH', None)}
+        'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
 
 
-class ClusterApi(test_util.helpers.ApiClient):
+class DcosUser:
+    """A lightweight user representation for grabbing the auth info and stashing it"""
+    def __init__(self, credentials: dict):
+        self.credentials = credentials
+        self.auth_token = None
+        self.auth_cookie = None
+
+    @property
+    def auth_header(self):
+        return {'Authorization': 'token={}'.format(self.auth_token)}
+
+
+class DcosAuth(requests.auth.AuthBase):
+    def __init__(self, auth_token: str):
+        self.auth_token = auth_token
+
+    def __call__(self, request):
+        request.headers['Authorization'] = 'token={}'.format(self.auth_token)
+        return request
+
+
+class ARNodeApiClientMixin:
+    def api_request(self, method, path_extension, *, scheme=None, host=None, query=None,
+                    fragment=None, port=None, node=None, **kwargs):
+        """ Communicating with a DC/OS cluster is done by default through Admin Router.
+        Use this Mixin with an ApiClientSession that requires distinguishing between nodes.
+        Admin Router has both a master and agent process and so this wrapper accepts a
+        node argument. node must be a host in self.master or self.all_slaves. If given,
+        the request will be made to the Admin Router endpoint for that node type
+        """
+        assert self.masters
+        assert self.all_slaves
+        if node is not None:
+            assert port is None, 'node is intended to retrieve port; cannot set both simultaneously'
+            assert host is None, 'node is intended to retrieve host; cannot set both simultaneously'
+            if node in self.masters:
+                # Nothing else to do, master Admin Router uses default HTTP (80) and HTTPS (443) ports
+                pass
+            elif node in self.all_slaves:
+                scheme = scheme if scheme is not None else self.default_url.scheme
+                if scheme == 'http':
+                    port = 61001
+                if scheme == 'https':
+                    port = 61002
+            else:
+                raise Exception('Node {} is not recognized within the DC/OS cluster'.format(node))
+            host = node
+        return super().api_request(method, path_extension, scheme=scheme, host=host,
+                                   query=query, fragment=fragment, port=port, **kwargs)
+
+
+class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
+    def __init__(self, dcos_url: str, masters: list, public_masters: list,
+                 slaves: list, public_slaves: list, dockercfg_hook_enabled,
+                 default_os_user: str, auth_user: Optional[DcosUser]):
+        """Proxy class for DC/OS clusters.
+
+        Args:
+            dcos_url: address for the DC/OS web UI.
+            masters: list of Mesos master advertised IP addresses.
+            public_masters: list of Mesos master IP addresses routable from
+                the local host.
+            slaves: list of Mesos slave/agent advertised IP addresses.
+            dockercfg_hook_enabled: whether to remove fetched dockercfg files before container start
+            default_os_user: default user that marathon/metronome will launch tasks under
+            auth_user: use this user's auth for all requests
+                Note: user must be authenticated explicitly or call self.wait_for_dcos()
+        """
+        super().__init__(Url.from_string(dcos_url))
+        self.masters = sorted(masters)
+        self.public_masters = sorted(public_masters)
+        self.slaves = sorted(slaves)
+        self.public_slaves = sorted(public_slaves)
+        self.all_slaves = sorted(slaves + public_slaves)
+        self.dockercfg_hook_enabled = dockercfg_hook_enabled == 'true'
+        self.default_os_user = default_os_user
+        self.auth_user = auth_user
+
+        assert len(self.masters) == len(self.public_masters)
+
+    @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
+    def _authenticate_default_user(self):
+        """retry default auth user because in some deployments,
+        the auth endpoint might not be routable immediately
+        after Admin Router is up. DcosUser.authenticate()
+        will raise exception if authorization fails
+        """
+        if self.auth_user is None:
+            return
+        logging.info('Attempting authentication')
+        # explicitly use a session with no user authentication for requesting auth headers
+        r = self.post('/acs/api/v1/auth/login', json=self.auth_user.credentials, auth=None)
+        r.raise_for_status()
+        logging.info('Received authentication blob: {}'.format(r.json()))
+        self.auth_user.auth_token = r.json()['token']
+        self.auth_user.auth_cookie = r.cookies['dcos-acs-auth-cookie']
+        logging.info('Authentication successful')
+        # Set requests auth
+        self.session.auth = DcosAuth(self.auth_user.auth_token)
 
     @retrying.retry(wait_fixed=1000,
                     retry_on_result=lambda ret: ret is False,
@@ -178,8 +279,7 @@ class ClusterApi(test_util.helpers.ApiClient):
 
     def wait_for_dcos(self):
         self._wait_for_adminrouter_up()
-        if self.web_auth_default_user is not None:
-            self._authenticate_default_user()
+        self._authenticate_default_user()
         self._wait_for_marathon_up()
         self._wait_for_zk_quorum()
         self._wait_for_slaves_to_join()
@@ -188,119 +288,54 @@ class ClusterApi(test_util.helpers.ApiClient):
         self._wait_for_dcos_history_data()
         self._wait_for_metronome()
 
-    @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
-    def _authenticate_default_user(self):
-        """retry default auth user because in some deployments,
-        the auth endpoint might not be routable immediately
-        after adminrouter is up. DcosUser.authenticate()
-        will raise exception if authorization fails
+    def copy(self):
+        """ Create a new client session without cookies, with the authentication intact.
         """
-        self.web_auth_default_user.authenticate(self)
-        self.default_headers.update(self.web_auth_default_user.auth_header)
-
-    def __init__(self, dcos_url, masters, public_masters, slaves, public_slaves, dockercfg_hook_enabled,
-                 default_os_user, web_auth_default_user=None, ca_cert_path=None):
-        """Proxy class for DC/OS clusters.
-
-        Args:
-            dcos_url: address for the DC/OS web UI.
-            masters: list of Mesos master advertised IP addresses.
-            public_masters: list of Mesos master IP addresses routable from
-                the local host.
-            slaves: list of Mesos slave/agent advertised IP addresses.
-            dockercfg_hook_enabled: whether to remove fetched dockercfg files before container start.
-            default_os_user: default user that marathon/metronome will launch tasks under
-            web_auth_default_user: use this user's auth for all requests
-                Note: user must be authenticated explicitly or call self.wait_for_dcos()
-            ca_cert_path: (str) optional path point to the CA cert to make requests against
-        """
-        # URL must include scheme
-        assert dcos_url.startswith('http')
-        parse_result = urlparse(dcos_url)
-        self.scheme = parse_result.scheme
-        self.dns_host = parse_result.netloc.split(':')[0]
-
-        # Make URL never end with /
-        self.dcos_url = dcos_url.rstrip('/')
-
-        super().__init__(
-            default_host_url=self.dcos_url,
-            api_base=None,
-            ca_cert_path=ca_cert_path,
-            get_node_url=self.get_node_url)
-        self.masters = sorted(masters)
-        self.public_masters = sorted(public_masters)
-        self.slaves = sorted(slaves)
-        self.public_slaves = sorted(public_slaves)
-        self.all_slaves = sorted(slaves + public_slaves)
-        self.zk_hostports = ','.join(':'.join([host, '2181']) for host in self.public_masters)
-        self.dockercfg_hook_enabled = dockercfg_hook_enabled == 'true'
-        self.default_os_user = default_os_user
-        self.web_auth_default_user = web_auth_default_user
-
-        assert len(self.masters) == len(self.public_masters)
+        new = copy.deepcopy(self)
+        new.session.cookies.clear()
+        return new
 
     def get_user_session(self, user):
-        """Returns a copy of self with auth headers set for user
+        """Returns a copy of this client but with auth for user (can be None)
         """
-        new_session = copy.deepcopy(self)
-        # purge old auth headers
-        if self.web_auth_default_user is not None:
-            for k in self.web_auth_default_user.auth_header.keys():
-                if k in new_session.default_headers:
-                    del new_session.default_headers[k]
-        # if user is given then auth and update the headers
-        new_session.web_auth_default_user = user
+        new = self.copy()
+        new.session.auth = None
+        new.auth_user = None
         if user is not None:
-            new_session._authenticate_default_user()
-        return new_session
-
-    def get_node_url(self, node, port=None):
-        """
-        Args:
-            node: (str) the hostname of the node to be requested from, if node=None,
-                then public cluster address (see environment DCOS_DNS_ADDRESS)
-            port: (int) port to be requested at. If port=None, the default port
-                for that given node type will be used
-        Returns:
-            fully-qualified URL string for this API
-        """
-        if node in self.masters:
-            role = 'master'
-        elif node in self.all_slaves:
-            role = 'agent'
-        else:
-            raise Exception('Node {} is not recognized within the DC/OS cluster'.format(node))
-        if port is None:
-            port = ADMINROUTER_PORT_MAPPING[role][self.scheme]
-        # do not explicitly declare default ports
-        if (port == 80 and self.scheme == 'http') or (port == 443 and self.scheme == 'https'):
-            netloc = node
-        else:
-            netloc = '{}:{}'.format(node, port)
-        return '{}://{}'.format(self.scheme, netloc)
+            new.auth_user = user
+            new._authenticate_default_user()
+        return new
 
     @property
     def marathon(self):
-        marathon_client = test_util.marathon.Marathon(
-            default_host_url=self.dcos_url,
+        return test_util.marathon.Marathon(
+            default_url=self.default_url.copy(path='marathon'),
             default_os_user=self.default_os_user,
-            default_headers=self.default_headers,
-            ca_cert_path=self.ca_cert_path,
-            get_node_url=self.get_node_url)
-        return marathon_client
+            session=self.copy().session)
 
     @property
     def metronome(self):
-        return self.get_client('/service/metronome/v1')
+        new = self.copy()
+        new.default_url = self.default_url.copy(path='service/metronome/v1')
+        return new
+
+    @property
+    def health(self):
+        new = self.copy()
+        new.default_url = self.default_url.copy(query='cache=0', path='system/health/v1')
+        return new
 
     @property
     def logs(self):
-        return self.get_client('/system/v1/logs')
+        new = self.copy()
+        new.default_url = self.default_url.copy(path='system/v1/logs')
+        return new
 
     @property
     def metrics(self):
-        return self.get_client('/system/v1/metrics/v0')
+        new = self.copy()
+        new.default_url = self.default_url.copy(path='/system/v1/metrics/v0')
+        return new
 
     def metronome_one_off(self, job_definition, timeout=300, ignore_failures=False):
         """Run a job on metronome and block until it returns success
@@ -336,3 +371,34 @@ class ClusterApi(test_util.helpers.ApiClient):
         r = self.metronome.delete('jobs/' + job_id)
         r.raise_for_status()
         return success
+
+    def mesos_sandbox_directory(self, slave_id, framework_id, task_id):
+        r = self.get('/agent/{}/state'.format(slave_id))
+        r.raise_for_status()
+        agent_state = r.json()
+
+        try:
+            framework = next(f for f in agent_state['frameworks'] if f['id'] == framework_id)
+        except StopIteration:
+            raise Exception('Framework {} not found on agent {}'.format(framework_id, slave_id))
+
+        try:
+            executor = next(e for e in framework['executors'] if e['id'] == task_id)
+        except StopIteration:
+            raise Exception('Executor {} not found on framework {} on agent {}'.format(task_id, framework_id, slave_id))
+
+        return executor['directory']
+
+    def mesos_sandbox_file(self, slave_id, framework_id, task_id, filename):
+        r = self.get(
+            '/agent/{}/files/download'.format(slave_id),
+            params={'path': self.mesos_sandbox_directory(slave_id, framework_id, task_id) + '/' + filename}
+        )
+        r.raise_for_status()
+        return r.text
+
+    def get_version(self):
+        version_metadata = self.get('/dcos-metadata/dcos-version.json')
+        version_metadata.raise_for_status()
+        data = version_metadata.json()
+        return data["version"]

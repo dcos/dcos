@@ -1,5 +1,5 @@
 [Unit]
-Description=Exhibitor: Zookeeper Supervisor Service
+Description=Exhibitor: Zookeeper supervisor service
 [Service]
 User=dcos_exhibitor
 StandardOutput=journal
@@ -7,9 +7,14 @@ StandardError=journal
 Restart=always
 StartLimitInterval=0
 RestartSec=5
+LimitNOFILE=16384
 # Run in new mount namespace to create custom resolv.conf.
 MountFlags=private
 RuntimeDirectory=dcos_exhibitor
+# On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
+# libraries to a path we control instead. See DCOS-11056
+Environment=JNA_TMP_DIR=/var/lib/dcos/exhibitor/tmp
+Environment=SERVER_JVMFLAGS=-Djna.tmpdir=/var/lib/dcos/exhibitor/tmp
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
