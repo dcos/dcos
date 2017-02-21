@@ -362,15 +362,10 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         logging.info('Starting metronome job')
         r = self.metronome.post('jobs/{}/runs'.format(job_id))
         r.raise_for_status()
-        success = False
-        try:
-            success = wait_for_completion()
-        except Exception:
-            return False
+        wait_for_completion()
         logging.info('Deleting metronome one-off')
         r = self.metronome.delete('jobs/' + job_id)
         r.raise_for_status()
-        return success
 
     def mesos_sandbox_directory(self, slave_id, framework_id, task_id):
         r = self.get('/agent/{}/state'.format(slave_id))

@@ -25,6 +25,7 @@ def test_remove_dockercfg_hook(dcos_api_session):
             'disk': 0,
             'cmd': "test ! -f .dockercfg",
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
-    removed = dcos_api_session.metronome_one_off(job)
-    assert removed, 'dockercfg was not removed from the sandbox'
-    logging.info('Completed test: dockercfg was successfully removed')
+    try:
+        dcos_api_session.metronome_one_off(job)
+    except Exception as ex:
+        pytest.fail('Dockercfg hook test did not finish successfully: {}'.format(ex))
