@@ -20,7 +20,9 @@ def test_remove_dockercfg_hook(dcos_api_session):
     job = {
         'id': 'integration-test--' + uuid.uuid4().hex,
         'run': {
-            'cpus': 0.1, 'mem': 32,
+            'cpus': .1,
+            'mem': 32,
+            'disk': 0,
             'cmd': "test ! -f .dockercfg",
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
     removed = dcos_api_session.metronome_one_off(job)
