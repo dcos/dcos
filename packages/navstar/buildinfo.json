@@ -4,7 +4,7 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "b643716d6882b2eb542919e8e1b47896fa1aaae5",
+      "ref": "519c340668b05eefaef4038112fe2d35c86ea0af",
       "ref_origin": "master"
     }
   },
