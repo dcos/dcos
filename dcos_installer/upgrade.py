@@ -93,21 +93,21 @@ if [ "$role" == "master" ]; then
             1) echo "Waiting for Exhibitor..."
                sleep 10
                ;;
-            2) echo "Could not read from Exhibitor."
+            2) echo "ERROR: Could not read from Exhibitor."
                echo "Please contact support."
-               exit
+               exit 1
                ;;
             4) echo "Rolling update in progress."
                exit
                ;;
-            8) echo "At least one Exhibitor config value does not have the expected pre-migration value." \
+            8) echo "ERROR: At least one Exhibitor config value does not have the expected pre-migration value." \
                     "Unable to automatically migrate Exhibitor."
                echo "Please contact support."
-               exit
+               exit 1
                ;;
-            16) echo "Exhibitor update failed with a non-OK response."
+            16) echo "ERROR: Exhibitor update failed with a non-OK response."
                 echo "Please contact support."
-                exit
+                exit 1
                 ;;
         esac
     done
