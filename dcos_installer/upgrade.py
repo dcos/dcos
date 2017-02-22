@@ -80,8 +80,8 @@ else
 fi
 
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
-pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
-pkgpanda activate --no-block {{ cluster_packages }}
+pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
+pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 # If this is a master node, migrate Exhibitor data to the correct directory.
 if [ "$role" == "master" ]; then
