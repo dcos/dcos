@@ -277,6 +277,7 @@ class DcosCfStack(CleanupS3BucketMixin, CfStack):
     @classmethod
     def create(cls, stack_name: str, template_url: str, public_agents: int, private_agents: int,
                admin_location: str, key_pair_name: str, boto_wrapper: BotoWrapper):
+
         parameters = {
             'KeyName': key_pair_name,
             'AdminLocation': admin_location,
