@@ -6,11 +6,11 @@
 # Simple state machine parser, hard coded. Recognizes a couple tokens:
 # "template body" - arbitrary bytes
 # To escape the template signature, put four `{`, so `{{{{` would result in the final result getting a `{{`.
-# For closing ones, just put closing wherever. Exeess closing isn't an error, and closing is only
+# For closing ones, just put closing wherever. Excess closing isn't an error, and closing is only
 # consumed if opening has been passed.
 # Unmatched closing }} are a hard error.
 # "template variable" - {{ <identifier> }}
-# "template flow conrol" - {% <control_expression %}
+# "template flow control" - {% <control_expression %}
 # The valid control expressions are:
 #   switch <identifier>
 #   case <string>:
@@ -37,7 +37,7 @@ class SyntaxError(Exception):
             return repr(self.message)
 
 
-class Tokenizer():
+class Tokenizer:
 
     def __init__(self, corpus: str):
         self.__corpus = corpus
@@ -256,7 +256,7 @@ class Tokenizer():
 # case -> case_tok chunks
 
 
-class Switch():
+class Switch:
 
     def __init__(self, identifier: str, cases: dict):
         self.identifier = identifier
@@ -269,7 +269,7 @@ class Switch():
         return isinstance(other, Switch) and self.identifier == other.identifier and self.cases == other.cases
 
 
-class For():
+class For:
     def __init__(self, new_var: str, iterable: str, body: list):
         self.new_var = new_var
         self.iterable = iterable
@@ -282,7 +282,7 @@ class For():
         return isinstance(other, For) and self.new_var == other.new_var and self.iterable == other.iterable
 
 
-class Replacement():
+class Replacement:
 
     def __init__(self, identifier_and_filter: Tuple[str, Optional[str]]):
         self.identifier = identifier_and_filter[0]
@@ -303,11 +303,11 @@ class UnsetParameter(KeyError):
         self.identifier = identifier
 
 
-class UnsetMarker():
+class UnsetMarker:
     pass
 
 
-class Template():
+class Template:
 
     def __init__(self, ast: list):
         self.ast = ast
@@ -344,7 +344,7 @@ class Template():
                     iterable = get_argument(chunk.iterable)
                     # TODO(cmaloney): for should only be used (for now) in code which doesn't contain
                     # arbitrary user parameters.
-                    # STash the original state of the argument.
+                    # Stash the original state of the argument.
                     original_value = UnsetMarker()
                     if chunk.new_var in arguments:
                         original_value = arguments[chunk.new_var]
