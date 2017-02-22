@@ -58,9 +58,9 @@ fi
 # check for version of dc/os upgrading from
 version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
 if [ $version != {{ installed_cluster_version }} ]; then
-   echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}.\
-                Version found on node: $version"
-   exit 1
+    echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}.\
+                 Version found on node: $version"
+    exit 1
 fi
 
 echo "Upgrading DC/OS agent {{ installed_cluster_version }}  -> {{ installer_version }}"
@@ -73,32 +73,32 @@ pkgpanda activate --no-block {{ cluster_packages }}
 
 # check if we are on a master node
 if [ -f /etc/mesosphere/roles/master ]; then
-   # run exhibitor migration script here
-   until dcos-shell dcos-exhibitor-migrate-perform
-   do
+    # run exhibitor migration script here
+    until dcos-shell dcos-exhibitor-migrate-perform
+    do
         status=$?
         case $status in
-             1) echo "Waiting for exhibitor endpoint"
-                sleep 10
-                ;;
-             2) echo "Could not read from exhibitor"
+            1) echo "Waiting for exhibitor endpoint"
+               sleep 10
+               ;;
+            2) echo "Could not read from exhibitor"
+               echo "Contact Support"
+               exit
+               ;;
+            4) echo "Rolling update in progress"
+               exit
+               ;;
+            8) echo "At least one config value does not have the expected pre migration value,
+                     \ and automatic migration can not take place"
+               echo "Contact Support"
+               exit
+               ;;
+            16) echo "Attempting to start the rolling update failed due to a non 200 response from exhibitor"
                 echo "Contact Support"
                 exit
                 ;;
-             4) echo "Rolling update in progress"
-                exit
-                ;;
-             8) echo "At least one config value does not have the expected pre migration value,
-                      \ and automatic migration can not take place"
-                echo "Contact Support"
-                exit
-                ;;
-             16) echo "Attempting to start the rolling update failed due to a non 200 response from exhibitor"
-                 echo "Contact Support"
-                 exit
-                 ;;
         esac
-   done
+    done
 fi
 
 """
