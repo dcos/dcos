@@ -2,8 +2,10 @@
 set -o errexit -o nounset -o pipefail
 
 echo ">>> Kernel: $(uname -r)"
-echo ">>> Updating system"
-yum -y update
+echo ">>> Updating system to 7.3.1611"
+sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#baseurl=/baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
+yum -y --releasever=7.3.1611 update
+sed -i -e 's/^#mirrorlist=/mirrorlist=/' -e 's/^baseurl=/#baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
 
 echo ">>> Disabling SELinux"
 sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
@@ -87,6 +89,7 @@ rm -f /var/run/utmp
 >/var/log/btmp
 
 echo ">>> Remove temporary files"
+yum clean all
 rm -rf /tmp/* /var/tmp/*
 
 echo ">>> Remove ssh client directories"
