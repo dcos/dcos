@@ -56,7 +56,7 @@ fi
 
 # check for version of dc/os upgrading from
 version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
-if [ $version != {{ installed_cluster_version }} ]; then
+if [ "$version" != "{{ installed_cluster_version }}" ]; then
     echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}.\
                  Version found on node: $version"
     exit 1
