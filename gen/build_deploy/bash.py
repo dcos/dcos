@@ -136,9 +136,11 @@ declare -i DISABLE_VERSION_CHECK=0
 
 # check if sort -V works
 function check_sort_capability() {
-    $( echo '1' | sort -V >/dev/null 2>&1 || exit 1 )
-    RC=$?
-    if [[ "$RC" -eq "2" ]]; then
+    $( command -v sort >/dev/null 2>&1 || exit 1 )
+    RC1=$?
+    $( echo '1' | sort -V >/dev/null 2>&1 )
+    RC2=$?
+    if [[ "$RC1" -eq "1" || "$RC2" -eq "2" ]]; then
         echo -e "${RED}Disabling version checking as sort -V is not available${NORMAL}"
         DISABLE_VERSION_CHECK=1
     fi
