@@ -54,7 +54,6 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-
 # check for version of dc/os upgrading from
 version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
 if [ $version != {{ installed_cluster_version }} ]; then
@@ -64,11 +63,7 @@ if [ $version != {{ installed_cluster_version }} ]; then
 fi
 
 echo "Upgrading DC/OS agent {{ installed_cluster_version }}  -> {{ installer_version }}"
-
-
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
-
-
 pkgpanda activate --no-block {{ cluster_packages }}
 
 # check if we are on a master node
