@@ -62,12 +62,29 @@ if [ "$version" != "{{ installed_cluster_version }}" ]; then
     exit 1
 fi
 
-echo "Upgrading DC/OS agent {{ installed_cluster_version }}  -> {{ installer_version }}"
+# Determine this node's role.
+ROLE_DIR=/etc/mesosphere/roles
+if [ -f $ROLE_DIR/master ]; then
+    role="master"
+    role_name="master"
+elif [ -f $ROLE_DIR/slave ]; then
+    role="slave"
+    role_name="agent"
+elif [-f $ROLE_DIR/slave_public ]; then
+    role="slave_public"
+    role_name="public agent"
+else
+    echo "ERROR: Can't determine this node's role." \
+         "One of master, slave, or slave_public must be present under $ROLE_DIR."
+    exit 1
+fi
+
+echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
 pkgpanda activate --no-block {{ cluster_packages }}
 
-# check if we are on a master node
-if [ -f /etc/mesosphere/roles/master ]; then
+# If this is a master node, migrate Exhibitor data to the correct directory.
+if [ "$role" == "master" ]; then
     # run exhibitor migration script here
     until dcos-shell dcos-exhibitor-migrate-perform
     do
