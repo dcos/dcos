@@ -55,10 +55,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # check for version of dc/os upgrading from
-version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
-if [ "$version" != "{{ installed_cluster_version }}" ]; then
-    echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}.\
-                 Version found on node: $version"
+found_version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
+if [ "$found_version" != "{{ installed_cluster_version }}" ]; then
+    echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}." \
+         "Version found on node: $found_version"
     exit 1
 fi
 
@@ -90,23 +90,23 @@ if [ "$role" == "master" ]; then
     do
         status=$?
         case $status in
-            1) echo "Waiting for exhibitor endpoint"
+            1) echo "Waiting for Exhibitor..."
                sleep 10
                ;;
-            2) echo "Could not read from exhibitor"
-               echo "Contact Support"
+            2) echo "Could not read from Exhibitor."
+               echo "Please contact support."
                exit
                ;;
-            4) echo "Rolling update in progress"
+            4) echo "Rolling update in progress."
                exit
                ;;
-            8) echo "At least one config value does not have the expected pre migration value,
-                     \ and automatic migration can not take place"
-               echo "Contact Support"
+            8) echo "At least one Exhibitor config value does not have the expected pre-migration value." \
+                    "Unable to automatically migrate Exhibitor."
+               echo "Please contact support."
                exit
                ;;
-            16) echo "Attempting to start the rolling update failed due to a non 200 response from exhibitor"
-                echo "Contact Support"
+            16) echo "Exhibitor update failed with a non-OK response."
+                echo "Please contact support."
                 exit
                 ;;
         esac
