@@ -85,7 +85,6 @@ pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 # If this is a master node, migrate Exhibitor data to the correct directory.
 if [ "$role" == "master" ]; then
-    # run exhibitor migration script here
     until dcos-shell dcos-exhibitor-migrate-perform
     do
         status=$?
