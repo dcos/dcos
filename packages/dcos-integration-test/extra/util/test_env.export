@@ -7,8 +7,8 @@
 source /opt/mesosphere/environment.export
 export MASTER_HOSTS=${MASTER_HOSTS:=`dig master.mesos +short | tr '\n' ',' | sed 's/.$//'`}
 export PUBLIC_MASTER_HOSTS=${PUBLIC_MASTER_HOSTS:=$MASTER_HOSTS}
-export SLAVE_HOSTS=${SLAVE_HOSTS:=`dig slave.mesos +short | tr '\n' ',' | sed  's/.$//'`}
-export PUBLIC_SLAVE_HOSTS=${PUBLIC_SLAVE_HOSTS:=$SLAVE_HOSTS}
+export SLAVE_HOSTS=${SLAVE_HOSTS:=`for h in $(dig slave.mesos +short); do curl -s $h:5051/state | grep '"default_role":"slave_public"' >/dev/null || printf ",$h"; done | cut -d',' -f2-`}
+export PUBLIC_SLAVE_HOSTS=${PUBLIC_SLAVE_HOSTS:=`for h in $(dig slave.mesos +short); do curl -s $h:5051/state | grep '"default_role":"slave_public"' >/dev/null && printf ",$h"; done | cut -d',' -f2-`}
 export DCOS_DNS_ADDRESS=${DCOS_DNS_ADDRESS:='http://master.mesos'}
 export DCOS_PROVIDER=${DCOS_PROVIDER:=$PROVIDER}
 export DNS_SEARCH=${DNS_SEARCH:=`(ping -c1 leader &> /dev/null && echo true) || echo false`}
