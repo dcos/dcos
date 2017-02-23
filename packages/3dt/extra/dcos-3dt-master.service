@@ -9,6 +9,9 @@ StartLimitInterval=0
 RestartSec=5
 LimitNOFILE=16384
 PermissionsStartOnly=True
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt-master
 User=dcos_3dt
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt-master
 ExecStart=/opt/mesosphere/bin/3dt --3dt-config ${DCOS_3DT_CONFIG_PATH}
+Sockets=dcos-3dt.socket

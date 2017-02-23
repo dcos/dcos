@@ -2,3 +2,6 @@
 Description=DC/OS Metrics Master Socket: socket for DC/OS Metrics Master service
 [Socket]
 ListenStream=/run/dcos/dcos-metrics-master.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660
