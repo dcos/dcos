@@ -2,6 +2,7 @@ PyJWT==1.4.2
 cryptography>=1.3.4
 flake8
 ipdb
+psutil
 pylint
 pyroute2==0.4.11
 pytest-mccabe

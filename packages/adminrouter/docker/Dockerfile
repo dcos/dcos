@@ -123,6 +123,9 @@ RUN echo "nameserver 127.0.0.1" > /etc/resolv.conf
 RUN echo "nameserver 8.8.8.8\nnameserver 8.8.4.4\n" > /etc/resolv.conf.dnsmasq
 COPY ./hosts.dnsmasq /etc/hosts.dnsmasq
 
+# Workers run as the dcos_adminrouter group.
+RUN groupadd --system dcos_adminrouter
+
 WORKDIR $AR_BIN_DIR/nginx/conf/
 
 CMD ["/bin/bash"]
