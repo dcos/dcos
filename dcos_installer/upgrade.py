@@ -64,6 +64,14 @@ fi
 
 # Determine this node's role.
 ROLE_DIR=/etc/mesosphere/roles
+
+num_roles=$(ls --format=single-column $ROLE_DIR/{master,slave,slave_public} 2>/dev/null | wc -l)
+if [ "$num_roles" -ne "1" ]; then
+    echo "ERROR: Can't determine this node's role." \
+         "One of master, slave, or slave_public must be present under $ROLE_DIR."
+    exit 1
+fi
+
 if [ -f $ROLE_DIR/master ]; then
     role="master"
     role_name="master"
@@ -73,10 +81,6 @@ elif [ -f $ROLE_DIR/slave ]; then
 elif [-f $ROLE_DIR/slave_public ]; then
     role="slave_public"
     role_name="public agent"
-else
-    echo "ERROR: Can't determine this node's role." \
-         "One of master, slave, or slave_public must be present under $ROLE_DIR."
-    exit 1
 fi
 
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
