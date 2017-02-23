@@ -150,6 +150,7 @@ def test_signal_service(dcos_api_session):
         'signal-service']
     all_node_units = [
         '3dt-service',
+        '3dt-socket',
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
@@ -169,7 +170,6 @@ def test_signal_service(dcos_api_session):
         'docker-gc-timer',
         'metrics-agent-service',
         'metrics-agent-socket',
-        '3dt-socket',
         'adminrouter-agent-service',
         'adminrouter-agent-reload-service',
         'adminrouter-agent-reload-timer',

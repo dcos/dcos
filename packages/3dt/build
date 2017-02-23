@@ -12,6 +12,7 @@ master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
 
+master_socket_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.socket
 slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.socket
 slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.socket
 
@@ -19,39 +20,9 @@ mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
 
-cat <<EOF | tee $slave_service $slave_public_service
-[Unit]
-Description=DC/OS Diagnostics (3DT) Agent: exposes component health
-[Service]
-EnvironmentFile=/opt/mesosphere/environment
-Restart=always
-StartLimitInterval=0
-RestartSec=5
-LimitNOFILE=16384
-User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
-EOF
-
-cat <<EOF | tee $master_service
-[Unit]
-Description=DC/OS Diagnostics (3DT) Master: aggregates and exposes component health
-[Service]
-EnvironmentFile=/opt/mesosphere/environment
-Restart=always
-StartLimitInterval=0
-RestartSec=5
-LimitNOFILE=16384
-PermissionsStartOnly=True
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt
-User=dcos_3dt
-ExecStart=/opt/mesosphere/bin/3dt --3dt-config /opt/mesosphere/etc/3dt_config_open.json
-EOF
-
-cat <<EOF | tee $slave_socket_service $slave_public_socket_service
-[Unit]
-Description=DC/OS Diagnostics (3DT) Agent Socket: socket for DC/OS Diagnostics Agent
-[Socket]
-ListenStream=/run/dcos/3dt.sock
-[Install]
-WantedBy=dcos-3dt.service
-EOF
+cp /pkg/extra/dcos-3dt-master.service "$master_service"
+cp /pkg/extra/dcos-3dt-agent.service "$slave_service"
+cp /pkg/extra/dcos-3dt-agent.service "$slave_public_service"
+cp /pkg/extra/dcos-3dt.socket "$master_socket_service"
+cp /pkg/extra/dcos-3dt.socket "$slave_socket_service"
+cp /pkg/extra/dcos-3dt.socket "$slave_public_socket_service"
