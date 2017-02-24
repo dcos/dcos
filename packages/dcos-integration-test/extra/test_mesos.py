@@ -2,24 +2,9 @@ import json
 import logging
 import uuid
 
-import requests
 
 from test_util.marathon import get_test_app
 from test_util.recordio import Decoder, Encoder
-
-
-# Wrapper to post, log, and validate return status
-def post(url, headers, json=None, data=None, stream=False):
-    r = requests.post(url, headers=headers, json=json, data=data, stream=stream)
-    logging.info(
-        'Got %s with POST request to %s with headers %s and json data %s.',
-        r.status_code,
-        url,
-        headers,
-        json
-    )
-    assert r.status_code == 200
-    return r
 
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
@@ -53,8 +38,10 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
     app_id = 'integration-test-{}'.format(test_uuid)
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
-        master_state_url = 'http://{}:{}/state'.format(dcos_api_session.masters[0], 5050)
-        r = requests.get(master_state_url)
+        scheme = dcos_api_session.default_url.scheme
+        master = dcos_api_session.masters[0]
+        master_state_url = '{}://{}:{}/state'.format(scheme, master, 5050)
+        r = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
         logging.debug('Got %s with request for %s. Response: \n%s', r.status_code, master_state_url, r.text)
         assert r.status_code == 200
         state = r.json()
@@ -76,8 +63,28 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             if agent['id'] == agent_id:
                 agent_hostname = agent['hostname']
         assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
-        agent_v1_url = 'http://{}:{}/api/v1'.format(agent_hostname, 5051)
         logging.debug('Located %s with containerID %s on agent %s', app_id, container_id, agent_hostname)
+
+        # Wrapper to post, log, and validate return status
+        def _post_agent(url, headers, json=None, data=None, stream=False):
+            r = dcos_api_session.post(
+                url,
+                host=agent_hostname,
+                port=5051,
+                headers=headers,
+                json=json,
+                data=data,
+                stream=stream)
+            agent_url = '{}://{}:{}/state'.format(scheme, agent_hostname, 5051)
+            logging.info(
+                'Got %s with POST request to %s with headers %s and json data %s.',
+                r.status_code,
+                agent_url,
+                headers,
+                json
+            )
+            assert r.status_code == 200
+            return r
 
         # Prepare nested container id data
         nested_container_id = {
@@ -95,13 +102,13 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             'launch_nested_container_session': {
                 'command': {'value': 'cat'},
                 'container_id': nested_container_id}}
-        launch_output = post(agent_v1_url, output_headers, json=lncs_data, stream=True)
+        launch_output = _post_agent('/api/v1', output_headers, json=lncs_data, stream=True)
 
         # Attach to output stream of nested container
         attach_out_data = {
             'type': 'ATTACH_CONTAINER_OUTPUT',
             'attach_container_output': {'container_id': nested_container_id}}
-        attached_output = post(agent_v1_url, output_headers, json=attach_out_data, stream=True)
+        attached_output = _post_agent('/api/v1', output_headers, json=attach_out_data, stream=True)
 
         # Attach to input stream of debug container and stream a message
         input_headers = {
@@ -110,7 +117,7 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             'Accept': 'application/json',
             'Transfer-Encoding': 'chunked'
         }
-        post(agent_v1_url, input_headers, data=input_streamer(nested_container_id))
+        _post_agent('/api/v1', input_headers, data=input_streamer(nested_container_id))
 
         # Verify the streamed output from the launch session
         meowed = False
