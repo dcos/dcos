@@ -39,9 +39,9 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
         scheme = dcos_api_session.default_url.scheme
-        master = dcos_api_session.masters[0]
-        master_state_url = '{}://{}:{}/state'.format(scheme, master, 5050)
-        r = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+        master_ip = dcos_api_session.masters[0]
+        master_state_url = '{}://{}:{}/state'.format(scheme, master_ip, 5050)
+        r = dcos_api_session.get('/state', host=master_ip, port=5050)
         logging.debug('Got %s with request for %s. Response: \n%s', r.status_code, master_state_url, r.text)
         assert r.status_code == 200
         state = r.json()
@@ -81,8 +81,7 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
                 r.status_code,
                 agent_url,
                 headers,
-                json
-            )
+                json)
             assert r.status_code == 200
             return r
 
