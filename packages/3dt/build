@@ -8,9 +8,6 @@ make install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
 
-# Copy the snapshot config file
-cp -v /pkg/src/github.com/dcos/3dt/endpoints_config.json $PKG_PATH/
-
 master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
 slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
 slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
