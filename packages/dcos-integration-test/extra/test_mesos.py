@@ -38,11 +38,8 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
     app_id = 'integration-test-{}'.format(test_uuid)
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
-        scheme = dcos_api_session.default_url.scheme
         master_ip = dcos_api_session.masters[0]
-        master_state_url = '{}://{}:{}/state'.format(scheme, master_ip, 5050)
         r = dcos_api_session.get('/state', host=master_ip, port=5050)
-        logging.debug('Got %s with request for %s. Response: \n%s', r.status_code, master_state_url, r.text)
         assert r.status_code == 200
         state = r.json()
 
@@ -65,7 +62,6 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
         assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
         logging.debug('Located %s with containerID %s on agent %s', app_id, container_id, agent_hostname)
 
-        # Wrapper to post, log, and validate return status
         def _post_agent(url, headers, json=None, data=None, stream=False):
             r = dcos_api_session.post(
                 url,
@@ -75,13 +71,6 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
                 json=json,
                 data=data,
                 stream=stream)
-            agent_url = '{}://{}:{}/state'.format(scheme, agent_hostname, 5051)
-            logging.info(
-                'Got %s with POST request to %s with headers %s and json data %s.',
-                r.status_code,
-                agent_url,
-                headers,
-                json)
             assert r.status_code == 200
             return r
 
