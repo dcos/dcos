@@ -71,6 +71,15 @@ class AzureWrapper:
         if self.rmc.resource_groups.check_existence(group_name):
             raise Exception("Group name already exists / taken: {}".format(group_name))
         log.info('Starting resource group_creation')
+
+        def get_all_details(error):
+            formatted_message = '{}: {}\n\n'.format(error.code, error.message)
+            if error.details is None:
+                return formatted_message
+            for d in error.details:
+                formatted_message += get_all_details(d)
+            return formatted_message
+
         with contextlib.ExitStack() as stack:
             self.rmc.resource_groups.create_or_update(
                 group_name,
@@ -84,8 +93,7 @@ class AzureWrapper:
             result = self.rmc.deployments.validate(
                 group_name, deployment_name, properties=deployment_properties)
             if result.error:
-                log.critical('{}: {}'.format(result.error.code, result.error.message))
-                raise Exception("Template verification failed!\n{}".format(result.error))
+                raise Exception("Template verification failed!\n{}".format(get_all_details(result.error)))
             log.info('Template successfully validated')
             log.info('Starting template deployment')
             self.rmc.deployments.create_or_update(
