@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Unauthorized</title>
+  <noscript><meta http-equiv="refresh" content="5; url=/#/login"></noscript>
+  <script>
+    (function () {
+      var location = window.location;
+      location.href = "/#/login?redirect=" + encodeURIComponent(location.href);
+    }())
+  </script>
+</head>
+<body>
+  <h1>Unauthorized</h1>
+</body>
+</html>

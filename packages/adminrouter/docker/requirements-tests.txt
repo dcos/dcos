@@ -1,0 +1,11 @@
+PyJWT==1.4.2
+cryptography>=1.3.4
+flake8
+ipdb
+pylint
+pyroute2==0.4.11
+pytest-mccabe
+pytest-pythonpath
+pytest-timeout==1.2.0
+pytest>=3.0.4
+requests==2.12.1
