@@ -95,6 +95,15 @@ def test_task_logs(dcos_api_session):
         check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
         check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
 
+        stream_url = get_task_url(dcos_api_session, task_id, stream=True)
+        response = dcos_api_session.get(stream_url, stream=True, headers={'Accept': 'text/event-stream'})
+        check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
+        lines = response.iter_lines()
+        sse_id = next(lines)
+        assert sse_id, 'First line must be id. Got {}'.format(sse_id)
+        data = next(lines).decode('utf-8', 'ignore')
+        validate_sse_entry(data)
+
 
 def test_pod_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
