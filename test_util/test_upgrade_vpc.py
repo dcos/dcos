@@ -247,7 +247,7 @@ class VpcClusterUpgradeTest:
             # the master's view after the upgrade.
             # See this issue for why we check for a difference:
             # https://issues.apache.org/jira/browse/MESOS-1718
-            self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[0])
+            self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
 
     def verify_apps_state(self, dcos_api: DcosApiSession, dns_app: dict):
         with logger.scope("verify apps state"):
@@ -265,7 +265,7 @@ class VpcClusterUpgradeTest:
 
             def test_mesos_task_state_remains_consistent():
                 # Verify that the "state" of the task does not change.
-                task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[0])
+                task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
                 if not self.task_state_start == task_state_end:
                     self.teamcity_msg.testFailed(
                         "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
