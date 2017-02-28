@@ -31,7 +31,8 @@ def get_async_runner(config, hosts, async_delegate=None):
         process_timeout=process_timeout,
         extra_opts=extra_ssh_options,
         async_delegate=async_delegate,
-        parallelism=parallelism)
+        parallelism=parallelism,
+        default_port=config.hacky_default_get('ssh_port', 22))
 
 
 def add_pre_action(chain, ssh_user):
