@@ -2,8 +2,8 @@
   "requires": ["mesos", "boost-libs"],
     "single_source" : {
       "kind": "git",
-      "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "36ce01e6cf869b4bb2bfe9e91766f984f333f742",
-      "ref_origin": "master"
+      "git": "https://github.com/klueska-mesosphere/dcos-mesos-modules.git",
+      "ref": "55ac711639f101a81756b7477fa916f9b17d0058",
+      "ref_origin": "rename-subprocessinfo"
     }
 }
