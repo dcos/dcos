@@ -319,7 +319,7 @@ def validate_os_name(os_name, platform):
 
 def calculate_ssh_private_key(ssh_private_key_filename):
     if ssh_private_key_filename == '':
-        return 'NO KEY PROVIDED - CANNOT TEST'
+        return launch.util.NO_TEST_FLAG
     return load_string(ssh_private_key_filename)
 
 

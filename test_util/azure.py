@@ -19,7 +19,7 @@ from azure.mgmt.resource.resources.models import (DeploymentMode,
                                                   DeploymentProperties,
                                                   ResourceGroup)
 
-from test_util.helpers import lazy_property
+from test_util.helpers import Host
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +52,14 @@ def check_array(arr):
     """
     assert isinstance(arr, list), 'Invalid array: {}'.format(arr)
     return arr
+
+
+def nic_to_host(nic):
+    assert len(nic.ip_configurations) == 1
+    ip_config = nic.ip_configurations[0]
+    if ip_config.public_ip_address is None:
+        return Host(ip_config.private_ip_address, None)
+    return Host(ip_config.private_ip_address, ip_config.public_ip_address.ip_address)
 
 
 class AzureWrapper:
@@ -226,55 +234,55 @@ class DcosAzureResourceGroup:
 
         check_deployment_operations()
 
-    def get_ip_buckets(self):
-        """ Go through all network interfaces for this resource group and grab
-        the correct IP by matching a sting in the resource name
+    def list_resources(self, filter_string):
+        yield from self.azure_wrapper.rmc.resource_groups.list_resources(
+            self.group_name, filter=(filter_string))
+
+    def get_scale_set_nics(self, name_substring):
+        for resource in self.list_resources("resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'"):
+            if name_substring not in resource.name:
+                continue
+            yield from self.azure_wrapper.nmc.network_interfaces.list_virtual_machine_scale_set_network_interfaces(
+                self.group_name, resource.name)
+
+    def get_public_ip_address(self, name_substring):
+        for resource in self.list_resources("resourceType eq 'Microsoft.Network/publicIPAddresses'"):
+            if name_substring not in resource.name:
+                continue
+            return self.azure_wrapper.nmc.public_ip_addresses.get(self.group_name, resource.name)
+
+    @property
+    def public_agent_lb_fqdn(self):
+        return self.get_public_ip_address('agent-ip').dns_settings.fqdn
+
+    @property
+    def public_master_lb_fqdn(self):
+        return self.get_public_ip_address('master-ip').dns_settings.fqdn
+
+    @property
+    def master_nics(self):
+        """ The only instances of networkInterface Resources are for masters
         """
-        # FIXME: sometimes this method returns nodes that shouldn't exist as part of the cluster
-        #        it is not clear what the issue is, but it might be 'magic' provisioning interfaces
-        ip_buckets = {
-            'master': [],
-            'private': [],
-            'public': []}
-        for resource in self.azure_wrapper.rmc.resource_groups.list_resources(
-                self.group_name,
-                filter=("resourceType eq 'Microsoft.Network/networkInterfaces' or "
-                        "resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'")):
-            if resource.type == 'Microsoft.Network/networkInterfaces':
-                nics = [self.azure_wrapper.nmc.network_interfaces.get(self.group_name, resource.name)]
-            elif resource.type == 'Microsoft.Compute/virtualMachineScaleSets':
-                nics = list(self.azure_wrapper.nmc.network_interfaces.list_virtual_machine_scale_set_network_interfaces(
-                    virtual_machine_scale_set_name=resource.name, resource_group_name=self.group_name))
-            else:
-                raise('Unexpected resourceType: {}'.format(resource.type))
-
-            for bucket_name in ip_buckets:
-                if bucket_name in resource.name:
-                    for n in nics:
-                        for config in n.ip_configurations:
-                            ip_buckets[bucket_name].append(config.private_ip_address)
-        return ip_buckets
-
-    @lazy_property
-    def ip_buckets(self):
-        return self.get_ip_buckets()
-
-    def get_outputs(self):
-        return {k: v['value'] for k, v in self.azure_wrapper.rmc.deployments.
-                get(self.group_name, DEPLOYMENT_NAME.format(self.group_name)).properties.outputs.items()}
-
-    @lazy_property
-    def outputs(self):
-        return self.get_outputs()
+        for resource in self.list_resources("resourceType eq 'Microsoft.Network/networkInterfaces'"):
+            assert 'master' in resource.name, 'Expected to only find master NICs, not: {}'.format(resource.name)
+            yield self.azure_wrapper.nmc.network_interfaces.get(self.group_name, resource.name)
 
     def get_master_ips(self):
-        return self.ip_buckets['master']
+        """ Traffic from abroad is routed to a master wth the public master
+        loadbalancer FQDN and the VM index plus 2200 (so the first master will be at 2200)
+        """
+        public_lb_ip = self.public_master_lb_fqdn
+        return [Host(nic_to_host(nic).private_ip, '{}:{}'.format(public_lb_ip, 2200 + int(nic.name[-1])))
+                for nic in self.master_nics]
 
-    def get_public_ips(self):
-        return self.ip_buckets['public']
+    def get_private_agent_ips(self):
+        return [nic_to_host(nic) for nic in self.get_scale_set_nics('private')]
 
-    def get_private_ips(self):
-        return self.ip_buckets['private']
+    def get_public_agent_ips(self):
+        """ public traffic is routed to public agents via a specific load balancer """
+        public_lb_ip = self.public_agent_lb_fqdn
+        return [Host(nic_to_host(nic).private_ip, public_lb_ip)
+                for nic in self.get_scale_set_nics('public')]
 
     def delete(self):
         log.info('Triggering delete')
