@@ -74,7 +74,7 @@ pkgpanda activate --no-block {{ cluster_packages }}
 # check if we are on a master node
 if [ -f /etc/mesosphere/roles/master ]; then
    # run exhibitor migration script here
-   until dcos-shell dcos-exhibitor-migrate-perform
+   until dcos-shell dcos-exhibitor-migrate-perform > /dev/null
    do
         status=$?
         case $status in
