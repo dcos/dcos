@@ -194,8 +194,8 @@
     },
     "PrivateAgentInstanceType": {
       "Type": "String",
-      "Default": "c4.xlarge",
-      "Description" : "\nRegion-specific instance type. E.g. c4.xlarge"
+      "Default": "m4.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m4.xlarge"
     },
     "CustomAMI": {
       "Default": "default",
