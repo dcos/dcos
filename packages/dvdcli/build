@@ -1,4 +1,12 @@
 #!/bin/bash
+set -o errexit -o nounset -o pipefail
 
-mkdir -p $PKG_PATH/bin/
-tar -xf /pkg/src/dvdcli/dvdcli-Linux-x86_64-0.1.0.tar.gz -C $PKG_PATH/bin/
+srcdir=$GOPATH/src/github.com/codedellemc/dvdcli
+mkdir -p $(dirname $srcdir)
+ln -s /pkg/src/dvdcli $srcdir
+cd $srcdir
+
+make
+
+mkdir -p $PKG_PATH/bin
+mv $GOPATH/bin/dvdcli $PKG_PATH/bin
