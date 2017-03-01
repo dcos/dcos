@@ -1,0 +1,5 @@
+# IPv4
+127.0.0.2 leader.mesos
+127.0.0.1 master.mesos
+127.0.0.1 agent.mesos
+127.0.0.1 slave.mesos
