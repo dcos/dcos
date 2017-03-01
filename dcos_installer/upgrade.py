@@ -65,7 +65,7 @@ fi
 # Determine this node's role.
 ROLE_DIR=/etc/mesosphere/roles
 
-num_roles=$(ls --format=single-column $ROLE_DIR/{master,slave,slave_public} 2>/dev/null | wc -l)
+num_roles=$( (ls --format=single-column $ROLE_DIR/{master,slave,slave_public} || true) 2>/dev/null | wc -l)
 if [ "$num_roles" -ne "1" ]; then
     echo "ERROR: Can't determine this node's role." \
          "One of master, slave, or slave_public must be present under $ROLE_DIR."
