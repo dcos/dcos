@@ -123,7 +123,7 @@
         "Standard_GS4",
         "Standard_GS5"
       ],
-      "defaultValue": "Standard_D2",
+      "defaultValue": "Standard_D2_v2",
       "metadata": {
         "description": "The size of the Virtual Machine."
       },
@@ -579,7 +579,7 @@
     "apiVersionStorage": "2015-06-15",
     "enableNewStorageAccountNaming": "[parameters('enableNewStorageAccountNaming')]",
     "masterSizes": [
-      "Standard_D2",
+      "Standard_D2_v2",
       "Standard_A2"
     ]
 {% switch oauth_available %}

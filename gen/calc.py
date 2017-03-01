@@ -335,7 +335,7 @@ def validate_cluster_packages(cluster_packages):
 
 def calculate_no_proxy(no_proxy):
     user_proxy_config = validate_json_list(no_proxy)
-    return ",".join(['*.mesos,127.0.0.1,localhost'] + user_proxy_config)
+    return ",".join(['.mesos,.thisdcos.directory,.dcos.directory,.zk,127.0.0.1,localhost'] + user_proxy_config)
 
 
 def validate_zk_hosts(exhibitor_zk_hosts):
