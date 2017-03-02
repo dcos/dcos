@@ -24,6 +24,6 @@ ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
 # Wait for auth backend to seed the secret key
 ExecStartPre=/usr/bin/curl --fail -sS -o /dev/null 127.0.0.1:8101/acs/api/v1/groups
 ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.master.conf
-ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
