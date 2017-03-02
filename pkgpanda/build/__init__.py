@@ -226,8 +226,13 @@ class PackageSet:
         # Validate that all needed packages are built and not excluded by treeinfo.
         for package_name, variant in package_tuples:
             if (package_name, variant) not in package_store.packages:
-                raise BuildError("package {} variant {} is needed (explicitly requested or as a requires) "
-                                 "but is not in the set of built packages.".format(package_name, variant))
+                raise BuildError(
+                    "package {} variant {} is needed (explicitly requested or as a requires) "
+                    "but is not in the set of built packages.".format(
+                        package_name,
+                        pkgpanda.util.variant_name(variant),
+                    )
+                )
             if package_name in treeinfo.excludes:
                 raise BuildError("package {} is needed (explicitly requested or as a requires) "
                                  "but is excluded according to the treeinfo.json.".format(package_name))
