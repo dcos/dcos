@@ -21,15 +21,15 @@ cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
 # Copy systemd unit files:
 for st in ".service" "-reload.service" "-reload.timer"; do
-    tmp="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter${st}
-    mkdir -p "$(dirname "$tmp")"
-    envsubst '$PKG_PATH' < /pkg/extra/systemd/dcos-adminrouter${st} > "$tmp"
+    tmp="$PKG_PATH/dcos.target.wants_master/dcos-adminrouter${st}"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter${st}" > "$tmp"
 done
 
 for at in slave slave_public; do
     for st in ".service" "-reload.service" "-reload.timer"; do
-        tmp="$PKG_PATH"/dcos.target.wants_${at}/dcos-adminrouter-agent${st}
-        mkdir -p "$(dirname "$tmp")"
-        envsubst '$PKG_PATH' < /pkg/extra/systemd/dcos-adminrouter-agent${st} > "$tmp"
+        tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-adminrouter-agent${st}"
+        mkdir -vp "$(dirname "$tmp")"
+        envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter-agent${st}" > "$tmp"
     done
 done
