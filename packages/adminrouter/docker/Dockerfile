@@ -20,14 +20,14 @@ ENV OPENRESTY_DOWNLOAD_URL=https://openresty.org/download/openresty-$OPENRESTY_V
 
 WORKDIR /usr/local/src/
 
-# Some remarks when it comes to apt-get udpate:
+# Some remarks when it comes to apt-get update:
 # * `apt-get update` and `apt-get install` are unreliable. Because of that there
 #   is some basic retrying logic
 # * we put it on top of every apt-get install, because docker layer cache will
 #   not re-run it when updating image with `make update-devkit` if it is a
 #   separate `RUN` line. This leads to `404 Not Found errors.
 
-#### Stuff usefull while debugging docker container, not strictly needed for
+#### Stuff useful while debugging docker container, not strictly needed for
 #### building:
 RUN set -ex \
     && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
@@ -70,7 +70,7 @@ RUN set -ex \
 #   https://github.com/docker/docker/issues/12327#issuecomment-187158265
 RUN python3 -m pip install --upgrade virtualenv
 RUN set -ex \
-	&& virtualenv --no-site-packages $VENV_DIR \
+    && virtualenv --no-site-packages $VENV_DIR \
     && ${VENV_DIR}/bin/pip install --upgrade setuptools pip
 
 ENV PATH ${VENV_DIR}/bin:$PATH

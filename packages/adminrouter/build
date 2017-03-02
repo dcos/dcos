@@ -14,7 +14,7 @@ $OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-o
 rm -vfR $PKG_PATH/nginx/conf/*
 cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
 
-# FIXME: We need more comprehensive approach to librarires. This is tracked in
+# TODO: We need more comprehensive approach to libraries. This is tracked in
 # https://jira.mesosphere.com/browse/DCOS-14039
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
