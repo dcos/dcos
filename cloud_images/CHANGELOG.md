@@ -1,5 +1,36 @@
 ## Changelog
 
+### 2017-02-22
+
+#### dcos-centos7-201702221655
+
+Base (source) AMI:
+* ami-c5af54a5
+
+DC/OS AMI's:
+* ap-northeast-1:ami-2ea9e149
+* ap-northeast-2:ami-98ec3cf6
+* ap-south-1:ami-8ccdbce3
+* ap-southeast-1:ami-e9d5648a
+* ap-southeast-2:ami-f99c9c9a
+* ca-central-1:ami-7279c416
+* eu-central-1:ami-1b13d974
+* eu-west-1:ami-57240931
+* eu-west-2:ami-2b2e3b4f
+* sa-east-1:ami-a60f69ca
+* us-east-1:ami-6a1bca7c
+* us-east-2:ami-34a08551
+* us-west-1:ami-4eebb42e
+* us-west-2:ami-71961611
+
+#### dcos-centos7-201702221615
+
+Base (source) AMI:
+* ami-7dff411c
+
+DC/OS AMI's:
+* us-gov-west-1: ami-f34df792
+
 ### 2016-08-30
 
 * Fix intermittent issue with Docker 1.11.2 startup where a small percentage of agents (~5%) fail to start.
