@@ -4,7 +4,7 @@ import json
 import logging
 import random
 import threading
-import time
+#import time
 from collections import deque
 from subprocess import check_output
 
@@ -177,9 +177,9 @@ def vip_test(dcos_api_session, r):
     returned_uuid = None
     with contextlib.ExitStack() as stack:
         # try to avoid thundering herd
-        time.sleep(random.randint(0, 30))
-        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, timeout=timeout))
-        sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app, timeout=timeout))
+        # time.sleep(random.randint(0, 30))
+        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, timeout=timeout, check_health=False))
+        sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app, timeout=timeout, check_health=False))
         proxy_host = sp[0].host
         proxy_port = sp[0].port
         if proxy_port == 0 and sp[0].ip is not None:
@@ -217,7 +217,8 @@ def test_vip(dcos_api_session, reduce_logging):
     # tests
     # UCR doesn't support BRIDGE mode
     permutations = [[c, vi, va, sh, vn, pn]
-                    for c in ['NONE', 'UCR', 'DOCKER']
+                    #for c in ['NONE', 'UCR', 'DOCKER']
+                    for c in ['NONE', 'UCR']
                     for [vi, va] in addrs
                     for sh in [True, False]
                     for vn in ['USER', 'BRIDGE', 'HOST']
