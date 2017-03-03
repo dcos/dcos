@@ -7,7 +7,7 @@ DCOSAR_AR_LOCAL_PATH := $(CURDIR)
 DCOSAR_AR_CTR_MOUNT := /usr/local/adminrouter/nginx/conf/
 
 BRIDGE_DEVNAME := $(shell docker network inspect -f '{{ index .Options "com.docker.network.bridge.name" }}' bridge | awk 'NF')
-BRIDGE_IP := $(shell ip a sh dev $(BRIDGE_DEVNAME) | awk '/inet / {print $$2}' | sed 's@/.*@@')
+BRIDGE_IP := $(shell docker run --net=host --rm alpine ifconfig $(BRIDGE_DEVNAME) | grep 'inet addr:' | cut -d: -f2 | cut -d' ' -f1)
 
 # FIXME: some problems with dns queries timing out, use hosts caching dns as a
 # workaround for now
