@@ -117,7 +117,7 @@ def generic_valid_user_is_permitted_test(ar, auth_header, path):
     assert resp.status_code == 200
 
 
-def generic_upstream_headers_verify_test(ar, auth_header, path):
+def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=None):
     """Test if headers sent upstream are correct
 
     Helper function meant to simplify writing multiple tests testing the
@@ -128,6 +128,8 @@ def generic_upstream_headers_verify_test(ar, auth_header, path):
         auth_header (dict): headers dict that contains JWT. The auth data it
             contains is valid and the request should be accepted.
         path (str): path for which request should be made
+        assert_headers (dict): additional headers to test where key is the
+            asserted header name and value is expected value
     """
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
@@ -137,10 +139,14 @@ def generic_upstream_headers_verify_test(ar, auth_header, path):
     assert resp.status_code == 200
 
     req_data = resp.json()
-    verify_header(req_data['headers'], 'Host', '127.0.0.1')
+
     verify_header(req_data['headers'], 'X-Forwarded-For', '127.0.0.1')
     verify_header(req_data['headers'], 'X-Forwarded-Proto', 'http')
     verify_header(req_data['headers'], 'X-Real-IP', '127.0.0.1')
+
+    if assert_headers:
+        for name, value in assert_headers.items():
+            verify_header(req_data['headers'], name, value)
 
 
 def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):

@@ -1,5 +1,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
+import copy
+
 import pytest
 import requests
 
@@ -180,9 +182,15 @@ class TestLogsEndpoint():
                                              master_ar_process,
                                              superuser_user_header):
 
+        accel_buff_header = {"X-Accel-Buffering": "TEST"}
+
+        req_headers = copy.deepcopy(superuser_user_header)
+        req_headers.update(accel_buff_header)
+
         generic_upstream_headers_verify_test(master_ar_process,
-                                             superuser_user_header,
+                                             req_headers,
                                              '/system/v1/logs/v1/foo/bar',
+                                             assert_headers=accel_buff_header,
                                              )
 
 
