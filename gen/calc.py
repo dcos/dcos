@@ -520,6 +520,12 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
 __dcos_overlay_network_default_name = 'dcos'
 
 
+ip_detect_public = """#!/bin/sh
+set -o nounset -o errexit
+curl -fsSL https://ipinfo.io/ip
+"""
+
+
 entry = {
     'validate': [
         validate_num_masters,
@@ -575,7 +581,7 @@ entry = {
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
-        'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip_detect_public_contents': yaml.dump(ip_detect_public),
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
