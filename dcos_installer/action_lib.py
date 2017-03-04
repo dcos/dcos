@@ -32,7 +32,7 @@ def get_async_runner(config, hosts, async_delegate=None):
         extra_opts=extra_ssh_options,
         async_delegate=async_delegate,
         parallelism=parallelism,
-        default_port=config.hacky_default_get('ssh_port', 22))
+        default_port=int(config.hacky_default_get('ssh_port', 22)))
 
 
 def add_pre_action(chain, ssh_user):
@@ -63,7 +63,8 @@ def nodes_count_by_type(config):
 
 def get_full_nodes_list(config):
     def add_nodes(nodes, tag):
-        return [Node(node, tag) for node in nodes]
+        return [Node(node, tag, default_port=int(config.hacky_default_get('ssh_port', 22)))
+                for node in nodes]
 
     node_role_map = {
         'master_list': 'master',
