@@ -26,7 +26,7 @@ git clone -q "file://$PWD" /tmp/dcos-installer-build/
 pushd /tmp/dcos-installer-build
 # Install the DC/OS tools
 pip install -e /tmp/dcos-installer-build
-cp gen/build_deploy/bash/dcos-launch.spec ./
+cp launch/dcos-launch.spec ./
 pyinstaller --log-level=DEBUG dcos-launch.spec
 popd
 cp /tmp/dcos-installer-build/dist/dcos-launch ./

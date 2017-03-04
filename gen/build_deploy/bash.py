@@ -678,7 +678,7 @@ def make_dcos_launch():
     this_tree = GitLocalSrcFetcher(src_info, None, os.getcwd())
     this_tree.checkout_to(str(work_dir))
     # put the launch spec into the root of the tree before running pyinstaller
-    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string(__name__, 'bash/dcos-launch.spec'))
+    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string('launch', 'dcos-launch.spec'))
     with work_dir.as_cwd():
         subprocess.check_call(['pyinstaller', '--log-level=DEBUG', 'dcos-launch.spec'])
     subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), 'dcos-launch'])

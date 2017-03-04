@@ -1,0 +1,24 @@
+---
+launch_config_version: 1
+deployment_name: dcos-onprem-with-new-stack
+installer_url: https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
+platform: aws
+provider: onprem
+aws_region: us-west-2
+aws_access_key_id: ALSAFLAJ4L20922KF20TL294
+aws_secret_access_key: ADWOFIAOFWJTPW3924JR
+aws_key_name: default
+os_name: cent-os-7
+instance_type: t2.micro
+dcos_config:
+    cluster_name: My Awesome DC/OS
+    resolvers:
+        - 8.8.4.4
+        - 8.8.8.8
+    dns_search: mesos
+    master_discovery: static
+    ip_detect_filename: ip-detect.sh
+num_masters: 3
+num_private_agents: 2
+num_public_agents: 1
+ssh_private_key_filename: foobar
