@@ -13,7 +13,7 @@ from mocker.endpoints.recording import (
 # pylint: disable=C0103
 log = logging.getLogger(__name__)
 
-NGINX_TASK_ALWAYSTHERE = {
+NGINX_APP_ALWAYSTHERE = {
     "id": "/nginx-alwaysthere",
     "cmd": ("cd /opt/bitnami/nginx && harpoon initialize nginx && "
             "rm -rf /opt/bitnami/nginx/html && ln -s "
@@ -169,7 +169,7 @@ NGINX_TASK_ALWAYSTHERE = {
     ]
 }
 
-NGINX_TASK_ENABLED = {
+NGINX_APP_ENABLED = {
     "id": "/nginx-enabled",
     "cmd": ("cd /opt/bitnami/nginx && harpoon initialize nginx && "
             "rm -rf /opt/bitnami/nginx/html && ln -s "
@@ -352,7 +352,10 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         with ctx.lock:
             if base_path == '/v2/apps':
-                blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
+                if ctx.data["endpoint-content-is-encoded"]:
+                    blob = ctx.data['endpoint-content']
+                else:
+                    blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
             elif base_path == '/v2/leader':
                 if ctx.data['leader-content'] is None:
                     msg = "Marathon leader unknown"
@@ -372,22 +375,33 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
     """An endpoint that mimics DC/OS root Marathon"""
     def __init__(self, port, ip=''):
         super().__init__(port, ip, MarathonHTTPRequestHandler)
-        self._context.data["endpoint-content"] = {"apps": [NGINX_TASK_ALWAYSTHERE, ]}
-        self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
+        self._reset()
 
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
-            self._context.data["endpoint-content"] = {"apps": [NGINX_TASK_ALWAYSTHERE, ]}
-            self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
+            self._reset()
 
-    def enable_nginx_task(self, *_):
-        """Change the endpoint output so that it simulates extra Nginx task
+    def enable_nginx_app(self, *_):
+        """Change the endpoint output so that it simulates extra Nginx app
            running in the cluster
         """
         with self._context.lock:
-            self._context.data["endpoint-content"]["apps"].append(NGINX_TASK_ENABLED)
+            self._context.data["endpoint-content"]["apps"].append(NGINX_APP_ENABLED)
+
+    def set_encoded_apps_response(self, content):
+        """Change the response content for apps endpoint to arbitrary data
+           and disable response JSON encoding.
+        """
+        with self._context.lock:
+            self._context.data["endpoint-content"] = content
+            self._context.data["endpoint-content-is-encoded"] = True
+
+    def set_apps_response(self, apps):
+        """Change the response content for apps endpoint"""
+        with self._context.lock:
+            self._context.data["endpoint-content"] = apps
 
     def remove_leader(self, *_):
         """Change the endpoint output so that it simulates absence of the Marathon
@@ -409,3 +423,9 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         """
         with self._context.lock:
             self._context.data["leader-content"] = 'blah blah buh buh'
+
+    def _reset(self):
+        """Reset internal state to default values"""
+        self._context.data["endpoint-content"] = {"apps": [NGINX_APP_ALWAYSTHERE, ]}
+        self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
+        self._context.data["endpoint-content-is-encoded"] = False

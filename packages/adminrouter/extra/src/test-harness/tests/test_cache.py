@@ -1,10 +1,12 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
+import copy
 import logging
 import requests
 import time
 
 from generic_test_code import ping_mesos_agent
+from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE
 from mocker.endpoints.mesos import EXTRA_SLAVE_DICT
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta
 from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
@@ -161,7 +163,7 @@ class TestCache():
                          )
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_task')
+                            func_name='enable_nginx_app')
         url = ar.make_url_from_path('/service/nginx-enabled/foo/bar/')
 
         with GuardedSubprocess(ar):
@@ -214,7 +216,7 @@ class TestCache():
                          )
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_task')
+                            func_name='enable_nginx_app')
         url = ar.make_url_from_path('/service/nginx-enabled/foo/bar/')
 
         with GuardedSubprocess(ar):
@@ -373,7 +375,7 @@ class TestCache():
                             aux_data=True)
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_task')
+                            func_name='enable_nginx_app')
 
         ar = nginx_class()
         url = ar.make_url_from_path('/service/nginx-enabled/bar/baz')
@@ -407,7 +409,7 @@ class TestCache():
             assert resp.status_code == 500
 
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                                func_name='enable_nginx_task')
+                                func_name='enable_nginx_app')
 
             # First poll (2s) + normal poll interval(4s) < 2 * normal poll
             # interval(4s)
@@ -518,7 +520,7 @@ class TestCache():
                             func_name='record_requests')
         # Enable sample Nginx task in marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_task')
+                            func_name='enable_nginx_app')
         # Enable recording for mesos
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='record_requests')
@@ -668,3 +670,197 @@ class TestCache():
             with GuardedSubprocess(v):
                 time.sleep(backend_request_timeout * 0.3 + 1)  # let it warm-up!
                 ping_mesos_agent(ar, superuser_user_header)
+
+
+class TestCacheMarathon:
+
+    def test_upstream_wrong_json(
+            self, nginx_class, mocker, superuser_user_header):
+        filter_regexp = {
+            "Cannot decode Marathon apps JSON: ": SearchCriteria(1, True),
+        }
+
+        ar = nginx_class()
+
+        # Set wrong non-json response content
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_encoded_apps_response',
+                            aux_data=b"wrong response")
+
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        with GuardedSubprocess(ar):
+            # Register Line buffer filter:
+            lbf = LineBufferFilter(filter_regexp,
+                                   timeout=5,  # Just to give LBF enough time
+                                   line_buffer=ar.stderr_line_buffer)
+
+            # Trigger cache update by issuing request:
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=superuser_user_header)
+            assert "cache state is invalid" in resp.content.decode('utf-8')
+            assert resp.status_code == 503
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    def test_app_without_labels(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app.pop("labels", None)
+
+        filter_regexp = {
+            "Labels not found in app '{}'".format(app["id"]): SearchCriteria(1, True),
+        }
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_service_scheme_label(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["labels"].pop("DCOS_SERVICE_SCHEME", None)
+
+        filter_regexp = {
+            "Cannot find DCOS_SERVICE_SCHEME for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_port_index_label(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["labels"].pop("DCOS_SERVICE_PORT_INDEX", None)
+
+        filter_regexp = {
+            "Cannot find DCOS_SERVICE_PORT_INDEX for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_with_port_index_nan_label(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "not a number"
+
+        filter_regexp = {
+            "Cannot convert port to number for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_mesos_tasks(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["tasks"] = []
+
+        filter_regexp = {
+            "No task in state TASK_RUNNING for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_tasks_in_running_state(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["tasks"] = [{"state": "TASK_FAILED"}]
+
+        filter_regexp = {
+            "No task in state TASK_RUNNING for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_task_host(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["tasks"][0].pop("host", None)
+
+        filter_regexp = {
+            "Cannot find host for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_task_ports(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["tasks"][0].pop("ports", None)
+
+        filter_regexp = {
+            "Cannot find ports for app '{}'".format(app["id"]):
+                SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def test_app_without_task_specified_port_idx(
+            self, nginx_class, mocker, superuser_user_header):
+        app = self._nginx_alwaysthere_app()
+        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "5"
+
+        filter_regexp = {
+            "Cannot find port at Marathon port index '5' for app '{}'".format(
+                app["id"]): SearchCriteria(1, True),
+        }
+
+        self.assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+
+    def assert_filter_regexp_for_invalid_app(
+            self,
+            filter_regexp,
+            app,
+            nginx_class,
+            mocker,
+            auth_headers,
+            ):
+        """Helper method that will assert if provided regexp filter is found
+        in nginx logs for given apps response from Marathon upstream endpoint.
+
+        Arguments:
+            filter_regexp (dict): Filter definition where key is the message
+                looked up in logs and value is SearchCriteria definition
+            app (dict): App that upstream endpoint should respond with
+            nginx_class (Nginx): NGINX fixture
+            mocker (Mocker): Mocker fixture
+            auth_header (dict): Headers that should be passed to NGINX request
+        """
+        ar = nginx_class()
+
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data={"apps": [app]})
+
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        with GuardedSubprocess(ar):
+            # Register Line buffer filter:
+            lbf = LineBufferFilter(filter_regexp,
+                                   timeout=5,  # Just to give LBF enough time
+                                   line_buffer=ar.stderr_line_buffer)
+
+            # Trigger cache update by issuing request:
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=auth_headers)
+            assert resp.status_code == 500
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    def _nginx_alwaysthere_app(self):
+        """Returns a valid Marathon app with the '/nginx-alwaysthere' id"""
+        return copy.deepcopy(NGINX_APP_ALWAYSTHERE)
