@@ -236,7 +236,8 @@ def install_dcos(
         targets = hosts
     else:
         for role, params in role_params.items():
-            targets += [Node(node, params['tags']) for node in params['hosts']]
+            targets += [Node(node, params['tags'], default_port=int(config.hacky_default_get('ssh_port', 22)))
+                        for node in params['hosts']]
 
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     chains = []
