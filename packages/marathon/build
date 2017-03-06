@@ -37,7 +37,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     --hostname "\$MARATHON_HOSTNAME" \\
     --default_accepted_resource_roles "*" \\
     --mesos_role "slave_public" \\
-    --max_tasks_per_offer 100 \\
+    --max_tasks_per_offer 2 \\
     --task_launch_timeout 86400000 \\
     --decline_offer_duration 300000 \\
     --revive_offers_for_new_apps \\
