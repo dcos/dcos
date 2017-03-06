@@ -429,7 +429,7 @@ package:
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
       MESOS_CGROUPS_ENABLE_CFS=true
-      MESOS_CGROUPS_LIMIT_SWAP=false
+      MESOS_CGROUPS_LIMIT_SWAP=true
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
       MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
       MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
