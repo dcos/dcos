@@ -37,8 +37,10 @@ import sys
 
 from docopt import docopt
 
-from pkgpanda.util import json_prettyprint, load_json, load_yaml, write_json, YamlParseError
-from test_util.launch import check_keys, get_launcher, LauncherError
+import launch
+import launch.config
+import launch.util
+from pkgpanda.util import json_prettyprint, load_json, write_json
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 
@@ -55,7 +57,7 @@ def _handle_logging(log_level_str):
     elif log_level_str == 'DEBUG' or log_level_str == 'TRACE':
         log_level = logging.DEBUG
     else:
-        raise LauncherError('InvalidOption', '{} is not a valid log level'.format(log_level_str))
+        raise launch.util.LauncherError('InvalidOption', '{} is not a valid log level'.format(log_level_str))
     logging.basicConfig(format=LOGGING_FORMAT, level=log_level)
     if log_level_str in ('TRACE', 'CRITICAL'):
         return
@@ -66,18 +68,18 @@ def _handle_logging(log_level_str):
 
 def do_main(args):
     _handle_logging(args['--log-level'].upper())
+
+    config_path = args['--config-path']
     if args['create']:
+        config = launch.config.get_validated_config(config_path)
         info_path = args['--info-path']
         if os.path.exists(info_path):
-            raise LauncherError('InputConflict', 'Target info path already exists!')
-        config = load_yaml(args['--config-path'])
-        check_keys(config, ['type', 'provider_info', 'this_is_a_temporary_config_format_do_not_put_in_production'])
-        write_json(info_path, get_launcher(config['type'], config['provider_info']).create(config))
+            raise launch.util.LauncherError('InputConflict', 'Target info path already exists!')
+        write_json(info_path, launch.get_launcher(config).create(config))
         return 0
 
     info = load_json(args['--info-path'])
-    check_keys(info, ['type', 'provider'])
-    launcher = get_launcher(info['type'], info['provider'])
+    launcher = launch.get_launcher(info)
 
     if args['wait']:
         launcher.wait(info)
@@ -93,10 +95,11 @@ def do_main(args):
         if args['--env'] is not None:
             if '=' in args['--env']:
                 # User is attempting to do an assigment with the option
-                raise LauncherError('OptionError', "The '--env' option can only pass through environment variables "
-                                    "from the current environment. Set variables according to the shell being used.")
+                raise launch.util.LauncherError(
+                    'OptionError', "The '--env' option can only pass through environment variables "
+                    "from the current environment. Set variables according to the shell being used.")
             var_list = args['--env'].split(',')
-            check_keys(os.environ, var_list)
+            launch.util.check_keys(os.environ, var_list)
             test_cmd = ' '.join(['{}={}'.format(e, os.environ[e]) for e in var_list]) + ' ' + test_cmd
         if len(args['<pytest_extras>']) > 0:
             test_cmd += ' ' + ' '.join(args['<pytest_extras>'])
@@ -113,7 +116,7 @@ def main(argv=None):
 
     try:
         return do_main(args)
-    except (LauncherError, YamlParseError) as ex:
+    except launch.util.LauncherError as ex:
         print('DC/OS Launch encountered an error!')
         print(repr(ex))
         return 1

@@ -14,22 +14,22 @@ $OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-o
 rm -vfR $PKG_PATH/nginx/conf/*
 cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
 
-# FIXME: We need more comprehensive approach to librarires. This is tracked in
+# TODO: We need more comprehensive approach to libraries. This is tracked in
 # https://jira.mesosphere.com/browse/DCOS-14039
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
 # Copy systemd unit files:
 for st in ".service" "-reload.service" "-reload.timer"; do
-    tmp="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter${st}
-    mkdir -p "$(dirname "$tmp")"
-    envsubst '$PKG_PATH' < /pkg/extra/systemd/dcos-adminrouter${st} > "$tmp"
+    tmp="$PKG_PATH/dcos.target.wants_master/dcos-adminrouter${st}"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter${st}" > "$tmp"
 done
 
 for at in slave slave_public; do
     for st in ".service" "-reload.service" "-reload.timer"; do
-        tmp="$PKG_PATH"/dcos.target.wants_${at}/dcos-adminrouter-agent${st}
-        mkdir -p "$(dirname "$tmp")"
-        envsubst '$PKG_PATH' < /pkg/extra/systemd/dcos-adminrouter-agent${st} > "$tmp"
+        tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-adminrouter-agent${st}"
+        mkdir -vp "$(dirname "$tmp")"
+        envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter-agent${st}" > "$tmp"
     done
 done

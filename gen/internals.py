@@ -800,9 +800,10 @@ def resolve_configuration(sources: List[Source], targets: List[Target]):
             setters[name] += setter_list
         validate += source.validate
 
-    # TODO(cmaloney): Re-enable this after sorting out how to have "optional" config targets which
+    # Re-enable this after sorting out how to have "optional" config targets which
     # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)
     # validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
+    # TODO DCOS-14196: [gen.internals] disallow extra user provided arguments
 
     user_config = Source(is_user=True)
 

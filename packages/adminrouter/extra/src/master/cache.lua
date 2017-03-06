@@ -114,7 +114,7 @@ local function fetch_and_store_marathon_apps()
        local appId = app["id"]
        local labels = app["labels"]
        if not labels then
-          ngx.log(ngx.NOTICE, "Labels not found in app '" .. appId .. "': " .. err)
+          ngx.log(ngx.NOTICE, "Labels not found in app '" .. appId .. "'")
           goto continue
        end
 
@@ -133,12 +133,14 @@ local function fetch_and_store_marathon_apps()
           goto continue
        end
 
-       -- Lua arrays default starting index is 1 not the 0 of marathon
-       local portIdx = tonumber(portIdx) + 1
+       local portIdx = tonumber(portIdx)
        if not portIdx then
           ngx.log(ngx.NOTICE, "Cannot convert port to number for app '" .. appId .. "'")
           goto continue
        end
+
+       -- Lua arrays default starting index is 1 not the 0 of marathon
+       portIdx = portIdx + 1
 
        local tasks = app["tasks"]
 
@@ -177,7 +179,7 @@ local function fetch_and_store_marathon_apps()
 
        local port = ports[portIdx]
        if not port then
-          ngx.log(ngx.NOTICE, "Cannot find port at port index '" .. portIdx .. "' for app '" .. appId .. "'")
+          ngx.log(ngx.NOTICE, "Cannot find port at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
           goto continue
        end
 

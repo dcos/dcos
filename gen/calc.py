@@ -191,7 +191,9 @@ def calculate_ip_detect_contents(ip_detect_filename):
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
-def calculate_ip_detect_public_contents(ip_detect_contents):
+def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
+    if ip_detect_public_filename != '':
+        calculate_ip_detect_contents(ip_detect_public_filename)
     return ip_detect_contents
 
 
@@ -575,6 +577,7 @@ entry = {
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
+        'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',

@@ -502,25 +502,18 @@ def build_late_package(late_files, config_id, provider):
     }
 
 
-def generate(
-        arguments,
-        extra_templates=list(),
-        extra_sources=list(),
-        extra_targets=list()):
-    # To maintain the old API where we passed arguments rather than the new name.
-    user_arguments = arguments
-    arguments = None
-
-    sources, targets, templates = get_dcosconfig_source_target_and_templates(
-        user_arguments, extra_templates, extra_sources)
-
+def validate_and_raise(sources, targets):
     # TODO(cmaloney): Make it so we only get out the dcosconfig target arguments not all the config target arguments.
-    resolver = gen.internals.resolve_configuration(sources, targets + extra_targets)
+    resolver = gen.internals.resolve_configuration(sources, targets)
     status = resolver.status_dict
 
     if status['status'] == 'errors':
         raise ValidationError(errors=status['errors'], unset=status['unset'])
 
+    return resolver
+
+
+def get_late_variables(resolver, sources):
     # Gather out the late variables. The presence of late variables changes
     # whether or not a late package is created
     late_variables = dict()
@@ -544,7 +537,28 @@ def generate(
                 late_variables[setter.name] = setter.late_expression
     log.debug('Late variables:\n{}'.format(pprint.pformat(late_variables)))
 
-    argument_dict = {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
+    return late_variables
+
+
+def get_final_arguments(resolver):
+    return {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
+
+
+def generate(
+        arguments,
+        extra_templates=list(),
+        extra_sources=list(),
+        extra_targets=list()):
+    # To maintain the old API where we passed arguments rather than the new name.
+    user_arguments = arguments
+    arguments = None
+
+    sources, targets, templates = get_dcosconfig_source_target_and_templates(
+        user_arguments, extra_templates, extra_sources)
+
+    resolver = validate_and_raise(sources, targets + extra_targets)
+    argument_dict = get_final_arguments(resolver)
+    late_variables = get_late_variables(resolver, sources)
 
     # expanded_config is a special result which contains all other arguments. It has to come after
     # the calculation of all the other arguments so it can be filled with everything which was
