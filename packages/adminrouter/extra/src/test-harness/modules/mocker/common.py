@@ -4,6 +4,7 @@
 Shared management code for DC/OS mocks used by AR instances, both EE and Open.
 """
 
+import concurrent.futures
 import logging
 
 from mocker.endpoints.reflectors import (
@@ -98,16 +99,18 @@ class MockerBase():
 
     def start(self):
         """Start all endpoints registered with this Mocker instance"""
-        for endpoint in self._endpoints.values():
-            endpoint.start()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for endpoint in self._endpoints.values():
+                executor.submit(endpoint.start)
 
     def stop(self):
         """Stop all endpoints registered with this Mocker instance.
 
         Usually called right before object destruction
         """
-        for endpoint in self._endpoints.values():
-            endpoint.stop()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for endpoint in self._endpoints.values():
+                executor.submit(endpoint.stop)
 
     def reset(self):
         """Reset all the endpoints to their initial state
