@@ -424,16 +424,30 @@ class VpcCfStack(CfStack):
     @classmethod
     def create(cls, stack_name, instance_type, instance_os, instance_count,
                admin_location, key_pair_name, boto_wrapper):
-        ami_code = OS_AMIS[instance_os][boto_wrapper.region]
+        stack = cls.create_from_ami(
+            stack_name,
+            instance_type,
+            OS_AMIS[instance_os][boto_wrapper.region],
+            instance_count,
+            admin_location,
+            key_pair_name,
+            boto_wrapper,
+        )
+        return stack, OS_SSH_INFO[instance_os]
+
+    @classmethod
+    def create_from_ami(cls, stack_name, instance_type, instance_ami, instance_count,
+                        admin_location, key_pair_name, boto_wrapper):
         template_url = template_by_instance_type(instance_type)
         parameters = {
             'KeyPair': key_pair_name,
             'AllowAccessFrom': admin_location,
             'ClusterSize': instance_count,
             'InstanceType': instance_type,
-            'AmiCode': ami_code}
+            'AmiCode': instance_ami,
+        }
         stack = boto_wrapper.create_stack(stack_name, template_url, param_dict_to_aws_format(parameters))
-        return cls(stack.stack_id, boto_wrapper), OS_SSH_INFO[instance_os]
+        return cls(stack.stack_id, boto_wrapper)
 
     def delete(self):
         # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
