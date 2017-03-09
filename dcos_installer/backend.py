@@ -332,6 +332,13 @@ def do_aws_cf_configure():
         'artifacts',
     ))
 
+    for package_id in json.loads(full_config['package_ids']):
+        package_filename = release.make_package_filename(package_id)
+        artifacts.append({
+            'reproducible_path': package_filename,
+            'local_path': 'artifacts/' + package_filename,
+        })
+
     # Upload all the artifacts to the config-id path and then print out what
     # the path that should be used is, as well as saving a local json file for
     # easy machine access / processing.
