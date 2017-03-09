@@ -57,8 +57,11 @@ local function cache_data(key, value)
 end
 
 
-local function request(url, accept_404_reply)
+local function request(url, accept_404_reply, auth_token)
     local headers = {}
+    if auth_token ~= nil then
+        headers = {["Authorization"] = "token=" .. auth_token}
+    end
 
     -- Use cosocket-based HTTP library, as ngx subrequests are not available
     -- from within this code path (decoupled from nginx' request processing).
@@ -92,11 +95,12 @@ local function request(url, accept_404_reply)
 end
 
 
-local function fetch_and_store_marathon_apps()
+local function fetch_and_store_marathon_apps(auth_token)
     -- Access Marathon through localhost.
     ngx.log(ngx.NOTICE, "Cache Marathon app state")
-    local appsRes, err = request("http://127.0.0.1:8080" .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
-                                 false)
+    local appsRes, err = request(UPSTREAM_MARATHON .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
+                                 false,
+                                 auth_token)
 
     if err then
         ngx.log(ngx.NOTICE, "Marathon app request failed: " .. err)
@@ -207,10 +211,12 @@ local function fetch_and_store_marathon_apps()
 end
 
 
-local function fetch_and_store_marathon_leader()
+local function fetch_and_store_marathon_leader(auth_token)
     -- Fetch Marathon leader address. If successful, store to SHM cache.
     -- Expected to run within lock context.
-    local mleaderRes, err = request("http://127.0.0.1:8080" .. "/v2/leader", true)
+    local mleaderRes, err = request(UPSTREAM_MARATHON .. "/v2/leader",
+                                    true,
+                                    auth_token)
 
     if err then
         ngx.log(ngx.WARN, "Marathon leader request failed: " .. err)
@@ -259,10 +265,12 @@ local function fetch_and_store_marathon_leader()
 end
 
 
-local function fetch_and_store_state_mesos()
+local function fetch_and_store_state_mesos(auth_token)
     -- Fetch state JSON summary from Mesos. If successful, store to SHM cache.
     -- Expected to run within lock context.
-    local mesosRes, err = request("http://leader.mesos:5050" .. "/master/state-summary", false)
+    local mesosRes, err = request(UPSTREAM_MESOS .. "/master/state-summary",
+                                  false,
+                                  auth_token)
 
     if err then
         ngx.log(ngx.NOTICE, "Mesos state request failed: " .. err)
@@ -309,7 +317,7 @@ local function refresh_needed(ts_name)
 end
 
 
-local function refresh_cache(from_timer)
+local function refresh_cache(from_timer, auth_token)
     -- Refresh cache in case when it expired or has not been created yet.
     -- Use SHM-based lock for synchronizing coroutines across worker processes.
     --
@@ -368,15 +376,15 @@ local function refresh_cache(from_timer)
     end
 
     if refresh_needed("mesosstate_last_refresh") then
-        fetch_and_store_state_mesos()
+        fetch_and_store_state_mesos(auth_token)
     end
 
     if refresh_needed("svcapps_last_refresh") then
-        fetch_and_store_marathon_apps()
+        fetch_and_store_marathon_apps(auth_token)
     end
 
     if refresh_needed("marathonleader_last_refresh") then
-        fetch_and_store_marathon_leader()
+        fetch_and_store_marathon_leader(auth_token)
     end
 
     local ok, err = lock:unlock()
@@ -388,7 +396,7 @@ local function refresh_cache(from_timer)
 end
 
 
-function _M.periodically_refresh_cache()
+local function periodically_refresh_cache(auth_token)
     -- This function is invoked from within init_worker_by_lua code.
     -- ngx.timer.at() can be called here, whereas most of the other ngx.*
     -- API is not available.
@@ -406,7 +414,7 @@ function _M.periodically_refresh_cache()
         end
 
         -- Invoke timer business logic.
-        refresh_cache(true)
+        refresh_cache(true, auth_token)
 
         -- Register new timer.
         local ok, err = ngx.timer.at(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
@@ -429,7 +437,7 @@ function _M.periodically_refresh_cache()
 end
 
 
-function _M.get_cache_entry(name)
+local function get_cache_entry(name, auth_token)
     local cache = ngx.shared.cache
     local name_last_refresh = name .. "_last_refresh"
 
@@ -437,7 +445,7 @@ function _M.get_cache_entry(name)
     -- timer-based cache refresh
     local entry_last_refresh = cache:get(name_last_refresh)
     if entry_last_refresh == nil then
-        refresh_cache()
+        refresh_cache(false, auth_token)
 
         entry_last_refresh = cache:get(name .. "_last_refresh")
         if entry_last_refresh == nil then
@@ -477,5 +485,31 @@ function _M.get_cache_entry(name)
     return entry
 end
 
+
+-- Expose AdminRouter cache interface
+local _M = {}
+function _M.init(auth_token)
+    -- At some point auth_token passing will be refactored out in
+    -- favour of service accounts support.
+    local res = {}
+
+    if auth_token ~= nil then
+        -- auth_token variable is needed by a few functions which are
+        -- nested inside top-level ones. We can either define all the functions
+        -- inside the same lexical block, or we pass it around. Passing it
+        -- around seems cleaner.
+        res.get_cache_entry = function (name)
+            return get_cache_entry(name, auth_token)
+        end
+        res.periodically_refresh_cache = function()
+            return periodically_refresh_cache(auth_token)
+        end
+    else
+        res.get_cache_entry = get_cache_entry
+        res.periodically_refresh_cache = periodically_refresh_cache
+    end
+
+    return res
+end
 
 return _M
