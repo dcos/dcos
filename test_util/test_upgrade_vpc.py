@@ -330,7 +330,9 @@ class VpcClusterUpgradeTest:
             def test_mesos_task_state_remains_consistent():
                 # Verify that the "state" of the task does not change.
                 task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
-                if not self.task_state_start == task_state_end:
+                # To avoid errors when new items are added to the task state, we
+                # check that the old state is a subset of the new state.
+                if not all(item in task_state_end.items() for item in self.task_state_start.items()):
                     self.teamcity_msg.testFailed(
                         "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
                         details="expected: {}\nactual:   {}".format(self.task_state_start, task_state_end))
