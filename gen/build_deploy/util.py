@@ -12,7 +12,7 @@ if dcos_image_commit is None:
     dcos_image_commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
 if dcos_image_commit is None:
-    raise "Unable to set dcos_image_commit from teamcity or git."
+    raise ValueError("Unable to set dcos_image_commit from environment or git.")
 
 template_generation_date = str(datetime.utcnow())
 
