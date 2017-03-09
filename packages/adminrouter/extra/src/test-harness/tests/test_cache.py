@@ -465,7 +465,8 @@ class TestCache():
 
             # change the leader and wait for cache to notice
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                                func_name='change_leader')
+                                func_name='change_leader',
+                                aux_data="127.0.0.3:80")
             # First poll (2s) + normal poll interval(4s) < 2 * normal poll
             # interval(4s)
             time.sleep(cache_poll_period * 2)
