@@ -6,7 +6,11 @@ DEV_PATH := /usr/local/src
 DCOSAR_AR_LOCAL_PATH := $(CURDIR)
 DCOSAR_AR_CTR_MOUNT := /usr/local/adminrouter/nginx/conf/
 
+# Detect the docker network interface bridge name.
 BRIDGE_DEVNAME := $(shell docker network inspect -f '{{ index .Options "com.docker.network.bridge.name" }}' bridge | awk 'NF')
+
+# Detect the docker network interface bridge IP.
+# Using a docker container for this allows the docker daemon to run locally or remotely in a VM, like docker-machine.
 BRIDGE_IP := $(shell docker run --net=host --rm alpine ifconfig $(BRIDGE_DEVNAME) | grep 'inet addr:' | cut -d: -f2 | cut -d' ' -f1)
 
 # FIXME: some problems with dns queries timing out, use hosts caching dns as a
