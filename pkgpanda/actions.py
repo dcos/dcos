@@ -229,6 +229,7 @@ def _do_bootstrap(install, repository):
                 f.name,
                 repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
+                rm_on_error=False,
             )
             late_package = load_yaml(f.name)
 

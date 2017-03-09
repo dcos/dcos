@@ -57,7 +57,7 @@ def variant_prefix(variant):
     return variant + '.'
 
 
-def download(out_filename, url, work_dir):
+def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
     work_dir = work_dir.rstrip('/')
@@ -83,16 +83,19 @@ def download(out_filename, url, work_dir):
                 for chunk in r.iter_content(chunk_size=4096):
                     f.write(chunk)
     except Exception as fetch_exception:
-        rm_passed = False
+        if rm_on_error:
+            rm_passed = False
 
-        # try / except so if remove fails we don't get an exception during an exception.
-        # Sets rm_passed to true so if this fails we can include a special error message in the
-        # FetchError
-        try:
-            os.remove(out_filename)
+            # try / except so if remove fails we don't get an exception during an exception.
+            # Sets rm_passed to true so if this fails we can include a special error message in the
+            # FetchError
+            try:
+                os.remove(out_filename)
+                rm_passed = True
+            except Exception:
+                pass
+        else:
             rm_passed = True
-        except Exception:
-            pass
 
         raise FetchError(url, out_filename, fetch_exception, rm_passed) from fetch_exception
 
