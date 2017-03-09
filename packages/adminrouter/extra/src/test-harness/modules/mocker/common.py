@@ -52,18 +52,26 @@ class MockerBase():
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/pkgpanda-api.sock'))
         # exhibitor
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=8181))
-        # mesos
+        # Mesos masters
         res.append(MesosEndpoint(ip='127.0.0.2', port=5050))
-        # marathon
+        res.append(MesosEndpoint(ip='127.0.0.3', port=5050))
+        # Marathon instances running on the masters
         res.append(MarathonEndpoint(ip='127.0.0.1', port=8080))
+        res.append(MarathonEndpoint(ip='127.0.0.2', port=8080))
         # cosmos
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=7070))
         # navstar
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=62080))
-        # slave1
+        # Mesos agents:
+        # - plain
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15001))
-        # slave2
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=15002))
+        # - ssl (we need to use 127.0.0.1 so that cert names match)
+        res.append(ReflectingTcpIpEndpoint(
+            ip='127.0.0.1',
+            port=15401,
+            certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
+            keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
         # slave3
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.4', port=15003))
         # Slave AR 1
@@ -74,9 +82,14 @@ class MockerBase():
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16000))
         # task /nginx-enabled
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16001))
-        # general purpose reflectors, used i.e. for Marathon leader testing
+        # other Admin Router Masters, used i.e. during Marathon leader testing
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=80))
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=80))
+        res.append(ReflectingTcpIpEndpoint(
+            ip='127.0.0.4',
+            port=443,
+            certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
+            keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
         # metrics endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-metrics-master.sock'))
         # log endpoint
