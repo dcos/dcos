@@ -11,7 +11,7 @@ if (master_branches.contains(env.BRANCH_NAME)) {
     ])
 }
 
-task_wrapper('mesos'){
+task_wrapper('mesos', master_branches) {
     stage("Verify author") {
         user_is_authorized(master_branches)
     }
