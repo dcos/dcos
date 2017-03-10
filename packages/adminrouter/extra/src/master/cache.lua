@@ -19,7 +19,7 @@ local _CONFIG = {}
 local env_vars = {CACHE_FIRST_POLL_DELAY = 2,
                   CACHE_POLL_PERIOD = 25,
                   CACHE_EXPIRATION = 20,
-                  CACHE_MAX_AGE_SOFT_LIMIT = 35,
+                  CACHE_MAX_AGE_SOFT_LIMIT = 75,
                   CACHE_MAX_AGE_HARD_LIMIT = 259200,
                   CACHE_BACKEND_REQUEST_TIMEOUT = 10,
                   CACHE_REFRESH_LOCK_TIMEOUT = 20,

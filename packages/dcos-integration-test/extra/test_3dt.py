@@ -483,14 +483,11 @@ def test_3dt_bundle_create(dcos_api_session):
     assert bundles[0] == create_response['extra']['bundle_name']
 
 
-def verify_unit_response(zip_ext_file):
+def verify_unit_response(zip_ext_file, min_lines):
     assert isinstance(zip_ext_file, zipfile.ZipExtFile)
     unit_output = gzip.decompress(zip_ext_file.read())
-
-    # TODO: This seems like a really fragile string to be searching for. This might need to be changed for
-    # different localizations.
-    assert 'Hint: You are currently not seeing messages from other users and the system' not in str(unit_output), (
-        '3dt does not have permission to run `journalctl`')
+    assert len(unit_output.decode().split('\n')) >= min_lines, 'Expect at least {} lines. Full unit output {}'.format(
+        min_lines, unit_output)
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
@@ -601,7 +598,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
                 # make sure systemd unit output is correct and does not contain error message
                 gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
-                verify_unit_response(gzipped_unit_output)
+                verify_unit_response(gzipped_unit_output, 100)
 
                 for expected_master_file in expected_master_files:
                     expected_file = master_folder + expected_master_file
@@ -618,7 +615,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
                 # make sure systemd unit output is correct and does not contain error message
                 gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
-                verify_unit_response(gzipped_unit_output)
+                verify_unit_response(gzipped_unit_output, 100)
 
                 for expected_agent_file in expected_agent_files:
                     expected_file = agent_folder + expected_agent_file
@@ -635,7 +632,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
                 # make sure systemd unit output is correct and does not contain error message
                 gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
-                verify_unit_response(gzipped_unit_output)
+                verify_unit_response(gzipped_unit_output, 100)
 
                 for expected_public_agent_file in expected_public_agent_files:
                     expected_file = agent_public_folder + expected_public_agent_file
