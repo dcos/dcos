@@ -19,12 +19,12 @@ def make_slave_pty():
     os.close(master_pty)
 
 
-def parse_ip(ip: str):
+def parse_ip(ip: str, default_port: int):
     tmp = ip.split(':')
     if len(tmp) == 2:
         return {"ip": tmp[0], "port": int(tmp[1])}
     elif len(tmp) == 1:
-        return {"ip": ip, "port": 22}
+        return {"ip": ip, "port": default_port}
     else:
         raise ValueError(
             "Expected a string of form <ip> or <ip>:<port> but found a string with more than one " +
@@ -32,9 +32,9 @@ def parse_ip(ip: str):
 
 
 class Node():
-    def __init__(self, host, tags: dict=dict()):
+    def __init__(self, host, tags: dict=dict(), default_port: int=22):
         self.tags = copy.copy(tags)
-        self.host = parse_ip(host)
+        self.host = parse_ip(host, default_port)
         self.ip = self.host['ip']
         self.port = self.host['port']
 
@@ -50,15 +50,15 @@ class Node():
             ', '.join(['{}:{}'.format(k, v) for k, v in sorted(self.tags.items())]))
 
 
-def add_host(target):
+def add_host(target, default_port):
     if isinstance(target, Node):
         return target
-    return Node(target)
+    return Node(target, default_port=default_port)
 
 
 class MultiRunner():
     def __init__(self, targets: list, async_delegate=None, user=None, key_path=None, extra_opts='',
-                 process_timeout=120, parallelism=10):
+                 process_timeout=120, parallelism=10, default_port=22):
         # TODO(cmaloney): accept an "ssh_config" object which generates an ssh
         # config file, then add a '-F' to that temporary config file rather than
         # manually building up / adding the arguments in _get_base_args which is
@@ -73,7 +73,7 @@ class MultiRunner():
         self.async_delegate = async_delegate
         self.__targets = []
         for target in targets:
-            self.__targets.append(add_host(target))
+            self.__targets.append(add_host(target, default_port))
         self.__parallelism = parallelism
 
     def _get_base_args(self, bin_name, host):
