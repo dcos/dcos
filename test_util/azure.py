@@ -278,7 +278,7 @@ class DcosAzureResourceGroup:
 
     def delete(self):
         log.info('Triggering delete')
-        self.azure_wrapper.rmc.resource_groups.delete(self.group_name)
+        self.azure_wrapper.rmc.resource_groups.delete(self.group_name).wait()
 
     def __enter__(self):
         return self
