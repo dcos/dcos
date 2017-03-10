@@ -4,8 +4,8 @@ What features does this change enable? What bugs does this change fix? High-Leve
 
 ## Related Issues
 
-  - [DCOS-<number>](https://dcosjira.atlassian.net/browse/DCOS-<number>) Foo the Bar so it stops Bazzing.
-  - [DCOS-<number>](https://mesosphere.atlassian.net/browse/DCOS-<number) TRACKING: dcosjira-123 Foo the Bar
+  - [DCOS_OSS-<number>](https://jira.dcos.io/browse/DCOS_OSS-<number>) Foo the Bar so it stops Bazzing.
+  - [DCOS-<number>](https://jira.mesosphere.com/browse/DCOS-<number>) Foo the Bar so it stops Bazzing.
 
 ## Checklist for all PR's
 
