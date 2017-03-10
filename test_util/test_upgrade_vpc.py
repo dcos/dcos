@@ -333,7 +333,9 @@ class VpcClusterUpgradeTest:
 
         with logger.scope("install dcos"):
             # Use the CLI installer to set exhibitor_storage_backend = zookeeper.
-            test_util.cluster.install_dcos(cluster, self.stable_installer_url, api=False,
+            # Don't install prereqs since stable breaks Docker 1.13. See
+            # https://jira.mesosphere.com/browse/DCOS_OSS-743.
+            test_util.cluster.install_dcos(cluster, self.stable_installer_url, api=False, install_prereqs=False,
                                            add_config_path=self.config_yaml_override_install)
 
             master_list = [h.private_ip for h in cluster.masters]
