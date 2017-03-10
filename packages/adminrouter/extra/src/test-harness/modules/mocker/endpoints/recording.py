@@ -78,6 +78,14 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
             # Recording does not end the request processing, so we do not
             # return anything here
 
+        if ctx.data["encoded_response"]:
+            msg_fmt = "Endpoint `%s` sending encoded response `%s` as requested"
+            log.debug(
+                msg_fmt, ctx.data['endpoint_id'], ctx.data["encoded_response"])
+            self._finalize_request(
+                200, 'text/plain; charset=utf-8', ctx.data["encoded_response"])
+            return True
+
         return super()._process_commands(blob)
 
     @staticmethod
@@ -102,6 +110,7 @@ class RecordingTcpIpEndpoint(TcpIpHttpEndpoint):
         super().__init__(request_handler, port, ip)
         self._context.data["record_requests"] = False
         self._context.data["requests"] = list()
+        self._context.data["encoded_response"] = None
 
     def record_requests(self, *_):
         """Enable recording the requests data by the handler."""
@@ -115,9 +124,19 @@ class RecordingTcpIpEndpoint(TcpIpHttpEndpoint):
 
         return requests_list_copy
 
+    def set_encoded_response(self, aux_data):
+        """Make endpoint to respond with provided data without encoding data
+
+        Arguments:
+            aux_data (bytes): Encoded bytes array
+        """
+        with self._context.lock:
+            self._context.data["encoded_response"] = aux_data
+
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
             self._context.data["record_requests"] = False
             self._context.data["requests"] = list()
+            self._context.data["encoded_response"] = None
