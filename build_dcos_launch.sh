@@ -1,32 +1,20 @@
 #!/bin/bash
 #
 # Simple helper script to build dcos-launch binary
-# NOTE: this needs to be kept in sync with gen.build_deploy.bash::make_dcos_launch()
-
-set -x
-set -o errexit -o pipefail
-
-# Cleanup from previous build
-rm -rf /tmp/dcos_build_venv
-
+# Note:
+#  - must be run after this repo has been prepped with prep_local or prep_teamcity
+#  - must be run after `mkpanda tree util` in order for package depedencies to be present
+#  - must be maintained in sync with gen/build_deploy/bash.py
+set -x -o errexit -o pipefail
 # Force Python stdout/err to be unbuffered.
 export PYTHONUNBUFFERED="notemtpy"
-
-# Create a python virtual environment to install the DC/OS tools to
-python3 -m venv /tmp/dcos_launch_venv
-. /tmp/dcos_launch_venv/bin/activate
-
-# Make a clean as possible clone
-if [[ -n $(git -C $PWD status --porcelain -uno -z) ]]; then
-  echo "Commit all changes before attempting to build!";
-  exit 1;
-fi
-rm -rf /tmp/dcos-installer-build
-git clone -q "file://$PWD" /tmp/dcos-installer-build/
-pushd /tmp/dcos-installer-build
-# Install the DC/OS tools
-pip install -e /tmp/dcos-installer-build
-cp launch/dcos-launch.spec ./
-pyinstaller --log-level=DEBUG dcos-launch.spec
+pushd packages/dcos-launch
+# mkpanda will pump out the package path in the last line;
+# this is required to grab only the binary built here
+new_package_name=`mkpanda | tail -n 1 | cut -d':' -f2`
 popd
-cp /tmp/dcos-installer-build/dist/dcos-launch ./
+mkdir -p tmp/dcos_build
+cp $new_package_name tmp/dcos_build/dcos-launch.tar.xz
+(cd tmp/dcos_build && tar -Jxf dcos-launch.tar.xz)
+cp tmp/dcos_build/dcos-launch .
+rm -rf tmp/dcos_build/

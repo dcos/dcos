@@ -78,7 +78,11 @@ def do_main(args):
         write_json(info_path, launch.get_launcher(config).create(config))
         return 0
 
-    info = load_json(args['--info-path'])
+    try:
+        info = load_json(args['--info-path'])
+    except FileNotFoundError as ex:
+        raise launch.util.LauncherError('MissingInfoJSON', None) from ex
+
     launcher = launch.get_launcher(info)
 
     if args['wait']:
