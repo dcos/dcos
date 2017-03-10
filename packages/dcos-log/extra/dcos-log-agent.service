@@ -1,5 +1,6 @@
 [Unit]
 Description=DC/OS Log Agent: exposes agent node, component, and container (task) logs
+
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-log.env
@@ -9,4 +10,7 @@ StartLimitInterval=0
 RestartSec=5
 LimitNOFILE=16384
 User=dcos_log
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
 ExecStart=/opt/mesosphere/bin/dcos-log -config ${DCOS_LOG_CONFIG_PATH}
+Sockets=dcos-log-agent.socket

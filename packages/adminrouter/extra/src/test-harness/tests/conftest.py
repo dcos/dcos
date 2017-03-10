@@ -193,7 +193,21 @@ def master_ar_process(nginx_class):
     need to start AR with different env vars or AR type (master/agent). So the
     idea is to give it 'module' scope and thus have the same AR instance for
     all the tests in given test file unless some greater flexibility is required
-    and the nginx_class fixture is used directly.
+    and the nginx_class fixture or master_ar_process_pertest fixture is used.
+    .
+    """
+    nginx = nginx_class(role="master")
+    nginx.start()
+
+    yield nginx
+
+    nginx.stop()
+
+
+@pytest.fixture()
+def master_ar_process_pertest(nginx_class):
+    """An AR process instance fixture for situations where need to trade off
+       tests speed for having a per-test AR instance
     """
     nginx = nginx_class(role="master")
     nginx.start()
@@ -207,6 +221,20 @@ def master_ar_process(nginx_class):
 def agent_ar_process(nginx_class):
     """
     Same as `master_ar_process` fixture except for the fact that it starts 'agent'
+    nginx instead of `master`.
+    """
+    nginx = nginx_class(role="agent")
+    nginx.start()
+
+    yield nginx
+
+    nginx.stop()
+
+
+@pytest.fixture()
+def agent_ar_process_pertest(nginx_class):
+    """
+    Same as `master_ar_process_pertest` fixture except for the fact that it starts 'agent'
     nginx instead of `master`.
     """
     nginx = nginx_class(role="agent")

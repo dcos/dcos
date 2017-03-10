@@ -3,3 +3,6 @@ Description=DC/OS Component Package Manager (Pkgpanda) Socket: socket for DC/OS 
 
 [Socket]
 ListenStream=/run/dcos/pkgpanda-api.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660
