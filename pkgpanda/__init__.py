@@ -302,7 +302,7 @@ def requests_fetcher(base_url, id_str, target, work_dir):
     # TODO(cmaloney): Use a private tmp directory so there is no chance of a user
     # intercepting the tarball + other validation data locally.
     with tempfile.NamedTemporaryFile(suffix=".tar.xz") as file:
-        download(file.name, url, work_dir)
+        download(file.name, url, work_dir, rm_on_error=False)
         extract_tarball(file.name, target)
 
 
@@ -516,7 +516,7 @@ class UserManagement:
                 "User {} exists with current UID {}, however he should be assigned to group {} with {} UID, please "
                 "check `buildinfo.json`".format(username, user.pw_gid, group_name, group.gr_gid))
 
-    def add_user(self, username, group):
+    def add_user(self, username, groupname):
         UserManagement.validate_username(username)
 
         if not self._manage_users:
@@ -524,7 +524,7 @@ class UserManagement:
 
         # Check if the user already exists and exit.
         try:
-            UserManagement.validate_user_group(username, group)
+            UserManagement.validate_user_group(username, groupname)
             self._users.add(username)
             return
         except KeyError as ex:
@@ -545,10 +545,13 @@ class UserManagement:
             '-c', 'DCOS System User',
         ]
 
-        if group is not None:
-            UserManagement.validate_group(group)
+        # A group matching the username will be created by the adduser command.
+        # Any other group that the user is added to needs to exist prior to executing the
+        # adduser command.
+        if groupname is not None and groupname != username:
+            UserManagement.validate_group(groupname)
             add_user_cmd += [
-                '-g', group
+                '-g', groupname
             ]
 
         add_user_cmd += [username]

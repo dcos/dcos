@@ -352,10 +352,7 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         with ctx.lock:
             if base_path == '/v2/apps':
-                if ctx.data["endpoint-content-is-encoded"]:
-                    blob = ctx.data['endpoint-content']
-                else:
-                    blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
+                blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
             elif base_path == '/v2/leader':
                 if ctx.data['leader-content'] is None:
                     msg = "Marathon leader unknown"
@@ -390,14 +387,6 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         with self._context.lock:
             self._context.data["endpoint-content"]["apps"].append(NGINX_APP_ENABLED)
 
-    def set_encoded_apps_response(self, content):
-        """Change the response content for apps endpoint to arbitrary data
-           and disable response JSON encoding.
-        """
-        with self._context.lock:
-            self._context.data["endpoint-content"] = content
-            self._context.data["endpoint-content-is-encoded"] = True
-
     def set_apps_response(self, apps):
         """Change the response content for apps endpoint"""
         with self._context.lock:
@@ -428,4 +417,3 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         """Reset internal state to default values"""
         self._context.data["endpoint-content"] = {"apps": [NGINX_APP_ALWAYSTHERE, ]}
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
-        self._context.data["endpoint-content-is-encoded"] = False

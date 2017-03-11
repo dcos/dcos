@@ -1,4 +1,8 @@
 import glob
+import logging
+import os
+import pathlib
+import stat
 import subprocess
 
 import pytest
@@ -66,3 +70,58 @@ def test_verify_units():
 
     _check_units("/etc/systemd/system/dcos-*.service")
     _check_units("/etc/systemd/system/dcos-*.socket")
+
+
+def test_socket_units():
+    """Test that socket units configure socket files in /run/dcos
+    that are owned by 'dcos_adminrouter'.
+    """
+    def _check_unit(file):
+        logging.info("Checking socket unit {}".format(file))
+        out = subprocess.check_output(
+            ["/usr/bin/systemctl", "show", "--no-pager", os.path.basename(file)],
+            stderr=subprocess.STDOUT,
+            universal_newlines=True)
+        user = ""
+        group = ""
+        mode = ""
+        had_unix_socket = False
+        for line in out.split("\n"):
+            parts = line.split("=")
+            if len(parts) != 2:
+                continue
+            k, v = parts
+            if k == "SocketUser":
+                user = v
+            if k == "SocketGroup":
+                group = v
+            if k == "ListenStream":
+                # Unix sockets are distinguished from IP sockets by having a '/' as the first
+                # character in the value of the ListenStream directive.
+                if v.startswith("/"):
+                    had_unix_socket = True
+                    assert v.startswith("/run/dcos/"), "DC/OS unix sockets must go in the /run/dcos directory"
+            if k == "SocketMode":
+                mode = v
+        if not had_unix_socket:
+            # This socket file doesn't declare any unix sockets, ignore.
+            return
+        assert user == "root"
+        assert group == "dcos_adminrouter"
+        assert mode == "0660"
+
+    for file in glob.glob("/etc/systemd/system/dcos-*.socket"):
+        _check_unit(file)
+
+
+def test_socket_files():
+    """Test that all socket files in /run/dcos are owned by 'dcos_adminrouter'."""
+    for file in glob.glob("/run/dcos/*"):
+        path = pathlib.Path(file)
+        if not path.is_socket():
+            # This is not a unix socket file, ignore.
+            continue
+        logging.info("Checking socket file {}".format(file))
+        assert path.owner() == "root"
+        assert path.group() == "dcos_adminrouter"
+        assert stat.S_IMODE(path.stat().st_mode) == 0o660

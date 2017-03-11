@@ -417,6 +417,10 @@ class ManagedSubprocess(abc.ABC):
         return self.__class__.__name__
 
     @property
+    def pid(self):
+        return self._process.pid
+
+    @property
     def stdout(self):
         """Return stdout file descriptor of this process"""
         assert_msg = "`{}` process must be initialized first".format(self.id)

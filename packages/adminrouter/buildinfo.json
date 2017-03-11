@@ -1,5 +1,6 @@
 {
   "docker": "dcos/dcos-builder:adminrouter_dockerdir-latest",
   "requires": ["openssl"],
-  "sources": {}
+  "sources": {},
+  "username": "dcos_adminrouter"
 }

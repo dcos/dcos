@@ -36,6 +36,18 @@ TEST_INSTALL_PREREQS_ONLY: true or false (default=false)
     continue through completion (running integration_test.py). TEST_INSTALL_PREREQS must be
     set in order to use this option
 
+CLUSTER_AMI: string (default=None)
+    AMI from which cluster instances are launched. If defined, all other CLUSTER_AMI* env vars
+    must also be defined.
+
+CLUSTER_AMI_SSH_USER: string (default=None)
+    The SSH user for instances launched from CLUSTER_AMI. If defined, all other CLUSTER_AMI*
+    env vars must also be defined.
+
+CLUSTER_AMI_SSH_HOME_DIR: string (default=None)
+    The home dir for CLUSTER_AMI_SSH_USER. If defined, all other CLUSTER_AMI* env vars must
+    also be defined.
+
 CI_FLAGS: string (default=None)
     If provided, this string will be passed directly to py.test as in:
     py.test -vv CI_FLAGS integration_test.py
@@ -55,7 +67,7 @@ import sys
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import write_string
-from test_util.helpers import random_id
+from test_util.helpers import random_id, SshInfo
 
 LOGGING_FORMAT = '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.DEBUG)
@@ -115,6 +127,16 @@ def check_environment():
     if options.add_config_path:
         assert os.path.isfile(options.add_config_path)
 
+    options.cluster_ami = os.getenv('CLUSTER_AMI')
+    options.cluster_ami_ssh_user = os.getenv('CLUSTER_AMI_SSH_USER')
+    options.cluster_ami_ssh_home_dir = os.getenv('CLUSTER_AMI_SSH_HOME_DIR')
+    cluster_ami_opts = [options.cluster_ami, options.cluster_ami_ssh_user, options.cluster_ami_ssh_home_dir]
+    if any(cluster_ami_opts):
+        assert all(cluster_ami_opts), (
+            'If any one of the env vars CLUSTER_AMI, CLUSTER_AMI_SSH_USER, or CLUSTER_AMI_SSH_HOME_DIR is defined, '
+            'they must all be defined.'
+        )
+
     add_env = []
     prefix = 'TEST_ADD_ENV_'
     for k, v in os.environ.items():
@@ -140,15 +162,28 @@ def main():
     ssh_key = bw.create_key_pair(unique_cluster_id)
     # Drop the key to disk so CI can cache it as an artifact
     write_string('ssh_key', ssh_key)
-    vpc, ssh_info = test_util.aws.VpcCfStack.create(
-        stack_name=unique_cluster_id,
-        instance_type=options.instance_type,
-        instance_os=os_name,
-        # An instance for each cluster node plus the bootstrap.
-        instance_count=(options.masters + options.agents + options.public_agents + 1),
-        admin_location='0.0.0.0/0',
-        key_pair_name=unique_cluster_id,
-        boto_wrapper=bw)
+
+    if options.cluster_ami:
+        vpc = test_util.aws.VpcCfStack.create_from_ami(
+            stack_name=unique_cluster_id,
+            instance_type=options.instance_type,
+            instance_ami=options.cluster_ami,
+            # An instance for each cluster node plus the bootstrap.
+            instance_count=(options.masters + options.agents + options.public_agents + 1),
+            admin_location='0.0.0.0/0',
+            key_pair_name=unique_cluster_id,
+            boto_wrapper=bw)
+        ssh_info = SshInfo(user=options.cluster_ami_ssh_user, home_dir=options.cluster_ami_ssh_home_dir)
+    else:
+        vpc, ssh_info = test_util.aws.VpcCfStack.create(
+            stack_name=unique_cluster_id,
+            instance_type=options.instance_type,
+            instance_os=os_name,
+            # An instance for each cluster node plus the bootstrap.
+            instance_count=(options.masters + options.agents + options.public_agents + 1),
+            admin_location='0.0.0.0/0',
+            key_pair_name=unique_cluster_id,
+            boto_wrapper=bw)
     vpc.wait_for_complete()
 
     cluster = test_util.cluster.Cluster.from_vpc(

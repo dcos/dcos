@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -xe
 
+# Wait for dcos-pkgpanda-api.socket to create the socket file so we don't
+# create one with the wrong ownership and permissions below.
+test -S /run/dcos/pkgpanda-api.sock
+
 exec /opt/mesosphere/bin/gunicorn --worker-class=sync \
     --workers=1 \
     --threads=10 \

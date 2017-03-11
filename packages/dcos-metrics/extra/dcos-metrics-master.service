@@ -6,9 +6,12 @@ RestartSec=5
 LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_metrics
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-metrics.env
 EnvironmentFile=-/opt/mesosphere/etc/dcos-metrics-extra.env
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-master
 ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
 ExecStart=/opt/mesosphere/bin/dcos-metrics -role master -config ${DCOS_METRICS_CONFIG_PATH}
+Sockets=dcos-metrics-master.socket

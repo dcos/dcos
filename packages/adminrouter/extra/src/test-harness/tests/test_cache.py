@@ -684,7 +684,7 @@ class TestCacheMarathon:
 
         # Set wrong non-json response content
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='set_encoded_apps_response',
+                            func_name='set_encoded_response',
                             aux_data=b"wrong response")
 
         url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
