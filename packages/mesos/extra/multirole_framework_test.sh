@@ -59,11 +59,11 @@ function mkdtemp_ {
 function setup_env {
   # export LD_LIBRARY_PATH=${MESOS_BUILD_DIR}/src/.libs
 
-  MESOS_SBIN_DIR=/opt/mesosphere/packages/mesos--257d0712c2ea3b4e467a958cce5bc91a929800b8/bin/
+  MESOS_SBIN_DIR=/opt/mesosphere/active/mesos/bin/
   MASTER=${MESOS_SBIN_DIR}/mesos-master
   AGENT=${MESOS_SBIN_DIR}/mesos-agent
 
-  MESOS_HELPER_DIR=/opt/mesosphere/packages/mesos--257d0712c2ea3b4e467a958cce5bc91a929800b8/libexec/mesos/tests/
+  MESOS_HELPER_DIR=/opt/mesosphere/active/mesos/libexec/mesos/tests/
   MULTIROLE_FRAMEWORK=${MESOS_HELPER_DIR}/multirole-framework
 }
 
