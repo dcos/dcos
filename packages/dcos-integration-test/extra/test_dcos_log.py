@@ -1,8 +1,27 @@
 import json
+import logging
 import uuid
+from functools import wraps
 
+import pytest
 import requests
 import retrying
+
+
+def dcos_journald_log_enabled(fn):
+    @wraps(fn)
+    def wrapped(dcos_api_session):
+        response = dcos_api_session.get('/dcos-metadata/ui-config.json').json()
+        try:
+            strategy = response['uiConfiguration']['plugins']['mesos']['logging-strategy']
+        except Exception:
+            logging.error('Unable to find logging strategy')
+            raise
+
+        if strategy.startswith('journald'):
+            return fn(dcos_api_session)
+        pytest.skip('Skipping a test since journald logging is disabled')
+    return wrapped
 
 
 def validate_json_entry(entry: dict):
@@ -77,6 +96,7 @@ def test_log_proxy(dcos_api_session):
         assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
+@dcos_journald_log_enabled
 def test_task_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
 
@@ -105,6 +125,7 @@ def test_task_logs(dcos_api_session):
         validate_sse_entry(data)
 
 
+@dcos_journald_log_enabled
 def test_pod_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
 
