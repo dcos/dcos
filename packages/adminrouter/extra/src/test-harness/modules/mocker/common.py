@@ -63,10 +63,12 @@ class MockerBase():
         # navstar
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=62080))
         # Mesos agents:
-        # - plain
+        # - plain/without TLS
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15001))
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=15002))
-        # - ssl (we need to use 127.0.0.1 so that cert names match)
+        # - TLS version. It's used for testing e.g. DEFAULT_SCHEME variable
+        # where AR is connecting to the upstream Mesos Agent using TLS.
+        # 127.0.0.1 address stems from certificate names matching.
         res.append(ReflectingTcpIpEndpoint(
             ip='127.0.0.1',
             port=15401,

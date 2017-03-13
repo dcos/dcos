@@ -5,7 +5,7 @@ import pytest
 import requests
 
 from mocker.endpoints.open.iam import IamEndpoint
-from util import LineBufferFilter
+from util import LineBufferFilter, SearchCriteria
 from generic_test_code import (
     generic_user_is_401_forbidden_test,
     generic_correct_upstream_dest_test,
@@ -126,7 +126,10 @@ class TestAuthenticationOpen():
                             func_name='add_user',
                             aux_data={'uid': uid})
 
-        filter_regexp = 'validate_jwt_or_exit\(\): UID from valid JWT: `{}`'.format(uid)
+        filter_regexp = {
+            'validate_jwt_or_exit\(\): UID from valid JWT: `{}`'.format(uid):
+                SearchCriteria(1, False)}
+
         lbf = LineBufferFilter(filter_regexp,
                                line_buffer=master_ar_process.stderr_line_buffer)
 
@@ -141,14 +144,16 @@ class TestAuthenticationOpen():
                                 headers=header)
 
         assert resp.status_code == 200
-        assert lbf.all_found
+        assert lbf.extra_matches == {}
 
     def test_if_invalid_auth_attempt_is_logged_correctly(
             self, master_ar_process, valid_jwt_generator):
         # Create some random, unique user that we can grep for:
         uid = 'some_random_string_abc1251231143'
 
-        filter_regexp = 'validate_jwt_or_exit\(\): User not found: `{}`'.format(uid)
+        filter_regexp = {
+            'validate_jwt_or_exit\(\): User not found: `{}`'.format(uid):
+                SearchCriteria(1, False)}
         lbf = LineBufferFilter(filter_regexp,
                                line_buffer=master_ar_process.stderr_line_buffer)
 
@@ -163,7 +168,7 @@ class TestAuthenticationOpen():
                                 headers=header)
 
         assert resp.status_code == 401
-        assert lbf.all_found
+        assert lbf.extra_matches == {}
 
 
 class TestHealthEndpointOpen():

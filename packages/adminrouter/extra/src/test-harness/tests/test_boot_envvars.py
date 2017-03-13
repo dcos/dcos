@@ -22,7 +22,7 @@ class TestSecretKeyFilePathEnvVarBehaviour():
     def test_if_not_defining_the_var_is_handled(self, nginx_class, role):
         # Scanning for the exact log entry is bad, but in this case - can't be
         # avoided.
-        filter_regexp = 'SECRET_KEY_FILE_PATH not set.'
+        filter_regexp = {'SECRET_KEY_FILE_PATH not set.': SearchCriteria(1, False)}
         ar = nginx_class(role=role, secret_key_file_path=None)
 
         with GuardedSubprocess(ar):
@@ -30,14 +30,14 @@ class TestSecretKeyFilePathEnvVarBehaviour():
                                    line_buffer=ar.stderr_line_buffer)
             lbf.scan_log_buffer()
 
-        assert lbf.all_found is True
+        assert lbf.extra_matches == {}
 
     @pytest.mark.parametrize('role', ['master', 'agent'])
     def test_if_var_pointing_to_empty_file_is_handled(
             self, nginx_class, role, empty_file):
         # Scanning for the exact log entry is bad, but in this case - can't be
         # avoided.
-        filter_regexp = 'Secret key not set or empty string.'
+        filter_regexp = {'Secret key not set or empty string.': SearchCriteria(1, False)}
         ar = nginx_class(role=role, secret_key_file_path=empty_file)
 
         with GuardedSubprocess(ar):
@@ -46,7 +46,7 @@ class TestSecretKeyFilePathEnvVarBehaviour():
 
             lbf.scan_log_buffer()
 
-        assert lbf.all_found is True
+        assert lbf.extra_matches == {}
 
     # TODO: ATM in Agent-Open there are no paths we can test auth with
     @pytest.mark.parametrize('role,use_empty',
@@ -70,9 +70,9 @@ class TestSecretKeyFilePathEnvVarBehaviour():
 
 
 class TestDefaultSchemeEnvVarBehaviour():
-    def test_if_default_scheme_is_honourded_by_agent_endpoint(
+    def test_if_default_scheme_is_honoured_by_agent_endpoint(
             self, nginx_class, mocker, superuser_user_header):
-        filter_regexp = 'Default scheme: https://'
+        filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         ar = nginx_class(default_scheme="https://")
         agent_id = '35f210bb-bb58-4559-9932-b62619e72b6d-S0'
@@ -100,11 +100,11 @@ class TestDefaultSchemeEnvVarBehaviour():
 
             lbf.scan_log_buffer()
 
-        assert lbf.all_found is True
+        assert lbf.extra_matches == {}
 
     def test_if_default_scheme_is_honourded_by_mleader_endpoint(
             self, nginx_class, mocker, superuser_user_header):
-        filter_regexp = 'Default scheme: https://'
+        filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         cache_poll_period = 3
         ar = nginx_class(cache_poll_period=cache_poll_period,
@@ -139,7 +139,7 @@ class TestDefaultSchemeEnvVarBehaviour():
 
             lbf.scan_log_buffer()
 
-        assert lbf.all_found is True
+        assert lbf.extra_matches == {}
 
 
 class TestUpstreamsEnvVarBehaviour():
