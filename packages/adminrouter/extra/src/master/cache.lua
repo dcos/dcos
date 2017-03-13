@@ -486,7 +486,7 @@ local function get_cache_entry(name, auth_token)
 end
 
 
--- Expose AdminRouter cache interface
+-- Expose Admin Router cache interface
 local _M = {}
 function _M.init(auth_token)
     -- At some point auth_token passing will be refactored out in
