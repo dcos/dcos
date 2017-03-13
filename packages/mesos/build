@@ -63,3 +63,7 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_sl
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
+
+demo="$PKG_PATH/bin/demo.sh"
+cp /pkg/extra/multirole_framework_test.sh "$demo"
+chmod +x "$demo"
