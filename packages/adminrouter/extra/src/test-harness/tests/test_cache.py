@@ -14,7 +14,7 @@ from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
 log = logging.getLogger(__name__)
 
 
-class TestCache():
+class TestCache:
     def test_if_first_cache_refresh_occurs_earlier(
             self, nginx_class, mocker, superuser_user_header):
         filter_regexp = {

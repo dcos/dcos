@@ -22,7 +22,7 @@ LOG_LINE_SEARCH_INTERVAL = 0.2
 log = logging.getLogger(__name__)
 
 
-class GuardedSubprocess():
+class GuardedSubprocess:
     """Context manager for Subproces instances
 
        The purpose of this class is to provide reliable cleanup for all Subprocess
@@ -67,7 +67,7 @@ class SearchCriteria:
         self.exact = exact
 
 
-class LineBufferFilter():
+class LineBufferFilter:
     """Helper class for grepping line buffers created by LogCatcher class
 
     This class is meant to simplify searching of particular strings in line

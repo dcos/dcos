@@ -17,7 +17,7 @@ from mocker.endpoints.marathon import MarathonEndpoint
 log = logging.getLogger(__name__)
 
 
-class MockerBase():
+class MockerBase:
     """This class represents mocking behaviour shared between both EE and Open
        repositories.
 

@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # Just a dict would be no good as we want to have threading lock initialization
 # as well.
 # pylint: disable=R0903
-class EndpointContext():
+class EndpointContext:
     """An endpoint context that holds all the endpoint data together with
        threading lock that protects it."""
     data = None

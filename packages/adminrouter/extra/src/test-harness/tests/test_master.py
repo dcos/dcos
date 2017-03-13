@@ -13,7 +13,7 @@ from generic_test_code import (
 )
 
 
-class TestExhibitorEndpoint():
+class TestExhibitorEndpoint:
     def test_redirect_req_without_slash(self, master_ar_process):
         generic_no_slash_redirect_test(master_ar_process, '/exhibitor')
 
@@ -64,7 +64,7 @@ class TestExhibitorEndpoint():
 agent_prefix = '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
 
 
-class TestAgentEndpoint():
+class TestAgentEndpoint:
     # FIXME: Figure out how we can test disable-request-response-buffering.conf
 
     def test_if_request_is_sent_to_correct_upstream(self,
@@ -107,7 +107,7 @@ class TestAgentEndpoint():
                                              )
 
 
-class TestMetricsEndpoint():
+class TestMetricsEndpoint:
     def test_redirect_req_without_slash(self, master_ar_process):
         generic_no_slash_redirect_test(master_ar_process, '/system/v1/metrics')
 
@@ -147,7 +147,7 @@ class TestMetricsEndpoint():
                                              )
 
 
-class TestLogsEndpoint():
+class TestLogsEndpoint:
     def test_redirect_req_without_slash(self, master_ar_process):
         generic_no_slash_redirect_test(master_ar_process, '/system/v1/logs/v1')
 
@@ -194,7 +194,7 @@ class TestLogsEndpoint():
                                              )
 
 
-class TestHealthEndpoint():
+class TestHealthEndpoint:
     @pytest.mark.parametrize("path_given,path_expected",
                              [("/system/health/v1/foo/bar", "/system/health/v1/foo/bar"),
                               ("/system/health/v1/", "/system/health/v1/"),
@@ -222,7 +222,7 @@ class TestHealthEndpoint():
                                              )
 
 
-class TestSystemAPIAgentProxing():
+class TestSystemAPIAgentProxing:
     @pytest.mark.parametrize("prefix", [("/logs/v1"),
                                         ("/metrics/v0"),
                                         ("/logs/v1/foo/bar"),
@@ -292,7 +292,7 @@ class TestSystemAPIAgentProxing():
                                              )
 
 
-class TestSystemApiLeaderProxing():
+class TestSystemApiLeaderProxing:
     def test_if_request_is_sent_to_the_current_mesos_leader(self,
                                                             master_ar_process,
                                                             superuser_user_header):

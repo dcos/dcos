@@ -17,7 +17,7 @@ def empty_file(tmp_file):
     return tmp_file
 
 
-class TestSecretKeyFilePathEnvVarBehaviour():
+class TestSecretKeyFilePathEnvVarBehaviour:
     @pytest.mark.parametrize('role', ['master', 'agent'])
     def test_if_not_defining_the_var_is_handled(self, nginx_class, role):
         # Scanning for the exact log entry is bad, but in this case - can't be
@@ -69,7 +69,7 @@ class TestSecretKeyFilePathEnvVarBehaviour():
         assert resp.status_code == 401
 
 
-class TestDefaultSchemeEnvVarBehaviour():
+class TestDefaultSchemeEnvVarBehaviour:
     def test_if_default_scheme_is_honoured_by_agent_endpoint(
             self, nginx_class, mocker, superuser_user_header):
         filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
@@ -142,7 +142,7 @@ class TestDefaultSchemeEnvVarBehaviour():
         assert lbf.extra_matches == {}
 
 
-class TestUpstreamsEnvVarBehaviour():
+class TestUpstreamsEnvVarBehaviour:
     def test_if_marathon_upstream_env_is_honoured(
             self, nginx_class, mocker, superuser_user_header):
 

@@ -26,7 +26,7 @@ authed_endpoints = ['/exhibitor',
                     ]
 
 
-class TestAuthEnforcementOpen():
+class TestAuthEnforcementOpen:
     @pytest.mark.parametrize("path", authed_endpoints)
     def test_if_unknown_user_is_forbidden_access(self,
                                                  master_ar_process,
@@ -46,7 +46,7 @@ class TestAuthEnforcementOpen():
                                              path + "/foo/bar")
 
 
-class TestAuthenticationOpen():
+class TestAuthenticationOpen:
     def test_if_adding_user_grants_access(
             self, valid_jwt_generator, mocker, master_ar_process):
         uid = 'random_user'
@@ -171,7 +171,7 @@ class TestAuthenticationOpen():
         assert lbf.extra_matches == {}
 
 
-class TestHealthEndpointOpen():
+class TestHealthEndpointOpen:
     def test_if_request_is_sent_to_correct_upstream(self,
                                                     master_ar_process,
                                                     superuser_user_header):
