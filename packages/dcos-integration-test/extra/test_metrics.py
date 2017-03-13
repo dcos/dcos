@@ -96,26 +96,97 @@ def test_metrics_containers(dcos_api_session):
     the statsd-emitter executor. When found, query it's /app endpoint to test that
     it's sending the statsd metrics as expected.
     """
+    # Helper func to check for non-unique CID's in a given /containers/id endpoint
+    def check_cid(registry):
+        if len(registry) <= 1:
+            return True
+
+        cid1 = registry[len(registry) - 1]
+        cid2 = registry[len(registry) - 2]
+        if cid1 != cid2:
+            raise ValueError('{} != {}'.format(cid1, cid2))
+
+        return True
+
     @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
+
+        debug_eid = []
+
         for agent in app_endpoints:
             response = dcos_api_session.metrics.get('containers', node=agent.host)
+            assert response.status_code == 200, "got {}".format(
+                response.status_code)
+
             if len(response.json()) > 0:
                 for c in response.json():
-
                     # Test that /containers/<id> responds with expected data
-                    container_response = dcos_api_session.metrics.get('containers/{}'.format(c), node=agent.host)
-                    if container_response.status_code == 200 and 'executor_id' in container_response.json():
-                        # Executor ID value is "executor_id": "statsd-emitter.a094eed0-b017-11e6-a972-b2bcad3866cb"
-                        assert 'statsd-emitter' in container_response.json()['executor_id'].split('.'), 'statsd-emitter'
-                        ' was not found running on any slaves.'
+                    container_id_path = 'containers/{}'.format(c)
+                    container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
 
+                    # /containers/<container_id> should always respond succesfully
+                    assert container_response.status_code == 200, 'got {}'.format(c)
+
+                    assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
+
+                    cid_registry = []
+                    for dp in container_response.json()['datapoints']:
+                        assert 'tags' in dp, 'got {}'.format(dp)
+                        assert len(dp['tags']) == 5, 'got {}'.format(
+                            len(dp['tags']))
+
+                        # Ensure all container ID's in the container/<id> endpoint are
+                        # the same.
+                        assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
+                        cid_registry.append(dp['tags']['container_id'])
+                        assert(check_cid(cid_registry))
+
+                        for k, v in dp['tags'].items():
+                            assert len(v) != 0, 'tag values must not be empty'
+
+                    assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
+                    assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
+                        container_response.json()['dimensions'])
+
+                    debug_eid.append(container_response.json()['dimensions']['executor_id'])
+
+                    # looking for "statsd-emitter.<some_uuid>"
+                    if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
                         # Test that /app response is responding with expected data
                         app_response = dcos_api_session.metrics.get('containers/{}/app'.format(c), node=agent.host)
-                        if app_response.status_code == 200:
-                            assert 'labels' in app_response.json(), '"labels" key not found in response.'
-                            assert 'test_tag_key' in container_response.json()['labels'].items(), 'test-tag-key was not'
-                            ' found in labels for statsd-emitter, expected test-tag-key key to be present.'
+                        assert app_response.status_code == 200, '/containers/<id>/app response did not return 200, '
+                        'got {}'.format(app_response.status_code)
+
+                        # Ensure all /container/<id>/app data is correct
+                        assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
+                        assert len(app_response.json()['datapoints']) == 1, 'got {}'.format(
+                            len(app_response.json()['datapoints']))
+
+                        datapoint_keys = ['name', 'value', 'unit', 'timestamp']
+                        for k in datapoint_keys:
+                            assert k in app_response.json()['datapoints'][0], 'got {}'.format(
+                                app_response.json()['datapoints'][0])
+
+                            assert app_response.json()['datapoints'][0]['name'] == 'statsd_tester.time.uptime', 'got '
+                            '{}'.format(app_response.json()['datapoints'][0]['name'])
+
+                        assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
+                        assert 'labels' in app_response.json()['dimensions'], 'got {}'.format(
+                            app_response.json()['dimensions'])
+
+                        assert 'test_tag_key' in app_response.json()['dimensions']['labels'], 'got {}'.format(
+                            app_response.json()['dimensions']['labels'])
+
+                        assert app_response.json()['dimensions']['labels']['test_tag_key'] == "test_tag_value", ''
+                        'got {}'.format(
+                            app_response.json()['dimensions']['labels']['test_tag_key'])
+
+                        return True
+
+            else:
+                raise ValueError("no containers found in /v0/containers/ response. Expected at least 1.")
+
+        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_eid)
 
     marathon_config = {
         "id": "/statsd-emitter",

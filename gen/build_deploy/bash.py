@@ -136,9 +136,11 @@ declare -i DISABLE_VERSION_CHECK=0
 
 # check if sort -V works
 function check_sort_capability() {
-    $( echo '1' | sort -V >/dev/null 2>&1 || exit 1 )
-    RC=$?
-    if [[ "$RC" -eq "2" ]]; then
+    $( command -v sort >/dev/null 2>&1 || exit 1 )
+    RC1=$?
+    $( echo '1' | sort -V >/dev/null 2>&1 )
+    RC2=$?
+    if [[ "$RC1" -eq "1" || "$RC2" -eq "2" ]]; then
         echo -e "${RED}Disabling version checking as sort -V is not available${NORMAL}"
         DISABLE_VERSION_CHECK=1
     fi
@@ -325,10 +327,10 @@ function check_all() {
             if(client_version == server_version) {
                 version = client_version
             } else {
-                split(client_version, cv, ".")
-                split(server_version, sv, ".")
+                cv_length = split(client_version, cv, ".")
+                sv_length = split(server_version, sv, ".")
 
-                y = length(cv) > length(sv) ? length(cv) : length(sv)
+                y = cv_length > sv_length ? cv_length : sv_length
 
                 for(i = 1; i <= y; i++) {
                     if(cv[i] < sv[i]) {
@@ -678,7 +680,7 @@ def make_dcos_launch():
     this_tree = GitLocalSrcFetcher(src_info, None, os.getcwd())
     this_tree.checkout_to(str(work_dir))
     # put the launch spec into the root of the tree before running pyinstaller
-    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string(__name__, 'bash/dcos-launch.spec'))
+    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string('launch', 'dcos-launch.spec'))
     with work_dir.as_cwd():
         subprocess.check_call(['pyinstaller', '--log-level=DEBUG', 'dcos-launch.spec'])
     subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), 'dcos-launch'])

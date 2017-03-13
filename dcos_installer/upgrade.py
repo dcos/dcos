@@ -54,51 +54,66 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-
 # check for version of dc/os upgrading from
-version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
-if [ $version != {{ installed_cluster_version }} ]; then
-   echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}.\
-                Version found on node: $version"
-   exit 1
+found_version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
+if [ "$found_version" != "{{ installed_cluster_version }}" ]; then
+    echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}." \
+         "Version found on node: $found_version"
+    exit 1
 fi
 
-echo "Upgrading DC/OS agent {{ installed_cluster_version }}  -> {{ installer_version }}"
+# Determine this node's role.
+ROLE_DIR=/etc/mesosphere/roles
 
+num_roles=$( (ls --format=single-column $ROLE_DIR/{master,slave,slave_public} || true) 2>/dev/null | wc -l)
+if [ "$num_roles" -ne "1" ]; then
+    echo "ERROR: Can't determine this node's role." \
+         "One of master, slave, or slave_public must be present under $ROLE_DIR."
+    exit 1
+fi
 
-pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
+if [ -f $ROLE_DIR/master ]; then
+    role="master"
+    role_name="master"
+elif [ -f $ROLE_DIR/slave ]; then
+    role="slave"
+    role_name="agent"
+elif [ -f $ROLE_DIR/slave_public ]; then
+    role="slave_public"
+    role_name="public agent"
+fi
 
+echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
+pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
+pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
-pkgpanda activate --no-block {{ cluster_packages }}
-
-# check if we are on a master node
-if [ -f /etc/mesosphere/roles/master ]; then
-   # run exhibitor migration script here
-   until dcos-shell dcos-exhibitor-migrate-perform
-   do
+# If this is a master node, migrate Exhibitor data to the correct directory.
+if [ "$role" == "master" ]; then
+    until dcos-shell dcos-exhibitor-migrate-perform > /dev/null
+    do
         status=$?
         case $status in
-             1) echo "Waiting for exhibitor endpoint"
-                sleep 10
+            1) echo "Waiting for Exhibitor..."
+               sleep 10
+               ;;
+            2) echo "ERROR: Could not read from Exhibitor."
+               echo "Please contact support."
+               exit 1
+               ;;
+            4) echo "Rolling update in progress."
+               exit
+               ;;
+            8) echo "ERROR: At least one Exhibitor config value does not have the expected pre-migration value." \
+                    "Unable to automatically migrate Exhibitor."
+               echo "Please contact support."
+               exit 1
+               ;;
+            16) echo "ERROR: Exhibitor update failed with a non-OK response."
+                echo "Please contact support."
+                exit 1
                 ;;
-             2) echo "Could not read from exhibitor"
-                echo "Contact Support"
-                exit
-                ;;
-             4) echo "Rolling update in progress"
-                exit
-                ;;
-             8) echo "At least one config value does not have the expected pre migration value,
-                      \ and automatic migration can not take place"
-                echo "Contact Support"
-                exit
-                ;;
-             16) echo "Attempting to start the rolling update failed due to a non 200 response from exhibitor"
-                 echo "Contact Support"
-                 exit
-                 ;;
         esac
-   done
+    done
 fi
 
 """

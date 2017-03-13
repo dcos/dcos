@@ -1,16 +1,6 @@
 {
+  "docker": "dcos/dcos-builder:adminrouter_dockerdir-latest",
   "requires": ["openssl"],
-  "sources" :{
-      "nginx": {
-          "kind": "url_extract",
-          "url": "https://openresty.org/download/openresty-1.9.15.1.tar.gz",
-          "sha1": "491a84d70ed10b79abb9d1a7496ee57a9244350b"
-      },
-      "adminrouter": {
-          "kind": "git",
-          "git": "https://github.com/dcos/adminrouter.git",
-          "ref": "89a3099470325346193321d31409681c213de7ac",
-          "ref_origin": "master"
-      }
-  }
+  "sources": {},
+  "username": "dcos_adminrouter"
 }

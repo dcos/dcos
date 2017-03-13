@@ -240,7 +240,9 @@ def action_action_name(request):
                     failed_hosts = []
                     for deploy_host, deploy_params in json_state['hosts'].items():
                         if deploy_params['host_status'] != 'success':
-                            failed_hosts.append(Node(deploy_host, tags=deploy_params['tags']))
+                            failed_hosts.append(Node(
+                                deploy_host, tags=deploy_params['tags'],
+                                default_port=int(Config(CONFIG_PATH).hacky_default_get('ssh_port', 22))))
                     log.debug('failed hosts: {}'.format(failed_hosts))
                     if failed_hosts:
                         yield from asyncio.async(

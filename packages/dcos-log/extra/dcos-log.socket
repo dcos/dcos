@@ -1,4 +1,8 @@
 [Unit]
 Description=DC/OS Log Socket: socket for DC/OS Log service
+
 [Socket]
 ListenStream=/run/dcos/dcos-log.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660

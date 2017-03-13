@@ -4,7 +4,7 @@ import inspect
 import logging
 from contextlib import contextmanager
 from functools import partial, partialmethod
-from typing import Callable, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from gen.exceptions import ValidationError
 from pkgpanda.util import hash_checkout
@@ -75,8 +75,11 @@ def value_id(value: Union[str, Callable, Late]) -> str:
 
 
 class Setter:
+    """ Class utilized by Source so that user can provide either a string or a
+    function whose arguments will be interpreted as required parameters which
+    will then be evaluated
+    """
 
-    # NOTE: value may either be a function or a string.
     def __init__(
             self,
             name: str,
@@ -128,9 +131,16 @@ class Setter:
 
 
 class Scope:
-    def __init__(self, name: str, cases=None):
+    """ Abstraction for maintaining the mapping between a parameter and the
+    dependent Targets resulting in each case of parameter value. += operator
+    is implemented to allow easily combining Targets without tedious iteration
+    """
+    def __init__(self, name: str, cases: Dict[str, Any]=None):
+        # Note: use type Any and type check later to avoid circular dependency
         self.name = name
-        self.cases = cases if cases else dict()
+        self.cases = cases if cases is not None else dict()
+        for v in self.cases.values():
+            assert isinstance(v, Target)
 
     def add_case(self, value: str, target):
         # Note: Can't make a parameter because target uses Scope for parameters.
@@ -165,12 +175,18 @@ class Scope:
 
 
 class Target:
-
+    """ Abstraction for specifying the final set of argument targets as well as
+    the argument conditions in which other argument targets will be added
+    """
     # TODO(cmaloney): Make a better API for working with and managing sub scopes. The current
     # dictionary of dictionaries is really hard to use right.
-    def __init__(self, variables=None, sub_scopes=None):
-        self.variables = variables if variables else set()
-        self.sub_scopes = sub_scopes if sub_scopes else dict()
+    def __init__(self, variables: Set[str]=None, sub_scopes: Dict[str, Scope]=None):
+        """
+        variables: set of parameters that must be extracted from Source
+        sub_scopes: mapping of variables to be conditionally added
+        """
+        self.variables = variables if variables is not None else set()
+        self.sub_scopes = sub_scopes if sub_scopes is not None else dict()
         self._arguments = None
 
     def add_variable(self, variable: str):
@@ -230,7 +246,21 @@ class Target:
 
 
 class Source:
+    """ Object to define how arguments can be specified, including argument
+    calculation, default values, validation, and any conditional variations
+    of those three
+    """
     def __init__(self, entry=None, is_user=False):
+        """ Entry is a dict of the following form:
+        {
+          'validate': [validate_my_arg_fn],
+          'default': {arg: value},  # may be overridden by user args
+          'must': {arg: value}  # may NOT be overridden by user args
+          'conditional': {arg: {val_1: add_entry_1, val_2: add_entry_2}}
+        }
+        validate_my_arg_fn: a function that will be called against the argument names it uses
+        add_entry_*: additional entries like the object above
+        """
         self.setters = dict()
         self.validate = list()
         self.is_user = is_user
@@ -770,9 +800,10 @@ def resolve_configuration(sources: List[Source], targets: List[Target]):
             setters[name] += setter_list
         validate += source.validate
 
-    # TODO(cmaloney): Re-enable this after sorting out how to have "optional" config targets which
+    # Re-enable this after sorting out how to have "optional" config targets which
     # add in extra "acceptable" parameters (SSH Config, AWS Advanced Template config, etc)
     # validate_all_arguments_match_parameters(mandatory_parameters, setters, user_arguments)
+    # TODO DCOS-14196: [gen.internals] disallow extra user provided arguments
 
     user_config = Source(is_user=True)
 

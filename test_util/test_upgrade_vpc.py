@@ -59,6 +59,63 @@ logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', 
 TEST_APP_NAME_FMT = 'upgrade-{}'
 
 
+def create_marathon_viplisten_app():
+    return {
+        "id": '/' + TEST_APP_NAME_FMT.format('viplisten-' + uuid.uuid4().hex),
+        "cmd": '/usr/bin/nc -l -p $PORT0',
+        "cpus": 0.1,
+        "mem": 32,
+        "instances": 1,
+        "container": {
+            "type": "MESOS",
+            "docker": {
+              "image": "alpine:3.5"
+            }
+        },
+        'portDefinitions': [{
+            'labels': {
+                'VIP_0': '/viplisten:5000'
+            }
+        }],
+        "healthChecks": [{
+            "protocol": "COMMAND",
+            "command": {
+                "value": "/usr/bin/nslookup viplisten.marathon.l4lb.thisdcos.directory && pgrep -x /usr/bin/nc"
+            },
+            "gracePeriodSeconds": 300,
+            "intervalSeconds": 60,
+            "timeoutSeconds": 20,
+            "maxConsecutiveFailures": 3
+        }]
+    }
+
+
+def create_marathon_viptalk_app():
+    return {
+        "id": '/' + TEST_APP_NAME_FMT.format('viptalk-' + uuid.uuid4().hex),
+        "cmd": "/usr/bin/nc viplisten.marathon.l4lb.thisdcos.directory 5000 < /dev/zero",
+        "cpus": 0.1,
+        "mem": 32,
+        "instances": 1,
+        "container": {
+            "type": "MESOS",
+            "docker": {
+              "image": "alpine:3.5"
+            }
+        },
+        "healthChecks": [{
+            "protocol": "COMMAND",
+            "command": {
+                "value": "pgrep -x /usr/bin/nc && sleep 5 && pgrep -x /usr/bin/nc"
+            },
+            "gracePeriodSeconds": 300,
+            "intervalSeconds": 60,
+            "timeoutSeconds": 20,
+            "maxConsecutiveFailures": 3
+        }]
+    }
+
+
 def create_marathon_healthcheck_app(app_id: str) -> dict:
     # HTTP healthcheck app to make sure tasks are reachable during the upgrade.
     # If a task fails its healthcheck, Marathon will terminate it and we'll
@@ -221,11 +278,18 @@ class VpcClusterUpgradeTest:
         hosts = dcos_api.get('/mesos_dns/v1/hosts/' + hostname).json()
         return any(h['host'] != '' and h['ip'] != '' for h in hosts)
 
-    def setup_cluster_workload(self, dcos_api: DcosApiSession, healthcheck_app: dict, dns_app: dict):
+    def setup_cluster_workload(self, dcos_api: DcosApiSession, healthcheck_app: dict, dns_app: dict,
+                               viplisten_app: dict, viptalk_app: dict):
         # Deploy test apps.
         # TODO(branden): We ought to be able to deploy these apps concurrently. See
         # https://mesosphere.atlassian.net/browse/DCOS-13360.
         with logger.scope("deploy apps"):
+
+            dcos_api.marathon.deploy_app(viplisten_app)
+            dcos_api.marathon.ensure_deployments_complete()
+            dcos_api.marathon.deploy_app(viptalk_app)
+            dcos_api.marathon.ensure_deployments_complete()
+
             dcos_api.marathon.deploy_app(healthcheck_app)
             dcos_api.marathon.ensure_deployments_complete()
             # This is a hack to make sure we don't deploy dns_app before the name it's
@@ -234,7 +298,7 @@ class VpcClusterUpgradeTest:
             dcos_api.marathon.deploy_app(dns_app, check_health=False)
             dcos_api.marathon.ensure_deployments_complete()
 
-            test_apps = [healthcheck_app, dns_app]
+            test_apps = [healthcheck_app, dns_app, viplisten_app, viptalk_app]
             self.test_app_ids = [app['id'] for app in test_apps]
 
             self.tasks_start = {app_id: sorted(self.app_task_ids(dcos_api, app_id)) for app_id in self.test_app_ids}
@@ -247,7 +311,7 @@ class VpcClusterUpgradeTest:
             # the master's view after the upgrade.
             # See this issue for why we check for a difference:
             # https://issues.apache.org/jira/browse/MESOS-1718
-            self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[0])
+            self.task_state_start = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
 
     def verify_apps_state(self, dcos_api: DcosApiSession, dns_app: dict):
         with logger.scope("verify apps state"):
@@ -265,7 +329,7 @@ class VpcClusterUpgradeTest:
 
             def test_mesos_task_state_remains_consistent():
                 # Verify that the "state" of the task does not change.
-                task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[0])
+                task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
                 if not self.task_state_start == task_state_end:
                     self.teamcity_msg.testFailed(
                         "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
@@ -351,8 +415,10 @@ class VpcClusterUpgradeTest:
         installed_version = dcos_api_install.get_version()
         healthcheck_app = create_marathon_healthcheck_app(healthcheck_app_id)
         dns_app = create_marathon_dns_app(dns_app_id, healthcheck_app_id)
+        viplisten_app = create_marathon_viplisten_app()
+        viptalk_app = create_marathon_viptalk_app()
 
-        self.setup_cluster_workload(dcos_api_install, healthcheck_app, dns_app)
+        self.setup_cluster_workload(dcos_api_install, healthcheck_app, dns_app, viplisten_app, viptalk_app)
 
         with logger.scope("upgrade cluster"):
             test_util.cluster.upgrade_dcos(cluster, self.installer_url,
@@ -384,7 +450,7 @@ class VpcClusterUpgradeTest:
             for k, v in os.environ.items():
                 if k.startswith(prefix):
                     add_env.append(k.replace(prefix, '') + '=' + v)
-            test_cmd = ' '.join(add_env) + 'py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
+            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
             result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
         if result == 0:

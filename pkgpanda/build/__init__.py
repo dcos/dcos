@@ -210,18 +210,29 @@ class PackageSet:
 
     @staticmethod
     def validate_package_tuples(package_tuples, treeinfo, package_store):
-        # Validate that all package variants listed in treeinfo are included.
-        for package_name, variant in treeinfo.variants.items():
-            if (package_name, variant) not in package_tuples:
-                raise BuildError("package {} is supposed to have variant {} included in "
-                                 "the tree according to the treeinfo.json, but the no such package "
-                                 "(let alone variant) was found".format(package_name, variant))
+        # Validate that all packages have the variant specified in treeinfo.
+        for package_name, variant in package_tuples:
+            treeinfo_variant = treeinfo.variants.get(package_name)
+            if variant != treeinfo_variant:
+                raise BuildError(
+                    "package {} is supposed to have variant {} included in the tree according to the treeinfo, "
+                    "but variant {} was found.".format(
+                        package_name,
+                        pkgpanda.util.variant_name(treeinfo_variant),
+                        pkgpanda.util.variant_name(variant),
+                    )
+                )
 
         # Validate that all needed packages are built and not excluded by treeinfo.
         for package_name, variant in package_tuples:
             if (package_name, variant) not in package_store.packages:
-                raise BuildError("package {} variant {} is needed (explicitly requested or as a requires) "
-                                 "but is not in the set of built packages.".format(package_name, variant))
+                raise BuildError(
+                    "package {} variant {} is needed (explicitly requested or as a requires) "
+                    "but is not in the set of built packages.".format(
+                        package_name,
+                        pkgpanda.util.variant_name(variant),
+                    )
+                )
             if package_name in treeinfo.excludes:
                 raise BuildError("package {} is needed (explicitly requested or as a requires) "
                                  "but is excluded according to the treeinfo.json.".format(package_name))

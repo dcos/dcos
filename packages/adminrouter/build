@@ -1,72 +1,35 @@
 #!/bin/bash
 
-mkdir -p "/build"
+set -e  # Fail the script if anything fails
+set -x  # Verbose output
+set -u  # Undefined variables
 
+# Compile OpenResty
 export CXXFLAGS=-I/opt/mesosphere/include
+export AR_BIN_DIR=$PKG_PATH
 
-# TODO(cmaloney): Set alternate log, config paths?
-pushd "/pkg/src/nginx"
-./configure \
-  "--prefix=$PKG_PATH" \
-  --with-cc-opt="-I /opt/mesosphere/include" \
-  --with-ld-opt="-L /opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib" \
-  --with-ipv6 \
-  --with-file-aio \
-  --with-http_gunzip_module \
-  --with-http_gzip_static_module \
-  --without-mail_pop3_module \
-  --without-mail_imap_module \
-  --without-mail_smtp_module \
-  --with-http_ssl_module \
-  --with-luajit
+$OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-opt="-L /opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
 
-make -j$NUM_CORES
-make install
-popd
-
-pushd "$PKG_PATH/nginx/conf"
 # Incorporate adminrouter components.
-cp -r /pkg/src/adminrouter/* .
-# Remove unecessary files, such as nginx' default configs.
-rm -f win-utf uwsgi* scgi* nginx.conf* mime.types.default* koi-* fastcgi* README* *.png
-popd
+rm -vfR $PKG_PATH/nginx/conf/*
+cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
 
-# Copy in needed libraries.
+# TODO: We need more comprehensive approach to libraries. This is tracked in
+# https://jira.mesosphere.com/browse/DCOS-14039
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
 
-systemd_master="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter.service
-mkdir -p "$(dirname "$systemd_master")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter.service > "$systemd_master"
+# Copy systemd unit files:
+for st in ".service" "-reload.service" "-reload.timer"; do
+    tmp="$PKG_PATH/dcos.target.wants_master/dcos-adminrouter${st}"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter${st}" > "$tmp"
+done
 
-systemd_agent="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent.service
-mkdir -p "$(dirname "$systemd_agent")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent"
-
-systemd_agent_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent.service
-mkdir -p "$(dirname "$systemd_agent_public")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent.service > "$systemd_agent_public"
-
-systemd_reload="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.service
-mkdir -p "$(dirname "$systemd_reload")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.service > "$systemd_reload"
-
-systemd_timer="$PKG_PATH"/dcos.target.wants_master/dcos-adminrouter-reload.timer
-mkdir -p "$(dirname "$systemd_timer")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
-
-systemd_reload="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent-reload.service
-mkdir -p "$(dirname "$systemd_reload")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent-reload.service > "$systemd_reload"
-
-systemd_reload="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent-reload.service
-mkdir -p "$(dirname "$systemd_reload")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-agent-reload.service > "$systemd_reload"
-
-systemd_timer="$PKG_PATH"/dcos.target.wants_slave/dcos-adminrouter-agent-reload.timer
-mkdir -p "$(dirname "$systemd_timer")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
-
-systemd_timer="$PKG_PATH"/dcos.target.wants_slave_public/dcos-adminrouter-agent-reload.timer
-mkdir -p "$(dirname "$systemd_timer")"
-envsubst '$PKG_PATH' < /pkg/extra/dcos-adminrouter-reload.timer > "$systemd_timer"
+for at in slave slave_public; do
+    for st in ".service" "-reload.service" "-reload.timer"; do
+        tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-adminrouter-agent${st}"
+        mkdir -vp "$(dirname "$tmp")"
+        envsubst '$PKG_PATH' < "/pkg/extra/systemd/dcos-adminrouter-agent${st}" > "$tmp"
+    done
+done

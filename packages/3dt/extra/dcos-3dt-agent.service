@@ -1,0 +1,17 @@
+[Unit]
+Description=DC/OS Diagnostics (3DT) Agent: exposes component health
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-3dt.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-3dt-extra.env
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+LimitNOFILE=16384
+PermissionsStartOnly=True
+User=dcos_3dt
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-3dt-agent
+ExecStart=/opt/mesosphere/bin/3dt --3dt-config ${DCOS_3DT_CONFIG_PATH}
+Sockets=dcos-3dt.socket
