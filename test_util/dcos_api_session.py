@@ -34,7 +34,7 @@ def get_args_from_env():
         'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-        'dockercfg_hook_enabled': os.getenv('DOCKERCFG_HOOK', 'false'),
+        'dockercfg_hook_enabled': os.getenv('DOCKERCFG_HOOK', 'true'),
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
 
 

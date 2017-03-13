@@ -612,7 +612,7 @@ entry = {
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
-        'dcos_remove_dockercfg_enable': "false",
+        'dcos_remove_dockercfg_enable': "true",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
         'no_proxy': '',
