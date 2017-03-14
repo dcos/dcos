@@ -13,6 +13,8 @@ from collections import namedtuple
 from typing import Union
 from urllib.parse import urlsplit, urlunsplit
 
+import pytest
+
 import requests
 import retrying
 from botocore.exceptions import ClientError, WaiterError
@@ -262,3 +264,14 @@ def lazy_property(property_fn):
 
 def random_id(n):
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(n))
+
+
+def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
+    response = dcos_api_session.get('/dcos-metadata/ui-config.json').json()
+    try:
+        strategy = response['uiConfiguration']['plugins']['mesos']['logging-strategy']
+    except Exception:
+        logging.error('Unable to find logging strategy')
+        raise
+    if not strategy.startswith('journald'):
+        pytest.skip('Skipping a test since journald logging is disabled')
