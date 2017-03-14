@@ -15,15 +15,5 @@ EnvironmentFile=-/opt/mesosphere/etc/minuteman.env
 EnvironmentFile=-/run/dcos/etc/navstar_auth.env
 Environment=HOME=/opt/mesosphere
 ExecStartPre=/opt/mesosphere/bin/check-time
-ExecStartPre=/bin/ping -c1 ready.spartan
-ExecStartPre=-/usr/bin/env modprobe ip_vs_wlc
-ExecStartPre=/opt/mesosphere/bin/setup_iptables.sh
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-navstar
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-minuteman
-ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/mnesia
-ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/lashup
-ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/minuteman/dets
-ExecStartPre=/usr/bin/env modprobe dummy
-ExecStartPre=-/usr/bin/env ip link add minuteman type dummy
-ExecStartPre=/usr/bin/env ip link set minuteman up
+ExecStartPre=/usr/bin/env python dcos-navstar.start.py
 ExecStart=/opt/mesosphere/active/navstar/navstar/bin/navstar-env foreground
