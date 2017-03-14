@@ -10,8 +10,9 @@ be active at a given time.
 
 # Documentation
 
-* [For Packagers](for_packagers.md)
+* [For Packagers](create_and_maintain_packages.md)
 * [Package Concepts](package_concepts.md)
+* [Tree Concepts](tree_concepts.md)
 * [HTTP API](http.md)
 
 # Internals
