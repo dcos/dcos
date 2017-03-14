@@ -406,24 +406,6 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
-  - path: /etc/dcos-log.env
-    content: |
-      DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
-  - path: /etc_master/dcos-log-config.json
-    content: |
-      {
-        "role": "master"
-      }
-  - path: /etc_slave/dcos-log-config.json
-    content: |
-      {
-        "role": "agent"
-      }
-  - path: /etc_slave_public/dcos-log-config.json
-    content: |
-      {
-        "role": "agent_public"
-      }
 {% switch use_mesos_hooks %}
 {% case "true" %}
       MESOS_HOOKS={{ mesos_hooks }}
@@ -463,6 +445,24 @@ package:
         "LD_LIBRARY_PATH": "/opt/mesosphere/lib",
         "SASL_PATH": "/opt/mesosphere/lib/sasl2",
         "LIBPROCESS_NUM_WORKER_THREADS": "8"
+      }
+  - path: /etc/dcos-log.env
+    content: |
+      DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
+  - path: /etc_master/dcos-log-config.json
+    content: |
+      {
+        "role": "master"
+      }
+  - path: /etc_slave/dcos-log-config.json
+    content: |
+      {
+        "role": "agent"
+      }
+  - path: /etc_slave_public/dcos-log-config.json
+    content: |
+      {
+        "role": "agent_public"
       }
   - path: /etc/dns_search_config
     content: |
