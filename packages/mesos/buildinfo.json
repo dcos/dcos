@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "7610f4d1dba0e15b28e0cf955d85449ed87bf88e",
+    "ref": "aadb71eb547954181af0b3f64512c8d2916bb128",
     "ref_origin" : "adam/hrole"
   },
   "environment": {
