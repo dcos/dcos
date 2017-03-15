@@ -5,6 +5,7 @@ Common code for AR instance management.
 """
 
 import abc
+import copy
 import logging
 import os
 import pytest
@@ -781,6 +782,11 @@ class NginxBase(ManagedSubprocess):
                          cache_refresh_lock_timeout,
                          )
         self._set_ar_cmdline()
+
+    @property
+    def env(self):
+        """Provides read only access to nginx environment"""
+        return copy.deepcopy(self._env)
 
     def make_url_from_path(self, path='/exhibitor/some/path'):
         """A helper function used in tests that is meant to abstract AR

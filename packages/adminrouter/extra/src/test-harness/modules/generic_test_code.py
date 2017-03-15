@@ -2,7 +2,9 @@
 
 import logging
 import requests
+from contextlib import contextmanager
 
+from util import LineBufferFilter
 
 log = logging.getLogger(__name__)
 
@@ -237,3 +239,73 @@ def verify_header(headers, header_name, header_value):
         assert len(matching_headers) == 1, msg
 
     assert matching_headers[0][1] == header_value
+
+
+def assert_endpoint_response(
+        ar,
+        path,
+        code,
+        assert_stderr=None,
+        headers=None,
+        cookies=None,
+        assertions=None
+        ):
+    """Asserts response code and log messages in Admin Router stderr for
+    request against specified path.
+
+    Arguments:
+        ar (Nginx): Running instance of the AR
+        code (int): Expected response code
+        assert_stderr (dict): LineBufferFilter compatible definition of messages
+            to assert
+        cookies (dict): Optionally provide request cookies
+        headers (dict): Optionally provide request headers
+        assertions (List[lambda r]) Optionally provide additional assertions
+            for the response
+    """
+    lbf = LineBufferFilter(
+        assert_stderr,
+        line_buffer=ar.stderr_line_buffer,
+        )
+    with lbf:
+        r = requests.get(
+            ar.make_url_from_path(path),
+            headers=headers,
+            cookies=cookies,
+            )
+        assert r.status_code == code
+        if assertions:
+            for func in assertions:
+                assert func(r)
+
+    assert lbf.extra_matches == {}
+
+
+@contextmanager
+def assert_iam_queried_for_uid_and_rid(mocker, uid, rid):
+    """Asserts that IAM mock has been queried for given UID and RID
+
+    Arguments:
+        mocker (Mocker): Mocker instance with all server mocks
+        uid (str): User ID that should have been queried
+        rid (str): Role ID that should have been queried
+    """
+    mocker.send_command(
+        endpoint_id='http://127.0.0.1:8101',
+        func_name='record_requests',
+        )
+
+    yield
+
+    upstream_requests = mocker.send_command(
+        endpoint_id='http://127.0.0.1:8101',
+        func_name='get_recorded_requests',
+        )
+
+    # Test if first request to IAM mock was policyquery
+    upstream_request = upstream_requests[0]
+    expected_path = (
+        '/acs/api/v1/internal/policyquery'
+        '?rid={}&uid={}&action=full'.format(rid, uid)
+        )
+    assert upstream_request['path'] == expected_path
