@@ -1,0 +1,8 @@
+{
+  "requires": ["python", "libffi"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/99/df/71c7260003f5c469cec3db4c547115df39e9ce6c719a99e067ba0e78fd8a/cryptography-1.7.2.tar.gz",
+    "sha1": "2b5bc62fda71992633f83164b1a74c16a784acdf"
+  }
+}
