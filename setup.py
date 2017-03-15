@@ -37,7 +37,6 @@ setup(
         'aiohttp==0.22.5',
         'analytics-python',
         'coloredlogs',
-        'cryptography',
         'Flask',
         'flask-compress',
         # Pins taken from 'azure==2.0.0rc4'
