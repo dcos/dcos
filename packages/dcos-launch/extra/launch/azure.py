@@ -45,7 +45,7 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         """ Adds private key to the config and injects the public key into
         the template parameters
         """
-        private_key, public_key = launch.util.generate_RSA_keypair()
+        private_key, public_key = launch.util.generate_rsa_keypair()
         config.update({'ssh_private_key': private_key.decode()})
         template_parameters = yaml.load(config['template_parameters'])
         template_parameters.update({'sshRSAPublicKey': public_key.decode()})

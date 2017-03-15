@@ -74,6 +74,9 @@ class AzureWrapper:
         self.location = location
 
     def deploy_template_to_new_resource_group(self, template_url, group_name, parameters):
+        log.info('Checking deployment parameters vs template before starting...')
+        deployment_properties = self.create_deployment_properties(
+            template_url, parameters)
         deployment_name = DEPLOYMENT_NAME.format(group_name)
         # Resource group must be created before validation can occur
         if self.rmc.resource_groups.check_existence(group_name):
@@ -95,8 +98,6 @@ class AzureWrapper:
             # Ensure the resource group will be deleted if the following steps fail
             stack.callback(self.rmc.resource_groups.delete, group_name)
             log.info('Resource group created: {}'.format(group_name))
-            deployment_properties = self.create_deployment_properties(
-                template_url, parameters)
             log.info('Checking with Azure to validate template deployment')
             result = self.rmc.deployments.validate(
                 group_name, deployment_name, properties=deployment_properties)
@@ -105,7 +106,7 @@ class AzureWrapper:
             log.info('Template successfully validated')
             log.info('Starting template deployment')
             self.rmc.deployments.create_or_update(
-                group_name, deployment_name, deployment_properties)
+                group_name, deployment_name, deployment_properties, raw=True)
             stack.pop_all()
         log.info('Successfully started template deployment')
 
@@ -286,7 +287,7 @@ class DcosAzureResourceGroup:
 
     def delete(self):
         log.info('Triggering delete')
-        self.azure_wrapper.rmc.resource_groups.delete(self.group_name).wait()
+        self.azure_wrapper.rmc.resource_groups.delete(self.group_name, raw=True)
 
     def __enter__(self):
         return self

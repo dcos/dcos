@@ -4,8 +4,8 @@ import logging
 import cryptography.hazmat.backends
 import pkg_resources
 import yaml
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 import pkgpanda
 
@@ -83,11 +83,11 @@ def convert_host_list(host_list):
     return [{'private_ip': h.private_ip, 'public_ip': h.public_ip} for h in host_list]
 
 
-def generate_RSA_keypair(key_size=2048):
+def generate_rsa_keypair(key_size=2048):
     """Generate an RSA keypair.
     Create new RSA keypair with an exponent of 65537. Serialize the public
-    key in the the X.509 SubjectPublicKeyInfo/OpenSSL PEM public key format
-    (RFC 5280). Serialize the private key in the PKCS#8 (RFC 3447) format.
+    key OpenSSH format that is used by providers for specifying access keys
+    Serialize the private key in the PKCS#8 (RFC 3447) format.
     Args:
         bits (int): the key length in bits.
     Returns:
@@ -108,7 +108,7 @@ def generate_RSA_keypair(key_size=2048):
 
     public_key = private_key.public_key()
     pubkey_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        encoding=serialization.Encoding.OpenSSH,
+        format=serialization.PublicFormat.OpenSSH)
 
     return privkey_pem, pubkey_pem

@@ -148,14 +148,15 @@ def main():
     result = 1
     dcos_resource_group.wait_for_deployment()
     dcos_dns = dcos_resource_group.public_master_lb_fqdn
+    master_list = [ip.private_ip for ip in dcos_resource_group.get_master_ips()]
     with tunnel(options.linux_user, load_string(options.ssh_key_path),
                 dcos_dns, port=2200) as t:
         result = integration_test(
             tunnel=t,
-            dcos_dns=dcos_dns,
-            master_list=[ip.private_ip for ip in dcos_resource_group.get_master_ips()],
-            agent_list=[ip.private_ip for ip in dcos_resource_group.get_private_ips()],
-            public_agent_list=[ip.private_ip for ip in dcos_resource_group.get_public_ips()],
+            dcos_dns=master_list[0],
+            master_list=master_list,
+            agent_list=[ip.private_ip for ip in dcos_resource_group.get_private_agent_ips()],
+            public_agent_list=[ip.private_ip for ip in dcos_resource_group.get_public_agent_ips()],
             test_cmd=options.test_cmd)
     if result == 0:
         log.info('Test successsful! Deleting Azure resource group')
