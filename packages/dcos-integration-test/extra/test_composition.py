@@ -87,9 +87,9 @@ def test_signal_service(dcos_api_session):
     if enabled == 'false':
         pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
 
-    logging.info("Version: ", dcos_version)
-    logging.info("Customer Key: ", customer_key)
-    logging.info("Cluster ID: ", cluster_id)
+    logging.info("Version: " + dcos_version)
+    logging.info("Customer Key: " + customer_key)
+    logging.info("Cluster ID: " + cluster_id)
 
     direct_report = dcos_api_session.get('/system/health/v1/report?cache=0')
     signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
