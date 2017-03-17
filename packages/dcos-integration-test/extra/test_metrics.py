@@ -114,77 +114,81 @@ def test_metrics_containers(dcos_api_session):
         debug_eid = []
 
         for agent in app_endpoints:
+
+            # Retry for two and a half minutes since the collector collects
+            # state every 2 minutes to propogate containers to the API
+            @retrying.retry(wait_fixed=2000, stop_max_delay=150000)
+            def wait_for_container_propogation():
+                response = dcos_api_session.metrics.get('containers', node=agent.host)
+                assert response.status_code == 200
+                assert len(response.json()) > 0, 'must have at least 1 container'
+
+            wait_for_container_propogation()
+
             response = dcos_api_session.metrics.get('containers', node=agent.host)
-            assert response.status_code == 200, "got {}".format(
-                response.status_code)
+            for c in response.json():
+                # Test that /containers/<id> responds with expected data
+                container_id_path = 'containers/{}'.format(c)
+                container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
 
-            if len(response.json()) > 0:
-                for c in response.json():
-                    # Test that /containers/<id> responds with expected data
-                    container_id_path = 'containers/{}'.format(c)
-                    container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
+                # /containers/<container_id> should always respond succesfully
+                assert container_response.status_code == 200
 
-                    # /containers/<container_id> should always respond succesfully
-                    assert container_response.status_code == 200, 'got {}'.format(c)
+                assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
 
-                    assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
+                cid_registry = []
+                for dp in container_response.json()['datapoints']:
+                    assert 'tags' in dp, 'got {}'.format(dp)
+                    assert len(dp['tags']) == 5, 'got {}'.format(
+                        len(dp['tags']))
 
-                    cid_registry = []
-                    for dp in container_response.json()['datapoints']:
-                        assert 'tags' in dp, 'got {}'.format(dp)
-                        assert len(dp['tags']) == 5, 'got {}'.format(
-                            len(dp['tags']))
+                    # Ensure all container ID's in the container/<id> endpoint are
+                    # the same.
+                    assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
+                    cid_registry.append(dp['tags']['container_id'])
+                    assert(check_cid(cid_registry))
 
-                        # Ensure all container ID's in the container/<id> endpoint are
-                        # the same.
-                        assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
-                        cid_registry.append(dp['tags']['container_id'])
-                        assert(check_cid(cid_registry))
+                    for k, v in dp['tags'].items():
+                        assert len(v) != 0, 'tag values must not be empty'
 
-                        for k, v in dp['tags'].items():
-                            assert len(v) != 0, 'tag values must not be empty'
+                assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
+                assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
+                    container_response.json()['dimensions'])
 
-                    assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
-                    assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
-                        container_response.json()['dimensions'])
+                debug_eid.append(container_response.json()['dimensions']['executor_id'])
 
-                    debug_eid.append(container_response.json()['dimensions']['executor_id'])
+                # looking for "statsd-emitter.<some_uuid>"
+                if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
+                    # Test that /app response is responding with expected data
+                    app_response = dcos_api_session.metrics.get('containers/{}/app'.format(c), node=agent.host)
+                    assert app_response.status_code == 200
+                    'got {}'.format(app_response.status_code)
 
-                    # looking for "statsd-emitter.<some_uuid>"
-                    if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
-                        # Test that /app response is responding with expected data
-                        app_response = dcos_api_session.metrics.get('containers/{}/app'.format(c), node=agent.host)
-                        assert app_response.status_code == 200, '/containers/<id>/app response did not return 200, '
-                        'got {}'.format(app_response.status_code)
+                    # Ensure all /container/<id>/app data is correct
+                    assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
+                    assert len(app_response.json()['datapoints']) == 1, 'got {}'.format(
+                        len(app_response.json()['datapoints']))
 
-                        # Ensure all /container/<id>/app data is correct
-                        assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
-                        assert len(app_response.json()['datapoints']) == 1, 'got {}'.format(
-                            len(app_response.json()['datapoints']))
+                    datapoint_keys = ['name', 'value', 'unit', 'timestamp']
+                    for k in datapoint_keys:
+                        assert k in app_response.json()['datapoints'][0], 'got {}'.format(
+                            app_response.json()['datapoints'][0])
 
-                        datapoint_keys = ['name', 'value', 'unit', 'timestamp']
-                        for k in datapoint_keys:
-                            assert k in app_response.json()['datapoints'][0], 'got {}'.format(
-                                app_response.json()['datapoints'][0])
+                        assert app_response.json()['datapoints'][0]['name'] == 'statsd_tester.time.uptime', 'got '
+                        '{}'.format(app_response.json()['datapoints'][0]['name'])
 
-                            assert app_response.json()['datapoints'][0]['name'] == 'statsd_tester.time.uptime', 'got '
-                            '{}'.format(app_response.json()['datapoints'][0]['name'])
+                    assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
+                    assert 'labels' in app_response.json()['dimensions'], 'got {}'.format(
+                        app_response.json()['dimensions'])
 
-                        assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
-                        assert 'labels' in app_response.json()['dimensions'], 'got {}'.format(
-                            app_response.json()['dimensions'])
+                    assert 'test_tag_key' in app_response.json()['dimensions']['labels'], 'got {}'.format(
+                        app_response.json()['dimensions']['labels'])
 
-                        assert 'test_tag_key' in app_response.json()['dimensions']['labels'], 'got {}'.format(
-                            app_response.json()['dimensions']['labels'])
+                    assert app_response.json()['dimensions']['labels']['test_tag_key'] == "test_tag_value", ''
+                    'got {}'.format(
+                        app_response.json()['dimensions']['labels']['test_tag_key'])
 
-                        assert app_response.json()['dimensions']['labels']['test_tag_key'] == "test_tag_value", ''
-                        'got {}'.format(
-                            app_response.json()['dimensions']['labels']['test_tag_key'])
-
-                        return True
-
-            else:
-                raise ValueError("no containers found in /v0/containers/ response. Expected at least 1.")
+                    return True
 
         assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_eid)
 

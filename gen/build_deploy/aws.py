@@ -127,61 +127,61 @@ region_to_ami_map = {
     'ap-northeast-1': {
         'coreos': 'ami-86f1b9e1',
         'stable': 'ami-86f1b9e1',
-        'el7': 'ami-d93d69be',
+        'el7': 'ami-5942133e',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
         'coreos': 'ami-27cc7d44',
         'stable': 'ami-27cc7d44',
-        'el7': 'ami-68da6a0b',
+        'el7': 'ami-83ea59e0',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
         'coreos': 'ami-5baeae38',
         'stable': 'ami-5baeae38',
-        'el7': 'ami-21fefd42',
+        'el7': 'ami-7f393b1c',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
         'coreos': 'ami-4733f928',
         'stable': 'ami-4733f928',
-        'el7': 'ami-e80bde87',
+        'el7': 'ami-9e13c7f1',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
         'coreos': 'ami-89f6dbef',
         'stable': 'ami-89f6dbef',
-        'el7': 'ami-68dcf20e',
+        'el7': 'ami-41b89327',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
         'coreos': 'ami-c51573a9',
         'stable': 'ami-c51573a9',
-        'el7': 'ami-5c9cfa30',
+        'el7': 'ami-6d600101',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
         'coreos': 'ami-42ad7d54',
         'stable': 'ami-42ad7d54',
-        'el7': 'ami-b4f128a2',
+        'el7': 'ami-84862092',
         'natami': 'ami-4c9e4b24'
     },
     'us-gov-west-1': {
         'coreos': 'ami-a846fcc9',
         'stable': 'ami-a846fcc9',
-        'el7': 'ami-b91ba1d8',
+        'el7': 'ami-8dce4bec',
         'natami': ''
     },
     'us-west-1': {
         'coreos': 'ami-1a1b457a',
         'stable': 'ami-1a1b457a',
-        'el7': 'ami-d4b3edb4',
+        'el7': 'ami-794f1619',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
         'coreos': 'ami-2551d145',
         'stable': 'ami-2551d145',
-        'el7': 'ami-b863e1d8',
+        'el7': 'ami-4953df29',
         'natami': 'ami-bb69128b'
     }
 }

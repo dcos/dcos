@@ -3,6 +3,7 @@
     "boto",
     "dnspython",
     "flask",
+    "pytest",
     "python",
     "python-docopt",
     "python-isodate",

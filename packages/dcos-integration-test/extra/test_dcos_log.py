@@ -4,6 +4,8 @@ import uuid
 import requests
 import retrying
 
+import test_util
+
 
 def validate_json_entry(entry: dict):
     required_fields = {'fields', 'cursor', 'monotonic_timestamp', 'realtime_timestamp'}
@@ -78,6 +80,7 @@ def test_log_proxy(dcos_api_session):
 
 
 def test_task_logs(dcos_api_session):
+    test_util.helpers.skip_test_if_dcos_journald_log_disabled(dcos_api_session)
     test_uuid = uuid.uuid4().hex
 
     task_id = "integration-test-task-logs-{}".format(test_uuid)
@@ -106,6 +109,7 @@ def test_task_logs(dcos_api_session):
 
 
 def test_pod_logs(dcos_api_session):
+    test_util.helpers.skip_test_if_dcos_journald_log_disabled(dcos_api_session)
     test_uuid = uuid.uuid4().hex
 
     pod_id = 'integration-test-pod-logs-{}'.format(test_uuid)

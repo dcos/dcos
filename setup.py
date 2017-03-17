@@ -53,6 +53,7 @@ setup(
         'passlib',
         'py',
         'pyinstaller==3.2',
+        'pytest',
         'pyyaml',
         'requests==2.10.0',
         'retrying',
