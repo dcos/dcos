@@ -206,6 +206,7 @@ class VpcClusterUpgradeTest:
                  config_yaml_override_install: str, config_yaml_override_upgrade: str,
                  dcos_api_session_factory_install: VpcClusterUpgradeTestDcosApiSessionFactory,
                  dcos_api_session_factory_upgrade: VpcClusterUpgradeTestDcosApiSessionFactory):
+
         self.dcos_api_session_factory_install = dcos_api_session_factory_install
         self.dcos_api_session_factory_upgrade = dcos_api_session_factory_upgrade
         self.num_masters = num_masters
@@ -361,7 +362,9 @@ class VpcClusterUpgradeTest:
             self.log_test("test_upgrade_vpc.test_app_dns_survive_upgrade", test_app_dns_survive_upgrade)
 
     def run_test(self) -> int:
-        stack_name = 'dcos-ci-test-upgrade-' + random_id(10)
+        stack_suffix = os.getenv("CF_STACK_NAME_SUFFIX", "open-upgrade")
+        stack_name = "dcos-ci-test-{stack_suffix}-{random_id}".format(
+            stack_suffix=stack_suffix, random_id=random_id(10))
 
         test_id = uuid.uuid4().hex
         healthcheck_app_id = TEST_APP_NAME_FMT.format('healthcheck-' + test_id)
