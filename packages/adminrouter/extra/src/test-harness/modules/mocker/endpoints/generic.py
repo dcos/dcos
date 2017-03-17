@@ -10,6 +10,7 @@ import logging
 import os
 import socket
 import socketserver
+import ssl
 import threading
 
 # pylint: disable=C0103
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 # Just a dict would be no good as we want to have threading lock initialization
 # as well.
 # pylint: disable=R0903
-class EndpointContext():
+class EndpointContext:
     """An endpoint context that holds all the endpoint data together with
        threading lock that protects it."""
     data = None
@@ -185,6 +186,14 @@ class StatefullHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         self.startup_done = threading.Event()
         http.server.HTTPServer.__init__(self, *args, **kw)
 
+        certfile = self.context.data['certfile']
+        keyfile = self.context.data['keyfile']
+        if certfile is not None and keyfile is not None:
+            self.socket = ssl.wrap_socket(self.socket,
+                                          keyfile=keyfile,
+                                          certfile=certfile,
+                                          server_side=True)
+
     def server_activate(self):
         super().server_activate()
         self.startup_done.set()
@@ -197,7 +206,7 @@ class TcpIpHttpEndpoint(Endpoint):
         endpoint context to form a base class for all endpoints that serve
         TCP/IP traffic.
     """
-    def __init__(self, handler_class, port, ip=''):
+    def __init__(self, handler_class, port, ip='', keyfile=None, certfile=None):
         """Initialize new TcpIpHttpEndpoint object
 
         Args:
@@ -207,11 +216,16 @@ class TcpIpHttpEndpoint(Endpoint):
             ip (str): ip address that httpd server will listen on, by default
                 listen on all addresses
         """
-        endpoint_id = "http://{}:{}".format(ip, port)
+        if certfile is not None and keyfile is not None:
+            endpoint_id = "https://{}:{}".format(ip, port)
+        else:
+            endpoint_id = "http://{}:{}".format(ip, port)
         super().__init__(endpoint_id)
 
         self._context.data['listen_ip'] = ip
         self._context.data['listen_port'] = port
+        self._context.data['certfile'] = certfile
+        self._context.data['keyfile'] = keyfile
 
         self._handler_class = handler_class
 
@@ -274,7 +288,7 @@ class UnixSocketHTTPEndpoint(Endpoint):
         endpoint context to form a base class for all endpoints that serve
         Unix socket traffic.
     """
-    def __init__(self, handler_class, path):
+    def __init__(self, handler_class, path, keyfile=None, certfile=None):
         """Initialize new UnixSocketHTTPEndpoint object
 
         Args:
@@ -283,10 +297,15 @@ class UnixSocketHTTPEndpoint(Endpoint):
             path (str): Unix socket path, that internal httpd server will listen
                 on
         """
-        endpoint_id = "http://{}".format(path)
+        if certfile is not None and keyfile is not None:
+            endpoint_id = "https://{}".format(path)
+        else:
+            endpoint_id = "http://{}".format(path)
         super().__init__(endpoint_id)
 
         self._context.data['socket_path'] = path
+        self._context.data['certfile'] = certfile
+        self._context.data['keyfile'] = keyfile
 
         self._handler_class = handler_class
 
