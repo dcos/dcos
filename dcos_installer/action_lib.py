@@ -401,10 +401,10 @@ StartLimitInterval=0
 RestartSec=15
 ExecStartPre=-/sbin/ip link del docker0
 ExecStart=
-ExecStart=/usr/bin/docker daemon --storage-driver=overlay -H fd://
+ExecStart=/usr/bin/dockerd --storage-driver=overlay
 EOF
 
-sudo yum install -y docker-engine-1.11.2
+sudo yum install -y docker-engine-1.13.1 docker-engine-selinux-1.13.1
 sudo systemctl start docker
 sudo systemctl enable docker
 
