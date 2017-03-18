@@ -1,8 +1,5 @@
 # Pkgpanda: The DC/OS Package Manager
 
-Most packages run in containers on top of Mesos, using its native mechanism. There are requirements to install and run
-packages on top of the host system.
-
 `pkgpanda` allows for having multiple versions of every component present on a host and selecting one of them to
 be active at a given time.
 
@@ -21,9 +18,3 @@ be active at a given time.
 
 * [Filesystem Layout](filesystem_layout.md)
 * [Activating Packages](activating.md)
-
-# WIP / long term design
-
-* [Architecture for Cluster Upgrades](architecture.md)
-* [Deployer component](deployer.md)
-* [Modules](modules.md)
