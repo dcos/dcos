@@ -59,6 +59,7 @@ bootstrappers = {
     'dcos-oauth': dcos_oauth,
     'dcos-metrics-master': dcos_metrics_master,
     'dcos-metrics-agent': dcos_metrics_agent,
+    'dcos-backup-master': noop,
     'dcos-3dt-master': noop,
     'dcos-3dt-agent': noop,
     'dcos-marathon': noop,
