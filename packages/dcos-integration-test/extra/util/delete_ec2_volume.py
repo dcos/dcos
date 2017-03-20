@@ -37,9 +37,18 @@ def delete_ec2_volume(name, timeout=300):
         timeout: seconds to wait for volume to become available for deletion
 
     """
+    def _force_detach_volume(volume):
+        for attachment in volume.attachments:
+            volume.detach_from_instance(
+                DryRun=False,
+                InstanceId=attachment['InstanceId'],
+                Device=attachment['Device'],
+                Force=True)
+
     @retrying.retry(wait_fixed=30 * 1000, stop_max_delay=timeout * 1000,
                     retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError))
     def _delete_volume(volume):
+        _force_detach_volume(volume)
         volume.delete()  # Raises ClientError if the volume is still attached.
 
     def _get_current_aws_region():
