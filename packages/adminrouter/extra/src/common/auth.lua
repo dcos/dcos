@@ -44,6 +44,7 @@ else
         SECRET_KEY = nil
         ngx.log(ngx.WARN, "Secret key not set or empty string.")
     end
+	jwt:set_alg_whitelist({HS256=1})
 end
 
 
