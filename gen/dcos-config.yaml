@@ -49,7 +49,7 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503
   - path: /etc/minuteman-net.env
     content: |
-      DISABLE_BRIDGE_NETFILTER=true
+      DISABLE_BRIDGE_NETFILTER={{ minuteman_disable_bridge_netfilter }}
   - path: /etc_slave/spartan.json
     content: |
       {
