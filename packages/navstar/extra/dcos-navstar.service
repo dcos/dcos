@@ -8,6 +8,7 @@ RestartSec=5
 LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}/navstar
 EnvironmentFile=/opt/mesosphere/etc/navstar-erl.env
+EnvironmentFile=/opt/mesosphere/etc/minuteman-net.env
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/navstar.env
