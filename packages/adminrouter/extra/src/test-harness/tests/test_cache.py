@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 class TestCache:
     def test_if_first_cache_refresh_occurs_earlier(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(1, False),
             'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
@@ -45,7 +45,7 @@ class TestCache:
             # Do a request that uses cache so that we can verify that data was
             # in fact cached and no more than one req to mesos/marathon
             # backends were made
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
         mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                                              func_name='get_recorded_requests')
@@ -57,7 +57,7 @@ class TestCache:
         assert len(marathon_requests) == 2
 
     def test_if_cache_refresh_occurs_regularly(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(3, False),
             'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(6, True),
@@ -90,7 +90,7 @@ class TestCache:
             # Do a request that uses cache so that we can verify that data was
             # in fact cached and no more than one req to mesos/marathon
             # backends were made
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
         mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                                              func_name='get_recorded_requests')
@@ -102,7 +102,7 @@ class TestCache:
         assert len(marathon_requests) == 6
 
     def test_if_cache_refresh_is_triggered_by_request(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         """...right after Nginx has started."""
         filter_regexp = {
             'Executing cache refresh triggered by request': SearchCriteria(1, True),
@@ -128,13 +128,13 @@ class TestCache:
                                    timeout=5,
                                    line_buffer=ar.stderr_line_buffer)
 
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
             lbf.scan_log_buffer()
 
             # Do an extra request so that we can verify that data was in fact
             # cached and no more than one req to mesos/marathon backends were
             # made
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
         mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                                              func_name='get_recorded_requests')
@@ -146,7 +146,7 @@ class TestCache:
         assert len(marathon_requests) == 2
 
     def test_if_broken_marathon_causes_marathon_cache_to_expire_and_requests_to_fail(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, False),
@@ -175,7 +175,7 @@ class TestCache:
             # Trigger cache update by issuing request:
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
 
             # Break marathon
@@ -191,7 +191,7 @@ class TestCache:
             # Perform the main/test request:
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 503
 
             lbf.scan_log_buffer()
@@ -199,7 +199,7 @@ class TestCache:
         assert lbf.extra_matches == {}
 
     def test_if_temp_marathon_borkage_does_not_disrupt_caching(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, False),
@@ -228,7 +228,7 @@ class TestCache:
             # Trigger cache update by issuing request:
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
 
             # Break marathon
@@ -243,7 +243,7 @@ class TestCache:
             # Perform the main/test request:
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
 
             lbf.scan_log_buffer()
@@ -251,7 +251,7 @@ class TestCache:
         assert lbf.extra_matches == {}
 
     def test_if_broken_mesos_causes_mesos_cache_to_expire_and_requests_to_fail(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, False),
@@ -274,7 +274,7 @@ class TestCache:
                                    line_buffer=ar.stderr_line_buffer)
 
             # Trigger cache update using a request:
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
             # Break mesos
             mocker.send_command(endpoint_id='http://127.0.0.2:5050',
@@ -287,14 +287,14 @@ class TestCache:
             time.sleep(4 + 1)
 
             # Perform the main/test request:
-            ping_mesos_agent(ar, superuser_user_header, expect_status=503)
+            ping_mesos_agent(ar, valid_user_header, expect_status=503)
 
             lbf.scan_log_buffer()
 
         assert lbf.extra_matches == {}
 
     def test_if_temp_mesos_borkage_does_not_dirupt_caching(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, False),
@@ -317,7 +317,7 @@ class TestCache:
                                    line_buffer=ar.stderr_line_buffer)
 
             # Trigger cache update using a request:
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
             # Break mesos
             mocker.send_command(endpoint_id='http://127.0.0.2:5050',
@@ -329,14 +329,14 @@ class TestCache:
             time.sleep(3 + 1)
 
             # Perform the main/test request:
-            ping_mesos_agent(ar, superuser_user_header, expect_status=200)
+            ping_mesos_agent(ar, valid_user_header, expect_status=200)
 
             lbf.scan_log_buffer()
 
         assert lbf.extra_matches == {}
 
     def test_if_broken_marathon_does_not_break_mesos_cache(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, True),
@@ -356,13 +356,13 @@ class TestCache:
                                    timeout=(CACHE_FIRST_POLL_DELAY + 1),
                                    line_buffer=ar.stderr_line_buffer)
 
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
             lbf.scan_log_buffer()
 
         assert lbf.extra_matches == {}
 
     def test_if_broken_mesos_does_not_break_marathon_cache(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, True),
@@ -387,7 +387,7 @@ class TestCache:
 
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             lbf.scan_log_buffer()
 
         assert resp.status_code == 200
@@ -397,7 +397,7 @@ class TestCache:
         assert lbf.extra_matches == {}
 
     def test_if_changing_marathon_apps_is_reflected_in_cache(
-            self, nginx_class, superuser_user_header, mocker):
+            self, nginx_class, valid_user_header, mocker):
         cache_poll_period = 4
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
         url = ar.make_url_from_path('/service/nginx-enabled/bar/baz')
@@ -405,7 +405,7 @@ class TestCache:
         with GuardedSubprocess(ar):
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 500
 
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -417,20 +417,20 @@ class TestCache:
 
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
 
         req_data = resp.json()
         assert req_data['endpoint_id'] == 'http://127.0.0.1:16001'
 
     def test_if_changing_mesos_state_is_reflected_in_cache(
-            self, nginx_class, superuser_user_header, mocker):
+            self, nginx_class, valid_user_header, mocker):
         cache_poll_period = 4
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
 
         with GuardedSubprocess(ar):
             ping_mesos_agent(ar,
-                             superuser_user_header,
+                             valid_user_header,
                              agent_id=EXTRA_SLAVE_DICT['id'],
                              expect_status=404)
 
@@ -442,12 +442,12 @@ class TestCache:
             time.sleep(cache_poll_period * 2)
 
             ping_mesos_agent(ar,
-                             superuser_user_header,
+                             valid_user_header,
                              agent_id=EXTRA_SLAVE_DICT['id'],
                              endpoint_id='http://127.0.0.4:15003')
 
     def test_if_changing_marathon_leader_is_reflected_in_cache(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
 
         cache_poll_period = 4
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
@@ -458,7 +458,7 @@ class TestCache:
             # let's make sure that current leader is the default one
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
@@ -474,13 +474,13 @@ class TestCache:
             # now, let's see if the leader changed
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 200
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.3:80'
 
     def test_if_absence_of_marathon_leader_is_handled_by_cache(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='remove_leader')
@@ -491,11 +491,11 @@ class TestCache:
         with GuardedSubprocess(ar):
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert resp.status_code == 404
 
     def test_if_caching_works_for_mesos_state(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         # Enable recording for mesos
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='record_requests')
@@ -506,7 +506,7 @@ class TestCache:
             # Let the cache warm-up:
             time.sleep(CACHE_FIRST_POLL_DELAY + 1)
             for _ in range(3):
-                ping_mesos_agent(ar, superuser_user_header)
+                ping_mesos_agent(ar, valid_user_header)
 
         mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                                              func_name='get_recorded_requests')
@@ -515,7 +515,7 @@ class TestCache:
         assert len(mesos_requests) == 1
 
     def test_if_caching_works_for_marathon_apps(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='record_requests')
@@ -535,7 +535,7 @@ class TestCache:
             for _ in range(5):
                 resp = requests.get(url,
                                     allow_redirects=False,
-                                    headers=superuser_user_header)
+                                    headers=valid_user_header)
                 assert resp.status_code == 200
 
         mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
@@ -548,7 +548,7 @@ class TestCache:
         assert len(marathon_requests) == 2
 
     def test_if_caching_works_for_marathon_leader(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='record_requests')
@@ -562,7 +562,7 @@ class TestCache:
             for _ in range(5):
                 resp = requests.get(url,
                                     allow_redirects=False,
-                                    headers=superuser_user_header)
+                                    headers=valid_user_header)
                 assert resp.status_code == 200
                 req_data = resp.json()
                 assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
@@ -574,7 +574,7 @@ class TestCache:
         assert len(marathon_requests) == 2
 
     def test_if_broken_response_from_marathon_is_handled(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Cannot decode Marathon leader JSON': SearchCriteria(1, True),
         }
@@ -591,14 +591,14 @@ class TestCache:
                                    line_buffer=ar.stderr_line_buffer)
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             lbf.scan_log_buffer()
 
         assert resp.status_code == 503
         assert lbf.extra_matches == {}
 
     def test_if_failed_request_triggered_update_is_recovered_by_timers(
-            self, nginx_class, superuser_user_header, mocker, log_catcher):
+            self, nginx_class, valid_user_header, mocker, log_catcher):
         # The idea here is to make Backend a bit slow, so that AR is still able
         # to update cache on first request.
 
@@ -623,12 +623,12 @@ class TestCache:
             start = time.time()
 
             # Let's break the cache by making it update against broken Mesos:
-            ping_mesos_agent(ar, superuser_user_header, expect_status=503)
+            ping_mesos_agent(ar, valid_user_header, expect_status=503)
 
             time.sleep(1)
 
             # Let's make sure that the brokerage is still there
-            ping_mesos_agent(ar, superuser_user_header, expect_status=503)
+            ping_mesos_agent(ar, valid_user_header, expect_status=503)
 
             # Healing hands!
             mocker.send_command(endpoint_id='http://127.0.0.2:5050',
@@ -639,10 +639,10 @@ class TestCache:
             time.sleep(1 + (first_poll_delay - (time.time() - start)))
 
             # Verify that the cache is OK now
-            ping_mesos_agent(ar, superuser_user_header)
+            ping_mesos_agent(ar, valid_user_header)
 
     def test_if_early_boot_stage_can_recover_from_a_bit_slow_backend(
-            self, nginx_class, superuser_user_header, mocker, log_catcher):
+            self, nginx_class, valid_user_header, mocker, log_catcher):
         # The idea here is to make Backend a bit slow, so that AR is still able
         # to update cache on first request.
 
@@ -659,7 +659,7 @@ class TestCache:
                          )
         agent_id = 'de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
         url = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
-        v = Vegeta(log_catcher, target=url, jwt=superuser_user_header, rate=3)
+        v = Vegeta(log_catcher, target=url, jwt=valid_user_header, rate=3)
 
         # Make mesos just a bit :)
         # It mus respond slower than backend_request_timeout
@@ -670,13 +670,13 @@ class TestCache:
         with GuardedSubprocess(ar):
             with GuardedSubprocess(v):
                 time.sleep(backend_request_timeout * 0.3 + 1)  # let it warm-up!
-                ping_mesos_agent(ar, superuser_user_header)
+                ping_mesos_agent(ar, valid_user_header)
 
 
 class TestCacheMarathon:
 
     def test_upstream_wrong_json(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             "Cannot decode Marathon apps JSON: ": SearchCriteria(1, True),
         }
@@ -698,7 +698,7 @@ class TestCacheMarathon:
             # Trigger cache update by issuing request:
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
             assert "cache state is invalid" in resp.content.decode('utf-8')
             assert resp.status_code == 503
 
@@ -707,7 +707,7 @@ class TestCacheMarathon:
         assert lbf.extra_matches == {}
 
     def test_app_without_labels(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app.pop("labels", None)
 
@@ -715,10 +715,10 @@ class TestCacheMarathon:
             "Labels not found in app '{}'".format(app["id"]): SearchCriteria(1, True),
         }
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_service_scheme_label(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["labels"].pop("DCOS_SERVICE_SCHEME", None)
 
@@ -728,10 +728,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_port_index_label(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["labels"].pop("DCOS_SERVICE_PORT_INDEX", None)
 
@@ -740,10 +740,10 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_with_port_index_nan_label(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "not a number"
 
@@ -753,10 +753,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_mesos_tasks(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["tasks"] = []
 
@@ -766,10 +766,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_tasks_in_running_state(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["tasks"] = [{"state": "TASK_FAILED"}]
 
@@ -779,10 +779,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_host(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["tasks"][0].pop("host", None)
 
@@ -792,10 +792,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_ports(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["tasks"][0].pop("ports", None)
 
@@ -805,10 +805,10 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_specified_port_idx(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         app = self._nginx_alwaysthere_app()
         app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "5"
 
@@ -818,7 +818,7 @@ class TestCacheMarathon:
         }
 
         self.assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, superuser_user_header)
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def assert_filter_regexp_for_invalid_app(
             self,

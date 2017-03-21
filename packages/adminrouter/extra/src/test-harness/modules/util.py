@@ -16,6 +16,8 @@ import signal
 import time
 import traceback
 
+from contextlib import contextmanager
+
 
 LOG_LINE_SEARCH_INTERVAL = 0.2
 
@@ -394,3 +396,52 @@ def ar_listen_link_setup(role, is_ee):
         return
 
     os.symlink(dst_path, src_path)
+
+
+@contextmanager
+def iam_denies_all_requests(mocker_instance):
+    """Modifies IAM mock configuration to deny all policyquery requests"""
+    mocker_instance.send_command(
+        endpoint_id='http://127.0.0.1:8101',
+        func_name='deny_all_queries',
+        )
+
+    yield
+
+    mocker_instance.send_command(
+        endpoint_id='http://127.0.0.1:8101',
+        func_name='permit_all_queries',
+        )
+
+
+def auth_type_str(repo_type):
+    """Return valid authentication type string for given cluster type
+
+    Arguments:
+        repo_type (bool): True/False, depending on wheter it is an EE cluster
+            or not.
+
+    Returns:
+        String denoting valid authentication type string as used in
+        WWW-Authenticate header.
+    """
+    if repo_type:
+        return 'acsjwt'
+    else:
+        return 'oauthjwt'
+
+
+def jwt_type_str(repo_type):
+    """Return valid JWT type string for given cluster type
+
+    Arguments:
+        repo_type (bool): True/False, depending on wheter it is an EE cluster
+            or not.
+
+    Returns:
+        String denoting JWT type string.
+    """
+    if repo_type:
+        return 'RS256'
+    else:
+        return 'HS256'
