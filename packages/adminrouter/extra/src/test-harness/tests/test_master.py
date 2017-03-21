@@ -5,7 +5,7 @@ import copy
 import pytest
 import requests
 
-from generic_test_code import (
+from generic_test_code.common import (
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
     generic_upstream_headers_verify_test,

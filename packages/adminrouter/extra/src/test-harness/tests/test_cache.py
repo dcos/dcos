@@ -5,7 +5,7 @@ import logging
 import requests
 import time
 
-from generic_test_code import ping_mesos_agent
+from generic_test_code.common import ping_mesos_agent
 from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE
 from mocker.endpoints.mesos import EXTRA_SLAVE_DICT
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta

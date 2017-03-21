@@ -4,13 +4,12 @@ import logging
 import pytest
 import requests
 
-from mocker.endpoints.open.iam import IamEndpoint
-from util import LineBufferFilter, SearchCriteria
-from generic_test_code import (
-    generic_user_is_401_forbidden_test,
+from generic_test_code.common import (
+    assert_endpoint_response,
     generic_correct_upstream_dest_test,
-    generic_valid_user_is_permitted_test,
 )
+from generic_test_code.open import assert_iam_queried_for_uid
+from util import SearchCriteria, iam_denies_all_requests
 
 log = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from generic_test_code import (
+from generic_test_code.common import (
     generic_no_slash_redirect_test,
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
