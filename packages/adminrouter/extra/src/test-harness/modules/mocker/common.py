@@ -100,6 +100,9 @@ class MockerBase:
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15055))
         # Mesos DNS
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=8123))
+        # Metrics(agent):
+        res.append(
+            ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))
         # TODO - other endpoints common for all flavours go here...
 
         return res
