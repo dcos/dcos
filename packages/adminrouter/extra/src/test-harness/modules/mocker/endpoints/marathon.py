@@ -375,13 +375,13 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
     """An endpoint that mimics DC/OS root Marathon"""
     def __init__(self, port, ip=''):
         super().__init__(port, ip, MarathonHTTPRequestHandler)
-        self._reset()
+        self.__context_init()
 
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
-            self._reset()
+            self.__context_init()
 
     def enable_nginx_app(self, *_):
         """Change the endpoint output so that it simulates extra Nginx app
@@ -416,7 +416,8 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         with self._context.lock:
             self._context.data["leader-content"] = 'blah blah buh buh'
 
-    def _reset(self):
-        """Reset internal state to default values"""
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
         self._context.data["endpoint-content"] = {"apps": [NGINX_APP_ALWAYSTHERE, ]}
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}

@@ -60,10 +60,16 @@ class IamEndpoint(RecordingTcpIpEndpoint):
     def __init__(self, port, ip=''):
         """Initialize a new IamEndpoint"""
         super().__init__(port, ip, IamHTTPRequestHandler)
-        self._context.data["allowed"] = True
+        self.__context_init()
 
     def reset(self):
-        super().reset()
+        with self._context.lock:
+            super().reset()
+            self.__context_init()
+
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
         self._context.data["allowed"] = True
 
     def permit_all_queries(self, *_):
