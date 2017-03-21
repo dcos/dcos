@@ -140,28 +140,7 @@ class LineBufferFilter:
         self._line_buffer = line_buffer
         self._timeout = timeout
 
-        self._parse_filter_regexpes(filter_regexpes)
-
-    def _parse_filter_regexpes(self, filter_regexpes):
-        """Parse filter regexpes into standardized dictionary
-
-        This method implement the polymorphism described in `__init__` method
-        of this class. Both single string and list arguments are converted here
-        to standardized form of dict({<regexp>: SearchCriteria()}) object.
-
-
-        Arguments:
-            filter_regexpes: see description of this argument in `__init__`
-            method
-        """
-        if isinstance(filter_regexpes, str):
-            self._filter_regexpes = {filter_regexpes: SearchCriteria(1, False)}
-        elif isinstance(filter_regexpes, list):
-            self._filter_regexpes = {x: SearchCriteria(1, False) for x in filter_regexpes}
-        elif isinstance(filter_regexpes, dict):
-            self._filter_regexpes = filter_regexpes
-        else:
-            assert False, "Unsupported filter strings object!"
+        self._filter_regexpes = filter_regexpes
 
     def __enter__(self):
         assert self._line_buffer_start is None
