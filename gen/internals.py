@@ -19,7 +19,7 @@ def get_function_parameters(function):
 
 def validate_arguments_strings(arguments: dict):
     errors = dict()
-    # Validate that all keys and vlaues of arguments are strings
+    # Validate that all keys and values of arguments are strings
     for k, v in arguments.items():
         if not isinstance(k, str):
             errors[''] = "All keys in arguments must be strings. '{}' isn't.".format(k)
@@ -558,7 +558,7 @@ class Resolver:
             self._unset.add(resolvable.name)
             raise SkipError("no way to calculate. Must be set in configuration.")
 
-        # Filtier out all optional setters if there is more than one way to set.
+        # Filter out all optional setters if there is more than one way to set.
         if len(feasible) > 1:
             final_feasible = list(filter(lambda setter: not setter.is_optional, feasible))
             assert final_feasible, "Had multiple optionals and no musts. Template internal error: {!r}".format(feasible)
@@ -817,7 +817,7 @@ def resolve_configuration(sources: List[Source], targets: List[Target]):
             setters[name] += setter_list
         validate += source.validate
 
-    # Use setters to caluclate every required parameter
+    # Use setters to calculate every required parameter
     resolver = Resolver(setters, validate, targets)
     resolver.resolve()
 

@@ -204,7 +204,7 @@ has been created. It exposes two interfaces:
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=header)
-    assert lbf.all_found
+    assert lbf.extra_matches == {}
 
   ```
 * `scan_log_buffer()` method that scans all the entries, since the subprocess
@@ -217,7 +217,7 @@ has been created. It exposes two interfaces:
 
     lbf.scan_log_buffer()
 
-    assert lbf.all_found is True
+    assert lbf.extra_matches == {}
 
   ```
 Separation of the log entries stemming from different instances of a given

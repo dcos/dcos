@@ -1,5 +1,3 @@
-local cache = require "master.cache"
-
 local mleader = cache.get_cache_entry("marathonleader")
 if mleader == nil then
     ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE

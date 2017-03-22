@@ -4,6 +4,11 @@ info:
   version: '1.0.0'
 basePath: /pkgpanda
 
+tags:
+  - name: repository
+    description: manage installed packages
+  - name: active
+    description: manage active packages
 
 definitions:
 
@@ -82,6 +87,8 @@ paths:
   /repository/:
     get:
       summary: List the packages that are present in the node's pkgpanda repository.
+      tags:
+        - repository
       produces:
         - application/json
       responses:
@@ -93,6 +100,8 @@ paths:
   /repository/{package-id}:
     get:
       summary: Get metadata for a package in the node's pkgpanda repository.
+      tags:
+        - repository
       parameters:
         - $ref: '#/parameters/PackageId'
       produces:
@@ -108,6 +117,8 @@ paths:
             $ref: '#/definitions/Error'
     post:
       summary: Fetch a package from the repository URL in the request body.
+      tags:
+        - repository
       description: The package is fetched from `<repository_url>/<package_name>/<package_id>.tar.xz`.
       parameters:
         - $ref: '#/parameters/PackageId'
@@ -139,6 +150,8 @@ paths:
             $ref: '#/definitions/Error'
     delete:
       summary: Remove a package from the node's pkgpanda repository.
+      tags:
+        - repository
       parameters:
         - $ref: '#/parameters/PackageId'
       produces:
@@ -158,6 +171,8 @@ paths:
   /active/:
     get:
       summary: List packages that are active on this node.
+      tags:
+        - active
       produces:
         - application/json
       responses:
@@ -167,6 +182,8 @@ paths:
             $ref: '#/definitions/PackageIdArray'
     put:
       summary: Replace the current list of active packages with the packages in the request body.
+      tags:
+        - active
       consumes:
         - application/json
       parameters:
@@ -192,6 +209,8 @@ paths:
   /active/{package-id}:
     get:
       summary: Get metadata for a package that is active on this node.
+      tags:
+        - active
       parameters:
         - $ref: '#/parameters/PackageId'
       produces:

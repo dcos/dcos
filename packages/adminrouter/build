@@ -10,7 +10,7 @@ export AR_BIN_DIR=$PKG_PATH
 
 $OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-opt="-L /opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
 
-# Incorporate adminrouter components.
+# Incorporate Admin Router components.
 rm -vfR $PKG_PATH/nginx/conf/*
 cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
 
