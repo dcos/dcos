@@ -25,10 +25,9 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
         if match:
             return self.__users_permissions_request_handler(match.group(1))
 
-        stub_paths = [
-            '/acs/api/v1/foo/bar',
-        ]
-        if base_path in stub_paths:
+        if base_path == '/acs/api/v1/foo/bar':
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse /acs/api/v1/users/ path.
             blob = self._convert_data_to_blob({})
             return 200, 'application/json', blob
 
