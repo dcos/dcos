@@ -669,7 +669,8 @@ def make_installer_docker(variant, variant_info, installer_info):
 
 
 def get_launch_package_id(package_list):
-    """scans througha the package list of the
+    """scans through the a list of packages ID's to return the one
+    that corresponds to dcos-launch
     """
     launch_package_id = None
     for package_id in package_list:
@@ -683,21 +684,13 @@ def get_launch_package_id(package_list):
 def fetch_dcos_launch_bin(launch_name, launch_package_id):
     work_dir = py.path.local.mkdtemp()
     # inspect the local packages cache to grab the desired artifact
-    cached_package_path = 'packages/cache/packages/dcos-launch/' + launch_package_id + '.tar.xz'
-    temp_package_path = str(work_dir.join('dcos-launch.tar.xz'))
-    subprocess.check_call(['cp', cached_package_path, temp_package_path])
-    with work_dir.as_cwd():
-        subprocess.check_call(['tar', '-Jxf', 'dcos-launch.tar.xz'])
+    cached_package_path = 'packages/cache/packages/{pkg_name}/{pkg_id}.tar.xz'.format(
+        pkg_name=pkgpanda.PackageId.parse(launch_package_id)[0], pkg_id=launch_package_id)
+    subprocess.check_call(['tar', '-Jxf', cached_package_path, '-C', str(work_dir)])
     launch_path = 'packages/cache/' + launch_name
     subprocess.check_call(['cp', str(work_dir.join('dcos-launch')), launch_path])
+    work_dir.remove()
     return launch_path
-
-
-def get_dcos_launch_name(variant):
-    if variant is None:
-        return 'dcos-launch'
-    else:
-        return 'dcos-launch-' + pkgpanda.util.variant_name(variant)
 
 
 def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):
@@ -732,7 +725,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         else:
             with logger.scope("building dcos-launch for variant: {}".format(variant_name)):
                 launch_package_id = get_launch_package_id(all_completes[bootstrap_util_name]['packages'])
-                launch_name = get_dcos_launch_name(variant)
+                launch_name = 'dcos-launch' + pkgpanda.util.variant_suffix(variant, delim='-')
                 yield {
                     'channel_path': launch_name,
                     'local_path': fetch_dcos_launch_bin(launch_name, launch_package_id)
