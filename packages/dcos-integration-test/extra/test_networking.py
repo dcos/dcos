@@ -21,7 +21,7 @@ from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_ap
 log = logging.getLogger(__name__)
 timeout = 100
 # number of worker threads to use to parallelize the vip test
-maxthreads = 16
+maxthreads = 10
 vip_port_base = 7000
 backend_port_st = 8000
 
