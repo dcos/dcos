@@ -4,8 +4,8 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "f4ba3ec9784b9e5c26e4ed2e4dc9782861aefd9c",
-      "ref_origin": "master"
+      "ref": "f03267825736b3a1bc808fe704f9b825e8386f86",
+      "ref_origin": "fix-dcos-oss-812"
     }
   },
   "sysctl": {
