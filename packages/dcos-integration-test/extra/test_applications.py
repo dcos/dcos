@@ -140,7 +140,8 @@ def test_octarine_http(dcos_api_session, timeout=30):
         }]
     }
 
-    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition):
+        pass
 
 
 def test_octarine_srv(dcos_api_session, timeout=30):
@@ -187,7 +188,8 @@ def test_octarine_srv(dcos_api_session, timeout=30):
         }]
     }
 
-    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition):
+        pass
 
 
 def test_pkgpanda_api(dcos_api_session):
