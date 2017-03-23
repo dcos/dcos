@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "bbb692d4b5fc27533bca0706f6d8c3b430a0026f",
+    "ref": "2b5e1af8003d96473bd7457e13da8aafad0db32c",
     "ref_origin" : "ci/till/dcos-mesos-1.2.x-docker-nl-env-fix"
   },
   "environment": {
