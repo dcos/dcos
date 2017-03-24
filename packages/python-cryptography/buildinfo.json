@@ -1,0 +1,25 @@
+{
+  "requires": ["python", "libffi"],
+  "sources": {
+    "cryptography": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/99/df/71c7260003f5c469cec3db4c547115df39e9ce6c719a99e067ba0e78fd8a/cryptography-1.7.2.tar.gz",
+      "sha1": "2b5bc62fda71992633f83164b1a74c16a784acdf"
+    },
+    "pyasn1": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/07/4c/9a0927b81958997c1a4b2f88f70a48e622471b61fcd00d5039054fe881df/pyasn1-0.2.2-py2.py3-none-any.whl",
+      "sha1": "bdf5ef86a3a102fe9feece461b93b7e1717080e9"
+    },
+    "cffi": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz",
+      "sha1": "16265a4b305d433fb9089b19278502e904b0cb43"
+    },
+    "idna": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/71/02/dee75fc3e6f7455bf69221164f94586ee13552c5f33c8002335667a3d122/idna-2.1-py2.py3-none-any.whl",
+      "sha1": "ef95a0f1627b85fbfb74eaba4fbb82f0c1b9d6d6"
+    }
+  }
+}

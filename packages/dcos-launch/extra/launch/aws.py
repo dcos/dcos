@@ -4,7 +4,9 @@ import logging
 import yaml
 
 import launch.util
+import ssh.tunnel
 import test_util.aws
+import test_util.runner
 
 log = logging.getLogger(__name__)
 
@@ -114,3 +116,19 @@ class AwsCloudformationLauncher(launch.util.AbstractLauncher):
             return test_util.aws.fetch_stack(info['stack_id'], self.boto_wrapper)
         except Exception as ex:
             raise launch.util.LauncherError('StackNotFound', None) from ex
+
+    def test(self, info, test_cmd):
+        launch.util.check_testable(info)
+        details = self.describe(info)
+        test_host = details['masters'][0]['public_ip']
+        with ssh.tunnel.tunnel(info['ssh_user'], info['ssh_private_key'], test_host) as test_tunnel:
+            return test_util.runner.integration_test(
+                tunnel=test_tunnel,
+                dcos_dns=test_host,
+                master_list=[m['private_ip'] for m in details['masters']],
+                agent_list=[a['private_ip'] for a in details['private_agents']],
+                public_agent_list=[a['private_ip'] for a in details['public_agents']],
+                aws_access_key_id=info['aws_access_key_id'],
+                aws_secret_access_key=info['aws_secret_access_key'],
+                region=info['aws_region'],
+                test_cmd=test_cmd)

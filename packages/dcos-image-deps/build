@@ -7,7 +7,7 @@ mkdir -p "$LIB_INSTALL_DIR"
 for package in analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
     azure-mgmt-network azure-storage beautifulsoup4 certifi docutils enum34 keyring msrest \
     msrestazure py requests-oauthlib webob; do
-  pip3 install --no-deps --no-index --target="$LIB_INSTALL_DIR" /pkg/src/$package/*.whl
+  pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
 done
 
 for package in aiohttp chardet coloredlogs docker-py humanfriendly multidict oauthlib \
