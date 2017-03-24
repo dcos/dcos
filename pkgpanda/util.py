@@ -57,6 +57,12 @@ def variant_prefix(variant):
     return variant + '.'
 
 
+def variant_suffix(variant, delim='.'):
+    if variant is None:
+        return ''
+    return delim + variant
+
+
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)

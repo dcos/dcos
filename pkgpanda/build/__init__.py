@@ -609,6 +609,18 @@ def make_bootstrap_tarball(package_store, packages, variant):
     return mark_latest()
 
 
+def build_tree_variants(package_store, mkbootstrap):
+    """ Builds all possible tree variants in a given package store
+    """
+    result = dict()
+    tree_variants = get_variants_from_filesystem(package_store.packages_dir, 'treeinfo.json')
+    if len(tree_variants) == 0:
+        raise Exception('No treeinfo.json can be found in {}'.format(package_store.packages_dir))
+    for variant in tree_variants:
+        result[variant] = pkgpanda.build.build_tree(package_store, mkbootstrap, variant)
+    return result
+
+
 def build_tree(package_store, mkbootstrap, tree_variant):
     """Build packages and bootstrap tarballs for one or all tree variants.
 

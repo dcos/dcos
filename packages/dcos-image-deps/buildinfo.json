@@ -122,11 +122,6 @@
       "url": "https://pypi.python.org/packages/2.7/p/py/py-1.4.31-py2.py3-none-any.whl",
       "sha1": "ffcba27ff8391f46904c2762135a383d29a4bf1b"
     },
-    "pyinstaller": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/33/f9/034a89276301ef5e88efd11e5ea592e3d3b2324706e65bdff7445d271077/PyInstaller-3.2.tar.gz",
-      "sha1": "a53b882adbd3f9f4fd14b482ad9467f90ad5154e"
-    },
     "requests-oauthlib": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/3d/b9/895abf47ce871c80460727ba385d10d246a2d9ded1bc82ba3748d02e5196/requests_oauthlib-0.6.1-py2.py3-none-any.whl",

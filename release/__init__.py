@@ -323,12 +323,13 @@ def make_stable_artifacts(cache_repository_url):
             logger.error("Failure building package(s): {}".format(ex))
             raise
 
-    # The installer is a built bootstrap, but not a DC/OS variant. We use
+    # The installer and util are built bootstraps, but not a DC/OS variants. We use
     # iteration over the complete_dict to enumerate all variants a whole lot,
-    # so explicity remove installer here so people don't accidentally hit it.
+    # so explicity remove installer/util here so people don't accidentally hit it.
+    # TODO: make this into a tree option
     complete_dict = dict()
     for name, info in copy.copy(all_completes).items():
-        if name is not None and name.endswith('installer'):
+        if name is not None and (name.endswith('installer') or name.endswith('util')):
             continue
         complete_dict[name] = info
 

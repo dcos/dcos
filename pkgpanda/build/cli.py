@@ -5,8 +5,8 @@ package version, then builds the package in an isolated environment along with
 the necessary dependencies.
 
 Usage:
-  mkpanda [--repository-url=<repository_url>] [--dont-clean-after-build] [--recursive]
-  mkpanda tree [--mkbootstrap] [--repository-url=<repository_url>] [<variant>]
+  mkpanda [--repository-url=<repository_url>] [--dont-clean-after-build] [--recursive] [--variant=<variant>]
+  mkpanda tree [--mkbootstrap] [--repository-url=<repository_url>] [--variant=<variant>]
 """
 
 import sys
@@ -23,11 +23,17 @@ def main():
     try:
         arguments = docopt(__doc__, version="mkpanda {}".format(pkgpanda.build.constants.version))
         umask(0o022)
-
+        variant_arg = arguments['--variant']
+        # map the keyword 'default' to None to build default as this is how default is internally
+        # represented, but use the None argument (i.e. the lack of variant arguments) to trigger all variants
+        target_variant = variant_arg if variant_arg != 'default' else None
         # Make a local repository for build dependencies
         if arguments['tree']:
             package_store = pkgpanda.build.PackageStore(getcwd(), arguments['--repository-url'])
-            pkgpanda.build.build_tree(package_store, arguments['--mkbootstrap'], arguments['<variant>'])
+            if variant_arg is None:
+                pkgpanda.build.build_tree_variants(package_store, arguments['--mkbootstrap'])
+            else:
+                pkgpanda.build.build_tree(package_store, arguments['--mkbootstrap'], target_variant)
             sys.exit(0)
 
         # Package name is the folder name.
@@ -42,12 +48,25 @@ def main():
             print("Not a valid package folder. Didn't find any 'buildinfo.json' files.")
             sys.exit(1)
 
-        # No command -> build package.
-        pkg_dict = pkgpanda.build.build_package_variants(
-            package_store,
-            name,
-            not arguments['--dont-clean-after-build'],
-            arguments['--recursive'])
+        clean_after_build = not arguments['--dont-clean-after-build']
+        recursive = arguments['--recursive']
+        if variant_arg is None:
+            # No command -> build all package variants.
+            pkg_dict = pkgpanda.build.build_package_variants(
+                package_store,
+                name,
+                clean_after_build,
+                recursive)
+        else:
+            # variant given, only build that one package variant
+            pkg_dict = {
+                target_variant: pkgpanda.build.build(
+                    package_store,
+                    name,
+                    target_variant,
+                    clean_after_build,
+                    recursive)
+            }
 
         print("Package variants available as:")
         for k, v in pkg_dict.items():
