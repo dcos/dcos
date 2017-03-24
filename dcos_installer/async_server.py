@@ -340,8 +340,9 @@ def build_app(loop):
 
     # TODO(cmaloney): These should probably actually hard fail.
     try:
-        app.router.add_static('/assets', assets_path)
-        app.router.add_static('/download/log', STATE_DIR)
+        # Passing an absolute path because we don't trust add_static() to resolve relative paths for us.
+        app.router.add_static('/assets', os.path.abspath(assets_path))
+        app.router.add_static('/download/log', os.path.abspath(STATE_DIR))
     except ValueError as err:
         log.warning(err)
 
