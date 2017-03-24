@@ -3,7 +3,7 @@ import logging
 import uuid
 
 
-from test_util.marathon import get_test_app
+from test_util.marathon import get_test_app, get_test_app_in_ucr
 from test_util.recordio import Decoder, Encoder
 
 
@@ -141,3 +141,23 @@ def test_files_api(dcos_api_session):
                 app_task['slaveId'], marathon_framework_id, app_task['id'], required_sandbox_file)
 
             assert content, 'File {} should not be empty'.format(required_sandbox_file)
+
+
+def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
+    # We run a marathon app instead of a metronome job because metronome
+    # doesn't support running docker images with the UCR. We need this
+    # functionality in order to test that the pid namespace isolator
+    # is functioning correctly.
+    app, test_uuid = get_test_app_in_ucr()
+
+    ps_output_file = 'ps_output'
+    app['cmd'] = 'ps ax -o pid= > {}; sleep 1000'.format(ps_output_file)
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app, check_health=False):
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
+        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+
+        content = dcos_api_session.mesos_sandbox_file(
+            app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
+
+        assert len(content.split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
