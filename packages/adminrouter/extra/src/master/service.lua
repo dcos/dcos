@@ -1,5 +1,4 @@
 local util = require "master.util"
-local cache = require "master.cache"
 local url = require "master.url"
 
 function gen_serviceurl(service_name)

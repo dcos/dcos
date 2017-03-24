@@ -42,5 +42,4 @@ def test_missing_input(tmpdir):
     """
     with tmpdir.as_cwd():
         for cmd in ['create', 'wait', 'describe', 'delete', 'pytest']:
-            with pytest.raises(FileNotFoundError):
-                main([cmd])
+            assert main([cmd]) == 1

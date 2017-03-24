@@ -14,7 +14,7 @@ from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
 log = logging.getLogger(__name__)
 
 
-class TestCache():
+class TestCache:
     def test_if_first_cache_refresh_occurs_earlier(
             self, nginx_class, mocker, superuser_user_header):
         filter_regexp = {
@@ -465,7 +465,8 @@ class TestCache():
 
             # change the leader and wait for cache to notice
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                                func_name='change_leader')
+                                func_name='change_leader',
+                                aux_data="127.0.0.3:80")
             # First poll (2s) + normal poll interval(4s) < 2 * normal poll
             # interval(4s)
             time.sleep(cache_poll_period * 2)

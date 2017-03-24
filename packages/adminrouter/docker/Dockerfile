@@ -50,6 +50,7 @@ RUN set -ex \
     && apt-get install -y --no-install-recommends \
         dnsmasq \
         gcc \
+        gettext-base \
         libdigest-sha-perl \
         libffi-dev \
         libffi6 \
@@ -60,7 +61,7 @@ RUN set -ex \
         python3-dev \
         python3-pip \
         python3-virtualenv \
-        gettext-base
+        rsync
 
 # Upgrading pip/setuptools and making the upgrade actually apply in the
 # following filesystem layers works more reliable when using a virtualenv for

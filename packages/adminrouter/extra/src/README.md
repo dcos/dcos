@@ -32,6 +32,92 @@ The endpoint should only use relative links for links and referenced assets such
 
 Tasks running in nested [Marathon app groups](https://mesosphere.github.io/marathon/docs/application-groups.html) will be available only using their service name (i.e, `<dcos-cluster>/service/<service-name>`) and not considering the marathon app group name (i.e., `<dcos-cluster>/service/app-group/<service-name>`).
 
+## Caching
+
+In order to serve some of the requests, Admin Router relies on the information
+ that can be obtained from Marathon and  Mesos. This includes:
+* Mesos agents - e.g. `/agent/.*` location
+* Marathon leader - e.g. `/system/v1/leader/marathon/.*` location
+* Tasks/Frameworks running in the cluster - e.g. `/service/.*` location
+
+Due to scalability reasons, it's impossible to obtain this data on each and
+every request to given endpoint as it will overload Mesos/Marathon. So
+the idea was born to pre-fetch this data and store it in shared memory where
+each Nginx worker process can access it.
+
+### Architecture
+
+Due to the nature of Nginx, there are some limitations when it comes to Lua
+code that OpenResty can run. For example:
+* threading is unavailable, it's recommended to use recursive timers (http://stackoverflow.com/a/19060625/145400) for asynchronous tasks
+* it's impossible to hold back Nginx request processing machinery from within
+  certain initialization hooks as workers work independently.
+* Using ngx.timer API in `init_by_lua` is not possible because init_by_lua runs
+  in the Nginx master process instead of the worker processes which does the
+  real request processing, etc. (https://github.com/openresty/lua-nginx-module/issues/330#issuecomment-33622121)
+
+So a decision was made to periodically poll Mesos and Marathon for relevant data
+using recursive timers. There are two variables that control this behaviour:
+* `CACHE_FIRST_POLL_DELAY` - first poll for Mesos and Marathon occurs after this
+  amount of time passed since worker initialization
+* `CACHE_POLL_PERIOD` - after the first poll is done, every other is scheduled
+  every this number of seconds.
+Obviously `CACHE_FIRST_POLL_DELAY` should be much smaller than `CACHE_POLL_PERIOD`.
+
+Cache refresh can also be triggered by a request coming in during
+<0, `CACHE_FIRST_POLL_DELAY`> period. In this case, cache refresh will not occur
+during the `CACHE_FIRST_POLL_DELAY` timer execution as the contents of the
+shared memory will still be considered fresh.
+
+### Cache timers
+
+The `freshness` of the cache is governed by few variables:
+* `CACHE_EXPIRATION` - if the age of the cached data is smaller than
+  `CACHE_EXPIRATION` seconds, then the cache refresh will not occur if it's
+  ngx.timer context and request processing code will use the data stored in shared memory.
+* `CACHE_MAX_AGE_SOFT_LIMIT` - between `CACHE_EXPIRATION` seconds and
+  `CACHE_MAX_AGE_SOFT_LIMIT` seconds, cache is still considered "usable" in
+  request context, but the ngx.timer context will try to update it with fresh
+  data fetched from Mesos and Marathon
+* `CACHE_MAX_AGE_HARD_LIMIT` - between `CACHE_MAX_AGE_SOFT_LIMIT` and
+  `CACHE_MAX_AGE_HARD_LIMIT` cache is still usable in request context, but
+  with each access to it, a warning message is written to the Nginx log.
+  Timer context will try to update the cache.
+* beyond `CACHE_MAX_AGE_HARD_LIMIT` age, cache is considered unusable and
+  every request made to the location that uses it will fail with 503 status.
+
+The relation between these is:
+`CACHE_EXPIRATION` < `CACHE_MAX_AGE_SOFT_LIMIT` << `CACHE_MAX_AGE_HARD_LIMIT`
+
+The reason why we put `<<` in front of `CACHE_MAX_AGE_HARD_LIMIT` is to make
+the cache a bit of a "best-effort" one - In the case when Mesos and/or Marathon
+dies, the cache should still be able to serve data for a reasonable amount of time
+and thus give the operator some time to solve the underlying issue. For example
+Mesos tasks do not move that often and the data stored in Nginx should still be
+usable, at least partially.
+
+### Locking and error handling
+
+Each worker tries to perform cache updates independently. On top of that during
+the early stage of Admin Router operation, a request can trigger the update as
+well. In order to coordinate it, locking was introduced.
+
+There are two different locking behaviours, depending on the context from which
+the update was triggered:
+* for timer-based refreshes, the lock is non-blocking. If there is an update already
+  in progress, execution is aborted, and next timer-based refresh is scheduled.
+* in case of request-triggered update, lock is blocking and the lock timeout
+  is equal to `CACHE_REFRESH_LOCK_TIMEOUT` seconds. This way, during
+  `<0, CACHE_FIRST_POLL_DELAY>` period, requests are queued while waiting for the
+  first, refresh to succeed.
+
+Request to Mesos/Marathon can take at most `CACHE_BACKEND_REQUEST_TIMEOUT` seconds.
+After that, the request is considered failed, and it is retried during the next
+update.
+
+Worth noting is that Nginx reload resets all the timers. Cache is left intact
+though.
+
 ## Testing
 
 Admin Router repository includes a test harness that is meant to make
@@ -204,7 +290,7 @@ has been created. It exposes two interfaces:
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=header)
-    assert lbf.all_found
+    assert lbf.extra_matches == {}
 
   ```
 * `scan_log_buffer()` method that scans all the entries, since the subprocess
@@ -217,7 +303,7 @@ has been created. It exposes two interfaces:
 
     lbf.scan_log_buffer()
 
-    assert lbf.all_found is True
+    assert lbf.extra_matches == {}
 
   ```
 Separation of the log entries stemming from different instances of a given

@@ -15,7 +15,6 @@ import pkgpanda
 import pkgpanda.util
 from gen.calc import calculate_environment_variable
 from gen.internals import Source
-from pkgpanda.build.src_fetchers import GitLocalSrcFetcher
 from pkgpanda.util import logger
 
 
@@ -669,24 +668,29 @@ def make_installer_docker(variant, variant_info, installer_info):
     return installer_filename
 
 
-def make_dcos_launch():
-    # NOTE: this needs to be kept in sync with build_dcos_launch.sh
-    work_dir = py.path.local.mkdtemp()
-    # the tree will not be in the working dir if run from downstream
-    tree_src = './'
-    if os.path.exists('ext/upstream'):
-        tree_src = './ext/upstream'
-    src_info = {'kind': 'git_local', 'rel_path': tree_src}
-    this_tree = GitLocalSrcFetcher(src_info, None, os.getcwd())
-    this_tree.checkout_to(str(work_dir))
-    # put the launch spec into the root of the tree before running pyinstaller
-    work_dir.join('dcos-launch.spec').write(pkg_resources.resource_string('launch', 'dcos-launch.spec'))
-    with work_dir.as_cwd():
-        subprocess.check_call(['pyinstaller', '--log-level=DEBUG', 'dcos-launch.spec'])
-    subprocess.check_call(['mv', str(work_dir.join('dist').join('dcos-launch')), 'dcos-launch'])
-    work_dir.remove()
+def get_launch_package_id(package_list):
+    """scans through the a list of packages ID's to return the one
+    that corresponds to dcos-launch
+    """
+    launch_package_id = None
+    for package_id in package_list:
+        if pkgpanda.PackageId(package_id).name == 'dcos-launch':
+            launch_package_id = package_id
+            break
+    assert launch_package_id, 'dcos-launch package cannot be found!'
+    return launch_package_id
 
-    return "dcos-launch"
+
+def fetch_dcos_launch_bin(launch_name, launch_package_id):
+    work_dir = py.path.local.mkdtemp()
+    # inspect the local packages cache to grab the desired artifact
+    cached_package_path = 'packages/cache/packages/{pkg_name}/{pkg_id}.tar.xz'.format(
+        pkg_name=pkgpanda.PackageId.parse(launch_package_id)[0], pkg_id=launch_package_id)
+    subprocess.check_call(['tar', '-Jxf', cached_package_path, '-C', str(work_dir)])
+    launch_path = 'packages/cache/' + launch_name
+    subprocess.check_call(['cp', str(work_dir.join('dcos-launch')), launch_path])
+    work_dir.remove()
+    return launch_path
 
 
 def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):
@@ -701,24 +705,28 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
     """
     # TODO(cmaloney): Build installers in parallel.
     # Variants are sorted for stable ordering.
-    for variant, bootstrap_info in sorted(variant_arguments.items(),
-                                          key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        with logger.scope("Building installer for variant: ".format(pkgpanda.util.variant_name(variant))):
-            bootstrap_installer_name = '{}installer'.format(pkgpanda.util.variant_prefix(variant))
-            installer_filename = make_installer_docker(variant, all_completes[variant],
-                                                       all_completes[bootstrap_installer_name])
+    for variant in sorted(variant_arguments.keys(), key=lambda k: pkgpanda.util.variant_str(k)):
+        variant_name = pkgpanda.util.variant_name(variant)
+        bootstrap_installer_name = '{}installer'.format(pkgpanda.util.variant_prefix(variant))
+        bootstrap_util_name = '{}util'.format(pkgpanda.util.variant_prefix(variant))
+        if bootstrap_installer_name not in all_completes:
+            print('WARNING: No installer tree for variant: {}'.format(variant_name))
+        else:
+            with logger.scope("Building installer for variant: {}".format(variant_name)):
 
-            yield {
-                'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
-                'local_path': installer_filename
-            }
+                yield {
+                    'channel_path': 'dcos_generate_config.{}sh'.format(pkgpanda.util.variant_prefix(variant)),
+                    'local_path': make_installer_docker(variant, all_completes[variant],
+                                                        all_completes[bootstrap_installer_name])
+                }
 
-    # Build dcos-launch
-    # TODO(cmaloney): This really doesn't belong to here, but it's the best place it fits for now.
-    #                 dcos-launch works many places which aren't bash / on-premise installers.
-    #                 It also isn't dependent on the "reproducible" artifacts at all. Just the commit...
-    with logger.scope("building dcos-launch"):
-        yield {
-            'channel_path': 'dcos-launch',
-            'local_path': make_dcos_launch()
-        }
+        if bootstrap_util_name not in all_completes:
+            print('WARNING: No util tree for variant: {}'.format(variant_name))
+        else:
+            with logger.scope("building dcos-launch for variant: {}".format(variant_name)):
+                launch_package_id = get_launch_package_id(all_completes[bootstrap_util_name]['packages'])
+                launch_name = 'dcos-launch' + pkgpanda.util.variant_suffix(variant, delim='-')
+                yield {
+                    'channel_path': launch_name,
+                    'local_path': fetch_dcos_launch_bin(launch_name, launch_package_id)
+                }

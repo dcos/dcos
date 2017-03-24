@@ -399,12 +399,12 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         with self._context.lock:
             self._context.data["leader-content"] = None
 
-    def change_leader(self, *_):
+    def change_leader(self, new_leader):
         """Change the endpoint output so that it responds with a non-default
            Marathon leader node.
         """
         with self._context.lock:
-            self._context.data["leader-content"] = {"leader": "127.0.0.3:80"}
+            self._context.data["leader-content"] = {"leader": new_leader}
 
     def break_leader_reply(self, *_):
         """Change the endpoint output so that it responds with a broken

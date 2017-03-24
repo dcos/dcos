@@ -14,7 +14,7 @@ from generic_test_code import (
 pytestmark = pytest.mark.usefixtures("agent_ar_process")
 
 
-class TestLogsEndpoint():
+class TestLogsEndpoint:
     def test_redirect_req_without_slash(self, agent_ar_process):
         generic_no_slash_redirect_test(agent_ar_process, '/system/v1/logs/v1')
 

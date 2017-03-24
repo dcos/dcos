@@ -133,6 +133,11 @@ class RecordingTcpIpEndpoint(TcpIpHttpEndpoint):
         with self._context.lock:
             self._context.data["encoded_response"] = aux_data
 
+    def erase_recorded_requests(self, *_):
+        """Fetch all the recorded requests data from the handler"""
+        with self._context.lock:
+            self._context.data["requests"] = list()
+
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:

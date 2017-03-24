@@ -1,5 +1,3 @@
-local cache = require "master.cache"
-
 local state = cache.get_cache_entry("mesosstate")
 
 if state == nil then
