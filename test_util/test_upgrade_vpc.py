@@ -41,6 +41,7 @@ import os
 import pprint
 import random
 import sys
+import time
 import traceback
 import uuid
 from subprocess import CalledProcessError
@@ -75,6 +76,11 @@ curl_cmd = [
     '--speed-limit', '100000',
     '--speed-time', '60',
 ]
+
+
+def sleep(seconds):
+    logging.info('Sleeping for {} seconds'.format(seconds))
+    time.sleep(seconds)
 
 
 def create_marathon_viplisten_app():
@@ -473,6 +479,7 @@ class VpcClusterUpgradeTest:
                     logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
                     with cluster.ssher.tunnel(host) as tunnel:
                         self.upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
+                        sleep(60)
 
                         wait_metric = {
                             'master': 'registrar/log/recovered',
@@ -487,6 +494,7 @@ class VpcClusterUpgradeTest:
                                 'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.
                                 format(role_name, repr(host))
                             ) from exc
+                        sleep(60)
 
     def run_test(self) -> int:
         stack_suffix = os.getenv("CF_STACK_NAME_SUFFIX", "open-upgrade")
