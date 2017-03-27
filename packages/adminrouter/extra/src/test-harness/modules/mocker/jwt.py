@@ -66,7 +66,8 @@ def decode_pem_key(key_pem):
     return private_key
 
 
-def generate_rs256_jwt(key_path, uid, exp=None):
+def generate_rs256_jwt(
+        key_path, uid, exp=None, skip_uid_claim=False, skip_exp_claim=False):
     """Generate a RS256 JSON Web Token
 
     Args:
@@ -75,6 +76,10 @@ def generate_rs256_jwt(key_path, uid, exp=None):
         uid (str): a value of `uid` JWT claim that should be set in the token
         exp (int): a value of `exp` JWT claim that should be set in the token,
             by default it's AUTHTOKEN_LIFETIME_SECONDS seconds from now.
+        skip_uid_claim (bool): specifies whether the UID claim should be present
+            in the token
+        skip_exp_claim (bool): specifies whether the `exp` claim should be present
+            in the token
 
     Returns:
         A JSON Web Token string that can be used directly in HTTP headers/cookies/etc...
@@ -84,6 +89,12 @@ def generate_rs256_jwt(key_path, uid, exp=None):
 
     payload = {"uid": uid,
                "exp": int(exp)}
+    if skip_uid_claim:
+        del payload['uid']
+
+    if skip_exp_claim:
+        del payload['exp']
+
 
     key_pem = load_key(key_path)
 
@@ -94,7 +105,8 @@ def generate_rs256_jwt(key_path, uid, exp=None):
     return jwt_token
 
 
-def generate_hs256_jwt(key_path, uid, exp=None):
+def generate_hs256_jwt(
+        key_path, uid, exp=None, skip_uid_claim=False, skip_exp_claim=False):
     """Generate a HS256 JSON Web Token
 
     Args:
@@ -103,6 +115,10 @@ def generate_hs256_jwt(key_path, uid, exp=None):
         uid (str): a value of `uid` JWT claim that should be set in the token
         exp (int): a value of `exp` JWT claim that should be set in the token,
             by default it's AUTHTOKEN_LIFETIME_SECONDS seconds from now.
+        skip_uid_claim (bool): specifies whether the `uid` claim should be present
+            in the token
+        skip_exp_claim (bool): specifies whether the `exp` claim should be present
+            in the token
 
     Returns:
         A JSON Web Token string that can be used directly in HTTP headers/cookies/etc...
@@ -112,6 +128,11 @@ def generate_hs256_jwt(key_path, uid, exp=None):
 
     payload = {"uid": uid,
                "exp": int(exp)}
+    if skip_uid_claim:
+        del payload['uid']
+
+    if skip_exp_claim:
+        del payload['exp']
 
     key = load_key(key_path)
 
