@@ -1,10 +1,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
-import requests
-import os
-
 from generic_test_code.common import assert_endpoint_response
-from util import SearchCriteria, iam_denies_all_requests
+from util import SearchCriteria
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 

@@ -95,7 +95,6 @@ def generate_rs256_jwt(
     if skip_exp_claim:
         del payload['exp']
 
-
     key_pem = load_key(key_path)
 
     key = decode_pem_key(key_pem)
