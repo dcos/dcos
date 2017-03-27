@@ -2,6 +2,11 @@
 set -x
 set -o errexit -o pipefail
 
+echo "Print ENVVAR"
+echo $AWS_TESTING_ACCESS_KEY_ID
+echo $AWS_TESTING_SECRET_ACCESS_KEY
+
+
 function now { date +"%Y-%m-%dT%H:%M:%S.000" | tr -d '\n' ;}
 function _scope_msg() {
     # Here we want to turn off `-x` that is present when running the bash script
