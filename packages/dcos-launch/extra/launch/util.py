@@ -1,12 +1,13 @@
 import abc
 import logging
 
+import cryptography.hazmat.backends
 import pkg_resources
 import yaml
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 import pkgpanda
-import ssh.tunnel
-import test_util.runner
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +17,13 @@ MOCK_VPC_ID = 'vpc-foo-bar'
 MOCK_SUBNET_ID = 'subnet-foo-bar'
 MOCK_GATEWAY_ID = 'gateway-foo-bar'
 MOCK_STACK_ID = 'this-is-a-important-test-stack::deadbeefdeadbeef'
+
+NO_TEST_FLAG = 'NO PRIVATE SSH KEY PROVIDED - CANNOT TEST'
+
+
+def check_testable(info):
+    if info['ssh_private_key'] == NO_TEST_FLAG or 'ssh_user' not in info:
+        raise LauncherError('MissingInput', 'DC/OS Launch is missing sufficient SSH info to run tests!')
 
 
 def stub(output):
@@ -66,27 +74,41 @@ class AbstractLauncher(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def test(self, info, test_cmd):
-        try:
-            check_keys(info, ['ssh_user', 'ssh_private_key'])
-        except LauncherError:
-            print('DC/OS Launch is missing sufficient SSH info to run tests!')
-            raise
-        details = self.describe(info)
-        test_host = details['masters'][0]['public_ip']
-        with ssh.tunnel.tunnel(info['ssh_user'], info['ssh_private_key'], test_host) as test_tunnel:
-            return test_util.runner.integration_test(
-                tunnel=test_tunnel,
-                dcos_dns=test_host,
-                master_list=[m['private_ip'] for m in details['masters']],
-                agent_list=[a['private_ip'] for a in details['private_agents']],
-                public_agent_list=[a['private_ip'] for a in details['public_agents']],
-                aws_access_key_id=info['aws_access_key_id'],
-                aws_secret_access_key=info['aws_secret_access_key'],
-                region=info['aws_region'],
-                test_cmd=test_cmd)
+        raise NotImplementedError()
 
 
 def convert_host_list(host_list):
     """ Makes Host tuples more readable when using describe
     """
     return [{'private_ip': h.private_ip, 'public_ip': h.public_ip} for h in host_list]
+
+
+def generate_rsa_keypair(key_size=2048):
+    """Generate an RSA keypair.
+    Create new RSA keypair with an exponent of 65537. Serialize the public
+    key OpenSSH format that is used by providers for specifying access keys
+    Serialize the private key in the PKCS#8 (RFC 3447) format.
+    Args:
+        bits (int): the key length in bits.
+    Returns:
+        (private key, public key) 2-tuple, both unicode objects holding the
+        serialized keys
+    """
+    crypto_backend = cryptography.hazmat.backends.default_backend()
+
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=key_size,
+        backend=crypto_backend)
+
+    privkey_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+
+    public_key = private_key.public_key()
+    pubkey_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.OpenSSH,
+        format=serialization.PublicFormat.OpenSSH)
+
+    return privkey_pem, pubkey_pem

@@ -2,7 +2,7 @@
   "requires": [
       "dcos-image",
       "python",
-      "python-requests",
+      "python-cryptography",
       "pytest"],
   "sources": {
     "pyinstaller": {
