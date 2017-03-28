@@ -14,7 +14,7 @@ from retrying import retry
 from pkgpanda.util import load_yaml
 from ssh.tunnel import Tunnelled
 
-MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '900'))
+MAX_STAGE_TIME = int(os.getenv('INSTALLER_API_MAX_STAGE_TIME', '1500'))
 
 
 class AbstractDcosInstaller(metaclass=abc.ABCMeta):
