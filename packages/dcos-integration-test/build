@@ -1,4 +1,2 @@
 #!/bin/bash
 cp -r /pkg/extra/* $PKG_PATH
-# Create dummy .dockercfg for integration test
-touch $PKG_PATH/.dockercfg

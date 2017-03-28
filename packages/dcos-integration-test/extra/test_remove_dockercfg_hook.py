@@ -23,7 +23,7 @@ def test_remove_dockercfg_hook(dcos_api_session):
             'mem': 32,
             'disk': 0,
             'cmd': "test ! -f .dockercfg",
-            'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/.dockercfg"}]}}
+            'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/util/.dockercfg"}]}}
     try:
         dcos_api_session.metronome_one_off(job)
     except Exception as ex:
