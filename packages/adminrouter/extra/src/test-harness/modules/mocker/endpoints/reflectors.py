@@ -86,13 +86,13 @@ class ReflectingHTTPRequestHandler(BaseHTTPRequestHandler):
 class ReflectingTcpIpEndpoint(TcpIpHttpEndpoint):
     """ReflectingTcpIpEndpoint is just a plain TCP/IP endpoint with a
        request handler that pushes back request data to the client."""
-    def __init__(self, port, ip=''):
-        super().__init__(ReflectingHTTPRequestHandler, port, ip)
+    def __init__(self, port, ip='', keyfile=None, certfile=None):
+        super().__init__(ReflectingHTTPRequestHandler, port, ip, keyfile, certfile)
 
 
 # pylint: disable=R0903
 class ReflectingUnixSocketEndpoint(UnixSocketHTTPEndpoint):
     """ReflectingUnixSocketEndpoint is just a plain Unix Socket endpoint with a
        request handler that pushes back request data to the client."""
-    def __init__(self, path):
-        super().__init__(ReflectingHTTPRequestHandler, path)
+    def __init__(self, path, keyfile=None, certfile=None):
+        super().__init__(ReflectingHTTPRequestHandler, path, keyfile, certfile)

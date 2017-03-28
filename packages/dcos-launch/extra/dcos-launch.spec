@@ -5,8 +5,7 @@
 #   - Building will suck up the local SSL .so and package it
 #     with the final exe. Ensure build system has OpenSSL 1.0.2g or greater
 a = Analysis(['launch/cli.py'],
-             hiddenimports=['html.parser'],
-             datas=[('gen/ip-detect/*.sh', 'gen/ip-detect/')])
+             hiddenimports=['html.parser'])
 pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 exe = EXE(
     pyz,

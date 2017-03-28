@@ -1,6 +1,7 @@
 {
   "exclude": [
-    "dcos-installer-ui"
+    "dcos-installer-ui",
+    "dcos-launch"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }

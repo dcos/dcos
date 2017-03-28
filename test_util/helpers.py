@@ -250,18 +250,6 @@ def marathon_app_id_to_mesos_dns_subdomain(app_id):
     return '-'.join(reversed(app_id.strip('/').split('/')))
 
 
-def lazy_property(property_fn):
-    cache_name = '__{}_cached'.format(property_fn.__name__)
-
-    @property
-    @functools.wraps(property_fn)
-    def _lazy_prop(self):
-        if not hasattr(self, cache_name):
-            setattr(self, cache_name, property_fn(self))
-        return getattr(self, cache_name)
-    return _lazy_prop
-
-
 def random_id(n):
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(n))
 

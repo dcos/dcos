@@ -5,6 +5,7 @@ Common code for AR instance management.
 """
 
 import abc
+import copy
 import logging
 import os
 import pytest
@@ -30,7 +31,7 @@ CACHE_BACKEND_REQUEST_TIMEOUT = 10
 CACHE_REFRESH_LOCK_TIMEOUT = 20
 
 
-class SyslogMock():
+class SyslogMock:
     """A mock of system syslog
 
     A simple mock of system's syslog, that listens of UDP Unix socket and pushes
@@ -95,7 +96,7 @@ class SyslogMock():
         return self._log_catcher.line_buffer(self._socket)
 
 
-class LogWriter():
+class LogWriter:
     """LogWriter handles log lines gathered by LogCatcher.
 
     It takes care of storing them internally in a list(), writing them to
@@ -236,7 +237,7 @@ class LogWriter():
         return self._line_buffer
 
 
-class LogCatcher():
+class LogCatcher:
     """A central log-gathering facility.
 
     This object collects all the logs that come from subprocesses (like i.e.
@@ -781,6 +782,11 @@ class NginxBase(ManagedSubprocess):
                          cache_refresh_lock_timeout,
                          )
         self._set_ar_cmdline()
+
+    @property
+    def env(self):
+        """Provides read only access to nginx environment"""
+        return copy.deepcopy(self._env)
 
     def make_url_from_path(self, path='/exhibitor/some/path'):
         """A helper function used in tests that is meant to abstract AR

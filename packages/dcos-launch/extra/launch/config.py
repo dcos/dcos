@@ -1,15 +1,38 @@
+import atexit
 import copy
 import os
 
 import yaml
 
-import dcos_installer.config
 import gen
 import launch.util
 import ssh.validate
 import test_util.aws
 from gen.internals import resolve_configuration, Scope, Source, Target, validate_one_of
 from pkgpanda.util import load_string, load_yaml, YamlParseError
+
+# DCOS_OSS-802: [gen/dcos_installer] allow using library uncoupled from installer
+# dcos_installer.config will directly import gen.build_deploy.util
+# which expects to find the image commit in the environment or in
+# a directory-local git tree **at import time**. Therefore, the
+# environment variable DCOS_IMAGE_COMMIT must be set here.
+if 'DCOS_IMAGE_COMMIT' not in os.environ:
+    os.environ['DCOS_IMAGE_COMMIT'] = ''
+    atexit.register(os.unsetenv, 'DCOS_IMAGE_COMMIT')
+
+import dcos_installer.config  # noqa
+
+# gen.build_deploy.bash expects to be run from the installer or git-tree
+# environment and will expect this when resolving the onprem configuration
+if 'BOOTSTRAP_VARIANT' not in os.environ:
+    os.environ['BOOTSTRAP_VARIANT'] = ''
+    atexit.register(os.unsetenv, 'BOOTSTRAP_VARIANT')
+
+# gen.build_deploy.bash expects to be able to get a list of packages
+# from a JSON at a hard-coded path. The package list is used for the deploy
+# logic of the installer and trivializing it here will have no bearing on
+# the onprem config.yaml pre-validation performed in this module
+setattr(dcos_installer.config_util, 'installer_latest_complete_artifact', launch.util.stub({'packages': []}))
 
 
 def expand_path(path: str, relative_dir: str) -> str:
@@ -70,7 +93,6 @@ def get_validated_config(config_path: str) -> dict:
     """ Returns validated a finalized argument dictionary for dcos-launch
     """
     config = load_config(config_path)
-    # TODO: no abspath?
     config_dir = os.path.dirname(config_path)
     config = gen_format_config(config, config_dir)
     resolver = validate_config(config)
@@ -297,7 +319,7 @@ def validate_os_name(os_name, platform):
 
 def calculate_ssh_private_key(ssh_private_key_filename):
     if ssh_private_key_filename == '':
-        return 'NO KEY PROVIDED - CANNOT TEST'
+        return launch.util.NO_TEST_FLAG
     return load_string(ssh_private_key_filename)
 
 

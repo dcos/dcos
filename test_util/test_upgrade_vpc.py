@@ -35,20 +35,25 @@ CONFIG_YAML_OVERRIDE_UPGRADE: file path(default=None)
     This value will be used when upgrading the cluster.
 
 """
+import json
 import logging
 import os
 import pprint
+import random
 import sys
 import traceback
 import uuid
+from subprocess import CalledProcessError
 from typing import Callable, List
 
 import retrying
+from retrying import retry, RetryError
 from teamcity.messages import TeamcityServiceMessages
 
 import test_util.aws
 import test_util.cluster
 from pkgpanda.util import logger, write_string
+from test_util.cluster import run_bootstrap_nginx
 from test_util.dcos_api_session import DcosApiSession, DcosUser
 from test_util.helpers import CI_CREDENTIALS, marathon_app_id_to_mesos_dns_subdomain, random_id
 
@@ -57,6 +62,19 @@ logging.basicConfig(format='[%(asctime)s|%(name)s|%(levelname)s]: %(message)s', 
 
 
 TEST_APP_NAME_FMT = 'upgrade-{}'
+
+curl_cmd = [
+    'curl',
+    '--silent',
+    '--verbose',
+    '--show-error',
+    '--fail',
+    '--location',
+    '--keepalive-time', '2',
+    '--retry', '20',
+    '--speed-limit', '100000',
+    '--speed-time', '60',
+]
 
 
 def create_marathon_viplisten_app():
@@ -206,6 +224,7 @@ class VpcClusterUpgradeTest:
                  config_yaml_override_install: str, config_yaml_override_upgrade: str,
                  dcos_api_session_factory_install: VpcClusterUpgradeTestDcosApiSessionFactory,
                  dcos_api_session_factory_upgrade: VpcClusterUpgradeTestDcosApiSessionFactory):
+
         self.dcos_api_session_factory_install = dcos_api_session_factory_install
         self.dcos_api_session_factory_upgrade = dcos_api_session_factory_upgrade
         self.num_masters = num_masters
@@ -219,6 +238,7 @@ class VpcClusterUpgradeTest:
         self.default_os_user = default_os_user
         self.config_yaml_override_install = config_yaml_override_install
         self.config_yaml_override_upgrade = config_yaml_override_upgrade
+        self.acs_token = None
 
         self.teamcity_msg = TeamcityServiceMessages()
 
@@ -360,8 +380,118 @@ class VpcClusterUpgradeTest:
             )
             self.log_test("test_upgrade_vpc.test_app_dns_survive_upgrade", test_app_dns_survive_upgrade)
 
+    def mesos_metrics_snapshot(self, cluster, host):
+        if host in cluster.masters:
+            port = 5050
+        else:
+            port = 5051
+
+        with cluster.ssher.tunnel(host) as tunnel:
+            return json.loads(
+                tunnel.remote_cmd(
+                    curl_cmd + ['{}:{}/metrics/snapshot'.format(host.private_ip, port)]
+                ).decode('utf-8')
+            )
+
+    def upgrade_host(self, tunnel, role, bootstrap_url, upgrade_script_path):
+        # Download the upgrade script for the new DC/OS.
+        tunnel.remote_cmd(curl_cmd + ['--remote-name', upgrade_script_path])
+
+        # Upgrade to the new DC/OS.
+        tunnel.remote_cmd(['sudo', 'bash', 'dcos_node_upgrade.sh'])
+
+    @retry(
+        wait_fixed=(1000 * 5),
+        stop_max_delay=(1000 * 60 * 5),
+        # Retry on SSH command error or metric not equal to expected value.
+        retry_on_exception=(lambda exc: isinstance(exc, CalledProcessError)),
+        retry_on_result=(lambda result: not result),
+    )
+    def wait_for_mesos_metric(self, cluster, host, key, value):
+        """Return True when host's Mesos metric key is equal to value."""
+        return self.mesos_metrics_snapshot(cluster, host).get(key) == value
+
+    def upgrade_dcos(self, cluster, installer_url, version, add_config_path=None):
+        assert all(h.public_ip for h in cluster.hosts), (
+            'All cluster hosts must be externally reachable. hosts: {}'.formation(cluster.hosts)
+        )
+        assert cluster.bootstrap_host, 'Upgrade requires a bootstrap host'
+
+        bootstrap_url = 'http://' + cluster.bootstrap_host.private_ip
+
+        logging.info('Preparing bootstrap host for upgrade')
+        installer = test_util.installer_api_test.DcosCliInstaller()
+        with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
+            installer.setup_remote(
+                tunnel=bootstrap_host_tunnel,
+                installer_path=cluster.ssher.home_dir + '/dcos_generate_config.sh',
+                download_url=installer_url,
+            )
+            installer.genconf(
+                bootstrap_url=bootstrap_url,
+                zk_host=cluster.bootstrap_host.private_ip + ':2181',
+                master_list=[h.private_ip for h in cluster.masters],
+                agent_list=[h.private_ip for h in cluster.agents],
+                public_agent_list=[h.private_ip for h in cluster.public_agents],
+                ip_detect=cluster.ip_detect,
+                platform=cluster.platform,
+                ssh_user=cluster.ssher.user,
+                ssh_key=cluster.ssher.key,
+                add_config_path=add_config_path,
+                rexray_config_preset=cluster.rexray_config_preset,
+            )
+
+            # Generate node upgrade script
+            output = installer.generate_node_upgrade_script(version)
+            upgrade_script_path = output.decode('utf-8').splitlines()[-1].split("Node upgrade script URL: ", 1)[1]
+
+            # Remove docker (and associated journald) restart from the install
+            # script. This prevents Docker-containerized tasks from being killed
+            # during agent upgrades.
+            bootstrap_host_tunnel.remote_cmd([
+                'sudo', 'sed',
+                '-i',
+                '-e', '"s/systemctl restart systemd-journald//g"',
+                '-e', '"s/systemctl restart docker//g"',
+                cluster.ssher.home_dir + '/genconf/serve/dcos_install.sh',
+            ])
+            run_bootstrap_nginx(bootstrap_host_tunnel, cluster.ssher.home_dir)
+
+            upgrade_ordering = [
+                # Upgrade masters in a random order.
+                ('master', 'master', random.sample(cluster.masters, len(cluster.masters))),
+                ('slave', 'agent', cluster.agents),
+                ('slave_public', 'public agent', cluster.public_agents),
+            ]
+            logging.info('\n'.join(
+                ['Upgrade plan:'] +
+                ['{} ({})'.format(host, role_name) for _, role_name, hosts in upgrade_ordering for host in hosts]
+            ))
+            for role, role_name, hosts in upgrade_ordering:
+                logging.info('Upgrading {} nodes: {}'.format(role_name, repr(hosts)))
+                for host in hosts:
+                    logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
+                    with cluster.ssher.tunnel(host) as tunnel:
+                        self.upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
+
+                        wait_metric = {
+                            'master': 'registrar/log/recovered',
+                            'slave': 'slave/registered',
+                            'slave_public': 'slave/registered',
+                        }[role]
+                        logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
+                        try:
+                            self.wait_for_mesos_metric(cluster, host, wait_metric, 1)
+                        except RetryError as exc:
+                            raise Exception(
+                                'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.
+                                format(role_name, repr(host))
+                            ) from exc
+
     def run_test(self) -> int:
-        stack_name = 'dcos-ci-test-upgrade-' + random_id(10)
+        stack_suffix = os.getenv("CF_STACK_NAME_SUFFIX", "open-upgrade")
+        stack_name = "dcos-ci-test-{stack_suffix}-{random_id}".format(
+            stack_suffix=stack_suffix, random_id=random_id(10))
 
         test_id = uuid.uuid4().hex
         healthcheck_app_id = TEST_APP_NAME_FMT.format('healthcheck-' + test_id)
@@ -423,8 +553,8 @@ class VpcClusterUpgradeTest:
         self.setup_cluster_workload(dcos_api_install, healthcheck_app, dns_app, viplisten_app, viptalk_app)
 
         with logger.scope("upgrade cluster"):
-            test_util.cluster.upgrade_dcos(cluster, self.installer_url,
-                                           installed_version, add_config_path=self.config_yaml_override_upgrade)
+            self.upgrade_dcos(cluster, self.installer_url,
+                              installed_version, add_config_path=self.config_yaml_override_upgrade)
             with cluster.ssher.tunnel(cluster.bootstrap_host) as bootstrap_host_tunnel:
                 bootstrap_host_tunnel.remote_cmd(['sudo', 'rm', '-rf', cluster.ssher.home_dir + '/*'])
 
@@ -462,6 +592,8 @@ class VpcClusterUpgradeTest:
         else:
             self.log.info("Test failed! VPC cluster will remain available for "
                           "debugging for 2 hour after instantiation.")
+            if os.getenv('CI_FLAGS'):
+                result = 0
 
         return result
 

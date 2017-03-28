@@ -1,0 +1,14 @@
+{
+  "requires": [
+      "dcos-image",
+      "python",
+      "python-cryptography",
+      "pytest"],
+  "sources": {
+    "pyinstaller": {
+      "kind": "url_extract",
+      "url": "https://github.com/pyinstaller/pyinstaller/archive/8b491def32d02cedc912198930225cddfab2e871.zip",
+      "sha1": "d98d271f9b70021417b34a059766131a0d73fdb4"
+    }
+  }
+}

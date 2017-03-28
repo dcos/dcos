@@ -1,8 +1,11 @@
+import logging
 import uuid
 
 import pytest
 
 from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
+
+log = logging.getLogger(__name__)
 
 
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
@@ -109,85 +112,83 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
         pass
 
 
-def test_octarine_http(dcos_api_session, timeout=30):
-    """
-    Test if we are able to send traffic through octarine.
-    """
+def test_octarine(dcos_api_session, timeout=30):
+    # This app binds to port 80. This is only required by the http (not srv)
+    # transparent mode test. In transparent mode, we use ".mydcos.directory"
+    # to go to localhost, the port attached there is only used to
+    # determine which port to send traffic to on localhost. When it
+    # reaches the proxy, the port is not used, and a request is made
+    # to port 80.
 
-    test_uuid = uuid.uuid4().hex
-    octarine_id = uuid.uuid4().hex
-    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port {})"'.format(octarine_id))
-    check_command = 'curl --fail --proxy {} marathon.mesos.mydcos.directory'.format(proxy)
+    app, uuid = get_test_app()
+    app['acceptedResourceRoles'] = ["slave_public"]
+    app['portDefinitions'][0]["port"] = 80
+    app['requirePorts'] = True
 
-    app_definition = {
-        'id': '/integration-test-app-octarine-http-{}'.format(test_uuid),
-        'cpus': 0.1,
-        'mem': 128,
-        'ports': [0],
-        'cmd': '/opt/mesosphere/bin/octarine {}'.format(octarine_id),
-        'disk': 0,
-        'instances': 1,
-        'healthChecks': [{
-            'protocol': 'COMMAND',
-            'command': {
-                'value': check_command
-            },
-            'gracePeriodSeconds': 5,
-            'intervalSeconds': 10,
-            'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
-    }
+    with dcos_api_session.marathon.deploy_and_cleanup(app) as service_points:
+        port_number = service_points[0].port
+        # It didn't actually grab port 80 when requirePorts was unset
+        assert port_number == app['portDefinitions'][0]["port"]
 
-    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
+        app_name = app["id"].strip("/")
+        port_name = app['portDefinitions'][0]["name"]
+        port_protocol = app['portDefinitions'][0]["protocol"]
+
+        srv = "_{}._{}._{}.marathon.mesos".format(port_name, app_name, port_protocol)
+        addr = "{}.marathon.mesos".format(app_name)
+        transparent_suffix = ".mydcos.directory"
+
+        standard_mode = "standard"
+        transparent_mode = "transparent"
+
+        t_addr_bind = 2508
+        t_srv_bind = 2509
+
+        standard_addr = "{}:{}/ping".format(addr, port_number)
+        standard_srv = "{}/ping".format(srv)
+        transparent_addr = "{}{}:{}/ping".format(addr, transparent_suffix, t_addr_bind)
+        transparent_srv = "{}{}:{}/ping".format(srv, transparent_suffix, t_srv_bind)
+
+        # The uuids are different between runs so that they don't have a
+        # chance of colliding. They shouldn't anyways, but just to be safe.
+        octarine_runner(dcos_api_session, standard_mode, uuid + "1", standard_addr)
+        octarine_runner(dcos_api_session, standard_mode, uuid + "2", standard_srv)
+        octarine_runner(dcos_api_session, transparent_mode, uuid + "3", transparent_addr, bind_port=t_addr_bind)
+        octarine_runner(dcos_api_session, transparent_mode, uuid + "4", transparent_srv, bind_port=t_srv_bind)
 
 
-def test_octarine_srv(dcos_api_session, timeout=30):
-    """
-    Test resolving SRV records through octarine.
-    """
+def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
+    log.info("Running octarine(mode={}, uuid={}, uri={}".format(mode, uuid, uri))
 
-    # Limit string length so we don't go past the max SRV record length
-    test_uuid = uuid.uuid4().hex[:16]
-    octarine_id = uuid.uuid4().hex
-    proxy = ('"http://127.0.0.1:$(/opt/mesosphere/bin/octarine ' +
-             '--client --port {})"'.format(octarine_id))
-    port_name = 'pinger'
-    cmd = ('/opt/mesosphere/bin/octarine {} & '.format(octarine_id) +
-           '/opt/mesosphere/bin/python -m http.server ${PORT0}')
-    raw_app_id = 'integration-test-app-octarine-srv-{}'.format(test_uuid)
-    check_command = 'curl --fail --proxy {} _{}._{}._tcp.marathon.mesos.mydcos.directory'.format(
-        proxy,
-        port_name,
-        raw_app_id)
+    octarine = "/opt/mesosphere/bin/octarine"
 
-    app_definition = {
-        'id': '/{}'.format(raw_app_id),
-        'cpus': 0.1,
-        'mem': 128,
-        'cmd': cmd,
-        'disk': 0,
-        'instances': 1,
-        'portDefinitions': [{
-            'port': 0,
-            'protocol': 'tcp',
-            'name': port_name,
-            'labels': {}
-        }],
-        'healthChecks': [{
-            'protocol': 'COMMAND',
-            'command': {
-                'value': check_command
-            },
-            'gracePeriodSeconds': 5,
-            'intervalSeconds': 10,
-            'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
-    }
+    bind_port_str = ""
+    if bind_port is not None:
+        bind_port_str = "-bindPort {}".format(bind_port)
 
-    dcos_api_session.marathon.deploy_and_cleanup(app_definition)
+    server_cmd = "{} -mode {} {} {}".format(octarine, mode, bind_port_str, uuid)
+    log.info("Server: {}".format(server_cmd))
+
+    proxy = ('http://127.0.0.1:$({} --client --port {})'.format(octarine, uuid))
+    curl_cmd = '''"$(curl --fail --proxy {} {})"'''.format(proxy, uri)
+    expected_output = '''"$(printf "{\\n    \\"pong\\": true\\n}")"'''
+    check_cmd = """sh -c '[ {} = {} ]'""".format(curl_cmd, expected_output)
+    log.info("Check: {}".format(check_cmd))
+
+    app, uuid = get_test_app()
+    app['requirePorts'] = True
+    app['cmd'] = server_cmd
+    app['healthChecks'] = [{
+        "protocol": "COMMAND",
+        "command": {"value": check_cmd},
+        'gracePeriodSeconds': 5,
+        'intervalSeconds': 10,
+        'timeoutSeconds': 10,
+        'maxConsecutiveFailures': 30
+    }]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        pass
 
 
 def test_pkgpanda_api(dcos_api_session):

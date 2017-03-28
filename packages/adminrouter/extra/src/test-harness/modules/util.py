@@ -22,7 +22,7 @@ LOG_LINE_SEARCH_INTERVAL = 0.2
 log = logging.getLogger(__name__)
 
 
-class GuardedSubprocess():
+class GuardedSubprocess:
     """Context manager for Subproces instances
 
        The purpose of this class is to provide reliable cleanup for all Subprocess
@@ -67,7 +67,7 @@ class SearchCriteria:
         self.exact = exact
 
 
-class LineBufferFilter():
+class LineBufferFilter:
     """Helper class for grepping line buffers created by LogCatcher class
 
     This class is meant to simplify searching of particular strings in line
@@ -84,7 +84,7 @@ class LineBufferFilter():
                                 allow_redirects=False,
                                 headers=header)
 
-        assert lbf.all_found
+        assert lbf.extra_matches == {}
 
         In this case log buffer will be scanned only for entries that were added
         while executing the `requests.get()` call.
@@ -97,12 +97,11 @@ class LineBufferFilter():
 
         lbf.scan_log_buffer()
 
-        assert lbf.all_found
+        assert lbf.extra_matches == {}
 
     The result - whether the log was found or not can be determined using
-    `all_found` property which only exposes True/False value, or `extra_matches`
-    property which provides detailed information about the lines matched and
-    the number of occurrences.
+    `extra_matches` property which provides detailed information about the
+    lines matched and the number of occurrences.
     """
     _filter_regexpes = None
     _line_buffer = None
@@ -213,7 +212,7 @@ class LineBufferFilter():
 
             for log_line in self._line_buffer[self._line_buffer_start:]:
                 self._match_line_against_filter_regexpes(log_line)
-                if self.all_found:
+                if self._all_found:
                     return
                 lines_scanned += 1
 
@@ -234,8 +233,8 @@ class LineBufferFilter():
         return [x for x in self._filter_regexpes if self._filter_regexpes[x].occurrences > 0]
 
     @property
-    def all_found(self):
-        """Has the search criteria been met ?
+    def _all_found(self):
+        """Helper - check if all search criterias have been met ?
         """
         return all([sc.occurrences <= 0 for sc in self._filter_regexpes.values()])
 

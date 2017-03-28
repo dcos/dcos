@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 pytestmark = pytest.mark.usefixtures("agent_ar_process")
 
 
-class TestMetricsEndpointOpen():
+class TestMetricsEndpointOpen:
     def test_if_request_is_sent_to_correct_upstream(self,
                                                     valid_user_header,
                                                     agent_ar_process):

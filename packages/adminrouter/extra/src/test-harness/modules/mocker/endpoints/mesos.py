@@ -187,6 +187,61 @@ INITIAL_STATEJSON = {
                 "mem": 0.0
             },
             "version": "1.2.0"
+        },
+        {
+            "TASK_ERROR": 0,
+            "TASK_FAILED": 0,
+            "TASK_FINISHED": 0,
+            "TASK_KILLED": 0,
+            "TASK_KILLING": 0,
+            "TASK_LOST": 0,
+            "TASK_RUNNING": 0,
+            "TASK_STAGING": 0,
+            "TASK_STARTING": 0,
+            "active": True,
+            "attributes": {
+                "public_ip": "true"
+            },
+            "framework_ids": [],
+            "hostname": "127.0.0.1",
+            "id": "35f210bb-bb58-4559-9932-b62619e72b6d-S0",
+            "offered_resources": {
+                "cpus": 0.0,
+                "disk": 0.0,
+                "gpus": 0.0,
+                "mem": 0.0
+            },
+            "pid": "slave(1)@127.0.0.1:15401",
+            "registered_time": 1480619699.20796,
+            "reserved_resources": {
+                "slave_public": {
+                    "cpus": 4.0,
+                    "disk": 35577.0,
+                    "gpus": 0.0,
+                    "mem": 14018.0,
+                    "ports": "[1-21, 23-5050, 5052-32000]"
+                }
+            },
+            "resources": {
+                "cpus": 4.0,
+                "disk": 35577.0,
+                "gpus": 0.0,
+                "mem": 14018.0,
+                "ports": "[1-21, 23-5050, 5052-32000]"
+            },
+            "unreserved_resources": {
+                "cpus": 0.0,
+                "disk": 0.0,
+                "gpus": 0.0,
+                "mem": 0.0
+            },
+            "used_resources": {
+                "cpus": 0.0,
+                "disk": 0.0,
+                "gpus": 0.0,
+                "mem": 0.0
+            },
+            "version": "1.2.0"
         }
     ]
 }
