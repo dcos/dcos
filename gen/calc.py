@@ -193,7 +193,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        calculate_ip_detect_contents(ip_detect_public_filename)
+        return calculate_ip_detect_contents(ip_detect_public_filename)
     return ip_detect_contents
 
 
