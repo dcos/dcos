@@ -1,6 +1,6 @@
-'''
+"""
 Generating node upgrade script
-'''
+"""
 
 import subprocess
 import uuid
@@ -12,14 +12,14 @@ from dcos_installer.constants import SERVE_DIR
 from pkgpanda.util import write_string
 
 
-node_upgrade_template = """
-#!/bin/bash
+node_upgrade_template = """#!/bin/bash
 #
 # BASH script to upgrade DC/OS on a node
 #
 # Metadata:
 #   dcos image commit: {{ dcos_image_commit }}
 #   generation date: {{ generation_date }}
+#
 # Copyright 2017 Mesosphere, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,15 @@ node_upgrade_template = """
 set -o errexit -o nounset -o pipefail
 
 source /opt/mesosphere/environment.export
+
+# bash should trap the ERR signal and run err_report, which prints the line number
+# of failure to STDERR.
+
+err_report() {
+    echo "ERROR: Upgrade failed at line ${BASH_LINENO}"
+} >&2
+
+trap err_report ERR
 
 # Check if this is a terminal, and if colors are supported, set some basic
 # colors for outputs
