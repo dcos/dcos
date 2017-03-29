@@ -13,12 +13,13 @@ DcosZenCfStack: Represents DC/OS  deployed from a zen template
 MasterStack: thin wrapper for master stack in a zen template
 PrivateAgentStack: thin wrapper for public agent stack in a zen template
 PublicAgentStack: thin wrapper for public agent stack in a zen template
-VpcCfStack: Represents a homogeneous cluster of hosts with a specific AMI
+BareClusterCfStack: Represents a homogeneous cluster of hosts with a specific AMI
 """
 import logging
 import time
 
 import boto3
+import pkg_resources
 import retrying
 from botocore.exceptions import ClientError
 
@@ -26,15 +27,13 @@ from test_util.helpers import Host, retry_boto_rate_limits, SshInfo
 
 log = logging.getLogger(__name__)
 
-VPC_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-cluster-template.json'
-VPC_EBS_ONLY_TEMPLATE_URL = 'https://s3.amazonaws.com/vpc-cluster-template/vpc-ebs-only-cluster-template.json'
-
 
 def template_by_instance_type(instance_type):
     if instance_type.split('.')[0] in ('c4', 't2', 'm4'):
-        return VPC_EBS_ONLY_TEMPLATE_URL
+        template = pkg_resources.resource_string('test_util', 'templates/vpc-ebs-only-cluster-template.json')
     else:
-        return VPC_TEMPLATE_URL
+        template = pkg_resources.resource_string('test_util', 'templates/vpc-cluster-template.json')
+    return template.decode('utf-8')
 
 
 def param_dict_to_aws_format(user_parameters):
@@ -57,7 +56,7 @@ def fetch_stack(stack_name, boto_wrapper):
             log.debug('Using Basic DC/OS Cloudformation interface')
             return DcosCfStack(stack_name, boto_wrapper)
     log.debug('Using VPC Cloudformation interface')
-    return VpcCfStack(stack_name, boto_wrapper)
+    return BareClusterCfStack(stack_name, boto_wrapper)
 
 
 class BotoWrapper():
@@ -83,21 +82,27 @@ class BotoWrapper():
         log.info('Deleting KeyPair: {}'.format(key_name))
         self.resource('ec2').KeyPair(key_name).delete()
 
-    def create_stack(self, name, template_url, parameters, deploy_timeout=60):
+    def create_stack(self, name, parameters, template_url=None, template_body=None, deploy_timeout=60):
         """Pulls template and checks user params versus temlate params.
         Does simple casting of strings or numbers
         Starts stack creation if validation is successful
         """
         log.info('Requesting AWS CloudFormation: {}'.format(name))
-        return self.resource('cloudformation').create_stack(
-            StackName=name,
-            TemplateURL=template_url,
-            DisableRollback=True,
-            TimeoutInMinutes=deploy_timeout,
-            Capabilities=['CAPABILITY_IAM'],
+        args = {
+            'StackName': name,
+            'DisableRollback': True,
+            'TimeoutInMinutes': deploy_timeout,
+            'Capabilities': ['CAPABILITY_IAM'],
             # this python API only accepts data in string format; cast as string here
             # so that we may pass parameters directly from yaml (which parses numbers as non-strings)
-            Parameters=param_dict_to_aws_format(parameters))
+            'Parameters': param_dict_to_aws_format(parameters)}
+        if template_body is not None:
+            assert template_url is None, 'tempate_body and template_url cannot be supplied simultaneously'
+            args['TemplateBody'] = template_body
+        else:
+            assert template_url is not None, 'template_url must be set if template_body is not provided'
+            args['TemplateURL'] = template_url
+        return self.resource('cloudformation').create_stack(**args)
 
     def create_vpc_tagged(self, cidr, name_tag):
         ec2 = self.client('ec2')
@@ -283,7 +288,7 @@ class DcosCfStack(CleanupS3BucketMixin, CfStack):
             'AdminLocation': admin_location,
             'PublicSlaveInstanceCount': str(public_agents),
             'SlaveInstanceCount': str(private_agents)}
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, parameters, template_url=template_url)
         # Use stack_name as the binding identifier. At time of implementation,
         # stack.stack_name returns stack_id if Stack was created with ID
         return cls(stack.stack_id, boto_wrapper), SSH_INFO['coreos']
@@ -354,7 +359,7 @@ class DcosZenCfStack(CfStack):
             'PrivateAgentInstanceCount': private_agents,
             'PrivateAgentInstanceType': private_agent_type,
             'PrivateSubnet': private_subnet}
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, parameters, template_url=template_url)
         os_string = None
         try:
             os_string = template_url.split('/')[-1].split('.')[-2].split('-')[0]
@@ -421,7 +426,7 @@ class DcosZenCfStack(CfStack):
         return instances_to_hosts(self.public_agent_instances)
 
 
-class VpcCfStack(CfStack):
+class BareClusterCfStack(CfStack):
     @classmethod
     def create(cls, stack_name, instance_type, instance_os, instance_count,
                admin_location, key_pair_name, boto_wrapper):
@@ -439,7 +444,7 @@ class VpcCfStack(CfStack):
     @classmethod
     def create_from_ami(cls, stack_name, instance_type, instance_ami, instance_count,
                         admin_location, key_pair_name, boto_wrapper):
-        template_url = template_by_instance_type(instance_type)
+        template = template_by_instance_type(instance_type)
         parameters = {
             'KeyPair': key_pair_name,
             'AllowAccessFrom': admin_location,
@@ -447,7 +452,7 @@ class VpcCfStack(CfStack):
             'InstanceType': instance_type,
             'AmiCode': instance_ami,
         }
-        stack = boto_wrapper.create_stack(stack_name, template_url, parameters)
+        stack = boto_wrapper.create_stack(stack_name, parameters, template_body=template)
         return cls(stack.stack_id, boto_wrapper)
 
     def delete(self):
@@ -457,10 +462,8 @@ class VpcCfStack(CfStack):
 
     @property
     def instances(self):
-        # the vpc templates use the misleading name CentOSServerAutoScale for all deployments
-        # https://mesosphere.atlassian.net/browse/DCOS-11534
         yield from self.boto_wrapper.get_auto_scaling_instances(
-            self.stack.Resource('CentOSServerAutoScale').physical_resource_id)
+            self.stack.Resource('BareServerAutoScale').physical_resource_id)
 
     def get_host_ips(self):
         return instances_to_hosts(self.instances)
