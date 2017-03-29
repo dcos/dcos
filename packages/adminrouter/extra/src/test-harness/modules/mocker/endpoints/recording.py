@@ -39,9 +39,7 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
         for details on the arguments and return value of this method.
         """
         res = {"msg": 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}
-        blob = self._convert_data_to_blob(res)
-
-        return blob
+        return 200, 'application/json', self._convert_data_to_blob(res)
 
     def _record_request(self):
         """Store all the relevant data of the request into the endpoint context."""

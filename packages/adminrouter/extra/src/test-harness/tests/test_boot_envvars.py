@@ -71,7 +71,7 @@ class TestSecretKeyFilePathEnvVarBehaviour:
 
 class TestDefaultSchemeEnvVarBehaviour:
     def test_if_default_scheme_is_honoured_by_agent_endpoint(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         ar = nginx_class(default_scheme="https://")
@@ -86,13 +86,13 @@ class TestDefaultSchemeEnvVarBehaviour:
 
             resp = requests.get(url_bad,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
 
             assert resp.status_code == 502
 
             resp = requests.get(url_good,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
 
             assert resp.status_code == 200
             req_data = resp.json()
@@ -103,7 +103,7 @@ class TestDefaultSchemeEnvVarBehaviour:
         assert lbf.extra_matches == {}
 
     def test_if_default_scheme_is_honourded_by_mleader_endpoint(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
         filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         cache_poll_period = 3
@@ -117,7 +117,7 @@ class TestDefaultSchemeEnvVarBehaviour:
                                    line_buffer=ar.stderr_line_buffer)
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
 
             assert resp.status_code == 502
 
@@ -131,7 +131,7 @@ class TestDefaultSchemeEnvVarBehaviour:
 
             resp = requests.get(url,
                                 allow_redirects=False,
-                                headers=superuser_user_header)
+                                headers=valid_user_header)
 
             assert resp.status_code == 200
             req_data = resp.json()
@@ -144,7 +144,7 @@ class TestDefaultSchemeEnvVarBehaviour:
 
 class TestUpstreamsEnvVarBehaviour:
     def test_if_marathon_upstream_env_is_honoured(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
 
         # Stage 0 - setup the environment:
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -170,7 +170,7 @@ class TestUpstreamsEnvVarBehaviour:
                                    line_buffer=ar.stderr_line_buffer)
             requests.get(url,
                          allow_redirects=False,
-                         headers=superuser_user_header)
+                         headers=valid_user_header)
 
             lbf.scan_log_buffer()
 
@@ -203,7 +203,7 @@ class TestUpstreamsEnvVarBehaviour:
                                    line_buffer=ar.stderr_line_buffer)
             requests.get(url,
                          allow_redirects=False,
-                         headers=superuser_user_header)
+                         headers=valid_user_header)
 
             lbf.scan_log_buffer()
 
@@ -217,7 +217,7 @@ class TestUpstreamsEnvVarBehaviour:
         assert lbf.extra_matches == {}
 
     def test_if_mesos_upstream_env_is_honoured(
-            self, nginx_class, mocker, superuser_user_header):
+            self, nginx_class, mocker, valid_user_header):
 
         # Stage 0 - setup the environment:
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
@@ -242,7 +242,7 @@ class TestUpstreamsEnvVarBehaviour:
                                    line_buffer=ar.stderr_line_buffer)
             requests.get(url,
                          allow_redirects=False,
-                         headers=superuser_user_header)
+                         headers=valid_user_header)
 
             lbf.scan_log_buffer()
 
@@ -273,7 +273,7 @@ class TestUpstreamsEnvVarBehaviour:
                                    line_buffer=ar.stderr_line_buffer)
             requests.get(url,
                          allow_redirects=False,
-                         headers=superuser_user_header)
+                         headers=valid_user_header)
 
             lbf.scan_log_buffer()
 

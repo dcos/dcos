@@ -350,6 +350,8 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         ctx = self.server.context
 
+        status = 200
+        content_type = 'application/json'
         with ctx.lock:
             if base_path == '/v2/apps':
                 blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
@@ -357,14 +359,15 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
                 if ctx.data['leader-content'] is None:
                     msg = "Marathon leader unknown"
                     blob = msg.encode('utf-8')
-                    raise EndpointException(code=404, reason=blob)
+                    content_type = 'text/plain; charset=utf-8'
+                    status = 404
                 elif isinstance(ctx.data['leader-content'], str):
                     blob = ctx.data['leader-content'].encode('utf-8')
-                    raise EndpointException(code=200, reason=blob)
+                    content_type = 'text/plain; charset=utf-8'
                 else:
                     blob = self._convert_data_to_blob(ctx.data['leader-content'])
 
-        return blob
+        return status, content_type, blob
 
 
 # pylint: disable=R0903,C0103

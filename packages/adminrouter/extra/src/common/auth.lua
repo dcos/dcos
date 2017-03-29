@@ -1,4 +1,5 @@
 local cjson = require "cjson"
+local cjson_safe = require "cjson.safe"
 local jwt = require "resty.jwt"
 local cookiejar = require "resty.cookie"
 
@@ -7,7 +8,6 @@ local util = require "common.util"
 
 
 local SECRET_KEY = nil
-local BODY_AUTH_ERROR_RESPONSE = nil
 
 
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
@@ -44,6 +44,7 @@ else
         SECRET_KEY = nil
         ngx.log(ngx.WARN, "Secret key not set or empty string.")
     end
+	jwt:set_alg_whitelist({HS256=1})
 end
 
 
@@ -123,7 +124,7 @@ local function validate_jwt_or_exit()
     ngx.log(ngx.DEBUG, "Valid token. Extract UID from payload.")
     local uid = jwt_obj.payload.uid
 
-    if uid == nil then
+    if uid == nil or uid == ngx.null then
         ngx.log(ngx.NOTICE, "Unexpected token payload: missing uid.")
         return exit_401()
     end
