@@ -317,7 +317,7 @@ class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
         with ctx.lock:
             blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
 
-        return blob
+        return 200, 'application/json', blob
 
 
 # pylint: disable=R0903,C0103

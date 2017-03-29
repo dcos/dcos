@@ -4,7 +4,7 @@ import logging
 import pytest
 import requests
 
-from generic_test_code import (
+from generic_test_code.common import (
     verify_header
 )
 

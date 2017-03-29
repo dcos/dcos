@@ -101,6 +101,10 @@ COPY iam.jwt-key.pub \
      iam.jwt-key.priv \
      iam.jwt-key.shared-secret \
         /usr/local/
+COPY cluster-id /var/lib/dcos/cluster-id
+COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
+COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
+
 # The contents of adminrouter-listen* files differ from the ones that are
 # shipped with DC/OS - the IP addresses Nginx binds to are limited to only
 # 127.0.0.1 instead of *. The reason for it is that some endpoints also need to
@@ -113,7 +117,6 @@ COPY adminrouter-redirect-http-https.conf \
 COPY ca.crt /run/dcos/pki/CA/certs/
 COPY adminrouter.crt /run/dcos/pki/tls/certs/
 COPY adminrouter.key /run/dcos/pki/tls/private/
-
 
 # dnsmasq stuff:
 COPY ./dnsmasq.conf /etc/dnsmasq.conf

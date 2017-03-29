@@ -213,7 +213,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
         try:
             path, url_args = self._parse_request_path()
             body_args = self._parse_request_body()
-            blob = self._calculate_response(path, url_args, body_args)
+            status, content_type, blob = self._calculate_response(path, url_args, body_args)
         except EndpointException as e:
             self._finalize_request(e.code, e.content_type, e.reason)
         # Pylint, please trust me on this one ;)
@@ -235,7 +235,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
             # No need to specify character encoding if type is json:
             # http://stackoverflow.com/a/9254967
             if not request_handled:
-                self._finalize_request(200, 'application/json', blob)
+                self._finalize_request(status, content_type, blob)
 
     def do_GET(self):
         """Please check the http.server.BaseHTTPRequestHandler documentation
