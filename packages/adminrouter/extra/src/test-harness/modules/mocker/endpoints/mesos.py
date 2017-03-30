@@ -325,13 +325,18 @@ class MesosEndpoint(RecordingTcpIpEndpoint):
     """An endpoint that mimics DC/OS leader.mesos Mesos"""
     def __init__(self, port, ip=''):
         super().__init__(port, ip, MesosHTTPRequestHandler)
-        self._context.data["endpoint-content"] = copy.deepcopy(INITIAL_STATEJSON)
+        self.__context_init()
 
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
-            self._context.data["endpoint-content"] = copy.deepcopy(INITIAL_STATEJSON)
+            self.__context_init()
+
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
+        self._context.data["endpoint-content"] = copy.deepcopy(INITIAL_STATEJSON)
 
     def enable_extra_slave(self, *_):
         """Change returned JSON to include extra slave - as if cluster had three

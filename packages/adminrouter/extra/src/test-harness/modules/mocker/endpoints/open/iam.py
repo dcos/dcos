@@ -25,10 +25,9 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
         if match:
             return self.__users_permissions_request_handler(match.group(1))
 
-        stub_paths = [
-            '/acs/api/v1/foo/bar',
-        ]
-        if base_path in stub_paths:
+        if base_path == '/acs/api/v1/foo/bar':
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse /acs/api/v1/users/ path.
             blob = self._convert_data_to_blob({})
             return 200, 'application/json', blob
 
@@ -60,10 +59,16 @@ class IamEndpoint(RecordingTcpIpEndpoint):
     def __init__(self, port, ip=''):
         """Initialize a new IamEndpoint"""
         super().__init__(port, ip, IamHTTPRequestHandler)
-        self._context.data["allowed"] = True
+        self.__context_init()
 
     def reset(self):
-        super().reset()
+        with self._context.lock:
+            super().reset()
+            self.__context_init()
+
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
         self._context.data["allowed"] = True
 
     def permit_all_queries(self, *_):
