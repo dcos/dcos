@@ -95,7 +95,7 @@ def do_main(args):
         return 0
 
     if args['pytest']:
-        test_cmd = 'py.test'
+        var_list = list()
         if args['--env'] is not None:
             if '=' in args['--env']:
                 # User is attempting to do an assigment with the option
@@ -103,12 +103,13 @@ def do_main(args):
                     'OptionError', "The '--env' option can only pass through environment variables "
                     "from the current environment. Set variables according to the shell being used.")
             var_list = args['--env'].split(',')
-            launch.util.check_keys(os.environ, var_list)
-            test_cmd = ' '.join(['{}={}'.format(e, os.environ[e]) for e in var_list]) + ' ' + test_cmd
-        if len(args['<pytest_extras>']) > 0:
-            test_cmd += ' ' + ' '.join(args['<pytest_extras>'])
-        launcher.test(test_cmd)
-        return 0
+            missing = [v for v in var_list if v not in os.environ]
+            if len(missing) > 0:
+                raise launch.util.LauncherError(
+                    'MissingInput', 'Environment variable arguments have been indicated '
+                    'but not set: {}'.format(repr(missing)))
+        env_dict = {e: os.environ[e] for e in var_list}
+        return launcher.test(args['<pytest_extras>'], env_dict)
 
     if args['delete']:
         launcher.delete()

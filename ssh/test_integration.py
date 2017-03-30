@@ -5,7 +5,6 @@ import os
 import random
 import socket
 import subprocess
-import tempfile
 import time
 import uuid
 from contextlib import contextmanager
@@ -15,7 +14,7 @@ from retrying import retry
 
 import pkgpanda.util
 from ssh.runner import MultiRunner, Node
-from ssh.tunnel import tunnel, tunnel_collection
+from ssh.ssher import open_tunnel, Ssher
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -320,38 +319,29 @@ def test_tags_async(sshd_manager, loop):
                 ]
 
 
-def tunnel_write_and_run(remote_write_fn, remote_cmd_fn):
-    """write random data across the tunnel with a write function, then run a
-    remote command to read that same random data. Finally assert the returned
-    random data is the same
-    """
-    with tempfile.NamedTemporaryFile() as tmp_fh:
-        rando_text = str(uuid.uuid4())
-        tmp_fh.write(rando_text.encode())
-        tmp_fh.flush()
-        remote_tmp_file = '/tmp/' + str(uuid.uuid4())
-        remote_write_fn(src=tmp_fh.name, dst=remote_tmp_file)
-        returned_text = remote_cmd_fn(cmd=['cat', remote_tmp_file]).decode('utf-8').strip('\n')
-        assert returned_text == rando_text
-
-
-def test_ssh_tunnel(sshd_manager):
+@pytest.fixture
+def tunnel_args(sshd_manager):
     with sshd_manager.run(1) as sshd_ports:
-        tunnel_args = {
+        yield {
             'user': getpass.getuser(),
             'key': sshd_manager.key,
             'host': '127.0.0.1',
             'port': sshd_ports[0]}
-        with tunnel(**tunnel_args) as t:
-            tunnel_write_and_run(t.write_to_remote, t.remote_cmd)
 
 
-def test_ssh_tunnel_collection(sshd_manager):
-    with sshd_manager.run(10) as sshd_ports:
-        tunnel_args = {
-            'user': getpass.getuser(),
-            'key': sshd_manager.key,
-            'host_names': ['127.0.0.1:' + str(i) for i in sshd_ports]}
-        with tunnel_collection(**tunnel_args) as tunnels:
-            for t in tunnels:
-                tunnel_write_and_run(t.write_to_remote, t.remote_cmd)
+def test_ssh_tunnel(tunnel_args, tmpdir):
+    """ Copies data to 'remote' (localhost) and then commands to cat that data back
+    """
+    src_text = str(uuid.uuid4())
+    src_file = tmpdir.join('src')
+    src_file.write(src_text)
+    dst_file = tmpdir.join('dst')
+    read_cmd = ['cat', str(dst_file)]
+    with open_tunnel(**tunnel_args) as t:
+        t.copy_file(str(src_file), str(dst_file))
+        dst_text = t.command(read_cmd).decode().strip()
+    assert dst_text == src_text, 'retrieved destination file did not match source!'
+
+    ssher = Ssher(tunnel_args['user'], tunnel_args['key'])
+    ssher_out = ssher.command(tunnel_args['host'], read_cmd, port=tunnel_args['port']).decode().strip()
+    assert ssher_out == src_text, 'Ssher did not produce the expected result!'
