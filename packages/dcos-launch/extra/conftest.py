@@ -24,8 +24,14 @@ def mocked_context(*args, **kwargs):
 
 @pytest.fixture
 def mocked_test_runner(monkeypatch):
-    monkeypatch.setattr(ssh.tunnel, 'tunnel', mocked_context)
-    monkeypatch.setattr(test_util.runner, 'integration_test', stub(0))
+    monkeypatch.setattr(launch.util, 'try_to_output_unbuffered', stub(0))
+
+
+@pytest.fixture
+def mock_ssher(monkeypatch):
+    monkeypatch.setattr(ssh.ssher, 'open_tunnel', mocked_context)
+    monkeypatch.setattr(ssh.ssher.Ssher, 'command', stub(b''))
+    monkeypatch.setattr(ssh.ssher.Ssher, 'get_home_dir', stub(b''))
 
 
 @pytest.fixture
@@ -112,6 +118,47 @@ def mocked_azure(monkeypatch, mocked_test_runner):
     monkeypatch.setattr(test_util.azure.DcosAzureResourceGroup, 'public_master_lb_fqdn', 'dead-beef')
 
 
+class MockInstaller(test_util.onprem.DcosInstallerApiSession):
+    """Simple object to make sure the installer API is invoked
+    in the correct order
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.genconf_called = False
+        self.preflight_called = False
+        self.deploy_called = False
+
+    def genconf(self, config):
+        self.genconf_called = True
+
+    def preflight(self):
+        assert self.genconf_called is True
+        self.preflight_called = True
+
+    def deploy(self):
+        assert self.genconf_called is True
+        assert self.preflight_called is True
+        self.deploy_called = True
+
+    def postflight(self):
+        assert self.genconf_called is True
+        assert self.preflight_called is True
+        assert self.deploy_called is True
+
+
+@pytest.fixture
+def mock_bare_cluster_hosts(monkeypatch, mocked_aws_cf, mock_ssher):
+    monkeypatch.setattr(test_util.aws.BareClusterCfStack, '__init__', stub(None))
+    monkeypatch.setattr(test_util.aws.BareClusterCfStack, 'delete', stub(None))
+    monkeypatch.setattr(test_util.aws.BareClusterCfStack, 'get_host_ips', stub([mock_pub_priv_host] * 4))
+    monkeypatch.setattr(
+        test_util.aws, 'fetch_stack', lambda stack_name, bw: test_util.aws.BareClusterCfStack(stack_name, bw))
+    monkeypatch.setattr(test_util.onprem.OnpremCluster, 'setup_installer_server', stub(None))
+    monkeypatch.setattr(test_util.onprem.OnpremCluster, 'start_bootstrap_zk', stub(None))
+    monkeypatch.setattr(test_util.onprem, 'DcosInstallerApiSession', MockInstaller)
+    monkeypatch.setattr(launch.onprem.OnpremLauncher, 'get_last_state', stub(None))
+
+
 @pytest.fixture
 def aws_cf_config_path(tmpdir, ssh_key_path, mocked_aws_cf):
     return get_temp_config_path(tmpdir, 'aws-cf.yaml', update={'ssh_private_key_filename': ssh_key_path})
@@ -143,31 +190,14 @@ def azure_with_helper_config_path(tmpdir, mocked_azure):
 
 
 @pytest.fixture
-def aws_onprem_config_path(tmpdir, ssh_key_path):
-    return get_temp_config_path(tmpdir, 'aws-onprem.yaml', update={'ssh_private_key_filename': ssh_key_path})
+def aws_onprem_config_path(tmpdir, ssh_key_path, mock_bare_cluster_hosts):
+    return get_temp_config_path(tmpdir, 'aws-onprem.yaml', update={
+        'ssh_private_key_filename': ssh_key_path})
 
 
 @pytest.fixture
-def aws_onprem_with_helper_config_path(tmpdir):
+def aws_onprem_with_helper_config_path(tmpdir, mock_bare_cluster_hosts):
     return get_temp_config_path(tmpdir, 'aws-onprem-with-helper.yaml')
-
-
-@pytest.fixture
-def aws_bare_cluster_config_path(tmpdir, ssh_key_path):
-    return get_temp_config_path(tmpdir, 'aws-bare-cluster.yaml', update={'ssh_private_key_filename': ssh_key_path})
-
-
-@pytest.fixture
-def bare_cluster_onprem_config_path(tmpdir, ssh_key_path):
-    platform_info_path = tmpdir.join('bare_cluster_info.json')
-    platform_info_path.write("""
-{
-    "ssh_user": "core"
-}
-""")
-    return get_temp_config_path(tmpdir, 'bare-cluster-onprem.yaml', update={
-        'ssh_private_key_filename': ssh_key_path,
-        'platform_info_filename': str(platform_info_path)})
 
 
 def check_cli(cmd):
@@ -186,10 +216,9 @@ def check_success(capsys, tmpdir, config_path):
     config = launch.config.get_validated_config(config_path)
     launcher = launch.get_launcher(config)
     info = launcher.create()
-    launcher = launch.get_launcher(info)
     launcher.wait()
     launcher.describe()
-    launcher.test('py.test')
+    launcher.test([], {})
     launcher.delete()
 
     info_path = str(tmpdir.join('my_specific_info.json'))  # test non-default name

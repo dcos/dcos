@@ -5,7 +5,14 @@
 #   - Building will suck up the local SSL .so and package it
 #     with the final exe. Ensure build system has OpenSSL 1.0.2g or greater
 a = Analysis(['launch/cli.py'],
-             hiddenimports=['html.parser'])
+             hiddenimports=['html.parser'],
+             datas=[('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/gen/ip-detect/*.sh',
+                    'gen/ip-detect'),
+                    ('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/gen/*.yaml',
+                    'gen/'),
+                    ('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/test_util/templates/*.json',
+                    'test_util/templates'),
+])
 pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 exe = EXE(
     pyz,
