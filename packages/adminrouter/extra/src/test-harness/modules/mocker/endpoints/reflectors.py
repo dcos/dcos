@@ -43,7 +43,7 @@ class ReflectingHTTPRequestHandler(BaseHTTPRequestHandler):
         res['args_url'] = url_args
         res['args_body'] = body_args
         blob = self._convert_data_to_blob(res)
-        return blob
+        return 200, 'application/json', blob
 
     def _parse_request_body(self):
         """Parse request body in order to extract arguments.

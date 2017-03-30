@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from generic_test_code import (
+from generic_test_code.common import (
     generic_no_slash_redirect_test,
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
@@ -20,10 +20,10 @@ class TestLogsEndpoint:
 
     def test_if_request_is_sent_to_correct_upstream(self,
                                                     agent_ar_process,
-                                                    superuser_user_header):
+                                                    valid_user_header):
 
         generic_correct_upstream_dest_test(agent_ar_process,
-                                           superuser_user_header,
+                                           valid_user_header,
                                            '/system/v1/logs/v1/foo/bar',
                                            'http:///run/dcos/dcos-log.sock',
                                            )
@@ -34,12 +34,12 @@ class TestLogsEndpoint:
                               ])
     def test_if_upstream_request_is_correct(self,
                                             agent_ar_process,
-                                            superuser_user_header,
+                                            valid_user_header,
                                             path_given,
                                             path_expected):
 
         generic_correct_upstream_request_test(agent_ar_process,
-                                              superuser_user_header,
+                                              valid_user_header,
                                               path_given,
                                               path_expected,
                                               http_ver="HTTP/1.1"
@@ -47,11 +47,11 @@ class TestLogsEndpoint:
 
     def test_if_upstream_headers_are_correct(self,
                                              agent_ar_process,
-                                             superuser_user_header):
+                                             valid_user_header):
 
         accel_buff_header = {"X-Accel-Buffering": "TEST"}
 
-        req_headers = copy.deepcopy(superuser_user_header)
+        req_headers = copy.deepcopy(valid_user_header)
         req_headers.update(accel_buff_header)
 
         generic_upstream_headers_verify_test(agent_ar_process,

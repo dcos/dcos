@@ -2,7 +2,6 @@
 
 import logging
 import requests
-from contextlib import contextmanager
 
 from util import LineBufferFilter
 
@@ -57,66 +56,6 @@ def generic_no_slash_redirect_test(ar, path):
     r = requests.get(url, allow_redirects=False)
 
     assert r.status_code == 301
-
-
-def generic_user_is_401_forbidden_test(ar, auth_header, path):
-    """Test if unauthorized/unauthenticated user is getting 401 access denied
-
-    Helper function meant to simplify writing multiple tests testing the
-    same thing for different endpoints.
-
-    Arguments:
-        ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is invalid.
-        path (str): path for which request should be made
-    """
-    url = ar.make_url_from_path(path)
-    resp = requests.get(url,
-                        allow_redirects=False,
-                        headers=auth_header)
-
-    assert resp.status_code == 401
-
-
-def generic_user_is_403_forbidden_test(ar, auth_header, path):
-    """Test if unauthorized/unauthenticated user is getting 403 access denied
-
-    Helper function meant to simplify writing multiple tests testing the
-    same thing for different endpoints.
-
-    Arguments:
-        ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is invalid.
-        path (str): path for which request should be made
-    """
-    url = ar.make_url_from_path(path)
-    resp = requests.get(url,
-                        allow_redirects=False,
-                        headers=auth_header)
-
-    assert resp.status_code == 403
-
-
-def generic_valid_user_is_permitted_test(ar, auth_header, path):
-    """Test if valid user is forbidden access
-
-    Helper function meant to simplify writing multiple tests testing the
-    same thing for different endpoints.
-
-    Arguments:
-        ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is valid and the request should be accepted.
-        path (str): path for which request should be made
-    """
-    url = ar.make_url_from_path(path)
-    resp = requests.get(url,
-                        allow_redirects=False,
-                        headers=auth_header)
-
-    assert resp.status_code == 200
 
 
 def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=None):
@@ -263,11 +202,7 @@ def assert_endpoint_response(
         assertions (List[lambda r]) Optionally provide additional assertions
             for the response
     """
-    lbf = LineBufferFilter(
-        assert_stderr,
-        line_buffer=ar.stderr_line_buffer,
-        )
-    with lbf:
+    def body():
         r = requests.get(
             ar.make_url_from_path(path),
             headers=headers,
@@ -278,34 +213,10 @@ def assert_endpoint_response(
             for func in assertions:
                 assert func(r)
 
-    assert lbf.extra_matches == {}
-
-
-@contextmanager
-def assert_iam_queried_for_uid_and_rid(mocker, uid, rid):
-    """Asserts that IAM mock has been queried for given UID and RID
-
-    Arguments:
-        mocker (Mocker): Mocker instance with all server mocks
-        uid (str): User ID that should have been queried
-        rid (str): Role ID that should have been queried
-    """
-    mocker.send_command(
-        endpoint_id='http://127.0.0.1:8101',
-        func_name='record_requests',
-        )
-
-    yield
-
-    upstream_requests = mocker.send_command(
-        endpoint_id='http://127.0.0.1:8101',
-        func_name='get_recorded_requests',
-        )
-
-    # Test if first request to IAM mock was policyquery
-    upstream_request = upstream_requests[0]
-    expected_path = (
-        '/acs/api/v1/internal/policyquery'
-        '?rid={}&uid={}&action=full'.format(rid, uid)
-        )
-    assert upstream_request['path'] == expected_path
+    if assert_stderr is not None:
+        lbf = LineBufferFilter(assert_stderr, line_buffer=ar.stderr_line_buffer)
+        with lbf:
+            body()
+        assert lbf.extra_matches == {}
+    else:
+        body()

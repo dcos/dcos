@@ -61,11 +61,15 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         launch.util.check_testable(info)
         details = self.describe(info)
         test_host = details['master_fqdn']
+        master_private_ips = [m['private_ip'] for m in details['masters']]
         with ssh.tunnel.tunnel(info['ssh_user'], info['ssh_private_key'], test_host, port=2200) as test_tunnel:
             return test_util.runner.integration_test(
                 tunnel=test_tunnel,
-                dcos_dns=test_host,
-                master_list=[m['private_ip'] for m in details['masters']],
+                # DCOS-14627 [azure] route port 80 and 443 to master via master public LB if oauth enbaled
+                # ACS templates do not have inbound NAT rules or NSG rules for the public LB address
+                # Thus, use the private IP instead.
+                dcos_dns=master_private_ips[0],
+                master_list=master_private_ips,
                 agent_list=[a['private_ip'] for a in details['private_agents']],
                 public_agent_list=[a['private_ip'] for a in details['public_agents']],
                 test_cmd=test_cmd)
