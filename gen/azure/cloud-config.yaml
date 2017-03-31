@@ -10,7 +10,7 @@ root:
       Environment=DEBIAN_FRONTEND=noninteractive
       StandardOutput=journal+console
       StandardError=journal+console
-      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/d.deb https://az837203.vo.msecnd.net/dcos-deps/docker-engine_1.11.2-0~xenial_amd64.deb
+      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/d.deb https://mesosphere.blob.core.windows.net/dcos-deps/docker-engine_1.13.1-0-ubuntu-xenial_amd64.deb
       ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /var/tmp/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
   - path: /etc/systemd/system/docker.service.d/execstart.conf
     permissions: "0644"
@@ -19,10 +19,9 @@ root:
       Restart=always
       StartLimitInterval=0
       RestartSec=15
-      LimitNOFILE=16384
       ExecStartPre=-/sbin/ip link del docker0
       ExecStart=
-      ExecStart=/usr/bin/docker daemon -H fd:// --storage-driver=overlay
+      ExecStart=/usr/bin/dockerd --storage-driver=overlay
   - path: /etc/systemd/system/docker.socket
     permissions: "0644"
     content: |
