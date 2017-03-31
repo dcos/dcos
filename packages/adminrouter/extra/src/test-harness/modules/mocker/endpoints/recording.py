@@ -106,9 +106,7 @@ class RecordingTcpIpEndpoint(TcpIpHttpEndpoint):
     def __init__(self, port, ip='', request_handler=RecordingHTTPRequestHandler):
         """Initialize new RecordingTcpIpEndpoint endpoint"""
         super().__init__(request_handler, port, ip)
-        self._context.data["record_requests"] = False
-        self._context.data["requests"] = list()
-        self._context.data["encoded_response"] = None
+        self.__context_init()
 
     def record_requests(self, *_):
         """Enable recording the requests data by the handler."""
@@ -140,6 +138,11 @@ class RecordingTcpIpEndpoint(TcpIpHttpEndpoint):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
-            self._context.data["record_requests"] = False
-            self._context.data["requests"] = list()
-            self._context.data["encoded_response"] = None
+            self.__context_init()
+
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
+        self._context.data["record_requests"] = False
+        self._context.data["requests"] = list()
+        self._context.data["encoded_response"] = None
