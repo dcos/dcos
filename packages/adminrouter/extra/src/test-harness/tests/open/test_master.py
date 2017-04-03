@@ -24,6 +24,7 @@ authed_endpoints = [
     '/metadata',
     '/navstar/lashup/key',
     '/package/foo/bar',
+    '/pkgpanda/foo/bar',
     '/pkgpanda/active.buildinfo.full.json',
     '/service/nginx-alwaysthere/foo/bar',
     '/service/nginx-alwaysthere/foo/bar',
