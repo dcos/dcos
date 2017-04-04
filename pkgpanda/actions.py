@@ -10,7 +10,7 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (extract_tarball, if_exists, load_json, load_string,
-                           write_string)
+                           log_and_check_call, write_string)
 
 DCOS_TARGET_CONTENTS = """[Install]
 WantedBy=multi-user.target
@@ -186,9 +186,9 @@ def setup(install, repository):
 
 def _start_dcos_target(block_systemd):
     no_block = [] if block_systemd else ["--no-block"]
-    check_call(["systemctl", "daemon-reload"])
-    check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
-    check_call(["systemctl", "start", "dcos.target"] + no_block)
+    log_and_check_call(["systemctl", "daemon-reload"])
+    log_and_check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
+    log_and_check_call(["systemctl", "start", "dcos.target"] + no_block)
 
 
 def _do_bootstrap(install, repository):
