@@ -501,3 +501,8 @@ def split_by_token(token_prefix, token_suffix, string_, strip_token_decoration=F
 
         # Update the chars consumed count for the next iteration.
         num_chars_consumed = token_end[1]
+
+
+def log_and_check_call(cmd):
+    print('Running command {}'.format(repr(cmd)))
+    return check_call(cmd)
