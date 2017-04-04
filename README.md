@@ -136,6 +136,45 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     py.test
     ```
 
+## Using DC/OS Docker
+
+One way to run the integration tests is to use [DC/OS Docker](https://github.com/dcos/dcos-docker).
+
+1. Setup DC/OS in containers using [DC/OS Docker](https://github.com/dcos/dcos-docker).
+
+1. `exec` into the master node
+
+	```
+	docker exec -it dcos-docker-master1 /bin/bash
+	```
+
+1. Configure the tests
+
+    ```
+	export DCOS_DNS_ADDRESS=http://master.mesos
+	export DCOS_DNS_ADDRESS=http://172.17.0.2
+	export MASTER_HOSTS=172.17.0.2
+	export PUBLIC_MASTER_HOSTS=172.17.0.2
+	export SLAVE_HOSTS=172.17.0.3
+	export PUBLIC_SLAVE_HOSTS=172.17.0.4
+	export DCOS_PROVIDER=onprem
+	export DNS_SEARCH=false
+	export DCOS_LOGIN_PW=admin
+	export PYTHONUNBUFFERED=true
+	export DCOS_VARIANT=ee
+	export DCOS_INTEGRATION_TESTS=true
+	export PYTHONDONTWRITEBYTECODE=true
+	export DCOS_LOGIN_UNAME=admin
+	export TEST_DCOS_RESILIENCY=false
+	source /opt/mesosphere/environment.export
+    ```
+
+1. Run the tests with Pytest
+
+    ```
+    cd /opt/mesosphere/active/dcos-integration-test
+    py.test
+    ```
 
 # Build
 
