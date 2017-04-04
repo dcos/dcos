@@ -24,7 +24,8 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 RESERVED_UNIT_NAMES)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, load_json, log_and_check_call, write_json,
+                           write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -66,7 +67,7 @@ class Systemd:
                 cmd = ["systemctl", "stop", name]
                 if not self.__block:
                     cmd.append("--no-block")
-                check_call(cmd)
+                log_and_check_call(cmd)
             except CalledProcessError as ex:
                 # If the service doesn't exist, don't error. This happens when a
                 # bootstrap tarball has just been extracted but nothing started

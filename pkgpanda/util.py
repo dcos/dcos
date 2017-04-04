@@ -239,3 +239,8 @@ def run(cmd, *args, **kwargs):
 
     assert len(stderr) == 0
     return stdout.decode('utf-8')
+
+
+def log_and_check_call(cmd):
+    print('Running command {}'.format(repr(cmd)))
+    return check_call(cmd)
