@@ -764,7 +764,7 @@
         "frontendIPConfiguration": {
           "id": "[variables('masterLbIPConfigID')]"
         },
-        "frontendPort": "22",
+        "frontendPort": 22,
         "protocol": "tcp"
       }
     },
@@ -781,7 +781,7 @@
               "description": "Allow SSH",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "22",
+              "destinationPortRange": 22,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -795,7 +795,7 @@
               "description": "Allow SSH",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "2222",
+              "destinationPortRange": 2222,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -809,7 +809,7 @@
               "description": "HTTP Port 80",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "80",
+              "destinationPortRange": 80,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               {% switch oauth_available %}
@@ -833,7 +833,7 @@
               "description": "HTTPS Port 443",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "443",
+              "destinationPortRange": 443,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               {% switch oauth_available %}
@@ -868,7 +868,7 @@
         "frontendIPConfiguration": {
           "id": "[variables('masterLbIPConfigID')]"
         },
-        "frontendPort": "80",
+        "frontendPort": 80,
         "protocol": "tcp"
       }
     },
@@ -886,7 +886,7 @@
         "frontendIPConfiguration": {
           "id": "[variables('masterLbIPConfigID')]"
         },
-        "frontendPort": "443",
+        "frontendPort": 443,
         "protocol": "tcp"
       }
     },
@@ -909,7 +909,7 @@
               "description": "Allow HTTP traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "80",
+              "destinationPortRange": 80,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -923,7 +923,7 @@
               "description": "Allow HTTPS traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "443",
+              "destinationPortRange": 443,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -937,7 +937,7 @@
               "description": "Allow 8080 traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "8080",
+              "destinationPortRange": 8080,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
