@@ -14,7 +14,7 @@ import retrying
 
 from test_helpers import expanded_config
 
-from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
+from test_util.marathon import get_test_app
 
 
 log = logging.getLogger(__name__)
@@ -61,97 +61,25 @@ class VipTest:
         log.log(lvl, m)
 
 
-def docker_vip_app(network, host, vip):
-    # docker app definition defines its own healthchecks
-    app, uuid = get_test_app_in_docker()
-    app['id'] = '/viptest/' + app['id']
-    app['container']['docker']['network'] = network
-    app['mem'] = 16
-    app['cpu'] = 0.01
-    if network == 'HOST':
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
-        del app['container']['docker']['portMappings']
-        if vip is not None:
-            app['portDefinitions'] = [{'labels': {'VIP_0': vip}}]
-    else:
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py 9080'
-        app['container']['docker']['portMappings'] = [{
-            'hostPort': 0,
-            'containerPort': 9080,
-            'protocol': 'tcp',
-            'name': 'test',
-            'labels': {}
-        }]
-        if vip is not None:
-            app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': vip}
-        if network == 'USER':
-            app['ipAddress'] = {'networkName': 'dcos'}
-    app['constraints'] = [['hostname', 'CLUSTER', host]]
-    return app, uuid
-
-
-def mesos_vip_app(num, network, host, vip, ucr=False):
-    app = None
-    uuid = None
-    port = backend_port_st + num
-    if ucr is False:
-        app, uuid = get_test_app()
-    else:
-        app, uuid = get_test_app_in_ucr()
-    app['id'] = '/viptest/' + app['id']
-    app['mem'] = 16
-    app['cpu'] = 0.01
-    # define a health check that works with all the network options
-    app['healthChecks'] = [{
-        'protocol': 'MESOS_HTTP',
-        'path': '/ping',
-        'gracePeriodSeconds': 5,
-        'intervalSeconds': 10,
-        'timeoutSeconds': 10,
-        'maxConsecutiveFailures': 3,
-    }]
-    assert network != 'BRIDGE'
-    if network == 'HOST':
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
-        app['portDefinitions'] = [{
-            'protocol': 'tcp',
-            'port': 0
-        }]
-        if vip is not None:
-            app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
-        app['healthChecks'][0]['portIndex'] = 0
-    if network == 'USER':
-        app['ipAddress'] = {
-            'discovery': {
-                'ports': [{
-                    'protocol': 'tcp',
-                    'name': 'test',
-                    'number': port,
-                }]
-            }
-        }
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(port)
-        app['ipAddress']['networkName'] = 'dcos'
-        if vip is not None:
-            app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
-        app['healthChecks'][0]['port'] = port
-        app['portDefinitions'] = []
-    app['constraints'] = [['hostname', 'CLUSTER', host]]
-    log.info('app: {}'.format(json.dumps(app)))
-    return app, uuid
-
-
 def vip_app(num, container, network, host, vip):
-    if container == 'UCR':
-        return mesos_vip_app(num, network, host, vip, ucr=True)
-    if container == 'DOCKER':
-        return docker_vip_app(network, host, vip)
-    assert container == 'NONE', 'unkown container option {}'.format(container)
-    return mesos_vip_app(num, network, host, vip, ucr=False)
+    if network in ['HOST', 'BRIDGE']:
+        # both of these cases will rely on marathon to assign ports
+        return get_test_app(
+            network=network,
+            host_constraint=host,
+            vip=vip,
+            container_type=container)
+    elif network == 'USER':
+        # ports must be incremented as one shared network is used
+        return get_test_app(
+            network=network,
+            host_port=backend_port_st + num,
+            container_port=backend_port_st + num,
+            host_constraint=host,
+            vip=vip,
+            container_type=container)
+    else:
+        raise AssertionError('Unexpected network: {}'.format(network))
 
 
 def vip_test(dcos_api_session, r):
@@ -217,7 +145,7 @@ def test_vip(dcos_api_session, reduce_logging):
     # tests
     # UCR doesn't support BRIDGE mode
     permutations = [[c, vi, va, sh, vn, pn]
-                    for c in ['NONE', 'UCR', 'DOCKER']
+                    for c in [None, 'MESOS', 'DOCKER']
                     for [vi, va] in addrs
                     for sh in [True, False]
                     for vn in ['USER', 'BRIDGE', 'HOST']
@@ -288,8 +216,8 @@ def test_if_navstar_l4lb_disabled(dcos_api_session):
 def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
-    # Launch the test_server in ip-per-container mode
-    app_definition, test_uuid = get_test_app_in_docker(ip_per_container=True)
+    # Launch the test_server in ip-per-container mode (user network)
+    app_definition, test_uuid = get_test_app(container_type='DOCKER', network='USER', host_port=9080)
 
     assert len(dcos_api_session.slaves) >= 2, 'IP Per Container tests require 2 private agents to work'
 
