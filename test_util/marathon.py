@@ -14,7 +14,28 @@ REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
 log = logging.getLogger(__name__)
 
 
-def get_test_app(custom_port=False):
+def get_test_app(
+        container_port=9080,
+        host_port=0,
+        container_type=None,
+        network='HOST',
+        healthcheck_protocol='MESOS_HTTP',
+        vip=None,
+        host_constraint=None):
+    """ Creates an app for the python test server
+    Args:
+        container_port: port the server will bind to. If network==HOST this is
+            the same as the proxy port
+        host_port: if network is USER or BRIDGE, then the this is the port
+            for inbound traffic
+    """
+    assert network in ['HOST', 'USER', 'BRIDGE', None]
+    assert container_type in ['DOCKER', 'MESOS', None]
+    assert healthcheck_protocol in ['HTTP', 'MESOS_HTTP']
+    if network == 'HOST' and host_port == 0:
+        container_port = '$PORT0'
+    else:
+        container_port = host_port
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
         'id': TEST_APP_NAME_FMT.format(test_uuid),
@@ -22,7 +43,7 @@ def get_test_app(custom_port=False):
         'mem': 32,
         'instances': 1,
         'cmd': '/opt/mesosphere/bin/dcos-shell python '
-               '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py ',
+               '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(container_port),
         'env': {
             'DCOS_TEST_UUID': test_uuid,
             # required for python_test_server.py to run as nobody
@@ -30,9 +51,8 @@ def get_test_app(custom_port=False):
         },
         'healthChecks': [
             {
-                'protocol': 'MESOS_HTTP',
+                'protocol': healthcheck_protocol,
                 'path': '/ping',
-                'portIndex': 0,
                 'gracePeriodSeconds': 5,
                 'intervalSeconds': 10,
                 'timeoutSeconds': 10,
@@ -40,65 +60,52 @@ def get_test_app(custom_port=False):
             }
         ],
     })
-    if not custom_port:
-        app['cmd'] += '$PORT0'
-        app['portDefinitions'] = [{
-            "protocol": "tcp",
-            "port": 0,
-            "name": "test"
-        }]
-    return app, test_uuid
-
-
-def get_test_app_in_docker(ip_per_container=False):
-    app, test_uuid = get_test_app(custom_port=True)
-    assert 'portDefinitions' not in app
-    app['cmd'] += '9080'  # Fixed port for inside bridge networking or IP per container
-    app['container'] = {
-        'type': 'DOCKER',
-        'docker': {
-            # TODO(cmaloney): Switch to alpine with glibc
-            'image': 'debian:jessie',
-            'portMappings': [{
-                'hostPort': 0,
-                'containerPort': 9080,
-                'protocol': 'tcp',
-                'name': 'test',
-                'labels': {}
-            }]},
-        'volumes': [{
-            'containerPath': '/opt/mesosphere',
-            'hostPath': '/opt/mesosphere',
-            'mode': 'RO'
-        }]
-    }
-    if ip_per_container:
-        app['container']['docker']['network'] = 'USER'
-        app['ipAddress'] = {'networkName': 'dcos'}
+    if host_port == 0:
+        app['healthChecks'][0]['portIndex'] = 0
     else:
-        app['container']['docker']['network'] = 'BRIDGE'
-    return app, test_uuid
-
-
-def get_test_app_in_ucr(healthcheck='HTTP'):
-    app, test_uuid = get_test_app(custom_port=True)
-    assert 'portDefinitions' not in app
-    # UCR does NOT support portmappings host only.  must use $PORT0
-    app['cmd'] += '$PORT0'
-    app['container'] = {
-        'type': 'MESOS',
-        'docker': {
-            'image': 'debian:jessie'
-        },
-        'volumes': [{
-            'containerPath': '/opt/mesosphere',
-            'hostPath': '/opt/mesosphere',
-            'mode': 'RO'
-        }]
-    }
-    # currently UCR does NOT support bridge mode or port mappings
-    # UCR supports host mode
-    app['healthChecks'][0]['protocol'] = healthcheck
+        app['healthChecks'][0]['port'] = container_port
+    if container_type is not None:
+        app['container'] = {
+            'type': container_type,
+            # TODO(cmaloney): Switch to alpine with glibc
+            'docker': {'image': 'debian:jessie'},
+            'volumes': [{
+                'containerPath': '/opt/mesosphere',
+                'hostPath': '/opt/mesosphere',
+                'mode': 'RO'}]}
+        if container_type == 'DOCKER':
+            app['container']['network'] = network
+            app['container']['docker']['portMappings'] = [{
+                'hostPort': host_port,
+                'containerPort': container_port,
+                'protocol': 'tcp',
+                'name': 'test'}]
+            if vip is not None:
+                app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': vip}
+        else:
+            assert network == 'HOST'
+    if network == 'HOST':
+        app['portDefinitions'] = [{
+            'protocol': 'tcp',
+            'port': host_port,
+            'name': 'test'}]
+        if vip is not None:
+            app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
+    elif network == 'USER':
+        app['ipAddress'] = {
+            'networkName': 'dcos',
+            'discovery': {
+                'ports': [{
+                    'protocol': 'tcp',
+                    'name': 'test',
+                    'number': host_port,
+                }]
+            }
+        }
+        if vip is not None:
+            app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
+    if host_constraint is not None:
+        app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     return app, test_uuid
 
 
