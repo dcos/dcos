@@ -16,3 +16,17 @@
 * `calc.py`: methods for top-level option determination and validation
 * `internals.py`: tools for defining required arguments as well how to conditionally resolve them
 * `template.py`: custom templating engine
+
+## Deployment Artifacts
+The artifacts configured by gen templates and built by pkgpanda are actually delivered to hosts via one of the deployment methods crafted in the `do_create` function of the modules in `gen.build_deploy`.
+
+## Templates
+The modules `gen.build_deploy.aws` and `gen.build_deploy.azure` provide templates that interact directly with the specific provider services and APIs. By leveraging the native tools of a cloud provider, DC/OS can be spun up much faster with appropriate configurations. The downside is that relying on provider APIs can make upgrading much harder as many more settings outside of DC/OS need to be touched. Finally, some settings need to be baked into a template as provider APIs might not allow the required level of configuration flexibility.
+
+## Onprem Installer
+The on-prem installer is a docker image that is loaded with an entry-point for the program `dcos_installer` (hosted in the top-level of this repository) as well as the complete set of built packages. The installer can:
+* use SSH to push packages to hosts
+* call gen to configure DC/OS to the fullest
+* generate configured artifacts for other provisioning methods
+
+The [Dockerfile](gen/build_deploy/bash/Dockerfile.in) is templated and must be processed by gen to inject the build-specific artifact paths. The setup of the installer software is [easily handled](gen/build_deploy/bash/Dockerfile.in) by extracting the installer bootstrap tarball to /opt/mesosphere and sourcing `/opt/mesosphere/environment.export`

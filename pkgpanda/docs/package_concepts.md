@@ -1,18 +1,16 @@
 # Package concepts
 
-**Package Name**
+*Package Name*
 
 The name which other packages will know this package by and use. Package names must be valid Linux folder names, should
-be case insensitive most often lower case only. Valid characters are [a-zA-Z0-9@._+-]. They may not start with a hyphen
+be case insensitive most often lower case only. Valid characters are `[a-zA-Z0-9@._+-]`. They may not start with a hyphen
 or a dot. Must be at least one character long. A package name may not contain '--'.
 
-**Package ID**
+*Package ID*
 
-`name--id` combination package name + arbitrary information (most often a version indicator). The packaging system
-needs to extract the package name from a package id. Valid characters are [a-zA-Z0-9@._+-]. A package-id may not
-contain '-' or '--'. Once a package-id is utilized, it should never be re-used with different package contents.
+`name--version` combination package name + arbitrary information (most often a version indicator). The packaging system needs to extract the package name from a package id. Valid characters are `[a-zA-Z0-9@._+-]`
 
-**pkginfo.json**
+*pkginfo.json*
 
 Metadata file containing the requirements of the package (either package names or package ids), as well as the
 environment variables provided by the package.
@@ -33,22 +31,24 @@ For e.g. `minuteman`'s pkginfo will have this information which is collected the
 }
 ```
 
-* It denotes the `sysctl` required for the **service-name** `minuteman`
+* It denotes the `sysctl` required for the *service-name* `minuteman`
 
 These configuration settings are accumulated for all packages in a file
 `/opt/mesosphere/etc/dcos-service-configuration.json`, and the dcos bootstrap process will apply these settings before
 starting the service.
 
-**Well-known directories**
+*Well-known directories*
 
-Every pkgpanda package may put items in several well-known directories to have them available to other packages.
+Every pkgpanda package may put items in several well-known directories within the package to have them available to other packages globally via symlinks.
 
 ```bash
-lib
-bin
-etc
-dcos.target.wants
+lib/  # Will be linked to /opt/mesosphere/lib
+bin/  # Will be linked to /opt/mesosphere/bin
+etc/  # Will be linked to /opt/mesosphere/etc
+dcos.target.wants/  # Will be linked into /etc/systemd/system/dcos.target.wants
 ```
+
+Each of these directories can be appended with an underscore and a role name, which will cause the files to only be linked on nodes of those role type. E.G. `$PKG_PATH/etc_master/` will only be linked on a master node.
 
 ## Install directories
 
@@ -110,9 +110,3 @@ from a `environment` section in `pkginfo.json` of every active package, as well 
 2. `pkgpanda setup` the host.
 3. pkgpanda activate {list of packages}
     - Fix problems if they happen
-
-NOTE: Packager should always overwrite / remove / replace .new when that is given.
-
-### TODO
-
-*Doc how we support upgrading things in light of security problems.*
