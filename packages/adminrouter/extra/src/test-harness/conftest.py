@@ -6,6 +6,7 @@
 """
 
 import util
+import pytest
 
 
 def pytest_addoption(parser):
@@ -22,3 +23,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     util.setup_thread_debugger()
     util.configure_logger(config)
+
+
+pytest.register_assert_rewrite('generic_test_code.common')
+pytest.register_assert_rewrite('generic_test_code.open')

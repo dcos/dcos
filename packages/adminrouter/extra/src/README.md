@@ -32,6 +32,77 @@ The endpoint should only use relative links for links and referenced assets such
 
 Tasks running in nested [Marathon app groups](https://mesosphere.github.io/marathon/docs/application-groups.html) will be available only using their service name (i.e, `<dcos-cluster>/service/<service-name>`) and not considering the marathon app group name (i.e., `<dcos-cluster>/service/app-group/<service-name>`).
 
+## Authorization and authentication
+
+DC/OS uses JWT at the core of its authentication and authorization features and
+Admin Router performs a vital role in facilitating it. Lots of services which
+constitute DC/OS do not have their own authorizers and rely on Admin Router to
+provide them with authn/authn+authz enforcement.
+
+Authn and authz code differs considerably between Open Source and Enterprise
+versions of Admin Router. This documentation focuses on describing common and
+Open Source related code. For EE features documentation please consult
+README.md in EE Admin Router repository.
+
+### Authentication
+
+For Admin Router to establish the identity of the subject issuing a
+request, it looks for JWT token in the request. It may be present in following
+places:
+* request headers: client needs to set `Authorization` header with
+  `token=<token payload>` value.
+* client sets `dcos-acs-auth-cookie` cookie with the token payload as a value
+
+In the case when both request header and the cookie is set, request header token takes
+priority. Admin Router does not issue JWT tokens itself as this is the task of
+the IAM service. Please consult DC/OS documentation for more details.
+
+Currently, DC/OS uses/sets following mandatory claims:
+* `uid` which is ID of the user/subject making the request as defined in IAM
+* `exp` claim as defined in section 4.1.4 of RFC7519
+
+If the JWT signature is valid and token has not expired, then uid claim is used
+while communicating with IAM to make authz decisions.
+
+The way tokens are validated is shared between EE and Open, with the only
+difference being the signing algorithm used by the tokens. In case of Open it's
+`HS256` and in case of EE: `RS256`
+
+In case when authentication was not successful, Admin Router responds with 401
+error page with `WWW-Authenticate` header set to authentication process type
+that is required to finish the authn.
+
+### Authorization
+
+Open Source Admin Router performs authorization basing on the sole fact that
+user identity was transferred to Open Source IAM. This is done in by checking if
+the user with given `uid` extracted from JWT claim is present and active in the
+IAM using the `do_authn_and_authz_or_exit` LUA auth module method.
+
+### Parameter-less interface
+
+Authz differs significantly between EE and Open Source Admin Router,
+but the location blocks in `nginx.*.conf` files not necessarily. So to
+be able to share as much code as possible between EE and Open, there has to be
+a common interface for EE and Open LUA auth code that location blocks can use.
+
+This is the reason why LUA code responsible for auth exposes thin
+parameter-less wrappers around all the functions, for example:
+
+```
+res.access_lashupkey_endpoint = function()
+    return res.do_authn_and_authz_or_exit()
+end
+```
+
+This way by importing EE LUA auth module instead of Open, location block can
+use EE features immediately without any extra reconfiguration and the
+additional parameters that are required in EE are coded directly in the LUA
+module.
+
+More information about EE-Open code sharing and code layout that stems from it
+can be found in `Code sharing` section of this readme.
+
 ## Caching
 
 In order to serve some of the requests, Admin Router relies on the information

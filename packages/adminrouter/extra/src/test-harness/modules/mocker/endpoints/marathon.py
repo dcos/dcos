@@ -350,6 +350,8 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         ctx = self.server.context
 
+        status = 200
+        content_type = 'application/json'
         with ctx.lock:
             if base_path == '/v2/apps':
                 blob = self._convert_data_to_blob(ctx.data['endpoint-content'])
@@ -357,14 +359,15 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
                 if ctx.data['leader-content'] is None:
                     msg = "Marathon leader unknown"
                     blob = msg.encode('utf-8')
-                    raise EndpointException(code=404, reason=blob)
+                    content_type = 'text/plain; charset=utf-8'
+                    status = 404
                 elif isinstance(ctx.data['leader-content'], str):
                     blob = ctx.data['leader-content'].encode('utf-8')
-                    raise EndpointException(code=200, reason=blob)
+                    content_type = 'text/plain; charset=utf-8'
                 else:
                     blob = self._convert_data_to_blob(ctx.data['leader-content'])
 
-        return blob
+        return status, content_type, blob
 
 
 # pylint: disable=R0903,C0103
@@ -372,13 +375,13 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
     """An endpoint that mimics DC/OS root Marathon"""
     def __init__(self, port, ip=''):
         super().__init__(port, ip, MarathonHTTPRequestHandler)
-        self._reset()
+        self.__context_init()
 
     def reset(self, *_):
         """Reset the endpoint to the default/initial state."""
         with self._context.lock:
             super().reset()
-            self._reset()
+            self.__context_init()
 
     def enable_nginx_app(self, *_):
         """Change the endpoint output so that it simulates extra Nginx app
@@ -413,7 +416,8 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         with self._context.lock:
             self._context.data["leader-content"] = 'blah blah buh buh'
 
-    def _reset(self):
-        """Reset internal state to default values"""
+    def __context_init(self):
+        """Helper function meant to initialize all the data relevant to this
+           particular type of endpoint"""
         self._context.data["endpoint-content"] = {"apps": [NGINX_APP_ALWAYSTHERE, ]}
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}

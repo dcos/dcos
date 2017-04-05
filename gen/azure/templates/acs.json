@@ -520,21 +520,21 @@
     "masterAvailabilitySet": "[concat(variables('orchestratorName'), '-master-availabilitySet-', variables('nameSuffix'))]",
     "masterLbName": "[concat(variables('orchestratorName'), '-master-lb-', variables('nameSuffix'))]",
     "masterSshInboundNatRuleNamePrefix": "[concat(variables('masterLbName'),'/SSH-',variables('masterVMNamePrefix'))]",
-    "masterSshPort22InboundNatRuleNamePrefix": "[concat(variables('masterLbName'),'/SSHPort22-',variables('masterVMNamePrefix'))]",
+    "masterSshPort22InboundNatRuleName": "[concat(variables('masterLbName'),'/SSHPort22-',variables('masterVMNamePrefix'),'0')]",
     "masterVMSize": "[variables('masterSizes')[variables('isValidation')]]",
     "masterLbID": "[resourceId('Microsoft.Network/loadBalancers',variables('masterLbName'))]",
     "masterLbIPConfigName": "[concat(variables('orchestratorName'), '-master-lbFrontEnd-', variables('nameSuffix'))]",
     "masterLbIPConfigID": "[concat(variables('masterLbID'),'/frontendIPConfigurations/', variables('masterLbIPConfigName'))]",
     "masterLbBackendPoolName": "[concat(variables('orchestratorName'), '-master-pool-', variables('nameSuffix'))]",
     "masterSshInboundNatRuleIdPrefix": "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'))]",
-    "masterSshPort22InboundNatRuleIdPrefix": "[concat(variables('masterLbID'),'/inboundNatRules/SSHPort22-',variables('masterVMNamePrefix'))]",
+    "masterSshPort22InboundNatRuleId": "[concat(variables('masterLbID'),'/inboundNatRules/SSHPort22-',variables('masterVMNamePrefix'),'0')]",
     "masterLbInboundNatRules":[
       [
         {
           "id": "[concat(variables('masterSshInboundNatRuleIdPrefix'),'0')]"
         },
         {
-          "id": "[concat(variables('masterSshPort22InboundNatRuleIdPrefix'),'0')]"
+          "id": "[variables('masterSshPort22InboundNatRuleId')]"
         }
       ],
       [
@@ -739,11 +739,12 @@
     },
     {
       "apiVersion": "[variables('apiVersionDefault')]",
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules",
+      "name": "[variables('masterSshPort22InboundNatRuleName')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[variables('masterLbID')]"
       ],
-      "location": "[resourceGroup().location]",
-      "name": "[concat(variables('masterSshPort22InboundNatRuleNamePrefix'), '0')]",
       "properties": {
         "backendPort": 2222,
         "enableFloatingIP": false,
@@ -752,8 +753,7 @@
         },
         "frontendPort": "22",
         "protocol": "tcp"
-      },
-      "type": "Microsoft.Network/loadBalancers/inboundNatRules"
+      }
     },
     {
       "apiVersion": "[variables('apiVersionDefault')]",
@@ -864,6 +864,7 @@
         "[variables('masterLbID')]",
         "[variables('vnetID')]",
         "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'),copyIndex())]",
+        "[variables('masterSshPort22InboundNatRuleId')]",
         "[variables('masterNSGID')]"
       ],
       "properties": {

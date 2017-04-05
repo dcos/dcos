@@ -2,5 +2,10 @@
    "integrate": false,
    "ship-it": false,
    "test": false,
-   "bump-ee": true
+   "bump-ee": true,
+    "label": {
+        "enabled": true,
+        "default": "Work In Progress",
+        "pr-creator-can-apply": ["Ready For Review", "Work In Progress"]
+    }
 }
