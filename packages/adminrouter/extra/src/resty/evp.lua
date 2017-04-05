@@ -3,11 +3,12 @@
 
 local ffi = require "ffi"
 local _C = ffi.C
-local _M = { _VERSION = '0.01' }
+local _M = { _VERSION = "0.0.2" }
 
 
 local CONST = {
     SHA256_DIGEST = "SHA256",
+    SHA512_DIGEST = "SHA512",
 }
 _M.CONST = CONST
 
@@ -46,6 +47,10 @@ EVP_PKEY *EVP_PKEY_new_mac_key(int type, ENGINE *e,
                                const unsigned char *key, int keylen);
 void EVP_PKEY_free(EVP_PKEY *key);
 int i2d_RSA(RSA *a, unsigned char **out);
+
+// PUBKEY
+EVP_PKEY *PEM_read_bio_PUBKEY(BIO *bp, EVP_PKEY **x,
+                              pem_password_cb *cb, void *u);
 
 // X509
 typedef struct x509_st X509;
@@ -186,17 +191,13 @@ _M.RSAVerifier = RSAVerifier
 
 
 --- Create a new RSAVerifier
--- @param cert An instance of Cert used for verification
+-- @param key_source An instance of Cert or PublicKey used for verification
 -- @returns RSAVerifier, error_string
-function RSAVerifier.new(self, cert)
-    if not cert then
-        return nil, "You must pass in an Cert for a public key"
+function RSAVerifier.new(self, key_source)
+    if not key_source then
+        return nil, "You must pass in an key_source for a public key"
     end
-    local evp_public_key, err = cert:get_public_key()
-    if not evp_public_key then
-        return nil, err
-    end
-
+    local evp_public_key = key_source.public_key
     self.evp_pkey = evp_public_key
     return self, nil
 end
@@ -269,6 +270,12 @@ function Cert.new(self, payload)
     end
     ffi.gc(x509, _C.X509_free)
     self.x509 = x509
+    local public_key, err = self:get_public_key()
+    if not public_key then
+        return nil, err
+    end
+    
+    self.public_key = public_key
     return self, nil
 end
 
@@ -348,5 +355,42 @@ function Cert.verify_trust(self, trusted_cert_file)
 
 end
 
+local PublicKey = {}
+_M.PublicKey = PublicKey
+
+--- Create a new PublicKey object
+--
+-- If a PEM fornatted key is provided, the key must start with
+--
+-- ----- BEGIN PUBLIC KEY -----
+--
+-- @param payload A PEM or DER format public key file 
+-- @return PublicKey, error_string
+function PublicKey.new(self, payload)
+    if not payload then
+        return nil, "Must pass a PEM or binary DER public key"
+    end
+    local bio = _C.BIO_new(_C.BIO_s_mem())
+    ffi.gc(bio, _C.BIO_vfree)
+    local pkey
+    if payload:find('-----BEGIN') then
+        if _C.BIO_puts(bio, payload) < 0 then
+            return _err()
+        end
+        pkey = _C.PEM_read_bio_PUBKEY(bio, nil, nil, nil)
+    else
+        if _C.BIO_write(bio, payload, #payload) < 0 then
+            return _err()
+        end
+        pkey = _C.d2i_PUBKEY_bio(bio, nil)
+    end
+    if not pkey then
+        return _err()
+    end
+    ffi.gc(pkey, _C.EVP_PKEY_free)
+    self.public_key = pkey
+    return self, nil
+end
+    
 
 return _M

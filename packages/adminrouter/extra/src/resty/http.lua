@@ -10,21 +10,31 @@ local str_lower = string.lower
 local str_upper = string.upper
 local str_find = string.find
 local str_sub = string.sub
-local str_gsub = string.gsub
 local tbl_concat = table.concat
 local tbl_insert = table.insert
 local ngx_encode_args = ngx.encode_args
 local ngx_re_match = ngx.re.match
 local ngx_re_gsub = ngx.re.gsub
+local ngx_re_find = ngx.re.find
 local ngx_log = ngx.log
 local ngx_DEBUG = ngx.DEBUG
 local ngx_ERR = ngx.ERR
-local ngx_NOTICE = ngx.NOTICE
 local ngx_var = ngx.var
+local ngx_print = ngx.print
 local co_yield = coroutine.yield
 local co_create = coroutine.create
 local co_status = coroutine.status
 local co_resume = coroutine.resume
+local setmetatable = setmetatable
+local tonumber = tonumber
+local tostring = tostring
+local unpack = unpack
+local rawget = rawget
+local select = select
+local ipairs = ipairs
+local pairs = pairs
+local pcall = pcall
+local type = type
 
 
 -- http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
@@ -67,7 +77,7 @@ end
 
 
 local _M = {
-    _VERSION = '0.09',
+    _VERSION = '0.10',
 }
 _M._USER_AGENT = "lua-resty-http/" .. _M._VERSION .. " (Lua) ngx_lua/" .. ngx.config.ngx_lua_version
 
@@ -102,6 +112,16 @@ function _M.set_timeout(self, timeout)
     end
 
     return sock:settimeout(timeout)
+end
+
+
+function _M.set_timeouts(self, connect_timeout, send_timeout, read_timeout)
+    local sock = self.sock
+    if not sock then
+        return nil, "not initialized"
+    end
+
+    return sock:settimeouts(connect_timeout, send_timeout, read_timeout)
 end
 
 
@@ -187,9 +207,10 @@ local function _should_receive_body(method, code)
 end
 
 
-function _M.parse_uri(self, uri)
-    local m, err = ngx_re_match(uri, [[^(http[s]?)://([^:/]+)(?::(\d+))?(.*)]],
-        "jo")
+function _M.parse_uri(self, uri, query_in_path)
+    if query_in_path == nil then query_in_path = true end
+
+    local m, err = ngx_re_match(uri, [[^(?:(http[s]?):)?//([^:/\?]+)(?::(\d+))?([^\?]*)\??(.*)]], "jo")
 
     if not m then
         if err then
@@ -198,6 +219,17 @@ function _M.parse_uri(self, uri)
 
         return nil, "bad uri: " .. uri
     else
+        -- If the URI is schemaless (i.e. //example.com) try to use our current
+        -- request scheme.
+        if not m[1] then
+            local scheme = ngx.var.scheme
+            if scheme == "http" or scheme == "https" then
+                m[1] = scheme
+            else
+                return nil, "schemaless URIs require a request context: " .. uri
+            end
+        end
+
         if m[3] then
             m[3] = tonumber(m[3])
         else
@@ -208,6 +240,12 @@ function _M.parse_uri(self, uri)
             end
         end
         if not m[4] or "" == m[4] then m[4] = "/" end
+
+        if query_in_path and m[5] and m[5] ~= "" then
+            m[4] = m[4] .. "?" .. m[5]
+            m[5] = nil
+        end
+
         return m, nil
     end
 end
@@ -218,10 +256,10 @@ local function _format_request(params)
     local headers = params.headers or {}
 
     local query = params.query or ""
-    if query then
-        if type(query) == "table" then
-            query = "?" .. ngx_encode_args(query)
-        end
+    if type(query) == "table" then
+        query = "?" .. ngx_encode_args(query)
+    elseif query ~= "" and str_sub(query, 1, 1) ~= "?" then
+        query = "?" .. query
     end
 
     -- Initialize request
@@ -268,7 +306,6 @@ local function _receive_status(sock)
 end
 
 
-
 local function _receive_headers(sock)
     local headers = http_headers.new()
 
@@ -278,17 +315,22 @@ local function _receive_headers(sock)
             return nil, err
         end
 
-        for key, val in str_gmatch(line, "([^:%s]+):%s*(.+)") do
-            if headers[key] then
-                if type(headers[key]) ~= "table" then
-                    headers[key] = { headers[key] }
-                end
-                tbl_insert(headers[key], tostring(val))
-            else
-                headers[key] = tostring(val)
-            end
+        local m, err = ngx_re_match(line, "([^:\\s]+):\\s*(.+)", "jo")
+        if not m then
+            break
         end
-    until str_find(line, "^%s*$")
+
+        local key = m[1]
+        local val = m[2]
+        if headers[key] then
+            if type(headers[key]) ~= "table" then
+                headers[key] = { headers[key] }
+            end
+            tbl_insert(headers[key], tostring(val))
+        else
+            headers[key] = tostring(val)
+        end
+    until ngx_re_find(line, "^\\s*$", "jo")
 
     return headers, nil
 end
@@ -296,9 +338,9 @@ end
 
 local function _chunked_body_reader(sock, default_chunk_size)
     return co_wrap(function(max_chunk_size)
-        local max_chunk_size = max_chunk_size or default_chunk_size
         local remaining = 0
         local length
+        max_chunk_size = max_chunk_size or default_chunk_size
 
         repeat
             -- If we still have data on this chunk
@@ -358,7 +400,7 @@ end
 
 local function _body_reader(sock, content_length, default_chunk_size)
     return co_wrap(function(max_chunk_size)
-        local max_chunk_size = max_chunk_size or default_chunk_size
+        max_chunk_size = max_chunk_size or default_chunk_size
 
         if not content_length and max_chunk_size then
             -- We have no length, but wish to stream.
@@ -366,7 +408,7 @@ local function _body_reader(sock, content_length, default_chunk_size)
             repeat
                 local str, err, partial = sock:receive(max_chunk_size)
                 if not str and err == "closed" then
-                    max_chunk_size = tonumber(co_yield(partial, err) or default_chunk_size)
+                    co_yield(partial, err)
                 end
 
                 max_chunk_size = tonumber(co_yield(str) or default_chunk_size)
@@ -400,7 +442,7 @@ local function _body_reader(sock, content_length, default_chunk_size)
                 if length > 0 then
                     local str, err = sock:receive(length)
                     if not str then
-                        max_chunk_size = tonumber(co_yield(nil, err) or default_chunk_size)
+                        co_yield(nil, err)
                     end
                     received = received + length
 
@@ -476,7 +518,7 @@ local function _send_body(sock, body)
             local chunk, err, partial = body()
 
             if chunk then
-                local ok,err = sock:send(chunk)
+                local ok, err = sock:send(chunk)
 
                 if not ok then
                     return nil, err
@@ -630,7 +672,7 @@ function _M.read_response(self, params)
     end
 
     local body_reader = _no_body_reader
-    local trailer_reader, err = nil, nil
+    local trailer_reader, err
     local has_body = false
 
     -- Receive the body_reader
@@ -681,7 +723,7 @@ end
 
 
 function _M.request_pipeline(self, requests)
-    for i, params in ipairs(requests) do
+    for _, params in ipairs(requests) do
         if params.headers and params.headers["Expect"] == "100-continue" then
             return nil, "Cannot pipeline request specifying Expect: 100-continue"
         end
@@ -725,13 +767,14 @@ end
 function _M.request_uri(self, uri, params)
     if not params then params = {} end
 
-    local parsed_uri, err = self:parse_uri(uri)
+    local parsed_uri, err = self:parse_uri(uri, false)
     if not parsed_uri then
         return nil, err
     end
 
-    local scheme, host, port, path = unpack(parsed_uri)
+    local scheme, host, port, path, query = unpack(parsed_uri)
     if not params.path then params.path = path end
+    if not params.query then params.query = query end
 
     local c, err = self:connect(host, port)
     if not c then
@@ -771,7 +814,8 @@ end
 
 
 function _M.get_client_body_reader(self, chunksize, sock)
-    local chunksize = chunksize or 65536
+    chunksize = chunksize or 65536
+
     if not sock then
         local ok, err
         ok, sock, err = pcall(ngx_req_socket)
@@ -837,7 +881,7 @@ function _M.proxy_response(self, response, chunksize)
         end
 
         if chunk then
-            local res, err = ngx.print(chunk)
+            local res, err = ngx_print(chunk)
             if not res then
                 ngx_log(ngx_ERR, err)
                 break
