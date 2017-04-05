@@ -151,7 +151,6 @@ One way to run the integration tests is to use [DC/OS Docker](https://github.com
 1. Configure the tests
 
     ```
-	export DCOS_DNS_ADDRESS=http://master.mesos
 	export DCOS_DNS_ADDRESS=http://172.17.0.2
 	export MASTER_HOSTS=172.17.0.2
 	export PUBLIC_MASTER_HOSTS=172.17.0.2
@@ -161,8 +160,6 @@ One way to run the integration tests is to use [DC/OS Docker](https://github.com
 	export DNS_SEARCH=false
 	export DCOS_LOGIN_PW=admin
 	export PYTHONUNBUFFERED=true
-	export DCOS_VARIANT=ee
-	export DCOS_INTEGRATION_TESTS=true
 	export PYTHONDONTWRITEBYTECODE=true
 	export DCOS_LOGIN_UNAME=admin
 	export TEST_DCOS_RESILIENCY=false
