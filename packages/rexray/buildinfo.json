@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/codedellemc/rexray.git",
-    "ref": "38c16d3b3e82eb1ed0502fbf6877a72d0f777c46",
+    "ref": "7b6be36e0c3b9d69e59f87ebb0098d56a74467db",
     "ref_origin": "master"
   }
 }
