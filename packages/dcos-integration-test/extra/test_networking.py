@@ -1,10 +1,8 @@
-import concurrent.futures
 import contextlib
 import json
 import logging
 import random
 import threading
-import time
 from collections import deque
 from subprocess import check_output
 
@@ -16,11 +14,7 @@ from test_helpers import expanded_config
 
 from test_util.marathon import get_test_app
 
-
 log = logging.getLogger(__name__)
-timeout = 500
-maxthreads = 16
-backend_port_st = 8000
 
 
 def lb_enabled():
@@ -28,7 +22,7 @@ def lb_enabled():
 
 
 @retrying.retry(wait_fixed=2000,
-                stop_max_delay=timeout * 1000,
+                stop_max_delay=90 * 1000,
                 retry_on_result=lambda ret: ret is False,
                 retry_on_exception=lambda x: True)
 def ensure_routable(cmd, host, port):
@@ -40,28 +34,7 @@ def ensure_routable(cmd, host, port):
     return json.loads(r.json()['output'])
 
 
-class VipTest:
-    def __init__(self, num, container, vip, vipaddr, samehost, vipnet, proxynet):
-        self.num = num
-        self.vip = vip.format(num, 7000 + num)
-        self.vipaddr = vipaddr.format(num, 7000 + num)
-        self.container = container
-        self.samehost = samehost
-        self.vipnet = vipnet
-        self.proxynet = proxynet
-        self.notes = ""
-
-    def __str__(self):
-        return ('VipTest(container={}, vip={},vipaddr={},samehost={},'
-                'vipnet={},proxynet={}, notes={})').format(self.container, self.vip, self.vipaddr, self.samehost,
-                                                           self.vipnet, self.proxynet, self.notes)
-
-    def log(self, s, lvl=logging.DEBUG):
-        m = 'VIP_TEST {} {}'.format(s, self)
-        log.log(lvl, m)
-
-
-def vip_app(num, container, network, host, vip):
+def vip_app(container, network, host, vip, second):
     if network in ['HOST', 'BRIDGE']:
         # both of these cases will rely on marathon to assign ports
         return get_test_app(
@@ -71,10 +44,10 @@ def vip_app(num, container, network, host, vip):
             container_type=container)
     elif network == 'USER':
         # ports must be incremented as one shared network is used
+        user_port = 8000 if not second else 8001
         return get_test_app(
             network=network,
-            host_port=backend_port_st + num,
-            container_port=backend_port_st + num,
+            host_port=user_port,
             host_constraint=host,
             vip=vip,
             container_type=container)
@@ -82,114 +55,80 @@ def vip_app(num, container, network, host, vip):
         raise AssertionError('Unexpected network: {}'.format(network))
 
 
-def vip_test(dcos_api_session, r):
-    r.log('START')
-    agents = list(dcos_api_session.all_slaves)
-    # make sure we can reproduce
-    random.seed(r.vip)
-    random.shuffle(agents)
-    host1 = agents[0]
-    host2 = agents[0]
-    if not r.samehost:
-        host2 = agents[1]
-    log.debug('host1 is is: {}'.format(host1))
-    log.debug('host2 is is: {}'.format(host2))
-
-    origin_app, app_uuid = vip_app(r.num, r.container, r.vipnet, host1, r.vip)
-    # allow to run on both public and private agents
-    origin_app['acceptedResourceRoles'] = ["*", "slave_public"]
-    proxy_app, _ = vip_app(r.num, r.container, r.proxynet, host2, None)
-    # allow to run on both public and private agents
-    proxy_app['acceptedResourceRoles'] = ["*", "slave_public"]
-
-    returned_uuid = None
-    with contextlib.ExitStack() as stack:
-        # try to avoid thundering herd
-        time.sleep(random.randint(0, 30))
-        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, timeout=timeout))
-        sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app, timeout=timeout))
-        proxy_host = sp[0].host
-        proxy_port = sp[0].port
-        if proxy_port == 0 and sp[0].ip is not None:
-            proxy_port = backend_port_st + r.num
-            proxy_host = sp[0].ip
-        log.info("proxy endpoints are {}".format(sp))
-        cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(r.vipaddr)
-        returned_uuid = ensure_routable(cmd, proxy_host, proxy_port)
-        log.debug('returned_uuid is: {}'.format(returned_uuid))
-    assert returned_uuid is not None
-    assert returned_uuid['test_uuid'] == app_uuid
-    r.log('PASSED')
-
-
-@pytest.fixture
-def reduce_logging():
-    start_log_level = logging.getLogger('test_util.marathon').getEffectiveLevel()
-    # gotta go up to warning to mute it as its currently at info
-    logging.getLogger('test_util.marathon').setLevel(logging.WARNING)
-    yield
-    logging.getLogger('test_util.marathon').setLevel(start_log_level)
+def generate_vip_app_permutations():
+    """ Generate all possible network interface permutations for applying vips
+    """
+    permutations = []
+    for container in [None, 'MESOS', 'DOCKER']:
+        for named_vip in [True, False]:
+            for same_host in [True, False]:
+                for vip_net in ['USER', 'BRIDGE', 'HOST']:
+                    for proxy_net in ['USER', 'BRIDGE', 'HOST']:
+                        if container != 'DOCKER' and 'BRIDGE' in (vip_net, proxy_net):
+                            # only DOCKER containers support BRIDGE network
+                            continue
+                        permutations.append((container, named_vip, same_host, vip_net, proxy_net))
+    return permutations
 
 
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
-def test_vip(dcos_api_session, reduce_logging):
+@pytest.mark.parametrize('container,named_vip,same_host,vip_net,proxy_net', generate_vip_app_permutations())
+def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_net):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE (docker only), HOST
         * agents: source and destnations on same agent or different agents
         * vips: named and unnamed vip
 
+    Origin app will be deployed to the cluster with a VIP. Proxy app will be
+    deployed either to the same host or else where. Finally, a thread will be
+    started on localhost (which should be a master) to submit a command to the
+    proxy container that will ping the origin container VIP and then assert
+    that the expected origin app UUID was returned
     '''
-    addrs = [['1.1.1.{}:{}', '1.1.1.{}:{}'],
-             ['/namedvip{}:{}', 'namedvip{}.marathon.l4lb.thisdcos.directory:{}']]
-    # tests
-    # UCR doesn't support BRIDGE mode
-    permutations = [[c, vi, va, sh, vn, pn]
-                    for c in [None, 'MESOS', 'DOCKER']
-                    for [vi, va] in addrs
-                    for sh in [True, False]
-                    for vn in ['USER', 'BRIDGE', 'HOST']
-                    for pn in ['USER', 'BRIDGE', 'HOST']]
-    tests = [VipTest(i, c, vi, va, sh, vn, pn) for i, [c, vi, va, sh, vn, pn] in enumerate(permutations)]
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads)
-    # deque is thread safe
-    failed_tests = deque(tests)
-    passed_tests = deque()
-    skipped_tests = deque()
-    # skip certain tests
-    for r in tests:
-        if r.container == 'UCR' or r.container == 'NONE':
-            if r.vipnet == 'BRIDGE' or r.proxynet == 'BRIDGE':
-                r.notes = "bridge networks are not supported by mesos runtime"
-                failed_tests.remove(r)
-                skipped_tests.append(r)
-                continue
-        if not r.samehost and len(dcos_api_session.all_slaves) == 1:
-            r.notes = "needs more then 1 agent to run"
-            failed_tests.remove(r)
-            skipped_tests.append(r)
+    if not same_host and len(dcos_api_session.all_slaves) == 1:
+        pytest.skip("must have more than one agent for this test!")
+    if named_vip:
+        vip = '/namedvip:7000'
+        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:7000'
+    else:
+        vip = '1.1.1.7:7000'
+        vipaddr = '1.1.1.7:7000'
 
-    def run(test):
-        vip_test(dcos_api_session, test)
-        failed_tests.remove(test)
-        passed_tests.append(test)
-
-    tasks = [executor.submit(run, t) for t in failed_tests]
-    for t in concurrent.futures.as_completed(tasks):
-        try:
-            t.result()
-        except Exception as exc:
-            # just log the exception, each failed test is recored in the `failed_tests` array
-            log.info('vip_test generated an exception: {}'.format(exc))
-    [r.log('PASSED', lvl=logging.INFO) for r in passed_tests]
-    [r.log('SKIPPED', lvl=logging.INFO) for r in skipped_tests]
-    [r.log('FAILED', lvl=logging.INFO) for r in failed_tests]
-    log.info('VIP_TEST num agents: {}'.format(len(dcos_api_session.all_slaves)))
-    assert len(failed_tests) == 0
+    agents = list(dcos_api_session.all_slaves)
+    # make sure we can reproduce
+    random.seed(vip)
+    random.shuffle(agents)
+    host1 = agents[0]
+    if not same_host:
+        host2 = agents[1]
+    else:
+        host2 = agents[0]
+    origin_app, app_uuid = vip_app(container, vip_net, host1, vip, False)
+    proxy_app, _ = vip_app(container, proxy_net, host2, None, True)
+    # allow these apps to run on public slaves
+    origin_app['acceptedResourceRoles'] = ['*', 'slave_public']
+    proxy_app['acceptedResourceRoles'] = ['*', 'slave_public']
+    returned_uuid = None
+    with contextlib.ExitStack() as stack:
+        # We do not need the service endpoint of the origin app because it has the VIP,
+        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, check_health=False))
+        endpoints = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app))
+        endpoint = endpoints[0]
+        if proxy_net == 'USER':
+            host = endpoint.ip
+            port = 8001
+        else:
+            host = endpoint.host
+            port = endpoint.port
+        cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
+        returned_uuid = ensure_routable(cmd, host, port)
+    assert returned_uuid is not None
+    assert returned_uuid['test_uuid'] == app_uuid
 
 
 @retrying.retry(wait_fixed=2000,
-                stop_max_delay=timeout * 1000,
+                stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
 def test_if_overlay_ok(dcos_api_session):
     def _check_overlay(hostname, port):
