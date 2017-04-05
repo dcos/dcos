@@ -2,6 +2,7 @@
 
 import os
 import requests
+import time
 
 from generic_test_code.common import (
     assert_endpoint_response,
@@ -62,10 +63,10 @@ class TestAuthnJWTValidator:
             cookies={"dcos-acs-auth-cookie": token},
             )
 
-    def test_valid_auth_token_in_cookie_without_uid(
+    def test_valid_auth_token_in_cookie_with_null_uid(
             self,
             master_ar_process,
-            valid_jwt_generator,
+            jwt_generator,
             ):
         log_messages = {
             "No auth token in request.": SearchCriteria(0, True),
@@ -75,7 +76,7 @@ class TestAuthnJWTValidator:
                 SearchCriteria(1, True),
             }
 
-        token = valid_jwt_generator(uid=None)
+        token = jwt_generator(uid=None)
         assert_endpoint_response(
             master_ar_process,
             EXHIBITOR_PATH,
@@ -84,7 +85,7 @@ class TestAuthnJWTValidator:
             cookies={"dcos-acs-auth-cookie": token},
             )
 
-    def test_valid_auth_token_in_cookie(self, master_ar_process, valid_jwt_generator):
+    def test_valid_auth_token_in_cookie(self, master_ar_process, jwt_generator):
         log_messages = {
             "No auth token in request.": SearchCriteria(0, True),
             "Invalid token. Reason: invalid jwt string":
@@ -92,7 +93,7 @@ class TestAuthnJWTValidator:
             "UID from valid JWT: `test`": SearchCriteria(1, True),
             }
 
-        token = valid_jwt_generator(uid='test')
+        token = jwt_generator(uid='test')
         assert_endpoint_response(
             master_ar_process,
             EXHIBITOR_PATH,
@@ -117,14 +118,14 @@ class TestAuthnJWTValidator:
             self,
             master_ar_process,
             valid_user_header,
-            valid_jwt_generator,
+            jwt_generator,
             ):
         log_messages = {
             "UID from valid JWT: `bozydar`": SearchCriteria(1, True),
             "UID from valid JWT: `test`": SearchCriteria(0, True),
             }
 
-        token = valid_jwt_generator(uid='test')
+        token = jwt_generator(uid='test')
         assert_endpoint_response(
             master_ar_process,
             EXHIBITOR_PATH,
@@ -132,6 +133,61 @@ class TestAuthnJWTValidator:
             assert_stderr=log_messages,
             headers=valid_user_header,
             cookies={"dcos-acs-auth-cookie": token},
+            )
+
+    def test_valid_auth_token_without_uid(
+            self,
+            master_ar_process,
+            jwt_generator,
+            ):
+        log_messages = {
+            "Invalid token. Reason: Missing one of claims - \[ uid \]":
+                SearchCriteria(1, True),
+            }
+
+        token = jwt_generator(uid='test', skip_uid_claim=True)
+        auth_header = {'Authorization': 'token={}'.format(token)}
+        assert_endpoint_response(
+            master_ar_process,
+            EXHIBITOR_PATH,
+            401,
+            assert_stderr=log_messages,
+            headers=auth_header,
+            )
+
+    def test_valid_auth_token_without_exp(
+            self,
+            master_ar_process,
+            jwt_generator,
+            ):
+        # We accept "forever tokens"
+        token = jwt_generator(uid='test', skip_exp_claim=True)
+        auth_header = {'Authorization': 'token={}'.format(token)}
+        assert_endpoint_response(
+            master_ar_process,
+            EXHIBITOR_PATH,
+            200,
+            headers=auth_header,
+            )
+
+    def test_expired_auth_token(
+            self,
+            master_ar_process,
+            jwt_generator,
+            ):
+        log_messages = {
+            "Invalid token. Reason: 'exp' claim expired at ":
+                SearchCriteria(1, True),
+            }
+
+        token = jwt_generator(uid='test', exp=time.time() - 15)
+        auth_header = {'Authorization': 'token={}'.format(token)}
+        assert_endpoint_response(
+            master_ar_process,
+            EXHIBITOR_PATH,
+            401,
+            assert_stderr=log_messages,
+            headers=auth_header,
             )
 
 
