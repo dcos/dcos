@@ -307,7 +307,9 @@ class VpcClusterUpgradeTest:
 
             dcos_api.marathon.deploy_app(viplisten_app)
             dcos_api.marathon.ensure_deployments_complete()
-            dcos_api.marathon.deploy_app(viptalk_app)
+            # viptalk app depends on VIP from viplisten app, which may still fail
+            # the first try immediately after ensure_deployments_complete
+            dcos_api.marathon.deploy_app(viptalk_app, ignore_failed_tasks=True)
             dcos_api.marathon.ensure_deployments_complete()
 
             dcos_api.marathon.deploy_app(healthcheck_app)
