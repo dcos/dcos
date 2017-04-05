@@ -110,7 +110,7 @@ def check_environment():
     options.vm_size = os.getenv('AZURE_VM_SIZE', 'Standard_D2')
     options.num_agents = os.getenv('AGENTS', '2')
     options.name_suffix = os.getenv('AZURE_DCOS_SUFFIX', '12345')
-    options.oauth_enabled = os.getenv('AZURE_OAUTH_ENABLED', 'false')
+    options.oauth_enabled = os.getenv('AZURE_OAUTH_ENABLED', 'true')
     options.vm_diagnostics_enabled = os.getenv('AZURE_VM_DIAGNOSTICS_ENABLED', 'true')
     options.ci_flags = os.getenv('CI_FLAGS', '')
 
@@ -153,7 +153,7 @@ def main():
                 dcos_dns, port=2200) as t:
         result = integration_test(
             tunnel=t,
-            dcos_dns=master_list[0],
+            dcos_dns=dcos_dns,
             master_list=master_list,
             agent_list=[ip.private_ip for ip in dcos_resource_group.get_private_agent_ips()],
             public_agent_list=[ip.private_ip for ip in dcos_resource_group.get_public_agent_ips()],

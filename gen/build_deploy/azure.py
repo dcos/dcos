@@ -58,7 +58,7 @@ azure_base_source = Source(entry={
         'exhibitor_storage_backend': 'azure',
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
-        'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
+        'slave_public_cloud_config': '{{ slave_public_cloud_config }}'
     },
     'conditional': {
         'oauth_available': {
