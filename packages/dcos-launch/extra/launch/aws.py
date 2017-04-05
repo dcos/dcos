@@ -32,7 +32,9 @@ class AwsCloudformationLauncher(launch.util.AbstractLauncher):
             temp_resources.update(self.zen_helper(config))
         try:
             stack = self.boto_wrapper.create_stack(
-                config['deployment_name'], config['template_url'], yaml.load(config['template_parameters']))
+                config['deployment_name'],
+                yaml.load(config['template_parameters']),
+                template_url=config['template_url'])
         except Exception as ex:
             self.delete_temp_resources(temp_resources)
             raise launch.util.LauncherError('ProviderError', None) from ex
