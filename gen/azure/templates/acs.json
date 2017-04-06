@@ -521,6 +521,8 @@
     "masterLbName": "[concat(variables('orchestratorName'), '-master-lb-', variables('nameSuffix'))]",
     "masterSshInboundNatRuleNamePrefix": "[concat(variables('masterLbName'),'/SSH-',variables('masterVMNamePrefix'))]",
     "masterSshPort22InboundNatRuleName": "[concat(variables('masterLbName'),'/SSHPort22-',variables('masterVMNamePrefix'),'0')]",
+    "masterHttpPort80InboundNatRuleName": "[concat(variables('masterLbName'),'/HTTPPort80-',variables('masterVMNamePrefix'),'0')]",
+    "masterHttpsPort443InboundNatRuleName": "[concat(variables('masterLbName'),'/HTTPSPort443-',variables('masterVMNamePrefix'),'0')]",
     "masterVMSize": "[variables('masterSizes')[variables('isValidation')]]",
     "masterLbID": "[resourceId('Microsoft.Network/loadBalancers',variables('masterLbName'))]",
     "masterLbIPConfigName": "[concat(variables('orchestratorName'), '-master-lbFrontEnd-', variables('nameSuffix'))]",
@@ -528,6 +530,8 @@
     "masterLbBackendPoolName": "[concat(variables('orchestratorName'), '-master-pool-', variables('nameSuffix'))]",
     "masterSshInboundNatRuleIdPrefix": "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'))]",
     "masterSshPort22InboundNatRuleId": "[concat(variables('masterLbID'),'/inboundNatRules/SSHPort22-',variables('masterVMNamePrefix'),'0')]",
+    "masterHttpPort80InboundNatRuleId": "[concat(variables('masterLbID'),'/inboundNatRules/HTTPPort80-',variables('masterVMNamePrefix'),'0')]",
+    "masterHttpsPort443InboundNatRuleId": "[concat(variables('masterLbID'),'/inboundNatRules/HTTPSPort443-',variables('masterVMNamePrefix'),'0')]",
     "masterLbInboundNatRules":[
       [
         {
@@ -535,6 +539,12 @@
         },
         {
           "id": "[variables('masterSshPort22InboundNatRuleId')]"
+        },
+        {
+          "id": "[variables('masterHttpPort80InboundNatRuleId')]"
+        },
+        {
+          "id": "[variables('masterHttpsPort443InboundNatRuleId')]"
         }
       ],
       [
@@ -581,13 +591,16 @@
     "masterSizes": [
       "Standard_D2_v2",
       "Standard_A2"
-    ]
+    ],
 {% switch oauth_available %}
 {% case "true" %}
-    ,
-    "oauthEnabled": "[parameters('oauthEnabled')]"
+    "oauthEnabled": "[parameters('oauthEnabled')]",
 {% case "false" %}
 {% endswitch %}
+    "allowMasterHttp": {
+        "true": "Allow",
+        "false": "Deny"
+    }
   },
   "resources": [
     {
@@ -751,7 +764,7 @@
         "frontendIPConfiguration": {
           "id": "[variables('masterLbIPConfigID')]"
         },
-        "frontendPort": "22",
+        "frontendPort": 22,
         "protocol": "tcp"
       }
     },
@@ -768,7 +781,7 @@
               "description": "Allow SSH",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "22",
+              "destinationPortRange": 22,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -782,15 +795,99 @@
               "description": "Allow SSH",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "2222",
+              "destinationPortRange": 2222,
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 201,
               "direction": "Inbound"
             }
+          },
+          {
+            "name": "httpPort80",
+            "properties": {
+              "description": "HTTP Port 80",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": 80,
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              {% switch oauth_available %}
+              {% case "true" %}
+              "access": "[variables('allowMasterHttp')[variables('oauthEnabled')]]",
+              {% case "false" %}
+              {% switch custom_auth %}
+              {% case "true" %}
+              "access": "Allow",
+              {% case "false" %}
+              "access": "Deny",
+              {% endswitch %}
+              {% endswitch %}
+              "priority": 202,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "httpsPort443",
+            "properties": {
+              "description": "HTTPS Port 443",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": 443,
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              {% switch oauth_available %}
+              {% case "true" %}
+              "access": "[variables('allowMasterHttp')[variables('oauthEnabled')]]",
+              {% case "false" %}
+              {% switch custom_auth %}
+              {% case "true" %}
+              "access": "Allow",
+              {% case "false" %}
+              "access": "Deny",
+              {% endswitch %}
+              {% endswitch %}
+              "priority": 203,
+              "direction": "Inbound"
+            }
           }
         ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionDefault')]",
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules",
+      "name": "[variables('masterHttpPort80InboundNatRuleName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('masterLbID')]"
+      ],
+      "properties": {
+        "backendPort": 80,
+        "enableFloatingIP": false,
+        "frontendIPConfiguration": {
+          "id": "[variables('masterLbIPConfigID')]"
+        },
+        "frontendPort": 80,
+        "protocol": "tcp"
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionDefault')]",
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules",
+      "name": "[variables('masterHttpsPort443InboundNatRuleName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('masterLbID')]"
+      ],
+      "properties": {
+        "backendPort": 443,
+        "enableFloatingIP": false,
+        "frontendIPConfiguration": {
+          "id": "[variables('masterLbIPConfigID')]"
+        },
+        "frontendPort": 443,
+        "protocol": "tcp"
       }
     },
     {
@@ -812,7 +909,7 @@
               "description": "Allow HTTP traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "80",
+              "destinationPortRange": 80,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -826,7 +923,7 @@
               "description": "Allow HTTPS traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "443",
+              "destinationPortRange": 443,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -840,7 +937,7 @@
               "description": "Allow 8080 traffic from the Internet to Public Agents",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "8080",
+              "destinationPortRange": 8080,
               "sourceAddressPrefix": "Internet",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -861,10 +958,11 @@
         "count": "[variables('masterCount')]"
       },
       "dependsOn": [
-        "[variables('masterLbID')]",
         "[variables('vnetID')]",
         "[concat(variables('masterLbID'),'/inboundNatRules/SSH-',variables('masterVMNamePrefix'),copyIndex())]",
         "[variables('masterSshPort22InboundNatRuleId')]",
+        "[variables('masterHttpPort80InboundNatRuleId')]",
+        "[variables('masterHttpsPort443InboundNatRuleId')]",
         "[variables('masterNSGID')]"
       ],
       "properties": {
