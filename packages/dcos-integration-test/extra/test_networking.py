@@ -12,7 +12,8 @@ import pytest
 import requests
 import retrying
 
-from pkgpanda.build import load_json
+from test_helpers import expanded_config
+
 from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
 
 
@@ -23,8 +24,7 @@ backend_port_st = 8000
 
 
 def lb_enabled():
-    config = load_json('/opt/mesosphere/etc/expanded.config.json')
-    return config['enable_lb'] == 'true'
+    return expanded_config['enable_lb'] == 'true'
 
 
 @retrying.retry(wait_fixed=2000,
