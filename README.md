@@ -88,6 +88,9 @@ Integration tests are installed via the [dcos-integration-test](./packages/dcos-
 Integration test files are stored on the DC/OS master node at `/opt/mesosphere/active/dcos-integration-test`.
 Therefore, in order to test changes to test files, move files from `packages/dcos-integration-test/extra/` in your checkout to `/opt/mesosphere/active/dcos-integration-test` on the master node.
 
+The canonical source of the test suite's results is the continuous integration system.
+There may be differences between the results of running the integration tests as described in this document and the results given by the continuous integration system.
+
 ## Minimum Requirements
 
 - 1 master node
