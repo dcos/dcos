@@ -99,6 +99,10 @@ setup(
         ] + get_advanced_templates(),
         'pkgpanda': [
             'docker/dcos-builder/Dockerfile'
+        ],
+        'test_util': [
+            'templates/vpc-cluster-template.json',
+            'templates/vpc-ebs-only-cluster-template.json'
         ]
     },
     zip_safe=False

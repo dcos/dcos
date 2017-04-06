@@ -36,7 +36,7 @@ def dcos_stack(boto_wrapper):
     """ Works with either Zen or Simple cloud formations
     """
     stack = test_util.aws.fetch_stack(os.environ['AWS_STACK_NAME'], boto_wrapper)
-    if isinstance(stack, test_util.aws.VpcCfStack):
+    if isinstance(stack, test_util.aws.BareClusterCfStack):
         pytest.skip('Onprem Vpc not currently supported')
     return stack
 

@@ -143,7 +143,7 @@ class Cluster:
         )
 
     @classmethod
-    def from_vpc(
+    def from_bare_cluster(
         cls,
         vpc,
         ssh_info,
