@@ -170,6 +170,27 @@ class ApiClientSession:
         return self.api_request('OPTIONS', *args, **kwargs)
 
 
+def is_retryable_exception(exception):
+    for ex in [requests.exceptions.ConnectionError, requests.exceptions.Timeout]:
+        if isinstance(exception, ex):
+            return True
+    return False
+
+
+class RetryCommonHttpErrorsMixin:
+    """ Mixin for ApiClientSession so that random disconnects from
+    network instability do not derail entire scripts
+    """
+    def api_request(self, *args, retry_timeout=60, **kwargs):
+        @retrying.retry(
+            stop_max_delay=retry_timeout * 1000,
+            retry_on_exception=is_retryable_exception)
+        def retry_errors():
+            return super(RetryCommonHttpErrorsMixin, self).api_request(*args, **kwargs)
+
+        return retry_errors()
+
+
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
     """Decorator to make boto functions resilient to AWS rate limiting and throttling.
     If one of these errors is encounterd, the function will sleep for a geometrically
