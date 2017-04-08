@@ -74,6 +74,7 @@ def vip_app(num, container, network, host, vip):
         return get_test_app(
             network=network,
             host_port=backend_port_st + num,
+            container_port=backend_port_st + num,
             host_constraint=host,
             vip=vip,
             container_type=container)
@@ -216,7 +217,7 @@ def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
     # Launch the test_server in ip-per-container mode (user network)
-    app_definition, test_uuid = get_test_app(container_type='DOCKER', network='USER')
+    app_definition, test_uuid = get_test_app(container_type='DOCKER', network='USER', host_port=9080)
 
     assert len(dcos_api_session.slaves) >= 2, 'IP Per Container tests require 2 private agents to work'
 

@@ -32,7 +32,7 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     deployed and accessed as expected.
     """
     dcos_api_session.marathon.deploy_test_app_and_check(
-        *get_test_app(network='BRIDGE', container_type='DOCKER'))
+        *get_test_app(network='BRIDGE', container_type='DOCKER', container_port=9080))
 
 
 @pytest.mark.parametrize("healthcheck", [
