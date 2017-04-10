@@ -654,7 +654,7 @@ class TestCache:
                          cache_backend_request_timeout=backend_request_timeout,
                          cache_refresh_lock_timeout=refresh_lock_timeout,
                          )
-        agent_id = 'de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+        agent_id = SLAVE1_ID
         url = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
         v = Vegeta(log_catcher, target=url, jwt=valid_user_header, rate=3)
 

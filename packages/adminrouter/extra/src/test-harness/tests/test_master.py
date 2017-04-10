@@ -13,6 +13,7 @@ from generic_test_code.common import (
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
 )
+from mocker.endpoints.mesos import SLAVE1_ID, SLAVE2_ID
 
 log = logging.getLogger(__name__)
 
