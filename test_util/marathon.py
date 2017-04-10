@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import requests
 import retrying
 
-from test_util.helpers import ApiClientSession, path_join
+from test_util.helpers import ApiClientSession, path_join, RetryCommonHttpErrorsMixin
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
@@ -102,7 +102,7 @@ def get_test_app_in_ucr(healthcheck='HTTP'):
     return app, test_uuid
 
 
-class Marathon(ApiClientSession):
+class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
     def __init__(self, default_url, default_os_user='root', session=None):
         super().__init__(default_url)
         if session is not None:
