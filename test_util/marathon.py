@@ -253,7 +253,7 @@ class Marathon(ApiClientSession):
         except retrying.RetryError:
             raise Exception("Deployments were not completed within {timeout} seconds".format(timeout=timeout))
 
-    def deploy_pod(self, pod_definition):
+    def deploy_pod(self, pod_definition, timeout=300):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
@@ -264,13 +264,10 @@ class Marathon(ApiClientSession):
         Args:
             pod_definition: a dict with pod definition as specified in
                             Marathon API
-            check_health: wait until Marathon reports tasks as healthy before
-                          returning
+            timeout: seconds to wait for deployment to finish
         Returns:
-            Scaling instance count
+            Pod data JSON
         """
-        timeout = 120
-
         r = self.post('v2/pods', json=pod_definition)
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
         log.info('Response from marathon: {}'.format(repr(r.json())))
@@ -371,6 +368,6 @@ class Marathon(ApiClientSession):
         self.destroy_app(app_definition['id'], timeout)
 
     @contextmanager
-    def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
-        yield self.deploy_pod(pod_definition)
+    def deploy_pod_and_cleanup(self, pod_definition, timeout=300):
+        yield self.deploy_pod(pod_definition, timeout=timeout)
         self.destroy_pod(pod_definition['id'], timeout)
