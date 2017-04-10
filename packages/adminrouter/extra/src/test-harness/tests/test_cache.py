@@ -710,7 +710,7 @@ class TestCacheMarathon:
         filter_regexp = {
             "Labels not found in app '{}'".format(app["id"]): SearchCriteria(1, True),
         }
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_service_scheme_label(
@@ -723,7 +723,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_port_index_label(
@@ -735,7 +735,7 @@ class TestCacheMarathon:
             "Cannot find DCOS_SERVICE_PORT_INDEX for app '{}'".format(app["id"]):
                 SearchCriteria(1, True),
         }
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_with_port_index_nan_label(
@@ -748,7 +748,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_mesos_tasks(
@@ -761,7 +761,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_tasks_in_running_state(
@@ -774,7 +774,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_host(
@@ -787,7 +787,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_ports(
@@ -800,7 +800,7 @@ class TestCacheMarathon:
                 SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
     def test_app_without_task_specified_port_idx(
@@ -813,10 +813,10 @@ class TestCacheMarathon:
                 app["id"]): SearchCriteria(1, True),
         }
 
-        self.assert_filter_regexp_for_invalid_app(
+        self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
-    def assert_filter_regexp_for_invalid_app(
+    def _assert_filter_regexp_for_invalid_app(
             self,
             filter_regexp,
             app,
