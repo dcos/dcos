@@ -165,9 +165,7 @@ class TestCache:
                          cache_poll_period=3,
                          )
 
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_app')
-        url = ar.make_url_from_path('/service/nginx-enabled/foo/bar/')
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
 
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
@@ -218,9 +216,7 @@ class TestCache:
                          cache_poll_period=3,
                          )
 
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_app')
-        url = ar.make_url_from_path('/service/nginx-enabled/foo/bar/')
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
 
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
@@ -377,11 +373,8 @@ class TestCache:
                             func_name='always_bork',
                             aux_data=True)
 
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_app')
-
         ar = nginx_class()
-        url = ar.make_url_from_path('/service/nginx-enabled/bar/baz')
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp,
@@ -395,7 +388,7 @@ class TestCache:
 
         assert resp.status_code == 200
         req_data = resp.json()
-        assert req_data['endpoint_id'] == 'http://127.0.0.1:16001'
+        assert req_data['endpoint_id'] == 'http://127.0.0.1:16000'
 
         assert lbf.extra_matches == {}
 
@@ -403,13 +396,15 @@ class TestCache:
             self, nginx_class, valid_user_header, mocker):
         cache_poll_period = 4
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
-        url = ar.make_url_from_path('/service/nginx-enabled/bar/baz')
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             resp = requests.get(url,
                                 allow_redirects=False,
                                 headers=valid_user_header)
-            assert resp.status_code == 500
+            assert resp.status_code == 200
+            req_data = resp.json()
+            assert req_data['endpoint_id'] == 'http://127.0.0.1:16000'
 
             new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -424,9 +419,8 @@ class TestCache:
                                 allow_redirects=False,
                                 headers=valid_user_header)
             assert resp.status_code == 200
-
-        req_data = resp.json()
-        assert req_data['endpoint_id'] == 'http://127.0.0.1:16001'
+            req_data = resp.json()
+            assert req_data['endpoint_id'] == 'http://127.0.0.15:16001'
 
     def test_if_changing_mesos_state_is_reflected_in_cache(
             self, nginx_class, valid_user_header, mocker):
@@ -524,15 +518,12 @@ class TestCache:
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='record_requests')
-        # Enable sample Nginx task in marathon
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='enable_nginx_app')
         # Enable recording for mesos
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='record_requests')
 
         ar = nginx_class()
-        url = ar.make_url_from_path('/service/nginx-enabled/bar/baz')
+        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             # Let the cache warm-up:
