@@ -71,7 +71,7 @@ def compose_suite_paths_for_packages(packages_dir, packages):
 
 
 def compose_cluster_name(ccm_channel):
-    return ccm_channel.replace("/", "-")
+    return ccm_channel.replace("/", "-")[:40]
 
 
 if __name__ == '__main__':
