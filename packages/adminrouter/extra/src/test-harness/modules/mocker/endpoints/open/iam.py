@@ -21,6 +21,14 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
     USERS_QUERY_REGEXP = re.compile('^/acs/api/v1/users/([^/]+)$')
 
     def _calculate_response(self, base_path, url_args, body_args=None):
+        """Reply with the currently set mock-reply for given IAM user query.
+
+        Please refer to the description of the BaseHTTPRequestHandler class
+        for details on the arguments and return value of this method.
+
+        Raises:
+            EndpointException: request URL path is unsupported
+        """
         match = self.USERS_QUERY_REGEXP.search(base_path)
         if match:
             return self.__users_permissions_request_handler(match.group(1))

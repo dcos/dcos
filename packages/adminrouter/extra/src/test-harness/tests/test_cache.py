@@ -6,7 +6,10 @@ import requests
 import time
 
 from generic_test_code.common import ping_mesos_agent
-from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE
+from mocker.endpoints.marathon import (
+    NGINX_APP_ALWAYSTHERE,
+    NGINX_APP_ALWAYSTHERE_DIFFERENTPORT,
+)
 from mocker.endpoints.mesos import EXTRA_SLAVE_DICT
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta
 from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
@@ -408,8 +411,10 @@ class TestCache:
                                 headers=valid_user_header)
             assert resp.status_code == 500
 
+            new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                                func_name='enable_nginx_app')
+                                func_name='set_apps_response',
+                                aux_data=new_apps)
 
             # First poll (2s) + normal poll interval(4s) < 2 * normal poll
             # interval(4s)
@@ -844,6 +849,15 @@ class TestCacheMarathon:
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
                             aux_data={"apps": [app]})
+
+        # Remove all entries for mesos frameworks and mesos_dns so that
+        # we test only the information in Marathon
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[])
+        mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                            func_name='set_srv_response',
+                            aux_data=[])
 
         url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
         with GuardedSubprocess(ar):
