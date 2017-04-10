@@ -1,6 +1,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+
 import requests
 
 from util import LineBufferFilter

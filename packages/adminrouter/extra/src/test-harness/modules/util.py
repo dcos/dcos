@@ -10,14 +10,13 @@
 import code
 import logging
 import os
-import pyroute2
 import re
 import signal
 import time
 import traceback
-
 from contextlib import contextmanager
 
+import pyroute2
 
 LOG_LINE_SEARCH_INTERVAL = 0.2
 

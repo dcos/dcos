@@ -2,8 +2,9 @@
 
 import copy
 import logging
-import requests
 import time
+
+import requests
 
 from generic_test_code.common import ping_mesos_agent
 from mocker.endpoints.marathon import (
@@ -12,7 +13,7 @@ from mocker.endpoints.marathon import (
 )
 from mocker.endpoints.mesos import EXTRA_SLAVE_DICT
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta
-from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
+from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 

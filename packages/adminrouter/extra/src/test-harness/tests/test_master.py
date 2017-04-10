@@ -3,18 +3,16 @@
 import collections
 import copy
 import logging
+
 import pytest
 import requests
 
 from generic_test_code.common import (
-    assert_endpoint_response,
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
 )
-from generic_test_code.open import assert_iam_queried_for_uid
-from util import SearchCriteria, iam_denies_all_requests
 
 log = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@
 """MesosDNS mock endpoint"""
 
 import copy
-import re
 import logging
+import re
 
 from exceptions import EndpointException
 from mocker.endpoints.recording import (
