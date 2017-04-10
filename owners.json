@@ -1,9 +1,13 @@
 {
-  "amitaekbote": {"slack": "amitaekbote"},
   "adam-mesos": {"slack": "adam"},
+  "amitaekbote": {"slack": "amitaekbote"},
   "branden": {"slack": "branden"},
+  "gpaul": {"slack": "gpaul"},
+  "jgehrcke": {"slack": "jp"},
   "lingmann": {"slack": "jeremy"},
   "mellenburg": {"slack": "mellenburg"},
+  "mhrabovcin": {"slack": "mhrabovcin.c"},
   "orsenthil" : {"slack": "skumaran"},
-  "spahl": {"slack": "seb"}
+  "spahl": {"slack": "seb"},
+  "vespian": {"slack": "prozlach"}
 }
