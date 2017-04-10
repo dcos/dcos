@@ -11,8 +11,10 @@ from mocker.endpoints.reflectors import (
     ReflectingTcpIpEndpoint,
     ReflectingUnixSocketEndpoint,
 )
-from mocker.endpoints.mesos import MesosEndpoint
+
 from mocker.endpoints.marathon import MarathonEndpoint
+from mocker.endpoints.mesos import MesosEndpoint
+from mocker.endpoints.mesos_dns import MesosDnsEndpoint
 
 log = logging.getLogger(__name__)
 
@@ -108,7 +110,7 @@ class MockerBase:
         # DC/OS history service
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15055))
         # Mesos DNS
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=8123))
+        res.append(MesosDnsEndpoint(ip='127.0.0.1', port=8123))
         # Metrics(agent):
         res.append(
             ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))
