@@ -20,7 +20,7 @@ authed_endpoints = [
     '/exhibitor/foo/bar',
     '/marathon/v2/apps',
     '/mesos/master/state-summary',
-    '/mesos_dns/foo/bar',
+    '/mesos_dns/v1/services/_nginx-alwaysthere._tcp.marathon.mesos',
     '/metadata',
     '/navstar/lashup/key',
     '/package/foo/bar',
