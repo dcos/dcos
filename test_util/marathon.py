@@ -53,7 +53,7 @@ def get_test_app(
         'instances': 1,
         'cmd': '/opt/mesosphere/bin/dcos-shell python '
                '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(
-                   '$PORT0' if host_port == 0 else container_port),
+                   '$PORT0' if host_port == 0 and network == 'HOST' else container_port),
         'env': {
             'DCOS_TEST_UUID': test_uuid,
             # required for python_test_server.py to run as nobody
@@ -78,6 +78,7 @@ def get_test_app(
         assert container_type == 'DOCKER', 'BRIDGE network mode only supported for DOCKER container type'
         app['healthChecks'][0]['port'] = container_port if healthcheck_protocol == 'MESOS_HTTP' else host_port
     else:
+        # HOST or USER network with non-zero host port
         app['healthChecks'][0]['port'] = host_port
     if container_type is not None:
         app['container'] = {
