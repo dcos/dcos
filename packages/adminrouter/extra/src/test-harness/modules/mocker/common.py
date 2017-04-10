@@ -82,8 +82,17 @@ class MockerBase:
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=61001))
         # task /nginx-alwaysthere
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16000))
-        # task /nginx-enabled
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16001))
+        # task /nest1/nginx-alwaysthere
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=17000))
+        # task /nest2/nest1/nginx-alwaysthere
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18000))
+        # task /nginx-alwaysthere but with different ip+port, used i.e. in
+        # `/service` endpoint tests
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.15', port=16001))
+        # catch-all for /nginx-alwaysthere task. Its role is to respond for all
+        # the requests which i.e. used mesos_dns'es second entry in SRV reply.
+        # Successfull tests will never use it.
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16002))
         # other Admin Router Masters, used i.e. during Marathon leader testing
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=80))
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=80))
