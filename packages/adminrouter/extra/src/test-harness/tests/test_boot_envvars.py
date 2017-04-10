@@ -1,11 +1,12 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
-import pytest
-import requests
 import time
 
-from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
+import pytest
+import requests
+
+from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 

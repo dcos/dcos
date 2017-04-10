@@ -3,17 +3,11 @@
 """All the code relevant for reflecting mocker, both Unix Socket and TCP/IP based"""
 
 import logging
-
 from cgi import parse_header, parse_multipart
 from urllib.parse import parse_qs
 
-from mocker.endpoints.generic import (
-    TcpIpHttpEndpoint,
-    UnixSocketHTTPEndpoint,
-)
-from mocker.endpoints.basehandler import (
-    BaseHTTPRequestHandler,
-)
+from mocker.endpoints.basehandler import BaseHTTPRequestHandler
+from mocker.endpoints.generic import TcpIpHttpEndpoint, UnixSocketHTTPEndpoint
 
 # pylint: disable=C0103
 log = logging.getLogger(__name__)

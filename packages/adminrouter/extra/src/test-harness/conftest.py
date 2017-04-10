@@ -5,8 +5,9 @@
     Please check pytest documentation and/or util module docstrings.
 """
 
-import util
 import pytest
+
+import util
 
 
 def pytest_addoption(parser):

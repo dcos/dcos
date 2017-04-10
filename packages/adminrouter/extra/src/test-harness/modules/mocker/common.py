@@ -7,14 +7,13 @@ Shared management code for DC/OS mocks used by AR instances, both EE and Open.
 import concurrent.futures
 import logging
 
+from mocker.endpoints.marathon import MarathonEndpoint
+from mocker.endpoints.mesos import MesosEndpoint
+from mocker.endpoints.mesos_dns import MesosDnsEndpoint
 from mocker.endpoints.reflectors import (
     ReflectingTcpIpEndpoint,
     ReflectingUnixSocketEndpoint,
 )
-
-from mocker.endpoints.marathon import MarathonEndpoint
-from mocker.endpoints.mesos import MesosEndpoint
-from mocker.endpoints.mesos_dns import MesosDnsEndpoint
 
 log = logging.getLogger(__name__)
 

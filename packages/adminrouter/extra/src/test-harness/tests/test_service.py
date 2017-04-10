@@ -1,24 +1,22 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
-import pytest
-import requests
 import time
 
-from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE_DIFFERENTPORT
-from mocker.endpoints.mesos import (
-    NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT,
-    NGINX_FWRK_ALWAYSTHERE_NOWEBUI,
-    framework_from_template
-    )
-from mocker.endpoints.mesos_dns import NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT
+import pytest
+import requests
+
 from generic_test_code.common import (
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
     header_is_absent,
 )
-from generic_test_code.common import (
-    generic_upstream_headers_verify_test,
+from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE_DIFFERENTPORT
+from mocker.endpoints.mesos import (
+    NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT,
+    NGINX_FWRK_ALWAYSTHERE_NOWEBUI,
+    framework_from_template,
 )
+from mocker.endpoints.mesos_dns import NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT
 
 CACHE_UPDATE_DELAY = 2  # seconds
 assert CACHE_UPDATE_DELAY > 1.5  # due to cache_expiration=(CACHE_UPDATE_DELAY - 1)
