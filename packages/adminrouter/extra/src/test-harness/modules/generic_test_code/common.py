@@ -58,7 +58,8 @@ def generic_no_slash_redirect_test(ar, path):
     assert r.status_code == 301
 
 
-def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=None):
+def generic_upstream_headers_verify_test(
+        ar, auth_header, path, assert_headers=None, assert_headers_absent=None):
     """Test if headers sent upstream are correct
 
     Helper function meant to simplify writing multiple tests testing the
@@ -71,6 +72,8 @@ def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=N
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
+        assert_header_absent (dict): headers that *MUST NOT* be present in the
+            upstream request
     """
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
@@ -85,9 +88,12 @@ def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=N
     verify_header(req_data['headers'], 'X-Forwarded-Proto', 'http')
     verify_header(req_data['headers'], 'X-Real-IP', '127.0.0.1')
 
-    if assert_headers:
+    if assert_headers is not None:
         for name, value in assert_headers.items():
             verify_header(req_data['headers'], name, value)
+    if assert_headers_absent is not None:
+        for name in assert_headers_absent:
+            header_is_absent(req_data['headers'], name)
 
 
 def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
@@ -140,6 +146,23 @@ def generic_correct_upstream_request_test(
     assert req_data['method'] == 'GET'
     assert req_data['path'] == expected_path
     assert req_data['request_version'] == http_ver
+
+
+def header_is_absent(headers, header_name):
+    """Test if given header is present in the request headers list
+
+    Arguments:
+        headers (list): list of tuples containing all the headers present in
+            the reflected request data
+        header_name (string): name of the header that should not be present/must
+            not be set.
+
+    Raises:
+        AssertionErrror: header with the name "header_name" was found in
+        supplied header list.
+    """
+    for header in headers:
+        assert header[0] != header_name
 
 
 def verify_header(headers, header_name, header_value):
