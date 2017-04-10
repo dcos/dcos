@@ -8,10 +8,10 @@ import requests
 
 from generic_test_code.common import ping_mesos_agent
 from mocker.endpoints.marathon import (
-    NGINX_APP_ALWAYSTHERE,
-    NGINX_APP_ALWAYSTHERE_DIFFERENTPORT,
+    SCHEDULER_APP_ALWAYSTHERE,
+    SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT,
 )
-from mocker.endpoints.mesos import EXTRA_SLAVE_DICT
+from mocker.endpoints.mesos import EXTRA_SLAVE_DICT, SLAVE1_ID
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
@@ -166,7 +166,7 @@ class TestCache:
                          cache_poll_period=3,
                          )
 
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
 
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
@@ -217,7 +217,7 @@ class TestCache:
                          cache_poll_period=3,
                          )
 
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
 
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
@@ -375,7 +375,7 @@ class TestCache:
                             aux_data=True)
 
         ar = nginx_class()
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp,
@@ -397,7 +397,7 @@ class TestCache:
             self, nginx_class, valid_user_header, mocker):
         cache_poll_period = 4
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             resp = requests.get(url,
@@ -407,7 +407,7 @@ class TestCache:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.1:16000'
 
-            new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
+            new_apps = {"apps": [SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
             mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                                 func_name='set_apps_response',
                                 aux_data=new_apps)
@@ -524,7 +524,7 @@ class TestCache:
                             func_name='record_requests')
 
         ar = nginx_class()
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/bar/baz')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/bar/baz')
 
         with GuardedSubprocess(ar):
             # Let the cache warm-up:
@@ -685,7 +685,7 @@ class TestCacheMarathon:
                             func_name='set_encoded_response',
                             aux_data=b"wrong response")
 
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
             lbf = LineBufferFilter(filter_regexp,
@@ -705,7 +705,7 @@ class TestCacheMarathon:
 
     def test_app_without_labels(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app.pop("labels", None)
 
         filter_regexp = {
@@ -716,7 +716,7 @@ class TestCacheMarathon:
 
     def test_app_without_service_scheme_label(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["labels"].pop("DCOS_SERVICE_SCHEME", None)
 
         filter_regexp = {
@@ -729,7 +729,7 @@ class TestCacheMarathon:
 
     def test_app_without_port_index_label(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["labels"].pop("DCOS_SERVICE_PORT_INDEX", None)
 
         filter_regexp = {
@@ -741,7 +741,7 @@ class TestCacheMarathon:
 
     def test_app_with_port_index_nan_label(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "not a number"
 
         filter_regexp = {
@@ -754,7 +754,7 @@ class TestCacheMarathon:
 
     def test_app_without_mesos_tasks(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["tasks"] = []
 
         filter_regexp = {
@@ -767,7 +767,7 @@ class TestCacheMarathon:
 
     def test_app_without_tasks_in_running_state(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["tasks"] = [{"state": "TASK_FAILED"}]
 
         filter_regexp = {
@@ -780,7 +780,7 @@ class TestCacheMarathon:
 
     def test_app_without_task_host(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["tasks"][0].pop("host", None)
 
         filter_regexp = {
@@ -793,7 +793,7 @@ class TestCacheMarathon:
 
     def test_app_without_task_ports(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["tasks"][0].pop("ports", None)
 
         filter_regexp = {
@@ -806,7 +806,7 @@ class TestCacheMarathon:
 
     def test_app_without_task_specified_port_idx(
             self, nginx_class, mocker, valid_user_header):
-        app = self._nginx_alwaysthere_app()
+        app = self._scheduler_alwaysthere_app()
         app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "5"
 
         filter_regexp = {
@@ -832,9 +832,9 @@ class TestCacheMarathon:
             filter_regexp (dict): Filter definition where key is the message
                 looked up in logs and value is SearchCriteria definition
             app (dict): App that upstream endpoint should respond with
-            nginx_class (Nginx): NGINX fixture
+            nginx_class (Nginx): SCHEDULER fixture
             mocker (Mocker): Mocker fixture
-            auth_header (dict): Headers that should be passed to NGINX request
+            auth_header (dict): Headers that should be passed to SCHEDULER request
         """
         ar = nginx_class()
 
@@ -851,7 +851,7 @@ class TestCacheMarathon:
                             func_name='set_srv_response',
                             aux_data=[])
 
-        url = ar.make_url_from_path('/service/nginx-alwaysthere/foo/bar/')
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
         with GuardedSubprocess(ar):
             # Register Line buffer filter:
             lbf = LineBufferFilter(filter_regexp,
@@ -868,6 +868,6 @@ class TestCacheMarathon:
 
         assert lbf.extra_matches == {}
 
-    def _nginx_alwaysthere_app(self):
-        """Returns a valid Marathon app with the '/nginx-alwaysthere' id"""
-        return copy.deepcopy(NGINX_APP_ALWAYSTHERE)
+    def _scheduler_alwaysthere_app(self):
+        """Returns a valid Marathon app with the '/scheduler-alwaysthere' id"""
+        return copy.deepcopy(SCHEDULER_APP_ALWAYSTHERE)

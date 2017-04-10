@@ -10,13 +10,14 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     header_is_absent,
 )
-from mocker.endpoints.marathon import NGINX_APP_ALWAYSTHERE_DIFFERENTPORT
+from mocker.endpoints.marathon import SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT
 from mocker.endpoints.mesos import (
-    NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT,
-    NGINX_FWRK_ALWAYSTHERE_NOWEBUI,
+    SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT,
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI,
     framework_from_template,
 )
-from mocker.endpoints.mesos_dns import NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT
+from mocker.endpoints.mesos_dns import SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT
 
 CACHE_UPDATE_DELAY = 2  # seconds
 assert CACHE_UPDATE_DELAY > 1.5  # due to cache_expiration=(CACHE_UPDATE_DELAY - 1)
@@ -58,12 +59,12 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.1:16000"
             )
 
         # Update the application, wait for cache to register the change
-        new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
+        new_apps = {"apps": [SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
                             aux_data=new_apps)
@@ -73,7 +74,7 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -92,21 +93,21 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000/foo/bar/',
+            '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
             "http://127.0.0.1:16000"
             )
 
         # Update the application, wait for cache to register the change
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT])
         time.sleep(CACHE_UPDATE_DELAY + 1)
 
         # Check if the location now resolves correctly to the new app port
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000/foo/bar/',
+            '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
             "http://127.0.0.15:16001"
             )
 
@@ -125,21 +126,21 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.1:16000"
             )
 
         # Update the application, wait for cache to register the change
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT])
         time.sleep(CACHE_UPDATE_DELAY + 1)
 
         # Check if the location now resolves correctly to the new app port
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -151,28 +152,28 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
 
         # Check if we can use Mesos framework data to resolve `/service`
         # location request using framework ID:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.1:16000"
             )
 
         # Update the application, wait for cache to register the change
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data=NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT)
+                            aux_data=SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT)
         time.sleep(CACHE_UPDATE_DELAY + 1)
 
         # Check if the location now resolves correctly to the new app port
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -185,7 +186,7 @@ class TestServiceStatefull:
 
         # Make svcapps resolve the app upstream to a different address,
         # framework data implicitly has default port (127.0.0.1:16000)
-        new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
+        new_apps = {"apps": [SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
                             aux_data=new_apps)
@@ -194,7 +195,7 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -203,11 +204,11 @@ class TestServiceStatefull:
         # Disable resolving service data using webui
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
 
         # Make svcapps resolve the app upstream to a different address,
         # framework data implicitly has default port (127.0.0.1:16000)
-        new_apps = {"apps": [NGINX_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
+        new_apps = {"apps": [SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
                             aux_data=new_apps)
@@ -216,7 +217,7 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -230,13 +231,13 @@ class TestServiceStatefull:
         # Set a different port for webui-based framework data:
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT])
 
         # Check that svcapps resolve to different port
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -258,12 +259,12 @@ class TestServiceStatefull:
 
         # Fabricate state-summary data needed for the tests
         fwrk_a = framework_from_template(
-            "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-            "nginx-alwaysthere",
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "scheduler-alwaysthere",
             "http://127.0.0.15:16001")
         fwrk_b = framework_from_template(
             "0535dd9a-2644-4945-a365-6fe0145f103f-0000",
-            "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
             "http://127.0.0.1:16000")
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
@@ -273,7 +274,7 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000/foo/bar/',
+            '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
             "http://127.0.0.15:16001"
             )
 
@@ -291,8 +292,8 @@ class TestServiceStatefull:
 
         # Test webui_url entry withouth trailing slash:
         fwrk = framework_from_template(
-            "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-            "nginx-alwaysthere",
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "scheduler-alwaysthere",
             "http://127.0.0.15:16001")
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
@@ -300,21 +301,21 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
         generic_correct_upstream_request_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
             http_ver='HTTP/1.1'
             )
 
         # Test webui_url entry with trailing slash:
         fwrk = framework_from_template(
-            "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-            "nginx-alwaysthere",
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "scheduler-alwaysthere",
             "http://127.0.0.15:16001/")
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
@@ -322,13 +323,13 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
         generic_correct_upstream_request_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
             http_ver='HTTP/1.1'
             )
@@ -341,7 +342,7 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
         # Make MesosDNS mock respond with garbled data
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_encoded_response',
@@ -349,7 +350,7 @@ class TestServiceStatefull:
 
         # Verify the response:
         url = master_ar_process_fastcache.make_url_from_path(
-            '/service/nginx-alwaysthere/foo/bar/')
+            '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)
@@ -364,7 +365,7 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
 
         # Make MesosDNS mock respond with invalid data
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
@@ -373,7 +374,7 @@ class TestServiceStatefull:
 
         # Verify the response:
         url = master_ar_process_fastcache.make_url_from_path(
-            '/service/nginx-alwaysthere/foo/bar/')
+            '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)
@@ -388,7 +389,7 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
 
         # Make MesosDNS mock stall response by 10s
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
@@ -397,7 +398,7 @@ class TestServiceStatefull:
 
         # Verify the response:
         url = master_ar_process_fastcache.make_url_from_path(
-            '/service/nginx-alwaysthere/foo/bar/')
+            '/service/scheduler-alwaysthere/foo/bar/')
         t_start = time.time()
         resp = requests.get(url,
                             allow_redirects=False,
@@ -415,10 +416,10 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
-                            aux_data=[NGINX_FWRK_ALWAYSTHERE_NOWEBUI])
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data=NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT)
+                            aux_data=SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT)
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='record_requests')
@@ -426,7 +427,7 @@ class TestServiceStatefull:
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
-            '/service/nginx-alwaysthere/foo/bar/',
+            '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
@@ -450,7 +451,7 @@ class TestServiceStatefull:
                             aux_data={})
 
         url = master_ar_process_fastcache.make_url_from_path(
-            '/service/nginx-alwaysthere/foo/bar/')
+            '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)

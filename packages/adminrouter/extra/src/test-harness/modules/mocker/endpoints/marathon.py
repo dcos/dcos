@@ -14,8 +14,8 @@ from mocker.endpoints.recording import (
 # pylint: disable=C0103
 log = logging.getLogger(__name__)
 
-NGINX_APP_TEMPLATE = {
-    "id": "/nginx-alwaysthere",
+SCHEDULER_APP_TEMPLATE = {
+    "id": "/scheduler-alwaysthere",
     "cmd": ("cd /opt/bitnami/nginx && harpoon initialize nginx && "
             "rm -rf /opt/bitnami/nginx/html && ln -s "
             "/mnt/mesos/sandbox/hello-nginx-master/ /opt/bitnami/nginx/html "
@@ -97,7 +97,7 @@ NGINX_APP_TEMPLATE = {
         "DCOS_PACKAGE_SOURCE": "https://universe.mesosphere.com/repo",
         "DCOS_PACKAGE_METADATA": "blah, blah, bleh",
         "DCOS_PACKAGE_REGISTRY_VERSION": "2.0",
-        "DCOS_SERVICE_NAME": "nginx-alwaysthere",
+        "DCOS_SERVICE_NAME": "scheduler-alwaysthere",
         "DCOS_SERVICE_PORT_INDEX": "0",
         "DCOS_PACKAGE_VERSION": "1.10.2",
         "DCOS_PACKAGE_NAME": "nginx",
@@ -152,7 +152,7 @@ NGINX_APP_TEMPLATE = {
             "startedAt": "2017-01-16T15:48:42.061Z",
             "version": "2017-01-16T15:48:18.007Z",
             "id": "nginx.333d80f4-dc03-11e6-b993-e248be6c2f96",
-            "appId": "/nginx-alwaysthere",
+            "appId": "/scheduler-alwaysthere",
             "slaveId": "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S0",
             "host": "127.0.0.1",
             "healthCheckResults": [
@@ -171,23 +171,23 @@ NGINX_APP_TEMPLATE = {
 }
 
 
-def task_from_template(task_id, port, ip="127.0.0.1"):
-    """Create a Marathon task entry basing on the supplied data and the template
+def app_from_template(app_id, port, ip="127.0.0.1"):
+    """Create a Marathon app entry basing on the supplied data and the template
 
     Arguments:
-        task_id (string): task ID that the new task should have
-        port (string): TCP/IP port that the task should pretend to have
-        ip (string): IP address that the new tasks hould pretend to listen on
+        app_id (string): app ID that the new app should have
+        port (string): TCP/IP port that the app should pretend to have
+        ip (string): IP address that the new apps hould pretend to listen on
 
     Returns:
-        Task dict mimicing the one returned by Marathon
+        App dict mimicing the one returned by Marathon
     """
-    res = copy.deepcopy(NGINX_APP_TEMPLATE)
-    res['id'] = '/' + task_id
-    res['labels']['DCOS_SERVICE_NAME'] = task_id
+    res = copy.deepcopy(SCHEDULER_APP_TEMPLATE)
+    res['id'] = '/' + app_id
+    res['labels']['DCOS_SERVICE_NAME'] = app_id
     res['portDefinitions'][0]['port'] = port
     res['ports'] = [port]
-    res['tasks'][0]['appId'] = task_id
+    res['tasks'][0]['appId'] = app_id
     res['tasks'][0]['ports'] = [port]
     res['tasks'][0]['host'] = ip
     res['tasks'][0]['ipAddresses'][0]['ipAddress'] = ip
@@ -195,11 +195,14 @@ def task_from_template(task_id, port, ip="127.0.0.1"):
     return res
 
 
-NGINX_APP_ALWAYSTHERE = task_from_template('nginx-alwaysthere', 16000)
-NGINX_APP_ALWAYSTHERE_DIFFERENTPORT = task_from_template(
-    'nginx-alwaysthere', 16001, ip="127.0.0.15")
-NGINX_APP_ALWAYSTHERE_NEST1 = task_from_template('nest1/nginx-alwaysthere', 17000)
-NGINX_APP_ALWAYSTHERE_NEST2 = task_from_template('nest2/nest1/nginx-alwaysthere', 18000)
+SCHEDULER_APP_ALWAYSTHERE = \
+    app_from_template('scheduler-alwaysthere', 16000)
+SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT = \
+    app_from_template('scheduler-alwaysthere', 16001, ip="127.0.0.15")
+SCHEDULER_APP_ALWAYSTHERE_NEST1 = \
+    app_from_template('nest1/scheduler-alwaysthere', 17000)
+SCHEDULER_APP_ALWAYSTHERE_NEST2 =  \
+    app_from_template('nest2/nest1/scheduler-alwaysthere', 18000)
 
 
 # pylint: disable=R0903
@@ -263,8 +266,8 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         """Change the response content for apps endpoint
 
         Arguments:
-            apps (dict): a dict of marathon task dicts describing mocked
-                tasks
+            apps (dict): a dict of marathon app dicts describing mocked
+                apps
         """
         with self._context.lock:
             self._context.data["endpoint-content"] = apps
@@ -299,8 +302,8 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
         """Helper function meant to initialize all the data relevant to this
            particular type of endpoint"""
         self._context.data["endpoint-content"] = copy.deepcopy({"apps": [
-            NGINX_APP_ALWAYSTHERE,
-            NGINX_APP_ALWAYSTHERE_NEST1,
-            NGINX_APP_ALWAYSTHERE_NEST2,
+            SCHEDULER_APP_ALWAYSTHERE,
+            SCHEDULER_APP_ALWAYSTHERE_NEST1,
+            SCHEDULER_APP_ALWAYSTHERE_NEST2,
             ]})
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
