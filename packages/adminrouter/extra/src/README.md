@@ -239,7 +239,7 @@ It exposes a couple of targets:
    exist yet.
 * `make update-devkit` - updates `adminrouter-devkit`. Should be run every time
    the Dockerfile or its dependencies change.
-* `make test` - launch all the tests. Worth noting is the fact that McCabe
+* `make tests` - launch all the tests. Worth noting is the fact that McCabe
    complexity of the code is also verified, and an error is raised if it's
    equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should

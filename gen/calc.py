@@ -559,7 +559,8 @@ entry = {
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
         validate_exhibitor_storage_master_discovery,
         validate_cosmos_config,
-        lambda enable_lb: validate_true_false(enable_lb)
+        lambda enable_lb: validate_true_false(enable_lb),
+        lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -567,6 +568,7 @@ entry = {
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_tls_1_0_enabled': 'false',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
