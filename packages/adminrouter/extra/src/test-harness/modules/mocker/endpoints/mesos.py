@@ -160,24 +160,28 @@ def slave_from_template(sid, ip, port):
 
     return res
 
+SLAVE1_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1"  # noqa: E305
+SLAVE2_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0"  # noqa: E305
+SLAVE3_ID = "35f210bb-bb58-4559-9932-b62619e72b6d-S0"  # noqa: E305
+SLAVE_EXTRA_ID = "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2"  # noqa: E305
 
 SLAVE1_DICT = slave_from_template(
-    "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1",
+    SLAVE1_ID,
     "127.0.0.2",
     "15001",
     )
 SLAVE2_DICT = slave_from_template(
-    "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0",
+    SLAVE2_ID,
     "127.0.0.3",
     "15002",
     )
 SLAVE3_DICT = slave_from_template(
-    "35f210bb-bb58-4559-9932-b62619e72b6d-S0",
+    SLAVE3_ID,
     "127.0.0.1",
     "15401",
     )
 EXTRA_SLAVE_DICT = slave_from_template(
-    "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2",
+    SLAVE_EXTRA_ID,
     "127.0.0.4",
     "15003",
     )
