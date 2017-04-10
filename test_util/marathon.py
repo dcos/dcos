@@ -192,10 +192,12 @@ class Marathon(ApiClientSession):
 
             data = r.json()
 
-            if not ignore_failed_tasks:
-                assert 'lastTaskFailure' not in data['app'], (
-                    'Application deployment failed, reason: {}'.format(data['app']['lastTaskFailure']['message'])
-                )
+            if 'lastTaskFailure' in data['app']:
+                message = data['app']['lastTaskFailure']['message']
+                if not ignore_failed_tasks:
+                    raise AssertionError('Application deployment failed, reason: {}'.format(message))
+                else:
+                    log.warn('Task failure detected: {}'.format(message))
 
             check_tasks_running = (data['app']['tasksRunning'] == app_definition['instances'])
             check_tasks_healthy = (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
