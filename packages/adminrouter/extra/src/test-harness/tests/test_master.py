@@ -16,8 +16,8 @@ from generic_test_code.common import (
 
 log = logging.getLogger(__name__)
 
-EndpointTestPaths = collections.namedtuple(
-    "EndpointTestPaths",
+EndpointPathExpectation = collections.namedtuple(
+    "EndpointPathExpectation",
     ("sent_path, expected_path")
 )
 
@@ -30,178 +30,178 @@ EndpointTestConfig = collections.namedtuple(
 # TODO: This is WIP/POC
 endpoint_test_configuration = [
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/acs/api/v1/foo/bar', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/capabilities', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/cosmos/service/foo/bar', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/dcos-history-service/foo/bar', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/exhibitor/foo/bar', '/foo/bar'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/exhibitor/', '/'),
          ],
         None, 'HTTP/1.0', True, 'http://127.0.0.1:8181'),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/marathon/v2/apps', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/mesos/master/state-summary', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            '/mesos_dns/v1/services/_nginx-alwaysthere._tcp.marathon.mesos', None),
+        [EndpointPathExpectation(
+            '/mesos_dns/v1/services/_scheduler-alwaysthere._tcp.marathon.mesos', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/metadata', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/navstar/lashup/key', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/package/foo/bar', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/pkgpanda/foo/bar', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/pkgpanda/active.buildinfo.full.json', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            '/service/nginx-alwaysthere/foo/bar', '/foo/bar'),
-         EndpointTestPaths(
-            '/service/nginx-alwaysthere/', '/'),
+        [EndpointPathExpectation(
+            '/service/scheduler-alwaysthere/foo/bar', '/foo/bar'),
+         EndpointPathExpectation(
+            '/service/scheduler-alwaysthere/', '/'),
          ],
         True, 'HTTP/1.1', True, "http://127.0.0.1:16000"),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1', "/"),
-         EndpointTestPaths(
-            '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/', "/"),
-         EndpointTestPaths(
-            '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar', "/foo/bar"),
+        [EndpointPathExpectation(
+            '/agent/{}'.format(SLAVE1_ID), "/"),
+         EndpointPathExpectation(
+            '/agent/{}/'.format(SLAVE1_ID), "/"),
+         EndpointPathExpectation(
+            '/agent/{}/foo/bar'.format(SLAVE1_ID), "/foo/bar"),
          ],
         True, "HTTP/1.1", True, "http://127.0.0.2:15001"),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/system/health/v1/foo/bar', '/system/health/v1/foo/bar'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/health/v1/', '/system/health/v1/'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/health/v1', '/system/health/v1'),
          ],
         None, 'HTTP/1.0', True, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/foo/bar', None),
+        [EndpointPathExpectation(
+            '/system/v1/agent/{}/logs/v1/foo/bar'.format(SLAVE1_ID), None),
          ],
         None, None, None, None),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+        [EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/logs/v1/foo/bar?key=value&var=num'),
             '/system/v1/logs/v1/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/metrics/v0/foo/bar?key=value&var=num'),
             '/system/v1/metrics/v0/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/logs/v1/'),
             '/system/v1/logs/v1/'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/metrics/v0/'), '/system/v1/metrics/v0/'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/logs/v1'), '/system/v1/logs/v1'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
              '/metrics/v0'), '/system/v1/metrics/v0'),
          ],
         None, "HTTP/1.1", True, 'http://127.0.0.2:61001'),
     EndpointTestConfig(
-        [EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+        [EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/logs/v1/foo/bar?key=value&var=num'),
             '/system/v1/logs/v1/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/metrics/v0/foo/bar?key=value&var=num'),
             '/system/v1/metrics/v0/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/logs/v1/'),
             '/system/v1/logs/v1/'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/metrics/v0/'), '/system/v1/metrics/v0/'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/logs/v1'), '/system/v1/logs/v1'),
-         EndpointTestPaths(
-            ('/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0'
+         EndpointPathExpectation(
+            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
              '/metrics/v0'), '/system/v1/metrics/v0'),
          ],
         None, "HTTP/1.1", True, 'http://127.0.0.3:61001'),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/system/v1/leader/mesos/foo/bar?key=value&var=num',
             '/system/v1/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/leader/mesos/', '/system/v1/'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/leader/mesos', '/system/v1'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/leader/marathon/foo/bar?key=value&var=num',
             '/system/v1/foo/bar?key=value&var=num'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/leader/marathon/', '/system/v1/'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/leader/marathon', '/system/v1'),
          ],
         None, 'HTTP/1.1', True, 'http://127.0.0.2:80'),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/system/v1/logs/v1/foo/bar', '/foo/bar'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/logs/v1/', '/'),
          ],
         None, 'HTTP/1.1', True, 'http:///run/dcos/dcos-log.sock'),
     EndpointTestConfig(
-        [EndpointTestPaths(
+        [EndpointPathExpectation(
             '/system/v1/metrics/foo/bar', '/foo/bar'),
-         EndpointTestPaths(
+         EndpointPathExpectation(
             '/system/v1/metrics/', '/'),
          ],
         None, 'HTTP/1.0', True, 'http:///run/dcos/dcos-metrics-master.sock'),
@@ -235,29 +235,29 @@ LocationHeaderRewriteTestConfig = collections.namedtuple(
      'basepath, '
      'redirect_testscases')
 )
-LocationHeaderRewriteTestCase = collections.namedtuple(
-    "LocationHeaderRewriteTestCase",
+LocationRewriteExpectation = collections.namedtuple(
+    "LocationRewriteExpectation",
     ('location_set, location_expected')
 )
 
-redirect_test_configuration = [
+location_header_rewrite_test_config = [
     LocationHeaderRewriteTestConfig(
         "http://127.0.0.1:16000",
-        "/service/nginx-alwaysthere/foo/bar",
-        [LocationHeaderRewriteTestCase(
-            "http://127.0.0.1/service/nginx-alwaysthere/foo/bar",
-            "http://127.0.0.1/service/nginx-alwaysthere/foo/bar"),
-         LocationHeaderRewriteTestCase(
+        "/service/scheduler-alwaysthere/foo/bar",
+        [LocationRewriteExpectation(
+            "http://127.0.0.1/service/scheduler-alwaysthere/foo/bar",
+            "http://127.0.0.1/service/scheduler-alwaysthere/foo/bar"),
+         LocationRewriteExpectation(
              "http://127.0.0.1/foo/bar",
-             "http://127.0.0.1/service/nginx-alwaysthere/foo/bar"),
-         LocationHeaderRewriteTestCase(
+             "http://127.0.0.1/service/scheduler-alwaysthere/foo/bar"),
+         LocationRewriteExpectation(
             "/foo/bar",
-            "http://127.0.0.1/service/nginx-alwaysthere/foo/bar"),
+            "http://127.0.0.1/service/scheduler-alwaysthere/foo/bar"),
          ]),
     LocationHeaderRewriteTestConfig(
         "http://127.0.0.1:8181",
         "/exhibitor/v1/ui/index.html",
-        [LocationHeaderRewriteTestCase(
+        [LocationRewriteExpectation(
             "http://127.0.0.1/exhibitor/v1/ui/index.html",
             "http://127.0.0.1/exhibitor/exhibitor/v1/ui/index.html"),
          ]),
@@ -265,10 +265,10 @@ redirect_test_configuration = [
 
 location_header_test_params = [
     (x.endpoint_id, x.basepath, y.location_set, y.location_expected)
-    for x in redirect_test_configuration for y in x.redirect_testscases]
+    for x in location_header_rewrite_test_config for y in x.redirect_testscases]
 
 redirected_paths = [
-    '/service/nginx-alwaysthere',
+    '/service/scheduler-alwaysthere',
     '/exhibitor',
     '/system/v1/metrics',
     '/system/v1/logs/v1',
@@ -387,7 +387,7 @@ class TestService:
 
         generic_upstream_headers_verify_test(master_ar_process,
                                              headers,
-                                             '/service/nginx-alwaysthere/foo/bar/',
+                                             '/service/scheduler-alwaysthere/foo/bar/',
                                              assert_headers=headers,
                                              )
 
@@ -398,6 +398,6 @@ class TestService:
 
         generic_upstream_headers_verify_test(master_ar_process,
                                              headers,
-                                             '/service/nginx-alwaysthere/foo/bar/',
+                                             '/service/scheduler-alwaysthere/foo/bar/',
                                              assert_headers_absent=["Accept-Encoding"],
                                              )

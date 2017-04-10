@@ -31,7 +31,7 @@ FRAMEWORK_TEMPLATE = {
     ],
     "hostname": "10.0.5.35",
     "id": "09058589-9e78-4da8-8aa5-a97aee7a8bea-0000",
-    "name": "nginx-alwaysthere",
+    "name": "scheduler-alwaysthere",
     "offered_resources": {
         "cpus": 0.0,
         "disk": 0.0,
@@ -69,26 +69,29 @@ def framework_from_template(fid, name, webui_url):
 
     return res
 
+SCHEDULER_FWRK_ALWAYSTHERE_ID = '0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000'  # noqa: E305
+SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID = '4bfed1de-5c6c-48fa-931c-9f0468387db5-0000'  # noqa: E305
+SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID = '08cc2799-9380-469f-82ca-e4527ced3d8b-0000'  # noqa: E305
 
-NGINX_FWRK_ALWAYSTHERE = framework_from_template(
-    "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-    "nginx-alwaysthere",
+SCHEDULER_FWRK_ALWAYSTHERE = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
     "http://127.0.0.1:16000")
-NGINX_FWRK_ALWAYSTHERE_DIFFERENTPORT = framework_from_template(
-    "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-    "nginx-alwaysthere",
+SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
     "http://127.0.0.15:16001")
-NGINX_FWRK_ALWAYSTHERE_NOWEBUI = framework_from_template(
-    "0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000",
-    "nginx-alwaysthere",
+SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
     "")
-NGINX_FWRK_ALWAYSTHERE_NEST1 = framework_from_template(
-    "4bfed1de-5c6c-48fa-931c-9f0468387db5-0000",
-    'nest1/nginx-alwaysthere',
+SCHEDULER_FWRK_ALWAYSTHERE_NEST1 = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID,
+    'nest1/scheduler-alwaysthere',
     "http://127.0.0.1:17000")
-NGINX_FWRK_ALWAYSTHERE_NEST2 = framework_from_template(
-    "08cc2799-9380-469f-82ca-e4527ced3d8b-0000",
-    'nest2/nest1/nginx-alwaysthere',
+SCHEDULER_FWRK_ALWAYSTHERE_NEST2 = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID,
+    'nest2/nest1/scheduler-alwaysthere',
     "http://127.0.0.1:18000")
 
 SLAVE_TEMPLATE = {
@@ -181,9 +184,9 @@ EXTRA_SLAVE_DICT = slave_from_template(
 
 INITIAL_STATEJSON = {
     "cluster": "prozlach-qzpz04t",
-    "frameworks": [NGINX_FWRK_ALWAYSTHERE,
-                   NGINX_FWRK_ALWAYSTHERE_NEST1,
-                   NGINX_FWRK_ALWAYSTHERE_NEST2,
+    "frameworks": [SCHEDULER_FWRK_ALWAYSTHERE,
+                   SCHEDULER_FWRK_ALWAYSTHERE_NEST1,
+                   SCHEDULER_FWRK_ALWAYSTHERE_NEST2,
                    ],
     "hostname": "10.0.5.35",
     "slaves": [SLAVE1_DICT,

@@ -59,7 +59,7 @@ class MesosDnsHTTPRequestHandler(RecordingHTTPRequestHandler):
         return 200, 'application/json', blob
 
 
-def srv_entry_generator(srv_name, ip, port):
+def create_srv_entry(srv_name, ip, port):
     """Create a SRV entry basing on the supplied data
 
     Arguments:
@@ -79,35 +79,35 @@ def srv_entry_generator(srv_name, ip, port):
     return res
 
 
-NGINX_SRV_ALWAYSTHERE = {
-    "nginx-alwaysthere": [
-        srv_entry_generator("nginx-alwaysthere", "127.0.0.1", 16000),
-        srv_entry_generator("nginx-alwaysthere", "127.0.0.1", 16002),
+SCHEDULER_SRV_ALWAYSTHERE = {
+    "scheduler-alwaysthere": [
+        create_srv_entry("scheduler-alwaysthere", "127.0.0.1", 16000),
+        create_srv_entry("scheduler-alwaysthere", "127.0.0.1", 16002),
     ],
 }
-NGINX_SRV_ALWAYSTHERE_DIFFERENTPORT = {
-    "nginx-alwaysthere": [
-        srv_entry_generator("nginx-alwaysthere", "127.0.0.15", 16001),
-        srv_entry_generator("nginx-alwaysthere", "127.0.0.1", 16002),
+SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT = {
+    "scheduler-alwaysthere": [
+        create_srv_entry("scheduler-alwaysthere", "127.0.0.15", 16001),
+        create_srv_entry("scheduler-alwaysthere", "127.0.0.1", 16002),
     ],
 }
-NGINX_SRV_ALWAYSTHERE_NEST1 = {
-    "nest2.nest1.nginx-alwaysthere": [
-        srv_entry_generator("nest2.nest1.nginx-alwaysthere", "127.0.0.1", 18000),
-        srv_entry_generator("nest2.nest1.nginx-alwaysthere", "127.0.0.1", 16002),
+SCHEDULER_SRV_ALWAYSTHERE_NEST1 = {
+    "nest2.nest1.scheduler-alwaysthere": [
+        create_srv_entry("nest2.nest1.scheduler-alwaysthere", "127.0.0.1", 18000),
+        create_srv_entry("nest2.nest1.scheduler-alwaysthere", "127.0.0.1", 16002),
     ],
 }
-NGINX_SRV_ALWAYSTHERE_NEST2 = {
-    "nest1.nginx-alwaysthere": [
-        srv_entry_generator("nest1.nginx-alwaysthere", "127.0.0.1", 17000),
-        srv_entry_generator("nest1.nginx-alwaysthere", "127.0.0.1", 16002),
+SCHEDULER_SRV_ALWAYSTHERE_NEST2 = {
+    "nest1.scheduler-alwaysthere": [
+        create_srv_entry("nest1.scheduler-alwaysthere", "127.0.0.1", 17000),
+        create_srv_entry("nest1.scheduler-alwaysthere", "127.0.0.1", 16002),
     ],
 }
 
 INITIAL_SRVDATA = {}
-INITIAL_SRVDATA.update(NGINX_SRV_ALWAYSTHERE)
-INITIAL_SRVDATA.update(NGINX_SRV_ALWAYSTHERE_NEST1)
-INITIAL_SRVDATA.update(NGINX_SRV_ALWAYSTHERE_NEST2)
+INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE)
+INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE_NEST1)
+INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE_NEST2)
 
 
 # pylint: disable=R0903,C0103
