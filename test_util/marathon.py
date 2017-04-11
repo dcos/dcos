@@ -57,8 +57,7 @@ def get_test_app_in_docker(ip_per_container=False):
     app['container'] = {
         'type': 'DOCKER',
         'docker': {
-            # TODO(cmaloney): Switch to alpine with glibc
-            'image': 'debian:jessie',
+            'image': 'alpine:3.5',
             'portMappings': [{
                 'hostPort': 0,
                 'containerPort': 9080,
@@ -88,7 +87,7 @@ def get_test_app_in_ucr(healthcheck='HTTP'):
     app['container'] = {
         'type': 'MESOS',
         'docker': {
-            'image': 'debian:jessie'
+            'image': 'alpine:3.5'
         },
         'volumes': [{
             'containerPath': '/opt/mesosphere',
