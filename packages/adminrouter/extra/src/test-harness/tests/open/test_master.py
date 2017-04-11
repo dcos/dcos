@@ -24,6 +24,7 @@ authed_endpoints = [
     '/metadata',
     '/navstar/lashup/key',
     '/package/foo/bar',
+    '/pkgpanda/foo/bar',
     '/pkgpanda/active.buildinfo.full.json',
     '/service/nginx-alwaysthere/foo/bar',
     '/service/nginx-alwaysthere/foo/bar',
@@ -43,7 +44,7 @@ class TestAuthEnforcementOpen:
     def test_if_unknown_user_is_forbidden_access(
             self, mocker, master_ar_process, path, valid_user_header):
         log_messages = {
-            'validate_jwt_or_exit\(\): User not found: `bozydar`':
+            'User not found: `bozydar`':
                 SearchCriteria(1, True)}
         with iam_denies_all_requests(mocker):
             with assert_iam_queried_for_uid(mocker, 'bozydar'):

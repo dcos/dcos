@@ -44,7 +44,7 @@ function main {
   until test -b "$device"; do sleep 1; echo -n .; done
   echo
   local formated
-  mkfs.xfs $device > /dev/null 2>&1 && formated=true || formated=false
+  mkfs.xfs -n ftype=1 $device > /dev/null 2>&1 && formated=true || formated=false
   if [ "$formated" = true ]
   then
     echo "Setting up device mount"
