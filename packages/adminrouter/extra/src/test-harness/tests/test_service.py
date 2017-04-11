@@ -10,14 +10,20 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     header_is_absent,
 )
-from mocker.endpoints.marathon import SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT
+from mocker.endpoints.marathon import (
+    SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT,
+    app_from_template,
+)
 from mocker.endpoints.mesos import (
     SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT,
     SCHEDULER_FWRK_ALWAYSTHERE_ID,
     SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI,
     framework_from_template,
 )
-from mocker.endpoints.mesos_dns import SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT, EMPTY_SRV
+from mocker.endpoints.mesos_dns import (
+    EMPTY_SRV,
+    SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT,
+)
 
 CACHE_UPDATE_DELAY = 2  # seconds
 assert CACHE_UPDATE_DELAY > 1.5  # due to cache_expiration=(CACHE_UPDATE_DELAY - 1)
@@ -459,16 +465,146 @@ class TestServiceStatefull:
         # TODO: should be 404
         assert resp.status_code == 500
 
-# For future:
-#  * (JIRA!)test if inexistant service ends up in 404
-#  * (JIRA!)test if inactive frameworks are not taken into consideration
-#  * (JIRA!)test if nested services are honoured:
-#    * by svc
-#    * by mesos-dns
-#    * by framework-id
-#  * (JIRA!)pre-processing mesos data:
-#    * pre-process mesos data into two hashes, one webui_url per framework id, and
-#      other with webui_url per framework name.
-#    * some error conditions checking:
-#      * webui_url is invalid/cannot be parsed
-#      * scheme is missing from webui
+    def test_if_only_matching_scheme_redirects_are_adjusted_for_marathon_apps(
+            self, master_ar_process_fastcache, mocker, valid_user_header):
+        # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
+        mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='set_frameworks_response',
+            aux_data=[])
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Mock TLS-enabled Marathon app
+        app_dict = app_from_template(
+            'scheduler-alwaysthere', 443, ip="127.0.0.4", scheme='https')
+        new_apps = {"apps": [app_dict, ]}
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data=new_apps)
+
+        # Non-matching:
+        mocker.send_command(
+            endpoint_id="https://127.0.0.4:443",
+            func_name='always_redirect',
+            aux_data="http://127.0.0.1/")
+        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/foo/bar")
+        r = requests.get(url, allow_redirects=False, headers=valid_user_header)
+        assert r.status_code == 307
+        assert r.headers['Location'] == "http://127.0.0.1/"
+
+        # Matching:
+        mocker.send_command(
+            endpoint_id="https://127.0.0.4:443",
+            func_name='always_redirect',
+            aux_data="https://127.0.0.1/")
+        url = master_ar_process_fastcache.make_url_from_path(
+            "/service/scheduler-alwaysthere/foo/bar")
+        r = requests.get(url, allow_redirects=False, headers=valid_user_header)
+        assert r.status_code == 307
+        assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
+
+    def test_if_only_matching_scheme_redirects_are_adjusted_for_mesos_frameworks(
+            self, master_ar_process_fastcache, mocker, valid_user_header):
+        # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data={"apps": []})
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Mock TLS-enabled framework
+        fwrk = framework_from_template(
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "scheduler-alwaysthere",
+            "https://127.0.0.4:443/")
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[fwrk])
+
+        # Non-matching:
+        mocker.send_command(
+            endpoint_id="https://127.0.0.4:443",
+            func_name='always_redirect',
+            aux_data="http://127.0.0.1/")
+        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/foo/bar")
+        r = requests.get(url, allow_redirects=False, headers=valid_user_header)
+        assert r.status_code == 307
+        assert r.headers['Location'] == "http://127.0.0.1/"
+
+        # Matching:
+        mocker.send_command(
+            endpoint_id="https://127.0.0.4:443",
+            func_name='always_redirect',
+            aux_data="https://127.0.0.1/")
+        url = master_ar_process_fastcache.make_url_from_path(
+            "/service/scheduler-alwaysthere/foo/bar")
+        r = requests.get(url, allow_redirects=False, headers=valid_user_header)
+        assert r.status_code == 307
+        assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
+
+    def test_if_scheme_is_honoured_for_marathon_apps(
+            self, master_ar_process_fastcache, mocker, valid_user_header):
+        # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
+        mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='set_frameworks_response',
+            aux_data=[])
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Mock TLS-enabled Marathon app
+        app_dict = app_from_template(
+            'scheduler-alwaysthere', 443, ip="127.0.0.4", scheme='https')
+        new_apps = {"apps": [app_dict, ]}
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data=new_apps)
+
+        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/")
+        resp = requests.get(url,
+                            allow_redirects=False,
+                            headers=valid_user_header)
+
+        assert resp.status_code == 200
+        req_data = resp.json()
+        assert req_data['endpoint_id'] == "https://127.0.0.4:443"
+
+    def test_if_scheme_is_honoured_in_mesos_scheduler_entry(
+            self, master_ar_process_fastcache, mocker, valid_user_header):
+        # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data={"apps": []})
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Mock TLS-enabled framework
+        fwrk = framework_from_template(
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "scheduler-alwaysthere",
+            "https://127.0.0.4:443/")
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[fwrk])
+
+        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/")
+        resp = requests.get(url,
+                            allow_redirects=False,
+                            headers=valid_user_header)
+
+        assert resp.status_code == 200
+        req_data = resp.json()
+        assert req_data['endpoint_id'] == "https://127.0.0.4:443"
