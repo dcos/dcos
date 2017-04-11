@@ -17,7 +17,7 @@ from mocker.endpoints.mesos import (
     SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI,
     framework_from_template,
 )
-from mocker.endpoints.mesos_dns import SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT
+from mocker.endpoints.mesos_dns import SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT, EMPTY_SRV
 
 CACHE_UPDATE_DELAY = 2  # seconds
 assert CACHE_UPDATE_DELAY > 1.5  # due to cache_expiration=(CACHE_UPDATE_DELAY - 1)
@@ -52,7 +52,7 @@ class TestServiceStatefull:
                             aux_data=[])
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Check if we can use root Marathon app data to resolve `/service`
         # location requests:
@@ -86,7 +86,7 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Check if we can use Mesos framework data to resolve `/service`
         # location request using framework ID:
@@ -119,7 +119,7 @@ class TestServiceStatefull:
                             aux_data={"apps": []})
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Check if we can use Mesos framework data to resolve `/service`
         # location request using framework ID:
@@ -182,7 +182,7 @@ class TestServiceStatefull:
         # Remove the data from MesosDNS
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Make svcapps resolve the app upstream to a different address,
         # framework data implicitly has default port (127.0.0.1:16000)
@@ -255,7 +255,7 @@ class TestServiceStatefull:
         # Remove the data from MesosDNS mock
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Fabricate state-summary data needed for the tests
         fwrk_a = framework_from_template(
@@ -288,7 +288,7 @@ class TestServiceStatefull:
         # Remove the data from MesosDNS mock
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         # Test webui_url entry withouth trailing slash:
         fwrk = framework_from_template(
@@ -448,7 +448,7 @@ class TestServiceStatefull:
                             aux_data=[])
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
-                            aux_data={})
+                            aux_data=EMPTY_SRV)
 
         url = master_ar_process_fastcache.make_url_from_path(
             '/service/scheduler-alwaysthere/foo/bar/')

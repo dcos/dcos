@@ -78,6 +78,16 @@ def create_srv_entry(srv_name, ip, port):
 
     return res
 
+EMPTY_SRV = {
+    "scheduler-alwaysthere": [
+        {
+            "service": "",
+            "host": "",
+            "ip": "",
+            "port": "",
+        }
+    ],
+}
 
 SCHEDULER_SRV_ALWAYSTHERE = {
     "scheduler-alwaysthere": [
