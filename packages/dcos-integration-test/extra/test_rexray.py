@@ -4,8 +4,12 @@ import uuid
 
 import pytest
 
+from test_helpers import expanded_config
 
-@pytest.mark.ccm
+
+@pytest.mark.skipif(
+    not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'),
+    reason='Must be run in an AWS environment!')
 def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
 

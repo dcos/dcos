@@ -9,7 +9,7 @@ import kazoo.client
 import pytest
 import requests
 
-from test_helpers import dcos_config
+from test_helpers import expanded_config
 
 from pkgpanda.util import load_json, load_string
 
@@ -115,8 +115,8 @@ def test_signal_service(dcos_api_session):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
-        'platform': dcos_config['platform'],
-        'provider': dcos_config['provider'],
+        'platform': expanded_config['platform'],
+        'provider': expanded_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
         'customerKey': customer_key,
