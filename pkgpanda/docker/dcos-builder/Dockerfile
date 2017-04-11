@@ -37,11 +37,17 @@ RUN apt-get -qq update && apt-get -y install \
   python-setuptools \
   ruby \
   scala \
+  software-properties-common \
   unzip \
   wget \
   xutils-dev \
   xz-utils \
   zlib1g-dev
+
+# Install glide
+RUN add-apt-repository ppa:masterminds/glide && \
+  apt-get update && \
+  apt-get install -y glide
 
 RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \

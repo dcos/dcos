@@ -1,0 +1,8 @@
+#!/bin/bash
+set -o nounset -o pipefail
+
+pushd /pkg/src/dcos-cni/
+make
+popd
+
+cp /pkg/src/dcos-cni/bin/* $PKG_PATH
