@@ -7,7 +7,7 @@ import pytest
 import requests
 import retrying
 
-from test_helpers import dcos_config
+from test_helpers import expanded_config
 
 from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
 
@@ -334,7 +334,7 @@ def test_if_search_is_working(dcos_api_session):
         expected_error = {'error': '[Errno -2] Name or service not known'}
 
         # Check that result matches expectations for this dcos_api_session
-        if dcos_config['dns_search']:
+        if expanded_config['dns_search']:
             assert r_data['search_hit_leader'] in dcos_api_session.masters
             assert r_data['always_hit_leader'] in dcos_api_session.masters
             assert r_data['always_miss'] == expected_error
