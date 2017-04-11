@@ -171,13 +171,14 @@ SCHEDULER_APP_TEMPLATE = {
 }
 
 
-def app_from_template(app_id, port, ip="127.0.0.1"):
+def app_from_template(app_id, port, ip="127.0.0.1", scheme="http"):
     """Create a Marathon app entry basing on the supplied data and the template
 
     Arguments:
         app_id (string): app ID that the new app should have
         port (string): TCP/IP port that the app should pretend to have
         ip (string): IP address that the new apps hould pretend to listen on
+        scheme (string): scheme that given service uses
 
     Returns:
         App dict mimicing the one returned by Marathon
@@ -185,6 +186,7 @@ def app_from_template(app_id, port, ip="127.0.0.1"):
     res = copy.deepcopy(SCHEDULER_APP_TEMPLATE)
     res['id'] = '/' + app_id
     res['labels']['DCOS_SERVICE_NAME'] = app_id
+    res['labels']['DCOS_SERVICE_SCHEME'] = scheme
     res['portDefinitions'][0]['port'] = port
     res['ports'] = [port]
     res['tasks'][0]['appId'] = app_id
