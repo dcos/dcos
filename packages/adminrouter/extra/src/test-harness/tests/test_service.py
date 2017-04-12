@@ -60,23 +60,13 @@ class TestServiceStatefull:
                             func_name='set_srv_response',
                             aux_data=EMPTY_SRV)
 
-        # Check if we can use root Marathon app data to resolve `/service`
-        # location requests:
-        generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
-            valid_user_header,
-            '/service/scheduler-alwaysthere/foo/bar/',
-            "http://127.0.0.1:16000"
-            )
-
-        # Update the application, wait for cache to register the change
+        # Set non-standard socket for the applicaiton
         new_apps = {"apps": [SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT, ]}
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
                             aux_data=new_apps)
-        time.sleep(CACHE_UPDATE_DELAY + 1)
 
-        # Check if the location now resolves correctly to the new app port
+        # Check if the location now resolves correctly to the new app socket
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
@@ -94,22 +84,13 @@ class TestServiceStatefull:
                             func_name='set_srv_response',
                             aux_data=EMPTY_SRV)
 
-        # Check if we can use Mesos framework data to resolve `/service`
-        # location request using framework ID:
-        generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
-            valid_user_header,
-            '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
-            "http://127.0.0.1:16000"
-            )
-
-        # Update the application, wait for cache to register the change
+        # Set non-standard socket for the framework
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
                             aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT])
-        time.sleep(CACHE_UPDATE_DELAY + 1)
 
-        # Check if the location now resolves correctly to the new app port
+        # Check if the location now resolves correctly to the new framework
+        # socket
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
@@ -127,22 +108,13 @@ class TestServiceStatefull:
                             func_name='set_srv_response',
                             aux_data=EMPTY_SRV)
 
-        # Check if we can use Mesos framework data to resolve `/service`
-        # location request using framework ID:
-        generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
-            valid_user_header,
-            '/service/scheduler-alwaysthere/foo/bar/',
-            "http://127.0.0.1:16000"
-            )
-
-        # Update the application, wait for cache to register the change
+        # Set non-standard port for the framework:
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
                             aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT])
-        time.sleep(CACHE_UPDATE_DELAY + 1)
 
-        # Check if the location now resolves correctly to the new app port
+        # Check if the location now resolves correctly to the new framework
+        # socket
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
@@ -160,22 +132,13 @@ class TestServiceStatefull:
                             func_name='set_frameworks_response',
                             aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
 
-        # Check if we can use Mesos framework data to resolve `/service`
-        # location request using framework ID:
-        generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
-            valid_user_header,
-            '/service/scheduler-alwaysthere/foo/bar/',
-            "http://127.0.0.1:16000"
-            )
-
-        # Update the application, wait for cache to register the change
+        # Set non-standard port for the framework:
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
                             aux_data=SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT)
-        time.sleep(CACHE_UPDATE_DELAY + 1)
 
-        # Check if the location now resolves correctly to the new app port
+        # Check if the location now resolves correctly to the new framework
+        # socket
         generic_correct_upstream_dest_test(
             master_ar_process_fastcache,
             valid_user_header,
@@ -491,7 +454,8 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="http://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/foo/bar")
+        url = master_ar_process_fastcache.make_url_from_path(
+            "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
         assert r.headers['Location'] == "http://127.0.0.1/"
@@ -533,7 +497,8 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="http://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/foo/bar")
+        url = master_ar_process_fastcache.make_url_from_path(
+            "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
         assert r.headers['Location'] == "http://127.0.0.1/"
