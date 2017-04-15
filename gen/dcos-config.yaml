@@ -43,10 +43,7 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc/navstar-erl.env
     content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar enable_lb {{ enable_lb }}
-  - path: /etc/minuteman-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503
+      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar_l4lb enable_lb {{ enable_lb }}
   - path: /etc_slave/spartan.json
     content: |
       {
@@ -93,31 +90,27 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": false
       }
-  - path: /etc_master/minuteman.config.d/master.config
-    content: |
-      [
-        {minuteman,
-          [
-            {agent_polling_enabled, false}
-          ]
-        }
-      ].
-  - path: /etc/minuteman.config.d/common.config
-    content: |
-      [
-        {minuteman,
-          [
-            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
-            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
-          ]
-        }
-      ].
-  - path: /etc_master/navstar.app.config
+  - path: /etc_master/navstar.config.d/master.config
     content: |
       [
         {navstar,
           [
             {is_master, true}
+          ]
+        },
+        {navstar_l4lb,
+          [
+            {agent_polling_enabled, false}
+          ]
+        }
+      ].
+  - path: /etc/navstar.config.d/common.config
+    content: |
+      [
+        {navstar_l4lb,
+          [
+            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
+            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
           ]
         }
       ].
@@ -467,7 +460,7 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/minuteman/overrides.json
+  - path: /etc/navstar/overrides.json
     content: |
       {
         "forward_metrics": {{ minuteman_forward_metrics }}
