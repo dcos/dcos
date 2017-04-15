@@ -1,0 +1,272 @@
+ngindox: 0.1.0
+backends:
+  auth:
+    server: '127.0.0.1:8101'
+  cosmos:
+    server: '127.0.0.1:7070'
+  dcos_history_service:
+    server: 'leader.mesos:15055'
+  dddt:
+    server: '127.0.0.1:1050'
+  exhibitor:
+    server: '127.0.0.1:8181'
+  log:
+    server: 'unix:/run/dcos/dcos-log.sock'
+  marathon:
+    server: 'master.mesos:8080'
+  mesos:
+    server: 'leader.mesos:5050'
+  mesos_dns:
+    server: 'master.mesos:8123'
+  metrics:
+    server: 'unix:/run/dcos/dcos-metrics-master.sock'
+  navstar:
+    server: '127.0.0.1:62080'
+  pkgpanda:
+    server: 'unix:/run/dcos/pkgpanda-api.sock'
+routes:
+  /:
+    group: Other
+    matcher: path
+    file: /opt/mesosphere/active/dcos-ui/usr
+    path: /
+  '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)':
+    group: Other
+    matcher: regex
+    rewrites:
+      - regex: ^/(slave|agent)/(.*)$
+        replacement: /agent/$2/
+        type: last
+    path: '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)'
+  '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)(?<url>.+)':
+    group: Other
+    matcher: regex
+    proxy:
+      path: '$agentaddr:$agentport'
+    rewrites:
+      - regex: '^/(slave|agent)/[0-9a-zA-Z-]+/.*$'
+        replacement: $url
+        type: break
+    path: '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)(?<url>.+)'
+  /acs/api/v1:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/acs/api/v1'
+      backend: auth
+    path: /acs/api/v1
+  /acs/api/v1/auth/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/acs/api/v1/auth/'
+      backend: auth
+    path: /acs/api/v1/auth/
+  /cache/master/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/master/'
+      backend: mesos
+    path: /cache/master/
+  /capabilities:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/capabilities'
+      backend: cosmos
+    path: /capabilities
+  /cosmos/service/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/service/'
+      backend: cosmos
+    path: /cosmos/service/
+  /dcos-history-service/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: dcos_history_service
+    path: /dcos-history-service/
+  /dcos-metadata/:
+    group: Other
+    matcher: path
+    file: /opt/mesosphere/active/dcos-metadata/etc/
+    path: /dcos-metadata/
+  /dcos-metadata/dcos-version.json:
+    group: Other
+    matcher: path
+    file: /opt/mesosphere/active/dcos-metadata/etc/dcos-version.json
+    path: /dcos-metadata/dcos-version.json
+  /dcos-metadata/ui-config.json:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/dcos-metadata/ui-config.json'
+      backend: auth
+    path: /dcos-metadata/ui-config.json
+  /exhibitor:
+    group: Other
+    matcher: exact
+    redirects:
+      - regex: ^/exhibitor$
+        replacement: '$scheme://$http_host/exhibitor/'
+        type: permanent
+    path: /exhibitor
+  /exhibitor/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: exhibitor
+    path: /exhibitor/
+  /login:
+    group: Other
+    matcher: exact
+    redirects:
+      - regex: ^
+        replacement: >-
+          $oauth_auth_redirector$uri?client=$oauth_client_id&cluster_id=$cluster_id
+        type: redirect
+    path: /login
+  /marathon:
+    group: Other
+    matcher: exact
+    redirects:
+      - regex: ^/marathon$
+        replacement: '$scheme://$http_host/marathon/'
+        type: permanent
+    path: /marathon
+  /marathon/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: marathon
+    path: /marathon/
+  /mesos:
+    group: Other
+    matcher: exact
+    redirects:
+      - regex: ^/mesos$
+        replacement: '$scheme://$http_host/mesos/'
+        type: permanent
+    path: /mesos
+  /mesos/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: mesos
+    path: /mesos/
+  /mesos_dns:
+    group: Other
+    matcher: exact
+    redirects:
+      - regex: ^/mesos_dns$
+        replacement: '$scheme://$http_host/mesos_dns/'
+        type: permanent
+    path: /mesos_dns
+  /mesos_dns/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: mesos_dns
+    path: /mesos_dns/
+  /metadata:
+    group: Other
+    matcher: path
+    lua:
+      file: conf/master/metadata.lua
+    path: /metadata
+  /navstar/lashup/key:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/lashup/key'
+      backend: navstar
+    path: /navstar/lashup/key
+  /package/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/package/'
+      backend: cosmos
+    path: /package/
+  /pkgpanda/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: pkgpanda
+    path: /pkgpanda/
+  /pkgpanda/active.buildinfo.full.json:
+    group: Other
+    matcher: path
+    file: /opt/mesosphere/active.buildinfo.full.json
+    path: /pkgpanda/active.buildinfo.full.json
+  '/service/(?<serviceid>[0-9a-zA-Z-.]+)':
+    group: Other
+    matcher: regex
+    redirects:
+      - regex: ^/service/(.*)$
+        replacement: /service/$1/
+        type: permanent
+    path: '/service/(?<serviceid>[0-9a-zA-Z-.]+)'
+  '/service/(?<serviceid>[0-9a-zA-Z-.]+)/(?<url>.*)':
+    group: Other
+    matcher: regex
+    proxy:
+      path: $serviceurl
+    rewrites:
+      - regex: '^/service/[0-9a-zA-Z-.]+/?.*$'
+        replacement: /$url
+        type: break
+    path: '/service/(?<serviceid>[0-9a-zA-Z-.]+)/(?<url>.*)'
+  /system/health/v1:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend/system/health/v1'
+      backend: dddt
+    path: /system/health/v1
+  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)':
+    group: Other
+    matcher: regex
+    proxy:
+      path: '$agentaddr:61001/system/v1$type$url$is_args$query_string'
+    rewrites:
+      - regex: '^/agent/[0-9a-zA-Z-]+(.*)$'
+        replacement: $1
+        type: break
+    path: >-
+      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)
+  /system/v1/leader/marathon(?<url>.*):
+    group: Other
+    matcher: regex
+    proxy:
+      path: $mleader_host/system/v1$url$is_args$query_string
+    path: /system/v1/leader/marathon(?<url>.*)
+  /system/v1/leader/mesos(?<url>.*):
+    group: Other
+    matcher: regex
+    proxy:
+      path: 'http://leader.mesos/system/v1$url$is_args$query_string'
+    path: /system/v1/leader/mesos(?<url>.*)
+  /system/v1/logs/v1/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: log
+    path: /system/v1/logs/v1/
+  /system/v1/metrics/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: metrics
+    path: /system/v1/metrics/
