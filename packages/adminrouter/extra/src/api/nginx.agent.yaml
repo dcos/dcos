@@ -1,0 +1,39 @@
+ngindox: 0.1.0
+backends:
+  dddt:
+    server: 'unix:/run/dcos/3dt.sock'
+  log:
+    server: 'unix:/run/dcos/dcos-log.sock'
+  metrics:
+    server: 'unix:/run/dcos/dcos-metrics-agent.sock'
+  pkgpanda:
+    server: 'unix:/run/dcos/pkgpanda-api.sock'
+routes:
+  /pkgpanda/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: pkgpanda
+    path: /pkgpanda/
+  /system/health/v1:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: dddt
+    path: /system/health/v1
+  /system/v1/logs/v1/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: log
+    path: /system/v1/logs/v1/
+  /system/v1/metrics/:
+    group: Other
+    matcher: path
+    proxy:
+      path: 'http://$backend'
+      backend: metrics
+    path: /system/v1/metrics/

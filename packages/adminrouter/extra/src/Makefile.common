@@ -1,6 +1,9 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 
+# Absolute path to AdminRouter source, even if make is run from elsewhere
+SRC_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
 DEV_PATH := /usr/local/src
 
 DCOSAR_AR_LOCAL_PATH := $(CURDIR)
@@ -89,6 +92,15 @@ test: clean-devkit-container devkit
 		mesosphere/adminrouter-devkit:full /bin/bash -x -c " \
  			py.test \
  		"
+
+.PHONY: api
+api:
+	@for prefix in nginx.master nginx.agent ; do \
+		echo "Generating api/$${prefix}.yaml" && \
+		docker run --rm -v "$(SRC_DIR):/src" karlkfi/ngindox parse -f /src/$${prefix}.conf > $(SRC_DIR)/api/$${prefix}.yaml && \
+		echo "Generating api/$${prefix}.html" && \
+		docker run --rm -v "$(SRC_DIR):/src" karlkfi/ngindox ui -f /src/api/$${prefix}.yaml > $(SRC_DIR)/api/$${prefix}.html ; \
+	done
 
 .PHONY: flake8
 flake8: clean-devkit-container devkit
