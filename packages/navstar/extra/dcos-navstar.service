@@ -19,7 +19,6 @@ ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=-/usr/bin/env modprobe ip_vs_wlc
 ExecStartPre=/opt/mesosphere/bin/setup_iptables.sh
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-navstar
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-minuteman
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/mnesia
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/lashup
 ExecStartPre=/usr/bin/env modprobe dummy
