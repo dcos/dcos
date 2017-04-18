@@ -23,4 +23,3 @@ ExecStart=${PKG_PATH}/pkgpanda-api/bin/pkgpanda-api.sh
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
-Sockets=dcos-pkgpanda-api.socket
