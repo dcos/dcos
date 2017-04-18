@@ -2,37 +2,50 @@ ngindox: 0.1.0
 backends:
   dddt:
     server: 'unix:/run/dcos/3dt.sock'
+    name: DC/OS Diagnostics (3DT)
+    reference: >-
+      https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
+    name: DC/OS Log
+    reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
   metrics:
     server: 'unix:/run/dcos/dcos-metrics-agent.sock'
+    name: DC/OS Metrics
+    reference: 'https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/'
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
+    name: DC/OS Component Package Manager (Pkgpanda)
+    reference: 'https://dcos.io/docs/1.9/administration/component-management/'
 routes:
   /pkgpanda/:
-    group: Other
+    group: Pkgpanda
     matcher: path
+    description: DC/OS component package management
     proxy:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
   /system/health/v1:
-    group: Other
+    group: System
     matcher: path
+    description: Component service status
     proxy:
       path: 'http://$backend'
       backend: dddt
     path: /system/health/v1
   /system/v1/logs/v1/:
-    group: Other
+    group: System
     matcher: path
+    description: 'Node, component service, and container (task) logs'
     proxy:
       path: 'http://$backend'
       backend: log
     path: /system/v1/logs/v1/
   /system/v1/metrics/:
-    group: Other
+    group: System
     matcher: path
+    description: 'Node, container, and application metrics'
     proxy:
       path: 'http://$backend'
       backend: metrics

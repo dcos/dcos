@@ -477,21 +477,22 @@
     </ul>
   </div>
   <ul class="resources">
-    <li id="resource-other" class="resource">
+    <li id="resource-pkgpanda" class="resource">
       <div class="heading">
         <h2>
-          <a id="other" href="#other" aria-hidden="true" class="toggle-route-group" data-id="other">
-            <div class="arrow arrow-right"></div>Other</a>
+          <a id="pkgpanda" href="#pkgpanda" aria-hidden="true" class="toggle-route-group" data-id="pkgpanda">
+            <div class="arrow arrow-right"></div>Pkgpanda</a>
         </h2>
-        <span class="options"><a href="#other" class="toggle-route-group" data-id="other">Show/Hide</a> </span>
+        <span class="options"><a href="#pkgpanda" class="toggle-route-group" data-id="pkgpanda">Show/Hide</a> </span>
       </div>
-      <ul id="routes-other" class="routes">
+      <ul id="routes-pkgpanda" class="routes">
         <li class="route route-type-proxy">
           <div class="heading">
             <h3>
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/pkgpanda/</code></span>
             </h3>
+            <span class="route-desc">DC/OS component package management</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
@@ -516,18 +517,38 @@
                   Backend:
                 </td>
                 <td>
-                  pkgpanda
+                  DC/OS Component Package Manager (Pkgpanda)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/component-management/">https://dcos.io/docs/1.9/administration/component-management/</a>
                 </td>
               </tr>
             </table>
           </div>
         </li>
+      </ul>
+    </li>
+    <li id="resource-system" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="system" href="#system" aria-hidden="true" class="toggle-route-group" data-id="system">
+            <div class="arrow arrow-right"></div>System</a>
+        </h2>
+        <span class="options"><a href="#system" class="toggle-route-group" data-id="system">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-system" class="routes">
         <li class="route route-type-proxy">
           <div class="heading">
             <h3>
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/system/health/v1</code></span>
             </h3>
+            <span class="route-desc">Component service status</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
@@ -552,7 +573,15 @@
                   Backend:
                 </td>
                 <td>
-                  dddt
+                  DC/OS Diagnostics (3DT)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint">https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint</a>
                 </td>
               </tr>
             </table>
@@ -564,6 +593,7 @@
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/system/v1/logs/v1/</code></span>
             </h3>
+            <span class="route-desc">Node, component service, and container (task) logs</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
@@ -588,7 +618,15 @@
                   Backend:
                 </td>
                 <td>
-                  log
+                  DC/OS Log
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/logging/logging-api/">https://dcos.io/docs/1.9/administration/logging/logging-api/</a>
                 </td>
               </tr>
             </table>
@@ -600,6 +638,7 @@
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/system/v1/metrics/</code></span>
             </h3>
+            <span class="route-desc">Node, container, and application metrics</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
@@ -624,7 +663,15 @@
                   Backend:
                 </td>
                 <td>
-                  metrics
+                  DC/OS Metrics
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/">https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/</a>
                 </td>
               </tr>
             </table>
