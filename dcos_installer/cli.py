@@ -136,7 +136,7 @@ dispatch_dict_simple = {
     'genconf': (
         lambda args: backend.do_configure(),
         'EXECUTING CONFIGURATION GENERATION',
-        'Execute the configuration generation (genconf).'),
+        'Create DC/OS install files customized according to {}.'.format(dcos_installer.constants.CONFIG_PATH)),
     'validate-config': (
         do_validate_config,
         'VALIDATING CONFIGURATION',
@@ -155,7 +155,7 @@ dispatch_dict_aio = {
     'install-prereqs': (
         action_lib.install_prereqs,
         'EXECUTING INSTALL PREREQUISITES',
-        'Execute the preflight checks on a series of nodes.'),
+        'Install the cluster prerequisites.'),
     'deploy': (
         action_lib.install_dcos,
         'EXECUTING DC/OS INSTALLATION',

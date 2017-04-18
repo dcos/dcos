@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import requests
 import retrying
 
-from test_util.helpers import ApiClientSession, path_join
+from test_util.helpers import ApiClientSession, path_join, RetryCommonHttpErrorsMixin
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
@@ -102,7 +102,7 @@ def get_test_app_in_ucr(healthcheck='HTTP'):
     return app, test_uuid
 
 
-class Marathon(ApiClientSession):
+class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
     def __init__(self, default_url, default_os_user='root', session=None):
         super().__init__(default_url)
         if session is not None:
@@ -192,10 +192,12 @@ class Marathon(ApiClientSession):
 
             data = r.json()
 
-            if not ignore_failed_tasks:
-                assert 'lastTaskFailure' not in data['app'], (
-                    'Application deployment failed, reason: {}'.format(data['app']['lastTaskFailure']['message'])
-                )
+            if 'lastTaskFailure' in data['app']:
+                message = data['app']['lastTaskFailure']['message']
+                if not ignore_failed_tasks:
+                    raise AssertionError('Application deployment failed, reason: {}'.format(message))
+                else:
+                    log.warn('Task failure detected: {}'.format(message))
 
             check_tasks_running = (data['app']['tasksRunning'] == app_definition['instances'])
             check_tasks_healthy = (not check_health or data['app']['tasksHealthy'] == app_definition['instances'])
@@ -253,7 +255,7 @@ class Marathon(ApiClientSession):
         except retrying.RetryError:
             raise Exception("Deployments were not completed within {timeout} seconds".format(timeout=timeout))
 
-    def deploy_pod(self, pod_definition):
+    def deploy_pod(self, pod_definition, timeout=300):
         """Deploy a pod to marathon
 
         This function deploys an a pod and then waits for marathon to
@@ -264,13 +266,10 @@ class Marathon(ApiClientSession):
         Args:
             pod_definition: a dict with pod definition as specified in
                             Marathon API
-            check_health: wait until Marathon reports tasks as healthy before
-                          returning
+            timeout: seconds to wait for deployment to finish
         Returns:
-            Scaling instance count
+            Pod data JSON
         """
-        timeout = 120
-
         r = self.post('v2/pods', json=pod_definition)
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
         log.info('Response from marathon: {}'.format(repr(r.json())))
@@ -371,6 +370,6 @@ class Marathon(ApiClientSession):
         self.destroy_app(app_definition['id'], timeout)
 
     @contextmanager
-    def deploy_pod_and_cleanup(self, pod_definition, timeout=120):
-        yield self.deploy_pod(pod_definition)
+    def deploy_pod_and_cleanup(self, pod_definition, timeout=300):
+        yield self.deploy_pod(pod_definition, timeout=timeout)
         self.destroy_pod(pod_definition['id'], timeout)
