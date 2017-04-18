@@ -13,18 +13,20 @@ Admin Router runs on both master and agent nodes, each with different configurat
 **Master Routes:**
 
 - NGINX: [nginx.master.conf](nginx.master.conf)
-- YAML: [api/nginx.master.yaml](api/nginx.master.yaml)
-- HMTL: [api/nginx.master.html](api/nginx.master.html)
-- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/api/nginx.master.html>
+- YAML: [docs/api/nginx.master.yaml](api/nginx.master.yaml)
+- HMTL: [docs/api/nginx.master.html](api/nginx.master.html)
+- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.master.html>
 
 **Agent Routes:**
 
 - NGINX: [nginx.agent.conf](nginx.agent.conf)
-- YAML: [api/nginx.agent.yaml](api/nginx.agent.yaml)
-- HMTL: [api/nginx.agent.html](api/nginx.agent.html)
-- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/api/nginx.agent.html>
+- YAML: [docs/api/nginx.agent.yaml](api/nginx.agent.yaml)
+- HMTL: [docs/api/nginx.agent.html](api/nginx.agent.html)
+- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
 
-Use `make api` to regenerate the YAML and HTML files.
+Use `make api-docs` to regenerate the YAML and HTML files.
+
+Use `make check-api-docs` to validate that the YAML and HTML files are up to date.
 
 ## Ports summary
 <img src="admin-router-table.png" alt="" width="100%" align="middle">
