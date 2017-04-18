@@ -4,8 +4,8 @@ dir("packages/adminrouter/extra/src") {
     }
 
     try {
-        stage('make api-docs') {
-            sh 'make api-docs'
+        stage('make check-api-docs') {
+            sh 'make check-api-docs'
         }
 
         stage('make flake8') {
