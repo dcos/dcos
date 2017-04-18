@@ -963,3 +963,5 @@ package:
       admin: {{ exhibitor_admin_password }},admin
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/rexray.conf
+    content: {{ rexray_config_contents }}
