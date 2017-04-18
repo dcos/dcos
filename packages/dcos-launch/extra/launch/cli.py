@@ -75,7 +75,7 @@ def do_main(args):
         info_path = args['--info-path']
         if os.path.exists(info_path):
             raise launch.util.LauncherError('InputConflict', 'Target info path already exists!')
-        write_json(info_path, launch.get_launcher(config).create(config))
+        write_json(info_path, launch.get_launcher(config).create())
         return 0
 
     try:
@@ -86,12 +86,12 @@ def do_main(args):
     launcher = launch.get_launcher(info)
 
     if args['wait']:
-        launcher.wait(info)
+        launcher.wait()
         print('Cluster is ready!')
         return 0
 
     if args['describe']:
-        print(json_prettyprint(launcher.describe(info)))
+        print(json_prettyprint(launcher.describe()))
         return 0
 
     if args['pytest']:
@@ -107,11 +107,11 @@ def do_main(args):
             test_cmd = ' '.join(['{}={}'.format(e, os.environ[e]) for e in var_list]) + ' ' + test_cmd
         if len(args['<pytest_extras>']) > 0:
             test_cmd += ' ' + ' '.join(args['<pytest_extras>'])
-        launcher.test(info, test_cmd)
+        launcher.test(test_cmd)
         return 0
 
     if args['delete']:
-        launcher.delete(info)
+        launcher.delete()
         return 0
 
 
