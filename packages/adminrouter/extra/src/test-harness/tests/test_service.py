@@ -2,7 +2,6 @@
 
 import time
 
-import pytest
 import requests
 
 from generic_test_code.common import (
@@ -25,33 +24,12 @@ from mocker.endpoints.mesos_dns import (
     SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT,
 )
 
-CACHE_UPDATE_DELAY = 2  # seconds
-assert CACHE_UPDATE_DELAY > 1.5  # due to cache_expiration=(CACHE_UPDATE_DELAY - 1)
 
-
-@pytest.fixture()
-def master_ar_process_fastcache(nginx_class):
-    """An AR process instance fixture for situations where a short lived cache
-       is needed. In order to achieve it, the scope of this fixture needs to be
-       single test.
-    """
-    nginx = nginx_class(role="master",
-                        cache_poll_period=CACHE_UPDATE_DELAY,
-                        cache_expiration=(CACHE_UPDATE_DELAY - 1),
-                        cache_first_poll_delay=1,
-                        )
-    nginx.start()
-
-    yield nginx
-
-    nginx.stop()
-
-
-class TestServiceStatefull:
+class TestServiceStateful:
     # Test all the stateful test-cases/tests where AR caching may influence the
     # results
     def test_if_marathon_apps_are_resolved(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
@@ -68,14 +46,14 @@ class TestServiceStatefull:
 
         # Check if the location now resolves correctly to the new app socket
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_webui_url_is_resolved_using_framework_id(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -92,14 +70,14 @@ class TestServiceStatefull:
         # Check if the location now resolves correctly to the new framework
         # socket
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
             "http://127.0.0.15:16001"
             )
 
     def test_if_webui_url_is_resolved_using_framework_name(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -116,14 +94,14 @@ class TestServiceStatefull:
         # Check if the location now resolves correctly to the new framework
         # socket
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_mesos_dns_resolving_works(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -140,14 +118,14 @@ class TestServiceStatefull:
         # Check if the location now resolves correctly to the new framework
         # socket
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_marathon_apps_have_prio_over_webui_url(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS
         mocker.send_command(endpoint_id='http://127.0.0.1:8123',
                             func_name='set_srv_response',
@@ -162,14 +140,14 @@ class TestServiceStatefull:
 
         # Check that svcapps resolve to different port
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_marathon_apps_have_prio_over_mesos_dns(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Disable resolving service data using webui
         mocker.send_command(endpoint_id='http://127.0.0.2:5050',
                             func_name='set_frameworks_response',
@@ -184,14 +162,14 @@ class TestServiceStatefull:
 
         # Check that svcapps resolve to different port
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_webui_url_has_prio_over_mesos_dns(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Marathon mock
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -204,14 +182,14 @@ class TestServiceStatefull:
 
         # Check that svcapps resolve to different port
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
 
     def test_if_webui_url_by_fwrk_id_has_prio_over_webui_url_by_fwrk_name(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # This one is tricky, we need to create a state-summary entry that has
         # a framework entry with "name" field equal to the "id" field of a
         # different entry
@@ -241,14 +219,14 @@ class TestServiceStatefull:
 
         # Check that svcapps resolve to different port
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/{}/foo/bar/'.format(SCHEDULER_FWRK_ALWAYSTHERE_ID),
             "http://127.0.0.15:16001"
             )
 
     def test_if_webui_url_path_is_normalized(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Marathon mock
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -268,13 +246,13 @@ class TestServiceStatefull:
                             func_name='set_frameworks_response',
                             aux_data=[fwrk])
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
         generic_correct_upstream_request_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
@@ -290,13 +268,13 @@ class TestServiceStatefull:
                             func_name='set_frameworks_response',
                             aux_data=[fwrk])
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
             )
         generic_correct_upstream_request_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
@@ -304,7 +282,7 @@ class TestServiceStatefull:
             )
 
     def test_if_broken_json_from_mesos_dns_is_handled(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -318,7 +296,7 @@ class TestServiceStatefull:
                             aux_data=b'blah blah duh duh')
 
         # Verify the response:
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
@@ -327,7 +305,7 @@ class TestServiceStatefull:
         assert resp.status_code == 503
 
     def test_if_broken_response_status_from_mesos_dns_is_handled(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -342,7 +320,7 @@ class TestServiceStatefull:
                             aux_data=True)
 
         # Verify the response:
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
@@ -351,7 +329,7 @@ class TestServiceStatefull:
         assert resp.status_code == 503
 
     def test_if_timed_out_response_from_mesos_dns_is_handled(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -366,7 +344,7 @@ class TestServiceStatefull:
                             aux_data=10)
 
         # Verify the response:
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             '/service/scheduler-alwaysthere/foo/bar/')
         t_start = time.time()
         resp = requests.get(url,
@@ -381,7 +359,7 @@ class TestServiceStatefull:
         assert resp.status_code == 503
 
     def test_if_mesos_dns_subrequest_does_not_pass_auth_header_to_mesos_dns(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -397,7 +375,7 @@ class TestServiceStatefull:
                             func_name='record_requests')
 
         generic_correct_upstream_dest_test(
-            master_ar_process_fastcache,
+            master_ar_process_pertest,
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             "http://127.0.0.15:16001"
@@ -410,7 +388,7 @@ class TestServiceStatefull:
         header_is_absent(r_reqs[0]['headers'], 'Authorization')
 
     def test_if_no_services_in_cluster_case_is_handled(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from ALL backends:
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
                             func_name='set_apps_response',
@@ -422,17 +400,18 @@ class TestServiceStatefull:
                             func_name='set_srv_response',
                             aux_data=EMPTY_SRV)
 
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             '/service/scheduler-alwaysthere/foo/bar/')
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)
 
-        # TODO: should be 404
+        # TODO (prozlach): We rely on an AR bug here (DCOS-5191). In fact this
+        # should be a 404 response.
         assert resp.status_code == 500
 
     def test_if_only_matching_scheme_redirects_are_adjusted_for_marathon_apps(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
         mocker.send_command(
             endpoint_id='http://127.0.0.2:5050',
@@ -457,7 +436,7 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="http://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
@@ -468,14 +447,14 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="https://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
         assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
 
     def test_if_only_matching_scheme_redirects_are_adjusted_for_mesos_frameworks(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
         mocker.send_command(
             endpoint_id='http://127.0.0.1:8080',
@@ -500,7 +479,7 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="http://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
@@ -511,14 +490,14 @@ class TestServiceStatefull:
             endpoint_id="https://127.0.0.4:443",
             func_name='always_redirect',
             aux_data="https://127.0.0.1/")
-        url = master_ar_process_fastcache.make_url_from_path(
+        url = master_ar_process_pertest.make_url_from_path(
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
         assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
 
     def test_if_scheme_is_honoured_for_marathon_apps(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
         mocker.send_command(
             endpoint_id='http://127.0.0.2:5050',
@@ -538,7 +517,7 @@ class TestServiceStatefull:
             func_name='set_apps_response',
             aux_data=new_apps)
 
-        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/")
+        url = master_ar_process_pertest.make_url_from_path("/service/scheduler-alwaysthere/")
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)
@@ -548,7 +527,7 @@ class TestServiceStatefull:
         assert req_data['endpoint_id'] == "https://127.0.0.4:443"
 
     def test_if_scheme_is_honoured_in_mesos_scheduler_entry(
-            self, master_ar_process_fastcache, mocker, valid_user_header):
+            self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from MesosDNS and Marathon mocks w.r.t. resolved service
         mocker.send_command(
             endpoint_id='http://127.0.0.1:8080',
@@ -568,7 +547,7 @@ class TestServiceStatefull:
                             func_name='set_frameworks_response',
                             aux_data=[fwrk])
 
-        url = master_ar_process_fastcache.make_url_from_path("/service/scheduler-alwaysthere/")
+        url = master_ar_process_pertest.make_url_from_path("/service/scheduler-alwaysthere/")
         resp = requests.get(url,
                             allow_redirects=False,
                             headers=valid_user_header)
