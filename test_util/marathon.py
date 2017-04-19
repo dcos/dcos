@@ -57,7 +57,7 @@ def get_test_app_in_docker(ip_per_container=False):
     app['container'] = {
         'type': 'DOCKER',
         'docker': {
-            'image': 'alpine:3.5',
+            'image': 'debian:jessie',
             'portMappings': [{
                 'hostPort': 0,
                 'containerPort': 9080,
@@ -87,7 +87,7 @@ def get_test_app_in_ucr(healthcheck='HTTP'):
     app['container'] = {
         'type': 'MESOS',
         'docker': {
-            'image': 'alpine:3.5'
+            'image': 'debian:jessie'
         },
         'volumes': [{
             'containerPath': '/opt/mesosphere',
