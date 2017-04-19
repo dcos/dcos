@@ -10,8 +10,9 @@ import pytest
 
 import retrying
 
-# Expected latency for all 3dt units to refresh after postflight
-LATENCY = 60
+# Expected latency for all 3dt units to refresh after postflight plus
+# another minute to allow for check-time to settle. See: DCOS_OSS-988
+LATENCY = 120
 
 
 def check_json(response):
