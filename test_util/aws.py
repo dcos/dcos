@@ -16,7 +16,6 @@ PublicAgentStack: thin wrapper for public agent stack in a zen template
 BareClusterCfStack: Represents a homogeneous cluster of hosts with a specific AMI
 """
 import logging
-import time
 
 import boto3
 import pkg_resources
@@ -165,7 +164,7 @@ class CfStack:
         self.boto_wrapper = boto_wrapper
         self.stack = self.boto_wrapper.resource('cloudformation').Stack(stack_name)
 
-    def wait_for_status_change(self, state_1, state_2, wait_before_poll_min, timeout=60 * 60):
+    def wait_for_status_change(self, state_1, state_2):
         """
         Note: Do not use unwrapped boto waiter class, it has very poor error handling
 
@@ -182,11 +181,8 @@ class CfStack:
         UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS
         """
         log.info('Waiting for status to change from {} to {}'.format(state_1, state_2))
-        log.info('Sleeping for {} minutes before polling'.format(wait_before_poll_min))
-        time.sleep(60 * wait_before_poll_min)
 
-        @retrying.retry(wait_fixed=10 * 1000,
-                        stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=60 * 1000,
                         retry_on_result=lambda res: res is False,
                         retry_on_exception=lambda ex: False)
         def wait_loop():
@@ -203,14 +199,13 @@ class CfStack:
             return False
         wait_loop()
 
-    def wait_for_complete(self, wait_before_poll_min=0):
+    def wait_for_complete(self):
         status = self.get_stack_details()['StackStatus']
         if status.endswith('_COMPLETE'):
             return
         elif status.endswith('_IN_PROGRESS'):
             self.wait_for_status_change(
-                status, status.replace('IN_PROGRESS', 'COMPLETE'),
-                wait_before_poll_min)
+                status, status.replace('IN_PROGRESS', 'COMPLETE'))
         else:
             raise Exception('AWS Stack has entered unexpected state: {}'.format(status))
 
