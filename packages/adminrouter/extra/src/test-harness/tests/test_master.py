@@ -13,7 +13,7 @@ from generic_test_code.common import (
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
 )
-from mocker.endpoints.mesos import SLAVE1_ID, SLAVE2_ID
+from mocker.endpoints.mesos import AGENT1_ID, AGENT2_ID
 
 log = logging.getLogger(__name__)
 
@@ -106,11 +106,11 @@ endpoint_test_configuration = [
         True, 'HTTP/1.1', True, "http://127.0.0.1:16000"),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/agent/{}'.format(SLAVE1_ID), "/"),
+            '/agent/{}'.format(AGENT1_ID), "/"),
          EndpointPathExpectation(
-            '/agent/{}/'.format(SLAVE1_ID), "/"),
+            '/agent/{}/'.format(AGENT1_ID), "/"),
          EndpointPathExpectation(
-            '/agent/{}/foo/bar'.format(SLAVE1_ID), "/foo/bar"),
+            '/agent/{}/foo/bar'.format(AGENT1_ID), "/foo/bar"),
          ],
         True, "HTTP/1.1", True, "http://127.0.0.2:15001"),
     EndpointTestConfig(
@@ -124,54 +124,54 @@ endpoint_test_configuration = [
         None, 'HTTP/1.0', True, None),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/system/v1/agent/{}/logs/v1/foo/bar'.format(SLAVE1_ID), None),
+            '/system/v1/agent/{}/logs/v1/foo/bar'.format(AGENT1_ID), None),
          ],
         None, None, None, None),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/logs/v1/foo/bar?key=value&var=num'),
             '/system/v1/logs/v1/foo/bar?key=value&var=num'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/metrics/v0/foo/bar?key=value&var=num'),
             '/system/v1/metrics/v0/foo/bar?key=value&var=num'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/logs/v1/'),
             '/system/v1/logs/v1/'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/metrics/v0/'), '/system/v1/metrics/v0/'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/logs/v1'), '/system/v1/logs/v1'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE1_ID) +
+            ('/system/v1/agent/{}'.format(AGENT1_ID) +
              '/metrics/v0'), '/system/v1/metrics/v0'),
          ],
         None, "HTTP/1.1", True, 'http://127.0.0.2:61001'),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/logs/v1/foo/bar?key=value&var=num'),
             '/system/v1/logs/v1/foo/bar?key=value&var=num'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/metrics/v0/foo/bar?key=value&var=num'),
             '/system/v1/metrics/v0/foo/bar?key=value&var=num'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/logs/v1/'),
             '/system/v1/logs/v1/'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/metrics/v0/'), '/system/v1/metrics/v0/'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/logs/v1'), '/system/v1/logs/v1'),
          EndpointPathExpectation(
-            ('/system/v1/agent/{}'.format(SLAVE2_ID) +
+            ('/system/v1/agent/{}'.format(AGENT2_ID) +
              '/metrics/v0'), '/system/v1/metrics/v0'),
          ],
         None, "HTTP/1.1", True, 'http://127.0.0.3:61001'),

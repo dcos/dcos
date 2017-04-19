@@ -47,7 +47,8 @@ class MesosDnsHTTPRequestHandler(RecordingHTTPRequestHandler):
         """Calculate reply for given service-ID
 
         Arguments:
-            srvid (string): service ID to reply to"""
+            srvid (string): service ID to reply to
+        """
         ctx = self.server.context
 
         if srvid not in ctx.data['services']:
@@ -64,8 +65,8 @@ def create_srv_entry(srv_name, ip, port):
 
     Arguments:
         srv_name (string): service ID that the new SRV-entry should represent
-        port (string): TCP/IP port that the new slave should pretend to listen on
-        ip (string): IP address that the new slave hould pretend to listen on
+        port (string): TCP/IP port that the new agent should pretend to listen on
+        ip (string): IP address that the new agent hould pretend to listen on
 
     Returns:
         SRV entry dict mimicing the one returned by MesosDNS
@@ -77,6 +78,7 @@ def create_srv_entry(srv_name, ip, port):
     res['port'] = port
 
     return res
+
 
 EMPTY_SRV = {
     "scheduler-alwaysthere": [

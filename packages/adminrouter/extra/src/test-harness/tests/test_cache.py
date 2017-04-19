@@ -11,7 +11,7 @@ from mocker.endpoints.marathon import (
     SCHEDULER_APP_ALWAYSTHERE,
     SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT,
 )
-from mocker.endpoints.mesos import EXTRA_SLAVE_DICT, SLAVE1_ID
+from mocker.endpoints.mesos import AGENT1_ID, EXTRA_AGENT_DICT
 from runner.common import CACHE_FIRST_POLL_DELAY, Vegeta
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
@@ -431,11 +431,11 @@ class TestCache:
         with GuardedSubprocess(ar):
             ping_mesos_agent(ar,
                              valid_user_header,
-                             agent_id=EXTRA_SLAVE_DICT['id'],
+                             agent_id=EXTRA_AGENT_DICT['id'],
                              expect_status=404)
 
             mocker.send_command(endpoint_id='http://127.0.0.2:5050',
-                                func_name='enable_extra_slave')
+                                func_name='enable_extra_agent')
 
             # First poll (2s) + normal poll interval(4s) < 2 * normal poll
             # interval(4s)
@@ -443,7 +443,7 @@ class TestCache:
 
             ping_mesos_agent(ar,
                              valid_user_header,
-                             agent_id=EXTRA_SLAVE_DICT['id'],
+                             agent_id=EXTRA_AGENT_DICT['id'],
                              endpoint_id='http://127.0.0.4:15003')
 
     def test_if_changing_marathon_leader_is_reflected_in_cache(
@@ -654,7 +654,7 @@ class TestCache:
                          cache_backend_request_timeout=backend_request_timeout,
                          cache_refresh_lock_timeout=refresh_lock_timeout,
                          )
-        agent_id = SLAVE1_ID
+        agent_id = AGENT1_ID
         url = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
         v = Vegeta(log_catcher, target=url, jwt=valid_user_header, rate=3)
 
