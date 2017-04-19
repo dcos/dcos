@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-from test_util.marathon import get_test_app
+from test_util.marathon import Container, get_test_app, Healthcheck, Network
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +32,12 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     deployed and accessed as expected.
     """
     dcos_api_session.marathon.deploy_test_app_and_check(
-        *get_test_app(network='BRIDGE', container_type='DOCKER', container_port=9080))
+        *get_test_app(network=Network.BRIDGE, container_type=Container.DOCKER, container_port=9080))
 
 
-@pytest.mark.parametrize("healthcheck", [
-    "HTTP",
-    "MESOS_HTTP",
+@pytest.mark.parametrize('healthcheck', [
+    Healthcheck.HTTP,
+    Healthcheck.MESOS_HTTP,
 ])
 def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     """Marathon app inside ucr deployment integration test.
@@ -46,7 +46,7 @@ def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     deployed and accessed as expected.
     """
     dcos_api_session.marathon.deploy_test_app_and_check(
-        *get_test_app(container_type='MESOS', healthcheck_protocol=healthcheck))
+        *get_test_app(container_type=Container.MESOS, healthcheck_protocol=healthcheck))
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
@@ -63,7 +63,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
     When port mapping is available (MESOS-4777), this test should be updated to
     reflect that.
     """
-    app, test_uuid = get_test_app(container_type='MESOS')
+    app, test_uuid = get_test_app(container_type=Container.MESOS)
     dcos_api_session.marathon.deploy_test_app_and_check(app, test_uuid)
 
 

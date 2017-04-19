@@ -3,7 +3,7 @@ import logging
 import uuid
 
 
-from test_util.marathon import get_test_app
+from test_util.marathon import Container, get_test_app
 from test_util.recordio import Decoder, Encoder
 
 
@@ -148,7 +148,7 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
     # doesn't support running docker images with the UCR. We need this
     # functionality in order to test that the pid namespace isolator
     # is functioning correctly.
-    app, test_uuid = get_test_app(container_type='MESOS')
+    app, test_uuid = get_test_app(container_type=Container.MESOS)
 
     ps_output_file = 'ps_output'
     app['cmd'] = 'ps ax -o pid= > {}; sleep 1000'.format(ps_output_file)

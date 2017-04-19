@@ -12,7 +12,7 @@ import retrying
 
 from test_helpers import expanded_config
 
-from test_util.marathon import get_test_app
+from test_util.marathon import Container, get_test_app, Network
 
 log = logging.getLogger(__name__)
 
@@ -34,17 +34,20 @@ def ensure_routable(cmd, host, port):
     return json.loads(r.json()['output'])
 
 
-def vip_app(container, network, host, vip, second):
-    if network in ['HOST', 'BRIDGE']:
+def vip_app(container: Container, network: Network, host: str, vip: str, offset_port: bool):
+    """ If offset_port is True then the port on the user network will be one higher
+    to allow two apps on the same USER network
+    """
+    if network in [Network.HOST, Network.BRIDGE]:
         # both of these cases will rely on marathon to assign ports
         return get_test_app(
             network=network,
             host_constraint=host,
             vip=vip,
             container_type=container)
-    elif network == 'USER':
+    elif network == Network.USER:
         # ports must be incremented as one shared network is used
-        user_port = 8000 if not second else 8001
+        user_port = 8000 if not offset_port else 8001
         return get_test_app(
             network=network,
             host_port=user_port,
@@ -52,19 +55,20 @@ def vip_app(container, network, host, vip, second):
             vip=vip,
             container_type=container)
     else:
-        raise AssertionError('Unexpected network: {}'.format(network))
+        raise AssertionError('Unexpected network: {}'.format(network.value))
 
 
 def generate_vip_app_permutations():
     """ Generate all possible network interface permutations for applying vips
     """
+    network_options = [Network.USER, Network.BRIDGE, Network.HOST]
     permutations = []
-    for container in [None, 'MESOS', 'DOCKER']:
+    for container in [Container.NONE, Container.MESOS, Container.DOCKER]:
         for named_vip in [True, False]:
             for same_host in [True, False]:
-                for vip_net in ['USER', 'BRIDGE', 'HOST']:
-                    for proxy_net in ['USER', 'BRIDGE', 'HOST']:
-                        if container != 'DOCKER' and 'BRIDGE' in (vip_net, proxy_net):
+                for vip_net in network_options:
+                    for proxy_net in network_options:
+                        if container != Container.DOCKER and Network.BRIDGE in (vip_net, proxy_net):
                             # only DOCKER containers support BRIDGE network
                             continue
                         permutations.append((container, named_vip, same_host, vip_net, proxy_net))
@@ -81,13 +85,13 @@ def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_n
         * vips: named and unnamed vip
 
     Origin app will be deployed to the cluster with a VIP. Proxy app will be
-    deployed either to the same host or else where. Finally, a thread will be
+    deployed either to the same host or elsewhere. Finally, a thread will be
     started on localhost (which should be a master) to submit a command to the
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
     if not same_host and len(dcos_api_session.all_slaves) == 1:
-        pytest.skip("must have more than one agent for this test!")
+        pytest.skip('must have more than one agent for this test!')
     if named_vip:
         vip = '/namedvip:7000'
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:7000'
@@ -97,7 +101,7 @@ def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_n
 
     agents = list(dcos_api_session.all_slaves)
     # make sure we can reproduce
-    random.seed(vip)
+    random.seed(0)
     random.shuffle(agents)
     host1 = agents[0]
     if not same_host:
@@ -115,7 +119,7 @@ def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_n
         stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, check_health=False))
         endpoints = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app))
         endpoint = endpoints[0]
-        if proxy_net == 'USER':
+        if proxy_net == Network.USER:
             host = endpoint.ip
             port = 8001
         else:
@@ -156,7 +160,7 @@ def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
     # Launch the test_server in ip-per-container mode (user network)
-    app_definition, test_uuid = get_test_app(container_type='DOCKER', network='USER', host_port=9080)
+    app_definition, test_uuid = get_test_app(container_type=Container.DOCKER, network=Network.USER, host_port=9080)
 
     assert len(dcos_api_session.slaves) >= 2, 'IP Per Container tests require 2 private agents to work'
 
