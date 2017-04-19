@@ -74,7 +74,7 @@ def generic_upstream_headers_verify_test(
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
-        assert_header_absent (dict): headers that *MUST NOT* be present in the
+        assert_headers_absent (dict): headers that *MUST NOT* be present in the
             upstream request
     """
     url = ar.make_url_from_path(path)
@@ -160,8 +160,8 @@ def header_is_absent(headers, header_name):
             not be set.
 
     Raises:
-        AssertionErrror: header with the name "header_name" was found in
-        supplied header list.
+        AssertionError: header with the name "header_name" was found in
+            supplied header list.
     """
     for header in headers:
         assert header[0] != header_name
