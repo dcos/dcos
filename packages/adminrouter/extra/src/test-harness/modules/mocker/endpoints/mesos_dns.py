@@ -60,7 +60,7 @@ class MesosDnsHTTPRequestHandler(RecordingHTTPRequestHandler):
 
 
 def create_srv_entry(srv_name, ip, port):
-    """Create a SRV entry basing on the supplied data
+    """Create a SRV entry based on the supplied data
 
     Arguments:
         srv_name (string): service ID that the new SRV-entry should represent

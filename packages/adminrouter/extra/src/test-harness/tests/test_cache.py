@@ -832,9 +832,10 @@ class TestCacheMarathon:
             filter_regexp (dict): Filter definition where key is the message
                 looked up in logs and value is SearchCriteria definition
             app (dict): App that upstream endpoint should respond with
-            nginx_class (Nginx): SCHEDULER fixture
+            nginx_class (Nginx): Nginx process fixture
             mocker (Mocker): Mocker fixture
-            auth_header (dict): Headers that should be passed to SCHEDULER request
+            auth_header (dict): Headers that should be passed to Nginx in the
+                request
         """
         ar = nginx_class()
 

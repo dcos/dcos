@@ -48,7 +48,7 @@ def master_ar_process_fastcache(nginx_class):
 
 
 class TestServiceStatefull:
-    # Test all the statefull test-cases/tests where AR caching may influence the
+    # Test all the stateful test-cases/tests where AR caching may influence the
     # results
     def test_if_marathon_apps_are_resolved(
             self, master_ar_process_fastcache, mocker, valid_user_header):
@@ -374,6 +374,9 @@ class TestServiceStatefull:
                             headers=valid_user_header)
         t_spent = time.time() - t_start
 
+        # If the timeout was properly enforced by Admin Router, the total time
+        # spent waiting for response will be less than 10s. If there is no
+        # timeout - it will be at least 10s.
         assert t_spent < 10
         assert resp.status_code == 503
 

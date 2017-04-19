@@ -293,7 +293,7 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
            reply to a query for Marathon leader node.
 
            NOTE: We cannot just use `always_bork` here as we need a more fine-grained
-           controll on what we are breaking. E.G. cache tests need to have apps
+           control on what we are breaking. E.G. cache tests need to have apps
            endpoint up and running while testing broken leader endpoint and
            vice-versa.
         """
