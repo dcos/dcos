@@ -4,7 +4,7 @@ import logging
 
 import requests
 
-from mocker.endpoints.mesos import SLAVE1_ID
+from mocker.endpoints.mesos import AGENT1_ID
 from util import LineBufferFilter
 
 log = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def ping_mesos_agent(ar,
                      auth_header,
                      endpoint_id='http://127.0.0.2:15001',
                      expect_status=200,
-                     agent_id=SLAVE1_ID,
+                     agent_id=AGENT1_ID,
                      timeout=60,
                      ):
     """Test if agent is reachable or not

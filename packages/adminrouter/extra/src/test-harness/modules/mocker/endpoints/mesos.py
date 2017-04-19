@@ -94,7 +94,7 @@ SCHEDULER_FWRK_ALWAYSTHERE_NEST2 = framework_from_template(
     'nest2/nest1/scheduler-alwaysthere',
     "http://127.0.0.1:18000")
 
-SLAVE_TEMPLATE = {
+AGENT_TEMPLATE = {
     "id": "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2",
     "pid": "slave(1)@127.0.0.4:15003",
     "hostname": "127.0.0.4",
@@ -142,46 +142,46 @@ SLAVE_TEMPLATE = {
 }
 
 
-def slave_from_template(sid, ip, port):
-    """Create a Mesos slave entry basing on the supplied data and the template
+def agent_from_template(sid, ip, port):
+    """Create a Mesos agent entry basing on the supplied data and the template
 
     Arguments:
-        sid (string): slave ID that the new slave should have
-        port (string): TCP/IP port that the new slave should pretend to listen on
-        ip (string): IP address that the new slave hould pretend to listen on
+        sid (string): agent ID that the new agent should have
+        port (string): TCP/IP port that the new agent should pretend to listen on
+        ip (string): IP address that the new agent hould pretend to listen on
 
     Returns:
         Slave dict mimicing the one returned by Marathon
     """
-    res = copy.deepcopy(SLAVE_TEMPLATE)
+    res = copy.deepcopy(AGENT_TEMPLATE)
     res['id'] = sid
     res['pid'] = "slave(1)@{0}:{1}".format(ip, port)
     res['hostname'] = ip
 
     return res
 
-SLAVE1_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1"  # noqa: E305
-SLAVE2_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0"  # noqa: E305
-SLAVE3_ID = "35f210bb-bb58-4559-9932-b62619e72b6d-S0"  # noqa: E305
-SLAVE_EXTRA_ID = "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2"  # noqa: E305
+AGENT1_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1"  # noqa: E305
+AGENT2_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0"  # noqa: E305
+AGENT3_ID = "35f210bb-bb58-4559-9932-b62619e72b6d-S0"  # noqa: E305
+AGENT_EXTRA_ID = "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2"  # noqa: E305
 
-SLAVE1_DICT = slave_from_template(
-    SLAVE1_ID,
+AGENT1_DICT = agent_from_template(
+    AGENT1_ID,
     "127.0.0.2",
     "15001",
     )
-SLAVE2_DICT = slave_from_template(
-    SLAVE2_ID,
+AGENT2_DICT = agent_from_template(
+    AGENT2_ID,
     "127.0.0.3",
     "15002",
     )
-SLAVE3_DICT = slave_from_template(
-    SLAVE3_ID,
+AGENT3_DICT = agent_from_template(
+    AGENT3_ID,
     "127.0.0.1",
     "15401",
     )
-EXTRA_SLAVE_DICT = slave_from_template(
-    SLAVE_EXTRA_ID,
+EXTRA_AGENT_DICT = agent_from_template(
+    AGENT_EXTRA_ID,
     "127.0.0.4",
     "15003",
     )
@@ -193,9 +193,9 @@ INITIAL_STATEJSON = {
                    SCHEDULER_FWRK_ALWAYSTHERE_NEST2,
                    ],
     "hostname": "10.0.5.35",
-    "slaves": [SLAVE1_DICT,
-               SLAVE2_DICT,
-               SLAVE3_DICT,
+    "slaves": [AGENT1_DICT,
+               AGENT2_DICT,
+               AGENT3_DICT,
                ],
 }
 
@@ -244,12 +244,12 @@ class MesosEndpoint(RecordingTcpIpEndpoint):
            particular type of endpoint"""
         self._context.data["endpoint-content"] = copy.deepcopy(INITIAL_STATEJSON)
 
-    def enable_extra_slave(self, *_):
-        """Change returned JSON to include extra slave, one that is by default
+    def enable_extra_agent(self, *_):
+        """Change returned JSON to include extra agent, one that is by default
            not present in mocked `/state-json summary`
         """
         with self._context.lock:
-            self._context.data["endpoint-content"]["slaves"].append(EXTRA_SLAVE_DICT)
+            self._context.data["endpoint-content"]["slaves"].append(EXTRA_AGENT_DICT)
 
     def set_frameworks_response(self, frameworks):
         """Set response content for frameworks section of /state-summary response

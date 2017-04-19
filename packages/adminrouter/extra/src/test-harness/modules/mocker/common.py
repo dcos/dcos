@@ -75,11 +75,11 @@ class MockerBase:
             port=15401,
             certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
             keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
-        # slave3
+        # Agent3
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.4', port=15003))
-        # Slave AR 1
+        # Agent AR 1
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=61001))
-        # Slave AR 2
+        # Agent AR 2
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=61001))
         # task /scheduler-alwaysthere
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16000))

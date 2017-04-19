@@ -9,7 +9,7 @@ from generic_test_code.common import (
     generic_correct_upstream_dest_test,
 )
 from generic_test_code.open import assert_iam_queried_for_uid
-from mocker.endpoints.mesos import SLAVE1_ID
+from mocker.endpoints.mesos import AGENT1_ID
 from util import SearchCriteria, iam_denies_all_requests
 
 log = logging.getLogger(__name__)
@@ -30,10 +30,10 @@ authed_endpoints = [
     '/pkgpanda/active.buildinfo.full.json',
     '/service/scheduler-alwaysthere/foo/bar',
     '/service/scheduler-alwaysthere/foo/bar',
-    '/slave/{}'.format(SLAVE1_ID),
+    '/slave/{}'.format(AGENT1_ID),
     '/system/health/v1/foo/bar',
-    '/system/v1/agent/{}/logs/v1/foo/bar'.format(SLAVE1_ID),
-    '/system/v1/agent/{}/metrics/v0/foo/bar'.format(SLAVE1_ID),
+    '/system/v1/agent/{}/logs/v1/foo/bar'.format(AGENT1_ID),
+    '/system/v1/agent/{}/metrics/v0/foo/bar'.format(AGENT1_ID),
     '/system/v1/leader/marathon/foo/bar',
     '/system/v1/leader/mesos/foo/bar',
     '/system/v1/logs/v1/foo/bar',

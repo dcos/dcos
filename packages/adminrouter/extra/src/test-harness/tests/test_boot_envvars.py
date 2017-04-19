@@ -6,7 +6,7 @@ import time
 import pytest
 import requests
 
-from mocker.endpoints.mesos import SLAVE1_ID, SLAVE3_ID
+from mocker.endpoints.mesos import AGENT1_ID, AGENT3_ID
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
@@ -77,9 +77,9 @@ class TestDefaultSchemeEnvVarBehaviour:
         filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         ar = nginx_class(default_scheme="https://")
-        agent_id = SLAVE3_ID
+        agent_id = AGENT3_ID
         url_good = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
-        agent_id = SLAVE1_ID
+        agent_id = AGENT1_ID
         url_bad = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
 
         with GuardedSubprocess(ar):
@@ -236,7 +236,7 @@ class TestUpstreamsEnvVarBehaviour:
         }
 
         ar = nginx_class(upstream_mesos="http://127.0.0.2:5050")
-        agent_id = SLAVE1_ID
+        agent_id = AGENT1_ID
         url = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
 
         with GuardedSubprocess(ar):
