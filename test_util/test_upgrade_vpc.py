@@ -41,6 +41,7 @@ import os
 import pprint
 import random
 import sys
+import time
 import traceback
 import uuid
 from subprocess import CalledProcessError
@@ -516,6 +517,7 @@ class VpcClusterUpgradeTest:
                 key_pair_name=stack_name,
                 boto_wrapper=bw
             )
+            time.sleep(300)  # we know the cluster is not ready yet, don't poll to avoid hitting the rate limit
             bare_cluster.wait_for_complete()
 
         cluster = test_util.cluster.Cluster.from_bare_cluster(
