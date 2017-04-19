@@ -75,6 +75,7 @@ def generate_vip_app_permutations():
     return permutations
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 @pytest.mark.parametrize('container,named_vip,same_host,vip_net,proxy_net', generate_vip_app_permutations())
 def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_net):
