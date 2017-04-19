@@ -432,6 +432,13 @@ group the tests that are specific for given version:
 * `test-harness/modules/open/test_*.py` for Open
 * `test-harness/tests/test_*.py` common for both variants
 
+#### Tooling
+Code uses some extra tooling in order to enforce coding standards.
+
+Currently it's only `isort` together with flake8-isort plugin. In order to
+properly distinguish between 2nd party and 3rd party modules, the `.isort.cfg`
+file lists all local modules in `known_first_party` config parameter.
+
 #### Debugging threads-related issues
 The fixtures, mocks, and all other features make the code heavily threaded. In
 order to simplify debugging a special signal handler is installed. It launches a
