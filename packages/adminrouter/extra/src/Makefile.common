@@ -101,9 +101,11 @@ api-docs:
 	@mkdir -p $(SRC_DIR)/$(API_DOCS_DIR)
 	@for prefix in nginx.master nginx.agent ; do \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.yaml" >&2 && \
-		docker run --rm -v "$(SRC_DIR):/src" karlkfi/ngindox parse -f /src/$${prefix}.conf > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.yaml && \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+			ngindox parse -f $${prefix}.conf > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.yaml && \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.html" >&2 && \
-		docker run --rm -v "$(SRC_DIR):/src" karlkfi/ngindox ui -f /src/$(API_DOCS_DIR)/$${prefix}.yaml > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.html ; \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+			ngindox ui -f $(API_DOCS_DIR)/$${prefix}.yaml > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.html ; \
 	done
 
 .PHONY: check-api-docs
