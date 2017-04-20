@@ -446,7 +446,7 @@ class BareClusterCfStack(CfStack):
                         admin_location, key_pair_name, boto_wrapper):
         template = template_by_instance_type(instance_type)
         parameters = {
-            'KeyPair': key_pair_name,
+            'KeyName': key_pair_name,
             'AllowAccessFrom': admin_location,
             'ClusterSize': instance_count,
             'InstanceType': instance_type,
