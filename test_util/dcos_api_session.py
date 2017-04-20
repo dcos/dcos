@@ -208,7 +208,8 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         if ro.status_code <= 500:
             logging.info("DC/OS History is probably getting data")
             json = ro.json()
-            assert len(json["slaves"]) == len(self.all_slaves)
+            # if an agent was removed, it may linger in the history data
+            assert len(json["slaves"]) >= len(self.all_slaves)
             return True
         else:
             msg = "Waiting for DC/OS History, resp code is: {}"
