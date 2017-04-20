@@ -55,8 +55,11 @@ def fetch_stack(stack_name, boto_wrapper):
         if resource.logical_resource_id == 'MasterServerGroup':
             log.debug('Using Basic DC/OS Cloudformation interface')
             return DcosCfStack(stack_name, boto_wrapper)
-    log.debug('Using VPC Cloudformation interface')
-    return BareClusterCfStack(stack_name, boto_wrapper)
+        if resource.logical_resource_id == 'BareServerAutoScale':
+            log.debug('Using Bare Cluster Cloudformation interface')
+            return BareClusterCfStack(stack_name, boto_wrapper)
+    log.warning('No recognized resources found; using generic stack')
+    return CfStack(stack_name, boto_wrapper)
 
 
 class BotoWrapper():
@@ -454,11 +457,6 @@ class BareClusterCfStack(CfStack):
         }
         stack = boto_wrapper.create_stack(stack_name, parameters, template_body=template)
         return cls(stack.stack_id, boto_wrapper)
-
-    def delete(self):
-        # boto stacks become unusable after deletion (e.g. status/info checks) if name-based
-        self.stack = self.boto_wrapper.resource('cloudformation').Stack(self.stack.stack_id)
-        self.stack.delete()
 
     @property
     def instances(self):
