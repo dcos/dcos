@@ -17,6 +17,10 @@ dir("packages/adminrouter/extra/src") {
         }
 
     } finally {
+        stage('archive build logs') {
+             archiveArtifacts artifacts: 'test-harness/logs/*.log', allowEmptyArchive: true, excludes: 'test_harness/', fingerprint: true
+        }
+
         stage('Cleanup docker container'){
             sh 'make clean-containers'
             sh "docker rmi -f adminrouter-devkit || true"
