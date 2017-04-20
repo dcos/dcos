@@ -133,6 +133,30 @@ package:
         "name": "dummy",
         "type": "bridge"
       }
+  - path: /etc/dcos/network/cni/ucr-default-bridge.cni
+    content: |
+      {
+        "name": "mesos-bridge",
+        "type" : "mesos-cni-port-mapper",
+        "excludeDevices" : ["ucr-br0"],
+        "chain": "UCR-DEFAULT-BRIDGE",
+        "delegate": {
+          "type": "bridge"
+          "bridge": "ucr-br0",
+          "isDefaultGateway": true,
+          "forceAddress": false,
+          "ipMasq": true,
+          "hairpinMode": true,
+          "ipam": {
+            "type": "host-local",
+            "subnet": {{ dcos_ucr_default_bridge_subnet }},
+            "routes": [
+            { "dst":
+              "0.0.0.0/0" }
+            ]
+          }
+        }
+      }
   - path: /etc/overlay/config/agent.json
     content: |
       {

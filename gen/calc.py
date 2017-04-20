@@ -248,6 +248,15 @@ def validate_network_default_name(dcos_overlay_network_default_name, dcos_overla
             dcos_overlay_network_default_name))
 
 
+def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
+    try:
+        ipaddress.ip_network(dcos_ucr_default_bridge_subnet)
+    except ValueError as ex:
+        raise AssertionError(
+            "Incorrect value for dcos_ucr_default_bridge_subnet: {}."
+            " Only IPv4 subnets are allowed".format(dcos_ucr_default_bridge_subnet)) from ex
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -541,6 +550,7 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        validate_dcos_ucr_default_bridge_subnet,
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
             validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
@@ -612,6 +622,7 @@ entry = {
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
