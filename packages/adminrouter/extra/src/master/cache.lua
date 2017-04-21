@@ -4,8 +4,6 @@ local http = require "resty.http"
 local resolver = require "resty.resolver"
 
 
-local _M = {}
-
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
 --
