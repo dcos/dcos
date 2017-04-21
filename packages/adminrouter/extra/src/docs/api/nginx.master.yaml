@@ -148,6 +148,7 @@ routes:
     matcher: exact
     description: Redirect to add trailing slash
     visibility: hidden
+    deprecated: Use `/service/marathon/`
     redirects:
       - regex: ^/marathon$
         replacement: '$scheme://$http_host/marathon/'
@@ -156,6 +157,7 @@ routes:
   /marathon/:
     group: Marathon
     matcher: path
+    deprecated: Use `/service/marathon/`
     proxy:
       path: 'http://$backend/'
       backend: marathon
@@ -164,6 +166,7 @@ routes:
     group: Mesos
     matcher: path
     description: Cache of the Mesos master API
+    cache: 5 seconds
     proxy:
       path: 'http://$backend/master/'
       backend: mesos
@@ -218,7 +221,7 @@ routes:
   /dcos-metadata/ui-config.json:
     group: Metadata
     matcher: path
-    description: DC/OS GUI configuration
+    description: DC/OS GUI configuration (unauthenticated)
     proxy:
       path: 'http://$backend/dcos-metadata/ui-config.json'
       backend: auth

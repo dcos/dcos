@@ -84,7 +84,7 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
     && apt-get install -y --no-install-recommends nodejs
 
 # Install Ngindox for API doc generation
-RUN npm install -g ngindox@0.1.3
+RUN npm install -g ngindox@0.2.0
 
 # Download Vegeta tool for benchmarking
 RUN curl -fsSL "$VEGETA_DOWNLOAD_URL" -o vegeta.tar.gz \
