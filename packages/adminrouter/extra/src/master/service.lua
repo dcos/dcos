@@ -1,5 +1,5 @@
+local util = require "master.util"
 local url = require "master.url"
-local cjson_safe = require "cjson.safe"
 
 
 local function resolve_srv_entry(framework_name)
@@ -192,10 +192,28 @@ local function resolve(service_name)
     return res
 end
 
-local resolved = resolve(ngx.var.serviceid)
+local function recursive_resolve(serviceid)
 
-if resolved == false then
-    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-    ngx.say("500 Service unknown")
-    return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    -- TODO (prozlach): Add recursive resolving here
+    local resolved = resolve(serviceid)
+    -- TODO (prozlach): Recursive resolving ends here
+
+    if resolved == false then
+        ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
+        ngx.say("500 Service unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
 end
+
+-- Initialise and return the module:
+local _M = {}
+function _M.init()
+    local res = {}
+
+    res.recursive_resolve = recursive_resolve
+
+    return res
+end
+
+return _M
