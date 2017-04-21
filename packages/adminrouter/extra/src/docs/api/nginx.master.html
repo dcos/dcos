@@ -979,34 +979,51 @@
             <table>
               <tr>
                 <td>
-                  Path:
+                  Proxy:
                 </td>
                 <td>
-                  <code>http://$backend/</code>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>http://$backend/</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Server:
+                      </td>
+                      <td>
+                        <code>master.mesos:8080</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Backend:
+                      </td>
+                      <td>
+                        Marathon
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        API Reference:
+                      </td>
+                      <td>
+                        <a href="https://dcos.io/docs/1.9/usage/managing-services/rest-api/">https://dcos.io/docs/1.9/usage/managing-services/rest-api/</a>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
               <tr>
                 <td>
-                  Server:
+                  Deprecated:
                 </td>
                 <td>
-                  <code>master.mesos:8080</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  Marathon
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://dcos.io/docs/1.9/usage/managing-services/rest-api/">https://dcos.io/docs/1.9/usage/managing-services/rest-api/</a>
+                  Use <code>/service/marathon/</code>
                 </td>
               </tr>
             </table>
@@ -1035,34 +1052,51 @@
             <table>
               <tr>
                 <td>
-                  Path:
+                  Proxy:
                 </td>
                 <td>
-                  <code>http://$backend/master/</code>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>http://$backend/master/</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Server:
+                      </td>
+                      <td>
+                        <code>leader.mesos:5050</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Backend:
+                      </td>
+                      <td>
+                        Apache Mesos
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        API Reference:
+                      </td>
+                      <td>
+                        <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
               <tr>
                 <td>
-                  Server:
+                  Cache:
                 </td>
                 <td>
-                  <code>leader.mesos:5050</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  Apache Mesos
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                  5 seconds
                 </td>
               </tr>
             </table>
@@ -1227,7 +1261,7 @@
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/dcos-metadata/ui-config.json</code></span>
             </h3>
-            <span class="route-desc">DC/OS GUI configuration</span>
+            <span class="route-desc">DC/OS GUI configuration (unauthenticated)</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
