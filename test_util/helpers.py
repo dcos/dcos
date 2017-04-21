@@ -21,6 +21,7 @@ from botocore.exceptions import ClientError, WaiterError
 
 Host = namedtuple('Host', ['private_ip', 'public_ip'])
 SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
+log = logging.getLogger(__name__)
 
 log = logging.getLogger(__name__)
 

@@ -552,6 +552,7 @@ entry = {
         lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
         validate_minuteman_min_named_ip,
         validate_minuteman_max_named_ip,
+        lambda minuteman_disable_bridge_netfilter: validate_true_false(minuteman_disable_bridge_netfilter),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -615,6 +616,7 @@ entry = {
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
+        'minuteman_disable_bridge_netfilter': 'true',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({

@@ -1,11 +1,13 @@
 import concurrent.futures
 import contextlib
+import copy
 import json
 import logging
 import random
 import threading
-import time
+import uuid
 from collections import deque
+from enum import Enum
 from subprocess import check_output
 
 import pytest
@@ -18,8 +20,10 @@ from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_ap
 
 
 log = logging.getLogger(__name__)
-timeout = 500
-maxthreads = 16
+timeout = 100
+# number of worker threads to use to parallelize the vip test
+maxthreads = 10
+vip_port_base = 7000
 backend_port_st = 8000
 
 
@@ -33,216 +37,380 @@ def lb_enabled():
                 retry_on_exception=lambda x: True)
 def ensure_routable(cmd, host, port):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
-    log.info('Sending {} data: {}'.format(proxy_uri, cmd))
+    log.debug('Sending {} data: {}'.format(proxy_uri, cmd))
     r = requests.post(proxy_uri, data=cmd)
-    log.info('Requests Response: %s', repr(r.json()))
+    log.debug('Requests Response: %s', repr(r.json()))
     assert r.json()['status'] == 0
     return json.loads(r.json()['output'])
 
 
-class VipTest:
-    def __init__(self, num, container, vip, vipaddr, samehost, vipnet, proxynet):
+class VipTest():
+
+    def __init__(self, num: int, container: str, is_named: bool, samehost: bool,
+                 vipnet: str, proxynet: str, notes: str='') -> None:
+        self.vip = '1.1.1.{}:{}'
+        self.vipaddr = self.vip
+        if is_named:
+            self.vip = '/namedvip{}:{}'
+            self.vipaddr = 'namedvip{}.marathon.l4lb.thisdcos.directory:{}'
+        self.vip = self.vip.format(num, vip_port_base + num)
+        self.vipaddr = self.vipaddr.format(num, vip_port_base + num)
         self.num = num
-        self.vip = vip.format(num, 7000 + num)
-        self.vipaddr = vipaddr.format(num, 7000 + num)
         self.container = container
         self.samehost = samehost
         self.vipnet = vipnet
         self.proxynet = proxynet
-        self.notes = ""
+        self.notes = notes
 
     def __str__(self):
-        return ('VipTest(container={}, vip={},vipaddr={},samehost={},'
-                'vipnet={},proxynet={}, notes={})').format(self.container, self.vip, self.vipaddr, self.samehost,
-                                                           self.vipnet, self.proxynet, self.notes)
+        s = 'VipTest(container={}, vip={},vipaddr={},samehost={},vipnet={},proxynet={}) {}'
+        return s.format(self.container, self.vip, self.vipaddr, self.samehost, self.vipnet, self.proxynet,
+                        self.notes)
 
     def log(self, s, lvl=logging.DEBUG):
         m = 'VIP_TEST {} {}'.format(s, self)
         log.log(lvl, m)
 
+    def docker_vip_app(self, network, host, vip):
+        app, uuid = get_test_app_in_docker()
+        container_port = 9080
+        app['id'] = '/viptest/' + app['id']
+        app['container']['docker']['network'] = network
+        app['mem'] = 16
+        app['cpu'] = 0.01
+        if network == 'HOST':
+            app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
+                         '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
+            del app['container']['docker']['portMappings']
+            if vip is not None:
+                app['portDefinitions'] = [{'labels': {'VIP_0': vip}}]
 
-def docker_vip_app(network, host, vip):
-    # docker app definition defines its own healthchecks
-    app, uuid = get_test_app_in_docker()
-    app['id'] = '/viptest/' + app['id']
-    app['container']['docker']['network'] = network
-    app['mem'] = 16
-    app['cpu'] = 0.01
-    if network == 'HOST':
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
-        del app['container']['docker']['portMappings']
-        if vip is not None:
-            app['portDefinitions'] = [{'labels': {'VIP_0': vip}}]
-    else:
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py 9080'
-        app['container']['docker']['portMappings'] = [{
-            'hostPort': 0,
-            'containerPort': 9080,
-            'protocol': 'tcp',
-            'name': 'test',
-            'labels': {}
+        else:
+            app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
+                         '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py'\
+                         ' {}'.format(container_port)
+            app['container']['docker']['portMappings'] = [{
+                'hostPort': 0,
+                'containerPort': container_port,
+                'protocol': 'tcp',
+                'name': 'test',
+                'labels': {}
+            }]
+            if vip is not None:
+                app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': vip}
+            if network == 'USER':
+                app['ipAddress'] = {'networkName': 'dcos'}
+
+        app['constraints'] = [['hostname', 'CLUSTER', host]]
+        return app, uuid
+
+    def mesos_vip_app(self, num, network, host, vip, ucr=False):
+        port = backend_port_st + num
+        if ucr is False:
+            app, uuid = get_test_app()
+        else:
+            app, uuid = get_test_app_in_ucr()
+        app['id'] = '/viptest/' + app['id']
+        app['mem'] = 16
+        app['cpu'] = 0.01
+        app['healthChecks'] = [{
+            'protocol': 'MESOS_HTTP',
+            'path': '/ping',
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3,
         }]
-        if vip is not None:
-            app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': vip}
+
+        assert network != 'BRIDGE'
         if network == 'USER':
-            app['ipAddress'] = {'networkName': 'dcos'}
-    app['constraints'] = [['hostname', 'CLUSTER', host]]
-    return app, uuid
-
-
-def mesos_vip_app(num, network, host, vip, ucr=False):
-    app = None
-    uuid = None
-    port = backend_port_st + num
-    if ucr is False:
-        app, uuid = get_test_app()
-    else:
-        app, uuid = get_test_app_in_ucr()
-    app['id'] = '/viptest/' + app['id']
-    app['mem'] = 16
-    app['cpu'] = 0.01
-    # define a health check that works with all the network options
-    app['healthChecks'] = [{
-        'protocol': 'MESOS_HTTP',
-        'path': '/ping',
-        'gracePeriodSeconds': 5,
-        'intervalSeconds': 10,
-        'timeoutSeconds': 10,
-        'maxConsecutiveFailures': 3,
-    }]
-    assert network != 'BRIDGE'
-    if network == 'HOST':
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
-        app['portDefinitions'] = [{
-            'protocol': 'tcp',
-            'port': 0
-        }]
-        if vip is not None:
-            app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
-        app['healthChecks'][0]['portIndex'] = 0
-    if network == 'USER':
-        app['ipAddress'] = {
-            'discovery': {
-                'ports': [{
-                    'protocol': 'tcp',
-                    'name': 'test',
-                    'number': port,
-                }]
+            app['ipAddress'] = {
+                'discovery': {
+                    'ports': [{
+                        'protocol': 'tcp',
+                        'name': 'test',
+                        'number': port,
+                    }]
+                }
             }
+            app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
+                         '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(port)
+            app['ipAddress']['networkName'] = 'dcos'
+            if vip is not None:
+                app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
+            app['healthChecks'][0]['port'] = port
+            app['portDefinitions'] = []
+
+        if network == 'HOST':
+            app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
+                         '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py $PORT0'
+            app['portDefinitions'] = [{
+                'protocol': 'tcp',
+                'port': 0
+            }]
+            if vip is not None:
+                app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
+            app['healthChecks'][0]['portIndex'] = 0
+
+        app['constraints'] = [['hostname', 'CLUSTER', host]]
+        log.debug('app: {}'.format(json.dumps(app)))
+        return app, uuid
+
+    def vip_app(self, num, container, network, host, vip):
+        if container == 'UCR':
+            return self.mesos_vip_app(num, network, host, vip, ucr=True)
+        if container == 'DOCKER':
+            return self.docker_vip_app(network, host, vip)
+        if container == 'NONE':
+            return self.mesos_vip_app(num, network, host, vip, ucr=False)
+        assert False, 'unknown container option {}'.format(container)
+
+    def run(self, dcos_api_session):
+        self.log('START')
+        agents = list(copy.copy(dcos_api_session.all_slaves))
+        self.log('seed is {}'.format(hash(self.vip)))
+        random.seed(hash(self.vip))
+        random.shuffle(agents)
+        host1 = agents[0]
+        host2 = agents[0]
+        if not self.samehost:
+            host2 = agents[1]
+        log.debug('host1 is is: {}'.format(host1))
+        log.debug('host2 is is: {}'.format(host2))
+
+        origin_app, app_uuid = self.vip_app(self.num, self.container, self.vipnet, host1, self.vip)
+        origin_app['acceptedResourceRoles'] = ['*', 'slave_public']
+        proxy_app, _ = self.vip_app(self.num, self.container, self.proxynet, host2, None)
+        proxy_app['acceptedResourceRoles'] = ['*', 'slave_public']
+
+        returned_uuid = None
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, timeout=timeout))
+            sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app, timeout=timeout))
+            proxy_host = sp[0].host
+            proxy_port = sp[0].port
+            if proxy_port == 0 and sp[0].ip is not None:
+                proxy_port = backend_port_st + self.num
+                proxy_host = sp[0].ip
+            log.debug('proxy endpoints are {}'.format(sp))
+            cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(self.vipaddr)
+            returned_uuid = ensure_routable(cmd, proxy_host, proxy_port)
+            log.debug('returned_uuid is: {}'.format(returned_uuid))
+        assert returned_uuid is not None
+        assert returned_uuid['test_uuid'] == app_uuid
+        self.log('PASSED')
+
+
+class ProxyPod(Enum):
+    # NoPod = 0
+    ItsOwnPod = 1
+    SamePodAsVip = 2
+
+
+class PodTest():
+    def __init__(self, num: int, proxy_pod: ProxyPod, proxy_net: str,
+                 vip_net: str, is_named: bool, notes: str='') -> None:
+        self.num = num
+        self.proxy_pod = proxy_pod
+        self.proxy_net = proxy_net
+        self.vip_net = vip_net
+        self.is_named = is_named
+        self.notes = notes
+        self.port = vip_port_base + num
+        self.proxy_ip = '1.1.2.{}'.format(num)
+        self.proxy_vip = '{}:{}'.format(self.proxy_ip, self.port)
+        self.vip = '1.1.1.{}:{}'.format(num, self.port)
+        self.uri = self.vip
+        if self.is_named:
+            self.vip = '/vippodtest{}:{}'.format(num, self.port)
+            self.uri = 'vippodtest{}.marathon.l4lb.thisdcos.directory:{}'.format(num, self.port)
+
+    def pod_app(self):
+        proxy = None
+        app, guid = self.create_pod_app(self.vip_net)
+        if self.proxy_pod == ProxyPod.SamePodAsVip:
+            assert self.proxy_net == self.vip_net
+        if self.proxy_pod == ProxyPod.ItsOwnPod:
+            # recurse to create a proxy pod
+            proxy, _ = self.create_pod_app(self.proxy_net)
+            # delete the proxy from the vip app
+            del app['containers'][0]
+            # delete the vip from the proxy app
+            del proxy['containers'][1]
+        self.log(app)
+        self.log(proxy)
+        return app, guid, proxy
+
+    def create_pod_app(self, network):
+        guid = uuid.uuid4().hex
+        test_id = '/vippodtest/integration-test-{}'.format(guid)
+        app = {
+            'id': test_id,
+            'acceptedResourceRoles': ['*', 'slave_public'],
+            'containers': [{
+                'name': 'proxyapp{}'.format(guid),
+                'resources': {
+                    'cpus': 0.01,
+                    'mem': 8
+                },
+                'image': {
+                    'kind': 'DOCKER',
+                    'id': 'debian:jessie'
+                },
+                'exec': {
+                    'command': {
+                        'shell': '/opt/mesosphere/bin/dcos-shell python /opt/mesosphere/active/dcos-integration-test'
+                                 '/util/python_test_server.py $ENDPOINT_PROXYAPP'
+                    }
+                },
+                'volumeMounts': [{
+                    'name': 'opt',
+                    'mountPath': '/opt/mesosphere'
+                }],
+                'endpoints': [{
+                    'name': 'proxyapp',
+                    'protocol': ['tcp'],
+                    'hostPort': 0,
+                    'labels': {'VIP_0': self.proxy_vip}
+                }],
+                'environment': {
+                    'DCOS_TEST_UUID': 'proxy{}'.format(guid)
+                }
+            }, {
+                'name': 'vipapp{}'.format(guid),
+                'resources': {
+                    'cpus': 0.01,
+                    'mem': 8
+                },
+                'image': {
+                    'kind': 'DOCKER',
+                    'id': 'debian:jessie'
+                },
+                'exec': {
+                    'command': {
+                        'shell': '/opt/mesosphere/bin/dcos-shell python /opt/mesosphere/active/dcos-integration-test'
+                                 '/util/python_test_server.py $ENDPOINT_VIPAPP'
+                    }
+                },
+                'volumeMounts': [{
+                    'name': 'opt',
+                    'mountPath': '/opt/mesosphere'
+                }],
+                'endpoints': [{
+                    'name': 'vipapp',
+                    'protocol': ['tcp'],
+                    'hostPort': 0,
+                    'labels': {'VIP_0': self.vip}
+                }],
+                'environment': {
+                    'DCOS_TEST_UUID': guid
+                }
+            }],
+            'networks': [{'mode': 'host'}],
+            'volumes': [{
+                'host': '/opt/mesosphere',
+                'name': 'opt'
+            }]
         }
-        app['cmd'] = '/opt/mesosphere/bin/dcos-shell python '\
-                     '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(port)
-        app['ipAddress']['networkName'] = 'dcos'
-        if vip is not None:
-            app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
-        app['healthChecks'][0]['port'] = port
-        app['portDefinitions'] = []
-    app['constraints'] = [['hostname', 'CLUSTER', host]]
-    log.info('app: {}'.format(json.dumps(app)))
-    return app, uuid
+        if network == 'USER':
+            app['networks'] = [{'mode': 'container',
+                                'name': 'dcos'}]
+        if self.proxy_net == 'USER':
+            app['containers'][0]['endpoints'][0]['containerPort'] = 9000
 
+        if self.vip_net == 'USER':
+            app['containers'][1]['endpoints'][0]['containerPort'] = 9001
 
-def vip_app(num, container, network, host, vip):
-    if container == 'UCR':
-        return mesos_vip_app(num, network, host, vip, ucr=True)
-    if container == 'DOCKER':
-        return docker_vip_app(network, host, vip)
-    assert container == 'NONE', 'unkown container option {}'.format(container)
-    return mesos_vip_app(num, network, host, vip, ucr=False)
+        return app, guid
 
+    def __str__(self):
+        s = 'PodTest(num={}, proxy_pod={}, proxy_net={}, vip_net={}, is_named={}): {}'
+        s = s.format(self.num, self.proxy_pod, self.proxy_net,
+                     self.vip_net, self.is_named, self.notes)
+        return s
 
-def vip_test(dcos_api_session, r):
-    r.log('START')
-    agents = list(dcos_api_session.all_slaves)
-    # make sure we can reproduce
-    random.seed(r.vip)
-    random.shuffle(agents)
-    host1 = agents[0]
-    host2 = agents[0]
-    if not r.samehost:
-        host2 = agents[1]
-    log.debug('host1 is is: {}'.format(host1))
-    log.debug('host2 is is: {}'.format(host2))
+    def log(self, s, lvl=logging.DEBUG):
+        m = 'VIP_TEST {} {}'.format(s, self)
+        log.log(lvl, m)
 
-    origin_app, app_uuid = vip_app(r.num, r.container, r.vipnet, host1, r.vip)
-    # allow to run on both public and private agents
-    origin_app['acceptedResourceRoles'] = ["*", "slave_public"]
-    proxy_app, _ = vip_app(r.num, r.container, r.proxynet, host2, None)
-    # allow to run on both public and private agents
-    proxy_app['acceptedResourceRoles'] = ["*", "slave_public"]
-
-    returned_uuid = None
-    with contextlib.ExitStack() as stack:
-        # try to avoid thundering herd
-        time.sleep(random.randint(0, 30))
-        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, timeout=timeout))
-        sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app, timeout=timeout))
-        proxy_host = sp[0].host
-        proxy_port = sp[0].port
-        if proxy_port == 0 and sp[0].ip is not None:
-            proxy_port = backend_port_st + r.num
-            proxy_host = sp[0].ip
-        log.info("proxy endpoints are {}".format(sp))
-        cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(r.vipaddr)
-        returned_uuid = ensure_routable(cmd, proxy_host, proxy_port)
-        log.debug('returned_uuid is: {}'.format(returned_uuid))
-    assert returned_uuid is not None
-    assert returned_uuid['test_uuid'] == app_uuid
-    r.log('PASSED')
+    def run(self, dcos_api_session):
+        self.log('START')
+        origin_app, app_uuid, proxy_app = self.pod_app()
+        returned_uuid = None
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(dcos_api_session.marathon.deploy_pod_and_cleanup(origin_app, timeout=timeout))
+            if proxy_app is not None:
+                stack.enter_context(dcos_api_session.marathon.deploy_pod_and_cleanup(proxy_app, timeout=timeout))
+            cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(self.uri)
+            returned_uuid = ensure_routable(cmd, self.proxy_ip, self.port)
+            log.debug('returned_uuid is: {}'.format(returned_uuid))
+        assert returned_uuid is not None
+        assert returned_uuid['test_uuid'] == app_uuid
+        self.log('PASSED')
 
 
 @pytest.fixture
 def reduce_logging():
-    start_log_level = logging.getLogger('test_util.marathon').getEffectiveLevel()
+    marathon_log_lvl = logging.getLogger('test_util.marathon').getEffectiveLevel()
+    helpers_log_lvl = logging.getLogger('test_util.helpers').getEffectiveLevel()
     # gotta go up to warning to mute it as its currently at info
     logging.getLogger('test_util.marathon').setLevel(logging.WARNING)
+    logging.getLogger('test_util.helpers').setLevel(logging.WARNING)
     yield
-    logging.getLogger('test_util.marathon').setLevel(start_log_level)
+    logging.getLogger('test_util.marathon').setLevel(marathon_log_lvl)
+    logging.getLogger('test_util.helpers').setLevel(helpers_log_lvl)
 
 
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 def test_vip(dcos_api_session, reduce_logging):
-    '''Test VIPs between the following source and destination configurations:
-        * containers: DOCKER, UCR and NONE
-        * networks: USER, BRIDGE (docker only), HOST
-        * agents: source and destnations on same agent or different agents
-        * vips: named and unnamed vip
-
+    '''Test every permutation of VIP
     '''
-    addrs = [['1.1.1.{}:{}', '1.1.1.{}:{}'],
-             ['/namedvip{}:{}', 'namedvip{}.marathon.l4lb.thisdcos.directory:{}']]
     # tests
     # UCR doesn't support BRIDGE mode
-    permutations = [[c, vi, va, sh, vn, pn]
-                    for c in ['NONE', 'UCR', 'DOCKER']
-                    for [vi, va] in addrs
-                    for sh in [True, False]
-                    for vn in ['USER', 'BRIDGE', 'HOST']
-                    for pn in ['USER', 'BRIDGE', 'HOST']]
-    tests = [VipTest(i, c, vi, va, sh, vn, pn) for i, [c, vi, va, sh, vn, pn] in enumerate(permutations)]
+    permutations = [[container, is_named, same_host, vip_net, proxy_net]
+                    for container in ['NONE', 'UCR', 'DOCKER']
+                    for is_named in [True, False]
+                    for same_host in [True, False]
+                    for vip_net in ['USER', 'BRIDGE', 'HOST']
+                    for proxy_net in ['USER', 'BRIDGE', 'HOST']]
+    tests = [VipTest(i + 1, container, is_named, same_host, vip_net, proxy_net)
+             for i, [container, is_named, same_host, vip_net, proxy_net] in enumerate(permutations)]
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads)
     # deque is thread safe
-    failed_tests = deque(tests)
+    # tests that didn't finish running
+    failed_tests = deque()
+    # test that ran successfully
     passed_tests = deque()
+    # tests that were skipped because cluster configuration cannot support them
     skipped_tests = deque()
     # skip certain tests
-    for r in tests:
-        if r.container == 'UCR' or r.container == 'NONE':
-            if r.vipnet == 'BRIDGE' or r.proxynet == 'BRIDGE':
-                r.notes = "bridge networks are not supported by mesos runtime"
-                failed_tests.remove(r)
-                skipped_tests.append(r)
+    for vip_test in tests:
+        if vip_test.container == 'UCR' or vip_test.container == 'NONE':
+            if vip_test.vipnet == 'BRIDGE' or vip_test.proxynet == 'BRIDGE':
+                vip_test.notes = 'bridge networks are not supported by mesos runtime'
+                skipped_tests.append(vip_test)
                 continue
-        if not r.samehost and len(dcos_api_session.all_slaves) == 1:
-            r.notes = "needs more then 1 agent to run"
-            failed_tests.remove(r)
-            skipped_tests.append(r)
+        if not vip_test.samehost and len(dcos_api_session.all_slaves) == 1:
+            vip_test.notes = 'needs more then 1 agent to run'
+            skipped_tests.append(vip_test)
+            continue
+        failed_tests.append(vip_test)
+    permutations = [[proxy_pod, proxy_net, vip_net, is_named]
+                    for proxy_pod in [ProxyPod.ItsOwnPod, ProxyPod.SamePodAsVip]
+                    for proxy_net in ['HOST', 'USER']
+                    for vip_net in ['HOST', 'USER']
+                    for is_named in [True, False]]
+    pods = [PodTest(i + len(tests), proxy_pod, proxy_net, vip_net, is_named)
+            for i, [proxy_pod, proxy_net, vip_net, is_named] in enumerate(permutations)]
+    for pod_test in pods:
+        if pod_test.proxy_pod == ProxyPod.SamePodAsVip and pod_test.vip_net != pod_test.proxy_net:
+            pod_test.notes = "Invalid configuration, pods only support single network for entire pod"
+            skipped_tests.append(pod_test)
+            continue
+        failed_tests.append(pod_test)
 
     def run(test):
-        vip_test(dcos_api_session, test)
+        test.run(dcos_api_session)
         failed_tests.remove(test)
         passed_tests.append(test)
 
@@ -251,12 +419,13 @@ def test_vip(dcos_api_session, reduce_logging):
         try:
             t.result()
         except Exception as exc:
-            # just log the exception, each failed test is recored in the `failed_tests` array
+            # just log the exception, each failed test is recorded in the `failed_tests` array
             log.info('vip_test generated an exception: {}'.format(exc))
-    [r.log('PASSED', lvl=logging.INFO) for r in passed_tests]
-    [r.log('SKIPPED', lvl=logging.INFO) for r in skipped_tests]
+    [r.log('PASSED', lvl=logging.DEBUG) for r in passed_tests]
+    [r.log('SKIPPED', lvl=logging.DEBUG) for r in skipped_tests]
     [r.log('FAILED', lvl=logging.INFO) for r in failed_tests]
-    log.info('VIP_TEST num agents: {}'.format(len(dcos_api_session.all_slaves)))
+    log.debug('VIP_TEST num agents: {}'.format(len(dcos_api_session.all_slaves)))
+    log.info('VIP_TEST passed {} skipped {} failed {}'.format(len(passed_tests), len(skipped_tests), len(failed_tests)))
     assert len(failed_tests) == 0
 
 
@@ -309,7 +478,7 @@ def geturl(url):
     rs = requests.get(url)
     assert rs.status_code == 200
     r = rs.json()
-    log.info('geturl {} -> {}'.format(url, r))
+    log.debug('geturl {} -> {}'.format(url, r))
     return r
 
 

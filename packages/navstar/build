@@ -30,3 +30,7 @@ setup_iptables="$PKG_PATH/bin/setup_iptables.sh"
 cp /pkg/extra/setup_iptables.sh "$setup_iptables"
 chmod +x "$setup_iptables"
 
+file="$PKG_PATH/bin/setup_minuteman.sh"
+cp /pkg/extra/setup_minuteman.sh "$file"
+chmod +x "$file"
+
