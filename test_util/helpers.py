@@ -138,7 +138,7 @@ class ApiClientSession:
             fragment=fragment,
             port=port))
 
-        log.info('Request method {}: {}'.format(method, request_url))
+        log.debug('Request method {}: {}. Arguments: {}'.format(method, request_url, repr(kwargs)))
         r = self.session.request(method, request_url, **kwargs)
         self.session.cookies.clear()
         return r
