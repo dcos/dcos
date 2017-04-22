@@ -6,12 +6,12 @@ complementing the goal of dcos-launch to provide a single tool for launching
 across a variety of provider APIs.
 
 ## Supported Deployments and Examples
-- [Simple AWS Cloudformation](sample_configs/aws-cf.yaml)
-- [Zen AWS Cloudformation](sample_configs/aws-zen-cf.yaml)
-- [AWS Bare (no DC/OS) Cluster](sample_configs/aws-bare-cluster.yaml)
-- [Onprem Install on AWS Bare Cluster](sample_configs/aws-onprem.yaml)
-- [Onprem Install on Previously Provisioned Linux Cluster](sample_configs/bare-cluster-onprem.yaml)
-- [Azure Template Deployment](sample_configs/azure.yaml)
+- [Simple AWS Cloudformation](aws-cf.yaml)
+- [Zen AWS Cloudformation](aws-zen-cf.yaml)
+- [AWS Bare (no DC/OS) Cluster](aws-bare-cluster.yaml)
+- [Onprem Install on AWS Bare Cluster](aws-onprem.yaml)
+- [Onprem Install on Previously Provisioned Linux Cluster](bare-cluster-onprem.yaml)
+- [Azure Template Deployment](azure.yaml)
 
 ## Keywords and Definitions
 ### Required Fields
