@@ -1,0 +1,335 @@
+ngindox: 0.1.0
+backends:
+  auth:
+    server: '127.0.0.1:8101'
+    name: DC/OS Authentication (OAuth)
+    reference: 'https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/'
+  cosmos:
+    server: '127.0.0.1:7070'
+    name: DC/OS Package Manager (Cosmos)
+    reference: 'https://dcos.io/docs/1.9/usage/managing-services/package-api/'
+  dcos_history_service:
+    server: 'leader.mesos:15055'
+    name: DC/OS History
+    reference: 'https://github.com/dcos/dcos/tree/master/packages/dcos-history/extra#api'
+  dddt:
+    server: '127.0.0.1:1050'
+    name: DC/OS Diagnostics (3DT)
+    reference: >-
+      https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint
+  exhibitor:
+    server: '127.0.0.1:8181'
+    name: Exhibitor (Zookeeper)
+    reference: 'https://github.com/soabase/exhibitor/wiki/REST-Introduction'
+  log:
+    server: 'unix:/run/dcos/dcos-log.sock'
+    name: DC/OS Log
+    reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
+  marathon:
+    server: 'master.mesos:8080'
+    name: Marathon
+    reference: 'https://dcos.io/docs/1.9/usage/managing-services/rest-api/'
+  mesos:
+    server: 'leader.mesos:5050'
+    name: Apache Mesos
+    reference: 'https://mesos.apache.org/documentation/latest/endpoints/'
+  mesos_dns:
+    server: 'master.mesos:8123'
+    name: Mesos DNS
+    reference: 'https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/'
+  metrics:
+    server: 'unix:/run/dcos/dcos-metrics-master.sock'
+    name: DC/OS Metrics
+    reference: 'https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/'
+  navstar:
+    server: '127.0.0.1:62080'
+    name: Navstar
+  pkgpanda:
+    server: 'unix:/run/dcos/pkgpanda-api.sock'
+    name: DC/OS Component Package Manager (Pkgpanda)
+    reference: 'https://dcos.io/docs/1.9/administration/component-management/'
+routes:
+  /:
+    group: Root
+    matcher: path
+    description: DC/OS GUI
+    file: /opt/mesosphere/active/dcos-ui/usr
+    path: /
+  '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)':
+    group: Agent
+    matcher: regex
+    description: Redirect to add trailing slash
+    visibility: hidden
+    rewrites:
+      - regex: ^/(slave|agent)/(.*)$
+        replacement: /agent/$2/
+        type: last
+    path: '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)'
+  '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)(?<url>.+)':
+    group: Agent
+    matcher: regex
+    description: API proxy to a specific agent node
+    proxy:
+      path: '$agentaddr:$agentport'
+    rewrites:
+      - regex: '^/(slave|agent)/[0-9a-zA-Z-]+/.*$'
+        replacement: $url
+        type: break
+    path: '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)(?<url>.+)'
+  /acs/api/v1:
+    group: Authentication
+    matcher: path
+    description: Access Control Service
+    proxy:
+      path: 'http://$backend/acs/api/v1'
+      backend: auth
+    path: /acs/api/v1
+  /acs/api/v1/auth/:
+    group: Authentication
+    matcher: path
+    description: Access Control Service (unauthenticated)
+    proxy:
+      path: 'http://$backend/acs/api/v1/auth/'
+      backend: auth
+    path: /acs/api/v1/auth/
+  /login:
+    group: Authentication
+    matcher: exact
+    description: Redirect to OpenID Connect server for user login
+    redirects:
+      - regex: ^
+        replacement: >-
+          $oauth_auth_redirector$uri?client=$oauth_client_id&cluster_id=$cluster_id
+        type: redirect
+    path: /login
+  /capabilities:
+    group: Capabilities
+    matcher: path
+    description: List of capabilities supported by DC/OS
+    proxy:
+      path: 'http://$backend/capabilities'
+      backend: cosmos
+    path: /capabilities
+  /cosmos/service/:
+    group: Cosmos
+    matcher: path
+    description: Start a DC/OS service from a DC/OS package
+    proxy:
+      path: 'http://$backend/service/'
+      backend: cosmos
+    path: /cosmos/service/
+  /exhibitor:
+    group: Exhibitor
+    matcher: exact
+    description: Redirect to add trailing slash
+    visibility: hidden
+    redirects:
+      - regex: ^/exhibitor$
+        replacement: '$scheme://$http_host/exhibitor/'
+        type: permanent
+    path: /exhibitor
+  /exhibitor/:
+    group: Exhibitor
+    matcher: path
+    description: Manage Zookeeper
+    proxy:
+      path: 'http://$backend/'
+      backend: exhibitor
+    path: /exhibitor/
+  /dcos-history-service/:
+    group: History
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: dcos_history_service
+    path: /dcos-history-service/
+  /marathon:
+    group: Marathon
+    matcher: exact
+    description: Redirect to add trailing slash
+    visibility: hidden
+    deprecated: Use `/service/marathon/`
+    redirects:
+      - regex: ^/marathon$
+        replacement: '$scheme://$http_host/marathon/'
+        type: permanent
+    path: /marathon
+  /marathon/:
+    group: Marathon
+    matcher: path
+    deprecated: Use `/service/marathon/`
+    proxy:
+      path: 'http://$backend/'
+      backend: marathon
+    path: /marathon/
+  /cache/master/:
+    group: Mesos
+    matcher: path
+    description: Cache of the Mesos master API
+    cache: 5 seconds
+    proxy:
+      path: 'http://$backend/master/'
+      backend: mesos
+    path: /cache/master/
+  /mesos:
+    group: Mesos
+    matcher: exact
+    description: Redirect to add trailing slash
+    visibility: hidden
+    redirects:
+      - regex: ^/mesos$
+        replacement: '$scheme://$http_host/mesos/'
+        type: permanent
+    path: /mesos
+  /mesos/:
+    group: Mesos
+    matcher: path
+    description: Apache Mesos
+    proxy:
+      path: 'http://$backend/'
+      backend: mesos
+    path: /mesos/
+  /mesos_dns:
+    group: Mesos DNS
+    matcher: exact
+    description: Redirect to add trailing slash
+    visibility: hidden
+    redirects:
+      - regex: ^/mesos_dns$
+        replacement: '$scheme://$http_host/mesos_dns/'
+        type: permanent
+    path: /mesos_dns
+  /mesos_dns/:
+    group: Mesos DNS
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: mesos_dns
+    path: /mesos_dns/
+  /dcos-metadata/:
+    group: Metadata
+    matcher: path
+    description: DC/OS metadata
+    file: /opt/mesosphere/active/dcos-metadata/etc/
+    path: /dcos-metadata/
+  /dcos-metadata/dcos-version.json:
+    group: Metadata
+    matcher: path
+    description: DC/OS version (unauthenticated)
+    file: /opt/mesosphere/active/dcos-metadata/etc/dcos-version.json
+    path: /dcos-metadata/dcos-version.json
+  /dcos-metadata/ui-config.json:
+    group: Metadata
+    matcher: path
+    description: DC/OS GUI configuration (unauthenticated)
+    proxy:
+      path: 'http://$backend/dcos-metadata/ui-config.json'
+      backend: auth
+    path: /dcos-metadata/ui-config.json
+  /metadata:
+    group: Metadata
+    matcher: path
+    description: Public IP and Cluster ID
+    lua:
+      file: conf/master/metadata.lua
+    path: /metadata
+  /navstar/lashup/key:
+    group: Navstar
+    matcher: path
+    proxy:
+      path: 'http://$backend/lashup/key'
+      backend: navstar
+    path: /navstar/lashup/key
+  /package/:
+    group: Package
+    matcher: path
+    description: Package Management
+    proxy:
+      path: 'http://$backend/package/'
+      backend: cosmos
+    path: /package/
+  /pkgpanda/:
+    group: Pkgpanda
+    matcher: path
+    description: DC/OS component package management
+    proxy:
+      path: 'http://$backend'
+      backend: pkgpanda
+    path: /pkgpanda/
+  /pkgpanda/active.buildinfo.full.json:
+    group: Pkgpanda
+    matcher: path
+    description: List the active Pkgpanda packages
+    file: /opt/mesosphere/active.buildinfo.full.json
+    path: /pkgpanda/active.buildinfo.full.json
+  '/service/(?<serviceid>[0-9a-zA-Z-.]+)':
+    group: Service
+    matcher: regex
+    description: Redirect to add trailing slash
+    visibility: hidden
+    redirects:
+      - regex: ^/service/(.*)$
+        replacement: /service/$1/
+        type: permanent
+    path: '/service/(?<serviceid>[0-9a-zA-Z-.]+)'
+  '/service/(?<serviceid>[0-9a-zA-Z-.]+)/(?<url>.*)':
+    group: Service
+    matcher: regex
+    description: Proxy to services running on DC/OS
+    proxy:
+      path: $serviceurl
+    rewrites:
+      - regex: '^/service/[0-9a-zA-Z-.]+/?.*$'
+        replacement: /$url
+        type: break
+    path: '/service/(?<serviceid>[0-9a-zA-Z-.]+)/(?<url>.*)'
+  /system/health/v1:
+    group: System
+    matcher: path
+    description: Component service status
+    proxy:
+      path: 'http://$backend/system/health/v1'
+      backend: dddt
+    path: /system/health/v1
+  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)':
+    group: System
+    matcher: regex
+    description: System proxy to a specific agent node
+    proxy:
+      path: '$agentaddr:61001/system/v1$type$url$is_args$query_string'
+    rewrites:
+      - regex: '^/agent/[0-9a-zA-Z-]+(.*)$'
+        replacement: $1
+        type: break
+    path: >-
+      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)
+  /system/v1/leader/marathon(?<url>.*):
+    group: System
+    matcher: regex
+    description: System proxy to the master node with the Marathon leader
+    proxy:
+      path: $mleader_host/system/v1$url$is_args$query_string
+    path: /system/v1/leader/marathon(?<url>.*)
+  /system/v1/leader/mesos(?<url>.*):
+    group: System
+    matcher: regex
+    description: System proxy to the master node with the Mesos leader
+    proxy:
+      path: 'http://leader.mesos/system/v1$url$is_args$query_string'
+    path: /system/v1/leader/mesos(?<url>.*)
+  /system/v1/logs/v1/:
+    group: System
+    matcher: path
+    description: 'Node, component service, and container (task) logs'
+    proxy:
+      path: 'http://$backend'
+      backend: log
+    path: /system/v1/logs/v1/
+  /system/v1/metrics/:
+    group: System
+    matcher: path
+    description: 'Node, container, and application metrics'
+    proxy:
+      path: 'http://$backend'
+      backend: metrics
+    path: /system/v1/metrics/
