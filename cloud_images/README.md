@@ -27,3 +27,6 @@ Steps to create a new AMI with the DC/OS pre-requisites installed using a base C
 
 [Guidelines for Shared Linux AMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/building-shared-amis.html)
 
+# Notes
+1. Use `date +"%Y%m%d%H%M"` to get the name for the snapshot and ami
+2. c4.xlarge is not available in all regions, use the latest equivalent when building new regions
