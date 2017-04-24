@@ -106,8 +106,11 @@ COPY build-resty.sh $OPENRESTY_COMPILE_SCRIPT
 COPY iam.jwt-key.pub \
      iam.jwt-key.priv \
      iam.jwt-key.shared-secret \
+     detect_ip_public_data.txt \
         /usr/local/
 COPY cluster-id /var/lib/dcos/cluster-id
+COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
+RUN chmod -v a+x /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
 
 # The contents of adminrouter-listen* files differ from the ones that are
