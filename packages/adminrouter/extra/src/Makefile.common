@@ -1,6 +1,12 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 
+# Absolute path to AdminRouter source, even if make is run from elsewhere
+SRC_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# API Docs path, relative to the src dir
+API_DOCS_DIR := docs/api
+
 DEV_PATH := /usr/local/src
 
 DCOSAR_AR_LOCAL_PATH := $(CURDIR)
@@ -89,6 +95,25 @@ test: clean-devkit-container devkit
 		mesosphere/adminrouter-devkit:full /bin/bash -x -c " \
  			py.test \
  		"
+
+.PHONY: api-docs
+api-docs:
+	@mkdir -p $(SRC_DIR)/$(API_DOCS_DIR)
+	@for prefix in nginx.master nginx.agent ; do \
+		echo "Generating $(API_DOCS_DIR)/$${prefix}.yaml" >&2 && \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+			ngindox parse -f $${prefix}.conf > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.yaml && \
+		echo "Generating $(API_DOCS_DIR)/$${prefix}.html" >&2 && \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+			ngindox ui -f $(API_DOCS_DIR)/$${prefix}.yaml > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.html ; \
+	done
+
+.PHONY: check-api-docs
+check-api-docs: api-docs
+	@git update-index --refresh || (echo 'Found local changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
+	@git diff-files --quiet || (echo 'Found unstaged changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
+	@git ls-files --exclude-standard --others || (echo 'Found untracked and unignored changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
+	@echo 'No changes found -- Admin Router API docs are up to date.' >&2
 
 .PHONY: flake8
 flake8: clean-devkit-container devkit

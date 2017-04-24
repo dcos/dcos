@@ -15,7 +15,7 @@ import requests
 import retrying
 
 import test_util.marathon
-from test_util.helpers import ApiClientSession, Url
+from test_util.helpers import ApiClientSession, RetryCommonHttpErrorsMixin, Url
 
 
 def get_args_from_env():
@@ -88,7 +88,7 @@ class ARNodeApiClientMixin:
                                    query=query, fragment=fragment, port=port, **kwargs)
 
 
-class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
+class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClientSession):
     def __init__(self, dcos_url: str, masters: list, public_masters: list,
                  slaves: list, public_slaves: list, default_os_user: str,
                  auth_user: Optional[DcosUser]):
@@ -208,7 +208,8 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         if ro.status_code <= 500:
             logging.info("DC/OS History is probably getting data")
             json = ro.json()
-            assert len(json["slaves"]) == len(self.all_slaves)
+            # if an agent was removed, it may linger in the history data
+            assert len(json["slaves"]) >= len(self.all_slaves)
             return True
         else:
             msg = "Waiting for DC/OS History, resp code is: {}"

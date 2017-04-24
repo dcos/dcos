@@ -69,7 +69,6 @@ bootstrappers = {
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
-    'dcos-minuteman': noop,
     'dcos-navstar': noop,
     'dcos-spartan': noop,
 }
