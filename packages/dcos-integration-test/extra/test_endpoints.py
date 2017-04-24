@@ -6,7 +6,7 @@ import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
-from pkgpanda.util import load_json
+from test_helpers import expanded_config
 
 
 def test_if_dcos_ui_is_up(dcos_api_session):
@@ -167,9 +167,8 @@ def test_cosmos_package_add(dcos_api_session):
         }
     )
 
-    user_config = load_json("/opt/mesosphere/etc/expanded.config.json")
-    if (user_config['cosmos_staged_package_storage_uri_flag'] and
-            user_config['cosmos_package_storage_uri_flag']):
+    if (expanded_config['cosmos_staged_package_storage_uri_flag'] and
+            expanded_config['cosmos_package_storage_uri_flag']):
         # if the config is enabled then Cosmos should accept the request and
         # return 202
         assert r.status_code == 202, 'status = {}, content = {}'.format(

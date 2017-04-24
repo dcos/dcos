@@ -307,7 +307,9 @@ class VpcClusterUpgradeTest:
 
             dcos_api.marathon.deploy_app(viplisten_app)
             dcos_api.marathon.ensure_deployments_complete()
-            dcos_api.marathon.deploy_app(viptalk_app)
+            # viptalk app depends on VIP from viplisten app, which may still fail
+            # the first try immediately after ensure_deployments_complete
+            dcos_api.marathon.deploy_app(viptalk_app, ignore_failed_tasks=True)
             dcos_api.marathon.ensure_deployments_complete()
 
             dcos_api.marathon.deploy_app(healthcheck_app)
@@ -504,7 +506,7 @@ class VpcClusterUpgradeTest:
                 aws_secret_access_key=self.aws_secret_access_key)
             ssh_key = bw.create_key_pair(stack_name)
             write_string('ssh_key', ssh_key)
-            vpc, ssh_info = test_util.aws.VpcCfStack.create(
+            bare_cluster, ssh_info = test_util.aws.BareClusterCfStack.create(
                 stack_name=stack_name,
                 instance_type='m4.xlarge',
                 instance_os='cent-os-7-dcos-prereqs',
@@ -514,10 +516,10 @@ class VpcClusterUpgradeTest:
                 key_pair_name=stack_name,
                 boto_wrapper=bw
             )
-            vpc.wait_for_complete()
+            bare_cluster.wait_for_complete()
 
-        cluster = test_util.cluster.Cluster.from_vpc(
-            vpc,
+        cluster = test_util.cluster.Cluster.from_bare_cluster(
+            bare_cluster,
             ssh_info,
             ssh_key=ssh_key,
             num_masters=self.num_masters,
@@ -587,7 +589,7 @@ class VpcClusterUpgradeTest:
 
         if result == 0:
             self.log.info("Test successful! Deleting VPC if provided in this run.")
-            vpc.delete()
+            bare_cluster.delete()
             bw.delete_key_pair(stack_name)
         else:
             self.log.info("Test failed! VPC cluster will remain available for "

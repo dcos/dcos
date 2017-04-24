@@ -85,6 +85,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
 
     test_uuid = uuid.uuid4().hex
 
+    # create pod with trivial apps that function as long running processes
     pod_definition = {
         'id': '/integration-test-pods-{}'.format(test_uuid),
         'scaling': {'kind': 'fixed', 'instances': 1},
@@ -94,7 +95,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
                 'name': 'ct1',
                 'resources': {'cpus': 0.1, 'mem': 32},
                 'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
-                'exec': {'command': {'shell': 'touch foo'}},
+                'exec': {'command': {'shell': 'touch foo; while true; do sleep 1; done'}},
                 'healthcheck': {'command': {'shell': 'test -f foo'}}
             },
             {

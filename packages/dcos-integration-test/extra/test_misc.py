@@ -1,5 +1,5 @@
 # Various tests that don't fit into the other categories and don't make their own really.
-import json
+from test_helpers import expanded_config
 
 from pkgpanda.util import load_yaml
 
@@ -16,10 +16,7 @@ def test_load_user_config():
     # platforms have different sets...
 
 
-def test_load_expanded_config():
-    with open("/opt/mesosphere/etc/expanded.config.json", "r") as f:
-        expanded_config = json.load(f)
-
+def test_expanded_config():
     # Caluclated parameters should be present
     assert 'master_quorum' in expanded_config
 

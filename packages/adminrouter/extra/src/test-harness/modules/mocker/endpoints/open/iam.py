@@ -45,7 +45,7 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
                 "code": "ERR_UNKNOWN_USER_ID"}
 
             blob = self._convert_data_to_blob(res)
-            return 400, 'application/json', blob
+            return 404, 'application/json', blob
 
         blob = self._convert_data_to_blob({
             "uid": uid,

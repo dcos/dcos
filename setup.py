@@ -42,6 +42,7 @@ setup(
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',
+        'azure-common==1.1.4',
         'azure-storage==0.32.0',
         'azure-mgmt-network==0.30.0rc4',
         'azure-mgmt-resource==0.30.0rc4',
@@ -99,6 +100,10 @@ setup(
         ] + get_advanced_templates(),
         'pkgpanda': [
             'docker/dcos-builder/Dockerfile'
+        ],
+        'test_util': [
+            'templates/vpc-cluster-template.json',
+            'templates/vpc-ebs-only-cluster-template.json'
         ]
     },
     zip_safe=False
