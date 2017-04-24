@@ -4,6 +4,7 @@ import pytest
 
 from test_helpers import expanded_config
 
+
 @pytest.skipif(expanded_config['dcos_remove_dockercfg_enable'] == 'true')
 def test_remove_dockercfg_hook(dcos_api_session):
     """Test that the remove .dockercfg hook is working properly.
@@ -21,4 +22,4 @@ def test_remove_dockercfg_hook(dcos_api_session):
             'disk': 0,
             'cmd': "test ! -f .dockercfg",
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/util/.dockercfg"}]}}
-        dcos_api_session.metronome_one_off(job)
+    dcos_api_session.metronome_one_off(job)
