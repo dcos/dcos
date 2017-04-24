@@ -3,6 +3,7 @@
 import collections
 import copy
 import logging
+import os
 import time
 
 import pytest
@@ -13,6 +14,7 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
+    with_file_contents,
 )
 from mocker.endpoints.mesos import AGENT1_ID, AGENT2_ID
 from util import GuardedSubprocess
@@ -503,3 +505,61 @@ class TestHistoryServiceRouting:
 
         assert resp.status_code == 503
         assert 'Mesos leader is unknown' in resp.text
+
+
+class TestMetadata:
+    @pytest.mark.parametrize("public_ip", ['1.2.3.4', "10.20.20.30"])
+    def test_if_public_ip_detection_works(
+            self, valid_user_header, nginx_class, public_ip):
+        ar = nginx_class(host_ip=public_ip)
+        url = ar.make_url_from_path('/metadata')
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+            assert resp.status_code == 200
+            resp_data = resp.json()
+            assert resp_data['PUBLIC_IPV4'] == public_ip
+
+    def test_if_clusterid_is_returned(
+            self, master_ar_process_perclass, valid_user_header):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp_data = resp.json()
+        assert resp_data['CLUSTER_ID'] == 'fdb1d7c0-06cf-4d65-bb9b-a8920bb854ef'
+
+        with with_file_contents(
+                '/var/lib/dcos/cluster-id',
+                "fd21689b-4fe2-4779-8c30-9125149eef11"):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp_data = resp.json()
+        assert resp_data['CLUSTER_ID'] == "fd21689b-4fe2-4779-8c30-9125149eef11"
+
+    def test_if_missing_clusterid_file_is_handled(
+            self, master_ar_process_perclass, valid_user_header):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
+
+        with with_file_contents('/var/lib/dcos/cluster-id'):
+            os.unlink('/var/lib/dcos/cluster-id')
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp_data = resp.json()
+        assert 'CLUSTER_ID' not in resp_data
