@@ -9,8 +9,12 @@ pushd "/pkg/src/openssl"
   --openssldir="$PKG_PATH/etc/ssl" \
   shared \
   zlib \
-  no-krb5 \
   linux-x86_64 \
+  no-krb5 \
+  no-rc4 \
+  no-ssl2 \
+  no-ssl3 \
+  enable-ec_nistp_64_gcc_128 \
   -Wa,--noexecstack \
   -O2 -DFORTIFY_SOURCE=2
 
