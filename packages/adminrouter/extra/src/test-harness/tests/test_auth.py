@@ -3,6 +3,7 @@
 import os
 import time
 
+import pytest
 import requests
 
 from generic_test_code.common import assert_endpoint_response
@@ -203,3 +204,71 @@ class TestAuthCustomErrorPages:
             resp_content = resp.content.decode('utf-8').strip()
             file_content = f.read().decode('utf-8').strip()
             assert resp_content == file_content
+
+
+class TestAuthPrecedence:
+    def test_if_service_endpoint_auth_precedence_is_enforced(
+            self,
+            valid_user_header,
+            master_ar_process_pertest):
+
+        url = master_ar_process_pertest.make_url_from_path("/service/i/do/not/exist")
+        resp = requests.get(
+            url,
+            allow_redirects=False)
+
+        assert resp.status_code == 401
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        assert resp.status_code == 404
+
+    @pytest.mark.parametrize("path", ["/system/v1/agent/{}/logs/v1{}", "/agent/{}{}"])
+    def test_if_agent_endpoint_auth_precedence_is_enforced(
+            self,
+            valid_user_header,
+            master_ar_process_pertest,
+            path):
+
+        uri = path.format("bdcd424a-b59e-4df4-b492-b54e38926bd8-S0", "/foo/bar")
+        url = master_ar_process_pertest.make_url_from_path(uri)
+        resp = requests.get(
+            url,
+            allow_redirects=False)
+
+        assert resp.status_code == 401
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        assert resp.status_code == 404
+
+    def test_if_mleader_endpoint_auth_precedence_is_enforced(
+            self,
+            valid_user_header,
+            master_ar_process_pertest,
+            mocker):
+
+        # We have to remove the leader in order to make AR respond with 404
+        # which has a chance of being processed earlier than auth.
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='remove_leader')
+        url = master_ar_process_pertest.make_url_from_path(
+            "/system/v1/leader/marathon/foo/bar")
+        resp = requests.get(
+            url,
+            allow_redirects=False)
+
+        assert resp.status_code == 401
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        assert resp.status_code == 404
