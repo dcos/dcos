@@ -5,6 +5,7 @@
     "flask",
     "pytest",
     "python",
+    "python-cryptography",
     "python-docopt",
     "python-isodate",
     "python-jinja2",
