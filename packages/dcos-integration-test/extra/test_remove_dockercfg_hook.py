@@ -2,18 +2,15 @@ import uuid
 
 import pytest
 
+from test_helpers import expanded_config
 
+@pytest.skipif(expanded_config['dcos_remove_dockercfg_enable'] == 'true')
 def test_remove_dockercfg_hook(dcos_api_session):
     """Test that the remove .dockercfg hook is working properly.
 
     If the hook is enabled, the test expects that the .dockercfg file
     (downloaded as a uri via the Mesos fetcher) is removed from the task's sandbox.
-
     """
-
-    # Skip the test if the hook is disabled
-    if not dcos_api_session.dockercfg_hook_enabled:
-        pytest.skip('Test requires dockercfg hook to be enabled')
 
     # Create a one-off job checking that the fetched .dockercfg file is not in the sandbox
     job = {
@@ -24,7 +21,4 @@ def test_remove_dockercfg_hook(dcos_api_session):
             'disk': 0,
             'cmd': "test ! -f .dockercfg",
             'artifacts': [{'uri': "file:///opt/mesosphere/active/dcos-integration-test/util/.dockercfg"}]}}
-    try:
         dcos_api_session.metronome_one_off(job)
-    except Exception as ex:
-        pytest.fail('Dockercfg hook test did not finish successfully: {}'.format(ex))

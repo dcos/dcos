@@ -34,7 +34,6 @@ def get_args_from_env():
         'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-        'dockercfg_hook_enabled': os.getenv('DOCKERCFG_HOOK', 'true'),
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
 
 
@@ -91,8 +90,8 @@ class ARNodeApiClientMixin:
 
 class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
     def __init__(self, dcos_url: str, masters: list, public_masters: list,
-                 slaves: list, public_slaves: list, dockercfg_hook_enabled,
-                 default_os_user: str, auth_user: Optional[DcosUser]):
+                 slaves: list, public_slaves: list, default_os_user: str,
+                 auth_user: Optional[DcosUser]):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -101,7 +100,6 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
             public_masters: list of Mesos master IP addresses routable from
                 the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
-            dockercfg_hook_enabled: whether to remove fetched dockercfg files before container start
             default_os_user: default user that marathon/metronome will launch tasks under
             auth_user: use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
@@ -112,7 +110,6 @@ class DcosApiSession(ARNodeApiClientMixin, ApiClientSession):
         self.slaves = sorted(slaves)
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves + public_slaves)
-        self.dockercfg_hook_enabled = dockercfg_hook_enabled == 'true'
         self.default_os_user = default_os_user
         self.auth_user = auth_user
 
