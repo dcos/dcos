@@ -1,6 +1,6 @@
-local authcommon = require "common.auth.common"
+local authcommon = require "auth.common"
 local jwt = require "resty.jwt"
-local util = require "common.util"
+local util = require "util"
 
 local SECRET_KEY = nil
 
