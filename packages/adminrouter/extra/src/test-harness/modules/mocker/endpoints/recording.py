@@ -23,20 +23,6 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
     extra code that actually processes the requests because on itself
     it just returns some sample text.
     """
-    def _calculate_response(self, *_):
-        """This method does not really do any useful work, it is here only to
-        satisfy the interface.
-
-        As mentioned in the class description, it most probably will be
-        overridden in inheriting classes. Because of that all input arguments
-        are ignored.
-
-        Please refer to the description of the BaseHTTPRequestHandler class
-        for details on the arguments and return value of this method.
-        """
-        res = {"msg": 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}
-        return 200, 'application/json', self._convert_data_to_blob(res)
-
     def _record_request(self):
         """Store all the relevant data of the request into the endpoint context."""
         ctx = self.server.context
@@ -81,11 +67,6 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
             return True
 
         return super()._process_commands(blob)
-
-    @staticmethod
-    def _parse_request_body():
-        """Unused, just to satisfy the interface"""
-        return None
 
 
 # pylint: disable=C0103

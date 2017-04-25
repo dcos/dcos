@@ -36,7 +36,7 @@ EndpointTestConfig = collections.namedtuple(
 endpoint_test_configuration = [
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/acs/api/v1/foo/bar', None),
+            '/acs/api/v1/reflect/me', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
@@ -63,17 +63,17 @@ endpoint_test_configuration = [
         None, 'HTTP/1.0', True, 'http://127.0.0.1:8181'),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/marathon/v2/apps', None),
+            '/marathon/v2/reflect/me', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/mesos/master/state-summary', None),
+            '/mesos/reflect/me', None),
          ],
         None, None, None, None),
     EndpointTestConfig(
         [EndpointPathExpectation(
-            '/mesos_dns/v1/services/_scheduler-alwaysthere._tcp.marathon.mesos', None),
+            '/mesos_dns/v1/reflect/me', None),
          ],
         None, None, None, None),
     EndpointTestConfig(

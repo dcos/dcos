@@ -15,14 +15,14 @@ from util import SearchCriteria, iam_denies_all_requests
 log = logging.getLogger(__name__)
 
 authed_endpoints = [
-    '/acs/api/v1/foo/bar',
+    '/acs/api/v1/reflect/me',
     '/capabilities',
     '/cosmos/service/foo/bar',
     '/dcos-history-service/foo/bar',
     '/exhibitor/foo/bar',
-    '/marathon/v2/apps',
-    '/mesos/master/state-summary',
-    '/mesos_dns/v1/services/_scheduler-alwaysthere._tcp.marathon.mesos',
+    '/marathon/v2/reflect/me',
+    '/mesos/reflect/me',
+    '/mesos_dns/v1/reflect/me',
     '/metadata',
     '/navstar/lashup/key',
     '/package/foo/bar',
