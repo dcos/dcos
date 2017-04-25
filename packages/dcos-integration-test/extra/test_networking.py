@@ -63,6 +63,7 @@ def generate_vip_app_permutations():
     """
     network_options = [Network.USER, Network.BRIDGE, Network.HOST]
     permutations = []
+    index = 0
     for container in [Container.NONE, Container.MESOS, Container.DOCKER]:
         for named_vip in [True, False]:
             for same_host in [True, False]:
@@ -71,14 +72,23 @@ def generate_vip_app_permutations():
                         if container != Container.DOCKER and Network.BRIDGE in (vip_net, proxy_net):
                             # only DOCKER containers support BRIDGE network
                             continue
-                        permutations.append((container, named_vip, same_host, vip_net, proxy_net))
+                        permutations.append((container, named_vip, same_host, vip_net, proxy_net, index))
+                        index += 1
     return permutations
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
-@pytest.mark.parametrize('container,named_vip,same_host,vip_net,proxy_net', generate_vip_app_permutations())
-def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_net):
+@pytest.mark.parametrize(
+    'container,named_vip,same_host,vip_net,proxy_net,test_index', generate_vip_app_permutations())
+def test_vip(
+        dcos_api_session,
+        container: Container,
+        named_vip: bool,
+        same_host: bool,
+        vip_net: Network,
+        proxy_net: Network,
+        test_index: int):  # only used to ensure that each app has a unique VIP port
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE (docker only), HOST
@@ -91,14 +101,15 @@ def test_vip(dcos_api_session, container, named_vip, same_host, vip_net, proxy_n
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
+    test_port = 7000 + test_index
     if not same_host and len(dcos_api_session.all_slaves) == 1:
         pytest.skip('must have more than one agent for this test!')
     if named_vip:
-        vip = '/namedvip:7000'
-        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:7000'
+        vip = '/namedvip:{}'.format(test_port)
+        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(test_port)
     else:
-        vip = '1.1.1.7:7000'
-        vipaddr = '1.1.1.7:7000'
+        vip = '1.1.1.7:{}'.format(test_port)
+        vipaddr = vip
 
     agents = list(dcos_api_session.all_slaves)
     # make sure we can reproduce

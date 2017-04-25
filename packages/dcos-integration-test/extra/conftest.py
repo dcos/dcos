@@ -35,7 +35,7 @@ def pytest_collection_modifyitems(session, config, items):
 def vip_apps(dcos_api_session):
     vip1 = '6.6.6.1:6661'
     test_app1, _ = get_test_app(vip=vip1)
-    name = 'foobarbaz'
+    name = 'myvipapp'
     port = 5432
     test_app2, _ = get_test_app(vip='{}:{}'.format(name, port))
     vip2 = '{}.marathon.l4lb.thisdcos.directory:{}'.format(name, port)

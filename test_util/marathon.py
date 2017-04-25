@@ -1,4 +1,4 @@
-""" Utilities for integration testing marathon in a deployed DC/OS clsuter
+""" Utilities for integration testing marathon in a deployed DC/OS cluster
 """
 import collections
 import copy
@@ -115,7 +115,6 @@ def get_test_app(
     if container_type != Container.NONE:
         app['container'] = {
             'type': container_type.value,
-            # TODO(cmaloney): Switch to alpine with glibc
             'docker': {'image': 'debian:jessie'},
             'volumes': [{
                 'containerPath': '/opt/mesosphere',
