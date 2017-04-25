@@ -1,0 +1,17 @@
+#!/bin/bash
+
+pushd "/pkg/src/freetype"
+
+sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg
+
+sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" \
+    -i include/freetype/config/ftoption.h
+
+
+./configure "--prefix=$PKG_PATH" --disable-static
+
+make
+make install
+
+echo $PATH
+ls

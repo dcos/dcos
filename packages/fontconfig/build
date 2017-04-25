@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source /opt/mesosphere/environment.export
+ls /opt/mesosphere/lib
+echo $PATH
+ls /opt/mesosphere/lib/pkgconfig
+export FREETYPE_LIBS=/opt/mesosphere/lib
+export PKG_CONFIG_PATH=/opt/mesosphere/lib/pkgconfig
+
+pushd "/pkg/src/fontconfig"
+./configure "--prefix=$PKG_PATH" --disable-docs
+
+make
+make install

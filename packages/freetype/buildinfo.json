@@ -1,0 +1,7 @@
+{
+    "single_source" : {
+	"kind": "url_extract",
+	"url": "http://downloads.sourceforge.net/freetype/freetype-2.7.1.tar.bz2",
+	"sha1": "4d08a9a6567c6332d58e9a5f9a7e9e3fbce66789"
+    }
+}
