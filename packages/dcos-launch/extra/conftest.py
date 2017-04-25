@@ -216,6 +216,8 @@ def check_success(capsys, tmpdir, config_path):
     config = launch.config.get_validated_config(config_path)
     launcher = launch.get_launcher(config)
     info = launcher.create()
+    # Grab the launcher again with the output from create
+    launcher = launch.get_launcher(info)
     launcher.wait()
     launcher.describe()
     launcher.test([], {})

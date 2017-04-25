@@ -15,7 +15,6 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         self.boto_wrapper = test_util.aws.BotoWrapper(
             config['aws_region'], config['aws_access_key_id'], config['aws_secret_access_key'])
         self.config = config
-        log.debug('Using AWS Cloudformation Launcher')
 
     def create(self):
         """ Checks if the key helper or zen helper are enabled,

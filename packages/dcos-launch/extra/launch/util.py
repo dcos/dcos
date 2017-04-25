@@ -52,22 +52,25 @@ class LauncherError(Exception):
 
 
 class AbstractLauncher(metaclass=abc.ABCMeta):
-    def get_ssher(self, info):
-        return ssh.ssher.Ssher(info['ssh_user'], info['ssh_private_key'])
+    def get_ssher(self):
+        return ssh.ssher.Ssher(self.config['ssh_user'], self.config['ssh_private_key'])
 
-    def create(self, config):
+    def __init__(self, config: dict):
         raise NotImplementedError()
 
-    def wait(self, info):
+    def create(self):
         raise NotImplementedError()
 
-    def describe(self, info):
+    def wait(self):
         raise NotImplementedError()
 
-    def delete(self, info):
+    def describe(self):
         raise NotImplementedError()
 
-    def test(self, info, args, env_dict, test_host=None, test_port=22):
+    def delete(self):
+        raise NotImplementedError()
+
+    def test(self, args, env_dict, test_host=None, test_port=22):
         """
         Args:
             args: a list of args that will follow the py.test command
@@ -75,9 +78,9 @@ class AbstractLauncher(metaclass=abc.ABCMeta):
         """
         if args is None:
             args = list()
-        if info['ssh_private_key'] == NO_TEST_FLAG or 'ssh_user' not in info:
+        if self.config['ssh_private_key'] == NO_TEST_FLAG or 'ssh_user' not in self.config:
             raise LauncherError('MissingInput', 'DC/OS Launch is missing sufficient SSH info to run tests!')
-        details = self.describe(info)
+        details = self.describe()
         # populate minimal env if not already set
         if test_host is None:
             test_host = details['masters'][0]['public_ip']
@@ -97,7 +100,7 @@ class AbstractLauncher(metaclass=abc.ABCMeta):
 cd /opt/mesosphere/active/dcos-integration-test &&
 {env} py.test {args}" """.format(env=env_string, args=arg_string)
         log.info('Running integration test...')
-        return try_to_output_unbuffered(info, test_host, pytest_cmd)
+        return try_to_output_unbuffered(self.config, test_host, pytest_cmd)
 
 
 def try_to_output_unbuffered(info, test_host, pytest_cmd):
