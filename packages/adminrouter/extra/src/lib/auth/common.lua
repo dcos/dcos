@@ -3,7 +3,7 @@ local cookiejar = require "resty.cookie"
 local jwt = require "resty.jwt"
 local jwt_validators = require "resty.jwt-validators"
 
-local util = require "common.util"
+local util = require "util"
 
 
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
