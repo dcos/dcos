@@ -10,6 +10,7 @@ import logging
 import socket
 import time
 import traceback
+from cgi import parse_header, parse_multipart
 from urllib.parse import parse_qs, urlparse
 
 from exceptions import EndpointException
@@ -38,7 +39,10 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
                 in the body of the request
 
         Returns:
-            A bytes array, exactly as it should be send to the client.
+            A tuple which contains, in order:
+                * HTTP status of the response
+                * content type of the response
+                * a bytes array, exactly as it should be send to the client.
 
         Raises:
             EndpointException: This exception signalizes that the normal
@@ -48,24 +52,62 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
         """
         pass
 
-    @abc.abstractmethod
-    def _parse_request_body(self):
-        """Extract requests arguments encoded in it's body
+    def _reflect_request(self, base_path, url_args, body_args=None):
+        """Gather all the request data into single dict and prepare it for
+        sending it to the client for inspection.
 
-        Methods overriding it should parse request body in a way that's
-        suitable for given request handler.
+        Please refer to the description of the _calculate_response method
+        for details on the arguments and return value of this method.
+        """
+        ctx = self.server.context
+
+        res = {}
+        res['method'] = self.command
+        res['path'] = self.path
+        res['path_base'] = base_path
+        res['headers'] = self.headers.items()
+        res['request_version'] = self.request_version
+        res['endpoint_id'] = ctx.data["endpoint_id"]
+        res['args_url'] = url_args
+        res['args_body'] = body_args
+        blob = self._convert_data_to_blob(res)
+        return 200, 'application/json', blob
+
+    def _parse_request_body(self):
+        """Parse request body in order to extract arguments.
+
+        This method recognizes both `multipart/form-data` and
+        `multipart/form-data` encoded data. So the client can check how the
+        Nginx in test behaves. It's based on: http://stackoverflow.com/a/4233452
 
         Returns:
-            It depends on the request handler - it may be a dict, a string,
-            or anything/nothing.
-
-        Raises:
-            EndpointException: This exception signalizes that the normal
-                processing of the request should be stopped, and the response
-                with given status&content-encoding&body should be immediately
-                sent.
+            It returns a dictionary that contains all the parsed data. In case
+            when body did not contain any arguments - an empty dict is returned.
         """
-        pass
+        if 'content-type' not in self.headers:
+            return {}
+
+        ctype, pdict = parse_header(self.headers['content-type'])
+        if ctype == 'multipart/form-data':
+            postvars = parse_multipart(self.rfile, pdict)
+        elif ctype == 'application/x-www-form-urlencoded':
+            # This should work (TM) basing on HTML5 spec:
+            # Which default character encoding to use can only be determined
+            # on a case-by-case basis, but generally the best character
+            # encoding to use as a default is the one that was used to
+            # encode the page on which the form used to create the payload
+            # was itself found. In the absence of a better default,
+            # UTF-8 is suggested.
+            length = int(self.headers['content-length'])
+            post_data = self.rfile.read(length).decode('utf-8')
+            postvars = parse_qs(post_data,
+                                keep_blank_values=1,
+                                encoding="utf-8",
+                                errors="strict",
+                                )
+        else:
+            postvars = {}
+        return postvars
 
     def _process_commands(self, blob):
         """Process all the endpoint configuration and execute things that

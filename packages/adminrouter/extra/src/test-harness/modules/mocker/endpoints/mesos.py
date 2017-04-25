@@ -204,7 +204,7 @@ INITIAL_STATEJSON = {
 class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
     """A request hander class mimicking Mesos master daemon.
     """
-    def _calculate_response(self, base_path, *_):
+    def _calculate_response(self, base_path, url_args, body_args=None):
         """Reply with a static Mesos state-summary response.
 
         Please refer to the description of the BaseHTTPRequestHandler class
@@ -213,6 +213,11 @@ class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
         Raises:
             EndpointException: request URL path is unsupported
         """
+        if base_path == '/reflect/me':
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse /master/state-summary path.
+            return self._reflect_request(base_path, url_args, body_args)
+
         if base_path != '/master/state-summary':
             msg = "Path `{}` is not supported yet".format(base_path)
             blob = msg.encode('utf-8')
