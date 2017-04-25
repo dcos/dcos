@@ -75,6 +75,8 @@ Unit tests can be run locally but require the [development environment](#develop
 
 ```
 tox
+List of tox tests:
+tox -l
 ```
 
 [Tox](https://tox.readthedocs.io/en/latest/) is used to run the codebase unit tests, as well as coding standard checks. The config is in `tox.ini`.
