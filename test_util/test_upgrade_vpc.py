@@ -173,6 +173,11 @@ def create_marathon_dns_app(app_id: str, healthcheck_app_id: str) -> dict:
     # DNS resolution app to make sure DNS is available during the upgrade.
     # Periodically resolves the healthcheck app's domain name and logs whether
     # it succeeded to a file in the Mesos sandbox.
+
+    dns_parsed_app_name = marathon_app_id_to_mesos_dns_subdomain(healthcheck_app_id)
+    resolve_name = '{}.marathon.agentip.dcos.thisdcos.directory'.format(dns_parsed_app_name)
+    mesos_dns_name = '{}.marathon.mesos'.format(dns_parsed_app_name)
+
     return {
         "id": '/' + app_id,
         "cmd": """
@@ -189,7 +194,8 @@ do
 done
 """,
         "env": {
-            'RESOLVE_NAME': marathon_app_id_to_mesos_dns_subdomain(healthcheck_app_id) + '.marathon.mesos',
+            'RESOLVE_NAME': resolve_name,
+            'MESOS_DNS_NAME': mesos_dns_name,
             'DNS_LOG_FILENAME': 'dns_resolve_log.txt',
             'INTERVAL_SECONDS': '1',
             'TIMEOUT_SECONDS': '1',
@@ -317,7 +323,7 @@ class VpcClusterUpgradeTest:
             dcos_api.marathon.ensure_deployments_complete()
             # This is a hack to make sure we don't deploy dns_app before the name it's
             # trying to resolve is available.
-            self.wait_for_dns(dcos_api, dns_app['env']['RESOLVE_NAME'])
+            self.wait_for_dns(dcos_api, dns_app['env']['MESOS_DNS_NAME'])
             dcos_api.marathon.deploy_app(dns_app, check_health=False)
             dcos_api.marathon.ensure_deployments_complete()
 
