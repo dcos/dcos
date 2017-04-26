@@ -174,6 +174,7 @@ def get_target():
             'num_private_agents',
             'num_public_agents',
             'num_masters',
+            'prevalidate_onprem_config',
             'onprem_dcos_config_contents'
         },
         {
@@ -215,8 +216,10 @@ def validate_launch_config_version(launch_config_version):
     assert int(launch_config_version) == 1
 
 
-def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_masters):
+def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_masters, prevalidate_onprem_config):
     # TODO DCOS-14033: [gen.internals] Source validate functions are global only
+    if prevalidate_onprem_config != 'true':
+        return
     user_config = yaml.load(onprem_dcos_config_contents)
     # Use the default config in the installer
     config = yaml.load(dcos_installer.config.config_sample)
@@ -340,6 +343,7 @@ def validate_key_name(provider, platform, key_helper):
 
 
 def calculate_cluster_size(num_masters, num_private_agents, num_public_agents):
+    # add one for the installer bootstrap host
     return str(1 + int(num_masters) + int(num_private_agents) + int(num_public_agents))
 
 
@@ -393,6 +397,7 @@ entry = {
             },
             'onprem': {
                 'default': {
+                    'prevalidate_onprem_config': 'false',
                     'num_public_agents': '0',
                     'num_private_agents': '0',
                     'installer_port': '9000',

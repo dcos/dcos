@@ -3,17 +3,19 @@
 import copy
 import itertools
 import logging
+from typing import List
 
+import requests
 from retrying import retry
 
 from ssh.ssher import Ssher
-from test_util.helpers import ApiClientSession, Url
+from test_util.helpers import ApiClientSession, Host, Url
 
 
 log = logging.getLogger(__name__)
 
 
-def log_and_raise_if_not_ok(response):
+def log_and_raise_if_not_ok(response: requests.Response):
     if not response.ok:
         log.error(response.content.decode())
         response.raise_for_status()
@@ -21,8 +23,22 @@ def log_and_raise_if_not_ok(response):
 
 class OnpremCluster:
 
-    def __init__(self, ssher, masters, private_agents, public_agents, bootstrap_host):
-        """ input lists are lists of Host Tuples
+    def __init__(
+            self,
+            ssher: Ssher,
+            masters: List[Host],
+            private_agents: List[Host],
+            public_agents: List[Host],
+            bootstrap_host: Host):
+        """ An abstration for an arbitrary group of servers to be used
+        as bootstrapping node and deployment nodes for DC/OS
+        Args:
+            ssher: Ssher object for accessing any given node in the cluster
+            masters: list of Hosts tuples to be used as masters
+            private_agents: list of Host tuples to be used as private agents
+            public_agents: list of Host tuples to be used as public agents
+            bootstrap_host: Host tuple for the bootstrap host I.E. has installer
+                downloaded to it and perhaps hosts a bootstrap ZooKeeper
         """
         self.ssher = ssher
         self.masters = masters
@@ -62,7 +78,11 @@ class OnpremCluster:
         )
 
     @staticmethod
-    def partition_cluster(hosts, num_masters, num_agents, num_public_agents):
+    def partition_cluster(
+            hosts: List[Host],
+            num_masters: int,
+            num_agents: int,
+            num_public_agents: int):
         """Return (bootstrap, masters, agents, public_agents) from hosts."""
         hosts_iter = iter(sorted(hosts))
         return (
@@ -87,7 +107,7 @@ class OnpremCluster:
 
 
 @retry(wait_fixed=3000, stop_max_delay=300 * 1000)
-def download_dcos_installer(ssher, host, installer_path, download_url):
+def _download_dcos_installer(ssher, host, installer_path, download_url):
     """Response status 403 is fatal for curl's retry. Additionally, S3 buckets
     have been returning 403 for valid uploads for 10-15 minutes after CI finished build
     Therefore, give a five minute buffer to help stabilize CI
@@ -104,13 +124,29 @@ def download_dcos_installer(ssher, host, installer_path, download_url):
 class DcosInstallerApiSession(ApiClientSession):
     @classmethod
     def api_session_from_host(
-            cls, ssher: Ssher, host: str, installer_url: str, offline_mode: bool, port: int=9000):
+            cls,
+            ssher: Ssher,
+            host: str,
+            installer_url: str,
+            offline_mode: bool,
+            port: int=9000):
+        """ Will download and start a DC/OS onprem installer and return a
+        DcosInstallerApiSession to interact with it
+
+        Args:
+            ssher: Ssher object to access the server hosting the installer
+            host: IP address of the target host server
+            installer_url: URL to pull the installer from relative to the host
+            offline_mode: if True, installer will start with the --offline-mode
+                option which disables installing pre-requisites from the internet
+            port: the installer can run on an arbitrary port but defaults to 9000
+        """
         ssher.command(host, ['sudo', 'usermod', '-aG', 'docker', ssher.user])
 
         host_home = ssher.get_home_dir(host)
         installer_path = host_home + '/dcos_generate_config.sh'
 
-        download_dcos_installer(ssher, host, installer_path, installer_url)
+        _download_dcos_installer(ssher, host, installer_path, installer_url)
 
         log.info('Starting installer server at: {}:{}'.format(host, port))
         cmd = ['DCOS_INSTALLER_DAEMONIZE=true', 'bash', installer_path, '--web', '-p', str(port)]
