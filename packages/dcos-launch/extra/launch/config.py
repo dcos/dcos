@@ -2,12 +2,14 @@ import atexit
 import copy
 import os
 
+import requests
 import yaml
 
 import gen
 import launch.util
 import ssh.validate
 import test_util.aws
+import test_util.helpers
 from gen.internals import resolve_configuration, Scope, Source, Target, validate_one_of
 from pkgpanda.util import load_string, load_yaml, YamlParseError
 
@@ -132,7 +134,8 @@ def pretty_print_validate_error(errors, unset):
 
 
 def get_target():
-    """ Targets must never be used, and so must be instantiated dynamically
+    """ Targets must never be re-used after its been evaluated by gen, so
+    do not define it as a global constant
     """
     aws_platform_target = Target({
         'aws_region',
@@ -166,24 +169,23 @@ def get_target():
         'template_parameters'})
     onprem_target = Target(
         {
-            'deploy_bare_cluster_only',
+            'installer_url',
+            'installer_port',
+            'num_private_agents',
+            'num_public_agents',
+            'num_masters',
+            'prevalidate_onprem_config',
+            'onprem_dcos_config_contents'
         },
         {
-            'deploy_bare_cluster_only': Scope('deploy_bare_cluster_only', {
-                'true': Target({'instance_count'}),
-                'false': Target({
-                    'installer_url',
-                    'num_private_agents',
-                    'num_public_agents',
-                    'num_masters',
-                    'onprem_dcos_config_contents'})}),
             'platform': Scope('platform', {
                 'aws': Target({
-                    'os_name',
+                    'aws_key_name',
+                    'cluster_size',
+                    'instance_ami',
                     'instance_type',
-                    'instance_count'}),
-                'azure': Target({}),  # Unsupported currently
-                'bare_cluster': Target({})})})  # Unsupported currently
+                    'admin_location'}),
+                'azure': Target({})})})  # Unsupported currently
     return Target({
         'launch_config_version',
         'platform',
@@ -194,8 +196,7 @@ def get_target():
         {
             'platform': Scope('platform', {
                 'aws': aws_platform_target,
-                'azure': azure_platform_target,
-                'bare_cluster': Target({'platform_info_filename'})}),
+                'azure': azure_platform_target}),
             'provider': Scope('provider', {
                 'aws': template_target,
                 'azure': template_target,
@@ -208,14 +209,17 @@ def validate_template_url(template_url):
 
 def validate_installer_url(installer_url):
     assert installer_url.startswith('http'), 'Not a valid URL: {}'.format(installer_url)
+    assert requests.head(installer_url).status_code == 200
 
 
 def validate_launch_config_version(launch_config_version):
     assert int(launch_config_version) == 1
 
 
-def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_masters):
+def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_masters, prevalidate_onprem_config):
     # TODO DCOS-14033: [gen.internals] Source validate functions are global only
+    if prevalidate_onprem_config != 'true':
+        return
     user_config = yaml.load(onprem_dcos_config_contents)
     # Use the default config in the installer
     config = yaml.load(dcos_installer.config.config_sample)
@@ -223,11 +227,6 @@ def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_master
     # This field is required and auto-added by installer, so add a dummy here
     if 'bootstrap_id' not in config:
         config['bootstrap_id'] = 'deadbeef'
-
-    # Error message will instruct user to provide ip_detect_contents if we dont
-    # have the filename argument provided. We want users providing the file
-    if 'ip_detect_filename' not in config:
-        config['ip_detect_filename'] = 'provide-this-ip-detect-path'
 
     # dummy master list to pass validation
     config['master_list'] = [('10.0.0.' + str(i)) for i in range(int(num_masters))]
@@ -257,22 +256,32 @@ def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_master
         raise AssertionError(pretty_print_validate_error(status['errors'], status['unset']))
 
 
-def calculate_dcos_config_contents(dcos_config, num_masters, ssh_user):
+def calculate_dcos_config_contents(dcos_config, num_masters, ssh_user, ssh_private_key, platform):
+    """ Fills in the ssh user, ssh private key and ip-detect script if possible
+    Takes the config's local references and converts them into transmittable content
+    """
     user_config = yaml.load(dcos_config)
     # Use the default config in the installer for the same experience
     # w.r.t the auto-filled settings
     config = yaml.load(dcos_installer.config.config_sample)
     config.update(user_config)
     config['ssh_user'] = ssh_user
+    config['ssh_key'] = ssh_private_key
+    for key_name in ['ip_detect_filename', 'ip_detect_public_filename']:
+        if key_name in config:
+            config[key_name.replace('_filename', '_contents')] = load_string(config[key_name])
+            del config[key_name]
+    if 'ip_detect_contents' not in config:
+        config['ip_detect_contents'] = test_util.helpers.ip_detect_script(platform)
     return yaml.dump(config)
 
 
 def validate_onprem_provider_platform(provider, platform):
     # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if provider != 'onprem':
-        assert platform != 'bare_cluster', 'bare_cluster only supports `provider: onprem`'
-    else:
+    if provider == 'onprem':
         assert platform != 'azure', '`provider: onprem` is not currently not support on azure'
+    else:
+        assert platform == provider
 
 
 def validate_key_helper_support(platform, key_helper):
@@ -282,9 +291,7 @@ def validate_key_helper_support(platform, key_helper):
     assert platform in ('aws', 'azure')
 
 
-def calculate_ssh_user(os_name, platform, platform_info_filename):
-    if platform_info_filename != '':
-        return load_yaml(platform_info_filename)['ssh_user']
+def calculate_ssh_user(os_name, platform):
     if platform == 'aws':
         return test_util.aws.OS_SSH_INFO[os_name].user
     else:
@@ -307,11 +314,14 @@ def calculate_instance_count(num_masters, num_private_agents, num_public_agents)
     return str(1 + int(num_masters) + int(num_private_agents) + int(num_public_agents))
 
 
-def validate_os_name(os_name, platform):
+def validate_os_name(os_name, platform, provider):
     # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if platform == 'bare_cluster':
+    if provider != 'onprem':
+        # the os_name parameter only applies to homogenous clusters that need
+        # to be created by dcos-launch for an onprem install. In other cases,
+        # the deployment template is parameterized for OS selection
         return
-    elif platform == 'aws':
+    if platform == 'aws':
         validate_one_of(os_name, list(test_util.aws.OS_SSH_INFO.keys()))
     else:
         raise AssertionError('Support not yet implemented for {} bare cluster'.format(platform))
@@ -323,6 +333,20 @@ def calculate_ssh_private_key(ssh_private_key_filename):
     return load_string(ssh_private_key_filename)
 
 
+def calculate_instance_ami(os_name, aws_region):
+    return test_util.aws.OS_AMIS[os_name][aws_region]
+
+
+def validate_key_name(provider, platform, key_helper):
+    if provider == 'aws' and platform == 'onprem' and key_helper == 'false':
+        raise AssertionError('Either provide `key_name`')
+
+
+def calculate_cluster_size(num_masters, num_private_agents, num_public_agents):
+    # add one for the installer bootstrap host
+    return str(1 + int(num_masters) + int(num_private_agents) + int(num_public_agents))
+
+
 entry = {
     'validate': [
         validate_installer_url,
@@ -331,26 +355,25 @@ entry = {
         validate_key_helper_parameters,
         validate_key_helper_support,
         validate_onprem_provider_platform,
+        validate_os_name,
         lambda key_helper: gen.calc.validate_true_false(key_helper),
         lambda zen_helper: gen.calc.validate_true_false(zen_helper),
         lambda provider: validate_one_of(provider, ['aws', 'azure', 'onprem']),
-        lambda platform: validate_one_of(platform, ['aws', 'azure', 'bare_cluster']),
+        lambda platform: validate_one_of(platform, ['aws', 'azure']),
     ],
     'default': {
         'ssh_port': '22',
         'ssh_private_key': calculate_ssh_private_key,
-        # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-        # not "real" defaults, but rather intended for allowing validation
+        'instance_ami': calculate_instance_ami,
+        'os_name': 'cent-os-7-prereqs',
         'key_helper': 'false',
-        'zen_helper': 'false',
-        'platform_info_filename': '',
+        'zen_helper': 'false'
     },
     'conditional': {
         'provider': {
             'aws': {
                 'default': {
-                    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-                    # not a real default, intended for allowing deploy w/o test
+                    # allow untest-able deployment
                     'ssh_user': '',
                     'ssh_private_key_filename': ''
                 },
@@ -362,8 +385,7 @@ entry = {
             },
             'azure': {
                 'default': {
-                    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-                    # not a real defaults, but rather a way to hack conditional
+                    # allow untest-able deployment
                     'ssh_user': '',
                     'ssh_private_key_filename': ''
                 },
@@ -375,42 +397,27 @@ entry = {
             },
             'onprem': {
                 'default': {
+                    'prevalidate_onprem_config': 'false',
                     'num_public_agents': '0',
                     'num_private_agents': '0',
-                    'deploy_bare_cluster_only': 'false'
+                    'installer_port': '9000',
+                    'admin_location': '0.0.0.0/0'
                 },
                 'must': {
                     'onprem_dcos_config_contents': calculate_dcos_config_contents,
-                    'ssh_user': calculate_ssh_user
+                    'ssh_user': calculate_ssh_user,
+                    'cluster_size': calculate_cluster_size
                 },
             },
-        },
-        'deploy_bare_cluster_only': {
-            'true': {},
-            'false': {'must': {'instance_count': calculate_instance_count}}
         },
         'key_helper': {
             'true': {
                 'must': {
-                    'ssh_private_key_filename': '',  # key input not applicable if helper is used
-                    'ssh_private_key': 'TBD'}},  # ghetto late-binding variable
+                    # key input not applicable if helper is used
+                    'aws_key_name': 'unset',
+                    'ssh_private_key_filename': 'unset',
+                    'ssh_private_key': 'unset'}},
             'false': {}
-        },
-        'platform': {
-            'aws': {},
-            'azure': {},
-            'bare_cluster': {
-                'default': {
-                    'os_name': '',
-                    'ssh_private_key_filename': '',
-                },
-                # TODO DCOS-14191: [gen.internals] Allow graph configuration dependencies and requirements
-                # Ideally we could enforce graph dependencies like this, however
-                # this will appear as a 'cycle' as stop the argument finalization
-                # believing it will loop forever, when in reality the dependency
-                # nodes are identical.
-                # 'must': {'provider': 'onprem'}
-            }
         }
     }
 }

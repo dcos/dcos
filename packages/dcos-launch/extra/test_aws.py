@@ -52,11 +52,11 @@ def test_missing_aws_stack(aws_cf_config_path, monkeypatch):
     check_stack_error('wait', ())
     check_stack_error('describe', ())
     check_stack_error('delete', ())
-    check_stack_error('test', ('py.test',))
+    check_stack_error('test', ([], {}))
 
 
-def test_key_helper(aws_cf_config_path):
-    config = launch.config.get_validated_config(aws_cf_config_path)
+def test_key_helper(aws_cf_with_helper_config_path):
+    config = launch.config.get_validated_config(aws_cf_with_helper_config_path)
     aws_launcher = launch.get_launcher(config)
     temp_resources = aws_launcher.key_helper()
     assert temp_resources['key_name'] == config['deployment_name']
