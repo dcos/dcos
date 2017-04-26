@@ -1,4 +1,4 @@
-import launch.onprem
+import launch
 
 
 def test_aws_onprem(check_cli_success, aws_onprem_config_path):

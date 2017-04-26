@@ -126,7 +126,7 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
 
 
 class BareClusterLauncher(DcosCloudformationLauncher):
-    """ Launches a homogenous cluster of plain AMIs intended for onprem DC/OS
+    """ Launches a homogeneous cluster of plain AMIs intended for onprem DC/OS
     """
     def create(self):
         """ Amend the config to add a template_body and the appropriate parameters

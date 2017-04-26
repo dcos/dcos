@@ -105,6 +105,13 @@ class TestAwsOnprem:
         with pytest.raises(LauncherError) as exinfo:
             get_validated_config(
                 get_temp_config_path(
-                    tmpdir, 'aws-onprem-with-helper.yaml', update={'dcos_config': {'provider': 'aws'}}))
+                    tmpdir, 'aws-onprem-with-helper.yaml',
+                    update={'dcos_config': {'provider': 'aws'}, 'prevalidate_onprem_config': 'true'}))
         assert exinfo.value.error == 'ValidationError'
         assert 'onprem_dcos_config_contents' in exinfo.value.msg
+
+    def test_error_is_skipped_in_nested_config(self, tmpdir):
+        get_validated_config(
+            get_temp_config_path(
+                tmpdir, 'aws-onprem-with-helper.yaml',
+                update={'dcos_config': {'provider': 'aws'}}))
