@@ -7,7 +7,7 @@ mkdir -p "$PKG_PATH/lib"
 
 cp -rp /pkg/src/marathon/bin/marathon "$PKG_PATH/bin/marathon"
 chmod +x "$PKG_PATH/bin/marathon"
-cp -rp /pkg/src/marathon/lib/*.jar "$PKG_PATH/lib"
+cp -rpn /pkg/src/marathon/lib/*.jar "$PKG_PATH/lib"
 
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
