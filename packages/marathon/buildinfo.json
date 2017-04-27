@@ -2,7 +2,7 @@
   "requires": ["java"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://s3.amazonaws.com/downloads.mesosphere.io/marathon/snapshots/jobs/marathon-pipelines/master/377/marathon-1.5.0-SNAPSHOT-456-gaa3972d.zip",
+    "url": "https://downloads.mesosphere.io/marathon/snapshots/jobs/marathon-pipelines/master/377/marathon-1.5.0-SNAPSHOT-456-gaa3972d.zip",
     "sha1": "e4c370bc9b1246d20faef1dbda8c9b14bfbece19"
   },
   "username": "dcos_marathon",
