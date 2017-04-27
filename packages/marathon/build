@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Marathon and Metronome use the same jars, and pkgpanda doens't allow two packages
+# to have files at the same path, so essentially make marathon package-private.
+# Nothing will end up in /opt/mesosphere/{bin, lib}
+# This is not ideal but its one of the few solutions.
+# the lib directory is _supposed_ to be in the parent of $(realpath bin/marathon)
+# and its unclear how to change that without creating a very custom zipfile
+# that is different.
+
 source /opt/mesosphere/environment.export
 
 mkdir -p "$PKG_PATH/marathon/bin"
