@@ -44,7 +44,6 @@ ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)"
 ExecStart=$PKG_PATH/marathon/bin/marathon \\
     --zk "\$MARATHON_ZK" \\
     --master zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos \\
-    --hostname "\$MARATHON_HOSTNAME" \\
     --default_accepted_resource_roles "*" \\
     --mesos_role "slave_public" \\
     --max_tasks_per_offer 100 \\
