@@ -278,21 +278,15 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
                         retry_on_result=lambda ret: ret is False,
                         retry_on_exception=lambda x: False)
         def _wait_for_pod_deployment(pod_id):
-            # TODO(greggomann): Revisit this logic. Can we make a request for
-            # info on only our specific deployment? See DCOS-11707.
-            r = self.get('v2/deployments')
-            data = r.json()
-            if len(data) > 0:
-                log.info('Waiting for pod to be deployed %r', data)
-                return False
-            # deployment complete
-            r = self.get('v2/pods' + pod_id)
+            r = self.get('v2/pods' + pod_id + '::status')
             r.raise_for_status()
             data = r.json()
-            if int(data['scaling']['instances']) != pod_definition['scaling']['instances']:
-                log.info('Pod is still scaling. Continuing to wait...')
-                return False
-            return data
+            if 'status' in data and data['status'] == 'STABLE':
+                # deployment complete
+                return data
+            log.info('Waiting for pod to be deployed %r', data)
+            return False
+
         try:
             return _wait_for_pod_deployment(pod_definition['id'])
         except retrying.RetryError as ex:
