@@ -4,7 +4,7 @@ DC/OS integration tests, see: packages/dcos-integration-tests/extra
 import pytest
 import requests
 
-from test_util.dcos_api_session import DcosApiSession, DcosUser, get_args_from_env
+from test_util.dcos_api_session import DcosApiSession, DcosUser
 
 
 class MockResponse:
@@ -22,13 +22,12 @@ class MockResponse:
 def mock_dcos_client(monkeypatch):
     monkeypatch.setenv('DCOS_DNS_ADDRESS', 'http://mydcos.dcos')
     monkeypatch.setenv('MASTER_HOSTS', '127.0.0.1,0.0.0.0')
-    monkeypatch.setenv('PUBLIC_MASTER_HOSTS', '127.0.0.1,0.0.0.0')
     monkeypatch.setenv('SLAVE_HOSTS', '127.0.0.1,123.123.123.123')
     monkeypatch.setenv('PUBLIC_SLAVE_HOSTS', '127.0.0.1,0.0.0.0')
     # covers any request made via the ApiClientSession
     monkeypatch.setattr(requests.Session, 'request', lambda *args, **kwargs: MockResponse())
     monkeypatch.setattr(DcosApiSession, 'wait_for_dcos', lambda self: True)
-    args = get_args_from_env()
+    args = DcosApiSession.get_args_from_env()
     args['auth_user'] = None
     return DcosApiSession(**args)
 
@@ -58,7 +57,7 @@ def test_dcos_client_api(mock_dcos_client):
     1. node keyword arg is supported
     2. all HTTP verbs work
     """
-    args = get_args_from_env()
+    args = DcosApiSession.get_args_from_env()
     args['auth_user'] = None
     cluster = DcosApiSession(**args)
     # no assert necessary, just make sure that this function signatures works
