@@ -24,14 +24,12 @@ def get_args_from_env():
     """
     assert 'DCOS_DNS_ADDRESS' in os.environ
     assert 'MASTER_HOSTS' in os.environ
-    assert 'PUBLIC_MASTER_HOSTS' in os.environ
     assert 'SLAVE_HOSTS' in os.environ
     assert 'PUBLIC_SLAVE_HOSTS' in os.environ
 
     return {
         'dcos_url': os.environ['DCOS_DNS_ADDRESS'],
         'masters': os.environ['MASTER_HOSTS'].split(','),
-        'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
         'slaves': os.environ['SLAVE_HOSTS'].split(','),
         'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
@@ -89,31 +87,26 @@ class ARNodeApiClientMixin:
 
 
 class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClientSession):
-    def __init__(self, dcos_url: str, masters: list, public_masters: list,
-                 slaves: list, public_slaves: list, default_os_user: str,
-                 auth_user: Optional[DcosUser]):
+    def __init__(self, dcos_url: str, masters: list, slaves: list,
+                 public_slaves: list, default_os_user: str, auth_user: Optional[DcosUser]):
         """Proxy class for DC/OS clusters.
 
         Args:
             dcos_url: address for the DC/OS web UI.
             masters: list of Mesos master advertised IP addresses.
-            public_masters: list of Mesos master IP addresses routable from
-                the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
+            public_slaves: list of public Mesos slave/agent advertised IP addresses.
             default_os_user: default user that marathon/metronome will launch tasks under
             auth_user: use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
         """
         super().__init__(Url.from_string(dcos_url))
         self.masters = sorted(masters)
-        self.public_masters = sorted(public_masters)
         self.slaves = sorted(slaves)
         self.public_slaves = sorted(public_slaves)
         self.all_slaves = sorted(slaves + public_slaves)
         self.default_os_user = default_os_user
         self.auth_user = auth_user
-
-        assert len(self.masters) == len(self.public_masters)
 
     @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
     def _authenticate_default_user(self):
