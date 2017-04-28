@@ -120,7 +120,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 1. Configure the tests
 
     ```
-    source /opt/mesosphere/active/dcos-integration-test/test_env.export
+    source /opt/mesosphere/active/dcos-integration-test/util/test_env.export
     export SLAVE_HOSTS=<PRIVATE-AGENT-IP-1>,<PRIVATE-AGENT-IP-2>
     export PUBLIC_SLAVE_HOSTS=<PUBLIC-AGENT-IP-1>,<PUBLIC-AGENT-IP-2>
     ```
