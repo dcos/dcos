@@ -209,7 +209,7 @@ done
 
 
 class VpcClusterUpgradeTestDcosApiSessionFactory:
-    def apply(self, dcos_url: str, masters: List[str], public_masters: List[str], slaves: List[str],
+    def apply(self, dcos_url: str, masters: List[str], slaves: List[str],
               public_slaves: List[str], default_os_user: str) -> DcosApiSession:
         pass
 
@@ -541,7 +541,6 @@ class VpcClusterUpgradeTest:
             dcos_api_install = self.dcos_api_session_factory_install.apply(
                 'http://{ip}'.format(ip=cluster.masters[0].public_ip),
                 master_list,
-                master_list,
                 [h.private_ip for h in cluster.agents],
                 [h.private_ip for h in cluster.public_agents],
                 self.default_os_user)
@@ -569,7 +568,6 @@ class VpcClusterUpgradeTest:
         # the hood when it probes the cluster.
         dcos_api_upgrade = self.dcos_api_session_factory_upgrade.apply(
             'http://{ip}'.format(ip=cluster.masters[0].public_ip),
-            master_list,
             master_list,
             [h.private_ip for h in cluster.agents],
             [h.private_ip for h in cluster.public_agents],
@@ -603,9 +601,9 @@ class VpcClusterUpgradeTest:
 
 
 class DcosApiSessionFactory(VpcClusterUpgradeTestDcosApiSessionFactory):
-    def apply(self, dcos_url: str, masters: List[str], public_masters: List[str], slaves: List[str],
+    def apply(self, dcos_url: str, masters: List[str], slaves: List[str],
               public_slaves: List[str], default_os_user: str) -> DcosApiSession:
-        return DcosApiSession(dcos_url, masters, public_masters, slaves, public_slaves,
+        return DcosApiSession(dcos_url, masters, slaves, public_slaves,
                               default_os_user, DcosUser(CI_CREDENTIALS))
 
 
