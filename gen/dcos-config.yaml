@@ -895,6 +895,23 @@ package:
 
       ssl_certificate common/snakeoil.crt;
       ssl_certificate_key common/snakeoil.key;
+  - path: /etc/adminrouter-tls.conf
+    content: |
+      # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
+      # Modulo ChaCha20 cipher.
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+      ssl_prefer_server_ciphers on;
+      # To manually test which TLS versions are enabled on a node, use
+      # `openssl` commands.
+      #
+      # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
+      # details.
+{% switch adminrouter_tls_1_0_enabled %}
+{% case "true" %}
+      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+{% case "false" %}
+      ssl_protocols TLSv1.1 TLSv1.2;
+{% endswitch %}
   - path: /etc_slave/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;

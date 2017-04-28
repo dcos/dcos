@@ -120,6 +120,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-upstreams.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
+     adminrouter-tls.conf \
         /opt/mesosphere/etc/
 COPY ca.crt /run/dcos/pki/CA/certs/
 COPY adminrouter.crt /run/dcos/pki/tls/certs/

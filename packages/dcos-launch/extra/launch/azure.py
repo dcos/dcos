@@ -4,8 +4,6 @@ import logging
 import yaml
 
 import launch.util
-import ssh.tunnel
-import test_util.aws
 import test_util.azure
 import test_util.runner
 
@@ -21,9 +19,7 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         log.debug('Using Azure Resource Group Launcher')
 
     def create(self):
-        launch.util.check_keys(self.config, ['deployment_name', 'template_url'])
-        if self.config['key_helper'] == 'true':
-            self.key_helper()
+        self.key_helper()
         self.azure_wrapper.deploy_template_to_new_resource_group(
             self.config['template_url'],
             self.config['deployment_name'],
@@ -49,6 +45,8 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         """ Adds private key to the config and injects the public key into
         the template parameters
         """
+        if self.config['key_helper'] != 'true':
+            return
         private_key, public_key = launch.util.generate_rsa_keypair()
         self.config.update({'ssh_private_key': private_key.decode()})
         template_parameters = yaml.load(self.config['template_parameters'])
@@ -62,20 +60,9 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         except Exception as ex:
             raise launch.util.LauncherError('GroupNotFound', None) from ex
 
-    def test(self, test_cmd):
-        launch.util.check_testable(self.config)
+    def test(self, args: list, env: dict):
         details = self.describe()
         test_host = details['master_fqdn']
-        master_private_ips = [m['private_ip'] for m in details['masters']]
-        with ssh.tunnel.tunnel(
-                self.config['ssh_user'], self.config['ssh_private_key'], test_host, port=2200) as test_tunnel:
-            return test_util.runner.integration_test(
-                tunnel=test_tunnel,
-                # DCOS-14627 [azure] route port 80 and 443 to master via master public LB if oauth enbaled
-                # ACS templates do not have inbound NAT rules or NSG rules for the public LB address
-                # Thus, use the private IP instead.
-                dcos_dns=master_private_ips[0],
-                master_list=master_private_ips,
-                agent_list=[a['private_ip'] for a in details['private_agents']],
-                public_agent_list=[a['private_ip'] for a in details['public_agents']],
-                test_cmd=test_cmd)
+        if 'DCOS_DNS_ADDRESS' not in env:
+            env['DCOS_DNS_ADDRESS'] = 'http://' + test_host
+        return super().test(args, env, test_host=test_host, test_port=2200)
