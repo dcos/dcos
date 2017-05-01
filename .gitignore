@@ -18,6 +18,7 @@ dcos_generate_config.sh
 *.egg-info
 wheelhouse/
 ./dcos-release.config.yaml
+*.pyc
 
 # Integration tests related:
 test/build/*
