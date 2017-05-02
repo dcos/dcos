@@ -251,8 +251,22 @@ def agent_ar_process(nginx_class):
 @pytest.fixture()
 def agent_ar_process_pertest(nginx_class):
     """
-    Same as `master_ar_process_pertest` fixture except for the fact that it starts 'agent'
-    nginx instead of `master`.
+    Same as `master_ar_process_pertest` fixture except for the fact that it
+    starts 'agent' nginx instead of `master`.
+    """
+    nginx = nginx_class(role="agent")
+    nginx.start()
+
+    yield nginx
+
+    nginx.stop()
+
+
+@pytest.fixture()
+def agent_ar_process_perclass(nginx_class):
+    """
+    Same as `master_ar_process_perclass` fixture except for the fact that it
+    starts 'agent' nginx instead of `master`.
     """
     nginx = nginx_class(role="agent")
     nginx.start()
