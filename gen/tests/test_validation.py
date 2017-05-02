@@ -1,7 +1,22 @@
 import json
 
 import gen
-from gen.tests.utils import make_arguments, true_false_msg, validate_error
+from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
+
+
+dns_forward_zones_str = """\
+[["a.contoso.com", [["1.1.1.1", 53], \
+                    ["2.2.2.2", 53]]], \
+ ["b.contoso.com", [["3.3.3.3", 53], \
+                    ["4.4.4.4", 53]]]] \
+"""
+
+bad_dns_forward_zones_str = """\
+[["a.contoso.com", [[1, 53], \
+                    ["2.2.2.2", 53]]], \
+ ["b.contoso.com", [["3.3.3.3", 53], \
+                    ["4.4.4.4", 53]]]] \
+"""
 
 
 def validate_error_multikey(new_arguments, keys, message, unset=None):
@@ -43,12 +58,41 @@ def test_invalid_ports():
         value_err_msg)
 
 
+def test_dns_bind_ip_blacklist():
+    test_ips = '["52.37.192.49", "52.37.181.230", "52.37.163.105"]'
+
+    validate_success(
+        {'dns_bind_ip_blacklist': test_ips},
+        'dns_bind_ip_blacklist')
+
+
+def test_dns_forward_zones():
+    zones = dns_forward_zones_str
+    bad_zones = bad_dns_forward_zones_str
+    err_msg = 'Invalid "dns_forward_zones": 1 not a valid IP address'
+
+    validate_success(
+        {'dns_forward_zones': zones},
+        'dns_forward_zones')
+
+    validate_error(
+        {'dns_forward_zones': bad_zones},
+        'dns_forward_zones',
+        err_msg)
+
+
 def test_invalid_ipv4():
     test_ips = '["52.37.192.49", "52.37.181.230", "foo", "52.37.163.105", "bar"]'
     err_msg = "Invalid IPv4 addresses in list: foo, bar"
+
     validate_error(
         {'master_list': test_ips},
         'master_list',
+        err_msg)
+
+    validate_error(
+        {'dns_bind_ip_blacklist': test_ips},
+        'dns_bind_ip_blacklist',
         err_msg)
 
     validate_error(
@@ -79,10 +123,18 @@ def test_invalid_bootstrap_url():
 
 
 def test_validate_duplicates():
+    test_ips = '["10.0.0.1", "10.0.0.2", "10.0.0.1"]'
+    err_msg = 'List cannot contain duplicates: 10.0.0.1 appears 2 times'
+
     validate_error(
-        {'master_list': '["10.0.0.1", "10.0.0.2", "10.0.0.1"]'},
+        {'master_list': test_ips},
         'master_list',
-        'List cannot contain duplicates: 10.0.0.1 appears 2 times')
+        err_msg)
+
+    validate_error(
+        {'dns_bind_ip_blacklist': test_ips},
+        'dns_bind_ip_blacklist',
+        err_msg)
 
 
 def test_invalid_oauth_enabled():

@@ -13,6 +13,10 @@ true_false_msg = "Must be one of 'true', 'false'. Got 'foo'."
 
 
 def make_arguments(new_arguments):
+    """
+    Fields with default values should not be added in here so that the
+    default values are also tested.
+    """
     arguments = copy.deepcopy({
         'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
         'bootstrap_id': '123',
@@ -40,4 +44,10 @@ def validate_error(new_arguments, key, message, unset=None):
         'status': 'errors',
         'errors': {key: {'message': message}},
         'unset': set() if unset is None else unset,
+    }
+
+
+def validate_success(new_arguments, key):
+    assert gen.validate(arguments=make_arguments(new_arguments)) == {
+        'status': 'ok',
     }
