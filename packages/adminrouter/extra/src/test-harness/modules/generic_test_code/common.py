@@ -59,6 +59,7 @@ def generic_no_slash_redirect_test(ar, path):
     r = requests.get(url, allow_redirects=False)
 
     assert r.status_code == 301
+    assert r.headers['Location'] == url + '/'
 
 
 def generic_upstream_headers_verify_test(
