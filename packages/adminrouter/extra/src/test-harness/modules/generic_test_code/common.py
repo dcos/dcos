@@ -153,6 +153,26 @@ def generic_correct_upstream_request_test(
     assert req_data['request_version'] == http_ver
 
 
+def generic_location_header_during_redirect_is_adjusted_test(
+        ar,
+        mocker,
+        auth_header,
+        endpoint_id,
+        basepath,
+        location_set,
+        location_expected,
+        ):
+    mocker.send_command(endpoint_id=endpoint_id,
+                        func_name='always_redirect',
+                        aux_data=location_set)
+
+    url = ar.make_url_from_path(basepath)
+    r = requests.get(url, allow_redirects=False, headers=auth_header)
+
+    assert r.status_code == 307
+    assert r.headers['Location'] == location_expected
+
+
 def header_is_absent(headers, header_name):
     """Test if given header is present in the request headers list
 
