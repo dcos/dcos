@@ -35,6 +35,7 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         if base_path in [
                 '/acs/api/v1/reflect/me',
+                '/dcos-metadata/ui-config.json',
                 '/acs/api/v1/auth/reflect/me']:
             # A test URI that is used by tests. In some cases it is impossible
             # to reuse /acs/api/v1/users/ path.
