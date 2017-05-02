@@ -262,7 +262,7 @@ def agent_ar_process_pertest(nginx_class):
     nginx.stop()
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def agent_ar_process_perclass(nginx_class):
     """
     Same as `master_ar_process_perclass` fixture except for the fact that it
