@@ -11,6 +11,17 @@ from util import SearchCriteria, auth_type_str, jwt_type_str, GuardedSubprocess
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
+unauthed_endpoints = [
+    "/exhibitor/exhibitor/v1/cluster/status",
+]
+
+
+class TestAuthEnforcement:
+    @pytest.mark.parametrize("path", unauthed_endpoints)
+    def test_if_unauthn_user_is_granted_access(
+            self, master_ar_process_perclass, path):
+        assert_endpoint_response(master_ar_process_perclass, path, 200)
+
 
 class TestAuthnJWTValidator:
     """Tests scenarios where authentication token isn't provided or is provided
