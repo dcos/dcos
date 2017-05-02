@@ -4,10 +4,7 @@ import logging
 
 import pytest
 
-from generic_test_code.common import (
-    assert_endpoint_response,
-    generic_correct_upstream_dest_test,
-)
+from generic_test_code.common import assert_endpoint_response
 from generic_test_code.open import assert_iam_queried_for_uid
 from mocker.endpoints.mesos import AGENT1_ID
 from util import SearchCriteria, iam_denies_all_requests
@@ -70,15 +67,3 @@ class TestAuthEnforcementOpen:
                 200,
                 headers=valid_user_header,
                 )
-
-
-class TestHealthEndpointOpen:
-    def test_if_request_is_sent_to_correct_upstream(self,
-                                                    master_ar_process,
-                                                    valid_user_header):
-
-        generic_correct_upstream_dest_test(master_ar_process,
-                                           valid_user_header,
-                                           '/system/health/v1/foo/bar',
-                                           'http://127.0.0.1:1050',
-                                           )
