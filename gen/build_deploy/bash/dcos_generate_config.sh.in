@@ -7,14 +7,13 @@ docker version >/dev/null 2>&1 || {{ echo >&2 "docker should be installed and ru
 
 backout(){{
     if [ -f "{genconf_tar}" ]; then
-        rm {genconf_tar}
+        rm -f {genconf_tar}
     fi
     exit 1
 }}
 trap 'backout' INT
 # extract payload and load into docker if not extracted
-if [ ! -f "{genconf_tar}" ]
-then
+if [ ! -f "{genconf_tar}" ]; then
     echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
     sed '1,/^#EOF#$/d' $0 | tar xv
     docker load -i {genconf_tar}
