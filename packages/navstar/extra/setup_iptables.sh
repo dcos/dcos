@@ -13,7 +13,10 @@ iptables --wait -t raw -D PREROUTING -p tcp -m set --match-set minuteman dst,dst
 iptables --wait -t raw -D OUTPUT -p tcp -m set --match-set minuteman dst,dst -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j NFQUEUE --queue-balance 50:58 || true
 
 # to fix DCOS_OSS-980
-iptables -A FORWARD -j ACCEPT 
+RULE="FORWARD -j ACCEPT"
+if ! iptables --wait -C ${RULE}; then
+  iptables --wait -A ${RULE}
+fi
 
 RULE="POSTROUTING -m ipvs --ipvs --vdir ORIGINAL --vmethod MASQ -m comment --comment Minuteman-IPVS-IPTables-masquerade-rule -j MASQUERADE"
 
