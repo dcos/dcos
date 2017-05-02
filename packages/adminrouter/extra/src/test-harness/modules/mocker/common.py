@@ -113,6 +113,12 @@ class MockerBase:
         # Metrics(agent):
         res.append(
             ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))
+        # DDDT, two variants:
+        # TODO (prozlach): cleanup DDDT sockets
+        res.append(
+            ReflectingTcpIpEndpoint(ip='127.0.0.1', port=1050))
+        res.append(
+            ReflectingUnixSocketEndpoint('/run/dcos/3dt.sock'))
         # TODO - other endpoints common for all flavours go here...
 
         return res
