@@ -12,6 +12,17 @@ backout(){{
     exit 1
 }}
 trap 'backout' INT
+
+# if the tarball was previously extracted
+if [ -f "{genconf_tar}" ]; then
+    # but not successfully loaded into Docker
+    if [ -z "$(docker images -q {docker_image_name} 2>/dev/null)" ]; then
+        # remove the potentially corrupted tarball and
+        # cause it to be re-extracted in the next step
+        rm -f {genconf_tar}
+    fi
+fi
+
 # extract payload and load into docker if not extracted
 if [ ! -f "{genconf_tar}" ]; then
     echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
