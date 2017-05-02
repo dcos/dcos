@@ -224,7 +224,7 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
         Raises:
             EndpointException: request URL path is unsupported
         """
-        if base_path == '/v2/reflect/me':
+        if base_path in ['/v2/reflect/me', '/']:
             # A test URI that is used by tests. In some cases it is impossible
             # to reuse /v2/apps path.
             return self._reflect_request(base_path, url_args, body_args)
