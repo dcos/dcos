@@ -9,6 +9,7 @@ import os
 import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
+import generic_test_code.common
 from mocker.dns import DcosDnsServer
 from mocker.jwt import generate_hs256_jwt, generate_rs256_jwt
 from runner.common import LogCatcher, SyslogMock
@@ -27,21 +28,7 @@ def tmp_file(tmpdir):
 
 @pytest.fixture(scope='session')
 def repo_is_ee():
-    """Determine the flavour of the repository
-
-    Return:
-        True if repository is EE
-    """
-    cur_dir = os.path.dirname(__file__)
-    ee_tests_dir = os.path.abspath(os.path.join(cur_dir, "ee"))
-    open_tests_dir = os.path.abspath(os.path.join(cur_dir, "open"))
-
-    is_ee = os.path.isdir(ee_tests_dir) and not os.path.isdir(open_tests_dir)
-    is_open = os.path.isdir(open_tests_dir) and not os.path.isdir(ee_tests_dir)
-
-    assert is_ee or is_open, "Unable to determine the variant of the repo"
-
-    return is_ee
+    return generic_test_code.common.repo_is_ee()
 
 
 @pytest.fixture(scope='session')

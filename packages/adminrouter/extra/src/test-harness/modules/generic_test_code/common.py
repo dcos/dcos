@@ -1,6 +1,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+import os
 from contextlib import contextmanager
 
 import requests
@@ -262,3 +263,21 @@ def overriden_file_content(file_path, new_content=None):
 
     with open(file_path, 'w') as fh:
         fh.write(old_content)
+
+
+def repo_is_ee():
+    """Determine the flavour of the repository
+
+    Return:
+        True if repository is EE
+    """
+    cur_dir = os.path.dirname(__file__)
+    ee_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "ee"))
+    open_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "open"))
+
+    is_ee = os.path.isdir(ee_tests_dir) and not os.path.isdir(open_tests_dir)
+    is_open = os.path.isdir(open_tests_dir) and not os.path.isdir(ee_tests_dir)
+
+    assert is_ee or is_open, "Unable to determine the variant of the repo"
+
+    return is_ee
