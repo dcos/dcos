@@ -1,0 +1,8 @@
+[Unit]
+Description=DC/OS Backup Master Socket: socket for DC/OS Backup Master service
+[Socket]
+ListenStream=/run/dcos/dcos-backup-master.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660
+

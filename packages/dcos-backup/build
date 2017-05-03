@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e 
+
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/dcos-backup /pkg/src/github.com/dcos/dcos-backup
+
+pushd /pkg/src/github.com/dcos/dcos-backup
+make
+popd
+
+mkdir -p $PKG_PATH/bin
+mv /pkg/src/github.com/dcos/dcos-metrics/.build/dcos-backup $PKG_PATH/bin/dcos-backup
+
+master_service="$PKG_PATH/dcos.target.wants_master/dcos-backup-master.service"
+mkdir -p "$(dirname "$master_service")"
+cp /pkg/extra/dcos-backup-master.service "$master_service"
+
+master_socket="$PKG_PATH/dcos.target.wants_master/dcos-backup-master.socket"
+mkdir -p "$(dirname "$master_socket")"
+cp /pkg/extra/dcos-backup-master.socket "$master_socket"
+

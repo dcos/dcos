@@ -1,0 +1,15 @@
+[Unit]
+Description=DC/OS Backup Master: backup & restore service
+[Service]
+Restart=always
+RestartSec=5
+PermissionsStartOnly=True
+User=dcos_backup
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-backup.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-backup-extra.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-backup-master
+ExecStart=/opt/mesosphere/bin/dcos-backup -config ${DCOS_BACKUP_CONFIG_PATH}
+Sockets=dcos-backup-master.socket
