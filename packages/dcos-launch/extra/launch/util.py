@@ -1,5 +1,7 @@
 import abc
 import logging
+import subprocess
+import sys
 
 import cryptography.hazmat.backends
 import pkg_resources
@@ -8,6 +10,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import pkgpanda
+import ssh.ssher
 
 log = logging.getLogger(__name__)
 
@@ -19,11 +22,6 @@ MOCK_GATEWAY_ID = 'gateway-foo-bar'
 MOCK_STACK_ID = 'this-is-a-important-test-stack::deadbeefdeadbeef'
 
 NO_TEST_FLAG = 'NO PRIVATE SSH KEY PROVIDED - CANNOT TEST'
-
-
-def check_testable(info):
-    if info['ssh_private_key'] == NO_TEST_FLAG or 'ssh_user' not in info:
-        raise LauncherError('MissingInput', 'DC/OS Launch is missing sufficient SSH info to run tests!')
 
 
 def stub(output):
@@ -44,13 +42,6 @@ def get_temp_config_path(tmpdir, name, update: dict = None):
     return str(new_config_path)
 
 
-def check_keys(user_dict, key_list):
-    missing = [k for k in key_list if k not in user_dict]
-    if len(missing) > 0:
-        raise LauncherError('MissingInput', 'The following keys were required but '
-                            'not provided: {}'.format(repr(missing)))
-
-
 class LauncherError(Exception):
     def __init__(self, error, msg):
         self.error = error
@@ -61,20 +52,67 @@ class LauncherError(Exception):
 
 
 class AbstractLauncher(metaclass=abc.ABCMeta):
-    def create(self, config):
+    def get_ssher(self):
+        return ssh.ssher.Ssher(self.config['ssh_user'], self.config['ssh_private_key'])
+
+    def __init__(self, config: dict):
         raise NotImplementedError()
 
-    def wait(self, info):
+    def create(self):
         raise NotImplementedError()
 
-    def describe(self, info):
+    def wait(self):
         raise NotImplementedError()
 
-    def delete(self, info):
+    def describe(self):
         raise NotImplementedError()
 
-    def test(self, info, test_cmd):
+    def delete(self):
         raise NotImplementedError()
+
+    def test(self, args, env_dict, test_host=None, test_port=22):
+        """
+        Args:
+            args: a list of args that will follow the py.test command
+            env_dict: the env to use during the test
+        """
+        if args is None:
+            args = list()
+        if self.config['ssh_private_key'] == NO_TEST_FLAG or 'ssh_user' not in self.config:
+            raise LauncherError('MissingInput', 'DC/OS Launch is missing sufficient SSH info to run tests!')
+        details = self.describe()
+        # populate minimal env if not already set
+        if test_host is None:
+            test_host = details['masters'][0]['public_ip']
+        if 'MASTER_HOSTS' not in env_dict:
+            env_dict['MASTER_HOSTS'] = ','.join(m['private_ip'] for m in details['masters'])
+        if 'PUBLIC_MASTER_HOSTS' not in env_dict:
+            env_dict['PUBLIC_MASTER_HOSTS'] = ','.join(m['private_ip'] for m in details['masters'])
+        if 'SLAVE_HOSTS' not in env_dict:
+            env_dict['SLAVE_HOSTS'] = ','.join(m['private_ip'] for m in details['private_agents'])
+        if 'PUBLIC_SLAVE_HOSTS' not in env_dict:
+            env_dict['PUBLIC_SLAVE_HOSTS'] = ','.join(m['private_ip'] for m in details['public_agents'])
+        if 'DCOS_DNS_ADDRESS' not in env_dict:
+            env_dict['DCOS_DNS_ADDRESS'] = 'http://' + details['masters'][0]['private_ip']
+        env_string = ' '.join(['{}={}'.format(e, env_dict[e]) for e in env_dict])
+        arg_string = ' '.join(args)
+        pytest_cmd = """ "source /opt/mesosphere/environment.export &&
+cd /opt/mesosphere/active/dcos-integration-test &&
+{env} py.test {args}" """.format(env=env_string, args=arg_string)
+        log.info('Running integration test...')
+        return try_to_output_unbuffered(self.config, test_host, pytest_cmd)
+
+
+def try_to_output_unbuffered(info, test_host, pytest_cmd):
+    """ Writing straight to STDOUT buffer does not work with syscap so mock this function out
+    """
+    ssher = ssh.ssher.Ssher(info['ssh_user'], info['ssh_private_key'])
+    try:
+        ssher.command(test_host, ['bash', '-c', pytest_cmd], stdout=sys.stdout.buffer)
+    except subprocess.CalledProcessError as e:
+        log.exception('Test run failed!')
+        return e.returncode
+    return 0
 
 
 def convert_host_list(host_list):

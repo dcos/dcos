@@ -27,6 +27,7 @@ TEST_ADD_ENV_*: string (default=None)
 import logging
 import os
 import sys
+import time
 
 import test_util.aws
 import test_util.cluster
@@ -114,7 +115,8 @@ def main():
             admin_location='0.0.0.0/0',
             key_pair_name=stack_name,
             boto_wrapper=bw)
-    cf.wait_for_complete(wait_before_poll_min=5)
+    time.sleep(300)  # we know the cluster is not ready yet, don't poll to avoid hitting the rate limit
+    cf.wait_for_complete()
     # Resiliency testing requires knowing the stack name
     options.test_cmd = 'AWS_STACK_NAME=' + stack_name + ' ' + options.test_cmd
 

@@ -61,15 +61,15 @@ local _M = {}
 function _M.init(use_auth)
     local res = {}
 
-    if use_auth ~= "true" then
+    if use_auth == "false" then
         ngx.log(
             ngx.NOTICE,
-            "ADMINROUTER_ACTIVATE_AUTH_MODULE not `true`. " ..
-            "Using dummy module."
+            "ADMINROUTER_ACTIVATE_AUTH_MODULE set to `false`. " ..
+            "Deactivate authentication module."
             )
         res.do_authn_and_authz_or_exit = function() return end
     else
-        ngx.log(ngx.NOTICE, "Use auth module.");
+        ngx.log(ngx.NOTICE, "Activate authentication module.");
         res.do_authn_and_authz_or_exit = do_authn_and_authz_or_exit
     end
 

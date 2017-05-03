@@ -13,8 +13,8 @@ from collections import namedtuple
 from typing import Union
 from urllib.parse import urlsplit, urlunsplit
 
+import pkg_resources
 import pytest
-
 import requests
 import retrying
 from botocore.exceptions import ClientError, WaiterError
@@ -138,7 +138,7 @@ class ApiClientSession:
             fragment=fragment,
             port=port))
 
-        log.info('Request method {}: {}'.format(method, request_url))
+        log.debug('Request method {}: {}. Arguments: {}'.format(method, request_url, repr(kwargs)))
         r = self.session.request(method, request_url, **kwargs)
         self.session.cookies.clear()
         return r
@@ -302,3 +302,10 @@ def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
         raise
     if not strategy.startswith('journald'):
         pytest.skip('Skipping a test since journald logging is disabled')
+
+
+def ip_detect_script(preset_name):
+    try:
+        return pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(preset_name)).decode('utf-8')
+    except OSError as exc:
+        raise Exception('Failed to read ip-detect script preset {}: {}'.format(preset_name, exc)) from exc

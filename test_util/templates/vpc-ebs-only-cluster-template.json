@@ -42,7 +42,7 @@
       "Default": "0.0.0.0/0",
       "Type": "String"
     },
-    "KeyPair": {
+    "KeyName": {
       "Description": "The name of an EC2 Key Pair to allow SSH access to the instance.",
       "Type": "String"
     }
@@ -250,7 +250,7 @@
           "Ref": "InstanceType"
         },
         "KeyName": {
-          "Ref": "KeyPair"
+          "Ref": "KeyName"
         },
         "SecurityGroups": [
           {

@@ -177,7 +177,7 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
         log.info('Response from marathon: {}'.format(repr(r.json())))
         r.raise_for_status()
 
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
         def _poll_marathon_for_app_deployment(app_id):
@@ -187,10 +187,12 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
             req_params = (('embed', 'apps.lastTaskFailure'),
                           ('embed', 'apps.counts'))
 
+            log.info('Waiting for application to be deployed...')
             r = self.get(path_join('v2/apps', app_id), params=req_params)
             r.raise_for_status()
 
             data = r.json()
+            log.debug('Current application state data: {}'.format(repr(data)))
 
             if 'lastTaskFailure' in data['app']:
                 message = data['app']['lastTaskFailure']['message']
@@ -210,15 +212,13 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
                 log.info('Application deployed, running on {}'.format(res))
                 return res
             elif not check_tasks_running:
-                log.info('Waiting for application to be deployed: '
-                         'Not all instances are running: {}'.format(repr(data)))
+                log.debug('Not all instances are running!')
                 return None
             elif not check_tasks_healthy:
-                log.info('Waiting for application to be deployed: '
-                         'Not all instances are healthy: {}'.format(repr(data)))
+                log.debug('Not all instances are healthy!')
                 return None
             else:
-                log.info('Waiting for application to be deployed: {}'.format(repr(data)))
+                log.debug('Still waiting for application to scale...')
                 return None
 
         try:
@@ -274,7 +274,7 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
         assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
         log.info('Response from marathon: {}'.format(repr(r.json())))
 
-        @retrying.retry(wait_fixed=2000, stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: ret is False,
                         retry_on_exception=lambda x: False)
         def _wait_for_pod_deployment(pod_id):
@@ -308,7 +308,7 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
             pod_id: id of the pod to remove
             timeout: seconds to wait for destruction before failing test
         """
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_pod_complete(deployment_id):
@@ -340,7 +340,7 @@ class Marathon(RetryCommonHttpErrorsMixin, ApiClientSession):
             app_name: name of the application to remove
             timeout: seconds to wait for destruction before failing test
         """
-        @retrying.retry(wait_fixed=1000, stop_max_delay=timeout * 1000,
+        @retrying.retry(wait_fixed=5000, stop_max_delay=timeout * 1000,
                         retry_on_result=lambda ret: not ret,
                         retry_on_exception=lambda x: False)
         def _destroy_complete(deployment_id):

@@ -101,16 +101,17 @@ class TestAwsOnprem:
     def test_with_key_helper(self, aws_onprem_with_helper_config_path):
         get_validated_config(aws_onprem_with_helper_config_path)
 
-    def test_bare_cluster_only(self, aws_bare_cluster_config_path):
-        get_validated_config(aws_bare_cluster_config_path)
-
-    def test_onprem_from_bare_cluster(self, bare_cluster_onprem_config_path):
-        get_validated_config(bare_cluster_onprem_config_path)
-
     def test_error_with_nested_config(self, tmpdir):
         with pytest.raises(LauncherError) as exinfo:
             get_validated_config(
                 get_temp_config_path(
-                    tmpdir, 'aws-onprem-with-helper.yaml', update={'dcos_config': {'provider': 'aws'}}))
+                    tmpdir, 'aws-onprem-with-helper.yaml',
+                    update={'dcos_config': {'provider': 'aws'}, 'prevalidate_onprem_config': 'true'}))
         assert exinfo.value.error == 'ValidationError'
         assert 'onprem_dcos_config_contents' in exinfo.value.msg
+
+    def test_error_is_skipped_in_nested_config(self, tmpdir):
+        get_validated_config(
+            get_temp_config_path(
+                tmpdir, 'aws-onprem-with-helper.yaml',
+                update={'dcos_config': {'provider': 'aws'}}))

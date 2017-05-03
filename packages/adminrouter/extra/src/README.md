@@ -1,10 +1,32 @@
 # Admin Router
 
-Admin Router is an open-source Nginx configuration created by
+Admin Router is an open-source NGINX configuration created by
 Mesosphere that provides central authentication and proxy to DC/OS services
 within the cluster.
 
 <img src="admin-router.png" alt="" width="100%" align="middle">
+
+## Routes
+
+Admin Router runs on both master and agent nodes, each with different configurations. From these NGINX config files, [Ngindox](https://github.com/karlkfi/ngindox) is used to generates swagger-like docs:
+
+**Master Routes:**
+
+- NGINX: [nginx.master.conf](nginx.master.conf)
+- YAML: [docs/api/nginx.master.yaml](api/nginx.master.yaml)
+- HMTL: [docs/api/nginx.master.html](api/nginx.master.html)
+- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.master.html>
+
+**Agent Routes:**
+
+- NGINX: [nginx.agent.conf](nginx.agent.conf)
+- YAML: [docs/api/nginx.agent.yaml](api/nginx.agent.yaml)
+- HMTL: [docs/api/nginx.agent.html](api/nginx.agent.html)
+- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
+
+Use `make api-docs` to regenerate the YAML and HTML files.
+
+Use `make check-api-docs` to validate that the YAML and HTML files are up to date.
 
 ## Ports summary
 <img src="admin-router-table.png" alt="" width="100%" align="middle">
@@ -114,17 +136,17 @@ In order to serve some of the requests, Admin Router relies on the information
 Due to scalability reasons, it's impossible to obtain this data on each and
 every request to given endpoint as it will overload Mesos/Marathon. So
 the idea was born to pre-fetch this data and store it in shared memory where
-each Nginx worker process can access it.
+each NGINX worker process can access it.
 
 ### Architecture
 
-Due to the nature of Nginx, there are some limitations when it comes to Lua
+Due to the nature of NGINX, there are some limitations when it comes to Lua
 code that OpenResty can run. For example:
 * threading is unavailable, it's recommended to use recursive timers (http://stackoverflow.com/a/19060625/145400) for asynchronous tasks
-* it's impossible to hold back Nginx request processing machinery from within
+* it's impossible to hold back NGINX request processing machinery from within
   certain initialization hooks as workers work independently.
 * Using ngx.timer API in `init_by_lua` is not possible because init_by_lua runs
-  in the Nginx master process instead of the worker processes which does the
+  in the NGINX master process instead of the worker processes which does the
   real request processing, etc. (https://github.com/openresty/lua-nginx-module/issues/330#issuecomment-33622121)
 
 So a decision was made to periodically poll Mesos and Marathon for relevant data
@@ -152,7 +174,7 @@ The `freshness` of the cache is governed by few variables:
   data fetched from Mesos and Marathon
 * `CACHE_MAX_AGE_HARD_LIMIT` - between `CACHE_MAX_AGE_SOFT_LIMIT` and
   `CACHE_MAX_AGE_HARD_LIMIT` cache is still usable in request context, but
-  with each access to it, a warning message is written to the Nginx log.
+  with each access to it, a warning message is written to the NGINX log.
   Timer context will try to update the cache.
 * beyond `CACHE_MAX_AGE_HARD_LIMIT` age, cache is considered unusable and
   every request made to the location that uses it will fail with 503 status.
@@ -164,7 +186,7 @@ The reason why we put `<<` in front of `CACHE_MAX_AGE_HARD_LIMIT` is to make
 the cache a bit of a "best-effort" one - In the case when Mesos and/or Marathon
 dies, the cache should still be able to serve data for a reasonable amount of time
 and thus give the operator some time to solve the underlying issue. For example
-Mesos tasks do not move that often and the data stored in Nginx should still be
+Mesos tasks do not move that often and the data stored in NGINX should still be
 usable, at least partially.
 
 ### Locking and error handling
@@ -186,7 +208,7 @@ Request to Mesos/Marathon can take at most `CACHE_BACKEND_REQUEST_TIMEOUT` secon
 After that, the request is considered failed, and it is retried during the next
 update.
 
-Worth noting is that Nginx reload resets all the timers. Cache is left intact
+Worth noting is that NGINX reload resets all the timers. Cache is left intact
 though.
 
 ## Testing
@@ -194,13 +216,13 @@ though.
 Admin Router repository includes a test harness that is meant to make
 testing easier and in some cases - possible. It's written in Python and
 uses pytest fixtures and custom modules to mock out all relevant DC/OS
-features and control Nginx startup and termination.
+features and control NGINX startup and termination.
 
 All the tests are executed in a Docker container which is controlled by the
 Makefile. Inside the container pytest command is started which in turn pulls
 in all the relevant fixtures, such as Syslog mock, mocker (DC/OS endpoints
-mock), DNS mock, etc... Finally, an Nginx is spawned using the configuration
-bind-mounted from the developer's repository. Tests may launch Nginx multiple
+mock), DNS mock, etc... Finally, an NGINX is spawned using the configuration
+bind-mounted from the developer's repository. Tests may launch NGINX multiple
 times, in different configurations, depending on what is needed. After the
 tests runner finishes, all the processes and the environment is cleaned up
 by pytest.
@@ -239,7 +261,7 @@ It exposes a couple of targets:
    exist yet.
 * `make update-devkit` - updates `adminrouter-devkit`. Should be run every time
    the Dockerfile or its dependencies change.
-* `make test` - launch all the tests. Worth noting is the fact that McCabe
+* `make tests` - launch all the tests. Worth noting is the fact that McCabe
    complexity of the code is also verified, and an error is raised if it's
    equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should
@@ -249,7 +271,7 @@ It exposes a couple of targets:
 
 ### Docker container
 As mentioned earlier, all the commands are executed inside the `adminrouter-devkit`
-container. It follows the same build process for Nginx that happens during
+container. It follows the same build process for NGINX that happens during
 DC/OS build with the exception of setting the  `--with-debug` flag. It also
 contains some basic debugging tools, pytest related dependencies and
 files that help pytest mimic the DC/OS environment. Their location is then
@@ -400,14 +422,14 @@ Syslog mock is a very simple Python hack - a DGRAM Unix Socket is created and
 added to LogWatcher. LogWatcher itself takes care of draining data from it,
 with the line length limit hard-coded to 4096 bytes.
 
-##### Nginx
-The Nginx subprocess is different from others in regard to its lifetime. Pytest
+##### NGINX
+The NGINX subprocess is different from others in regard to its lifetime. Pytest
 fixture that pulls it into the test is module-scoped by default. If there is a
 need to have custom lifetime or just single-test scoped lifetime, then it's
 necessary to use `nginx_class` fixture instead of simple `master_ar_process` or
 `agent_ar_process` ones.
 
-Nginx instances have the `.make_url_from_path` method which is a convenient way
+NGINX instances have the `.make_url_from_path` method which is a convenient way
 to generate AR URLs for tests. It uses exhibitor endpoint as it's present in
 all DC/OS configurations and uses auth features as well.
 

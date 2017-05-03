@@ -79,6 +79,13 @@ ENV PATH ${VENV_DIR}/bin:$PATH
 COPY ./requirements-tests.txt .
 RUN pip install -r requirements-tests.txt
 
+# Install Node & NPM
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs
+
+# Install Ngindox for API doc generation
+RUN npm install -g ngindox@0.2.0
+
 # Download Vegeta tool for benchmarking
 RUN curl -fsSL "$VEGETA_DOWNLOAD_URL" -o vegeta.tar.gz \
     && echo "$VEGETA_DOWNLOAD_SHA256  vegeta.tar.gz" | sha256sum -c - \
@@ -113,6 +120,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-upstreams.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
+     adminrouter-tls.conf \
         /opt/mesosphere/etc/
 COPY ca.crt /run/dcos/pki/CA/certs/
 COPY adminrouter.crt /run/dcos/pki/tls/certs/

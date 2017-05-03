@@ -40,7 +40,6 @@ def test_missing_aws_stack(aws_cf_config_path, monkeypatch):
     """
     monkeypatch.setattr(test_util.aws, 'fetch_stack', mock_stack_not_found)
     config = launch.config.get_validated_config(aws_cf_config_path)
-    assert 'platform' in config, str(config.items())
     aws_launcher = launch.get_launcher(config)
 
     def check_stack_error(cmd, args):
@@ -48,17 +47,18 @@ def test_missing_aws_stack(aws_cf_config_path, monkeypatch):
             getattr(aws_launcher, cmd)(*args)
         assert exinfo.value.error == 'StackNotFound'
 
-    info = aws_launcher.create(config)
-    check_stack_error('wait', (info,))
-    check_stack_error('describe', (info,))
-    check_stack_error('delete', (info,))
-    check_stack_error('test', (info, 'py.test'))
+    info = aws_launcher.create()
+    aws_launcher = launch.get_launcher(info)
+    check_stack_error('wait', ())
+    check_stack_error('describe', ())
+    check_stack_error('delete', ())
+    check_stack_error('test', ([], {}))
 
 
-def test_key_helper(aws_cf_config_path):
-    config = launch.config.get_validated_config(aws_cf_config_path)
+def test_key_helper(aws_cf_with_helper_config_path):
+    config = launch.config.get_validated_config(aws_cf_with_helper_config_path)
     aws_launcher = launch.get_launcher(config)
-    temp_resources = aws_launcher.key_helper(config)
+    temp_resources = aws_launcher.key_helper()
     assert temp_resources['key_name'] == config['deployment_name']
     assert yaml.load(config['template_parameters'])['KeyName'] == config['deployment_name']
     assert config['ssh_private_key'] == launch.util.MOCK_SSH_KEY_DATA
@@ -67,7 +67,7 @@ def test_key_helper(aws_cf_config_path):
 def test_zen_helper(aws_zen_cf_config_path):
     config = launch.config.get_validated_config(aws_zen_cf_config_path)
     aws_launcher = launch.get_launcher(config)
-    temp_resources = aws_launcher.zen_helper(config)
+    temp_resources = aws_launcher.zen_helper()
     assert temp_resources['vpc'] == launch.util.MOCK_VPC_ID
     assert temp_resources['gateway'] == launch.util.MOCK_GATEWAY_ID
     assert temp_resources['private_subnet'] == launch.util.MOCK_SUBNET_ID
