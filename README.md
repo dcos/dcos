@@ -91,6 +91,7 @@ Therefore, in order to test changes to test files, move files from `packages/dco
 
 The canonical source of the test suite's results is the continuous integration system.
 There may be differences between the results of running the integration tests as described in this document and the results given by the continuous integration system.
+In particular, some tests may pass on the continuous integration system and fail locally or vice versa.
 
 ## Minimum Requirements
 
