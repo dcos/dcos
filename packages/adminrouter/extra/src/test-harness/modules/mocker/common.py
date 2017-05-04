@@ -97,7 +97,7 @@ class MockerBase:
         # log endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-log.sock'))
         # DC/OS history service
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15055))
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=15055))
         # Mesos DNS
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=8123))
         # Metrics(agent):
