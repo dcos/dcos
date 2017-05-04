@@ -927,31 +927,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>http://$backend/</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Server:
-                </td>
-                <td>
-                  <code>leader.mesos:15055</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  DC/OS History
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://github.com/dcos/dcos/tree/master/packages/dcos-history/extra#api">https://github.com/dcos/dcos/tree/master/packages/dcos-history/extra#api</a>
+                  <code>$historyservice_upstream</code>
                 </td>
               </tr>
             </table>
@@ -1363,6 +1339,61 @@
                 </td>
                 <td>
                   Navstar
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-other" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="other" href="#other" aria-hidden="true" class="toggle-route-group" data-id="other">
+            <div class="arrow arrow-right"></div>Other</a>
+        </h2>
+        <span class="options"><a href="#other" class="toggle-route-group" data-id="other">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-other" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/internal/mesos_dns/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>master.mesos:8123</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Mesos DNS
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/">https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/</a>
                 </td>
               </tr>
             </table>
