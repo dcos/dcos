@@ -479,22 +479,22 @@ class ManagedSubprocess(abc.ABC):
             pytest.exit(msg_fmt % (self.id, self._process.returncode))
             return
 
-        log.info("Send SIGINT to `%s` master process", self.id)
+        log.info("Send SIGINT to `%s` session leader", self.id)
         self._process.send_signal(signal.SIGINT)
         try:
             self._process.wait(self._EXIT_TIMEOUT / 2.0)
         except subprocess.TimeoutExpired:
-            log.info("Send SIGTERM to `%s` master process", self.id)
+            log.info("Send SIGTERM to `%s` session leader", self.id)
             self._process.send_signal(signal.SIGTERM)
             try:
                 self._process.wait(self._EXIT_TIMEOUT / 2.0)
             except subprocess.TimeoutExpired:
                 log.info("Send SIGKILL to all `%s` processess", self.id)
                 os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
-                log.info("wait() for `%s` master process to die", self.id)
+                log.info("wait() for `%s` session leader to die", self.id)
                 self._process.wait()
 
-        log.info("`%s` master process has terminated", self.id)
+        log.info("`%s` session leader has terminated", self.id)
 
     def _wait_for_subprocess_to_finish_init(self):
         """Monitor process out for indication that the init process is complete
