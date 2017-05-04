@@ -675,7 +675,7 @@ class TestCacheMesosLeader:
         filter_regexp = {
             'Local Mesos Master IP address is unknown, cache entry is unusable':
                 SearchCriteria(1, True),
-            '`Mesos Leader is local` state cache has been successfully updated':
+            '`Mesos Leader` state cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         ar = nginx_class(host_ip=None)
@@ -695,10 +695,9 @@ class TestCacheMesosLeader:
         filter_regexp = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'DNS server returned error code': SearchCriteria(1, True),
-            '`Mesos Leader is local` state cache has been successfully updated':
+            '`Mesos Leader` state cache has been successfully updated':
                 SearchCriteria(0, True),
         }
-
 
         ar = nginx_class()
 
@@ -730,7 +729,7 @@ class TestCacheMesosLeader:
                 SearchCriteria(1, True),
             'Local Mesos Master IP address is unknown, cache entry is unusable':
                 SearchCriteria(0, True),
-            '`Mesos Leader is local` state cache has been successfully updated':
+            '`Mesos Leader` state cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         filter_regexp_post = {
@@ -738,7 +737,7 @@ class TestCacheMesosLeader:
             'Mesos Leader is local': SearchCriteria(1, True),
             'Local Mesos Master IP address is unknown, cache entry is unusable':
                 SearchCriteria(0, True),
-            '`Mesos Leader is local` state cache has been successfully updated':
+            '`Mesos Leader` state cache has been successfully updated':
                 SearchCriteria(1, True),
         }
 
