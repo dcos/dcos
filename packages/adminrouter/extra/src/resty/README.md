@@ -25,3 +25,9 @@
 
 `cookie.lua` is from
 [lua-resty-cookie](https://github.com/cloudflare/lua-resty-cookie) release 0.1.0.
+
+
+# lua-resty-dns
+
+`resolver.lua` is from
+[lua-resty-dns](https://github.com/openresty/lua-resty-dns) release 0.18
