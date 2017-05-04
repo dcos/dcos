@@ -241,9 +241,9 @@ class LogCatcher:
     """A central log-gathering facility.
 
     This object collects all the logs that come from subprocesses (like i.e.
-    nginx, dnsmasq, etc...) and syslog mock. It makes them available as an
-    easy to use lists that can be grepped/searched/monitored. Internally, it
-    uses LogWriter instances for storing the data.
+    nginx) and syslog mock. It makes them available as an easy to use lists
+    that can be grepped/searched/monitored. Internally, it uses LogWriter
+    instances for storing the data.
 
     Worth noting is that this class should be embedded by other objects - most
     notably objects derived from ManagedSubrocess abstract class.
@@ -563,57 +563,6 @@ class ManagedSubprocess(abc.ABC):
         pass
 
 
-class DNSMock(ManagedSubprocess):
-    """A DNS server subprocess that mocks DNS facilites in DC/OS
-
-    This class is used to spawn DNS servers based on dnsmasq, that will server
-    static content basing on /etc/hosts.dnsmasq file contents and will forward
-    all the requests that cannot be satisfied using it to upstream google
-    servers (8.8.8.8/8.8.4.4)
-
-    The complexity of DNS protocol makes it infeasible to implement it in pure
-    python. Thus the decision was made to just launch new child process that will
-    be answering all the requests stemming from Nginx that is being tested.
-
-    Due to the fact that depending on the type of AR in testing (master/agent),
-    different ports are used, dnsmasq can be started on different port depending
-    on init parameters.
-    """
-
-    _INIT_COMPLETE_STR = "read /etc/hosts.dnsmasq"
-
-    def _register_stdout_stderr_to_logcatcher(self):
-        """Please check ManagedSubprocess'es class method description"""
-        log_filename = 'dns.port_{}.stdout.log'.format(self._port)
-        self._log_catcher.add_fd(self.stdout, log_file=log_filename)
-
-        log_filename = 'dns.port_{}.stderr.log'.format(self._port)
-        self._log_catcher.add_fd(self.stderr, log_file=log_filename)
-
-    def __init__(self, log_catcher, port=53):
-        """Initialize new DNSMock object
-
-        Args:
-            port (int): port on which instance should listen for new requests
-            log_catcher (object: LogCatcher()): a LogCatcher instance that is
-                going to be used by the mock to store captured messages.
-        """
-        super().__init__(log_catcher)
-        self._port = port
-
-        self._args = ["/usr/sbin/dnsmasq",
-                      '--no-daemon',
-                      '--log-queries',
-                      '--port={}'.format(port),
-                      '--log-async=15',
-                      '--conf-file=/etc/dnsmasq.conf']
-
-    @property
-    def _init_log_buf(self):
-        """Please check ManagedSubprocess'es class method description"""
-        return self.stderr_line_buffer
-
-
 class NginxBase(ManagedSubprocess):
     """This class represents AR behaviour shared between both EE and Open.
 
@@ -687,6 +636,7 @@ class NginxBase(ManagedSubprocess):
                     auth_enabled,
                     default_scheme,
                     upstream_mesos,
+                    host_ip,
                     upstream_marathon,
                     cache_first_poll_delay,
                     cache_poll_period,
@@ -703,6 +653,7 @@ class NginxBase(ManagedSubprocess):
                                   str(auth_enabled).lower())
         self._set_ar_env_from_val('DEFAULT_SCHEME', default_scheme)
         self._set_ar_env_from_val('UPSTREAM_MESOS', upstream_mesos)
+        self._set_ar_env_from_val('HOST_IP', host_ip)
         self._set_ar_env_from_val('UPSTREAM_MARATHON', upstream_marathon)
         self._set_ar_env_from_val('CACHE_FIRST_POLL_DELAY', str(cache_first_poll_delay))
         self._set_ar_env_from_val('CACHE_POLL_PERIOD', str(cache_poll_period))
@@ -721,6 +672,7 @@ class NginxBase(ManagedSubprocess):
                  auth_enabled=True,
                  default_scheme="http://",
                  upstream_mesos="http://127.0.0.2:5050",
+                 host_ip="127.0.0.2",
                  upstream_marathon="http://127.0.0.1:8080",
                  role="master",
                  log_catcher=None,
@@ -743,6 +695,7 @@ class NginxBase(ManagedSubprocess):
                 env var
             default_scheme (str),
             upstream_mesos (str),
+            host_ip (str),
             upstream_marathon (str),
             cache_first_poll_delay (int),
             cache_poll_period (int),
@@ -753,6 +706,7 @@ class NginxBase(ManagedSubprocess):
             cache_max_age_hard_limit (int): translate to
                 `DEFAULT_SCHEME`,
                 `UPSTREAM_MESOS`,
+                `HOST_IP`,
                 `UPSTREAM_MARATHON`
                 `CACHE_FIRST_POLL_DELAY`,
                 `CACHE_POLL_PERIOD`,
@@ -772,6 +726,7 @@ class NginxBase(ManagedSubprocess):
         self._set_ar_env(auth_enabled,
                          default_scheme,
                          upstream_mesos,
+                         host_ip,
                          upstream_marathon,
                          cache_first_poll_delay,
                          cache_poll_period,

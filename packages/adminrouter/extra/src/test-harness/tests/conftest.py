@@ -10,10 +10,10 @@ import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
 from runner.common import (
-    DNSMock,
     LogCatcher,
     SyslogMock,
     )
+from mocker.dns import DcosDnsServer
 from mocker.jwt import generate_rs256_jwt, generate_hs256_jwt
 from util import add_lo_ipaddr, del_lo_ipaddr, ar_listen_link_setup
 
@@ -98,23 +98,40 @@ def syslog_mock(log_catcher):
 
 
 @pytest.fixture(scope='session')
-def dns_mock(log_catcher, navstar_ips, resolvconf_fixup):
+def dns_server_mock_s(navstar_ips, resolvconf_fixup):
     """Set-up DNS mocks, both for agent AR (port 53) and master AR (port 61053)"""
-    m_61053 = DNSMock(log_catcher, port=61053)
-    m_61053.start()
+    dns_sockets = [
+        ("198.51.100.1", 53),
+        ("198.51.100.2", 53),
+        ("198.51.100.3", 53),
+        ("127.0.0.1", 53),
+        ("127.0.0.1", 61053),
+        ]
+    s = DcosDnsServer(dns_sockets)
+    s.start()
 
-    m_53 = DNSMock(log_catcher, port=53)
-    m_53.start()
+    yield s
 
-    yield (m_53, m_61053)
+    s.stop()
 
-    m_61053.stop()
-    m_53.stop()
+
+@pytest.fixture(scope='function')
+def dns_server_mock(dns_server_mock_s):
+    """An extension to `dns_server_mock_s` fixture that adds resetting the mock
+    to initial state after each test.
+
+    The division stems from the fact that server instance should be created
+    only once per session, while it must be reset after every test to it's
+    initial state
+    """
+    yield dns_server_mock_s
+
+    dns_server_mock_s.reset()
 
 
 @pytest.fixture(scope='session')
 def navstar_ips():
-    """Setup IPs that help dns_mock mimic navstar"""
+    """Setup IPs that help dns_server_mock mimic navstar"""
     ips = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
 
     for ip in ips:
@@ -164,7 +181,7 @@ def resolvconf_fixup():
 
 
 @pytest.fixture(scope='session')
-def nginx_class(repo_is_ee, dns_mock, log_catcher, syslog_mock, mocker_s):
+def nginx_class(repo_is_ee, dns_server_mock_s, log_catcher, syslog_mock, mocker_s):
     """Provide a Nginx class suitable for the repository flavour
 
     This fixture also binds together all the mocks (dns, syslog, mocker(endpoints),

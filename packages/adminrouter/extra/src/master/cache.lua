@@ -1,6 +1,7 @@
 local cjson_safe = require "cjson.safe"
 local shmlock = require "resty.lock"
 local http = require "resty.http"
+local resolver = require "resty.resolver"
 
 
 local _M = {}
@@ -293,6 +294,88 @@ local function fetch_and_store_state_mesos(auth_token)
 end
 
 
+local function fetch_and_store_mesos_leader_is_local_state()
+    -- Lua forbids jumping over local variables definition, hence we define all
+    -- of them here.
+    local res_body, r, err, answers, err
+
+    if HOST_IP == 'unknown' then
+        ngx.log(ngx.ERR,
+        "Local Mesos Master IP address is unknown, cache entry is unusable")
+        res_body = '{"mesos_leader_is_local": "unknown", "leader_ip": null}'
+        goto store_cache
+    end
+
+    -- We want to use Navstar's dual-dispatch approach and get the response
+    -- as fast as possible from any operational MesosDNS. If we set it to local
+    -- instance, its failure will break this part of the cache as well.
+    --
+    -- As for the DNS TTL - we're on purpose ignoring it and going with own
+    -- refresh cycle period. Assuming that Navstar and MesosDNS do not do
+    -- caching on their own, we just treat DNS as an interface to obtain
+    -- current mesos leader data. How long we cache it is just an internal
+    -- implementation detail of AR.
+    --
+    -- Also, see https://github.com/openresty/lua-resty-dns#limitations
+    r, err = resolver:new{
+        nameservers = {{"198.51.100.1", 53},
+                       {"198.51.100.2", 53},
+                       {"198.51.100.3", 53}},
+        retrans = 3,  -- retransmissions on receive timeout
+        timeout = 2000,  -- msec
+    }
+
+    if not r then
+        ngx.log(ngx.ERR, "Failed to instantiate the resolver: " .. err)
+        return
+    end
+
+    answers, err = r:query("leader.mesos")
+    if not answers then
+        ngx.log(ngx.ERR, "Failed to query the DNS server: " .. err)
+        return
+    end
+
+    if answers.errcode then
+        ngx.log(ngx.ERR,
+            "DNS server returned error code: " .. answers.errcode .. ": " .. answers.errstr)
+        return
+    end
+
+    if util.table_len(answers) == 0 then
+        ngx.log(ngx.ERR,
+            "DNS server did not return anything for leader.mesos")
+        return
+    end
+
+    -- Yes, we are assuming that leader.mesos will always be just one A entry.
+    -- AAAA support is a different thing...
+
+    if answers[1].address == HOST_IP then
+        res_body = '{"mesos_leader_is_local": "yes", "leader_ip": '.. HOST_IP ..'}'
+        ngx.log(ngx.INFO, "Mesos Leader is local")
+    else
+        res_body = '{"mesos_leader_is_local": "no", "leader_ip": '.. answers[1].address ..'}'
+        ngx.log(ngx.INFO, "Mesos Leader is non-local: `" .. answers[1].address .. "`")
+    end
+
+    ::store_cache::
+    if not cache_data("mesos_leader_is_local", mleader) then
+        ngx.log(ngx.ERR, "Storing `Mesos Leader is local` state cache failed")
+        return
+    end
+
+    ngx.update_time()
+    local time_now = ngx.now()
+    if cache_data("mesos_leader_is_local_last_refresh", time_now) then
+        ngx.log(ngx.INFO, "`Mesos Leader is local` state cache has been successfully updated")
+    end
+
+    return
+
+end
+
+
 local function refresh_needed(ts_name)
     -- ts_name (str): name of the '*_last_refresh' timestamp to check
     local cache = ngx.shared.cache
@@ -385,6 +468,12 @@ local function refresh_cache(from_timer, auth_token)
 
     if refresh_needed("marathonleader_last_refresh") then
         fetch_and_store_marathon_leader(auth_token)
+    end
+
+    if refresh_needed("mesos_leader_is_local_last_refresh") then
+        fetch_and_store_mesos_leader_is_local_state(auth_token)
+    if refresh_needed("mesos_leader_last_refresh") then
+        fetch_and_store_mesos_leader_state()
     end
 
     local ok, err = lock:unlock()
