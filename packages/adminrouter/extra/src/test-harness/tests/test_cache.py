@@ -60,7 +60,7 @@ class TestCache:
             self, nginx_class, mocker, superuser_user_header):
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(3, False),
-            'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(6, True),
+            'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
             'Mesos state cache has been successfully updated': SearchCriteria(3, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(3, True),
             'Marathon leader cache has been successfully updated': SearchCriteria(3, True),
@@ -671,6 +671,108 @@ class TestCache:
             with GuardedSubprocess(v):
                 time.sleep(backend_request_timeout * 0.3 + 1)  # let it warm-up!
                 ping_mesos_agent(ar, superuser_user_header)
+
+
+class TestCacheMesosLeader:
+    def test_if_unset_hostip_var_is_handled(self, nginx_class, valid_user_header):
+        filter_regexp = {
+            'Local Mesos Master IP address is unknown, cache entry is unusable':
+                SearchCriteria(1, True),
+            '`Mesos Leader is local` state cache has been successfully updated':
+                SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=None)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+            # Just trigger the cache update:
+            ping_mesos_agent(ar, valid_user_header)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    def test_if_missing_mesos_leader_entry_is_handled(
+            self, nginx_class, valid_user_header, dns_server_mock):
+        filter_regexp = {
+            'Failed to instantiate the resolver': SearchCriteria(0, True),
+            'DNS server returned error code': SearchCriteria(1, True),
+            '`Mesos Leader is local` state cache has been successfully updated':
+                SearchCriteria(0, True),
+        }
+
+
+        ar = nginx_class()
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+            # Unfortunatelly there are upstreams that use `leader.mesos` and
+            # removing this entry too early will result in Nginx failing to start.
+            # So we need to do it right after nginx starts, but before first
+            # cache update.
+            time.sleep(1)
+            dns_server_mock.remove_dns_entry('leader.mesos.')
+
+            # Now let's trigger the cache update:
+            ping_mesos_agent(ar, valid_user_header)
+
+            lbf.scan_log_buffer()
+
+            assert lbf.extra_matches == {}
+
+    def test_if_mesos_leader_locality_is_resolved(
+            self, nginx_class, valid_user_header, dns_server_mock):
+        cache_poll_period = 4
+        nonlocal_leader_ip = "127.0.0.3"
+        local_leader_ip = "127.0.0.2"
+        filter_regexp_pre = {
+            'Failed to instantiate the resolver': SearchCriteria(0, True),
+            'Mesos Leader is non-local: `{}`'.format(nonlocal_leader_ip):
+                SearchCriteria(1, True),
+            'Local Mesos Master IP address is unknown, cache entry is unusable':
+                SearchCriteria(0, True),
+            '`Mesos Leader is local` state cache has been successfully updated':
+                SearchCriteria(1, True),
+        }
+        filter_regexp_post = {
+            'Failed to instantiate the resolver': SearchCriteria(0, True),
+            'Mesos Leader is local': SearchCriteria(1, True),
+            'Local Mesos Master IP address is unknown, cache entry is unusable':
+                SearchCriteria(0, True),
+            '`Mesos Leader is local` state cache has been successfully updated':
+                SearchCriteria(1, True),
+        }
+
+        dns_server_mock.set_dns_entry('leader.mesos.', ip=nonlocal_leader_ip)
+
+        ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp_pre,
+                                   line_buffer=ar.stderr_line_buffer)
+            # Just trigger the cache update:
+            ping_mesos_agent(ar, valid_user_header)
+
+            lbf.scan_log_buffer()
+
+            assert lbf.extra_matches == {}
+
+            dns_server_mock.set_dns_entry('leader.mesos.', ip=local_leader_ip)
+
+            # First poll (2s) + normal poll interval(4s) < 2 * normal poll
+            # interval(4s)
+            time.sleep(cache_poll_period * 2)
+
+            lbf = LineBufferFilter(filter_regexp_post,
+                                   line_buffer=ar.stderr_line_buffer)
+            # Just trigger the cache update:
+            ping_mesos_agent(ar, valid_user_header)
+
+            lbf.scan_log_buffer()
+
+            assert lbf.extra_matches == {}
 
 
 class TestCacheMarathon:

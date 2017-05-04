@@ -297,9 +297,6 @@ class TestSystemApiLeaderProxing:
                                                             master_ar_process,
                                                             superuser_user_header):
 
-        # FIXME: using MesosDNS `leader.mesos` alias makes things hard to test.
-        # Dropping in in favour of cache+API call would improve reliability as
-        # well. So no "changing the leader and testing results tests for now"
         generic_correct_upstream_dest_test(master_ar_process,
                                            superuser_user_header,
                                            '/system/v1/leader/mesos/foo/bar',

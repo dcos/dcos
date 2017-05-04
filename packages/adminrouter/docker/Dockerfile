@@ -48,7 +48,6 @@ RUN set -ex \
 RUN set -ex \
     && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
     && apt-get install -y --no-install-recommends \
-        dnsmasq \
         gcc \
         gettext-base \
         libdigest-sha-perl \
@@ -113,16 +112,6 @@ COPY adminrouter-redirect-http-https.conf \
 COPY ca.crt /run/dcos/pki/CA/certs/
 COPY adminrouter.crt /run/dcos/pki/tls/certs/
 COPY adminrouter.key /run/dcos/pki/tls/private/
-
-
-# dnsmasq stuff:
-COPY ./dnsmasq.conf /etc/dnsmasq.conf
-# In case if Docker someday decides to solve:
-# https://github.com/docker/docker/issues/1297
-# and container's /etc/resolv.conf becomes visible and not bind-mounted.
-RUN echo "nameserver 127.0.0.1" > /etc/resolv.conf
-RUN echo "nameserver 8.8.8.8\nnameserver 8.8.4.4\n" > /etc/resolv.conf.dnsmasq
-COPY ./hosts.dnsmasq /etc/hosts.dnsmasq
 
 # Workers run as the dcos_adminrouter group.
 RUN groupadd --system dcos_adminrouter
