@@ -294,15 +294,15 @@ local function fetch_and_store_state_mesos(auth_token)
 end
 
 
-local function fetch_and_store_mesos_leader_is_local_state()
+local function fetch_and_store_mesos_leader_state()
     -- Lua forbids jumping over local variables definition, hence we define all
     -- of them here.
-    local res_body, r, err, answers, err
+    local res_body, r, err, answers
 
     if HOST_IP == 'unknown' then
         ngx.log(ngx.ERR,
         "Local Mesos Master IP address is unknown, cache entry is unusable")
-        res_body = '{"mesos_leader_is_local": "unknown", "leader_ip": null}'
+        res_body = '{"is_local": "unknown", "leader_ip": null}'
         goto store_cache
     end
 
@@ -352,23 +352,23 @@ local function fetch_and_store_mesos_leader_is_local_state()
     -- AAAA support is a different thing...
 
     if answers[1].address == HOST_IP then
-        res_body = '{"mesos_leader_is_local": "yes", "leader_ip": '.. HOST_IP ..'}'
+        res_body = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
         ngx.log(ngx.INFO, "Mesos Leader is local")
     else
-        res_body = '{"mesos_leader_is_local": "no", "leader_ip": '.. answers[1].address ..'}'
+        res_body = '{"is_local": "no", "leader_ip": "'.. answers[1].address ..'"}'
         ngx.log(ngx.INFO, "Mesos Leader is non-local: `" .. answers[1].address .. "`")
     end
 
     ::store_cache::
-    if not cache_data("mesos_leader_is_local", mleader) then
-        ngx.log(ngx.ERR, "Storing `Mesos Leader is local` state cache failed")
+    if not cache_data("mesos_leader", res_body) then
+        ngx.log(ngx.ERR, "Storing `Mesos Leader` state cache failed")
         return
     end
 
     ngx.update_time()
     local time_now = ngx.now()
-    if cache_data("mesos_leader_is_local_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "`Mesos Leader is local` state cache has been successfully updated")
+    if cache_data("mesos_leader_last_refresh", time_now) then
+        ngx.log(ngx.INFO, "`Mesos Leader` state cache has been successfully updated")
     end
 
     return
@@ -470,8 +470,6 @@ local function refresh_cache(from_timer, auth_token)
         fetch_and_store_marathon_leader(auth_token)
     end
 
-    if refresh_needed("mesos_leader_is_local_last_refresh") then
-        fetch_and_store_mesos_leader_is_local_state(auth_token)
     if refresh_needed("mesos_leader_last_refresh") then
         fetch_and_store_mesos_leader_state()
     end

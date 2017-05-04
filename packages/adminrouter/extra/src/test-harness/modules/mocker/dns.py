@@ -6,7 +6,7 @@ Programmable in-memory DNS server
 
 import logging
 
-from dnslib import QTYPE, RR, A, RCODE
+from dnslib import QTYPE, RR, RCODE
 from dnslib.server import BaseResolver, DNSLogger, DNSServer
 
 log = logging.getLogger(__name__)
@@ -48,13 +48,13 @@ class DcosDnsResolver(BaseResolver):
 
         if request.q.qtype != QTYPE.A:
             log.error("Unsupported query qtype: `{}`".format(request.q.qtype))
-            reply.header.rcode = getattr(RCODE,'NXDOMAIN')
+            reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
             return reply
 
         query = str(request.q.qname)
         if query not in self._records:
             log.error("qname `{}` not present in DB".format(query))
-            reply.header.rcode = getattr(RCODE,'NXDOMAIN')
+            reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
             return reply
 
         log.info(
