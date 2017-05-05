@@ -237,6 +237,19 @@ def master_ar_process_pertest(nginx_class):
     nginx.stop()
 
 
+@pytest.fixture(scope='class')
+def master_ar_process_perclass(nginx_class):
+    """An AR process instance fixture for situations where need to trade off
+       tests speed for having a per-class AR instance
+    """
+    nginx = nginx_class(role="master")
+    nginx.start()
+
+    yield nginx
+
+    nginx.stop()
+
+
 @pytest.fixture(scope='module')
 def agent_ar_process(nginx_class):
     """
