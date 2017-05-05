@@ -1,5 +1,4 @@
 import pytest
-import yaml
 
 import launch
 import launch.cli
@@ -60,7 +59,7 @@ def test_key_helper(aws_cf_with_helper_config_path):
     aws_launcher = launch.get_launcher(config)
     temp_resources = aws_launcher.key_helper()
     assert temp_resources['key_name'] == config['deployment_name']
-    assert yaml.load(config['template_parameters'])['KeyName'] == config['deployment_name']
+    assert config['template_parameters']['KeyName'] == config['deployment_name']
     assert config['ssh_private_key'] == launch.util.MOCK_SSH_KEY_DATA
 
 
@@ -72,8 +71,7 @@ def test_zen_helper(aws_zen_cf_config_path):
     assert temp_resources['gateway'] == launch.util.MOCK_GATEWAY_ID
     assert temp_resources['private_subnet'] == launch.util.MOCK_SUBNET_ID
     assert temp_resources['public_subnet'] == launch.util.MOCK_SUBNET_ID
-    template_parameters = yaml.load(config['template_parameters'])
-    assert template_parameters['Vpc'] == launch.util.MOCK_VPC_ID
-    assert template_parameters['InternetGateway'] == launch.util.MOCK_GATEWAY_ID
-    assert template_parameters['PrivateSubnet'] == launch.util.MOCK_SUBNET_ID
-    assert template_parameters['PublicSubnet'] == launch.util.MOCK_SUBNET_ID
+    assert config['template_parameters']['Vpc'] == launch.util.MOCK_VPC_ID
+    assert config['template_parameters']['InternetGateway'] == launch.util.MOCK_GATEWAY_ID
+    assert config['template_parameters']['PrivateSubnet'] == launch.util.MOCK_SUBNET_ID
+    assert config['template_parameters']['PublicSubnet'] == launch.util.MOCK_SUBNET_ID

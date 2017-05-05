@@ -1,7 +1,6 @@
 import copy
 import logging
 
-import yaml
 
 import launch.util
 import test_util.azure
@@ -23,7 +22,7 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         self.azure_wrapper.deploy_template_to_new_resource_group(
             self.config['template_url'],
             self.config['deployment_name'],
-            yaml.load(self.config['template_parameters']))
+            self.config['template_parameters'])
         info = copy.deepcopy(self.config)
         return info
 
@@ -45,13 +44,14 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         """ Adds private key to the config and injects the public key into
         the template parameters
         """
-        if self.config['key_helper'] != 'true':
+        if self.config['key_helper'] is not True:
             return
+        if 'sshRSAPublicKey' in self.config['template_parameters']:
+            raise launch.util.LauncherError('KeyHelperError', 'key_helper will automatically'
+                                            'calculate and inject sshRSAPublicKey; do not set this parameter')
         private_key, public_key = launch.util.generate_rsa_keypair()
         self.config.update({'ssh_private_key': private_key.decode()})
-        template_parameters = yaml.load(self.config['template_parameters'])
-        template_parameters.update({'sshRSAPublicKey': public_key.decode()})
-        self.config['template_parameters'] = yaml.dump(template_parameters)
+        self.config['template_parameters'].update({'sshRSAPublicKey': public_key.decode()})
 
     @property
     def resource_group(self):

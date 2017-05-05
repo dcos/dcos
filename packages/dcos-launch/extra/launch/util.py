@@ -24,6 +24,11 @@ MOCK_STACK_ID = 'this-is-a-important-test-stack::deadbeefdeadbeef'
 NO_TEST_FLAG = 'NO PRIVATE SSH KEY PROVIDED - CANNOT TEST'
 
 
+def load_string(filename: str):
+    with open(filename) as f:
+        return f.read().strip()
+
+
 def stub(output):
     def accept_any_args(*args, **kwargs):
         return output
