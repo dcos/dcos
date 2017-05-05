@@ -6,9 +6,8 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/amitaekbote/universe",
-    "ref": "a8b2be59b3c2392069bb7c8d1386d40b40808c44",
+    "ref": "7df94673f9c4934ca43d168ac6ed6dccd4b5f920",
     "ref_origin": "version-3.x"
   },
-  "username": "dcos_cosmos",
   "state_directory": true
 }
