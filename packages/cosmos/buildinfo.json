@@ -4,9 +4,10 @@
     "exhibitor"
   ],
   "single_source": {
-    "kind": "url",
-    "url": "https://downloads.dcos.io/cosmos/0.3.0-5/cosmos-server-0.3.0-5-one-jar.jar",
-    "sha1": "a8b2be59b3c2392069bb7c8d1386d40b40808c44"
+    "kind": "git",
+    "git": "https://github.com/amitaekbote/universe",
+    "ref": "a8b2be59b3c2392069bb7c8d1386d40b40808c44",
+    "ref_origin": "version-3.x"
   },
   "username": "dcos_cosmos",
   "state_directory": true
