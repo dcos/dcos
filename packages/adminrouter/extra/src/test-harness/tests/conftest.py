@@ -5,17 +5,13 @@
 
 import json
 import os
-import pytest
 
+import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
-from runner.common import (
-    DNSMock,
-    LogCatcher,
-    SyslogMock,
-    )
-from mocker.jwt import generate_rs256_jwt, generate_hs256_jwt
-from util import add_lo_ipaddr, del_lo_ipaddr, ar_listen_link_setup
+from mocker.jwt import generate_hs256_jwt, generate_rs256_jwt
+from runner.common import DNSMock, LogCatcher, SyslogMock
+from util import add_lo_ipaddr, ar_listen_link_setup, del_lo_ipaddr
 
 
 @pytest.fixture()

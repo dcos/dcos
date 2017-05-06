@@ -8,13 +8,14 @@ import abc
 import copy
 import logging
 import os
-import pytest
 import select
 import signal
 import socket
 import subprocess
 import threading
 import time
+
+import pytest
 
 from exceptions import LogSourceEmpty
 from util import LOG_LINE_SEARCH_INTERVAL

@@ -5,7 +5,7 @@ local util = {}
 
 function util.mesos_dns_get_srv(framework_name)
     local res = ngx.location.capture(
-        "/mesos_dns/v1/services/_" .. framework_name .. "._tcp.marathon.mesos")
+        "/internal/mesos_dns/v1/services/_" .. framework_name .. "._tcp.marathon.mesos")
 
     if res.truncated then
         -- Remote connection dropped prematurely or timed out.

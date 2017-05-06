@@ -3,6 +3,12 @@ local url = require "master.url"
 
 function gen_serviceurl(service_name)
     local records = util.mesos_dns_get_srv(service_name)
+    if records == nil then
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
+        ngx.say("503 Service Unavailable: MesosDNS request has failed")
+        return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+    end
+
     local first_ip = records[1]['ip']
     local first_port = records[1]['port']
     ngx.var.servicescheme = "http"

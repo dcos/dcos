@@ -1,17 +1,12 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import os
-import requests
 import time
 
-from generic_test_code.common import (
-    assert_endpoint_response,
-    )
-from util import (
-    SearchCriteria,
-    auth_type_str,
-    jwt_type_str,
-)
+import requests
+
+from generic_test_code.common import assert_endpoint_response
+from util import SearchCriteria, auth_type_str, jwt_type_str
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 

@@ -14,239 +14,87 @@ from mocker.endpoints.recording import (
 # pylint: disable=C0103
 log = logging.getLogger(__name__)
 
-INITIAL_STATEJSON = {
-    "cluster": "prozlach-qzpz04t",
-    "frameworks": [
-        {
-            "TASK_ERROR": 0,
-            "TASK_FAILED": 0,
-            "TASK_FINISHED": 0,
-            "TASK_KILLED": 0,
-            "TASK_KILLING": 0,
-            "TASK_LOST": 0,
-            "TASK_RUNNING": 0,
-            "TASK_STAGING": 0,
-            "TASK_STARTING": 0,
-            "active": True,
-            "capabilities": [],
-            "hostname": "10.0.5.35",
-            "id": "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-0001",
-            "name": "metronome",
-            "offered_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "pid": "scheduler-f43b84ec-16c3-455c-94df-158885642b88@10.0.5.35:36857",
-            "slave_ids": [],
-            "used_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "webui_url": "http://10.0.5.35:9090"
-        },
-        {
-            "TASK_ERROR": 0,
-            "TASK_FAILED": 0,
-            "TASK_FINISHED": 0,
-            "TASK_KILLED": 0,
-            "TASK_KILLING": 0,
-            "TASK_LOST": 0,
-            "TASK_RUNNING": 0,
-            "TASK_STAGING": 0,
-            "TASK_STARTING": 0,
-            "active": True,
-            "capabilities": [
-                "TASK_KILLING_STATE",
-                "PARTITION_AWARE"
-            ],
-            "hostname": "10.0.5.35",
-            "id": "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-0000",
-            "name": "marathon",
-            "offered_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "pid": "scheduler-43d78acd-8c22-4a42-82e5-43c64407038c@10.0.5.35:38457",
-            "slave_ids": [],
-            "used_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "webui_url": "https://10.0.5.35:8443"
-        }
+FRAMEWORK_TEMPLATE = {
+    "TASK_ERROR": 0,
+    "TASK_FAILED": 0,
+    "TASK_FINISHED": 0,
+    "TASK_KILLED": 0,
+    "TASK_KILLING": 0,
+    "TASK_LOST": 0,
+    "TASK_RUNNING": 0,
+    "TASK_STAGING": 0,
+    "TASK_STARTING": 0,
+    "active": True,
+    "capabilities": [
+        "TASK_KILLING_STATE",
+        "PARTITION_AWARE"
     ],
     "hostname": "10.0.5.35",
-    "slaves": [
-        {
-            "TASK_ERROR": 0,
-            "TASK_FAILED": 0,
-            "TASK_FINISHED": 0,
-            "TASK_KILLED": 0,
-            "TASK_KILLING": 0,
-            "TASK_LOST": 0,
-            "TASK_RUNNING": 0,
-            "TASK_STAGING": 0,
-            "TASK_STARTING": 0,
-            "active": True,
-            "attributes": {},
-            "framework_ids": [],
-            "hostname": "127.0.0.2",
-            "id": "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1",
-            "offered_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "pid": "slave(1)@127.0.0.2:15001",
-            "registered_time": 1480619701.48294,
-            "reserved_resources": {},
-            "resources": {
-                "cpus": 4.0,
-                "disk": 35577.0,
-                "gpus": 0.0,
-                "mem": 14018.0,
-                "ports": ("[1025-2180, 2182-3887, 3889-5049,"
-                          "5052-8079, 8082-8180, 8182-32000]")
-            },
-            "unreserved_resources": {
-                "cpus": 4.0,
-                "disk": 35577.0,
-                "gpus": 0.0,
-                "mem": 14018.0,
-                "ports": ("[1025-2180, 2182-3887, 3889-5049,"
-                          "5052-8079, 8082-8180, 8182-32000]")
-            },
-            "used_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "version": "1.2.0"
-        },
-        {
-            "TASK_ERROR": 0,
-            "TASK_FAILED": 0,
-            "TASK_FINISHED": 0,
-            "TASK_KILLED": 0,
-            "TASK_KILLING": 0,
-            "TASK_LOST": 0,
-            "TASK_RUNNING": 0,
-            "TASK_STAGING": 0,
-            "TASK_STARTING": 0,
-            "active": True,
-            "attributes": {
-                "public_ip": "true"
-            },
-            "framework_ids": [],
-            "hostname": "127.0.0.3",
-            "id": "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0",
-            "offered_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "pid": "slave(1)@127.0.0.3:15002",
-            "registered_time": 1480619699.20796,
-            "reserved_resources": {
-                "slave_public": {
-                    "cpus": 4.0,
-                    "disk": 35577.0,
-                    "gpus": 0.0,
-                    "mem": 14018.0,
-                    "ports": "[1-21, 23-5050, 5052-32000]"
-                }
-            },
-            "resources": {
-                "cpus": 4.0,
-                "disk": 35577.0,
-                "gpus": 0.0,
-                "mem": 14018.0,
-                "ports": "[1-21, 23-5050, 5052-32000]"
-            },
-            "unreserved_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "used_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "version": "1.2.0"
-        },
-        {
-            "TASK_ERROR": 0,
-            "TASK_FAILED": 0,
-            "TASK_FINISHED": 0,
-            "TASK_KILLED": 0,
-            "TASK_KILLING": 0,
-            "TASK_LOST": 0,
-            "TASK_RUNNING": 0,
-            "TASK_STAGING": 0,
-            "TASK_STARTING": 0,
-            "active": True,
-            "attributes": {
-                "public_ip": "true"
-            },
-            "framework_ids": [],
-            "hostname": "127.0.0.1",
-            "id": "35f210bb-bb58-4559-9932-b62619e72b6d-S0",
-            "offered_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "pid": "slave(1)@127.0.0.1:15401",
-            "registered_time": 1480619699.20796,
-            "reserved_resources": {
-                "slave_public": {
-                    "cpus": 4.0,
-                    "disk": 35577.0,
-                    "gpus": 0.0,
-                    "mem": 14018.0,
-                    "ports": "[1-21, 23-5050, 5052-32000]"
-                }
-            },
-            "resources": {
-                "cpus": 4.0,
-                "disk": 35577.0,
-                "gpus": 0.0,
-                "mem": 14018.0,
-                "ports": "[1-21, 23-5050, 5052-32000]"
-            },
-            "unreserved_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "used_resources": {
-                "cpus": 0.0,
-                "disk": 0.0,
-                "gpus": 0.0,
-                "mem": 0.0
-            },
-            "version": "1.2.0"
-        }
-    ]
+    "id": "09058589-9e78-4da8-8aa5-a97aee7a8bea-0000",
+    "name": "scheduler-alwaysthere",
+    "offered_resources": {
+        "cpus": 0.0,
+        "disk": 0.0,
+        "gpus": 0.0,
+        "mem": 0.0
+    },
+    "pid": "scheduler-43d78acd-8c22-4a42-82e5-43c64407038c@10.0.5.35:38457",
+    "slave_ids": [],
+    "used_resources": {
+        "cpus": 0.0,
+        "disk": 0.0,
+        "gpus": 0.0,
+        "mem": 0.0
+    },
+    "webui_url": "https://127.0.0.1:16000"
 }
 
-EXTRA_SLAVE_DICT = {
+
+def framework_from_template(fid, name, webui_url):
+    """Create a Mesos framework entry basing on the supplied data and the template
+
+    Arguments:
+        sid (string): framework ID that the new framework should have
+        port (string): TCP/IP port that the new framework should pretend to
+            listen on
+        ip (string): IP address that the new framework hould pretend to listen on
+
+    Returns:
+        Framework dict mimicing the one returned by Marathon
+    """
+    res = copy.deepcopy(FRAMEWORK_TEMPLATE)
+    res['id'] = fid
+    res['name'] = name
+    res['webui_url'] = webui_url
+
+    return res
+
+SCHEDULER_FWRK_ALWAYSTHERE_ID = '0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000'  # noqa: E305
+SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID = '4bfed1de-5c6c-48fa-931c-9f0468387db5-0000'  # noqa: E305
+SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID = '08cc2799-9380-469f-82ca-e4527ced3d8b-0000'  # noqa: E305
+
+SCHEDULER_FWRK_ALWAYSTHERE = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
+    "http://127.0.0.1:16000")
+SCHEDULER_FWRK_ALWAYSTHERE_DIFFERENTPORT = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
+    "http://127.0.0.15:16001")
+SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_ID,
+    "scheduler-alwaysthere",
+    "")
+SCHEDULER_FWRK_ALWAYSTHERE_NEST1 = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID,
+    'nest1/scheduler-alwaysthere',
+    "http://127.0.0.1:17000")
+SCHEDULER_FWRK_ALWAYSTHERE_NEST2 = framework_from_template(
+    SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID,
+    'nest2/nest1/scheduler-alwaysthere',
+    "http://127.0.0.1:18000")
+
+AGENT_TEMPLATE = {
     "id": "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2",
     "pid": "slave(1)@127.0.0.4:15003",
     "hostname": "127.0.0.4",
@@ -294,6 +142,64 @@ EXTRA_SLAVE_DICT = {
 }
 
 
+def agent_from_template(sid, ip, port):
+    """Create a Mesos agent entry basing on the supplied data and the template
+
+    Arguments:
+        sid (string): agent ID that the new agent should have
+        port (string): TCP/IP port that the new agent should pretend to listen on
+        ip (string): IP address that the new agent hould pretend to listen on
+
+    Returns:
+        Slave dict mimicing the one returned by Marathon
+    """
+    res = copy.deepcopy(AGENT_TEMPLATE)
+    res['id'] = sid
+    res['pid'] = "slave(1)@{0}:{1}".format(ip, port)
+    res['hostname'] = ip
+
+    return res
+
+AGENT1_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1"  # noqa: E305
+AGENT2_ID = "de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0"  # noqa: E305
+AGENT3_ID = "35f210bb-bb58-4559-9932-b62619e72b6d-S0"  # noqa: E305
+AGENT_EXTRA_ID = "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2"  # noqa: E305
+
+AGENT1_DICT = agent_from_template(
+    AGENT1_ID,
+    "127.0.0.2",
+    "15001",
+    )
+AGENT2_DICT = agent_from_template(
+    AGENT2_ID,
+    "127.0.0.3",
+    "15002",
+    )
+AGENT3_DICT = agent_from_template(
+    AGENT3_ID,
+    "127.0.0.1",
+    "15401",
+    )
+EXTRA_AGENT_DICT = agent_from_template(
+    AGENT_EXTRA_ID,
+    "127.0.0.4",
+    "15003",
+    )
+
+INITIAL_STATEJSON = {
+    "cluster": "prozlach-qzpz04t",
+    "frameworks": [SCHEDULER_FWRK_ALWAYSTHERE,
+                   SCHEDULER_FWRK_ALWAYSTHERE_NEST1,
+                   SCHEDULER_FWRK_ALWAYSTHERE_NEST2,
+                   ],
+    "hostname": "10.0.5.35",
+    "slaves": [AGENT1_DICT,
+               AGENT2_DICT,
+               AGENT3_DICT,
+               ],
+}
+
+
 # pylint: disable=R0903
 class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
     """A request hander class mimicking Mesos master daemon.
@@ -338,8 +244,19 @@ class MesosEndpoint(RecordingTcpIpEndpoint):
            particular type of endpoint"""
         self._context.data["endpoint-content"] = copy.deepcopy(INITIAL_STATEJSON)
 
-    def enable_extra_slave(self, *_):
-        """Change returned JSON to include extra slave - as if cluster had three
+    def enable_extra_agent(self, *_):
+        """Change returned JSON to include extra agent, one that is by default
+           not present in mocked `/state-json summary`
         """
         with self._context.lock:
-            self._context.data["endpoint-content"]["slaves"].append(EXTRA_SLAVE_DICT)
+            self._context.data["endpoint-content"]["slaves"].append(EXTRA_AGENT_DICT)
+
+    def set_frameworks_response(self, frameworks):
+        """Set response content for frameworks section of /state-summary response
+
+        Arguments:
+            frameworks (list): a list of framework dicts describing mocked
+                frameworks.
+        """
+        with self._context.lock:
+            self._context.data["endpoint-content"]["frameworks"] = frameworks
