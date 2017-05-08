@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-metrics.git",
-    "ref": "4316a775d5aea98f3c482efe97af18d9f72485c4",
-    "ref_origin": "philipnrmn/fix-nans"
+    "ref": "62702c3396deb5b47f4492a5a39d9dfb6f95ab0b",
+    "ref_origin": "master"
   },
   "username": "dcos_metrics"
 }
