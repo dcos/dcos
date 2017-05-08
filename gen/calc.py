@@ -758,6 +758,11 @@ entry = {
                             'service': 'ebs'
                         },
                         'libstorage': {
+                            'server': {
+                                'tasks': {
+                                    'logTimeout': '5m'
+                                }
+                            },
                             'integration': {
                                 'volume': {
                                     'operations': {
