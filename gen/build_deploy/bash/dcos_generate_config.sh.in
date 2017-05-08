@@ -1,5 +1,10 @@
 #!/bin/bash
 # variant: {variant}
+#
+# All logging and tool output should be redirected to stderr
+# as the Docker container might output json that would
+# otherwise be tainted.
+#
 set -o errexit -o nounset -o pipefail
 
 # preflight checks
@@ -25,9 +30,9 @@ fi
 
 # extract payload and load into docker if not extracted
 if [ ! -f "{genconf_tar}" ]; then
-    echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
+    >&2 echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
     sed '1,/^#EOF#$/d' $0 | tar xv
-    docker load -i {genconf_tar}
+    >&2 docker load -i {genconf_tar}
 fi
 trap - INT
 
