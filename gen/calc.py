@@ -6,6 +6,10 @@ should be run, how arguments should be calculated, which arguments should have
 set defaults, which arguments should be user specified, and how some arguments
 should be calculated.
 
+HOW THIS WORKS:
+    The ARGUMENT NAME in the validate and calculate functions correspond
+    to the FIELD FROM THE INPUT (config.yaml).
+
 Notes:
 validate_* function: the arguments it takes will define the arguments which the
     function is evaluated against. All validations are performed at once
@@ -77,14 +81,22 @@ def validate_json_list(value):
     return items
 
 
+def valid_ipv4_address(ip):
+    try:
+        socket.inet_pton(socket.AF_INET, ip)
+        return True
+    except OSError:
+        return False
+    except TypeError:
+        return False
+
+
 def validate_ipv4_addresses(ips: list):
-    def try_parse_ip(ip):
-        try:
-            return socket.inet_pton(socket.AF_INET, ip)
-        except OSError:
-            return None
-    invalid_ips = list(filter(lambda ip: try_parse_ip(ip) is None, ips))
-    assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
+    invalid_ips = []
+    for ip in ips:
+        if not valid_ipv4_address(ip):
+            invalid_ips.append(ip)
+    assert not invalid_ips, 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
 
 
 def validate_url(url: str):
@@ -519,6 +531,44 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
+    return validate_ip_list(dns_bind_ip_blacklist)
+
+
+def validate_dns_forward_zones(dns_forward_zones):
+    """
+     "forward_zones": [["a.contoso.com", [["1.1.1.1", 53],
+                                          ["2.2.2.2", 53]]],
+                       ["b.contoso.com", [["3.3.3.3", 53],
+                                          ["4.4.4.4", 53]]]]
+    """
+
+    def fz_err(msg):
+        return 'Invalid "dns_forward_zones": {}'.format(msg)
+
+    zone_defs = None
+    try:
+        zone_defs = json.loads(dns_forward_zones)
+    except ValueError as ex:
+        raise AssertionError(fz_err("{} is not valid JSON: {}".format(dns_forward_zones, ex))) from ex
+    assert isinstance(zone_defs, list), fz_err("{} is not a list".format(zone_defs))
+
+    for z in zone_defs:
+        assert isinstance(z, list), fz_err("{} is not a list".format(z))
+        assert len(z) == 2, fz_err("{} is not length 2".format(z))
+        assert isinstance(z[0], str), fz_err("{} is not a string".format(z))
+
+        upstreams = z[1]
+        for u in upstreams:
+            assert isinstance(u, list), fz_err("{} not a list".format(u))
+            assert len(u) == 2, fz_err("{} not length 2".format(u))
+
+            ip = u[0]
+            port = u[1]
+            assert valid_ipv4_address(ip), fz_err("{} not a valid IP address".format(ip))
+            validate_int_in_range(port, 1, 65535)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -530,6 +580,8 @@ entry = {
         validate_dns_search,
         validate_master_list,
         validate_resolvers,
+        validate_dns_bind_ip_blacklist,
+        validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
@@ -565,6 +617,8 @@ entry = {
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_blacklist': '[]',
+        'dns_forward_zones': '[]',
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
