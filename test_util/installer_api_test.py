@@ -3,6 +3,7 @@
 import abc
 import json
 import os
+import re
 from subprocess import CalledProcessError
 from typing import Optional
 
@@ -51,7 +52,9 @@ class AbstractDcosInstaller(metaclass=abc.ABCMeta):
     def get_hashed_password(self, password):
         p = self.tunnel.remote_cmd(["bash", self.installer_path, "--hash-password", password])
         # password hash is last line output but output ends with newline
-        passwd_hash = p.decode('utf-8').split('\n')[-2]
+        stdout = p.communicate()[0]
+        stdout = stdout.decode('ascii')
+        passwd_hash = [x for x in re.split('\s+', stdout) if x.startswith('$6$')][0]
         return passwd_hash
 
     @staticmethod
