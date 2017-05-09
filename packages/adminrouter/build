@@ -14,6 +14,11 @@ $OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-o
 rm -vfR $PKG_PATH/nginx/conf/*
 cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
 
+# AR start script:
+ar_wrapper="$PKG_PATH/nginx/sbin/adminrouter.sh"
+envsubst '$PKG_PATH' < /pkg/extra/systemd/adminrouter.sh > "$ar_wrapper"
+chmod a+x $ar_wrapper
+
 # TODO: We need more comprehensive approach to libraries. This is tracked in
 # https://jira.mesosphere.com/browse/DCOS-14039
 mkdir -p "$PKG_PATH/lib"

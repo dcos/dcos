@@ -37,6 +37,31 @@ function util.get_file_content(path)
 end
 
 
+function util.verify_ip(ip)
+  -- Based on http://stackoverflow.com/a/16643628
+  -- Return True if ip is a valid IPv4 IP, False otherwise.
+  if type(ip) ~= "string" then return false end
+
+  -- check for format 1.11.111.111 for ipv4
+  local chunks = {ip:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
+  if #chunks == 4 then
+    for _, v in pairs(chunks) do
+      if tonumber(v) > 255 then return false end
+    end
+    return true
+  end
+
+  return false
+end
+
+
+function util.table_len(tbl)
+    local count = 0
+    for _ in pairs(tbl) do count = count + 1 end
+    return count
+end
+
+
 -- Monkey-patch string table.
 
 function string:split(sep)

@@ -345,13 +345,25 @@ and `.stop()` methods during the start and stop of mocker instance
 respectively. Each endpoint can be set to respond to each and every request
 with an error (`500 Internal server error`).
 
-#### Subprocess management
-Pytest fixtures start a couple of subprocesses:
-* two dnsmasq instances
-* Admin Router itself
+#### DNS mock
 
-These do not always log to stderr/stdout, so a very simple syslog mock is also
-provided. All the stdouts and stderrs are piped into the central log
+The AR requires a working DNS server that responds correctly to the following
+queries:
+
+* `leader.mesos` - `A`: current Mesos leader instance
+* `master.mesos` - `A`: any Mesos master instance
+* `agent.mesos` - `A`: any Mesos agent
+* `slave.mesos` - `A`: any Mesos agent
+
+Mocking library comes with a simple DNS in-memory programmable server that
+can be used to mock various DNS query responses and also to simulate leader
+instance changes.
+
+#### Subprocess management
+Pytest fixture starts an `Admin Router` subprocess.
+
+The subprocess doesn't always log to stderr/stdout, so a very simple syslog mock
+is also provided. All the stdouts and stderrs are piped into the central log
 processing class LogCatcher.
 
 ##### LogCatcher
@@ -363,12 +375,12 @@ all the sources for new information and push it into:
 * internal buffer which can be used by tests for logging-based testing
 
 The internal buffer is available through
-`stdout_line_buffer`/`stderr_line_buffer` methods of AR object, Syslog
-object(available through a fixture), and dnsmasq processes (also through
-fixture). The buffer itself is implemented as a plain python list where each
-log line represents a single entry. This list is shared across all the objects
-that are groking the buffer, and there is no extra protection from manipulating
-it from within tests so extra care needs to be taken.
+`stdout_line_buffer`/`stderr_line_buffer` methods of AR object and Syslog
+object(available through a fixture). The buffer itself is implemented as a
+plain python list where each log line represents a single entry. This list is
+shared across all the objects that are groking the buffer, and there is no
+extra protection from manipulating it from within tests so extra care needs
+to be taken.
 
 In order to simplify handling of the log lines buffers, `LineBufferFilter` class
 has been created. It exposes two interfaces:
@@ -406,16 +418,6 @@ file:
 ✄✄✄✄✄✄✄✄✄✄ Logging of this instance ends here ✄✄✄✄✄✄✄✄✄✄
 
 ```
-
-##### DNS mock
-It's easier to launch dnsmasq process that will serve a static entries from a
-`/etc/hosts.dnsmasq` file than to write a fully conforming dns server in python.
-All the entries in this file point to localhost where appropriately configured
-endpoints are listening for connections, even though in real DC/OS instance
-they would point to a different server/IP address.
-
-Dnsmasq processes log all the requests to stdout which in turn is pushed into
-LogCatcher instance.
 
 ##### Syslog mock
 Syslog mock is a very simple Python hack - a DGRAM Unix Socket is created and

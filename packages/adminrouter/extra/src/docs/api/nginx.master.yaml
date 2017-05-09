@@ -8,10 +8,6 @@ backends:
     server: '127.0.0.1:7070'
     name: DC/OS Package Manager (Cosmos)
     reference: 'https://dcos.io/docs/1.9/usage/managing-services/package-api/'
-  dcos_history_service:
-    server: 'leader.mesos:15055'
-    name: DC/OS History
-    reference: 'https://github.com/dcos/dcos/tree/master/packages/dcos-history/extra#api'
   dddt:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics (3DT)
@@ -140,8 +136,7 @@ routes:
     group: History
     matcher: path
     proxy:
-      path: 'http://$backend/'
-      backend: dcos_history_service
+      path: $historyservice_upstream
     path: /dcos-history-service/
   /marathon:
     group: Marathon
