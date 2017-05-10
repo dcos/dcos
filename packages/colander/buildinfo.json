@@ -1,0 +1,9 @@
+{
+  "docker": "golang:1.6",
+  "single_source" : {
+    "kind": "git",
+    "git": "git@github.com:nlsun/colander.git",
+    "ref": "cd789ac3130af03c4867483f121a0b78a3aad0e3",
+    "ref_origin": "nlsun-version"
+  }
+}
