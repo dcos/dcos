@@ -96,6 +96,8 @@ class MockerBase:
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-metrics-master.sock'))
         # log endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-log.sock'))
+        # DC/OS history service
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=15055))
         # TODO - other endpoints common for all flavours go here...
 
         return res
