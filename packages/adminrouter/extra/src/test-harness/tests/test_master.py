@@ -3,6 +3,7 @@
 import collections
 import copy
 import logging
+import time
 
 import pytest
 import requests
@@ -14,6 +15,7 @@ from generic_test_code.common import (
     generic_upstream_headers_verify_test,
 )
 from mocker.endpoints.mesos import AGENT1_ID, AGENT2_ID
+from util import GuardedSubprocess
 
 log = logging.getLogger(__name__)
 
@@ -402,6 +404,7 @@ class TestService:
                                              '/service/scheduler-alwaysthere/foo/bar/',
                                              assert_headers_absent=["Accept-Encoding"],
                                              )
+
 
 class TestHistoryServiceRouting:
     def test_if_invalid_cache_case_is_handled(

@@ -6,7 +6,7 @@ Programmable in-memory DNS server
 
 import logging
 
-from dnslib import QTYPE, RR, RCODE
+from dnslib import QTYPE, RCODE, RR
 from dnslib.server import BaseResolver, DNSLogger, DNSServer
 
 log = logging.getLogger(__name__)

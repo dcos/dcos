@@ -10,8 +10,8 @@ import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
 from mocker.dns import DcosDnsServer
-from mocker.jwt import generate_rs256_jwt, generate_hs256_jwt
-from runner.common import DNSMock, LogCatcher, SyslogMock
+from mocker.jwt import generate_hs256_jwt, generate_rs256_jwt
+from runner.common import LogCatcher, SyslogMock
 from util import add_lo_ipaddr, ar_listen_link_setup, del_lo_ipaddr
 
 
