@@ -383,7 +383,11 @@ class ClusterApi:
                 msg += "Detailed explanation of the problem: {2}"
                 raise Exception(msg.format(r.status_code, r.reason, r.text))
 
-            assert r.json() == {'username': marathon_user}
+            json_uid = r.json()['uid']
+            if marathon_user == 'root':
+                assert json_uid == 0, "App running as root should have uid 0."
+            else:
+                assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
 
     def deploy_marathon_app(self, app_definition, timeout=120, check_health=True, ignore_failed_tasks=False):
         """Deploy an app to marathon
