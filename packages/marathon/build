@@ -1,10 +1,21 @@
 #!/bin/bash
 
-mkdir -p "$PKG_PATH/usr/"
+# Marathon and Metronome use the same jars, and pkgpanda doens't allow two packages
+# to have files at the same path, so essentially make marathon package-private.
+# Nothing will end up in /opt/mesosphere/{bin, lib}
+# This is not ideal but its one of the few solutions.
+# the lib directory is _supposed_ to be in the parent of $(realpath bin/marathon)
+# and its unclear how to change that without creating a very custom zipfile
+# that is different.
 
-cp -rp /pkg/src/marathon/target/scala-2.11/marathon-assembly-*.jar "$PKG_PATH/usr/marathon.jar"
+source /opt/mesosphere/environment.export
 
-chmod -R o+r "$PKG_PATH/usr"
+mkdir -p "$PKG_PATH/marathon/bin"
+mkdir -p "$PKG_PATH/marathon/lib"
+
+cp -rp /pkg/src/marathon/bin/marathon "$PKG_PATH/marathon/bin/marathon"
+chmod +x "$PKG_PATH/marathon/bin/marathon"
+cp -rpn /pkg/src/marathon/lib/*.jar "$PKG_PATH/marathon/lib"
 
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
@@ -24,20 +35,21 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment.ip.marathon
+Environment=JAVA_HOME=${JAVA_HOME}
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStartPre=/bin/bash -c 'echo "HOST_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "MARATHON_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /var/lib/dcos/marathon/environment.ip.marathon'
-ExecStart=/opt/mesosphere/bin/java \\
-    -Xmx2G \\
-    -jar "$PKG_PATH/usr/marathon.jar" \\
-    --zk "\$MARATHON_ZK" \\
+ExecStart=$PKG_PATH/marathon/bin/marathon \\
+    -Duser.dir=/var/lib/dcos/marathon \\
+    -J-server \\
+    -J-verbose:gc \\
+    -J-XX:+PrintGCDetails \\
+    -J-XX:+PrintGCTimeStamps \\
     --master zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos \\
-    --hostname "\$MARATHON_HOSTNAME" \\
     --default_accepted_resource_roles "*" \\
     --mesos_role "slave_public" \\
-    --max_tasks_per_offer 100 \\
     --task_launch_timeout 86400000 \\
     --decline_offer_duration 300000 \\
     --revive_offers_for_new_apps \\
