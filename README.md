@@ -192,7 +192,7 @@ storage:
     path: /home/cmaloney/dcos-artifacts
 ```
 
-Sample config that will store to a local archive path as wll as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
+Sample config that will store to a local archive path as well as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
 ```yaml
 storage:
   aws:
