@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "d6fc5ad250a172fc74e12c1611522ca5b9603824",
-    "ref_origin" : "kapil/secret_resolver_plus_images"
+    "ref": "88fd41bb98719ef54d0fef1753bc65dfb8f7c407",
+    "ref_origin" : "gaston/checks"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
