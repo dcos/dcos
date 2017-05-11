@@ -13,16 +13,16 @@ Admin Router runs on both master and agent nodes, each with different configurat
 **Master Routes:**
 
 - NGINX: [nginx.master.conf](nginx.master.conf)
-- YAML: [docs/api/nginx.master.yaml](api/nginx.master.yaml)
-- HMTL: [docs/api/nginx.master.html](api/nginx.master.html)
-- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.master.html>
+- YAML: [docs/api/nginx.master.yaml](docs/api/nginx.master.yaml)
+- HMTL: [docs/api/nginx.master.html](docs/api/nginx.master.html)
+- Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.master.html>
 
 **Agent Routes:**
 
 - NGINX: [nginx.agent.conf](nginx.agent.conf)
-- YAML: [docs/api/nginx.agent.yaml](api/nginx.agent.yaml)
-- HMTL: [docs/api/nginx.agent.html](api/nginx.agent.html)
-- Rendered: <https://rawgit.com/dcos/dcos/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
+- YAML: [docs/api/nginx.agent.yaml](docs/api/nginx.agent.yaml)
+- HMTL: [docs/api/nginx.agent.html](docs/api/nginx.agent.html)
+- Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
 
 Use `make api-docs` to regenerate the YAML and HTML files.
 
