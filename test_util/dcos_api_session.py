@@ -30,10 +30,10 @@ def get_args_from_env():
 
     return {
         'dcos_url': os.environ['DCOS_DNS_ADDRESS'],
-        'masters': os.environ['MASTER_HOSTS'].split(','),
-        'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
-        'slaves': os.environ['SLAVE_HOSTS'].split(','),
-        'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
+        'masters': list(filter(None, os.environ['MASTER_HOSTS'].split(','))),
+        'public_masters': list(filter(None, os.environ['PUBLIC_MASTER_HOSTS'].split(','))),
+        'slaves': list(filter(None, os.environ['SLAVE_HOSTS'].split(','))),
+        'public_slaves': list(filter(None, os.environ['PUBLIC_SLAVE_HOSTS'].split(','))),
         'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
 
 
