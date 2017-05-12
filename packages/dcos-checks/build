@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e  # Fail the script if anything fails
+set -x  # Verbose output
+set -u  # Undefined variables
+
+CHECKS_PATH=$GOPATH/src/github.com/dcos/dcos/packages/dcos-checks/extra/checks
+mkdir -p $CHECKS_PATH
+cd $CHECKS_PATH
+cp -r /pkg/extra/checks/* ./
+go build
+cp $CHECKS_PATH/checks $PKG_PATH
