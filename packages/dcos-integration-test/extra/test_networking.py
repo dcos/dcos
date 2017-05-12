@@ -1,3 +1,4 @@
+import collections
 import contextlib
 import json
 import logging
@@ -16,6 +17,13 @@ from test_util.marathon import Container, get_test_app, Network
 
 log = logging.getLogger(__name__)
 
+GLOBAL_PORT_POOL = collections.defaultdict(lambda: list(range(10000, 32000)))
+
+
+def unused_port(network):
+    global GLOBAL_PORT_POOL
+    return GLOBAL_PORT_POOL[network].pop(random.choice(range(len(GLOBAL_PORT_POOL[network]))))
+
 
 def lb_enabled():
     return expanded_config['enable_lb'] == 'true'
@@ -27,17 +35,16 @@ def lb_enabled():
                 retry_on_exception=lambda x: True)
 def ensure_routable(cmd, host, port):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
-    log.info('Sending {} data: {}'.format(proxy_uri, cmd))
+    log.debug('Sending {} data: {}'.format(proxy_uri, cmd))
     r = requests.post(proxy_uri, data=cmd)
-    log.info('Requests Response: %s', repr(r.json()))
+    log.debug('Requests Response: %s', repr(r.json()))
     assert r.json()['status'] == 0
     return json.loads(r.json()['output'])
 
 
-def vip_app(container: Container, network: Network, host: str, vip: str, offset_port: bool):
-    """ If offset_port is True then the port on the user network will be one higher
-    to allow two apps on the same USER network
-    """
+def vip_app(container: Container, network: Network, host: str, vip: str):
+    # user_net_port is only actually used for USER network because this cannot be assigned
+    # by marathon
     if network in [Network.HOST, Network.BRIDGE]:
         # both of these cases will rely on marathon to assign ports
         return get_test_app(
@@ -46,11 +53,9 @@ def vip_app(container: Container, network: Network, host: str, vip: str, offset_
             vip=vip,
             container_type=container)
     elif network == Network.USER:
-        # ports must be incremented as one shared network is used
-        user_port = 8000 if not offset_port else 8001
         return get_test_app(
             network=network,
-            host_port=user_port,
+            host_port=unused_port(Network.USER),
             host_constraint=host,
             vip=vip,
             container_type=container)
@@ -63,32 +68,20 @@ def generate_vip_app_permutations():
     """
     network_options = [Network.USER, Network.BRIDGE, Network.HOST]
     permutations = []
-    index = 0
     for container in [Container.NONE, Container.MESOS, Container.DOCKER]:
-        for named_vip in [True, False]:
-            for same_host in [True, False]:
-                for vip_net in network_options:
-                    for proxy_net in network_options:
-                        if container != Container.DOCKER and Network.BRIDGE in (vip_net, proxy_net):
-                            # only DOCKER containers support BRIDGE network
-                            continue
-                        permutations.append((container, named_vip, same_host, vip_net, proxy_net, index))
-                        index += 1
+        for vip_net in network_options:
+            for proxy_net in network_options:
+                if container != Container.DOCKER and Network.BRIDGE in (vip_net, proxy_net):
+                    # only DOCKER containers support BRIDGE network
+                    continue
+                permutations.append((container, vip_net, proxy_net))
     return permutations
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
-@pytest.mark.parametrize(
-    'container,named_vip,same_host,vip_net,proxy_net,test_index', generate_vip_app_permutations())
-def test_vip(
-        dcos_api_session,
-        container: Container,
-        named_vip: bool,
-        same_host: bool,
-        vip_net: Network,
-        proxy_net: Network,
-        test_index: int):  # only used to ensure that each app has a unique VIP port
+@pytest.mark.parametrize('container,vip_net,proxy_net', generate_vip_app_permutations())
+def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net: Network):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE (docker only), HOST
@@ -101,46 +94,80 @@ def test_vip(
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
-    test_port = 7000 + test_index
-    if not same_host and len(dcos_api_session.all_slaves) == 1:
-        pytest.skip('must have more than one agent for this test!')
-    if named_vip:
-        vip = '/namedvip:{}'.format(test_port)
-        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(test_port)
-    else:
-        vip = '1.1.1.7:{}'.format(test_port)
-        vipaddr = vip
-
-    agents = list(dcos_api_session.all_slaves)
-    # make sure we can reproduce
-    random.seed(0)
-    random.shuffle(agents)
-    host1 = agents[0]
-    if not same_host:
-        host2 = agents[1]
-    else:
-        host2 = agents[0]
-    origin_app, app_uuid = vip_app(container, vip_net, host1, vip, False)
-    proxy_app, _ = vip_app(container, proxy_net, host2, None, True)
-    # allow these apps to run on public slaves
-    origin_app['acceptedResourceRoles'] = ['*', 'slave_public']
-    proxy_app['acceptedResourceRoles'] = ['*', 'slave_public']
-    returned_uuid = None
-    with contextlib.ExitStack() as stack:
-        # We do not need the service endpoint of the origin app because it has the VIP,
-        stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app, check_health=False))
-        endpoints = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(proxy_app))
-        endpoint = endpoints[0]
+    failure_stack = []
+    for test in setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
+        cmd, origin_app, proxy_app, proxy_net = test
+        log.info('ORIGIN APP INFO')
+        log.info(wait_for_tasks_healthy(dcos_api_session, origin_app))
+        log.info('PROXY APP INFO')
+        proxy_info = wait_for_tasks_healthy(dcos_api_session, proxy_app)
+        log.info(proxy_info)
+        proxy_task_info = proxy_info['app']['tasks'][0]
         if proxy_net == Network.USER:
-            host = endpoint.ip
-            port = 8001
+            proxy_host = proxy_task_info['ipAddresses'][0]['ipAddress']
+            if container == Container.DOCKER:
+                proxy_port = proxy_task_info['ports'][0]
+            else:
+                proxy_port = proxy_app['ipAddress']['discovery']['ports'][0]['number']
         else:
-            host = endpoint.host
-            port = endpoint.port
-        cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
-        returned_uuid = ensure_routable(cmd, host, port)
-    assert returned_uuid is not None
-    assert returned_uuid['test_uuid'] == app_uuid
+            proxy_host = proxy_task_info['host']
+            proxy_port = proxy_task_info['ports'][0]
+        try:
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app['env']['DCOS_TEST_UUID']
+        except Exception as ex:
+            failure_stack.append('RemoteCommand:{}\n\nOriginApp:{}\n\nProxyApp:{}\n\nException:'.format(*test))
+            failure_stack.append(str(repr(ex)))
+        dcos_api_session.marathon.delete('v2/apps/{}'.format(origin_app['id']))
+        dcos_api_session.marathon.delete('v2/apps/{}'.format(proxy_app['id']))
+    if len(failure_stack) > 0:
+        raise AssertionError('\n******************************************\n'.join(failure_stack))
+
+
+def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
+    if len(dcos_api_session.all_slaves) < 2:
+        pytest.skip('must have more than one agent for this test!')
+    apps = list()
+    tests = list()
+    for named_vip in (True, False):
+        for same_host in (True, False):
+            if named_vip:
+                origin_host = dcos_api_session.all_slaves[0]
+                proxy_host = dcos_api_session.all_slaves[1]
+                vip_port = unused_port('namedvip')
+                vip = '/namedvip:{}'.format(vip_port)
+                vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
+            else:
+                origin_host = dcos_api_session.all_slaves[1]
+                proxy_host = dcos_api_session.all_slaves[0]
+                vip_port = unused_port('1.1.1.7')
+                vip = '1.1.1.7:{}'.format(vip_port)
+                vipaddr = vip
+            if same_host:
+                proxy_host = origin_host
+            cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
+            origin_app, origin_app_uuid = vip_app(container, vip_net, origin_host, vip)
+            proxy_app, proxy_app_uuid = vip_app(container, proxy_net, proxy_host, None)
+            # allow these apps to run on public slaves
+            origin_app['acceptedResourceRoles'] = ['*', 'slave_public']
+            proxy_app['acceptedResourceRoles'] = ['*', 'slave_public']
+            # We do not need the service endpoints because we have deterministically assigned them
+            for app_definition in (origin_app, proxy_app):
+                r = dcos_api_session.marathon.post('v2/apps', json=app_definition)
+                r.raise_for_status()
+                apps.append(app_definition)
+            tests.append((cmd, origin_app, proxy_app, proxy_net))
+    return tests
+
+
+@retrying.retry(
+    wait_fixed=5000,
+    stop_max_delay=120 * 1000,
+    retry_on_result=lambda res: res is None)
+def wait_for_tasks_healthy(dcos_api_session, app_definition):
+    proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
+    if proxy_info['app']['tasksHealthy'] == app_definition['instances']:
+        return proxy_info
+    return None
 
 
 @retrying.retry(wait_fixed=2000,
