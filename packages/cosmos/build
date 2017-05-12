@@ -27,6 +27,7 @@ ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
 ExecStart=/opt/mesosphere/bin/java \\
     -Xmx2G \\
+    -Djdk.http.auth.tunneling.disabledSchemes="" \\
     -classpath ${PKG_PATH}/usr/cosmos.jar \\
     com.simontuffs.onejar.Boot \\
     -admin.port=127.0.0.1:9990 \\
