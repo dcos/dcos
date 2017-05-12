@@ -73,6 +73,9 @@ SCHEDULER_FWRK_MARATHON_ID = '819aed93-4143-4291-8ced-5afb5c726803-0000'  # noqa
 SCHEDULER_FWRK_ALWAYSTHERE_ID = '0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000'  # noqa: E305
 SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID = '4bfed1de-5c6c-48fa-931c-9f0468387db5-0000'  # noqa: E305
 SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID = '08cc2799-9380-469f-82ca-e4527ced3d8b-0000'  # noqa: E305
+SCHEDULER_FWRK_ONLYMESOS_NEST2_ID = '2795e97a-19c6-48a7-b55c-fb806bba8f02-0000'  # noqa: E305
+SCHEDULER_FWRK_ONLYMESOSDNS_NEST2_ID = \
+    '7b602083-218a-4f88-8741-81557f1c381a-0000'  # noqa: E305
 
 SCHEDULER_FWRK_MARATHON = framework_from_template(
     SCHEDULER_FWRK_MARATHON_ID,
@@ -98,6 +101,14 @@ SCHEDULER_FWRK_ALWAYSTHERE_NEST2 = framework_from_template(
     SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID,
     'nest2/nest1/scheduler-alwaysthere',
     "http://127.0.0.1:18000")
+SCHEDULER_FWRK_ONLYMESOS_NEST2 = framework_from_template(
+    SCHEDULER_FWRK_ONLYMESOS_NEST2_ID,
+    'nest2/nest1/scheduler-onlymesos',
+    "http://127.0.0.1:18002")
+SCHEDULER_FWRK_ONLYMESOSDNS_NEST2 = framework_from_template(
+    SCHEDULER_FWRK_ONLYMESOSDNS_NEST2_ID,
+    'nest2/nest1/scheduler-onlymesosdns',
+    "")
 
 AGENT_TEMPLATE = {
     "id": "8ad5a85c-c14b-4cca-a089-b9dc006e7286-S2",
@@ -197,6 +208,8 @@ INITIAL_STATEJSON = {
                    SCHEDULER_FWRK_ALWAYSTHERE,
                    SCHEDULER_FWRK_ALWAYSTHERE_NEST1,
                    SCHEDULER_FWRK_ALWAYSTHERE_NEST2,
+                   SCHEDULER_FWRK_ONLYMESOS_NEST2,
+                   SCHEDULER_FWRK_ONLYMESOSDNS_NEST2,
                    ],
     "hostname": "10.0.5.35",
     "slaves": [AGENT1_DICT,

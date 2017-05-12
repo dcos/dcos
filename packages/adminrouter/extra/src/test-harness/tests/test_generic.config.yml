@@ -46,6 +46,106 @@ endpoint_tests:
             sent: /service/scheduler-alwaysthere/
     type:
       - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: false
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /service/nest1/scheduler-alwaysthere/foo/bar
+        upstream: http://127.0.0.1:17000
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /foo/bar
+            sent: /service/nest1/scheduler-alwaysthere/foo/bar
+          - expected: /
+            sent: /service/nest1/scheduler-alwaysthere/
+          - expected: /
+            sent: /service/nest1/scheduler-alwaysthere
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: false
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /service/nest2/nest1/scheduler-alwaysthere/foo/bar
+        upstream: http://127.0.0.1:18000
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /foo/bar
+            sent: /service/nest2/nest1/scheduler-alwaysthere/foo/bar
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-alwaysthere/
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-alwaysthere
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: false
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /service/nest2/nest1/scheduler-onlymarathon/foo/bar
+        upstream: http://127.0.0.1:18001
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /foo/bar
+            sent: /service/nest2/nest1/scheduler-onlymarathon/foo/bar
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymarathon/
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymarathon
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: false
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /service/nest2/nest1/scheduler-onlymesos/foo/bar
+        upstream: http://127.0.0.1:18002
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /foo/bar
+            sent: /service/nest2/nest1/scheduler-onlymesos/foo/bar
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymesos/
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymesos
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: false
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /service/nest2/nest1/scheduler-onlymesosdns/foo/bar
+        upstream: http://127.0.0.1:18003
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /foo/bar
+            sent: /service/nest2/nest1/scheduler-onlymesosdns/foo/bar
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymesosdns/
+          - expected: /
+            sent: /service/nest2/nest1/scheduler-onlymesosdns
+    type:
+      - master
 
 ######### /agent endpoint
   - tests:
@@ -474,6 +574,28 @@ location_header_rewrite_tests:
       - location_expected: http://127.0.0.1/service/scheduler-alwaysthere/foo/bar
         location_set: http://127.0.0.1/foo/bar
       - location_expected: http://127.0.0.1/service/scheduler-alwaysthere/foo/bar
+        location_set: /foo/bar
+    type:
+      - master
+  - basepath: /service/nest1/scheduler-alwaysthere/foo/bar
+    endpoint_id: http://127.0.0.1:17000
+    redirect_testscases:
+      - location_expected: http://127.0.0.1/service/nest1/scheduler-alwaysthere/foo/bar
+        location_set: http://127.0.0.1/service/nest1/scheduler-alwaysthere/foo/bar
+      - location_expected: http://127.0.0.1/service/nest1/scheduler-alwaysthere/foo/bar
+        location_set: http://127.0.0.1/foo/bar
+      - location_expected: http://127.0.0.1/service/nest1/scheduler-alwaysthere/foo/bar
+        location_set: /foo/bar
+    type:
+      - master
+  - basepath: /service/nest2/nest1/scheduler-alwaysthere/foo/bar
+    endpoint_id: http://127.0.0.1:18000
+    redirect_testscases:
+      - location_expected: http://127.0.0.1/service/nest2/nest1/scheduler-alwaysthere/foo/bar
+        location_set: http://127.0.0.1/service/nest2/nest1/scheduler-alwaysthere/foo/bar
+      - location_expected: http://127.0.0.1/service/nest2/nest1/scheduler-alwaysthere/foo/bar
+        location_set: http://127.0.0.1/foo/bar
+      - location_expected: http://127.0.0.1/service/nest2/nest1/scheduler-alwaysthere/foo/bar
         location_set: /foo/bar
     type:
       - master

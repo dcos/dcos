@@ -2,6 +2,7 @@ local cjson_safe = require "cjson.safe"
 local shmlock = require "resty.lock"
 local http = require "resty.http"
 local resolver = require "resty.resolver"
+local util = require "util"
 
 
 -- In order to make caching code testable, these constants need to be
@@ -122,7 +123,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        end
 
        -- Service name should exist as we asked Marathon for it
-       local svcId = labels["DCOS_SERVICE_NAME"]
+       local svcId = util.normalize_service_name(labels["DCOS_SERVICE_NAME"])
 
        local scheme = labels["DCOS_SERVICE_SCHEME"]
        if not scheme then
@@ -289,14 +290,13 @@ local function fetch_and_store_state_mesos(auth_token)
 
     for _, framework in ipairs(raw_state_summary["frameworks"]) do
         local f_id = framework["id"]
-        local f_name = framework["name"]
+        local f_name = util.normalize_service_name(framework["name"])
 
         parsed_state_summary['f_by_id'][f_id] = {}
         parsed_state_summary['f_by_id'][f_id]['webui_url'] = framework["webui_url"]
         parsed_state_summary['f_by_id'][f_id]['name'] = f_name
         parsed_state_summary['f_by_name'][f_name] = {}
         parsed_state_summary['f_by_name'][f_name]['webui_url'] = framework["webui_url"]
-        parsed_state_summary['f_by_name'][f_name]['name'] = f_name
     end
 
     for _, agent in ipairs(raw_state_summary["slaves"]) do

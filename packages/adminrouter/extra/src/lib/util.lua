@@ -56,9 +56,113 @@ end
 
 
 function util.table_len(tbl)
+    -- Return the length of the table, without the limitations of #tbl
+    -- approach, where nil value in the table terminates counting/acts as the
+    -- end of the table.
     local count = 0
     for _ in pairs(tbl) do count = count + 1 end
     return count
+end
+
+
+function util.reverse(tbl)
+    -- Reverse in-place given table
+    local tl = util.table_len(tbl)
+
+    for i=1, math.floor(tl / 2) do
+        local tmp = tbl[i]
+        tbl[i] = tbl[tl - i + 1]
+        tbl[tl - i + 1] = tmp
+    end
+end
+
+
+function util.extract_service_path_component(service_path, fieldsLimit)
+    -- Extract path component in normalized form, at given level.
+    --
+    -- This function extracts from given service path the normalized service id
+    -- at a given level, defined by fieldsLimit.For example:
+    --
+    -- service_path group1/jenkins/ver/important/path/foobar.js
+    --
+    -- will yield following results, depending on fieldsLimit parameter:
+    -- nil:
+    --   normalised_name: foobar.js.path.important.ver.jenkins.group1
+    --   plain_name: group1/jenkins/ver/important/path/foobar.js
+    --   moreSegments: false
+    -- 4:
+    --   normalised_name: important.ver.jenkins.group1
+    --   plain_name: group1/jenkins/ver/important
+    --   moreSegments: true
+    -- 3:
+    --   normalised_name: ver.jenkins.group1
+    --   plain_name: group1/jenkins/ver
+    --   moreSegments: true
+    -- 2:
+    --   normalised_name: jenkins.group1
+    --   plain_name: group1/jenkins
+    --   moreSegments: true
+    -- 1:
+    --   normalised_name: group1
+    --   plain_name: group1
+    --   moreSegments: true
+    --
+    -- Returns:
+    --   A list with following elements, in order:
+    --     - normalised_name: service name in normalized form
+    --     - plain_name: service name in plain form
+    --     - moreSegments: true/false depending on whether all segments
+    --       service_path were processed or not.
+    local tmpTbl = {}
+    local moreSegments = false
+
+    if service_path:len() > 0 then
+        fieldsLimit = fieldsLimit or -1
+
+        local fieldCursor, searchCursor = 1, 1
+        local substrStart, _ = service_path:find('/', searchCursor, true)
+        while substrStart and fieldsLimit ~= 0 do
+            if substrStart ~= searchCursor then
+                tmpTbl[fieldCursor] = service_path:sub(searchCursor, substrStart-1)
+                fieldsLimit = fieldsLimit-1
+                fieldCursor = fieldCursor+1
+            end
+            searchCursor = substrStart+1
+            substrStart,substrStart = service_path:find('/', searchCursor, true)
+        end
+        if searchCursor < service_path:len() then
+            if fieldsLimit ~= 0 then
+                tmpTbl[fieldCursor] = service_path:sub(searchCursor)
+            else
+                moreSegments = true
+            end
+        end
+    end
+
+    plain_name = table.concat(tmpTbl, "/")
+    util.reverse(tmpTbl)
+    normalised_name = table.concat(tmpTbl, ".")
+
+    return normalised_name, plain_name, moreSegments
+end
+
+
+function util.normalize_service_name(serviceName, fieldsLimit)
+    -- Normalize service name
+    --
+    -- Different services (Marathon&Mesos vs. MesosDNS) use different formats
+    -- for the service name. So the idea is that in the cache we store it in
+    -- standardised format:
+    --
+    -- service name: group1/group2/foobar
+    -- normalized: foobar.group2.group1
+    --
+    -- For the convienience we use MesosDNS notation (dots+reversing) in favour
+    -- of Marathon&Mesos(just path) as it simplifies the code a bit.
+
+    ret, _, _ = util.extract_service_path_component(serviceName, nil)
+
+    return ret
 end
 
 

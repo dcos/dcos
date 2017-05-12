@@ -109,15 +109,21 @@ SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT = {
     ],
 }
 SCHEDULER_SRV_ALWAYSTHERE_NEST1 = {
-    "nest2.nest1.scheduler-alwaysthere": [
-        create_srv_entry("nest2.nest1.scheduler-alwaysthere", "127.0.0.1", 18000),
-        create_srv_entry("nest2.nest1.scheduler-alwaysthere", "127.0.0.1", 16002),
+    "scheduler-alwaysthere.nest1.nest2": [
+        create_srv_entry("scheduler-alwaysthere.nest1.nest2", "127.0.0.1", 18000),
+        create_srv_entry("scheduler-alwaysthere.nest1.nest2", "127.0.0.1", 16002),
     ],
 }
 SCHEDULER_SRV_ALWAYSTHERE_NEST2 = {
-    "nest1.scheduler-alwaysthere": [
-        create_srv_entry("nest1.scheduler-alwaysthere", "127.0.0.1", 17000),
-        create_srv_entry("nest1.scheduler-alwaysthere", "127.0.0.1", 16002),
+    "scheduler-alwaysthere.nest1": [
+        create_srv_entry("scheduler-alwaysthere.nest1", "127.0.0.1", 17000),
+        create_srv_entry("scheduler-alwaysthere.nest1", "127.0.0.1", 16002),
+    ],
+}
+SCHEDULER_SRV_ONLYMESOSDNS_NEST2 = {
+    "scheduler-onlymesosdns.nest1.nest2": [
+        create_srv_entry("scheduler-onlymesosdns.nest1.nest2", "127.0.0.1", 18003),
+        create_srv_entry("scheduler-onlymesosdns.nest1.nest2", "127.0.0.1", 16002),
     ],
 }
 
@@ -125,6 +131,7 @@ INITIAL_SRVDATA = {}
 INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE)
 INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE_NEST1)
 INITIAL_SRVDATA.update(SCHEDULER_SRV_ALWAYSTHERE_NEST2)
+INITIAL_SRVDATA.update(SCHEDULER_SRV_ONLYMESOSDNS_NEST2)
 
 
 # pylint: disable=R0903,C0103

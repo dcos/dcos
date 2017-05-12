@@ -205,6 +205,8 @@ SCHEDULER_APP_ALWAYSTHERE_NEST1 = \
     app_from_template('nest1/scheduler-alwaysthere', 17000)
 SCHEDULER_APP_ALWAYSTHERE_NEST2 =  \
     app_from_template('nest2/nest1/scheduler-alwaysthere', 18000)
+SCHEDULER_APP_ONLYMARATHON_NEST2 =  \
+    app_from_template('nest2/nest1/scheduler-onlymarathon', 18001)
 
 
 # pylint: disable=R0903
@@ -312,5 +314,6 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
             SCHEDULER_APP_ALWAYSTHERE,
             SCHEDULER_APP_ALWAYSTHERE_NEST1,
             SCHEDULER_APP_ALWAYSTHERE_NEST2,
+            SCHEDULER_APP_ONLYMARATHON_NEST2,
             ]})
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}
