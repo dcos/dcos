@@ -1,12 +1,11 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+
 import pytest
 import requests
 
-from generic_test_code.common import (
-    verify_header
-)
+from generic_test_code.common import verify_header
 
 log = logging.getLogger(__name__)
 pytestmark = pytest.mark.usefixtures("agent_ar_process")

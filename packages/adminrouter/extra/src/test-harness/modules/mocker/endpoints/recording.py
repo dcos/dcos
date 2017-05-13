@@ -7,12 +7,8 @@ import copy
 import logging
 import time
 
-from mocker.endpoints.generic import (
-    TcpIpHttpEndpoint,
-)
-from mocker.endpoints.basehandler import (
-    BaseHTTPRequestHandler,
-)
+from mocker.endpoints.basehandler import BaseHTTPRequestHandler
+from mocker.endpoints.generic import TcpIpHttpEndpoint
 
 # pylint: disable=C0103
 log = logging.getLogger(__name__)

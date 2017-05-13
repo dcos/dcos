@@ -7,12 +7,13 @@ Shared management code for DC/OS mocks used by AR instances, both EE and Open.
 import concurrent.futures
 import logging
 
+from mocker.endpoints.marathon import MarathonEndpoint
+from mocker.endpoints.mesos import MesosEndpoint
+from mocker.endpoints.mesos_dns import MesosDnsEndpoint
 from mocker.endpoints.reflectors import (
     ReflectingTcpIpEndpoint,
     ReflectingUnixSocketEndpoint,
 )
-from mocker.endpoints.mesos import MesosEndpoint
-from mocker.endpoints.marathon import MarathonEndpoint
 
 log = logging.getLogger(__name__)
 
@@ -74,16 +75,25 @@ class MockerBase:
             port=15401,
             certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
             keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
-        # slave3
+        # Agent3
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.4', port=15003))
-        # Slave AR 1
+        # Agent AR 1
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=61001))
-        # Slave AR 2
+        # Agent AR 2
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=61001))
-        # task /nginx-alwaysthere
+        # task /scheduler-alwaysthere
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16000))
-        # task /nginx-enabled
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16001))
+        # task /nest1/scheduler-alwaysthere
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=17000))
+        # task /nest2/nest1/scheduler-alwaysthere
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18000))
+        # task /scheduler-alwaysthere but with different ip+port, used i.e. in
+        # `/service` endpoint tests
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.15', port=16001))
+        # catch-all for /scheduler-alwaysthere task. Its role is to respond for all
+        # the requests which i.e. used mesos_dns'es second entry in SRV reply.
+        # Successfull tests will never use it.
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=16002))
         # other Admin Router Masters, used i.e. during Marathon leader testing
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=80))
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.3', port=80))
@@ -97,9 +107,9 @@ class MockerBase:
         # log endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-log.sock'))
         # DC/OS history service
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.2', port=15055))
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=15055))
         # Mesos DNS
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=8123))
+        res.append(MesosDnsEndpoint(ip='127.0.0.1', port=8123))
         # Metrics(agent):
         res.append(
             ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))

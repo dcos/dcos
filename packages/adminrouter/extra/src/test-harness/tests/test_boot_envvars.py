@@ -1,11 +1,13 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
-import pytest
-import requests
 import time
 
-from util import LineBufferFilter, SearchCriteria, GuardedSubprocess
+import pytest
+import requests
+
+from mocker.endpoints.mesos import AGENT1_ID, AGENT3_ID
+from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 
@@ -75,9 +77,9 @@ class TestDefaultSchemeEnvVarBehaviour:
         filter_regexp = {'Default scheme: https://': SearchCriteria(1, False)}
 
         ar = nginx_class(default_scheme="https://")
-        agent_id = '35f210bb-bb58-4559-9932-b62619e72b6d-S0'
+        agent_id = AGENT3_ID
         url_good = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
-        agent_id = 'de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+        agent_id = AGENT1_ID
         url_bad = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
 
         with GuardedSubprocess(ar):
@@ -234,7 +236,7 @@ class TestUpstreamsEnvVarBehaviour:
         }
 
         ar = nginx_class(upstream_mesos="http://127.0.0.2:5050")
-        agent_id = 'de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1'
+        agent_id = AGENT1_ID
         url = ar.make_url_from_path('/agent/{}/blah/blah'.format(agent_id))
 
         with GuardedSubprocess(ar):
@@ -283,5 +285,55 @@ class TestUpstreamsEnvVarBehaviour:
         m2_requests = mocker.send_command(endpoint_id='http://127.0.0.3:5050',
                                           func_name='get_recorded_requests')
         assert len(m2_requests) == 1
+
+        assert lbf.extra_matches == {}
+
+
+class TestHostIPVarBehavriour:
+    def test_if_absent_var_is_handled(self, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: unknown': SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=None)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    @pytest.mark.parametrize(
+        "invalid_ip",
+        ["not-an-ip", "1,3,4,4", "1.2.3.300", 'aaa.1.2.3.4', '1.2.3.4.bccd'])
+    def test_if_var_is_verified(self, invalid_ip, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: unknown': SearchCriteria(1, True),
+            'HOST_IP var is not a valid ipv4: {}'.format(invalid_ip):
+                SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=invalid_ip)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    @pytest.mark.parametrize("valid_ip", ["1.2.3.4", "255.255.255.255", "0.0.0.1"])
+    def test_if_var_is_honoured(self, valid_ip, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: {}'.format(valid_ip): SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=valid_ip)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
 
         assert lbf.extra_matches == {}

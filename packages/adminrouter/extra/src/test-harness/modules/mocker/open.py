@@ -8,9 +8,7 @@ import logging
 
 from mocker.common import MockerBase
 from mocker.endpoints.open.iam import IamEndpoint
-from mocker.endpoints.reflectors import (
-    ReflectingTcpIpEndpoint,
-)
+from mocker.endpoints.reflectors import ReflectingTcpIpEndpoint
 
 log = logging.getLogger(__name__)
 

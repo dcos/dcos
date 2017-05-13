@@ -10,7 +10,6 @@ import logging
 import socket
 import time
 import traceback
-
 from urllib.parse import parse_qs, urlparse
 
 from exceptions import EndpointException
