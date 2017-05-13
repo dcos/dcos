@@ -285,3 +285,53 @@ class TestUpstreamsEnvVarBehaviour:
         assert len(m2_requests) == 1
 
         assert lbf.extra_matches == {}
+
+
+class TestHostIPVarBehavriour:
+    def test_if_absent_var_is_handled(self, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: unknown': SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=None)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    @pytest.mark.parametrize(
+        "invalid_ip",
+        ["not-an-ip", "1,3,4,4", "1.2.3.300", 'aaa.1.2.3.4', '1.2.3.4.bccd'])
+    def test_if_var_is_verified(self, invalid_ip, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: unknown': SearchCriteria(1, True),
+            'HOST_IP var is not a valid ipv4: {}'.format(invalid_ip):
+                SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=invalid_ip)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+
+    @pytest.mark.parametrize("valid_ip", ["1.2.3.4", "255.255.255.255", "0.0.0.1"])
+    def test_if_var_is_honoured(self, valid_ip, nginx_class, mocker):
+        filter_regexp = {
+            'Local Mesos Master IP: {}'.format(valid_ip): SearchCriteria(1, True),
+        }
+        ar = nginx_class(host_ip=valid_ip)
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp,
+                                   line_buffer=ar.stderr_line_buffer)
+
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
