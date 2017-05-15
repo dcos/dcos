@@ -98,7 +98,7 @@ pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 # If this is a master node, migrate Exhibitor data to the correct directory.
 if [ "$role" == "master" ]; then
-    until dcos-shell dcos-exhibitor-migrate-perform > /dev/null
+    until dcos-shell dcos-exhibitor-migrate-perform {{ exhibitor_migrate_args }} > /dev/null
     do
         status=$?
         case $status in
@@ -129,30 +129,27 @@ fi
 
 
 def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=SERVE_DIR):
-
     # installed_cluster_version: Current installed version on the cluster
     # installer_version: Version we are upgrading to
-
     bootstrap_url = gen_out.arguments['bootstrap_url']
-
     installer_version = gen.calc.entry['must']['dcos_version']
-
     package_list = ' '.join(package['id'] for package in gen_out.cluster_packages.values())
-
+    exhibitor_migrate_args = ''
+    if gen_out.arguments['exhibitor_admin_password_enabled'] == 'true':
+        exhibitor_migrate_args = '--username=admin --password={}'.format(
+            gen_out.arguments['exhibitor_admin_password'])
     bash_script = gen.template.parse_str(node_upgrade_template).render({
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'bootstrap_url': bootstrap_url,
         'cluster_packages': package_list,
         'installed_cluster_version': installed_cluster_version,
-        'installer_version': installer_version})
+        'installer_version': installer_version,
+        'exhibitor_migrate_args': exhibitor_migrate_args})
 
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
-
     subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
-
     write_string(serve_dir + upgrade_script_path + '/dcos_node_upgrade.sh', bash_script)
 
     print("Node upgrade script URL: " + bootstrap_url + upgrade_script_path + '/dcos_node_upgrade.sh')
-
     return 0

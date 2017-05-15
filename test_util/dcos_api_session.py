@@ -58,6 +58,17 @@ class DcosAuth(requests.auth.AuthBase):
         return request
 
 
+class Exhibitor(RetryCommonHttpErrorsMixin, ApiClientSession):
+    def __init__(self, default_url: Url, session: Optional[requests.Session]=None,
+                 exhibitor_admin_password: Optional[str]=None):
+        super().__init__(default_url)
+        if session is not None:
+            self.session = session
+        if exhibitor_admin_password is not None:
+            # Override auth to use HTTP basic auth with the provided admin password.
+            self.session.auth = requests.auth.HTTPBasicAuth('admin', exhibitor_admin_password)
+
+
 class ARNodeApiClientMixin:
     def api_request(self, method, path_extension, *, scheme=None, host=None, query=None,
                     fragment=None, port=None, node=None, **kwargs):
@@ -91,7 +102,7 @@ class ARNodeApiClientMixin:
 class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClientSession):
     def __init__(self, dcos_url: str, masters: list, public_masters: list,
                  slaves: list, public_slaves: list, default_os_user: str,
-                 auth_user: Optional[DcosUser]):
+                 auth_user: Optional[DcosUser], exhibitor_admin_password: Optional[str]=None):
         """Proxy class for DC/OS clusters.
 
         Args:
@@ -112,6 +123,7 @@ class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClient
         self.all_slaves = sorted(slaves + public_slaves)
         self.default_os_user = default_os_user
         self.auth_user = auth_user
+        self.exhibitor_admin_password = exhibitor_admin_password
 
         assert len(self.masters) == len(self.public_masters)
 
@@ -303,6 +315,21 @@ class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClient
             new.auth_user = user
             new._authenticate_default_user()
         return new
+
+    @property
+    def exhibitor(self):
+        if self.exhibitor_admin_password is None:
+            # No basic HTTP auth. Access Exhibitor via the adminrouter.
+            default_url = self.default_url.copy(path='exhibitor')
+        else:
+            # Exhibitor is protected with HTTP basic auth, which conflicts with adminrouter's auth. We must bypass
+            # the adminrouter and access Exhibitor directly.
+            default_url = Url.from_string('http://{}:8181'.format(self.public_masters[0]))
+
+        return Exhibitor(
+            default_url=default_url,
+            session=self.copy().session,
+            exhibitor_admin_password=self.exhibitor_admin_password)
 
     @property
     def marathon(self):
