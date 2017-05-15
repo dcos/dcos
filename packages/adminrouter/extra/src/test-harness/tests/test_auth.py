@@ -7,7 +7,7 @@ import pytest
 import requests
 
 from generic_test_code.common import assert_endpoint_response
-from util import SearchCriteria, auth_type_str, jwt_type_str
+from util import SearchCriteria, auth_type_str, jwt_type_str, GuardedSubprocess
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
@@ -272,3 +272,16 @@ class TestAuthPrecedence:
             headers=valid_user_header)
 
         assert resp.status_code == 404
+
+    def test_if_historyservice_endpoint_auth_precedence_is_enforced(
+            self, valid_user_header, mocker, nginx_class):
+
+        ar = nginx_class(host_ip=None)
+        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(url,allow_redirects=False)
+            assert resp.status_code == 401
+
+            resp = requests.get(url, allow_redirects=False, headers=valid_user_header)
+            assert resp.status_code == 503
