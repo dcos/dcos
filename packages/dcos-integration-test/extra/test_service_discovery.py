@@ -9,7 +9,7 @@ import retrying
 
 from test_helpers import expanded_config
 
-from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
+from test_util.marathon import Container, get_test_app, Healthcheck, Network
 
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
@@ -60,18 +60,11 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
     """
 
     # TODO(cmaloney): For non docker network bridge we should just do a mesos container.
-    app_definition, test_uuid = get_test_app_in_docker(ip_per_container=False)
-
-    if not docker_network_bridge:
-        # TODO(cmaloney): This is very hacky to make PORT0 on the end instead of 9080...
-        app_definition['cmd'] = app_definition['cmd'][:-4] + '$PORT0'
-        app_definition['container']['docker']['network'] = 'HOST'
-        del app_definition['container']['docker']['portMappings']
-        app_definition['portDefinitions'] = [{
-            "protocol": "tcp",
-            "port": 0,
-            "name": "test"
-        }]
+    if docker_network_bridge:
+        app_definition, test_uuid = get_test_app(
+            container_type=Container.DOCKER, network=Network.BRIDGE, container_port=2020, host_port=9080)
+    else:
+        app_definition, test_uuid = get_test_app(container_type=Container.DOCKER)
 
     app_definition['instances'] = 2
 
@@ -176,16 +169,6 @@ def get_marathon_addresses_by_service_points(service_points):
     return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
 
 
-def replace_marathon_cmd_port(app_definition, port_str):
-    new_app = app_definition.copy()
-
-    cmd_list = new_app['cmd'].split()[:-1]
-    cmd_list.append(port_str)
-    mesos_cmd = ' '.join(cmd_list)
-    new_app['cmd'] = mesos_cmd
-    return new_app
-
-
 def assert_service_discovery(dcos_api_session, app_definition, net_types):
     """
     net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
@@ -236,71 +219,49 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
 
 
 def test_service_discovery_mesos_host(dcos_api_session):
-    app_definition, test_uuid = get_test_app_in_ucr()
+    app_definition, test_uuid = get_test_app(
+        container_type=Container.MESOS, healthcheck_protocol=Healthcheck.HTTP)
 
     assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
 def test_service_discovery_mesos_overlay(dcos_api_session):
-    port = 9080
-    app_definition, test_uuid = get_test_app_in_ucr(healthcheck='MESOS_HTTP')
-
-    app_definition['ipAddress'] = {
-        'networkName': 'dcos',
-        'discovery': {
-            'ports': [{
-                'protocol': 'tcp',
-                'name': 'test',
-                'number': port,
-            }]
-        }
-    }
-    if 'portIndex' in app_definition['healthChecks'][0]:
-        del app_definition['healthChecks'][0]['portIndex']
-    app_definition['healthChecks'][0]['port'] = port
-    app_definition = replace_marathon_cmd_port(app_definition, str(port))
+    app_definition, test_uuid = get_test_app(
+        container_type=Container.MESOS,
+        host_port=9080,
+        healthcheck_protocol=Healthcheck.MESOS_HTTP,
+        network=Network.USER)
 
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
 def test_service_discovery_docker_host(dcos_api_session):
-    app_definition, test_uuid = get_test_app_in_docker()
-    app_definition['container']['docker']['network'] = 'HOST'
-    del app_definition['container']['docker']['portMappings']
-    app_definition = replace_marathon_cmd_port(app_definition, "$PORT0")
-
+    app_definition, test_uuid = get_test_app(container_type=Container.DOCKER, network=Network.HOST)
     assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
 def test_service_discovery_docker_bridge(dcos_api_session):
-    app_definition, test_uuid = get_test_app_in_docker()
-    app_definition['container']['docker']['network'] = 'BRIDGE'
-
+    app_definition, test_uuid = get_test_app(
+        container_type=Container.DOCKER, network=Network.BRIDGE, container_port=2020, host_port=9080)
     assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
 
 
 def test_service_discovery_docker_overlay(dcos_api_session):
-    app_definition, test_uuid = get_test_app_in_docker()
-    app_definition['container']['docker']['network'] = 'USER'
-    app_definition['ipAddress'] = {'networkName': 'dcos'}
+    app_definition, test_uuid = get_test_app(container_type=Container.DOCKER, network=Network.USER, host_port=9080)
     del app_definition['container']['docker']['portMappings'][0]['hostPort']
-
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
 def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
-    app_definition, test_uuid = get_test_app_in_docker()
-    app_definition['container']['docker']['network'] = 'USER'
-    app_definition['ipAddress'] = {'networkName': 'dcos'}
-
+    app_definition, test_uuid = get_test_app(container_type=Container.DOCKER, network=Network.USER, host_port=9080)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay, DNSPortMap])
 
 
-def test_if_service_discovery_works_docker_bridged_network(dcos_api_session):
+def test_service_discovery_docker_bridged_network(dcos_api_session):
     return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
-def test_if_service_discovery_works_docker_host_network(dcos_api_session):
+def test_service_discovery_docker_host_network(dcos_api_session):
     return _service_discovery_test(dcos_api_session, docker_network_bridge=False)
 
 
