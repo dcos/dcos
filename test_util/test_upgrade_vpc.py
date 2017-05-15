@@ -590,7 +590,8 @@ class VpcClusterUpgradeTest:
             for k, v in os.environ.items():
                 if k.startswith(prefix):
                     add_env.append(k.replace(prefix, '') + '=' + v)
-            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
+            # this test is slow enough, so disable the slow tests
+            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs -m "not slow" ' + os.getenv('CI_FLAGS', '')
             result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
         if result == 0:
