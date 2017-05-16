@@ -331,6 +331,6 @@ def test_if_cosmos_is_only_available_locally(dcos_api_session):
     assert r.status_code == 404
 
     # In this case localhost:9990/ redirects to localhost:9990/admin so we
-    # we expect a 200 
+    # we expect a 200
     r = dcos_api_session.get('/', host="127.0.0.1", port=9990, scheme='http')
     assert r.status_code == 200
