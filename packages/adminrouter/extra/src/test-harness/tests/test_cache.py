@@ -494,6 +494,18 @@ class TestCache:
                                 headers=valid_user_header)
             assert resp.status_code == 404
 
+    def test_if_absence_of_agent_is_handled_by_cache(
+            self, nginx_class, mocker, valid_user_header):
+
+        ar = nginx_class()
+
+        with GuardedSubprocess(ar):
+            ping_mesos_agent(
+                ar,
+                valid_user_header,
+                agent_id='bdcd424a-b59e-4df4-b492-b54e38926bd8-S0',
+                expect_status=404)
+
     def test_if_caching_works_for_mesos_state(
             self, nginx_class, mocker, valid_user_header):
         # Enable recording for mesos
@@ -964,7 +976,7 @@ class TestCacheMarathon:
             resp = requests.get(url,
                                 allow_redirects=False,
                                 headers=auth_headers)
-            assert resp.status_code == 500
+            assert resp.status_code == 404
 
             lbf.scan_log_buffer()
 
