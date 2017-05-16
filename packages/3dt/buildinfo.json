@@ -4,8 +4,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/3dt.git",
-    "ref": "cc7a19f9c9c062745f313fe0e221cddba3feb5e7",
-    "ref_origin": "master"
+    "ref": "2624cbacf8959ccf584cfe87a2e535aca59c4755",
+    "ref_origin": "1.8.9"
   },
   "username": "dcos_3dt",
   "group": "systemd-journal",
