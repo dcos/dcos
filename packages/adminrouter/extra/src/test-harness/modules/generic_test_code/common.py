@@ -1,6 +1,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+from contextlib import contextmanager
 
 import requests
 
@@ -245,3 +246,18 @@ def assert_endpoint_response(
         assert lbf.extra_matches == {}
     else:
         body()
+
+
+@contextmanager
+def with_file_contents(file_path, new_content=None):
+    with open(file_path, 'r+') as fh:
+        old_content = fh.read()
+        if new_content is not None:
+            fh.seek(0)
+            fh.write(new_content)
+            fh.truncate()
+
+    yield
+
+    with open(file_path, 'w') as fh:
+        fh.write(old_content)
