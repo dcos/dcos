@@ -9,6 +9,11 @@
       "kind": "url_extract",
       "url": "https://github.com/pyinstaller/pyinstaller/archive/8b491def32d02cedc912198930225cddfab2e871.zip",
       "sha1": "d98d271f9b70021417b34a059766131a0d73fdb4"
+    },
+    "cerberus": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/e0/7e/3949c86f4e60bc2b3d24ebc94af55ffaf9d62ad221f47c194edc9bd7fa94/Cerberus-1.1.tar.gz",
+      "sha1": "da78773979913e01200c961456f069145894f3c5"
     }
   }
 }

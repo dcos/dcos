@@ -36,7 +36,7 @@ class OnpremLauncher(launch.util.AbstractLauncher):
         self.get_ssher().command(self.bootstrap_host, ['printf', state, '>', STATE_FILE])
 
     def get_last_state(self):
-        return self.get_ssher(self.config).command(self.bootstrap_host, ['cat', STATE_FILE]).decode().strip()
+        return self.get_ssher().command(self.bootstrap_host, ['cat', STATE_FILE]).decode().strip()
 
     def get_bare_cluster_launcher(self):
         if self.config['platform'] == 'aws':

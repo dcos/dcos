@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from launch.config import get_validated_config, expand_path
+from launch.config import expand_path, get_validated_config
 from launch.util import get_temp_config_path, LauncherError
 
 
