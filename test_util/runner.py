@@ -34,7 +34,6 @@ def integration_test(
     required_test_env = [
         'DCOS_DNS_ADDRESS=http://' + dcos_dns,
         'MASTER_HOSTS=' + ','.join(master_list),
-        'PUBLIC_MASTER_HOSTS=' + ','.join(master_list),
         'SLAVE_HOSTS=' + ','.join(agent_list),
         'PUBLIC_SLAVE_HOSTS=' + ','.join(public_agent_list),
         'AWS_ACCESS_KEY_ID=' + aws_access_key_id,
