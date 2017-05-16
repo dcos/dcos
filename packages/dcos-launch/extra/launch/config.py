@@ -8,18 +8,6 @@ import test_util.aws
 import test_util.helpers
 
 
-class YamlParseError(Exception):
-    pass
-
-
-def load_yaml(filename: str):
-    try:
-        with open(filename) as f:
-            return yaml.safe_load(f)
-    except yaml.YAMLError as ex:
-        raise YamlParseError("Invalid YAML in {}: {}".format(filename, ex)) from ex
-
-
 def expand_path(path: str, relative_dir: str) -> str:
     """ Returns an absolute path by performing '~' and '..' substitution target path
 
@@ -35,10 +23,10 @@ def expand_path(path: str, relative_dir: str) -> str:
 
 def load_config(config_path: str) -> dict:
     try:
-        config = load_yaml(config_path)
-        return config
-    except YamlParseError as ex:
-        raise launch.util.LauncherError('InvalidInput', None) from ex
+        with open(config_path) as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as ex:
+        raise launch.util.LauncherError('InvalidYaml', None) from ex
     except FileNotFoundError as ex:
         raise launch.util.LauncherError('MissingConfig', None) from ex
 
@@ -67,11 +55,6 @@ class LaunchValidator(cerberus.Validator):
 
     def _normalize_coerce_expand_local_path(self, value):
         return expand_path(value, self.config_dir)
-
-    def _normalize_coerce_local_path_to_contents(self, value):
-        """ Converts a localized filename to the contents of said file
-        """
-        return launch.util.load_string(expand_path(value, self.config_dir))
 
 
 def expand_error_dict(errors: dict) -> str:
@@ -128,10 +111,6 @@ def get_validated_config(config_path: str) -> dict:
     else:
         raise NotImplementedError()
 
-    # onprem requires some special configuration per platform, so add those here
-
-    # pop dcos_config field from the user config as we must allow the inner
-    # fields to contain unknowns, but no
     # create a strict validator with our final schema and process it
     final_validator = LaunchValidator(basic_validator.schema, config_dir=config_dir, allow_unknown=False)
     if not final_validator.validate(config):
@@ -249,10 +228,10 @@ ONPREM_DEPLOY_COMMON_SCHEMA = {
         'required': True},
     'os_name': {
         'type': 'string',
-        # not required because it can be set by ami directly
+        # not required because machine image can be set directly
         'required': False,
         'default': 'cent-os-7-prereqs',
-        # This is AWS specific and is kind of awkward here, move to launcher?
+        # TODO: This is AWS specific; move when support expands to other platofmrs
         'allowed': list(test_util.aws.OS_SSH_INFO.keys())},
     'ssh_user': {
         'required': True,
