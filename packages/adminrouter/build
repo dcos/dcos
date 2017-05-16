@@ -31,6 +31,11 @@ cp -r /pkg/src/adminrouter/* .
 rm -f win-utf uwsgi* scgi* nginx.conf* mime.types.default* koi-* fastcgi* README* *.png
 popd
 
+# AR start script:
+ar_wrapper="$PKG_PATH/nginx/sbin/adminrouter.sh"
+envsubst '$PKG_PATH' < /pkg/extra/adminrouter.sh > "$ar_wrapper"
+chmod a+x $ar_wrapper
+
 # Copy in needed libraries.
 mkdir -p "$PKG_PATH/lib"
 cp /lib/x86_64-linux-gnu/libpcre.so.3 "$PKG_PATH/lib/libpcre.so.3"
