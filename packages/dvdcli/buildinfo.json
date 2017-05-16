@@ -1,7 +1,9 @@
 {
-  "single_source": {
-    "kind": "url",
-    "url": "https://downloads.dcos.io/pkgpanda-artifact-cache/dvdcli-Linux-x86_64-0.1.0.tar.gz",
-    "sha1": "a0d7757939eefdf1ad28bc44919cdba5b6310528"
+  "docker": "golang:1.7",
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/codedellemc/dvdcli.git",
+    "ref": "7e3650924cc6671b8cb6655301ba3e872ae46f2d",
+    "ref_origin": "master"
   }
 }
