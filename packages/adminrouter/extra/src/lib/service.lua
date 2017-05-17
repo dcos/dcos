@@ -1,4 +1,4 @@
-local url = require "master.url"
+local url = require "url"
 local cjson_safe = require "cjson.safe"
 
 
