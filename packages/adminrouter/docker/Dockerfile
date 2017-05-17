@@ -108,7 +108,6 @@ COPY iam.jwt-key.pub \
      iam.jwt-key.shared-secret \
         /usr/local/
 COPY cluster-id /var/lib/dcos/cluster-id
-COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
 
 # The contents of adminrouter-listen* files differ from the ones that are
