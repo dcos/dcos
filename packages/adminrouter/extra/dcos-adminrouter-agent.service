@@ -16,7 +16,7 @@ Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
 EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 leader.mesos
-ExecStart=$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.agent.conf
+ExecStart=$PKG_PATH/nginx/sbin/adminrouter.sh -c $PKG_PATH/nginx/conf/nginx.agent.conf
 ExecReload=/usr/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
