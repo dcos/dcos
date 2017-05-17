@@ -161,7 +161,7 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
 
 @retrying.retry(
     wait_fixed=5000,
-    stop_max_delay=120 * 1000,
+    stop_max_delay=180 * 1000,
     retry_on_result=lambda res: res is None)
 def wait_for_tasks_healthy(dcos_api_session, app_definition):
     proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
