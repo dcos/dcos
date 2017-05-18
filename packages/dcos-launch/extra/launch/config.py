@@ -41,29 +41,30 @@ def load_ssh_private_key(doc):
         return 'unset'
     if 'ssh_private_key_filename' not in doc:
         return launch.util.NO_TEST_FLAG
-    return launch.util.load_string(doc['ssh_private_key_filename'])
+    return launch.util.read_file(doc['ssh_private_key_filename'])
 
 
 class LaunchValidator(cerberus.Validator):
     """ Needs to use unintuitive pattern so that child validator can be created
-    for validated the nested dcos_config
+    for validated the nested dcos_config. See:
+    http://docs.python-cerberus.org/en/latest/customize.html#instantiating-custom-validators
     """
     def __init__(self, *args, **kwargs):
         super(LaunchValidator, self).__init__(*args, **kwargs)
-        if 'config_dir' in kwargs:
-            self.config_dir = kwargs['config_dir']
+        assert 'config_dir' in kwargs, 'This class must be supplied with the config_dir kwarg'
+        self.config_dir = kwargs['config_dir']
 
     def _normalize_coerce_expand_local_path(self, value):
         return expand_path(value, self.config_dir)
 
 
-def expand_error_dict(errors: dict) -> str:
+def _expand_error_dict(errors: dict) -> str:
     message = ''
     for key, errors in errors.items():
         sub_message = 'Field: {}, Errors: '.format(key)
         for e in errors:
             if isinstance(e, dict):
-                sub_message += expand_error_dict(e)
+                sub_message += _expand_error_dict(e)
             else:
                 sub_message += e
             sub_message += '\n'
@@ -71,8 +72,8 @@ def expand_error_dict(errors: dict) -> str:
     return message
 
 
-def raise_errors(validator: LaunchValidator):
-    message = expand_error_dict(validator.errors)
+def _raise_errors(validator: LaunchValidator):
+    message = _expand_error_dict(validator.errors)
     raise launch.util.LauncherError('ValidationError', message)
 
 
@@ -87,7 +88,7 @@ def get_validated_config(config_path: str) -> dict:
     # validate against the fields common to all configs
     basic_validator = LaunchValidator(COMMON_SCHEMA, config_dir=config_dir, allow_unknown=True)
     if not basic_validator.validate(config):
-        raise_errors(basic_validator)
+        _raise_errors(basic_validator)
 
     # add provider specific information to the basic validator
     provider = basic_validator.normalized(config)['provider']
@@ -98,7 +99,7 @@ def get_validated_config(config_path: str) -> dict:
 
     # validate again before attempting to add platform information
     if not basic_validator.validate(config):
-        raise_errors(basic_validator)
+        _raise_errors(basic_validator)
 
     # use the intermediate provider-validated config to add the platform schema
     platform = basic_validator.normalized(config)['platform']
@@ -114,7 +115,7 @@ def get_validated_config(config_path: str) -> dict:
     # create a strict validator with our final schema and process it
     final_validator = LaunchValidator(basic_validator.schema, config_dir=config_dir, allow_unknown=False)
     if not final_validator.validate(config):
-        raise_errors(final_validator)
+        _raise_errors(final_validator)
     return final_validator.normalized(config)
 
 

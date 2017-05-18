@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from launch.config import expand_path, get_validated_config
+from launch.config import get_validated_config, LaunchValidator
 from launch.util import get_temp_config_path, LauncherError
 
 
@@ -23,9 +23,20 @@ def mock_relative_path(tmpdir):
         yield str(tmpdir)
 
 
-def test_expand_path(mock_home, mock_relative_path):
-    assert expand_path('foo/bar', mock_relative_path) == os.path.join(mock_relative_path, 'foo/bar')
-    assert expand_path('~/baz', mock_relative_path) == os.path.join(mock_home, 'baz')
+def test_launch_validator(mock_home, mock_relative_path):
+    test_schema = {
+        'foobar_path': {'coerce': 'expand_local_path'},
+        'baz_path': {'coerce': 'expand_local_path'}}
+    validator = LaunchValidator(test_schema, config_dir=mock_relative_path)
+
+    test_input = {
+        'foobar_path': 'foo/bar',
+        'baz_path': '~/baz'}
+    expected_output = {
+        'foobar_path': os.path.join(mock_relative_path, 'foo/bar'),
+        'baz_path': os.path.join(mock_home, 'baz')}
+
+    assert validator.normalized(test_input) == expected_output
 
 
 class TestAwsCloudformation:

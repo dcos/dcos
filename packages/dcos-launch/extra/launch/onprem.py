@@ -77,7 +77,7 @@ class OnpremLauncher(launch.util.AbstractLauncher):
             if new_key_name in onprem_config:
                 raise launch.util.LauncherError(
                     'InvalidDcosConfig', 'Cannot set *_filename and *_contents simultaneously!')
-            onprem_config[new_key_name] = launch.util.load_string(onprem_config[key_name])
+            onprem_config[new_key_name] = launch.util.read_file(onprem_config[key_name])
             del onprem_config[key_name]
         # set the simple default IP detect script if not provided
         # currently, only AWS is supported, but when support changes, this will have to update

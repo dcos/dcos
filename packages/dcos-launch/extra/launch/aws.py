@@ -46,7 +46,7 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         will be provided (must be done in correct order) and added to the info
         JSON as 'temp_resources'
         """
-        if self.config['zen_helper'] is not True:
+        if not self.config['zen_helper']:
             return {}
         parameters = self.config['template_parameters']
         temp_resources = {}
@@ -105,7 +105,7 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         as the cloudformation stack, update the config with the resulting private key,
         and amend the cloudformation template parameters to have KeyName set as this key
         """
-        if self.config['key_helper'] is not True:
+        if not self.config['key_helper']:
             return {}
         if 'KeyName' in self.config['template_parameters']:
             raise launch.util.LauncherError('KeyHelperError', 'KeyName cannot be set in '
@@ -137,7 +137,7 @@ class BareClusterLauncher(DcosCloudformationLauncher):
                             self.config['num_private_agents']),
             'InstanceType': self.config['instance_type'],
             'AmiCode': self.config['instance_ami']}
-        if self.config['key_helper'] is not True:
+        if not self.config['key_helper']:
             template_parameters['KeyName'] = self.config['aws_key_name']
         self.config.update({
             'template_body': test_util.aws.template_by_instance_type(self.config['instance_type']),

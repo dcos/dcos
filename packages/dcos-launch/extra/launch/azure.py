@@ -44,7 +44,7 @@ class AzureResourceGroupLauncher(launch.util.AbstractLauncher):
         """ Adds private key to the config and injects the public key into
         the template parameters
         """
-        if self.config['key_helper'] is not True:
+        if not self.config['key_helper']:
             return
         if 'sshRSAPublicKey' in self.config['template_parameters']:
             raise launch.util.LauncherError('KeyHelperError', 'key_helper will automatically'
