@@ -26,6 +26,12 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
+  /dcos-metadata/dcos-version.json:
+    group: System
+    matcher: path
+    description: DC/OS version (unauthenticated)
+    file: /opt/mesosphere/active/dcos-metadata/etc/dcos-version.json
+    path: /dcos-metadata/dcos-version.json
   /system/health/v1:
     group: System
     matcher: path

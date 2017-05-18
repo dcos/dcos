@@ -474,6 +474,11 @@
         <label class="heading"><span class="route-type toggle-route-type">Proxy</span> <span class="route-desc">retrieves resources from another address.</span> </label>
         </input>
       </li>
+      <li class="route route-type-file">
+        <input type="checkbox" data-type="file" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">File</span> <span class="route-desc">retrieves static files.</span> </label>
+        </input>
+      </li>
     </ul>
   </div>
   <ul class="resources">
@@ -542,6 +547,27 @@
         <span class="options"><a href="#system" class="toggle-route-group" data-id="system">Show/Hide</a> </span>
       </div>
       <ul id="routes-system" class="routes">
+        <li class="route route-type-file">
+          <div class="heading">
+            <h3>
+              <span class="route-type">File</span>
+              <span class="route-path"><code>/dcos-metadata/dcos-version.json</code></span>
+            </h3>
+            <span class="route-desc">DC/OS version (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>/opt/mesosphere/active/dcos-metadata/etc/dcos-version.json</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
         <li class="route route-type-proxy">
           <div class="heading">
             <h3>
