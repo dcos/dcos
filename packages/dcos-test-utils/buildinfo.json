@@ -1,0 +1,9 @@
+{
+  "requires": ["dcos-image-deps"],
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/mesosphere/dcos-test-utils.git",
+    "ref": "aab193d80439aee4de8530349aabaa9453729b55",
+    "ref_origin": "master"
+  }
+}
