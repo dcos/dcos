@@ -96,35 +96,6 @@ echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
-# If this is a master node, migrate Exhibitor data to the correct directory.
-if [ "$role" == "master" ]; then
-    until dcos-shell dcos-exhibitor-migrate-perform > /dev/null
-    do
-        status=$?
-        case $status in
-            1) echo "Waiting for Exhibitor..."
-               sleep 10
-               ;;
-            2) echo "ERROR: Could not read from Exhibitor."
-               echo "Please contact support."
-               exit 1
-               ;;
-            4) echo "Rolling update in progress."
-               exit
-               ;;
-            8) echo "ERROR: At least one Exhibitor config value does not have the expected pre-migration value." \
-                    "Unable to automatically migrate Exhibitor."
-               echo "Please contact support."
-               exit 1
-               ;;
-            16) echo "ERROR: Exhibitor update failed with a non-OK response."
-                echo "Please contact support."
-                exit 1
-                ;;
-        esac
-    done
-fi
-
 """
 
 

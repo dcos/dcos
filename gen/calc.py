@@ -386,6 +386,12 @@ def calculate_exhibitor_static_ensemble(master_list):
     return ','.join(['%d:%s' % (i + 1, m) for i, m in enumerate(masters)])
 
 
+def calculate_exhibitor_admin_password_enabled(exhibitor_admin_password):
+    if exhibitor_admin_password:
+        return 'true'
+    return 'false'
+
+
 def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
@@ -610,6 +616,7 @@ entry = {
         lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
         validate_exhibitor_storage_master_discovery,
+        lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         validate_cosmos_config,
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
@@ -646,6 +653,7 @@ entry = {
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
         'oauth_auth_host': 'https://dcos.auth0.com',
+        'exhibitor_admin_password': '',
         'ui_tracking': 'true',
         'ui_banner': 'false',
         'ui_banner_background_color': '#1E232F',
@@ -703,13 +711,14 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.9-dev',
+        'dcos_version': '1.10-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
+        'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',
         'ui_external_links': 'false',
         'ui_networking': 'false',

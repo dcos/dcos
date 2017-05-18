@@ -91,6 +91,7 @@ def open_tunnel(user: str, key: str, host: str, port: int=22) -> Tunnelled:
             '-oControlPath=' + temp_paths[0],
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
+            '-oLogLevel=ERROR',
             '-oBatchMode=yes',
             '-oPasswordAuthentication=no',
             '-p', str(port)]

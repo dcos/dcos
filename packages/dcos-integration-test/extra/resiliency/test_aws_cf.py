@@ -90,20 +90,18 @@ def test_agent_failure(dcos_stack, boto_wrapper, dcos_api_session, vip_apps):
     def wait_for_agents_to_refresh():
         public_agents = get_running_instances(dcos_stack.public_agent_instances)
         if len(public_agents) == public_agent_count:
-            dcos_api_session.public_slaves = get_private_ips(public_agents)
+            dcos_api_session.public_slave_list = get_private_ips(public_agents)
         else:
             log.info('Waiting for {} public agents. Current: {}'.format(
                      public_agent_count, len(public_agents)))
             return False
         private_agents = get_running_instances(dcos_stack.private_agent_instances)
         if len(private_agents) == private_agent_count:
-            dcos_api_session.slaves = get_private_ips(private_agents)
+            dcos_api_session.slave_list = get_private_ips(private_agents)
         else:
             log.info('Waiting for {} private agents. Current: {}'.format(
                      private_agent_count, len(private_agents)))
             return False
-        dcos_api_session.all_slaves = sorted(
-            dcos_api_session.slaves + dcos_api_session.public_slaves)
 
     wait_for_agents_to_refresh()
 

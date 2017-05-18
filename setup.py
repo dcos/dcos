@@ -69,8 +69,6 @@ setup(
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main',
-            'dcos-exhibitor-migrate-status=dcos_installer.exhibitor_migrate:status',
-            'dcos-exhibitor-migrate-perform=dcos_installer.exhibitor_migrate:perform',
         ],
     },
     package_data={
