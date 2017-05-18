@@ -9,32 +9,13 @@ to set the correct port and scheme.
 import copy
 import logging
 import os
-from typing import Optional
+from typing import List, Optional
 
 import requests
 import retrying
 
 import test_util.marathon
 from test_util.helpers import ApiClientSession, RetryCommonHttpErrorsMixin, Url
-
-
-def get_args_from_env():
-    """Does basic sanity checks and returns args converted
-    from strings to python data types
-    """
-    assert 'DCOS_DNS_ADDRESS' in os.environ
-    assert 'MASTER_HOSTS' in os.environ
-    assert 'PUBLIC_MASTER_HOSTS' in os.environ
-    assert 'SLAVE_HOSTS' in os.environ
-    assert 'PUBLIC_SLAVE_HOSTS' in os.environ
-
-    return {
-        'dcos_url': os.environ['DCOS_DNS_ADDRESS'],
-        'masters': os.environ['MASTER_HOSTS'].split(','),
-        'public_masters': os.environ['PUBLIC_MASTER_HOSTS'].split(','),
-        'slaves': os.environ['SLAVE_HOSTS'].split(','),
-        'public_slaves': os.environ['PUBLIC_SLAVE_HOSTS'].split(','),
-        'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
 
 
 class DcosUser:
@@ -67,8 +48,6 @@ class ARNodeApiClientMixin:
         node argument. node must be a host in self.master or self.all_slaves. If given,
         the request will be made to the Admin Router endpoint for that node type
         """
-        assert self.masters
-        assert self.all_slaves
         if node is not None:
             assert port is None, 'node is intended to retrieve port; cannot set both simultaneously'
             assert host is None, 'node is intended to retrieve host; cannot set both simultaneously'
@@ -89,31 +68,92 @@ class ARNodeApiClientMixin:
 
 
 class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClientSession):
-    def __init__(self, dcos_url: str, masters: list, public_masters: list,
-                 slaves: list, public_slaves: list, default_os_user: str,
-                 auth_user: Optional[DcosUser]):
-        """Proxy class for DC/OS clusters.
+    def __init__(
+            self,
+            dcos_url: str,
+            masters: Optional[List[str]],
+            slaves: Optional[List[str]],
+            public_slaves: Optional[List[str]],
+            default_os_user: str,
+            auth_user: Optional[DcosUser]):
+        """Proxy class for DC/OS clusters. If any of the host lists (masters,
+        slaves, public_slaves) are provided, the wait_for_dcos function of this
+        class will wait until provisioning is complete. If these lists are not
+        provided, then there is no ground truth and the cluster will be assumed
+        the be in a completed state.
 
         Args:
             dcos_url: address for the DC/OS web UI.
             masters: list of Mesos master advertised IP addresses.
-            public_masters: list of Mesos master IP addresses routable from
-                the local host.
             slaves: list of Mesos slave/agent advertised IP addresses.
+            public_slaves: list of public Mesos slave/agent advertised IP addresses.
             default_os_user: default user that marathon/metronome will launch tasks under
             auth_user: use this user's auth for all requests
                 Note: user must be authenticated explicitly or call self.wait_for_dcos()
         """
         super().__init__(Url.from_string(dcos_url))
-        self.masters = sorted(masters)
-        self.public_masters = sorted(public_masters)
-        self.slaves = sorted(slaves)
-        self.public_slaves = sorted(public_slaves)
-        self.all_slaves = sorted(slaves + public_slaves)
+        self.master_list = masters
+        self.slave_list = slaves
+        self.public_slave_list = public_slaves
         self.default_os_user = default_os_user
         self.auth_user = auth_user
 
-        assert len(self.masters) == len(self.public_masters)
+    @staticmethod
+    def get_args_from_env():
+        """ Provides the required arguments for a unauthenticated cluster
+        """
+        masters = os.getenv('MASTER_HOSTS')
+        slaves = os.getenv('SLAVE_HOSTS')
+        public_slaves = os.getenv('PUBLIC_SLAVE_HOSTS')
+        return {
+            'dcos_url': os.getenv('DCOS_DNS_ADDRESS', 'http://leader.mesos'),
+            'masters': masters.split(',') if masters else None,
+            'slaves': slaves.split(',') if slaves else None,
+            'public_slaves': public_slaves.split(',') if public_slaves else None,
+            'default_os_user': os.getenv('DCOS_DEFAULT_OS_USER', 'root')}
+
+    @property
+    def masters(self):
+        return sorted(self.master_list)
+
+    @property
+    def slaves(self):
+        return sorted(self.slave_list)
+
+    @property
+    def public_slaves(self):
+        return sorted(self.public_slave_list)
+
+    @property
+    def all_slaves(self):
+        return sorted(self.slaves + self.public_slaves)
+
+    def set_node_lists_if_unset(self):
+        """ Sets the expected cluster topology to be the observed cluster
+        topology from exhibitor and mesos. I.E. if masters, slave, or
+        public_slaves were not provided, accept whatever is currently available
+        """
+        if self.master_list is None:
+            logging.debug('Master list not provided, setting from exhibitor...')
+            r = self.get('/exhibitor/exhibitor/v1/cluster/list')
+            r.raise_for_status()
+            self.master_list = sorted(r.json()['servers'])
+            logging.info('Master list set as: {}'.format(self.masters))
+        if self.slave_list is not None and self.public_slave_list is not None:
+            return
+        r = self.get('/mesos/slaves')
+        r.raise_for_status()
+        slaves_json = r.json()['slaves']
+        if self.slave_list is None:
+            logging.debug('Private slave list not provided; fetching from mesos...')
+            self.slave_list = sorted(
+                [s['hostname'] for s in slaves_json if s['attributes'].get('public_ip') != 'true'])
+            logging.info('Private slave list set as: {}'.format(self.slaves))
+        if self.public_slave_list is None:
+            logging.debug('Public slave list not provided; fetching from mesos...')
+            self.public_slave_list = sorted(
+                [s['hostname'] for s in slaves_json if s['attributes'].get('public_ip') == 'true'])
+            logging.info('Public slave list set as: {}'.format(self.public_slaves))
 
     @retrying.retry(wait_fixed=2000, stop_max_delay=120 * 1000)
     def _authenticate_default_user(self):
@@ -278,6 +318,7 @@ class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClient
     def wait_for_dcos(self):
         self._wait_for_adminrouter_up()
         self._authenticate_default_user()
+        self.set_node_lists_if_unset()
         self._wait_for_marathon_up()
         self._wait_for_zk_quorum()
         self._wait_for_slaves_to_join()

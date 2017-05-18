@@ -11,7 +11,6 @@ while true; do
     fi
     sleep 1
 done
-source test_env.export
 pushd ${DCOS_PYTEST_DIR:='/opt/mesosphere/active/dcos-integration-test'}
 eval ${DCOS_PYTEST_CMD:='py.test -vv'}
 popd
