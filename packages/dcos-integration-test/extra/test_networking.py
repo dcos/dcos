@@ -78,9 +78,21 @@ def generate_vip_app_permutations():
     return permutations
 
 
+@pytest.fixture(scope='module')
+def clean_state_for_test_vip(dcos_api_session):
+    """ This fixture is intended only for use with only test_vip so that the
+    test suite only blocks on ensuring marathon has a clean state before and
+    after the all test_vip cases are invoked rather than per-case
+    """
+    dcos_api_session.marathon.ensure_deployments_complete()
+    yield
+    dcos_api_session.marathon.ensure_deployments_complete()
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 @pytest.mark.parametrize('container,vip_net,proxy_net', generate_vip_app_permutations())
+@pytest.mark.usefixtures('clean_state_for_test_vip')
 def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net: Network):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
@@ -161,7 +173,10 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
 
 @retrying.retry(
     wait_fixed=5000,
-    stop_max_delay=180 * 1000,
+    stop_max_delay=240 * 1000,
+    # the app monitored by this function typically takes 2 minutes when starting from
+    # a fresh state, but in this case the previous app load may still be winding down,
+    # so allow a larger buffer time
     retry_on_result=lambda res: res is None)
 def wait_for_tasks_healthy(dcos_api_session, app_definition):
     proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
