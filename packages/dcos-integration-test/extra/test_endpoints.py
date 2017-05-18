@@ -47,7 +47,7 @@ def test_if_all_mesos_slaves_have_registered(dcos_api_session):
 
 
 def test_if_exhibitor_api_is_up(dcos_api_session):
-    r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/list')
+    r = dcos_api_session.exhibitor.get('/exhibitor/v1/cluster/list')
     assert r.status_code == 200
 
     data = r.json()
@@ -55,7 +55,7 @@ def test_if_exhibitor_api_is_up(dcos_api_session):
 
 
 def test_if_exhibitor_ui_is_up(dcos_api_session):
-    r = dcos_api_session.get('/exhibitor')
+    r = dcos_api_session.exhibitor.get('/')
     assert r.status_code == 200
     assert 'Exhibitor for ZooKeeper' in r.text
 
