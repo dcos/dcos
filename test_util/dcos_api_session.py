@@ -366,7 +366,7 @@ class DcosApiSession(ARNodeApiClientMixin, RetryCommonHttpErrorsMixin, ApiClient
         else:
             # Exhibitor is protected with HTTP basic auth, which conflicts with adminrouter's auth. We must bypass
             # the adminrouter and access Exhibitor directly.
-            default_url = Url.from_string('http://{}:8181'.format(self.public_masters[0]))
+            default_url = Url.from_string('http://{}:8181'.format(self.masters[0]))
 
         return Exhibitor(
             default_url=default_url,
