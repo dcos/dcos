@@ -249,7 +249,7 @@ package:
       nomail
       /var/lib/dcos/mesos/log/mesos-master.log {
           olddir /var/lib/dcos/mesos/log/archive
-          maxsize 256M
+          size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
@@ -265,7 +265,7 @@ package:
       nomail
       /var/log/mesos/mesos-agent.log {
           olddir /var/log/mesos/archive
-          maxsize 256M
+          size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
