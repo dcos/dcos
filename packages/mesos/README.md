@@ -16,3 +16,4 @@
 <li>[3e703af02bc309a9d6653392d02627bf3d3ce930] Updated logrotation module to use `os::pagesize()`.
 <li>[1d45ba9f4f7f943d24282e0a91fb01c68815d6c3] Fixed sign comparisons in logrotate module.
 <li>[b546e7544c04a6d3e0da87cd6207ae8f4d827add] Added a way to set logrotate settings per executor.
+<li>[2adcc49bb584f84b358b6edb78a975382e9f9feb] Modified the executor driver to always relink on agent failover.
