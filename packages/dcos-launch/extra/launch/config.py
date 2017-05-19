@@ -1,44 +1,16 @@
-import atexit
-import copy
 import os
 
-import requests
+import cerberus
 import yaml
 
-import gen
 import launch.util
-import ssh.validate
 import test_util.aws
 import test_util.helpers
-from gen.internals import resolve_configuration, Scope, Source, Target, validate_one_of
-from pkgpanda.util import load_string, load_yaml, YamlParseError
-
-# DCOS_OSS-802: [gen/dcos_installer] allow using library uncoupled from installer
-# dcos_installer.config will directly import gen.build_deploy.util
-# which expects to find the image commit in the environment or in
-# a directory-local git tree **at import time**. Therefore, the
-# environment variable DCOS_IMAGE_COMMIT must be set here.
-if 'DCOS_IMAGE_COMMIT' not in os.environ:
-    os.environ['DCOS_IMAGE_COMMIT'] = ''
-    atexit.register(os.unsetenv, 'DCOS_IMAGE_COMMIT')
-
-import dcos_installer.config  # noqa
-
-# gen.build_deploy.bash expects to be run from the installer or git-tree
-# environment and will expect this when resolving the onprem configuration
-if 'BOOTSTRAP_VARIANT' not in os.environ:
-    os.environ['BOOTSTRAP_VARIANT'] = ''
-    atexit.register(os.unsetenv, 'BOOTSTRAP_VARIANT')
-
-# gen.build_deploy.bash expects to be able to get a list of packages
-# from a JSON at a hard-coded path. The package list is used for the deploy
-# logic of the installer and trivializing it here will have no bearing on
-# the onprem config.yaml pre-validation performed in this module
-setattr(dcos_installer.config_util, 'installer_latest_complete_artifact', launch.util.stub({'packages': []}))
 
 
 def expand_path(path: str, relative_dir: str) -> str:
-    """ Returns an absolute path
+    """ Returns an absolute path by performing '~' and '..' substitution target path
+
     path: the user-provided path
     relative_dir: the absolute directory to which `path` should be seen as
         relative
@@ -49,375 +21,257 @@ def expand_path(path: str, relative_dir: str) -> str:
     return os.path.abspath(os.path.join(relative_dir, path))
 
 
-def expand_filenames(config: dict, config_dir: str) -> dict:
-    """ Recursively mutates a config dict so that all keys that end with
-    '_filename' will be ensured to be absolute paths
-    """
-    new_config = copy.deepcopy(config)
-    for k, v in new_config.items():
-        if isinstance(v, dict):
-            new_config[k] = expand_filenames(v, config_dir)
-        if not isinstance(v, str):
-            continue
-        if k.endswith('_filename'):
-            new_config[k] = expand_path(v, config_dir)
-    return new_config
-
-
-def yaml_flatten(config: dict) -> dict:
-    """ Takes a multi-layered dict and converts it to a single-layer dict by
-    converting sub-icts into yaml strings
-    """
-    new_config = copy.deepcopy(config)
-    for k, v in new_config.items():
-        if isinstance(v, dict):
-            new_config[k] = yaml.dump(v)
-    return new_config
-
-
 def load_config(config_path: str) -> dict:
     try:
-        config = load_yaml(config_path)
-        return config
-    except YamlParseError as ex:
-        raise launch.util.LauncherError('InvalidInput', None) from ex
+        with open(config_path) as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as ex:
+        raise launch.util.LauncherError('InvalidYaml', None) from ex
     except FileNotFoundError as ex:
         raise launch.util.LauncherError('MissingConfig', None) from ex
 
 
-def gen_format_config(config: dict, config_dir: str) -> dict:
-    """ path-expands, yaml-flattens, and stringifies user-provided config-dict
+def validate_url(field, value, error):
+    if not value.startswith('http'):
+        error(field, 'Not a valid HTTP URL')
+
+
+def load_ssh_private_key(doc):
+    if doc.get('key_helper') == 'true':
+        return 'unset'
+    if 'ssh_private_key_filename' not in doc:
+        return launch.util.NO_TEST_FLAG
+    return launch.util.read_file(doc['ssh_private_key_filename'])
+
+
+class LaunchValidator(cerberus.Validator):
+    """ Needs to use unintuitive pattern so that child validator can be created
+    for validated the nested dcos_config. See:
+    http://docs.python-cerberus.org/en/latest/customize.html#instantiating-custom-validators
     """
-    return gen.stringify_configuration(yaml_flatten(expand_filenames(config, config_dir)))
+    def __init__(self, *args, **kwargs):
+        super(LaunchValidator, self).__init__(*args, **kwargs)
+        assert 'config_dir' in kwargs, 'This class must be supplied with the config_dir kwarg'
+        self.config_dir = kwargs['config_dir']
+
+    def _normalize_coerce_expand_local_path(self, value):
+        return expand_path(value, self.config_dir)
+
+
+def _expand_error_dict(errors: dict) -> str:
+    message = ''
+    for key, errors in errors.items():
+        sub_message = 'Field: {}, Errors: '.format(key)
+        for e in errors:
+            if isinstance(e, dict):
+                sub_message += _expand_error_dict(e)
+            else:
+                sub_message += e
+            sub_message += '\n'
+        message += sub_message
+    return message
+
+
+def _raise_errors(validator: LaunchValidator):
+    message = _expand_error_dict(validator.errors)
+    raise launch.util.LauncherError('ValidationError', message)
 
 
 def get_validated_config(config_path: str) -> dict:
     """ Returns validated a finalized argument dictionary for dcos-launch
+    Given the huge range of configuration space provided by this configuration
+    file, it must be processed in three steps (common, provider-specifc,
+    platform-specific)
     """
     config = load_config(config_path)
     config_dir = os.path.dirname(config_path)
-    config = gen_format_config(config, config_dir)
-    resolver = validate_config(config)
-    final_args = gen.get_final_arguments(resolver)
-    # TODO DCOS-14196: [gen.internals] disallow extra user provided arguments
-    unrecognized_args = set(config.keys()) - set(final_args.keys())
-    if len(unrecognized_args) > 0:
-        raise launch.util.LauncherError(
-            'ValidationError', 'Unrecognized/incompatible arguments: {}'.format(unrecognized_args))
-    return final_args
+    # validate against the fields common to all configs
+    basic_validator = LaunchValidator(COMMON_SCHEMA, config_dir=config_dir, allow_unknown=True)
+    if not basic_validator.validate(config):
+        _raise_errors(basic_validator)
 
-
-def validate_config(user_config: dict) -> gen.internals.Resolver:
-    """ Converts the user config to to a source and evaluates it
-    versus the targets and source in this module. Also, catches
-    and reformats the validation exception before raising
-    """
-    sources = [Source(entry), gen.user_arguments_to_source(user_config)]
-    try:
-        return gen.validate_and_raise(sources, [get_target()])
-    except gen.exceptions.ValidationError as ex:
-        raise launch.util.LauncherError(
-            'ValidationError', pretty_print_validate_error(ex.errors, ex.unset))
-
-
-def pretty_print_validate_error(errors, unset):
-    out = ''
-    if errors != {}:
-        out = '\nErrors:\n'
-        for k, v in errors.items():
-            out += '  {}: {}\n'.format(k, v['message'])
-    if len(unset) > 0:
-        out += '\nUnset arguments:\n'
-        for u in unset:
-            out += '  ' + u + '\n'
-    return out
-
-
-def get_target():
-    """ Targets must never be re-used after its been evaluated by gen, so
-    do not define it as a global constant
-    """
-    aws_platform_target = Target({
-        'aws_region',
-        'aws_access_key_id',
-        'aws_secret_access_key',
-        'key_helper',
-        'zen_helper',
-        'deployment_name'},
-        {
-            'provider': Scope('provider', {
-                'aws': Target({}),
-                'azure': Target({}),
-                'onprem': Target({}, {
-                    'key_helper': Scope('key_helper', {
-                        'true': Target({}),
-                        'false': Target({'aws_key_name'})
-                    })
-                })
-            })
-    })
-    azure_platform_target = Target({
-        'azure_location',
-        'azure_client_id',
-        'azure_client_secret',
-        'azure_tenant_id',
-        'azure_subscription_id',
-        'deployment_name',
-        'key_helper'})
-    template_target = Target({
-        'template_url',
-        'template_parameters'})
-    onprem_target = Target(
-        {
-            'installer_url',
-            'installer_port',
-            'num_private_agents',
-            'num_public_agents',
-            'num_masters',
-            'prevalidate_onprem_config',
-            'onprem_dcos_config_contents'
-        },
-        {
-            'platform': Scope('platform', {
-                'aws': Target({
-                    'aws_key_name',
-                    'cluster_size',
-                    'instance_ami',
-                    'instance_type',
-                    'admin_location'}),
-                'azure': Target({})})})  # Unsupported currently
-    return Target({
-        'launch_config_version',
-        'platform',
-        'provider',
-        'ssh_port',
-        'ssh_private_key',
-        'ssh_user'},
-        {
-            'platform': Scope('platform', {
-                'aws': aws_platform_target,
-                'azure': azure_platform_target}),
-            'provider': Scope('provider', {
-                'aws': template_target,
-                'azure': template_target,
-                'onprem': onprem_target})})
-
-
-def validate_template_url(template_url):
-    assert template_url.startswith('http')
-
-
-def validate_installer_url(installer_url):
-    assert installer_url.startswith('http'), 'Not a valid URL: {}'.format(installer_url)
-    assert requests.head(installer_url).status_code == 200
-
-
-def validate_launch_config_version(launch_config_version):
-    assert int(launch_config_version) == 1
-
-
-def validate_onprem_dcos_config_contents(onprem_dcos_config_contents, num_masters, prevalidate_onprem_config):
-    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if prevalidate_onprem_config != 'true':
-        return
-    user_config = yaml.load(onprem_dcos_config_contents)
-    # Use the default config in the installer
-    config = yaml.load(dcos_installer.config.config_sample)
-    config.update(user_config)
-    # This field is required and auto-added by installer, so add a dummy here
-    if 'bootstrap_id' not in config:
-        config['bootstrap_id'] = 'deadbeef'
-
-    # dummy master list to pass validation
-    config['master_list'] = [('10.0.0.' + str(i)) for i in range(int(num_masters))]
-
-    # Use the default config in the installer
-    sources, targets, templates = gen.get_dcosconfig_source_target_and_templates(
-        gen.stringify_configuration(config), list(), [ssh.validate.source, gen.build_deploy.bash.onprem_source])
-
-    # Copy the gen target from dcos_installer/config.py, but instead remove
-    # 'ssh_key_path' from the target because the validate fn in ssh_source is
-    # too strict I.E. we cannot validate a key if we are going to generate
-    # Furthermore, we cannot use the target ssh_key_path as it will automatically
-    # invoked the validate fn from ssh/validate.py Luckily, we can instead use
-    # the more idiomatic 'ssh_private_key_filename'
-    targets.append(Target({
-        'ssh_user',
-        'ssh_port',
-        'master_list',
-        'agent_list',
-        'public_agent_list',
-        'ssh_parallelism',
-        'process_timeout'}))
-
-    resolver = resolve_configuration(sources, targets)
-    status = resolver.status_dict
-    if status['status'] == 'errors':
-        raise AssertionError(pretty_print_validate_error(status['errors'], status['unset']))
-
-
-def calculate_dcos_config_contents(dcos_config, num_masters, ssh_user, ssh_private_key, platform):
-    """ Fills in the ssh user, ssh private key and ip-detect script if possible
-    Takes the config's local references and converts them into transmittable content
-    """
-    user_config = yaml.load(dcos_config)
-    # Use the default config in the installer for the same experience
-    # w.r.t the auto-filled settings
-    config = yaml.load(dcos_installer.config.config_sample)
-    config.update(user_config)
-    config['ssh_user'] = ssh_user
-    config['ssh_key'] = ssh_private_key
-    for key_name in ['ip_detect_filename', 'ip_detect_public_filename']:
-        if key_name in config:
-            config[key_name.replace('_filename', '_contents')] = load_string(config[key_name])
-            del config[key_name]
-    if 'ip_detect_contents' not in config:
-        config['ip_detect_contents'] = test_util.helpers.ip_detect_script(platform)
-    return yaml.dump(config)
-
-
-def validate_onprem_provider_platform(provider, platform):
-    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
+    # add provider specific information to the basic validator
+    provider = basic_validator.normalized(config)['provider']
     if provider == 'onprem':
-        assert platform != 'azure', '`provider: onprem` is not currently not support on azure'
+        basic_validator.schema.update(ONPREM_DEPLOY_COMMON_SCHEMA)
     else:
-        assert platform == provider
+        basic_validator.schema.update(TEMPLATE_DEPLOY_COMMON_SCHEMA)
 
+    # validate again before attempting to add platform information
+    if not basic_validator.validate(config):
+        _raise_errors(basic_validator)
 
-def validate_key_helper_support(platform, key_helper):
-    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if key_helper == 'false':
-        return
-    assert platform in ('aws', 'azure')
-
-
-def calculate_ssh_user(os_name, platform):
+    # use the intermediate provider-validated config to add the platform schema
+    platform = basic_validator.normalized(config)['platform']
     if platform == 'aws':
-        return test_util.aws.OS_SSH_INFO[os_name].user
+        basic_validator.schema.update(AWS_PLATFORM_SCHEMA)
+        if provider == 'onprem':
+            basic_validator.schema.update(AWS_ONPREM_SCHEMA)
+    elif platform == 'azure':
+        basic_validator.schema.update(AZURE_PLATFORM_SCHEMA)
     else:
-        raise Exception('Cannot yet calculate user for {} platform'.format(platform))
+        raise NotImplementedError()
+
+    # create a strict validator with our final schema and process it
+    final_validator = LaunchValidator(basic_validator.schema, config_dir=config_dir, allow_unknown=False)
+    if not final_validator.validate(config):
+        _raise_errors(final_validator)
+    return final_validator.normalized(config)
 
 
-def validate_key_helper_parameters(template_parameters, provider, key_helper):
-    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if key_helper == 'false':
-        return
-    if provider == 'aws':
-        assert 'KeyName' not in yaml.load(template_parameters), 'key_helper will '\
-            'automatically calculate and inject KeyName; do not set this parameter'
-    if provider == 'azure':
-        assert 'sshRSAPublicKey' not in yaml.load(template_parameters), 'key_helper will '\
-            'automatically calculate and inject sshRSAPublicKey; do not set this parameter'
+COMMON_SCHEMA = {
+    'deployment_name': {
+        'type': 'string',
+        'required': True},
+    'provider': {
+        'type': 'string',
+        'required': True,
+        'allowed': [
+            'aws',
+            'azure',
+            'onprem']},
+    'launch_config_version': {
+        'type': 'integer',
+        'required': True,
+        'allowed': [1]},
+    'ssh_port': {
+        'type': 'integer',
+        'required': False,
+        'default': 22},
+    'ssh_private_key_filename': {
+        'type': 'string',
+        'coerce': 'expand_local_path',
+        'required': False},
+    'ssh_private_key': {
+        'type': 'string',
+        'required': False,
+        'default_setter': load_ssh_private_key},
+    'ssh_user': {
+        'type': 'string',
+        'required': False,
+        'default': 'core'},
+    'key_helper': {
+        'type': 'boolean',
+        'default': False}}
 
 
-def calculate_instance_count(num_masters, num_private_agents, num_public_agents):
-    return str(1 + int(num_masters) + int(num_private_agents) + int(num_public_agents))
+AWS_PLATFORM_SCHEMA = {
+    'aws_region': {
+        'type': 'string',
+        'required': True},
+    'aws_access_key_id': {
+        'type': 'string',
+        'required': True},
+    'aws_secret_access_key': {
+        'type': 'string',
+        'required': True},
+    'zen_helper': {
+        'type': 'boolean',
+        'default': False}}
 
 
-def validate_os_name(os_name, platform, provider):
-    # TODO DCOS-14033: [gen.internals] Source validate functions are global only
-    if provider != 'onprem':
-        # the os_name parameter only applies to homogenous clusters that need
-        # to be created by dcos-launch for an onprem install. In other cases,
-        # the deployment template is parameterized for OS selection
-        return
-    if platform == 'aws':
-        validate_one_of(os_name, list(test_util.aws.OS_SSH_INFO.keys()))
-    else:
-        raise AssertionError('Support not yet implemented for {} bare cluster'.format(platform))
+AZURE_PLATFORM_SCHEMA = {
+    'azure_location': {
+        'type': 'string',
+        'required': True},
+    'azure_client_id': {
+        'type': 'string',
+        'required': True},
+    'azure_client_secret': {
+        'type': 'string',
+        'required': True},
+    'azure_tenant_id': {
+        'type': 'string',
+        'required': True},
+    'azure_subscription_id': {
+        'type': 'string',
+        'required': True}}
 
 
-def calculate_ssh_private_key(ssh_private_key_filename):
-    if ssh_private_key_filename == '':
-        return launch.util.NO_TEST_FLAG
-    return load_string(ssh_private_key_filename)
+TEMPLATE_DEPLOY_COMMON_SCHEMA = {
+    # platform MUST be equal to provider when using templates
+    'platform': {
+        'type': 'string',
+        'readonly': True,
+        'default_setter': lambda doc: doc['provider']},
+    'template_url': {
+        'type': 'string',
+        'required': True,
+        'validator': validate_url},
+    'template_parameters': {
+        'type': 'dict',
+        'required': True}}
 
 
-def calculate_instance_ami(os_name, aws_region):
-    return test_util.aws.OS_AMIS[os_name][aws_region]
+ONPREM_DEPLOY_COMMON_SCHEMA = {
+    'platform': {
+        'type': 'string',
+        'required': True,
+        'allowed': ['aws']},
+    'installer_url': {
+        'validator': validate_url,
+        'type': 'string',
+        'required': True},
+    'installer_port': {
+        'type': 'integer',
+        'default': 9000},
+    'num_private_agents': {
+        'type': 'integer',
+        'required': True,
+        'min': 0},
+    'num_public_agents': {
+        'type': 'integer',
+        'required': True,
+        'min': 0},
+    'num_masters': {
+        'type': 'integer',
+        'allowed': [1, 3, 5, 7, 9],
+        'required': True},
+    'os_name': {
+        'type': 'string',
+        # not required because machine image can be set directly
+        'required': False,
+        'default': 'cent-os-7-prereqs',
+        # TODO: This is AWS specific; move when support expands to other platofmrs
+        'allowed': list(test_util.aws.OS_SSH_INFO.keys())},
+    'ssh_user': {
+        'required': True,
+        'type': 'string',
+        'default_setter': lambda doc: test_util.aws.OS_SSH_INFO[doc['os_name']].user},
+    'dcos_config': {
+        'type': 'dict',
+        'required': True,
+        'allow_unknown': True,
+        'schema': {
+            'ip_detect_filename': {
+                'coerce': 'expand_local_path',
+                'excludes': 'ip_detect_content'},
+            'ip_detect_public_filename': {
+                'coerce': 'expand_local_path',
+                'excludes': 'ip_detect_public_content'},
+            'ip_detect_contents': {
+                'excludes': 'ip_detect_filename'},
+            'ip_detect_public_contents': {
+                'excludes': 'ip_detect_public_filename'},
+            # currently, these values cannot be set by a user, only by the launch process
+            'master_list': {'readonly': True},
+            'agent_list': {'readonly': True},
+            'public_agent_list': {'readonly': True}}}}
 
 
-def validate_key_name(provider, platform, key_helper):
-    if provider == 'aws' and platform == 'onprem' and key_helper == 'false':
-        raise AssertionError('Either provide `key_name`')
-
-
-def calculate_cluster_size(num_masters, num_private_agents, num_public_agents):
-    # add one for the installer bootstrap host
-    return str(1 + int(num_masters) + int(num_private_agents) + int(num_public_agents))
-
-
-entry = {
-    'validate': [
-        validate_installer_url,
-        validate_launch_config_version,
-        validate_onprem_dcos_config_contents,
-        validate_key_helper_parameters,
-        validate_key_helper_support,
-        validate_onprem_provider_platform,
-        validate_os_name,
-        lambda key_helper: gen.calc.validate_true_false(key_helper),
-        lambda zen_helper: gen.calc.validate_true_false(zen_helper),
-        lambda provider: validate_one_of(provider, ['aws', 'azure', 'onprem']),
-        lambda platform: validate_one_of(platform, ['aws', 'azure']),
-    ],
-    'default': {
-        'ssh_port': '22',
-        'ssh_private_key': calculate_ssh_private_key,
-        'instance_ami': calculate_instance_ami,
-        'os_name': 'cent-os-7-prereqs',
-        'key_helper': 'false',
-        'zen_helper': 'false'
-    },
-    'conditional': {
-        'provider': {
-            'aws': {
-                'default': {
-                    # allow untest-able deployment
-                    'ssh_user': '',
-                    'ssh_private_key_filename': ''
-                },
-                'must': {
-                    # TODO DCOS-14048: [gen.internals] allow user providing arguments
-                    # for a 'must' if the arguments agree
-                    'platform': 'aws'
-                }
-            },
-            'azure': {
-                'default': {
-                    # allow untest-able deployment
-                    'ssh_user': '',
-                    'ssh_private_key_filename': ''
-                },
-                'must': {
-                    # TODO DCOS-14048: [gen.internals] allow user providing arguments
-                    # for a 'must' if the arguments agree
-                    'platform': 'azure'
-                }
-            },
-            'onprem': {
-                'default': {
-                    'prevalidate_onprem_config': 'false',
-                    'num_public_agents': '0',
-                    'num_private_agents': '0',
-                    'installer_port': '9000',
-                    'admin_location': '0.0.0.0/0'
-                },
-                'must': {
-                    'onprem_dcos_config_contents': calculate_dcos_config_contents,
-                    'ssh_user': calculate_ssh_user,
-                    'cluster_size': calculate_cluster_size
-                },
-            },
-        },
-        'key_helper': {
-            'true': {
-                'must': {
-                    # key input not applicable if helper is used
-                    'aws_key_name': 'unset',
-                    'ssh_private_key_filename': 'unset',
-                    'ssh_private_key': 'unset'}},
-            'false': {}
-        }
-    }
-}
+AWS_ONPREM_SCHEMA = {
+    'aws_key_name': {
+        'type': 'string',
+        'dependencies': {
+            'key_helper': False}},
+    'instance_ami': {
+        'type': 'string',
+        'required': True,
+        'default_setter': lambda doc: test_util.aws.OS_AMIS[doc['os_name']][doc['aws_region']]},
+    'instance_type': {
+        'type': 'string',
+        'required': True},
+    'admin_location': {
+        'type': 'string',
+        'required': True,
+        'default': '0.0.0.0/0'}}

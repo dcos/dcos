@@ -1,8 +1,6 @@
 import copy
 import logging
 
-import yaml
-
 import launch.util
 import test_util.aws
 import test_util.runner
@@ -30,7 +28,7 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         try:
             stack = self.boto_wrapper.create_stack(
                 self.config['deployment_name'],
-                yaml.load(self.config['template_parameters']),
+                self.config['template_parameters'],
                 template_url=self.config.get('template_url'),
                 template_body=self.config.get('template_body'))
         except Exception as ex:
@@ -48,9 +46,9 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         will be provided (must be done in correct order) and added to the info
         JSON as 'temp_resources'
         """
-        if self.config['zen_helper'] != 'true':
+        if not self.config['zen_helper']:
             return {}
-        parameters = yaml.load(self.config['template_parameters'])
+        parameters = self.config['template_parameters']
         temp_resources = {}
         if 'Vpc' not in parameters:
             vpc_id = self.boto_wrapper.create_vpc_tagged('10.0.0.0/16', self.config['deployment_name'])
@@ -70,7 +68,7 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
                 vpc_id, '10.0.128.0/20', self.config['deployment_name'] + '-public')
             parameters['PublicSubnet'] = public_subnet_id
             temp_resources.update({'public_subnet': public_subnet_id})
-        self.config['template_parameters'] = yaml.dump(parameters)
+        self.config['template_parameters'] = parameters
         return temp_resources
 
     def wait(self):
@@ -107,14 +105,15 @@ class DcosCloudformationLauncher(launch.util.AbstractLauncher):
         as the cloudformation stack, update the config with the resulting private key,
         and amend the cloudformation template parameters to have KeyName set as this key
         """
-        if self.config['key_helper'] != 'true':
+        if not self.config['key_helper']:
             return {}
+        if 'KeyName' in self.config['template_parameters']:
+            raise launch.util.LauncherError('KeyHelperError', 'KeyName cannot be set in '
+                                            'template_parameters when key_helper is true')
         key_name = self.config['deployment_name']
         private_key = self.boto_wrapper.create_key_pair(key_name)
         self.config.update({'ssh_private_key': private_key})
-        template_parameters = yaml.load(self.config['template_parameters'])
-        template_parameters.update({'KeyName': key_name})
-        self.config['template_parameters'] = yaml.dump(template_parameters)
+        self.config['template_parameters'].update({'KeyName': key_name})
         return {'key_name': key_name}
 
     @property
@@ -131,14 +130,18 @@ class BareClusterLauncher(DcosCloudformationLauncher):
     def create(self):
         """ Amend the config to add a template_body and the appropriate parameters
         """
+        template_parameters = {
+            'AllowAccessFrom': self.config['admin_location'],
+            # cluster size is +1 for the bootstrap node
+            'ClusterSize': (1 + self.config['num_masters'] + self.config['num_public_agents'] +
+                            self.config['num_private_agents']),
+            'InstanceType': self.config['instance_type'],
+            'AmiCode': self.config['instance_ami']}
+        if not self.config['key_helper']:
+            template_parameters['KeyName'] = self.config['aws_key_name']
         self.config.update({
             'template_body': test_util.aws.template_by_instance_type(self.config['instance_type']),
-            'template_parameters': yaml.dump({
-                'KeyName': self.config['aws_key_name'],
-                'AllowAccessFrom': self.config['admin_location'],
-                'ClusterSize': self.config['cluster_size'],
-                'InstanceType': self.config['instance_type'],
-                'AmiCode': self.config['instance_ami']})})
+            'template_parameters': template_parameters})
         return super().create()
 
     def get_hosts(self):

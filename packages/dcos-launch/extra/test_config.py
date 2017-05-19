@@ -1,9 +1,8 @@
 import os
 
 import pytest
-import yaml
 
-from launch.config import gen_format_config, get_validated_config
+from launch.config import get_validated_config, LaunchValidator
 from launch.util import get_temp_config_path, LauncherError
 
 
@@ -24,35 +23,20 @@ def mock_relative_path(tmpdir):
         yield str(tmpdir)
 
 
-def test_gen_formatting(mock_home, mock_relative_path):
-    config = {
-        'foobarbaz': True,
-        'fizzbuzz': 3}
+def test_launch_validator(mock_home, mock_relative_path):
+    test_schema = {
+        'foobar_path': {'coerce': 'expand_local_path'},
+        'baz_path': {'coerce': 'expand_local_path'}}
+    validator = LaunchValidator(test_schema, config_dir=mock_relative_path)
 
-    abs_config = {'foo_filename': '/abc'}
-    foo_filename = '/abc'
-    config.update(abs_config)
-    config['foo'] = abs_config  # Test single nest
+    test_input = {
+        'foobar_path': 'foo/bar',
+        'baz_path': '~/baz'}
+    expected_output = {
+        'foobar_path': os.path.join(mock_relative_path, 'foo/bar'),
+        'baz_path': os.path.join(mock_home, 'baz')}
 
-    rel_config = {'bar_filename': 'some_other_dir'}
-    config.update(rel_config)
-    bar_filename = os.path.join(mock_relative_path, 'some_other_dir')
-    config['bar'] = {'bar': rel_config}  # Test double nested
-
-    user_config = {'baz_filename': '~/foo/bar/dir'}
-    baz_filename = os.path.join(mock_home, 'foo/bar/dir')
-    config.update(user_config)
-    config['baz'] = {'baz': {'baz': user_config}}  # Test triple-nested
-
-    assert gen_format_config(config, mock_relative_path) == {
-        'foobarbaz': 'true',
-        'fizzbuzz': '3',
-        'foo_filename': foo_filename,
-        'bar_filename': bar_filename,
-        'baz_filename': baz_filename,
-        'foo': yaml.dump({'foo_filename': foo_filename}),
-        'bar': yaml.dump({'bar': {'bar_filename': bar_filename}}),
-        'baz': yaml.dump({'baz': {'baz': {'baz_filename': baz_filename}}})}
+    assert validator.normalized(test_input) == expected_output
 
 
 class TestAwsCloudformation:
@@ -75,7 +59,6 @@ class TestAwsCloudformation:
                     tmpdir, 'aws-cf-with-helper.yaml', update={'installer_url': 'foobar'}))
         assert exinfo.value.error == 'ValidationError'
         assert 'installer_url' in exinfo.value.msg
-        assert 'Unrecognized/incompatible' in exinfo.value.msg
 
 
 class TestAzureTemplate:
@@ -91,7 +74,7 @@ class TestAzureTemplate:
                 get_temp_config_path(
                     tmpdir, 'azure-with-helper.yaml', update={'platform': 'aws'}))
         assert exinfo.value.error == 'ValidationError'
-        assert 'platform must be calculated' in exinfo.value.msg
+        assert 'platform' in exinfo.value.msg
 
 
 class TestAwsOnprem:
@@ -106,9 +89,11 @@ class TestAwsOnprem:
             get_validated_config(
                 get_temp_config_path(
                     tmpdir, 'aws-onprem-with-helper.yaml',
-                    update={'dcos_config': {'provider': 'aws'}, 'prevalidate_onprem_config': 'true'}))
+                    update={'dcos_config': {
+                        'ip_detect_content': 'foo',
+                        'ip_detect_filename': 'bar'}}))
         assert exinfo.value.error == 'ValidationError'
-        assert 'onprem_dcos_config_contents' in exinfo.value.msg
+        assert 'ip_detect' in exinfo.value.msg
 
     def test_error_is_skipped_in_nested_config(self, tmpdir):
         get_validated_config(

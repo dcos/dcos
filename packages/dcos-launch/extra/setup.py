@@ -25,6 +25,7 @@ setup(
         'azure-mgmt-resource==0.30.0rc4',
         'boto3',
         'botocore',
+        'cerberus',
         'docopt',
         'pyinstaller==3.2',
         'pyyaml'],
@@ -35,6 +36,8 @@ setup(
     },
     package_data={
         'launch': [
+            'ip-detect/aws.sh',
+            'ip-detect/aws_public.sh',
             'sample_configs/*.yaml',
             'dcos-launch.spec'
         ],
