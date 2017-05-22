@@ -1,5 +1,6 @@
 # Various tests that don't fit into the other categories and don't make their own really.
 import json
+import os
 
 from pkgpanda.util import load_yaml
 
@@ -25,3 +26,13 @@ def test_load_expanded_config():
 
     # TODO(cmaloney): Test user provided parameters are present. All the
     # platforms have different sets...
+
+
+def test_profile_symlink():
+    """Assert the DC/OS profile script is symlinked from the correct source."""
+    with open("/opt/mesosphere/etc/expanded.config.json", "r") as f:
+        expanded_config = json.load(f)
+    symlink_target = expanded_config['profile_symlink_target']
+    expected_symlink_source = expanded_config['profile_symlink_source']
+
+    assert expected_symlink_source == os.readlink(symlink_target)

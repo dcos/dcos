@@ -12,8 +12,8 @@
     Type=oneshot
     StandardOutput=journal+console
     StandardError=journal+console
-    ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
-    ExecStart=/usr/bin/ln -sf /opt/mesosphere/bin/add_dcos_path.sh /etc/profile.d/dcos.sh
+    ExecStartPre=/usr/bin/mkdir -p {{ profile_symlink_target_dir }}
+    ExecStart={{ profile_symlink_cmd }}
 - name: dcos-download.service
   content: |
     [Unit]
