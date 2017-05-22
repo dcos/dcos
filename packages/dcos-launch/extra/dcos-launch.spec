@@ -6,10 +6,8 @@
 #     with the final exe. Ensure build system has OpenSSL 1.0.2g or greater
 a = Analysis(['launch/cli.py'],
              hiddenimports=['html.parser'],
-             datas=[('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/gen/ip-detect/*.sh',
-                    'gen/ip-detect'),
-                    ('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/gen/*.yaml',
-                    'gen/'),
+             datas=[('launch/ip-detect/aws.sh', 'launch/ip-detect'),
+                    ('launch/ip-detect/aws_public.sh', 'launch/ip-detect'),
                     ('/opt/mesosphere/active/dcos-image/lib/python3.5/site-packages/test_util/templates/*.json',
                     'test_util/templates'),
 ])

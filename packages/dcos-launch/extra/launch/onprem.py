@@ -2,8 +2,8 @@ import copy
 import logging
 import subprocess
 
+import pkg_resources
 import retrying
-import yaml
 
 import launch.aws
 import launch.util
@@ -36,7 +36,7 @@ class OnpremLauncher(launch.util.AbstractLauncher):
         self.get_ssher().command(self.bootstrap_host, ['printf', state, '>', STATE_FILE])
 
     def get_last_state(self):
-        return self.get_ssher(self.config).command(self.bootstrap_host, ['cat', STATE_FILE]).decode().strip()
+        return self.get_ssher().command(self.bootstrap_host, ['cat', STATE_FILE]).decode().strip()
 
     def get_bare_cluster_launcher(self):
         if self.config['platform'] == 'aws':
@@ -53,24 +53,43 @@ class OnpremLauncher(launch.util.AbstractLauncher):
             num_private_agents=int(self.config['num_private_agents']),
             num_public_agents=int(self.config['num_public_agents']))
 
-    def get_completed_onprem_config(self, cluster):
-        onprem_config = yaml.load(self.config['onprem_dcos_config_contents'])
-        zk_backend = onprem_config.get('exhibitor_storage_backend') == 'zookeeper'
-        if zk_backend:
-            onprem_config['exhibitor_zk_hosts'] = self.bootstrap_host + ':2181'
-        if zk_backend:
-            cluster.start_bootstrap_zk()
+    def get_completed_onprem_config(self, cluster: test_util.onprem.OnpremCluster) -> dict:
+        onprem_config = self.config['dcos_config']
+        # First, try and retrieve the agent list from the cluster
         onprem_config['agent_list'] = [h.private_ip for h in cluster.private_agents]
         onprem_config['public_agent_list'] = [h.private_ip for h in cluster.public_agents]
         onprem_config['master_list'] = [h.private_ip for h in cluster.masters]
-        # SSH private key must have been provided at creation time or key helper true
-        # if provided initially then it will be set, if key_helper is true, then its unset
-        if onprem_config.get('ssh_key') == 'unset':
+        # if the user wanted to use exhibitor as the backend, then start it
+        if onprem_config.get('exhibitor_storage_backend') == 'zookeeper':
+            onprem_config['exhibitor_zk_hosts'] = cluster.start_bootstrap_zk()
+        # if key helper is true then ssh key must be injected, or the key
+        # must have been provided as a file and still needs to be injected
+        if self.config['key_helper'] or 'ssh_key' not in onprem_config:
             onprem_config['ssh_key'] = self.config['ssh_private_key']
+        # check if ssh user was not provided
+        if 'ssh_user' not in onprem_config:
+            onprem_config['ssh_user'] = self.config['ssh_user']
+        # check if the user provided any filenames and convert them into content
+        for key_name in ('ip_detect_filename', 'ip_detect_public_filename'):
+            if key_name not in onprem_config:
+                continue
+            new_key_name = key_name.replace('_filename', '_contents')
+            if new_key_name in onprem_config:
+                raise launch.util.LauncherError(
+                    'InvalidDcosConfig', 'Cannot set *_filename and *_contents simultaneously!')
+            onprem_config[new_key_name] = launch.util.read_file(onprem_config[key_name])
+            del onprem_config[key_name]
+        # set the simple default IP detect script if not provided
+        # currently, only AWS is supported, but when support changes, this will have to update
+        if 'ip_detect_contents' not in onprem_config:
+            onprem_config['ip_detect_contents'] = pkg_resources.resource_string(
+                'launch', 'ip-detect/aws.sh').decode('utf-8')
+        if 'ip_detect_contents' not in onprem_config:
+            onprem_config['ip_detect_public_contents'] = pkg_resources.resource_string(
+                'launch', 'ip-detect/aws_public.sh').decode('utf-8')
         # For no good reason the installer uses 'ip_detect_script' instead of 'ip_detect_contents'
-        if 'ip_detect_contents' in onprem_config:
-            onprem_config['ip_detect_script'] = onprem_config['ip_detect_contents']
-            del onprem_config['ip_detect_contents']
+        onprem_config['ip_detect_script'] = self.config['dcos_config']['ip_detect_contents']
+        del onprem_config['ip_detect_contents']
         log.debug('Generated cluster configuration: {}'.format(onprem_config))
         return onprem_config
 
@@ -111,7 +130,7 @@ class OnpremLauncher(launch.util.AbstractLauncher):
             last_complete = 'POSTFLIGHT'
             self.post_state(last_complete)
         if last_complete != 'POSTFLIGHT':
-            raise launch.util.LauncherError('InconsistentState', last_complete)
+            raise launch.util.LauncherError('InconsistentState', 'State on bootstrap host is: ' + last_complete)
 
     def describe(self):
         """ returns host information stored in the config as
@@ -128,8 +147,6 @@ class OnpremLauncher(launch.util.AbstractLauncher):
         # blackout unwanted fields
         del desc['template_body']
         del desc['template_parameters']
-        desc['dcos_config'] = yaml.load(desc['onprem_dcos_config_contents'])
-        del desc['onprem_dcos_config_contents']
         return desc
 
     def delete(self):
