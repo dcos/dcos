@@ -3,9 +3,13 @@ set -o errexit -o nounset -o pipefail
 
 # Zookeeper
 
+# Replace zkServer.sh with copy that doesn't write to zookeeper.out
+cp /pkg/extra/zkServer.sh /pkg/src/zookeeper/bin/zkServer.sh
+chmod 755 /pkg/src/zookeeper/bin/zkServer.sh
+
 mkdir -p "$PKG_PATH/usr"
 cp -rp "/pkg/src/zookeeper" "$PKG_PATH/usr"
-rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib}
+rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib,recipes,dist-maven}
 
 mkdir -p "$PKG_PATH/bin"
 ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
