@@ -6,13 +6,14 @@ import os
 
 import yaml
 
-import generic_test_code.common
 from generic_test_code.common import (
+    assert_endpoint_response,
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
     generic_location_header_during_redirect_is_adjusted_test,
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
+    repo_is_ee,
 )
 
 log = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def _verify_endpoint_tests_conf(endpoint_tests):
         _verify_type_specification(t['type'])
 
         at_least_one_test_enabled = False
-        assert 0 < len(t['tests'].keys()) < 6
+        assert 0 < len(t['tests'].keys()) < 7
         for k in t['tests']:
             assert 'enabled' in t['tests'][k]
             assert t['tests'][k]['enabled'] in [True, False]
@@ -79,6 +80,9 @@ def _verify_endpoint_tests_conf(endpoint_tests):
         if 'are_upstream_req_headers_ok' in t['tests']:
             _verify_jwt_should_be_forwarded_test_conf(
                 t['tests']['are_upstream_req_headers_ok'])
+        if 'is_unauthed_access_permitted' in t['tests']:
+            _verify_is_unauthed_access_permitted(
+                t['tests']['is_unauthed_access_permitted'])
 
 
 def _verify_is_location_header_rewritten(t_config):
@@ -103,6 +107,17 @@ def _verify_is_location_header_rewritten(t_config):
 
 
 def _verify_is_endpoint_redirecting_properly(t_config):
+    if not t_config['enabled']:
+        return
+
+    assert 'locations' in t_config
+
+    assert len(t_config['locations']) > 0
+    for p in t_config['locations']:
+        assert p.startswith('/')
+
+
+def _verify_is_unauthed_access_permitted(t_config):
     if not t_config['enabled']:
         return
 
@@ -155,7 +170,7 @@ def _tests_configuration():
     with open(common_tests_conf_file, 'r') as fh:
         common_tests_conf = yaml.load(fh)
 
-    if generic_test_code.common.repo_is_ee():
+    if repo_is_ee():
         flavour_dir = 'ee'
     else:
         flavour_dir = 'open'
@@ -259,6 +274,25 @@ def _testdata_to_location_header_rewrite_testdata(tests_config, node_type):
     return res
 
 
+def _testdata_to_is_unauthed_access_permitted(tests_config, node_type):
+    res = []
+
+    for x in tests_config['endpoint_tests']:
+        if node_type not in x['type']:
+            continue
+
+        if 'is_unauthed_access_permitted' not in x['tests']:
+            continue
+
+        h = x['tests']['is_unauthed_access_permitted']
+        if h['enabled'] is not True:
+            continue
+
+        res.extend(h['locations'])
+
+    return res
+
+
 def _testdata_to_redirect_testdata(tests_config, node_type):
     res = []
 
@@ -309,6 +343,11 @@ def pytest_generate_tests(metafunc):
     if 'redirect_path' in metafunc.fixturenames:
         args = _testdata_to_redirect_testdata(tests_config, ar_type)
         metafunc.parametrize("redirect_path", args)
+        return
+
+    if 'unauthed_path' in metafunc.fixturenames:
+        args = _testdata_to_is_unauthed_access_permitted(tests_config, ar_type)
+        metafunc.parametrize("unauthed_path", args)
         return
 
 
@@ -486,3 +525,7 @@ class TestAgentGeneric:
     def test_redirect_req_without_slash(
             self, agent_ar_process_perclass, redirect_path):
         generic_no_slash_redirect_test(agent_ar_process_perclass, redirect_path)
+
+    def test_if_unauthn_user_is_granted_access(
+            self, master_ar_process_perclass, unauthed_path):
+        assert_endpoint_response(master_ar_process_perclass, unauthed_path, 200)
