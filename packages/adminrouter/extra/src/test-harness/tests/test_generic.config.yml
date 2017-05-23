@@ -434,6 +434,11 @@ endpoint_tests:
 
 ######### /acs/api/v1/
   - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /acs/api/v1/reflect/me
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: true
