@@ -33,10 +33,10 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
         if match:
             return self.__users_permissions_request_handler(match.group(1))
 
-        if base_path in [
-                '/acs/api/v1/reflect/me',
-                '/dcos-metadata/ui-config.json',
-                '/acs/api/v1/auth/reflect/me']:
+        reflecting_paths = [
+            '/acs/api/v1/reflect/me',
+            '/dcos-metadata/ui-config.json']
+        if base_path in reflecting_paths or base_path.startswith('/acs/api/v1/auth/'):
             # A test URI that is used by tests. In some cases it is impossible
             # to reuse /acs/api/v1/users/ path.
             return self._reflect_request(base_path, url_args, body_args)
