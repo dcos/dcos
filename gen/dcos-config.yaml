@@ -914,3 +914,42 @@ package:
   - path: /etc_slave_public/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
+{% switch exhibitor_admin_password_enabled %}
+{% case "true" %}
+  - path: /etc_master/exhibitor_web.xml
+    permissions: "0644"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <web-app xmlns="http://java.sun.com/xml/ns/javaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+        version="2.5">
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>Protected</web-resource-name>
+            <url-pattern>/*</url-pattern>
+          </web-resource-collection>
+          <auth-constraint>
+            <role-name>admin</role-name>
+          </auth-constraint>
+        </security-constraint>
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>Public</web-resource-name>
+            <url-pattern>/exhibitor/v1/cluster/status</url-pattern>
+          </web-resource-collection>
+        </security-constraint>
+        <security-role>
+          <role-name>admin</role-name>
+        </security-role>
+        <login-config>
+          <auth-method>BASIC</auth-method>
+          <realm-name>DCOS</realm-name>
+        </login-config>
+      </web-app>
+  - path: /etc_master/exhibitor_realm
+    permissions: "0644"
+    content: |
+      admin: {{ exhibitor_admin_password }},admin
+{% case "false" %}
+{% endswitch %}

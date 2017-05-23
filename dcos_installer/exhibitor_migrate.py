@@ -27,7 +27,7 @@ performed.
 This script can be run on any of the DC/OS Master nodes by running (as root)
 
 ```
-dcos-shell dcos-exhibitor-migrate-status
+dcos-shell dcos-exhibitor-migrate-status [--username username --password password]
 ```
 """  # noqa
 
@@ -47,7 +47,7 @@ Will attempt to update the exhibitor (at `localhost`) config and trigger a rolli
 This script can be run on any of the DC/OS Master nodes by running (as root)
 
 ```
-dcos-shell dcos-exhibitor-migrate-perform
+dcos-shell dcos-exhibitor-migrate-perform [--username username --password password]
 ```
 """  # noqa
 
@@ -118,10 +118,31 @@ def update_config(current_config):
     return config
 
 
+def parse_args(description: str):
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('--username', help="Username for Exhibitor's HTTP basic auth")
+    parser.add_argument('--password', help="Password for Exhibitor's HTTP basic auth")
+    args = parser.parse_args()
+
+    auth_args_provided = [arg is not None for arg in [args.username, args.password]]
+    if any(auth_args_provided) and not all(auth_args_provided):
+        parser.error('If either --username or --password is passed, both must be passed')
+
+    return args
+
+
+def auth_from_args(args):
+    if args.username is None:
+        return None
+    else:
+        return (args.username, args.password)
+
+
 def perform():
-    argparse.ArgumentParser(description=DESCRIPTION_PERFORM).parse_args()
+    args = parse_args(DESCRIPTION_PERFORM)
+    auth = auth_from_args(args)
     try:
-        resp = requests.get("http://127.0.0.1:8181/exhibitor/v1/config/get-state", timeout=(3, 10))
+        resp = requests.get("http://127.0.0.1:8181/exhibitor/v1/config/get-state", auth=auth, timeout=(3, 10))
         config = get_config_json(resp)
         if migration_already_complete(config):
             print("Migration already complete")
@@ -147,9 +168,10 @@ def perform():
 
 
 def status():
-    argparse.ArgumentParser(description=DESCRIPTION_STATUS).parse_args()
+    args = parse_args(DESCRIPTION_STATUS)
+    auth = auth_from_args(args)
     try:
-        resp = requests.get("http://127.0.0.1:8181/exhibitor/v1/config/get-state", timeout=(3, 10))
+        resp = requests.get("http://127.0.0.1:8181/exhibitor/v1/config/get-state", auth=auth, timeout=(3, 10))
         config = get_config_json(resp)
         validate_config(config)
     except ValidationError as ve:
