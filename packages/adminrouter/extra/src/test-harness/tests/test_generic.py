@@ -438,6 +438,10 @@ class TestMasterGeneric:
             self, master_ar_process_perclass, redirect_path):
         generic_no_slash_redirect_test(master_ar_process_perclass, redirect_path)
 
+    def test_if_unauthn_user_is_granted_access(
+            self, master_ar_process_perclass, unauthed_path):
+        assert_endpoint_response(master_ar_process_perclass, unauthed_path, 200)
+
 
 class TestAgentGeneric:
     def test_if_request_is_sent_to_correct_upstream(
@@ -527,5 +531,5 @@ class TestAgentGeneric:
         generic_no_slash_redirect_test(agent_ar_process_perclass, redirect_path)
 
     def test_if_unauthn_user_is_granted_access(
-            self, master_ar_process_perclass, unauthed_path):
-        assert_endpoint_response(master_ar_process_perclass, unauthed_path, 200)
+            self, agent_ar_process_perclass, unauthed_path):
+        assert_endpoint_response(agent_ar_process_perclass, unauthed_path, 200)
