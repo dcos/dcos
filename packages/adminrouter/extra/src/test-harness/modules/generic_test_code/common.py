@@ -1,6 +1,8 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+import os
+from contextlib import contextmanager
 
 import requests
 
@@ -58,6 +60,7 @@ def generic_no_slash_redirect_test(ar, path):
     r = requests.get(url, allow_redirects=False)
 
     assert r.status_code == 301
+    assert r.headers['Location'] == url + '/'
 
 
 def generic_upstream_headers_verify_test(
@@ -148,6 +151,26 @@ def generic_correct_upstream_request_test(
     assert req_data['method'] == 'GET'
     assert req_data['path'] == expected_path
     assert req_data['request_version'] == http_ver
+
+
+def generic_location_header_during_redirect_is_adjusted_test(
+        ar,
+        mocker,
+        auth_header,
+        endpoint_id,
+        basepath,
+        location_set,
+        location_expected,
+        ):
+    mocker.send_command(endpoint_id=endpoint_id,
+                        func_name='always_redirect',
+                        aux_data=location_set)
+
+    url = ar.make_url_from_path(basepath)
+    r = requests.get(url, allow_redirects=False, headers=auth_header)
+
+    assert r.status_code == 307
+    assert r.headers['Location'] == location_expected
 
 
 def header_is_absent(headers, header_name):
@@ -245,3 +268,36 @@ def assert_endpoint_response(
         assert lbf.extra_matches == {}
     else:
         body()
+
+
+@contextmanager
+def overriden_file_content(file_path, new_content=None):
+    with open(file_path, 'r+') as fh:
+        old_content = fh.read()
+        if new_content is not None:
+            fh.seek(0)
+            fh.write(new_content)
+            fh.truncate()
+
+    yield
+
+    with open(file_path, 'w') as fh:
+        fh.write(old_content)
+
+
+def repo_is_ee():
+    """Determine the flavour of the repository
+
+    Return:
+        True if repository is EE
+    """
+    cur_dir = os.path.dirname(__file__)
+    ee_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "ee"))
+    open_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "open"))
+
+    is_ee = os.path.isdir(ee_tests_dir) and not os.path.isdir(open_tests_dir)
+    is_open = os.path.isdir(open_tests_dir) and not os.path.isdir(ee_tests_dir)
+
+    assert is_ee or is_open, "Unable to determine the variant of the repo"
+
+    return is_ee

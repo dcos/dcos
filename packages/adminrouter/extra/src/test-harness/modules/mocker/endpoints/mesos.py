@@ -69,10 +69,15 @@ def framework_from_template(fid, name, webui_url):
 
     return res
 
+SCHEDULER_FWRK_MARATHON_ID = '819aed93-4143-4291-8ced-5afb5c726803-0000'  # noqa: E305
 SCHEDULER_FWRK_ALWAYSTHERE_ID = '0f8899bf-a31a-44d5-b1a5-c8c3f7128905-0000'  # noqa: E305
 SCHEDULER_FWRK_ALWAYSTHERE_NEST1_ID = '4bfed1de-5c6c-48fa-931c-9f0468387db5-0000'  # noqa: E305
 SCHEDULER_FWRK_ALWAYSTHERE_NEST2_ID = '08cc2799-9380-469f-82ca-e4527ced3d8b-0000'  # noqa: E305
 
+SCHEDULER_FWRK_MARATHON = framework_from_template(
+    SCHEDULER_FWRK_MARATHON_ID,
+    "marathon",
+    "http://127.0.0.1:8080")
 SCHEDULER_FWRK_ALWAYSTHERE = framework_from_template(
     SCHEDULER_FWRK_ALWAYSTHERE_ID,
     "scheduler-alwaysthere",
@@ -188,7 +193,8 @@ EXTRA_AGENT_DICT = agent_from_template(
 
 INITIAL_STATEJSON = {
     "cluster": "prozlach-qzpz04t",
-    "frameworks": [SCHEDULER_FWRK_ALWAYSTHERE,
+    "frameworks": [SCHEDULER_FWRK_MARATHON,
+                   SCHEDULER_FWRK_ALWAYSTHERE,
                    SCHEDULER_FWRK_ALWAYSTHERE_NEST1,
                    SCHEDULER_FWRK_ALWAYSTHERE_NEST2,
                    ],
@@ -204,7 +210,7 @@ INITIAL_STATEJSON = {
 class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
     """A request hander class mimicking Mesos master daemon.
     """
-    def _calculate_response(self, base_path, *_):
+    def _calculate_response(self, base_path, url_args, body_args=None):
         """Reply with a static Mesos state-summary response.
 
         Please refer to the description of the BaseHTTPRequestHandler class
@@ -213,6 +219,11 @@ class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
         Raises:
             EndpointException: request URL path is unsupported
         """
+        if base_path == '/reflect/me':
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse /master/state-summary path.
+            return self._reflect_request(base_path, url_args, body_args)
+
         if base_path != '/master/state-summary':
             msg = "Path `{}` is not supported yet".format(base_path)
             blob = msg.encode('utf-8')

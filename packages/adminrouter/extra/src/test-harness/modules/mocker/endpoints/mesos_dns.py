@@ -35,6 +35,11 @@ class MesosDnsHTTPRequestHandler(RecordingHTTPRequestHandler):
             EndpointException: request URL path is unsupported
         """
 
+        if base_path == '/v1/reflect/me':
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse SRV record path.
+            return self._reflect_request(base_path, url_args, body_args)
+
         match = self.SRV_QUERY_REGEXP.search(base_path)
         if match:
             return self.__srv_permissions_request_handler(match.group(1))
