@@ -4,6 +4,7 @@ import json
 import logging
 import random
 import threading
+import uuid
 from collections import deque
 from subprocess import check_output
 
@@ -171,6 +172,129 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
+def pod_vip_app(network: marathon.Network, host: str, vip: str):
+    ''' Creates a single app in docker container in pod
+    '''
+    container_port = 0
+    if network is not marathon.Network.HOST:
+        container_port = unused_port(network)
+    test_uuid = uuid.uuid4().hex
+    app = {
+        'id': '/integration-test-{}'.format(test_uuid),
+        'placement': {'acceptedResourceRoles': ['*', 'slave_public']},
+        'containers': [{
+            'name': 'app-{}'.format(test_uuid),
+            'resources': {'cpus': 0.01, 'mem': 32},
+            'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
+            'exec': {'command': {
+                'shell': '/opt/mesosphere/bin/dcos-shell python '
+                         '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(
+                             '$ENDPOINT_TEST' if network == marathon.Network.HOST else container_port)
+            }},
+            'volumeMounts': [{'name': 'opt', 'mountPath': '/opt/mesosphere'}],
+            'endpoints': [{'name': 'test', 'protocol': ['tcp'], 'hostPort': 0}],
+            'environment': {'DCOS_TEST_UUID': test_uuid, 'HOME': '/'}
+        }],
+        'networks': [{'mode': 'host'}],
+        'volumes': [{'name': 'opt', 'host': '/opt/mesosphere'}]
+    }
+    if host is not None:
+        app['placement']['constraints'] = [{'fieldName': 'hostname', 'operator': 'CLUSTER', 'value': host}]
+    if vip is not None:
+        app['containers'][0]['endpoints'][0]['labels'] = {'VIP_0': vip}
+    if network == marathon.Network.USER:
+        del app['containers'][0]['endpoints'][0]['hostPort']
+        app['containers'][0]['endpoints'][0]['containerPort'] = container_port
+        app['networks'] = [{'name': 'dcos', 'mode': 'container'}]
+    elif network == marathon.Network.BRIDGE:
+        app['containers'][0]['endpoints'][0]['containerPort'] = container_port
+        app['networks'] = [{'mode': 'container/bridge'}]
+    return app, test_uuid
+
+
+def generate_pod_vip_app_permutations():
+    """ Generate all possible network interface permutations for applying vips
+    """
+    return [(vip_net, proxy_net)
+            for vip_net in [marathon.Network.USER, marathon.Network.BRIDGE, marathon.Network.HOST]
+            for proxy_net in [marathon.Network.USER, marathon.Network.BRIDGE, marathon.Network.HOST]]
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
+@pytest.mark.parametrize('vip_net,proxy_net', generate_pod_vip_app_permutations())
+def test_pod_vip(dcos_api_session, vip_net: marathon.Network, proxy_net: marathon.Network):
+    """ Same as test_vip but for pods
+        * containers: UCR
+        * networks: USER, HOST
+        * vips: named and unnamed vip
+    """
+    errors = 0
+    tests = setup_pod_vip_workload_tests(dcos_api_session, vip_net, proxy_net)
+    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
+        log.info("Remote command: {}".format(cmd))
+        proxy_info = dcos_api_session.marathon.get('v2/pods/{}::status'.format(proxy_app['id'])).json()
+        log.info(proxy_info)
+        if proxy_net == marathon.Network.USER:
+            proxy_host = proxy_info['instances'][0]['networks'][0]['addresses'][0]
+            proxy_port = proxy_app['containers'][0]['endpoints'][0]['containerPort']
+        else:
+            proxy_host = proxy_info['instances'][0]['agentHostname']
+            proxy_port = proxy_info['instances'][0]['containers'][0]['endpoints'][0]['allocatedHostPort']
+        try:
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == \
+                origin_app['containers'][0]['environment']['DCOS_TEST_UUID']
+        except Exception as ex:
+            log.error('Exception: {}'.format(ex))
+            errors = errors + 1
+        finally:
+            log.info('Purging application: {}'.format(origin_app['id']))
+            dcos_api_session.marathon.delete('v2/pods/{}'.format(origin_app['id']))
+            log.info('Purging application: {}'.format(proxy_app['id']))
+            dcos_api_session.marathon.delete('v2/pods/{}'.format(proxy_app['id']))
+    assert errors == 0
+
+
+def setup_pod_vip_workload_tests(dcos_api_session, vip_net, proxy_net):
+    same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
+    tests = [pod_vip_workload_test(dcos_api_session, vip_net, proxy_net, named_vip, same_host)
+             for named_vip in [True, False]
+             for same_host in same_hosts]
+    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        log.info('Starting apps :: VIP: {}, Hosts: {}'.format(vip, hosts))
+        log.info("Origin app: {}".format(origin_app))
+        dcos_api_session.marathon.post('v2/pods', json=origin_app).raise_for_status()
+        log.info("Proxy app: {}".format(proxy_app))
+        dcos_api_session.marathon.post('v2/pods', json=proxy_app).raise_for_status()
+    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        log.info("Deploying apps :: VIP: {}, Hosts: {}".format(vip, hosts))
+        log.info('Deploying origin app: {}'.format(origin_app['id']))
+        wait_for_pod_tasks_healthy(dcos_api_session, origin_app)
+        log.info('Deploying proxy app: {}'.format(proxy_app['id']))
+        wait_for_pod_tasks_healthy(dcos_api_session, proxy_app)
+        log.info('Apps are ready')
+    return tests
+
+
+def pod_vip_workload_test(dcos_api_session, vip_net, proxy_net, named_vip, same_host):
+    origin_host = dcos_api_session.all_slaves[0]
+    proxy_host = dcos_api_session.all_slaves[0] if same_host else dcos_api_session.all_slaves[1]
+    if named_vip:
+        vip_port = unused_port('namedvip')
+        vip = '/namedvip:{}'.format(vip_port)
+        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
+    else:
+        vip_port = unused_port('1.1.1.7')
+        vip = '1.1.1.7:{}'.format(vip_port)
+        vipaddr = vip
+    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
+    origin_app, origin_app_uuid = pod_vip_app(vip_net, origin_host, vip)
+    proxy_app, proxy_app_uuid = pod_vip_app(proxy_net, proxy_host, None)
+    hosts = list(set([origin_host, proxy_host]))
+    return (vip, hosts, cmd, origin_app, proxy_app)
+
+
 @retrying.retry(
     wait_fixed=5000,
     stop_max_delay=20 * 60 * 1000,
@@ -178,6 +302,15 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
 def wait_for_tasks_healthy(dcos_api_session, app_definition):
     info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
     return info['app']['tasksHealthy'] == app_definition['instances']
+
+
+@retrying.retry(
+    wait_fixed=5000,
+    stop_max_delay=20 * 60 * 1000,
+    retry_on_result=lambda res: res is False)
+def wait_for_pod_tasks_healthy(dcos_api_session, pod_definition):
+    proxy_info = dcos_api_session.marathon.get('v2/pods/{}::status'.format(pod_definition['id'])).json()
+    return 'status' in proxy_info and proxy_info['status'] == 'STABLE'
 
 
 @retrying.retry(wait_fixed=2000,
