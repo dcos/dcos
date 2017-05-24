@@ -686,13 +686,11 @@ entry = {
             'rexray': {
                 'loglevel': 'info',
                 'modules': {
-                    'default-admin': {
-                        'host': 'tcp://127.0.0.1:61003'
-                    },
                     'default-docker': {
                         'disabled': True
                     }
-                }
+                },
+                'service': 'vfs'
             }
         }),
         'enable_gpu_isolation': 'true',
@@ -757,15 +755,21 @@ entry = {
                         # Use IAM Instance Profile for auth.
                         'rexray': {
                             'loglevel': 'info',
-                            'modules': {
-                                'default-admin': {
-                                    'host': 'tcp://127.0.0.1:61003'
+                            'service': 'ebs'
+                        },
+                        'libstorage': {
+                            'server': {
+                                'tasks': {
+                                    'logTimeout': '5m'
                                 }
                             },
-                            'storageDrivers': ['ec2'],
-                            'volume': {
-                                'unmount': {
-                                    'ignoreusedcount': True
+                            'integration': {
+                                'volume': {
+                                    'operations': {
+                                        'unmount': {
+                                            'ignoreusedcount': True
+                                        }
+                                    }
                                 }
                             }
                         }
