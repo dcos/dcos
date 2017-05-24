@@ -489,6 +489,11 @@
         <label class="heading"><span class="route-type toggle-route-type">Redirect</span> <span class="route-desc">redirects to another address.</span> </label>
         </input>
       </li>
+      <li class="route route-type-rewrite">
+        <input type="checkbox" data-type="rewrite" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Rewrite</span> <span class="route-desc">retrieves resources from another route.</span> </label>
+        </input>
+      </li>
     </ul>
   </div>
   <ul class="resources">
@@ -902,6 +907,93 @@
             </table>
           </div>
         </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/exhibitor/exhibitor/v1/cluster/status</code></span>
+            </h3>
+            <span class="route-desc">Exhibitor cluster status (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/exhibitor/(.*)</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Proxy:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>http://$backend= /exhibitor/exhibitor/v1/cluster/status</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Server:
+                      </td>
+                      <td>
+                        <code>127.0.0.1:8181</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Backend:
+                      </td>
+                      <td>
+                        Exhibitor (Zookeeper)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        API Reference:
+                      </td>
+                      <td>
+                        <a href="https://github.com/soabase/exhibitor/wiki/REST-Introduction">https://github.com/soabase/exhibitor/wiki/REST-Introduction</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
       </ul>
     </li>
     <li id="resource-history" class="resource">
@@ -944,10 +1036,10 @@
         <span class="options"><a href="#marathon" class="toggle-route-group" data-id="marathon">Show/Hide</a> </span>
       </div>
       <ul id="routes-marathon" class="routes">
-        <li class="route route-type-proxy">
+        <li class="route route-type-rewrite">
           <div class="heading">
             <h3>
-              <span class="route-type">Proxy</span>
+              <span class="route-type">Rewrite</span>
               <span class="route-path"><code>/marathon/</code></span>
             </h3>
           </div>
@@ -955,40 +1047,32 @@
             <table>
               <tr>
                 <td>
-                  Proxy:
+                  Rewrite:
                 </td>
                 <td>
                   <table>
                     <tr>
                       <td>
-                        Path:
+                        Regex:
                       </td>
                       <td>
-                        <code>http://$backend/</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Server:
-                      </td>
-                      <td>
-                        <code>master.mesos:8080</code>
+                        <code>^/marathon/(.*)$</code>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        Backend:
+                        Replacement:
                       </td>
                       <td>
-                        Marathon
+                        <code>/service/marathon/$1</code>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        API Reference:
+                        Type:
                       </td>
                       <td>
-                        <a href="https://dcos.io/docs/1.9/usage/managing-services/rest-api/">https://dcos.io/docs/1.9/usage/managing-services/rest-api/</a>
+                        <code>last</code>
                       </td>
                     </tr>
                   </table>
@@ -1291,7 +1375,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>conf/master/metadata.lua</code>
+                  <code>conf/lib/metadata.lua</code>
                 </td>
               </tr>
             </table>
@@ -1547,7 +1631,7 @@
           <div class="heading">
             <h3>
               <span class="route-type">Proxy</span>
-              <span class="route-path"><code>/service/(?&lt;serviceid&gt;[0-9a-zA-Z-.]+)/(?&lt;url&gt;.*)</code></span>
+              <span class="route-path"><code>/service/(?&lt;service_path&gt;.+)</code></span>
             </h3>
             <span class="route-desc">Proxy to services running on DC/OS</span>
           </div>
@@ -1555,52 +1639,10 @@
             <table>
               <tr>
                 <td>
-                  Rewrite:
+                  Path:
                 </td>
                 <td>
-                  <table>
-                    <tr>
-                      <td>
-                        Regex:
-                      </td>
-                      <td>
-                        <code>^/service/[0-9a-zA-Z-.]+/?.*$</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Replacement:
-                      </td>
-                      <td>
-                        <code>/$url</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Type:
-                      </td>
-                      <td>
-                        <code>break</code>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Proxy:
-                </td>
-                <td>
-                  <table>
-                    <tr>
-                      <td>
-                        Path:
-                      </td>
-                      <td>
-                        <code>$serviceurl</code>
-                      </td>
-                    </tr>
-                  </table>
+                  <code>$upstream_url</code>
                 </td>
               </tr>
             </table>

@@ -33,11 +33,13 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
         if match:
             return self.__users_permissions_request_handler(match.group(1))
 
-        if base_path == '/acs/api/v1/foo/bar':
+        if base_path in [
+                '/acs/api/v1/reflect/me',
+                '/dcos-metadata/ui-config.json',
+                '/acs/api/v1/auth/reflect/me']:
             # A test URI that is used by tests. In some cases it is impossible
             # to reuse /acs/api/v1/users/ path.
-            blob = self._convert_data_to_blob({})
-            return 200, 'application/json', blob
+            return self._reflect_request(base_path, url_args, body_args)
 
         raise EndpointException(
             code=500,

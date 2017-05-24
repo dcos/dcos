@@ -205,6 +205,8 @@ SCHEDULER_APP_ALWAYSTHERE_NEST1 = \
     app_from_template('nest1/scheduler-alwaysthere', 17000)
 SCHEDULER_APP_ALWAYSTHERE_NEST2 =  \
     app_from_template('nest2/nest1/scheduler-alwaysthere', 18000)
+SCHEDULER_APP_ONLYMARATHON_NEST2 =  \
+    app_from_template('nest2/nest1/scheduler-onlymarathon', 18001)
 
 
 # pylint: disable=R0903
@@ -215,7 +217,7 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
     Most probably it will be extended with some extra logic as tests are
     being added.
     """
-    def _calculate_response(self, base_path, *_):
+    def _calculate_response(self, base_path, url_args, body_args=None):
         """Reply with empty list of apps for the '/v2/apps' request
 
         Please refer to the description of the BaseHTTPRequestHandler class
@@ -224,6 +226,11 @@ class MarathonHTTPRequestHandler(RecordingHTTPRequestHandler):
         Raises:
             EndpointException: request URL path is unsupported
         """
+        if base_path in ['/v2/reflect/me', '/']:
+            # A test URI that is used by tests. In some cases it is impossible
+            # to reuse /v2/apps path.
+            return self._reflect_request(base_path, url_args, body_args)
+
         if base_path not in ['/v2/apps', "/v2/leader"]:
             msg = "Path `{}` is not supported yet".format(base_path)
             blob = msg.encode('utf-8')
@@ -307,5 +314,6 @@ class MarathonEndpoint(RecordingTcpIpEndpoint):
             SCHEDULER_APP_ALWAYSTHERE,
             SCHEDULER_APP_ALWAYSTHERE_NEST1,
             SCHEDULER_APP_ALWAYSTHERE_NEST2,
+            SCHEDULER_APP_ONLYMARATHON_NEST2,
             ]})
         self._context.data["leader-content"] = {"leader": "127.0.0.2:80"}

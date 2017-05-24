@@ -87,6 +87,12 @@ class MockerBase:
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=17000))
         # task /nest2/nest1/scheduler-alwaysthere
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18000))
+        # task /nest2/nest1/scheduler-onlymarathon
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18001))
+        # task /nest2/nest1/scheduler-onlymesos
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18002))
+        # task /nest2/nest1/scheduler-onlymesosdns
+        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=18003))
         # task /scheduler-alwaysthere but with different ip+port, used i.e. in
         # `/service` endpoint tests
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.15', port=16001))
@@ -113,6 +119,12 @@ class MockerBase:
         # Metrics(agent):
         res.append(
             ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))
+        # DDDT, two variants:
+        # TODO (prozlach): cleanup DDDT sockets
+        res.append(
+            ReflectingTcpIpEndpoint(ip='127.0.0.1', port=1050))
+        res.append(
+            ReflectingUnixSocketEndpoint('/run/dcos/3dt.sock'))
         # TODO - other endpoints common for all flavours go here...
 
         return res

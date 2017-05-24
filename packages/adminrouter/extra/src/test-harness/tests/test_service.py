@@ -406,9 +406,7 @@ class TestServiceStateful:
                             allow_redirects=False,
                             headers=valid_user_header)
 
-        # TODO (prozlach): We rely on an AR bug here (DCOS-5191). In fact this
-        # should be a 404 response.
-        assert resp.status_code == 500
+        assert resp.status_code == 404
 
     def test_if_only_matching_scheme_redirects_are_adjusted_for_marathon_apps(
             self, master_ar_process_pertest, mocker, valid_user_header):

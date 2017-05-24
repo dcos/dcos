@@ -2,9 +2,8 @@ local cjson_safe = require "cjson.safe"
 local shmlock = require "resty.lock"
 local http = require "resty.http"
 local resolver = require "resty.resolver"
+local util = require "util"
 
-
-local _M = {}
 
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
@@ -124,7 +123,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        end
 
        -- Service name should exist as we asked Marathon for it
-       local svcId = labels["DCOS_SERVICE_NAME"]
+       local svcId = util.normalize_service_name(labels["DCOS_SERVICE_NAME"])
 
        local scheme = labels["DCOS_SERVICE_SCHEME"]
        if not scheme then
@@ -269,7 +268,7 @@ end
 local function fetch_and_store_state_mesos(auth_token)
     -- Fetch state JSON summary from Mesos. If successful, store to SHM cache.
     -- Expected to run within lock context.
-    local mesosRes, err = request(UPSTREAM_MESOS .. "/master/state-summary",
+    local response, err = request(UPSTREAM_MESOS .. "/master/state-summary",
                                   false,
                                   auth_token)
 
@@ -278,9 +277,38 @@ local function fetch_and_store_state_mesos(auth_token)
         return
     end
 
-    ngx.log(ngx.DEBUG, "Storing Mesos state to SHM.")
-    if not cache_data("mesosstate", mesosRes.body) then
-        ngx.log(ngx.WARN, "Storing mesos state cache failed")
+    local raw_state_summary, err = cjson_safe.decode(response.body)
+    if not raw_state_summary then
+        ngx.log(ngx.WARN, "Cannot decode Mesos state-summary JSON: " .. err)
+        return
+    end
+
+    local parsed_state_summary = {}
+    parsed_state_summary['f_by_id'] = {}
+    parsed_state_summary['f_by_name'] = {}
+    parsed_state_summary['agent_pids'] = {}
+
+    for _, framework in ipairs(raw_state_summary["frameworks"]) do
+        local f_id = framework["id"]
+        local f_name = util.normalize_service_name(framework["name"])
+
+        parsed_state_summary['f_by_id'][f_id] = {}
+        parsed_state_summary['f_by_id'][f_id]['webui_url'] = framework["webui_url"]
+        parsed_state_summary['f_by_id'][f_id]['name'] = f_name
+        parsed_state_summary['f_by_name'][f_name] = {}
+        parsed_state_summary['f_by_name'][f_name]['webui_url'] = framework["webui_url"]
+    end
+
+    for _, agent in ipairs(raw_state_summary["slaves"]) do
+        a_id = agent["id"]
+        parsed_state_summary['agent_pids'][a_id] = agent["pid"]
+    end
+
+    local parsed_state_summary_json = cjson_safe.encode(parsed_state_summary)
+
+    ngx.log(ngx.DEBUG, "Storing parsed Mesos state to SHM.")
+    if not cache_data("mesosstate", parsed_state_summary_json) then
+        ngx.log(ngx.WARN, "Storing parsed Mesos state to cache failed")
         return
     end
 

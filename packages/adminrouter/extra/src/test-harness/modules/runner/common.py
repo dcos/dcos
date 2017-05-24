@@ -749,7 +749,7 @@ class NginxBase(ManagedSubprocess):
            listen port and provide single point of change for updating
            the place where all the test expect AR to listen for requests."""
         if self._role == 'master':
-            base = 'http://127.0.0.1:80/'
+            base = 'http://127.0.0.1/'
         else:
             base = 'http://127.0.0.1:61001/'
 
