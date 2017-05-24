@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mhrabovcin/mesos",
-    "ref": "e5e41f097186e5408d506378e9f651d768507311",
+    "ref": "defd9e2749a413960fe8f0ed57ec6553735b9763",
     "ref_origin" : "mh/tls-ecdh"
   },
   "environment": {
