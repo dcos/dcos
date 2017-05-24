@@ -521,6 +521,10 @@ def calculate_cosmos_package_storage_uri_flag(cosmos_config):
         return ''
 
 
+def calculate_profile_symlink_target_dir(profile_symlink_target):
+    return os.path.dirname(profile_symlink_target)
+
+
 def calculate_set(parameter):
     if parameter == '':
         return 'false'
@@ -738,7 +742,10 @@ entry = {
         'cosmos_staged_package_storage_uri_flag':
             calculate_cosmos_staged_package_storage_uri_flag,
         'cosmos_package_storage_uri_flag':
-            calculate_cosmos_package_storage_uri_flag
+            calculate_cosmos_package_storage_uri_flag,
+        'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
+        'profile_symlink_target': '/etc/profile.d/dcos.sh',
+        'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
     },
     'conditional': {
         'master_discovery': {
