@@ -12,7 +12,7 @@ $OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-o
 
 # Incorporate Admin Router components.
 rm -vfR $PKG_PATH/nginx/conf/*
-cp -vR /pkg/extra/src/{common,errorpages,master,mime.types,nginx.agent.conf,nginx.master.conf,resty} $PKG_PATH/nginx/conf/
+cp -vR /pkg/extra/src/{common,errorpages,mime.types,nginx.agent.conf,nginx.master.conf,lib} $PKG_PATH/nginx/conf/
 
 # AR start script:
 ar_wrapper="$PKG_PATH/nginx/sbin/adminrouter.sh"

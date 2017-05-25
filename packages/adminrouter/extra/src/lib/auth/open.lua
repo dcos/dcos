@@ -1,6 +1,6 @@
-local authcommon = require "common.auth.common"
+local authcommon = require "auth.common"
 local jwt = require "resty.jwt"
-local util = require "common.util"
+local util = require "util"
 
 local SECRET_KEY = nil
 
@@ -56,6 +56,13 @@ local function do_authn_and_authz_or_exit()
     return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
 
+local function do_authn_or_exit(object)
+    -- This function only ensures that the user is authenticated
+    -- Even though it's only calling validate_jwt_or_exit, we put it for the
+    -- sake of completeness/consistency with EE.
+    validate_jwt_or_exit()
+end
+
 -- Initialise and return the module:
 local _M = {}
 function _M.init(use_auth)
@@ -68,9 +75,11 @@ function _M.init(use_auth)
             "Deactivate authentication module."
             )
         res.do_authn_and_authz_or_exit = function() return end
+        res.do_authn_or_exit = function() return end
     else
         ngx.log(ngx.NOTICE, "Activate authentication module.");
         res.do_authn_and_authz_or_exit = do_authn_and_authz_or_exit
+        res.do_authn_or_exit = do_authn_or_exit
     end
 
     -- /mesos/
@@ -93,8 +102,9 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /service/(?<serviceid>[0-9a-zA-Z-.]+)/(?<url>.*)
-    res.access_service_endpoint = function()
+    -- /service/.+
+    res.access_service_endpoint = function(service_path)
+        -- service_path is unused here, kept just for compatibility with EE
         return res.do_authn_and_authz_or_exit()
     end
 
