@@ -118,6 +118,11 @@ package:
             {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
             {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
           ]
+        },
+        {navstar_overlay,
+          [
+            {enable_overlay, {{ dcos_overlay_enable }}}
+          ]
         }
       ].
   - path: /etc/overlay/config/master.json
