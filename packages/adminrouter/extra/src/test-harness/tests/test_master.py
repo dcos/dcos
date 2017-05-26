@@ -277,3 +277,25 @@ class TestMetadata:
         assert resp.status_code == 200
         resp_data = resp.json()
         assert resp_data['PUBLIC_IPV4'] == "127.0.0.1"
+
+
+class TestUiRoot:
+    @pytest.mark.parametrize("uniq_content", ["(｡◕‿‿◕｡)", "plain text 1234"])
+    @pytest.mark.parametrize("path", ["plan-ui-testfile.html",
+                                      "nest1/nested-ui-testfile.html"])
+    def test_if_ui_files_are_handled(
+        self, master_ar_process_perclass, valid_user_header, uniq_content, path):
+
+        url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
+                uniq_content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp.encoding = 'utf-8'
+        assert resp.text == uniq_content
