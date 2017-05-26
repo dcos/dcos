@@ -304,7 +304,23 @@ def assert_endpoint_response(
 
 @contextmanager
 def overriden_file_content(file_path, new_content=None):
-    with open(file_path, 'r+') as fh:
+    """Context manager meant to simplify static files testsing
+
+    While inside the context, file can be modified and/or modified content
+    may be injected by the context manager itself. Right after context is
+    exited, the original file contents are restored.
+
+    Arguments:
+        file_path: path the the file that should be "guarded"
+        new_content: new content for the file. If None - file contents are not
+            changed, "string" objects are translated to binary blob first,
+            assuming utf-8 encoding.
+    """
+
+    if new_content is not None and not isinstance(new_content, bytes):
+        new_content = new_content.encode('utf-8')
+
+    with open(file_path, 'rb+') as fh:
         old_content = fh.read()
         if new_content is not None:
             fh.seek(0)
@@ -313,7 +329,7 @@ def overriden_file_content(file_path, new_content=None):
 
     yield
 
-    with open(file_path, 'w') as fh:
+    with open(file_path, 'wb') as fh:
         fh.write(old_content)
 
 
