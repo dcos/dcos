@@ -112,6 +112,8 @@ COPY cluster-id /var/lib/dcos/cluster-id
 COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
 RUN chmod -v a+x /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
+COPY plan-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/
+COPY nested-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/nest1/
 
 # The contents of adminrouter-listen* files differ from the ones that are
 # shipped with DC/OS - the IP addresses Nginx binds to are limited to only
