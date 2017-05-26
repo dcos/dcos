@@ -203,7 +203,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     --    or not.
     --  - err_code, err_text - if an error occured these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
-    ngx.log(ngx.NOTICE, "Resolving service `".. service_name .. "`")
+    ngx.log(ngx.DEBUG, "Resolving service `".. service_name .. "`")
     res, err_code, err_text = resolve_via_marathon_apps_state(
         service_name, marathon_cache)
 
