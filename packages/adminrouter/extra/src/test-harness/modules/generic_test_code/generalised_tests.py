@@ -14,10 +14,15 @@ from generic_test_code.common import (
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
     generic_response_headers_verify_test,
-    repo_is_ee,
 )
 
 log = logging.getLogger(__name__)
+
+# Generalised tests were moved to a separate library included by
+# test-harness/tests/(open|ee)/test_generic.py files because they
+# may require fixturesd from test-harness/tests/(open|ee)/conftest.py which
+# in turn is not reachable/included by test-harness/tests/test_generic.py
+# file.
 
 
 def _merge_testconfig(a, b):
@@ -180,19 +185,12 @@ def _verify_are_response_headers_ok(t_config):
         assert p.startswith('/')
 
 
-def _tests_configuration():
-    curdir = os.path.dirname(os.path.abspath(__file__))
-    common_tests_conf_file = os.path.join(curdir, "test_generic.config.yml")
+def _tests_configuration(path):
+    common_tests_conf_file = os.path.join(path, "..", "test_generic.config.yml")
     with open(common_tests_conf_file, 'r') as fh:
         common_tests_conf = yaml.load(fh)
 
-    if repo_is_ee():
-        flavour_dir = 'ee'
-    else:
-        flavour_dir = 'open'
-
-    flavoured_tests_conf_file = os.path.join(
-        curdir, flavour_dir, "test_generic.config.yml")
+    flavoured_tests_conf_file = os.path.join(path, "test_generic.config.yml")
     with open(flavoured_tests_conf_file, 'r') as fh:
         flavoured_tests_conf = yaml.load(fh)
 
@@ -347,8 +345,8 @@ def _testdata_to_redirect_testdata(tests_config, node_type):
     return res
 
 
-def pytest_generate_tests(metafunc):
-    tests_config = _tests_configuration()
+def create_tests(metafunc, path):
+    tests_config = _tests_configuration(path)
     if 'master_ar_process_perclass' in metafunc.fixturenames:
         ar_type = 'master'
     else:
@@ -391,7 +389,7 @@ def pytest_generate_tests(metafunc):
         return
 
 
-class TestMasterGeneric:
+class GenericTestMasterClass:
     def test_if_request_is_sent_to_correct_upstream(
             self,
             master_ar_process_perclass,
@@ -506,7 +504,7 @@ class TestMasterGeneric:
             )
 
 
-class TestAgentGeneric:
+class GenericTestAgentClass:
     def test_if_request_is_sent_to_correct_upstream(
             self,
             agent_ar_process_perclass,
