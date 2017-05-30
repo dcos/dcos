@@ -1,5 +1,6 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
+import copy
 import logging
 import os
 from contextlib import contextmanager
@@ -173,16 +174,33 @@ def generic_correct_upstream_request_test(
         http_ver (str): http version string that the upstream request should be
             made with
     """
+    h = copy.deepcopy(auth_header)
+    if http_ver == 'HTTP/1.1':
+        # In case of HTTP/1.1 connections, we also need to test if Connection
+        # header is cleared.
+        h['Connection'] = 'close'
+    elif http_ver == 'websockets':
+        h['Connection'] = 'close'
+        h['Upgrade'] = 'Websockets'
+
     url = ar.make_url_from_path(given_path)
     resp = requests.get(url,
                         allow_redirects=False,
-                        headers=auth_header)
+                        headers=h)
 
     assert resp.status_code == 200
     req_data = resp.json()
     assert req_data['method'] == 'GET'
     assert req_data['path'] == expected_path
-    assert req_data['request_version'] == http_ver
+    if http_ver == 'HTTP/1.1':
+        header_is_absent(req_data['headers'], 'Connection')
+        assert req_data['request_version'] == 'HTTP/1.1'
+    elif http_ver == 'websockets':
+        verify_header(req_data['headers'], 'Connection', 'upgrade')
+        verify_header(req_data['headers'], 'Upgrade', 'Websockets')
+        assert req_data['request_version'] == 'HTTP/1.1'
+    else:
+        assert req_data['request_version'] == http_ver
 
 
 def generic_location_header_during_redirect_is_adjusted_test(
