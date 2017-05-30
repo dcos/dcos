@@ -36,7 +36,8 @@ class TestLogsEndpoint:
                                              )
 
 
-class TestService:
+class TestServiceEndpoint:
+    # Majority of /service endpoint tests are done with generic tests framework
     def test_if_accept_encoding_header_is_removed_from_upstream_request(
             self, master_ar_process_perclass, mocker, valid_user_header):
         headers = copy.deepcopy(valid_user_header)
@@ -45,6 +46,20 @@ class TestService:
         generic_upstream_headers_verify_test(master_ar_process_perclass,
                                              headers,
                                              '/service/scheduler-alwaysthere/foo/bar/',
+                                             assert_headers_absent=["Accept-Encoding"],
+                                             )
+
+
+class TestAgentEndpoint:
+    # Tests for /agent endpoint routing are done in test_cache.py
+    def test_if_accept_encoding_header_is_removed_from_upstream_request(
+            self, master_ar_process_perclass, mocker, valid_user_header):
+        headers = copy.deepcopy(valid_user_header)
+        headers['Accept-Encoding'] = 'gzip'
+
+        generic_upstream_headers_verify_test(master_ar_process_perclass,
+                                             headers,
+                                             '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/',
                                              assert_headers_absent=["Accept-Encoding"],
                                              )
 
