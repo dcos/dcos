@@ -3,12 +3,11 @@
 import pytest
 import requests
 
-from generic_test_code.common import assert_endpoint_response
-from util import SearchCriteria
 from generic_test_code.common import (
+    assert_endpoint_response,
     overriden_file_content,
 )
-from util import GuardedSubprocess
+from util import GuardedSubprocess, SearchCriteria
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 

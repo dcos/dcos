@@ -625,6 +625,24 @@ endpoint_tests:
     type:
       - agent
 
+######### /pkgpanda/active.buildinfo.full.json
+  - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /pkgpanda/active.buildinfo.full.json
+    type:
+      - master
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /dcos-metadata/dcos-version.json
+    type:
+      - master
+      - agent
+
 ######### /system/v1/metrics endpoint
   - tests:
       are_upstream_req_headers_ok:

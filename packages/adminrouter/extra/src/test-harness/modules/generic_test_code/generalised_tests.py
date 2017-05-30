@@ -12,8 +12,8 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_location_header_during_redirect_is_adjusted_test,
     generic_no_slash_redirect_test,
-    generic_upstream_headers_verify_test,
     generic_response_headers_verify_test,
+    generic_upstream_headers_verify_test,
 )
 
 log = logging.getLogger(__name__)

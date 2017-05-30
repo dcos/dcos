@@ -3,10 +3,11 @@
 import os
 
 from generic_test_code.generalised_tests import (
-    create_tests,
-    GenericTestMasterClass,
     GenericTestAgentClass,
+    GenericTestMasterClass,
+    create_tests,
 )
+
 
 # Please check comment at the top of
 # test-harness/modules/generic_test_code/generalised_tests.py
