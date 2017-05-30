@@ -57,7 +57,7 @@ endpoint_tests:
           - /service/scheduler-alwaysthere
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/scheduler-alwaysthere/foo/bar
@@ -73,7 +73,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:17000
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest1/scheduler-alwaysthere/foo/bar
@@ -91,7 +91,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18000
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-alwaysthere/foo/bar
@@ -109,7 +109,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18001
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymarathon/foo/bar
@@ -127,7 +127,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18002
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymesos/foo/bar
@@ -145,7 +145,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18003
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymesosdns/foo/bar
@@ -673,7 +673,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:8080
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /v2/reflect/me
             sent: /marathon/v2/reflect/me

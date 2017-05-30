@@ -37,18 +37,6 @@ class TestLogsEndpoint:
 
 
 class TestService:
-    def test_if_websockets_conn_upgrade_is_supported(
-            self, master_ar_process_perclass, mocker, valid_user_header):
-        headers = copy.deepcopy(valid_user_header)
-        headers['Upgrade'] = 'WebSocket'
-        headers['Connection'] = 'upgrade'
-
-        generic_upstream_headers_verify_test(master_ar_process_perclass,
-                                             headers,
-                                             '/service/scheduler-alwaysthere/foo/bar/',
-                                             assert_headers=headers,
-                                             )
-
     def test_if_accept_encoding_header_is_removed_from_upstream_request(
             self, master_ar_process_perclass, mocker, valid_user_header):
         headers = copy.deepcopy(valid_user_header)

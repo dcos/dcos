@@ -154,7 +154,7 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
         return
 
     assert 'expected_http_ver' in t_config
-    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1']
+    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1', 'websockets']
 
     assert 'test_paths' in t_config
     for p in t_config['test_paths']:
