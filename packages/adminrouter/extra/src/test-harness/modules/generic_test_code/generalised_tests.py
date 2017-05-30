@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 # Generalised tests were moved to a separate library included by
 # test-harness/tests/(open|ee)/test_generic.py files because they
-# may require fixturesd from test-harness/tests/(open|ee)/conftest.py which
+# may require fixtures from test-harness/tests/(open|ee)/conftest.py which
 # in turn is not reachable/included by test-harness/tests/test_generic.py
 # file.
 
@@ -154,7 +154,7 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
         return
 
     assert 'expected_http_ver' in t_config
-    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1']
+    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1', 'websockets']
 
     assert 'test_paths' in t_config
     for p in t_config['test_paths']:
