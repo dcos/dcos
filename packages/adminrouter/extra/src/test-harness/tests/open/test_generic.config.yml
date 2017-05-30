@@ -44,6 +44,10 @@ endpoint_tests:
       - master
 ######### /dcos-metadata/ui-config.json
   - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /dcos-metadata/ui-config.json
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: skip

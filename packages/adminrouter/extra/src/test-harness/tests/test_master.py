@@ -47,6 +47,21 @@ class TestAgentEndpoint:
                                              )
 
 
+class TestSystemAgentEndpoint:
+    # Tests for /agent endpoint routing are done in test_cache.py
+    def test_if_accept_encoding_header_is_removed_from_upstream_request(
+            self, master_ar_process_perclass, mocker, valid_user_header):
+        headers = copy.deepcopy(valid_user_header)
+        headers['Accept-Encoding'] = 'gzip'
+
+        generic_upstream_headers_verify_test(
+            master_ar_process_perclass,
+            headers,
+            '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1',
+            assert_headers_absent=["Accept-Encoding"],
+            )
+
+
 class TestHistoryServiceRouting:
     def test_if_invalid_cache_case_is_handled(
             self, nginx_class, valid_user_header, dns_server_mock):
@@ -267,10 +282,14 @@ class TestMetadata:
 
 class TestUiRoot:
     @pytest.mark.parametrize("uniq_content", ["(｡◕‿‿◕｡)", "plain text 1234"])
-    @pytest.mark.parametrize("path", ["plan-ui-testfile.html",
+    @pytest.mark.parametrize("path", ["plain-ui-testfile.html",
                                       "nest1/nested-ui-testfile.html"])
     def test_if_ui_files_are_handled(
-        self, master_ar_process_perclass, valid_user_header, uniq_content, path):
+            self,
+            master_ar_process_perclass,
+            valid_user_header,
+            uniq_content,
+            path):
 
         url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
 
@@ -285,3 +304,41 @@ class TestUiRoot:
         assert resp.status_code == 200
         resp.encoding = 'utf-8'
         assert resp.text == uniq_content
+
+
+class TestMisc:
+    @pytest.mark.parametrize("content", ["{'data': '1234'}", "{'data': 'abcd'}"])
+    def test_if_buildinfo_is_served(
+            self, master_ar_process_perclass, valid_user_header, content):
+        url = master_ar_process_perclass.make_url_from_path(
+            '/pkgpanda/active.buildinfo.full.json')
+
+        with overriden_file_content(
+                '/opt/mesosphere/active.buildinfo.full.json',
+                content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header
+                )
+
+        assert resp.status_code == 200
+        assert resp.text == content
+
+    @pytest.mark.parametrize("content", ["{'data': '1234'}", "{'data': 'abcd'}"])
+    def test_if_dcos_metadata_is_served(
+            self, master_ar_process_perclass, valid_user_header, content):
+        url = master_ar_process_perclass.make_url_from_path(
+            '/dcos-metadata/dcos-version.json')
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-metadata/etc/dcos-version.json',
+                content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header
+                )
+
+        assert resp.status_code == 200
+        assert resp.text == content
