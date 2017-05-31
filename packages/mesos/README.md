@@ -17,3 +17,7 @@
 <li>[1d45ba9f4f7f943d24282e0a91fb01c68815d6c3] Fixed sign comparisons in logrotate module.
 <li>[b546e7544c04a6d3e0da87cd6207ae8f4d827add] Added a way to set logrotate settings per executor.
 <li>[2adcc49bb584f84b358b6edb78a975382e9f9feb] Modified the executor driver to always relink on agent failover.
+<li>[52b4675a96858eac6b4709c5f46bd432cd6e20d9] Added new agent flag 'executor_reregistration_timeout'.
+<li>[378e209c0e34c955e23505e2fb32b879794cdf8e] Added 'executor_reregister_timeout' agent flag to the tests.
+<li>[815e9dd6620ad1f13d6a326079e9b61c2484294d] Introduced executor reconnect retries on the agent.
+<li>[beb19ab9d6d42ae92e1868094af23f69ad553443] Made the executor driver drop some messages when not connected.
