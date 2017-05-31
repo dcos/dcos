@@ -14,7 +14,7 @@ from generic_test_code.common import (
     generic_upstream_headers_verify_test,
     overriden_file_content,
 )
-from util import GuardedSubprocess
+from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 
@@ -163,19 +163,20 @@ class TestHistoryServiceRouting:
 class TestMetadata:
     @pytest.mark.parametrize("public_ip", ['1.2.3.4', "10.20.20.30"])
     def test_if_public_ip_detection_works(
-            self, valid_user_header, nginx_class, public_ip):
-        ar = nginx_class(host_ip=public_ip)
-        url = ar.make_url_from_path('/metadata')
+            self, master_ar_process_perclass, valid_user_header, public_ip):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
 
-        with GuardedSubprocess(ar):
+        with overriden_file_content(
+                '/usr/local/detect_ip_public_data.txt',
+                "return ip {}".format(public_ip)):
             resp = requests.get(
                 url,
                 allow_redirects=False,
                 headers=valid_user_header)
 
-            assert resp.status_code == 200
-            resp_data = resp.json()
-            assert resp_data['PUBLIC_IPV4'] == public_ip
+        assert resp.status_code == 200
+        resp_data = resp.json()
+        assert resp_data['PUBLIC_IPV4'] == public_ip
 
     def test_if_clusterid_is_returned(
             self, master_ar_process_perclass, valid_user_header):
@@ -216,3 +217,63 @@ class TestMetadata:
         assert resp.status_code == 200
         resp_data = resp.json()
         assert 'CLUSTER_ID' not in resp_data
+
+    def test_if_public_ip_detect_script_failue_is_handled(
+            self, master_ar_process_perclass, valid_user_header):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
+        filter_regexp = {
+            'Traceback \(most recent call last\):': SearchCriteria(1, True),
+            ("FileNotFoundError: \[Errno 2\] No such file or directory:"
+             " '/usr/local/detect_ip_public_data.txt'"): SearchCriteria(1, True),
+        }
+        lbf = LineBufferFilter(filter_regexp,
+                               line_buffer=master_ar_process_perclass.stderr_line_buffer)
+
+        with lbf, overriden_file_content('/usr/local/detect_ip_public_data.txt'):
+            os.unlink('/usr/local/detect_ip_public_data.txt')
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        assert lbf.extra_matches == {}
+        resp_data = resp.json()
+        assert resp_data['PUBLIC_IPV4'] == "127.0.0.1"
+
+    @pytest.mark.xfail(reason="Needs some refactoring, tracked in DCOS_OSS-1007")
+    def test_if_public_ip_detect_script_execution_is_timed_out(
+            self, master_ar_process_perclass, valid_user_header):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
+
+        ts_start = time.time()
+        with overriden_file_content('/usr/local/detect_ip_public_data.txt',
+                                    "timeout 10"):
+            requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+        ts_total = time.time() - ts_start
+
+        assert ts_total < 10
+        # TODO (prozlach): tune it a bit
+        # assert resp.status_code == 200
+        # resp_data = resp.json()
+        # assert resp_data['PUBLIC_IPV4'] == "127.0.0.1"
+
+    @pytest.mark.xfail(reason="Needs some refactoring, tracked in DCOS_OSS-1007")
+    def test_if_public_ip_detect_script_nonzero_exit_status_is_handled(
+            self, master_ar_process_perclass, valid_user_header):
+        url = master_ar_process_perclass.make_url_from_path('/metadata')
+
+        with overriden_file_content(
+                '/usr/local/detect_ip_public_data.txt',
+                "break with 1"):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp_data = resp.json()
+        assert resp_data['PUBLIC_IPV4'] == "127.0.0.1"
