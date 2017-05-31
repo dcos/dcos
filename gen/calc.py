@@ -575,6 +575,12 @@ def validate_dns_forward_zones(dns_forward_zones):
             validate_int_in_range(port, 1, 65535)
 
 
+def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
+    if gpus_are_scarce == 'true':
+        return 'gpus'
+    return ''
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -618,7 +624,8 @@ entry = {
         validate_exhibitor_storage_master_discovery,
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         validate_cosmos_config,
-        lambda enable_lb: validate_true_false(enable_lb)
+        lambda enable_lb: validate_true_false(enable_lb),
+        lambda gpus_are_scarce: validate_true_false(gpus_are_scarce)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -699,7 +706,8 @@ entry = {
         'cluster_docker_credentials_write_to_etc': 'false',
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
-        'cosmos_config': '{}'
+        'cosmos_config': '{}',
+        'gpus_are_scarce': 'true'
     },
     'must': {
         'custom_auth': 'false',
@@ -738,7 +746,8 @@ entry = {
         'cosmos_staged_package_storage_uri_flag':
             calculate_cosmos_staged_package_storage_uri_flag,
         'cosmos_package_storage_uri_flag':
-            calculate_cosmos_package_storage_uri_flag
+            calculate_cosmos_package_storage_uri_flag,
+        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
     },
     'conditional': {
         'master_discovery': {
