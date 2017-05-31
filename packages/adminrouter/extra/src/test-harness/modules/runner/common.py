@@ -506,7 +506,7 @@ class ManagedSubprocess(abc.ABC):
         if self._INIT_COMPLETE_STR is None:
             msg_fmt = ("Not waiting for process `%s` to start and assuming that"
                        " it is already up")
-            log.warn(msg_fmt, self.id)
+            log.warning(msg_fmt, self.id)
             return True
 
         deadline = time.time() + self._START_TIMEOUT

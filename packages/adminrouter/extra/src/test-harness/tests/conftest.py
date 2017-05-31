@@ -6,6 +6,7 @@
 import json
 import os
 
+import pyroute2
 import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
@@ -117,28 +118,34 @@ def dns_server_mock(dns_server_mock_s):
 def navstar_ips():
     """Setup IPs that help dns_mock mimic navstar"""
     ips = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
+    nflink = pyroute2.IPRoute()
 
     for ip in ips:
-        add_lo_ipaddr(ip, 32)
+        add_lo_ipaddr(nflink, ip, 32)
 
     yield
 
     for ip in ips:
-        del_lo_ipaddr(ip, 32)
+        del_lo_ipaddr(nflink, ip, 32)
+
+    nflink.close()
 
 
 @pytest.fixture(scope='session')
 def extra_lo_ips():
     """Setup IPs that are used for simulating e.g. agent, mesos leader, etc.. """
     ips = ['127.0.0.2', '127.0.0.3']
+    nflink = pyroute2.IPRoute()
 
     for ip in ips:
-        add_lo_ipaddr(ip, 32)
+        add_lo_ipaddr(nflink, ip, 32)
 
     yield
 
     for ip in ips:
-        del_lo_ipaddr(ip, 32)
+        del_lo_ipaddr(nflink, ip, 32)
+
+    nflink.close()
 
 
 @pytest.fixture(scope='session')

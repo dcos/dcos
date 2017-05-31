@@ -112,7 +112,9 @@ class DcosDnsServer:
 
     def stop(self):
         for s in self._servers:
-            s.stop()
+            # Plain s.stop() does not clean up UDP socket :(
+            s.server.shutdown()
+            s.server.server_close()
 
     def reset(self):
         for s in self._servers:

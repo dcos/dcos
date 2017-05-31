@@ -204,8 +204,8 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
 
             self.wfile.write(blob)
         except BrokenPipeError:
-            log.warn("Client already closed the connection, "
-                     "aborting sending the response")
+            log.warning("Client already closed the connection, "
+                        "aborting sending the response")
 
     @staticmethod
     def _convert_data_to_blob(data):
