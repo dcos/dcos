@@ -19,23 +19,6 @@ from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 log = logging.getLogger(__name__)
 
 
-class TestLogsEndpoint:
-    def test_if_upstream_headers_are_correct(self,
-                                             master_ar_process_perclass,
-                                             valid_user_header):
-
-        accel_buff_header = {"X-Accel-Buffering": "TEST"}
-
-        req_headers = copy.deepcopy(valid_user_header)
-        req_headers.update(accel_buff_header)
-
-        generic_upstream_headers_verify_test(master_ar_process_perclass,
-                                             req_headers,
-                                             '/system/v1/logs/v1/foo/bar',
-                                             assert_headers=accel_buff_header,
-                                             )
-
-
 class TestServiceEndpoint:
     # Majority of /service endpoint tests are done with generic tests framework
     def test_if_accept_encoding_header_is_removed_from_upstream_request(
