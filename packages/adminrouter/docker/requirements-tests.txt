@@ -11,5 +11,5 @@ pyroute2==0.4.11
 pytest-mccabe==0.1
 pytest-pythonpath==0.7.1
 pytest-timeout==1.2.0
-pytest>=3.0.4
+pytest==3.0.4
 requests==2.13.0

@@ -116,6 +116,7 @@ class Endpoint(abc.ABC):
         log.debug("Stopping endpoint `%s`", self.id)
         self._httpd.shutdown()
         self._httpd_thread.join()
+        self._httpd.server_close()
 
     def reset(self, aux_data=None):
         """Reset endpoint to the default/good state
