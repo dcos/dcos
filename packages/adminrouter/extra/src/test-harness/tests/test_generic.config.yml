@@ -210,9 +210,9 @@ endpoint_tests:
         enabled: true
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
-          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
-          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
           - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
           - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
         upstream: http://127.0.0.2:15001
