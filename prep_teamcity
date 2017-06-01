@@ -30,7 +30,7 @@ popd
 pip install -U pip
 
 # We have wheel as a dependency since we use it to build the wheels
-pip install wheel
+pip install six wheel
 
 # Download distro independent artifacts
 pip install --download wheelhouse $DIR/ext/dcos-image
