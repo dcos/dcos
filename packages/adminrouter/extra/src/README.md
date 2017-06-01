@@ -276,7 +276,7 @@ Admin Router allows Marathon tasks to define custom service UI and HTTP endpoint
   }
 ```
 
-In this case `http://<dcos-cluster>/service/service-name` would be forwarded to the host running the task using the first port allocated to the task.
+When your container/task has its own IP (typically when running in a virtual network), `http://<dcos-cluster>/service/service-name` would be forwarded to the container/task's IP using one of the ports in the port mapping or port definition when USER networking is enabled or one of the discovery ports otherwise. When your task/container is mapped to the host, it would be forwarded to the host running the task using the one of the ports allocated to the task. The chosen port is defined by the DCOS_SERVICE_PORT_INDEX label.
 
 In order for the forwarding to work reliably across task failures, we recommend co-locating the endpoints with the task. This way, if the task is restarted on a potentially other host and with different ports, Admin Router will pick up the new labels and update the routing. NOTE: Due to caching there might be an up to 30-second delay until the new routing is working.
 
