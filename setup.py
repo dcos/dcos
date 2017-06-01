@@ -36,6 +36,7 @@ setup(
         'ssh',
         'test_util'],
     install_requires=[
+        'six',
         'aiohttp==0.22.5',
         'analytics-python',
         'coloredlogs',
