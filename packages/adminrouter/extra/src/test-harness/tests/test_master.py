@@ -13,6 +13,7 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_upstream_headers_verify_test,
     overriden_file_content,
+    verify_header,
 )
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
@@ -304,6 +305,7 @@ class TestUiRoot:
         assert resp.status_code == 200
         resp.encoding = 'utf-8'
         assert resp.text == uniq_content
+        verify_header(resp.headers.items(), 'X-Frame-Options', 'DENY')
 
 
 class TestMisc:
