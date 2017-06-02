@@ -87,6 +87,10 @@ echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
+# Recreate the DC/OS profile script symlink, since its intended source may be different in the new version of DC/OS.
+rm -f {{ profile_symlink_target }}
+{{ profile_symlink_cmd }}
+
 # If this is a master node, migrate Exhibitor data to the correct directory.
 if [ "$role" == "master" ]; then
     until dcos-shell dcos-exhibitor-migrate-perform {{ exhibitor_migrate_args }} > /dev/null
@@ -123,6 +127,8 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
     # installed_cluster_version: Current installed version on the cluster
     # installer_version: Version we are upgrading to
     bootstrap_url = gen_out.arguments['bootstrap_url']
+    profile_symlink_target = gen_out.arguments['profile_symlink_target']
+    profile_symlink_cmd = gen_out.arguments['profile_symlink_cmd']
     installer_version = gen.calc.entry['must']['dcos_version']
     package_list = ' '.join(package['id'] for package in gen_out.cluster_packages.values())
     exhibitor_migrate_args = ''
@@ -136,7 +142,9 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
         'cluster_packages': package_list,
         'installed_cluster_version': installed_cluster_version,
         'installer_version': installer_version,
-        'exhibitor_migrate_args': exhibitor_migrate_args})
+        'exhibitor_migrate_args': exhibitor_migrate_args,
+        'profile_symlink_target': profile_symlink_target,
+        'profile_symlink_cmd': profile_symlink_cmd})
 
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
     subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
