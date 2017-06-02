@@ -10,14 +10,11 @@
 import code
 import logging
 import os
-import pyroute2
 import re
 import signal
 import time
 import traceback
-
 from contextlib import contextmanager
-
 
 LOG_LINE_SEARCH_INTERVAL = 0.2
 
@@ -280,19 +277,19 @@ def configure_logger(pytest_config):
         rootlogger.addHandler(logging.NullHandler())
 
 
-def add_lo_ipaddr(ip_addr, prefix_len):
+def add_lo_ipaddr(nflink, ip_addr, prefix_len):
     """Add an ipv4 address to loopback interface.
 
     Add an ipv4 address to loopback provided that it does not already exist.
 
     Args:
+        nflink: a pyroute2.IPRoute() object/NFLINK connection
         ip_addr (str): IP address
         prefix_len (int): prefix length
     """
-    iproute2 = pyroute2.IPRoute()
-    idx = iproute2.link_lookup(ifname='lo')[0]
+    idx = nflink.link_lookup(ifname='lo')[0]
 
-    existing_ips = iproute2.get_addr(index=idx)
+    existing_ips = nflink.get_addr(index=idx)
     for existing_ip in existing_ips:
         if existing_ip['family'] != 2:
             # Only support only ipv4 for now, so this one is not ours
@@ -309,25 +306,25 @@ def add_lo_ipaddr(ip_addr, prefix_len):
                 log.info(msg_fmt, ip_addr, prefix_len)
                 return
 
-    iproute2.addr('add', index=idx, address=ip_addr, mask=prefix_len)
+    nflink.addr('add', index=idx, address=ip_addr, mask=prefix_len)
 
 
-def del_lo_ipaddr(ip_addr, prefix_len):
+def del_lo_ipaddr(nflink, ip_addr, prefix_len):
     """Remove ipv4 address from loopback interface
 
     Remove existing ipv4 address, defined by ip_addr and prefix_len, from
     loopback interface.
 
     Args:
+        nflink: a pyroute2.IPRoute() object/NFLINK connection
         ip_addr (str): IP address
         prefix_len (int): prefix length
 
     Raises:
         NetlinkError: failed to remove address, check exception data for details.
     """
-    iproute2 = pyroute2.IPRoute()
-    idx = iproute2.link_lookup(ifname='lo')[0]
-    iproute2.addr('del', index=idx, address=ip_addr, mask=prefix_len)
+    idx = nflink.link_lookup(ifname='lo')[0]
+    nflink.addr('del', index=idx, address=ip_addr, mask=prefix_len)
 
 
 def setup_thread_debugger():

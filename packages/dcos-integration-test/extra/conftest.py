@@ -34,13 +34,11 @@ def pytest_collection_modifyitems(session, config, items):
 @pytest.fixture
 def vip_apps(dcos_api_session):
     vip1 = '6.6.6.1:6661'
-    test_app1, _ = get_test_app()
-    test_app1['portDefinitions'][0]['labels'] = {
-        'VIP_0': vip1}
-    test_app2, _ = get_test_app()
-    test_app2['portDefinitions'][0]['labels'] = {
-        'VIP_0': 'foobarbaz:5432'}
-    vip2 = 'foobarbaz.marathon.l4lb.thisdcos.directory:5432'
+    test_app1, _ = get_test_app(vip=vip1)
+    name = 'myvipapp'
+    port = 5432
+    test_app2, _ = get_test_app(vip='{}:{}'.format(name, port))
+    vip2 = '{}.marathon.l4lb.thisdcos.directory:{}'.format(name, port)
     with dcos_api_session.marathon.deploy_and_cleanup(test_app1):
         with dcos_api_session.marathon.deploy_and_cleanup(test_app2):
             yield ((test_app1, vip1), (test_app2, vip2))

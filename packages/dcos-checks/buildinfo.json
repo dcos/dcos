@@ -1,0 +1,11 @@
+{
+  "single_source": {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-checks.git",
+    "ref": "42dc43b013fe79c3dbca188e3cb7fcd3ff11d86e",
+    "ref_origin": "master"
+  },
+  "state_directory": true,
+  "username": "dcos_3dt",
+  "group": "systemd-journal"
+}

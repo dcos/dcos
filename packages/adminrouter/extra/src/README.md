@@ -1,10 +1,32 @@
 # Admin Router
 
-Admin Router is an open-source Nginx configuration created by
+Admin Router is an open-source NGINX configuration created by
 Mesosphere that provides central authentication and proxy to DC/OS services
 within the cluster.
 
 <img src="admin-router.png" alt="" width="100%" align="middle">
+
+## Routes
+
+Admin Router runs on both master and agent nodes, each with different configurations. From these NGINX config files, [Ngindox](https://github.com/karlkfi/ngindox) is used to generates swagger-like docs:
+
+**Master Routes:**
+
+- NGINX: [nginx.master.conf](nginx.master.conf)
+- YAML: [docs/api/nginx.master.yaml](docs/api/nginx.master.yaml)
+- HMTL: [docs/api/nginx.master.html](docs/api/nginx.master.html)
+- Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.master.html>
+
+**Agent Routes:**
+
+- NGINX: [nginx.agent.conf](nginx.agent.conf)
+- YAML: [docs/api/nginx.agent.yaml](docs/api/nginx.agent.yaml)
+- HMTL: [docs/api/nginx.agent.html](docs/api/nginx.agent.html)
+- Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
+
+Use `make api-docs` to regenerate the YAML and HTML files.
+
+Use `make check-api-docs` to validate that the YAML and HTML files are up to date.
 
 ## Ports summary
 <img src="admin-router-table.png" alt="" width="100%" align="middle">
@@ -114,17 +136,17 @@ In order to serve some of the requests, Admin Router relies on the information
 Due to scalability reasons, it's impossible to obtain this data on each and
 every request to given endpoint as it will overload Mesos/Marathon. So
 the idea was born to pre-fetch this data and store it in shared memory where
-each Nginx worker process can access it.
+each NGINX worker process can access it.
 
 ### Architecture
 
-Due to the nature of Nginx, there are some limitations when it comes to Lua
+Due to the nature of NGINX, there are some limitations when it comes to Lua
 code that OpenResty can run. For example:
 * threading is unavailable, it's recommended to use recursive timers (http://stackoverflow.com/a/19060625/145400) for asynchronous tasks
-* it's impossible to hold back Nginx request processing machinery from within
+* it's impossible to hold back NGINX request processing machinery from within
   certain initialization hooks as workers work independently.
 * Using ngx.timer API in `init_by_lua` is not possible because init_by_lua runs
-  in the Nginx master process instead of the worker processes which does the
+  in the NGINX master process instead of the worker processes which does the
   real request processing, etc. (https://github.com/openresty/lua-nginx-module/issues/330#issuecomment-33622121)
 
 So a decision was made to periodically poll Mesos and Marathon for relevant data
@@ -152,7 +174,7 @@ The `freshness` of the cache is governed by few variables:
   data fetched from Mesos and Marathon
 * `CACHE_MAX_AGE_HARD_LIMIT` - between `CACHE_MAX_AGE_SOFT_LIMIT` and
   `CACHE_MAX_AGE_HARD_LIMIT` cache is still usable in request context, but
-  with each access to it, a warning message is written to the Nginx log.
+  with each access to it, a warning message is written to the NGINX log.
   Timer context will try to update the cache.
 * beyond `CACHE_MAX_AGE_HARD_LIMIT` age, cache is considered unusable and
   every request made to the location that uses it will fail with 503 status.
@@ -164,7 +186,7 @@ The reason why we put `<<` in front of `CACHE_MAX_AGE_HARD_LIMIT` is to make
 the cache a bit of a "best-effort" one - In the case when Mesos and/or Marathon
 dies, the cache should still be able to serve data for a reasonable amount of time
 and thus give the operator some time to solve the underlying issue. For example
-Mesos tasks do not move that often and the data stored in Nginx should still be
+Mesos tasks do not move that often and the data stored in NGINX should still be
 usable, at least partially.
 
 ### Locking and error handling
@@ -186,7 +208,7 @@ Request to Mesos/Marathon can take at most `CACHE_BACKEND_REQUEST_TIMEOUT` secon
 After that, the request is considered failed, and it is retried during the next
 update.
 
-Worth noting is that Nginx reload resets all the timers. Cache is left intact
+Worth noting is that NGINX reload resets all the timers. Cache is left intact
 though.
 
 ## Testing
@@ -194,13 +216,13 @@ though.
 Admin Router repository includes a test harness that is meant to make
 testing easier and in some cases - possible. It's written in Python and
 uses pytest fixtures and custom modules to mock out all relevant DC/OS
-features and control Nginx startup and termination.
+features and control NGINX startup and termination.
 
 All the tests are executed in a Docker container which is controlled by the
 Makefile. Inside the container pytest command is started which in turn pulls
 in all the relevant fixtures, such as Syslog mock, mocker (DC/OS endpoints
-mock), DNS mock, etc... Finally, an Nginx is spawned using the configuration
-bind-mounted from the developer's repository. Tests may launch Nginx multiple
+mock), DNS mock, etc... Finally, an NGINX is spawned using the configuration
+bind-mounted from the developer's repository. Tests may launch NGINX multiple
 times, in different configurations, depending on what is needed. After the
 tests runner finishes, all the processes and the environment is cleaned up
 by pytest.
@@ -249,7 +271,7 @@ It exposes a couple of targets:
 
 ### Docker container
 As mentioned earlier, all the commands are executed inside the `adminrouter-devkit`
-container. It follows the same build process for Nginx that happens during
+container. It follows the same build process for NGINX that happens during
 DC/OS build with the exception of setting the  `--with-debug` flag. It also
 contains some basic debugging tools, pytest related dependencies and
 files that help pytest mimic the DC/OS environment. Their location is then
@@ -323,13 +345,25 @@ and `.stop()` methods during the start and stop of mocker instance
 respectively. Each endpoint can be set to respond to each and every request
 with an error (`500 Internal server error`).
 
-#### Subprocess management
-Pytest fixtures start a couple of subprocesses:
-* two dnsmasq instances
-* Admin Router itself
+#### DNS mock
 
-These do not always log to stderr/stdout, so a very simple syslog mock is also
-provided. All the stdouts and stderrs are piped into the central log
+The AR requires a working DNS server that responds correctly to the following
+queries:
+
+* `leader.mesos` - `A`: current Mesos leader instance
+* `master.mesos` - `A`: any Mesos master instance
+* `agent.mesos` - `A`: any Mesos agent
+* `slave.mesos` - `A`: any Mesos agent
+
+Mocking library comes with a simple DNS in-memory programmable server that
+can be used to mock various DNS query responses and also to simulate leader
+instance changes.
+
+#### Subprocess management
+Pytest fixture starts an `Admin Router` subprocess.
+
+The subprocess doesn't always log to stderr/stdout, so a very simple syslog mock
+is also provided. All the stdouts and stderrs are piped into the central log
 processing class LogCatcher.
 
 ##### LogCatcher
@@ -341,12 +375,12 @@ all the sources for new information and push it into:
 * internal buffer which can be used by tests for logging-based testing
 
 The internal buffer is available through
-`stdout_line_buffer`/`stderr_line_buffer` methods of AR object, Syslog
-object(available through a fixture), and dnsmasq processes (also through
-fixture). The buffer itself is implemented as a plain python list where each
-log line represents a single entry. This list is shared across all the objects
-that are groking the buffer, and there is no extra protection from manipulating
-it from within tests so extra care needs to be taken.
+`stdout_line_buffer`/`stderr_line_buffer` methods of AR object and Syslog
+object(available through a fixture). The buffer itself is implemented as a
+plain python list where each log line represents a single entry. This list is
+shared across all the objects that are groking the buffer, and there is no
+extra protection from manipulating it from within tests so extra care needs
+to be taken.
 
 In order to simplify handling of the log lines buffers, `LineBufferFilter` class
 has been created. It exposes two interfaces:
@@ -385,29 +419,19 @@ file:
 
 ```
 
-##### DNS mock
-It's easier to launch dnsmasq process that will serve a static entries from a
-`/etc/hosts.dnsmasq` file than to write a fully conforming dns server in python.
-All the entries in this file point to localhost where appropriately configured
-endpoints are listening for connections, even though in real DC/OS instance
-they would point to a different server/IP address.
-
-Dnsmasq processes log all the requests to stdout which in turn is pushed into
-LogCatcher instance.
-
 ##### Syslog mock
 Syslog mock is a very simple Python hack - a DGRAM Unix Socket is created and
 added to LogWatcher. LogWatcher itself takes care of draining data from it,
 with the line length limit hard-coded to 4096 bytes.
 
-##### Nginx
-The Nginx subprocess is different from others in regard to its lifetime. Pytest
+##### NGINX
+The NGINX subprocess is different from others in regard to its lifetime. Pytest
 fixture that pulls it into the test is module-scoped by default. If there is a
 need to have custom lifetime or just single-test scoped lifetime, then it's
 necessary to use `nginx_class` fixture instead of simple `master_ar_process` or
 `agent_ar_process` ones.
 
-Nginx instances have the `.make_url_from_path` method which is a convenient way
+NGINX instances have the `.make_url_from_path` method which is a convenient way
 to generate AR URLs for tests. It uses exhibitor endpoint as it's present in
 all DC/OS configurations and uses auth features as well.
 
@@ -431,6 +455,13 @@ group the tests that are specific for given version:
 * `test-harness/modules/ee/test_*.py` for Enterprise
 * `test-harness/modules/open/test_*.py` for Open
 * `test-harness/tests/test_*.py` common for both variants
+
+#### Tooling
+Code uses some extra tooling in order to enforce coding standards.
+
+Currently it's only `isort` together with flake8-isort plugin. In order to
+properly distinguish between 2nd party and 3rd party modules, the `.isort.cfg`
+file lists all local modules in `known_first_party` config parameter.
 
 #### Debugging threads-related issues
 The fixtures, mocks, and all other features make the code heavily threaded. In

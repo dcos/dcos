@@ -74,8 +74,8 @@ def uninstall(install, repository):
     assert len(all_names) > 0
 
     if '/' in all_names + [install.root]:
-        print("Cowardly refusing to rm -rf '/' as part of uninstall.")
-        print("Uninstall directories: ", ','.join(all_names + [install.root]))
+        print("Cowardly refusing to rm -rf '/' as part of uninstall.", file=sys.stderr)
+        print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
     check_call(['rm', '-rf'] + all_names)
@@ -117,7 +117,7 @@ def run_checks(checks, install, repository):
             try:
                 check_call([os.path.join(check_dir, check_file)])
             except CalledProcessError:
-                print('Check failed: {}'.format(check_file))
+                print('Check failed: {}'.format(check_file), file=sys.stderr)
                 exit_code = 1
     return exit_code
 
@@ -210,16 +210,16 @@ def main():
             # Run all checks
             sys.exit(run_checks(checks, install, repository))
     except ValidationError as ex:
-        print("Validation Error: {0}".format(ex))
+        print("Validation Error: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
     except PackageError as ex:
-        print("Package Error: {0}".format(ex))
+        print("Package Error: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
     except Exception as ex:
-        print("ERROR: {0}".format(ex))
+        print("ERROR: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
 
-    print("unknown command")
+    print("unknown command", file=sys.stderr)
     sys.exit(1)
 
 

@@ -1,0 +1,1905 @@
+<div id="ngindox">
+  <style>
+    /* Ngindox */
+    /* Source: https://github.com/karlkfi/ngindox/blob/master/include/ngindox.css */
+
+    #ngindox {
+      font-family: "Droid Sans", sans-serif;
+      font-size: 0.9rem;
+    }
+
+    .heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .heading h1 {
+      display: inline-block;
+      margin: 0;
+      line-height: 125%;
+      padding: 0.5rem 0rem;
+      vertical-align: middle;
+    }
+
+    .legend {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 1rem;
+      margin: 0;
+    }
+
+    .legend .heading {
+      margin: 0;
+    }
+
+    .legend .heading h2 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      padding: 0;
+    }
+
+    .legend ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .legend li {
+      margin: 0;
+      margin-top: 0.25rem;
+    }
+
+    .legend li:first-of-type {
+      margin-top: 0;
+    }
+
+    .legend .route {
+      background-color: inherit;
+    }
+
+    .legend .route .heading {
+      display: inline;
+      line-height: 80%;
+      width: initial;
+      border: 0;
+    }
+
+    .legend .route-type {
+      padding: 0.2rem;
+    }
+
+    .legend .route-desc {
+      display: inline;
+      float: initial;
+      padding: 0.2rem;
+    }
+
+    a {
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    h1 a,
+    h2 a,
+    h3 a {
+      color: black;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    h2,
+    h3 {
+      font-size: 1rem;
+    }
+
+    table {
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+
+    table tr:nth-child(odd) {
+      /*background-color: #fff;*/
+    }
+
+    table tr:nth-child(even) {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    table td {
+      padding: 1rem;
+      line-height: 125%;
+    }
+
+    li {
+      margin: 0.5rem 0;
+    }
+
+    code {
+      padding: 0;
+      padding-top: 0.2em;
+      padding-bottom: 0.2em;
+      margin: 0;
+      font-size: 85%;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      background-color: inherit;
+      color: inherit;
+      border: 0;
+      word-break: break-word;
+    }
+
+    .resources {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .resource {
+      border-bottom: 1px solid #ddd;
+    }
+
+    .resource .heading {
+      display: block;
+      width: 100%;
+    }
+
+    .heading h2 {
+      display: inline-block;
+      margin: 0;
+      line-height: 125%;
+      padding: 0.5rem 0rem;
+      vertical-align: middle;
+    }
+
+    .heading .options {
+      right: 0;
+      display: block;
+      float: right;
+      line-height: 125%;
+      padding: 0.5rem 0rem;
+      vertical-align: middle;
+      color: #aaa;
+    }
+
+    .routes {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .route .heading {
+      display: inline-block;
+      width: calc(100% - 2px);
+      /* subtract 2x border-width */
+      border: 1px solid #000;
+      border-radius: 3px;
+      line-height: 125%;
+    }
+
+    .route .heading h3 {
+      display: inline-block;
+      margin: 0;
+      line-height: inherit;
+    }
+
+    .route-type {
+      display: inline-block;
+      padding: 0.5rem;
+      width: 5rem;
+      text-align: center;
+      text-transform: uppercase;
+      text-decoration: none;
+      font-family: "Droid Sans", sans-serif;
+      font-weight: 300;
+      font-size: 0.8rem;
+      color: #fff;
+      border-radius: 2px;
+      vertical-align: middle;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .route-type-proxy {
+      background-color: rgba(16, 165, 74, 0.1);
+    }
+
+    .route-type-redirect {
+      background-color: rgba(197, 134, 43, 0.1);
+    }
+
+    .route-type-rewrite {
+      background-color: rgba(234, 141, 6, 0.1);
+    }
+
+    .route-type-file {
+      background-color: rgba(15, 106, 180, 0.1);
+    }
+
+    .route-type-lua {
+      background-color: rgba(107, 70, 102, 0.1);
+    }
+
+    .route-type-unknown {
+      background-color: rgba(66, 66, 66, 0.1);
+    }
+
+    .route-type-proxy .route-type {
+      background-color: rgba(16, 165, 74, 1.0);
+    }
+
+    .route-type-redirect .route-type {
+      background-color: rgba(197, 134, 43, 1.0);
+    }
+
+    .route-type-rewrite .route-type {
+      background-color: rgba(234, 141, 6, 1.0);
+    }
+
+    .route-type-file .route-type {
+      background-color: rgba(15, 106, 180, 1.0);
+    }
+
+    .route-type-lua .route-type {
+      background-color: rgba(107, 70, 102, 1.0);
+    }
+
+    .route-type-unknown .route-type {
+      background-color: rgba(66, 66, 66, 1.0);
+    }
+
+    .route-type-proxy .route-type:hover {
+      box-shadow: 0 0 5px rgba(16, 165, 74, 1.0), inset 0 0 10px rgba(16, 165, 74, 1.0);
+    }
+
+    .route-type-redirect .route-type:hover {
+      box-shadow: 0 0 5px rgba(197, 134, 43, 1.0), inset 0 0 10px rgba(197, 134, 43, 1.0);
+    }
+
+    .route-type-rewrite .route-type:hover {
+      box-shadow: 0 0 5px rgba(234, 141, 6, 1.0), inset 0 0 10px rgba(234, 141, 6, 1.0);
+    }
+
+    .route-type-file .route-type:hover {
+      box-shadow: 0 0 5px rgba(15, 106, 180, 1.0), inset 0 0 10px rgba(15, 106, 180, 1.0);
+    }
+
+    .route-type-lua .route-type:hover {
+      box-shadow: 0 0 5px rgba(107, 70, 102, 1.0), inset 0 0 10px rgba(107, 70, 102, 1.0);
+    }
+
+    .route-type-unknown .route-type:hover {
+      box-shadow: 0 0 5px rgba(66, 66, 66, 1.0), inset 0 0 10px rgba(66, 66, 66, 1.0);
+    }
+
+    .route-type-proxy .route-desc {
+      color: rgba(16, 165, 74, 1.0);
+    }
+
+    .route-type-redirect .route-desc {
+      color: rgba(197, 134, 43, 1.0);
+    }
+
+    .route-type-rewrite .route-desc {
+      color: rgba(234, 141, 6, 1.0);
+    }
+
+    .route-type-file .route-desc {
+      color: rgba(15, 106, 180, 1.0);
+    }
+
+    .route-type-lua .route-desc {
+      color: rgba(107, 70, 102, 1.0);
+    }
+
+    .route-type-unknown .route-desc {
+      color: rgba(66, 66, 66, 1.0);
+    }
+
+    .route-type-proxy .heading,
+    .route-type-proxy .route-meta {
+      border-color: rgba(16, 165, 74, 0.3);
+    }
+
+    .route-type-redirect .heading,
+    .route-type-redirect .route-meta {
+      border-color: rgba(197, 134, 43, 0.3);
+    }
+
+    .route-type-rewrite .heading,
+    .route-type-rewrite .route-meta {
+      border-color: rgba(234, 141, 6, 0.3);
+    }
+
+    .route-type-file .heading,
+    .route-type-file .route-meta {
+      border-color: rgba(15, 106, 180, 0.3);
+    }
+
+    .route-type-lua .heading,
+    .route-type-lua .route-meta {
+      border-color: rgba(107, 70, 102, 0.3);
+    }
+
+    .route-type-unknown .heading,
+    .route-type-unknown .route-meta {
+      border-color: rgba(66, 66, 66, 0.3);
+    }
+
+    .route-path {
+      display: inline-block;
+      padding: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .route-desc {
+      right: 0;
+      display: block;
+      float: right;
+      padding: 0.5rem 1rem 0.5rem 0rem;
+      vertical-align: middle;
+      color: #aaa;
+    }
+
+    .route-meta {
+      padding: 0.5rem;
+      border: 1px solid #000;
+      border-top: 0;
+      border-radius: 3px;
+    }
+
+    .route-meta table {
+      width: 100%;
+    }
+
+    .route-meta table tr td:first-child {
+      white-space: nowrap;
+      width: 20%;
+    }
+
+    .arrow {
+      width: 0;
+      height: 0;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .arrow-down {
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid black;
+      margin: 0 2.5px;
+    }
+
+    .arrow-right {
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 5px solid black;
+      margin: 0 5px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.0/jquery.min.js" integrity="sha256-JAW99MJVpJBGcbzEuXk4Az05s/XyDdBomFqNlM3ic+I=" crossorigin="anonymous"></script>
+  <script>
+    // Nginx
+    // Source: https://github.com/karlkfi/ngindox/blob/master/include/ngindox.js
+    // requires jquery
+    window.NgindoxInit = function() {
+      // toggle visibility of all route groups
+      $('#ngindox .toggle-route-groups').click(function() {
+        var visible = ($(this).attr('data-state') != 'hidden');
+        $(this).attr('data-state', visible && 'hidden' || 'visible');
+        $('#ngindox .routes').each(function() {
+          var route = $(this);
+          if (visible) {
+            route.closest('.resource').find('.heading .arrow-down').toggleClass('arrow-right arrow-down');
+            route.slideUp('slow');
+          } else {
+            route.closest('.resource').find('.heading .arrow-right').toggleClass('arrow-down arrow-right');
+            route.slideDown('slow');
+          }
+        })
+      });
+      // toggle visibility of routes by group
+      $('#ngindox .resources .toggle-route-group').click(function() {
+        var resource = this.getAttribute('data-id');
+        if (!resource) {
+          return;
+        }
+        var route = $('#routes-' + resource);
+        if (route.is(':visible')) {
+          $(this).find('.arrow-down').toggleClass('arrow-right arrow-down');
+          route.slideUp('slow');
+        } else {
+          $(this).find('.arrow-right').toggleClass('arrow-down arrow-right');
+          route.slideDown('slow');
+        }
+      });
+      // toggle visibility of routes by type
+      $('#ngindox .legend .toggle-route-type').click(function() {
+        var checkbox = $(this).closest('.route').find('input');
+        checkbox.prop("checked", !checkbox.prop("checked")).trigger('change');
+      });
+      // set visibility of routes by type
+      $('#ngindox .legend .route input').on('change', function() {
+        var routeType = this.getAttribute('data-type');
+        if (!routeType) {
+          return;
+        }
+        if (this.checked) {
+          $('.resources .route-type-' + routeType).slideDown('slow');
+        } else {
+          $('.resources .route-type-' + routeType).slideUp('slow');
+        }
+      })
+      // toggle visibility of route meta
+      $('#ngindox .resources .route .route-type').click(function() {
+        $(this).closest('.route').find('.route-meta').slideToggle('slow');
+      });
+    };
+    $(document).ready(NgindoxInit);
+  </script>
+  <div class="heading">
+    <h1>
+      <a id="routes" href="#routes" aria-hidden="true" class="toggle-route-group" data-id="routes">Routes</a>
+    </h1>
+    <span class="options"><a href="#routes" class="toggle-route-groups" data-state="visible">Show/Hide All</a> </span>
+  </div>
+  <div class="legend">
+    <div class="heading">
+      <div class="heading">
+        <h2>
+          <a id="legend" href="#legend" aria-hidden="true" class="toggle-route-group" data-id="legend">Legend</a>
+        </h2>
+      </div>
+    </div>
+    <ul>
+      <li class="route route-type-proxy">
+        <input type="checkbox" data-type="proxy" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Proxy</span> <span class="route-desc">retrieves resources from another address.</span> </label>
+        </input>
+      </li>
+      <li class="route route-type-file">
+        <input type="checkbox" data-type="file" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">File</span> <span class="route-desc">retrieves static files.</span> </label>
+        </input>
+      </li>
+      <li class="route route-type-lua">
+        <input type="checkbox" data-type="lua" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Lua</span> <span class="route-desc">executes Lua code to generate response.</span> </label>
+        </input>
+      </li>
+      <li class="route route-type-redirect">
+        <input type="checkbox" data-type="redirect" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Redirect</span> <span class="route-desc">redirects to another address.</span> </label>
+        </input>
+      </li>
+      <li class="route route-type-rewrite">
+        <input type="checkbox" data-type="rewrite" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Rewrite</span> <span class="route-desc">retrieves resources from another route.</span> </label>
+        </input>
+      </li>
+    </ul>
+  </div>
+  <ul class="resources">
+    <li id="resource-root" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="root" href="#root" aria-hidden="true" class="toggle-route-group" data-id="root">
+            <div class="arrow arrow-right"></div>Root</a>
+        </h2>
+        <span class="options"><a href="#root" class="toggle-route-group" data-id="root">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-root" class="routes">
+        <li class="route route-type-file">
+          <div class="heading">
+            <h3>
+              <span class="route-type">File</span>
+              <span class="route-path"><code>/</code></span>
+            </h3>
+            <span class="route-desc">DC/OS GUI</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>/opt/mesosphere/active/dcos-ui/usr</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-agent" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="agent" href="#agent" aria-hidden="true" class="toggle-route-group" data-id="agent">
+            <div class="arrow arrow-right"></div>Agent</a>
+        </h2>
+        <span class="options"><a href="#agent" class="toggle-route-group" data-id="agent">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-agent" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/(slave|agent)/(?&lt;agentid&gt;[0-9a-zA-Z-]+)(?&lt;url&gt;.+)</code></span>
+            </h3>
+            <span class="route-desc">API proxy to a specific agent node</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/(slave|agent)/[0-9a-zA-Z-]+/.*$</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>$url</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Proxy:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>$agentaddr:$agentport</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-authentication" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="authentication" href="#authentication" aria-hidden="true" class="toggle-route-group" data-id="authentication">
+            <div class="arrow arrow-right"></div>Authentication</a>
+        </h2>
+        <span class="options"><a href="#authentication" class="toggle-route-group" data-id="authentication">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-authentication" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/acs/api/v1</code></span>
+            </h3>
+            <span class="route-desc">Access Control Service</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/acs/api/v1</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:8101</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Authentication (OAuth)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/">https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/acs/api/v1/auth/</code></span>
+            </h3>
+            <span class="route-desc">Access Control Service (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/acs/api/v1/auth/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:8101</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Authentication (OAuth)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/">https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-redirect">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Redirect</span>
+              <span class="route-path"><code>/login</code></span>
+            </h3>
+            <span class="route-desc">Redirect to OpenID Connect server for user login</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Regex:
+                </td>
+                <td>
+                  <code>^</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Replacement:
+                </td>
+                <td>
+                  <code>$oauth_auth_redirector$uri?client=$oauth_client_id&amp;cluster_id=$cluster_id</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Type:
+                </td>
+                <td>
+                  <code>redirect</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-capabilities" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="capabilities" href="#capabilities" aria-hidden="true" class="toggle-route-group" data-id="capabilities">
+            <div class="arrow arrow-right"></div>Capabilities</a>
+        </h2>
+        <span class="options"><a href="#capabilities" class="toggle-route-group" data-id="capabilities">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-capabilities" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/capabilities</code></span>
+            </h3>
+            <span class="route-desc">List of capabilities supported by DC/OS</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/capabilities</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:7070</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Package Manager (Cosmos)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-cosmos" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="cosmos" href="#cosmos" aria-hidden="true" class="toggle-route-group" data-id="cosmos">
+            <div class="arrow arrow-right"></div>Cosmos</a>
+        </h2>
+        <span class="options"><a href="#cosmos" class="toggle-route-group" data-id="cosmos">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-cosmos" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/cosmos/service/</code></span>
+            </h3>
+            <span class="route-desc">Start a DC/OS service from a DC/OS package</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/service/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:7070</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Package Manager (Cosmos)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-exhibitor" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="exhibitor" href="#exhibitor" aria-hidden="true" class="toggle-route-group" data-id="exhibitor">
+            <div class="arrow arrow-right"></div>Exhibitor</a>
+        </h2>
+        <span class="options"><a href="#exhibitor" class="toggle-route-group" data-id="exhibitor">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-exhibitor" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/exhibitor/</code></span>
+            </h3>
+            <span class="route-desc">Manage Zookeeper</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:8181</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Exhibitor (Zookeeper)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://github.com/soabase/exhibitor/wiki/REST-Introduction">https://github.com/soabase/exhibitor/wiki/REST-Introduction</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/exhibitor/exhibitor/v1/cluster/status</code></span>
+            </h3>
+            <span class="route-desc">Exhibitor cluster status (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/exhibitor/(.*)</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Proxy:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>http://$backend= /exhibitor/exhibitor/v1/cluster/status</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Server:
+                      </td>
+                      <td>
+                        <code>127.0.0.1:8181</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Backend:
+                      </td>
+                      <td>
+                        Exhibitor (Zookeeper)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        API Reference:
+                      </td>
+                      <td>
+                        <a href="https://github.com/soabase/exhibitor/wiki/REST-Introduction">https://github.com/soabase/exhibitor/wiki/REST-Introduction</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-history" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="history" href="#history" aria-hidden="true" class="toggle-route-group" data-id="history">
+            <div class="arrow arrow-right"></div>History</a>
+        </h2>
+        <span class="options"><a href="#history" class="toggle-route-group" data-id="history">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-history" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/dcos-history-service/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>$historyservice_upstream</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-marathon" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="marathon" href="#marathon" aria-hidden="true" class="toggle-route-group" data-id="marathon">
+            <div class="arrow arrow-right"></div>Marathon</a>
+        </h2>
+        <span class="options"><a href="#marathon" class="toggle-route-group" data-id="marathon">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-marathon" class="routes">
+        <li class="route route-type-rewrite">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Rewrite</span>
+              <span class="route-path"><code>/marathon/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/marathon/(.*)$</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/service/marathon/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>last</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Deprecated:
+                </td>
+                <td>
+                  Use <code>/service/marathon/</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-mesos" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="mesos" href="#mesos" aria-hidden="true" class="toggle-route-group" data-id="mesos">
+            <div class="arrow arrow-right"></div>Mesos</a>
+        </h2>
+        <span class="options"><a href="#mesos" class="toggle-route-group" data-id="mesos">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-mesos" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/cache/master/</code></span>
+            </h3>
+            <span class="route-desc">Cache of the Mesos master API</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Proxy:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>http://$backend/master/</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Server:
+                      </td>
+                      <td>
+                        <code>leader.mesos:5050</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Backend:
+                      </td>
+                      <td>
+                        Apache Mesos
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        API Reference:
+                      </td>
+                      <td>
+                        <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Cache:
+                </td>
+                <td>
+                  5 seconds
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/mesos/</code></span>
+            </h3>
+            <span class="route-desc">Apache Mesos</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>leader.mesos:5050</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Apache Mesos
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-mesos-dns" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="mesos-dns" href="#mesos-dns" aria-hidden="true" class="toggle-route-group" data-id="mesos-dns">
+            <div class="arrow arrow-right"></div>Mesos DNS</a>
+        </h2>
+        <span class="options"><a href="#mesos-dns" class="toggle-route-group" data-id="mesos-dns">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-mesos-dns" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/mesos_dns/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>master.mesos:8123</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Mesos DNS
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/">https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-metadata" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="metadata" href="#metadata" aria-hidden="true" class="toggle-route-group" data-id="metadata">
+            <div class="arrow arrow-right"></div>Metadata</a>
+        </h2>
+        <span class="options"><a href="#metadata" class="toggle-route-group" data-id="metadata">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-metadata" class="routes">
+        <li class="route route-type-file">
+          <div class="heading">
+            <h3>
+              <span class="route-type">File</span>
+              <span class="route-path"><code>/dcos-metadata/</code></span>
+            </h3>
+            <span class="route-desc">DC/OS metadata</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>/opt/mesosphere/active/dcos-metadata/etc/</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-file">
+          <div class="heading">
+            <h3>
+              <span class="route-type">File</span>
+              <span class="route-path"><code>/dcos-metadata/dcos-version.json</code></span>
+            </h3>
+            <span class="route-desc">DC/OS version (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>/opt/mesosphere/active/dcos-metadata/etc/dcos-version.json</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/dcos-metadata/ui-config.json</code></span>
+            </h3>
+            <span class="route-desc">DC/OS GUI configuration (unauthenticated)</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/dcos-metadata/ui-config.json</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:8101</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Authentication (OAuth)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/">https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-lua">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Lua</span>
+              <span class="route-path"><code>/metadata</code></span>
+            </h3>
+            <span class="route-desc">Public IP and Cluster ID</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>conf/lib/metadata.lua</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-navstar" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="navstar" href="#navstar" aria-hidden="true" class="toggle-route-group" data-id="navstar">
+            <div class="arrow arrow-right"></div>Navstar</a>
+        </h2>
+        <span class="options"><a href="#navstar" class="toggle-route-group" data-id="navstar">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-navstar" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/navstar/lashup/key</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/lashup/key</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:62080</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Navstar
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-other" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="other" href="#other" aria-hidden="true" class="toggle-route-group" data-id="other">
+            <div class="arrow arrow-right"></div>Other</a>
+        </h2>
+        <span class="options"><a href="#other" class="toggle-route-group" data-id="other">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-other" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/internal/mesos_dns/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>master.mesos:8123</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  Mesos DNS
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/">https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-package" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="package" href="#package" aria-hidden="true" class="toggle-route-group" data-id="package">
+            <div class="arrow arrow-right"></div>Package</a>
+        </h2>
+        <span class="options"><a href="#package" class="toggle-route-group" data-id="package">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-package" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/package/</code></span>
+            </h3>
+            <span class="route-desc">Package Management</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/package/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:7070</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Package Manager (Cosmos)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-pkgpanda" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="pkgpanda" href="#pkgpanda" aria-hidden="true" class="toggle-route-group" data-id="pkgpanda">
+            <div class="arrow arrow-right"></div>Pkgpanda</a>
+        </h2>
+        <span class="options"><a href="#pkgpanda" class="toggle-route-group" data-id="pkgpanda">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-pkgpanda" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/pkgpanda/</code></span>
+            </h3>
+            <span class="route-desc">DC/OS component package management</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>unix:/run/dcos/pkgpanda-api.sock</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Component Package Manager (Pkgpanda)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/component-management/">https://dcos.io/docs/1.9/administration/component-management/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-file">
+          <div class="heading">
+            <h3>
+              <span class="route-type">File</span>
+              <span class="route-path"><code>/pkgpanda/active.buildinfo.full.json</code></span>
+            </h3>
+            <span class="route-desc">List the active Pkgpanda packages</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>/opt/mesosphere/active.buildinfo.full.json</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-service" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="service" href="#service" aria-hidden="true" class="toggle-route-group" data-id="service">
+            <div class="arrow arrow-right"></div>Service</a>
+        </h2>
+        <span class="options"><a href="#service" class="toggle-route-group" data-id="service">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-service" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/service/(?&lt;service_path&gt;.+)</code></span>
+            </h3>
+            <span class="route-desc">Proxy to services running on DC/OS</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>$upstream_url</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-system" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="system" href="#system" aria-hidden="true" class="toggle-route-group" data-id="system">
+            <div class="arrow arrow-right"></div>System</a>
+        </h2>
+        <span class="options"><a href="#system" class="toggle-route-group" data-id="system">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-system" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/health/v1</code></span>
+            </h3>
+            <span class="route-desc">Component service status</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/system/health/v1</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:1050</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Diagnostics (3DT)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint">https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/v1/agent/(?&lt;agentid&gt;[0-9a-zA-Z-]+)(?&lt;type&gt;(/logs/v1|/metrics/v0))(?&lt;url&gt;.*)</code></span>
+            </h3>
+            <span class="route-desc">System proxy to a specific agent node</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/agent/[0-9a-zA-Z-]+(.*)$</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Proxy:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>$agentaddr:61001/system/v1$type$url$is_args$query_string</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/v1/leader/marathon(?&lt;url&gt;.*)</code></span>
+            </h3>
+            <span class="route-desc">System proxy to the master node with the Marathon leader</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>$mleader_host/system/v1$url$is_args$query_string</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/v1/leader/mesos(?&lt;url&gt;.*)</code></span>
+            </h3>
+            <span class="route-desc">System proxy to the master node with the Mesos leader</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://leader.mesos/system/v1$url$is_args$query_string</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/v1/logs/v1/</code></span>
+            </h3>
+            <span class="route-desc">Node, component service, and container (task) logs</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>unix:/run/dcos/dcos-log.sock</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Log
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/logging/logging-api/">https://dcos.io/docs/1.9/administration/logging/logging-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/v1/metrics/</code></span>
+            </h3>
+            <span class="route-desc">Node, container, and application metrics</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>unix:/run/dcos/dcos-metrics-master.sock</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Metrics
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  API Reference:
+                </td>
+                <td>
+                  <a href="https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/">https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>

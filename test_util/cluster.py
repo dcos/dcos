@@ -194,11 +194,11 @@ class Cluster:
             list(itertools.islice(hosts_iter, num_public_agents)),
         )
 
-    @retry(stop_max_delay=120000)
+    @retry(stop_max_delay=300 * 1000)
     def check_ssh(self, hosts):
         """SSH to each host's public IP and run a command.
 
-        Retries on failure for up to 2 minutes.
+        Retries on failure for up to 5 minutes.
 
         """
         self.ssher.remote_cmd(hosts, ['echo'])

@@ -42,6 +42,7 @@ setup(
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',
+        'azure-common==1.1.4',
         'azure-storage==0.32.0',
         'azure-mgmt-network==0.30.0rc4',
         'azure-mgmt-resource==0.30.0rc4',
@@ -68,8 +69,6 @@ setup(
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main',
-            'dcos-exhibitor-migrate-status=dcos_installer.exhibitor_migrate:status',
-            'dcos-exhibitor-migrate-perform=dcos_installer.exhibitor_migrate:perform',
         ],
     },
     package_data={

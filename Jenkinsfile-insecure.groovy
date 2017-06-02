@@ -4,6 +4,10 @@ dir("packages/adminrouter/extra/src") {
     }
 
     try {
+        stage('make check-api-docs') {
+            sh 'make check-api-docs'
+        }
+
         stage('make flake8') {
             sh 'make flake8'
         }
@@ -13,6 +17,10 @@ dir("packages/adminrouter/extra/src") {
         }
 
     } finally {
+        stage('archive build logs') {
+             archiveArtifacts artifacts: 'test-harness/logs/*.log', allowEmptyArchive: true, excludes: 'test_harness/', fingerprint: true
+        }
+
         stage('Cleanup docker container'){
             sh 'make clean-containers'
             sh "docker rmi -f adminrouter-devkit || true"

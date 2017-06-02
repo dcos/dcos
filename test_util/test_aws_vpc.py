@@ -63,6 +63,7 @@ TEST_ADD_ENV_*: string (default=None)
 import logging
 import os
 import sys
+import time
 
 import test_util.aws
 import test_util.cluster
@@ -184,6 +185,7 @@ def main():
             admin_location='0.0.0.0/0',
             key_pair_name=unique_cluster_id,
             boto_wrapper=bw)
+    time.sleep(300)  # we know the cluster is not ready yet, don't poll to avoid hitting the rate limit
     vpc.wait_for_complete()
 
     cluster = test_util.cluster.Cluster.from_bare_cluster(

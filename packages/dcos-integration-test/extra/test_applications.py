@@ -3,7 +3,9 @@ import uuid
 
 import pytest
 
-from test_util.marathon import get_test_app, get_test_app_in_docker, get_test_app_in_ucr
+from test_helpers import expanded_config
+
+from test_util.marathon import Container, get_test_app, Healthcheck, Network
 
 log = logging.getLogger(__name__)
 
@@ -31,12 +33,13 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected.
     """
-    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_docker(ip_per_container=False))
+    dcos_api_session.marathon.deploy_test_app_and_check(
+        *get_test_app(network=Network.BRIDGE, container_type=Container.DOCKER, container_port=9080))
 
 
-@pytest.mark.parametrize("healthcheck", [
-    "HTTP",
-    "MESOS_HTTP",
+@pytest.mark.parametrize('healthcheck', [
+    Healthcheck.HTTP,
+    Healthcheck.MESOS_HTTP,
 ])
 def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     """Marathon app inside ucr deployment integration test.
@@ -44,7 +47,8 @@ def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     Verifies that a marathon docker app inside of a ucr container can be
     deployed and accessed as expected.
     """
-    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app_in_ucr(healthcheck))
+    dcos_api_session.marathon.deploy_test_app_and_check(
+        *get_test_app(container_type=Container.MESOS, healthcheck_protocol=healthcheck))
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
@@ -61,19 +65,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
     When port mapping is available (MESOS-4777), this test should be updated to
     reflect that.
     """
-    app, test_uuid = get_test_app()
-    app['container'] = {
-        'type': 'MESOS',
-        'docker': {
-            # TODO(cmaloney): Switch to an alpine image with glibc inside.
-            'image': 'debian:jessie'
-        },
-        'volumes': [{
-            'containerPath': '/opt/mesosphere',
-            'hostPath': '/opt/mesosphere',
-            'mode': 'RO'
-        }]
-    }
+    app, test_uuid = get_test_app(container_type=Container.MESOS)
     dcos_api_session.marathon.deploy_test_app_and_check(app, test_uuid)
 
 
@@ -85,6 +77,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
 
     test_uuid = uuid.uuid4().hex
 
+    # create pod with trivial apps that function as long running processes
     pod_definition = {
         'id': '/integration-test-pods-{}'.format(test_uuid),
         'scaling': {'kind': 'fixed', 'instances': 1},
@@ -94,7 +87,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
                 'name': 'ct1',
                 'resources': {'cpus': 0.1, 'mem': 32},
                 'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
-                'exec': {'command': {'shell': 'touch foo'}},
+                'exec': {'command': {'shell': 'touch foo; while true; do sleep 1; done'}},
                 'healthcheck': {'command': {'shell': 'test -f foo'}}
             },
             {
@@ -112,6 +105,9 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
         pass
 
 
+@pytest.mark.skipif(
+    expanded_config.get('security') == 'strict',
+    reason='See: https://jira.mesosphere.com/browse/DCOS-14760')
 def test_octarine(dcos_api_session, timeout=30):
     # This app binds to port 80. This is only required by the http (not srv)
     # transparent mode test. In transparent mode, we use ".mydcos.directory"
@@ -120,9 +116,8 @@ def test_octarine(dcos_api_session, timeout=30):
     # reaches the proxy, the port is not used, and a request is made
     # to port 80.
 
-    app, uuid = get_test_app()
+    app, uuid = get_test_app(host_port=80)
     app['acceptedResourceRoles'] = ["slave_public"]
-    app['portDefinitions'][0]["port"] = 80
     app['requirePorts'] = True
 
     with dcos_api_session.marathon.deploy_and_cleanup(app) as service_points:

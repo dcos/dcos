@@ -9,13 +9,12 @@ systemd_slave_public=$PKG_PATH/dcos.target.wants_slave_public/dcos-rexray.servic
 mkdir -p $(dirname $systemd_slave_public)
 cp "$systemd_slave" "$systemd_slave_public"
 
-srcdir=$GOPATH/src/github.com/emccode/rexray
+srcdir=$GOPATH/src/github.com/codedellemc/rexray
 mkdir -p $(dirname $srcdir)
 ln -s /pkg/src/rexray $srcdir
-
 cd $srcdir
 
-echo "...building rexray..."
-mkdir -p $PKG_PATH/bin/
-make build-linux-amd64 OFFLINE=1
-mv .build/bin/Linux-x86_64/rexray $PKG_PATH/bin/
+DGOOS=linux make
+
+mkdir -p $PKG_PATH/bin
+mv $GOPATH/bin/rexray $PKG_PATH/bin

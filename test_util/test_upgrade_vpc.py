@@ -41,6 +41,7 @@ import os
 import pprint
 import random
 import sys
+import time
 import traceback
 import uuid
 from subprocess import CalledProcessError
@@ -208,7 +209,7 @@ done
 
 
 class VpcClusterUpgradeTestDcosApiSessionFactory:
-    def apply(self, dcos_url: str, masters: List[str], public_masters: List[str], slaves: List[str],
+    def apply(self, dcos_url: str, masters: List[str], slaves: List[str],
               public_slaves: List[str], default_os_user: str) -> DcosApiSession:
         pass
 
@@ -307,7 +308,9 @@ class VpcClusterUpgradeTest:
 
             dcos_api.marathon.deploy_app(viplisten_app)
             dcos_api.marathon.ensure_deployments_complete()
-            dcos_api.marathon.deploy_app(viptalk_app)
+            # viptalk app depends on VIP from viplisten app, which may still fail
+            # the first try immediately after ensure_deployments_complete
+            dcos_api.marathon.deploy_app(viptalk_app, ignore_failed_tasks=True)
             dcos_api.marathon.ensure_deployments_complete()
 
             dcos_api.marathon.deploy_app(healthcheck_app)
@@ -350,7 +353,11 @@ class VpcClusterUpgradeTest:
             def test_mesos_task_state_remains_consistent():
                 # Verify that the "state" of the task does not change.
                 task_state_end = self.get_master_task_state(dcos_api, self.tasks_start[self.test_app_ids[0]][0])
-                if not self.task_state_start == task_state_end:
+                # To avoid errors when new items are added to the task state, we
+                # check that the old state is a subset of the new state.
+                if (task_state_end is None or
+                        self.task_state_start is None or
+                        not all(item in task_state_end.items() for item in self.task_state_start.items())):
                     self.teamcity_msg.testFailed(
                         "test_upgrade_vpc.test_mesos_task_state_remains_consistent",
                         details="expected: {}\nactual:   {}".format(self.task_state_start, task_state_end))
@@ -514,6 +521,7 @@ class VpcClusterUpgradeTest:
                 key_pair_name=stack_name,
                 boto_wrapper=bw
             )
+            time.sleep(300)  # we know the cluster is not ready yet, don't poll to avoid hitting the rate limit
             bare_cluster.wait_for_complete()
 
         cluster = test_util.cluster.Cluster.from_bare_cluster(
@@ -536,7 +544,6 @@ class VpcClusterUpgradeTest:
 
             dcos_api_install = self.dcos_api_session_factory_install.apply(
                 'http://{ip}'.format(ip=cluster.masters[0].public_ip),
-                master_list,
                 master_list,
                 [h.private_ip for h in cluster.agents],
                 [h.private_ip for h in cluster.public_agents],
@@ -566,7 +573,6 @@ class VpcClusterUpgradeTest:
         dcos_api_upgrade = self.dcos_api_session_factory_upgrade.apply(
             'http://{ip}'.format(ip=cluster.masters[0].public_ip),
             master_list,
-            master_list,
             [h.private_ip for h in cluster.agents],
             [h.private_ip for h in cluster.public_agents],
             self.default_os_user)
@@ -582,7 +588,8 @@ class VpcClusterUpgradeTest:
             for k, v in os.environ.items():
                 if k.startswith(prefix):
                     add_env.append(k.replace(prefix, '') + '=' + v)
-            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs ' + os.getenv('CI_FLAGS', '')
+            # this test is slow enough, so disable the slow tests
+            test_cmd = ' '.join(add_env) + ' py.test -vv -s -rs -m "not slow" ' + os.getenv('CI_FLAGS', '')
             result = test_util.cluster.run_integration_tests(cluster, test_cmd=test_cmd)
 
         if result == 0:
@@ -599,9 +606,9 @@ class VpcClusterUpgradeTest:
 
 
 class DcosApiSessionFactory(VpcClusterUpgradeTestDcosApiSessionFactory):
-    def apply(self, dcos_url: str, masters: List[str], public_masters: List[str], slaves: List[str],
+    def apply(self, dcos_url: str, masters: List[str], slaves: List[str],
               public_slaves: List[str], default_os_user: str) -> DcosApiSession:
-        return DcosApiSession(dcos_url, masters, public_masters, slaves, public_slaves,
+        return DcosApiSession(dcos_url, masters, slaves, public_slaves,
                               default_os_user, DcosUser(CI_CREDENTIALS))
 
 

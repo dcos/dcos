@@ -43,17 +43,16 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc/navstar-erl.env
     content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar enable_lb {{ enable_lb }}
-  - path: /etc/minuteman-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62503 -kernel inet_dist_listen_max 62503
+      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar_l4lb enable_lb {{ enable_lb }}
   - path: /etc_slave/spartan.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
         "bind_interface": "spartan",
         "udp_port": 53,
-        "tcp_port": 53
+        "tcp_port": 53,
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_slave_public/spartan.json
     content: |
@@ -61,7 +60,9 @@ package:
         "upstream_resolvers": {{ resolvers }},
         "bind_interface": "spartan",
         "udp_port": 53,
-        "tcp_port": 53
+        "tcp_port": 53,
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_master/spartan.json
     content: |
@@ -73,7 +74,9 @@ package:
 {% endswitch %}
         "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
-        "tcp_port": 53
+        "tcp_port": 53,
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc/mesos-dns.env
     content: |
@@ -93,31 +96,27 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": false
       }
-  - path: /etc_master/minuteman.config.d/master.config
-    content: |
-      [
-        {minuteman,
-          [
-            {agent_polling_enabled, false}
-          ]
-        }
-      ].
-  - path: /etc/minuteman.config.d/common.config
-    content: |
-      [
-        {minuteman,
-          [
-            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
-            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
-          ]
-        }
-      ].
-  - path: /etc_master/navstar.app.config
+  - path: /etc_master/navstar.config.d/master.config
     content: |
       [
         {navstar,
           [
             {is_master, true}
+          ]
+        },
+        {navstar_l4lb,
+          [
+            {agent_polling_enabled, false}
+          ]
+        }
+      ].
+  - path: /etc/navstar.config.d/common.config
+    content: |
+      [
+        {navstar_l4lb,
+          [
+            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
+            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
           ]
         }
       ].
@@ -338,7 +337,7 @@ package:
       nomail
       /var/lib/dcos/mesos/log/mesos-master.log {
           olddir /var/lib/dcos/mesos/log/archive
-          maxsize 256M
+          size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
@@ -354,7 +353,7 @@ package:
       nomail
       /var/log/mesos/mesos-agent.log {
           olddir /var/log/mesos/archive
-          maxsize 256M
+          size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
@@ -392,7 +391,7 @@ package:
       MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
-      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
@@ -467,7 +466,7 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/minuteman/overrides.json
+  - path: /etc/navstar/overrides.json
     content: |
       {
         "forward_metrics": {{ minuteman_forward_metrics }}
@@ -902,9 +901,67 @@ package:
 
       ssl_certificate common/snakeoil.crt;
       ssl_certificate_key common/snakeoil.key;
+  - path: /etc/adminrouter-tls.conf
+    content: |
+      # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
+      # Modulo ChaCha20 cipher.
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+      ssl_prefer_server_ciphers on;
+      # To manually test which TLS versions are enabled on a node, use
+      # `openssl` commands.
+      #
+      # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
+      # details.
+{% switch adminrouter_tls_1_0_enabled %}
+{% case "true" %}
+      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+{% case "false" %}
+      ssl_protocols TLSv1.1 TLSv1.2;
+{% endswitch %}
   - path: /etc_slave/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
   - path: /etc_slave_public/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
+{% switch exhibitor_admin_password_enabled %}
+{% case "true" %}
+  - path: /etc_master/exhibitor_web.xml
+    permissions: "0644"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <web-app xmlns="http://java.sun.com/xml/ns/javaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+        version="2.5">
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>Protected</web-resource-name>
+            <url-pattern>/*</url-pattern>
+          </web-resource-collection>
+          <auth-constraint>
+            <role-name>admin</role-name>
+          </auth-constraint>
+        </security-constraint>
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>Public</web-resource-name>
+            <url-pattern>/exhibitor/v1/cluster/status</url-pattern>
+          </web-resource-collection>
+        </security-constraint>
+        <security-role>
+          <role-name>admin</role-name>
+        </security-role>
+        <login-config>
+          <auth-method>BASIC</auth-method>
+          <realm-name>DCOS</realm-name>
+        </login-config>
+      </web-app>
+  - path: /etc_master/exhibitor_realm
+    permissions: "0644"
+    content: |
+      admin: {{ exhibitor_admin_password }},admin
+{% case "false" %}
+{% endswitch %}
+  - path: /etc/rexray.conf
+    content: {{ rexray_config_contents }}

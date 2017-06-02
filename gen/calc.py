@@ -6,6 +6,10 @@ should be run, how arguments should be calculated, which arguments should have
 set defaults, which arguments should be user specified, and how some arguments
 should be calculated.
 
+HOW THIS WORKS:
+    The ARGUMENT NAME in the validate and calculate functions correspond
+    to the FIELD FROM THE INPUT (config.yaml).
+
 Notes:
 validate_* function: the arguments it takes will define the arguments which the
     function is evaluated against. All validations are performed at once
@@ -77,14 +81,22 @@ def validate_json_list(value):
     return items
 
 
+def valid_ipv4_address(ip):
+    try:
+        socket.inet_pton(socket.AF_INET, ip)
+        return True
+    except OSError:
+        return False
+    except TypeError:
+        return False
+
+
 def validate_ipv4_addresses(ips: list):
-    def try_parse_ip(ip):
-        try:
-            return socket.inet_pton(socket.AF_INET, ip)
-        except OSError:
-            return None
-    invalid_ips = list(filter(lambda ip: try_parse_ip(ip) is None, ips))
-    assert not len(invalid_ips), 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
+    invalid_ips = []
+    for ip in ips:
+        if not valid_ipv4_address(ip):
+            invalid_ips.append(ip)
+    assert not invalid_ips, 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
 
 
 def validate_url(url: str):
@@ -193,7 +205,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        calculate_ip_detect_contents(ip_detect_public_filename)
+        return calculate_ip_detect_contents(ip_detect_public_filename)
     return ip_detect_contents
 
 
@@ -374,6 +386,12 @@ def calculate_exhibitor_static_ensemble(master_list):
     return ','.join(['%d:%s' % (i + 1, m) for i, m in enumerate(masters)])
 
 
+def calculate_exhibitor_admin_password_enabled(exhibitor_admin_password):
+    if exhibitor_admin_password:
+        return 'true'
+    return 'false'
+
+
 def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
@@ -503,6 +521,10 @@ def calculate_cosmos_package_storage_uri_flag(cosmos_config):
         return ''
 
 
+def calculate_profile_symlink_target_dir(profile_symlink_target):
+    return os.path.dirname(profile_symlink_target)
+
+
 def calculate_set(parameter):
     if parameter == '':
         return 'false'
@@ -519,6 +541,44 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
+    return validate_ip_list(dns_bind_ip_blacklist)
+
+
+def validate_dns_forward_zones(dns_forward_zones):
+    """
+     "forward_zones": [["a.contoso.com", [["1.1.1.1", 53],
+                                          ["2.2.2.2", 53]]],
+                       ["b.contoso.com", [["3.3.3.3", 53],
+                                          ["4.4.4.4", 53]]]]
+    """
+
+    def fz_err(msg):
+        return 'Invalid "dns_forward_zones": {}'.format(msg)
+
+    zone_defs = None
+    try:
+        zone_defs = json.loads(dns_forward_zones)
+    except ValueError as ex:
+        raise AssertionError(fz_err("{} is not valid JSON: {}".format(dns_forward_zones, ex))) from ex
+    assert isinstance(zone_defs, list), fz_err("{} is not a list".format(zone_defs))
+
+    for z in zone_defs:
+        assert isinstance(z, list), fz_err("{} is not a list".format(z))
+        assert len(z) == 2, fz_err("{} is not length 2".format(z))
+        assert isinstance(z[0], str), fz_err("{} is not a string".format(z))
+
+        upstreams = z[1]
+        for u in upstreams:
+            assert isinstance(u, list), fz_err("{} not a list".format(u))
+            assert len(u) == 2, fz_err("{} not length 2".format(u))
+
+            ip = u[0]
+            port = u[1]
+            assert valid_ipv4_address(ip), fz_err("{} not a valid IP address".format(ip))
+            validate_int_in_range(port, 1, 65535)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -530,6 +590,8 @@ entry = {
         validate_dns_search,
         validate_master_list,
         validate_resolvers,
+        validate_dns_bind_ip_blacklist,
+        validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
@@ -558,15 +620,20 @@ entry = {
         lambda cluster_docker_credentials: validate_json_dictionary(cluster_docker_credentials),
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
         validate_exhibitor_storage_master_discovery,
+        lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         validate_cosmos_config,
-        lambda enable_lb: validate_true_false(enable_lb)
+        lambda enable_lb: validate_true_false(enable_lb),
+        lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_blacklist': '[]',
+        'dns_forward_zones': '[]',
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_tls_1_0_enabled': 'false',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
@@ -590,6 +657,7 @@ entry = {
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
         'oauth_auth_host': 'https://dcos.auth0.com',
+        'exhibitor_admin_password': '',
         'ui_tracking': 'true',
         'ui_banner': 'false',
         'ui_banner_background_color': '#1E232F',
@@ -622,13 +690,11 @@ entry = {
             'rexray': {
                 'loglevel': 'info',
                 'modules': {
-                    'default-admin': {
-                        'host': 'tcp://127.0.0.1:61003'
-                    },
                     'default-docker': {
                         'disabled': True
                     }
-                }
+                },
+                'service': 'vfs'
             }
         }),
         'enable_gpu_isolation': 'true',
@@ -647,13 +713,14 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.9-dev',
+        'dcos_version': '1.10-dev',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
+        'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',
         'ui_external_links': 'false',
         'ui_networking': 'false',
@@ -675,7 +742,10 @@ entry = {
         'cosmos_staged_package_storage_uri_flag':
             calculate_cosmos_staged_package_storage_uri_flag,
         'cosmos_package_storage_uri_flag':
-            calculate_cosmos_package_storage_uri_flag
+            calculate_cosmos_package_storage_uri_flag,
+        'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
+        'profile_symlink_target': '/etc/profile.d/dcos.sh',
+        'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
     },
     'conditional': {
         'master_discovery': {
@@ -692,15 +762,21 @@ entry = {
                         # Use IAM Instance Profile for auth.
                         'rexray': {
                             'loglevel': 'info',
-                            'modules': {
-                                'default-admin': {
-                                    'host': 'tcp://127.0.0.1:61003'
+                            'service': 'ebs'
+                        },
+                        'libstorage': {
+                            'server': {
+                                'tasks': {
+                                    'logTimeout': '5m'
                                 }
                             },
-                            'storageDrivers': ['ec2'],
-                            'volume': {
-                                'unmount': {
-                                    'ignoreusedcount': True
+                            'integration': {
+                                'volume': {
+                                    'operations': {
+                                        'unmount': {
+                                            'ignoreusedcount': True
+                                        }
+                                    }
                                 }
                             }
                         }

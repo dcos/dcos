@@ -47,26 +47,27 @@ To find the git SHA of any given release, check the latest commit in the version
 **Linux is required for building and testing DC/OS.**
 
 1. Linux distribution:
-  - Docker doesn't have all the features needed on OS X or Windows
-  - `tar` needs to be GNU tar for the set of flags used
+    - Docker doesn't have all the features needed on OS X or Windows
+    - `tar` needs to be GNU tar for the set of flags used
+    - `unzip` needs to be installed
 1. [tox](https://tox.readthedocs.org/en/latest/)
 1. git 1.8.5+
-1. Docker 1.11
-  - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
+1. Docker 1.11+
+    - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
 1. Python 3.5
-  - Arch Linux: `sudo pacman -S python`
-  - Fedora 23 Workstation: Already installed by default / no steps
-  - Ubuntu 16.04 LTS:
-    - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
-    - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev`
-    - Install Python 3.5.2: `pyenv install 3.5.2`
-    - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
-    - Activate environment: `pyenv activate dcos`
-1. Over 10GB of free disk space
+    - Arch Linux: `sudo pacman -S python`
+    - Fedora 23 Workstation: Already installed by default / no steps
+    - Ubuntu 16.04 LTS:
+        - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
+        - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev python3-venv`
+        - Install Python 3.5.2: `pyenv install 3.5.2`
+        - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
+        - Activate environment: `pyenv activate dcos`
+1. Over 10GB of free disk space and 8GB of RAM
+    - The build makes use of hard links, so if you're using VirtualBox the disk space cannot be a synced folder.
 1. _Optional_ pxz (speeds up package and bootstrap compression)
-  - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.
-  - Fedora 23: `sudo dnf install pxz`
-
+    - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.
+    - Fedora 23: `sudo dnf install pxz`
 
 # Unit Tests
 
@@ -84,6 +85,13 @@ tox
 Integration tests can be run on any deployed DC/OS cluster. For installation instructions, see <https://dcos.io/install/>.
 
 Integration tests are installed via the [dcos-integration-test](./packages/dcos-integration-test/) Pkgpanda package.
+
+Integration test files are stored on the DC/OS master node at `/opt/mesosphere/active/dcos-integration-test`.
+Therefore, in order to test changes to test files, move files from `packages/dcos-integration-test/extra/` in your checkout to `/opt/mesosphere/active/dcos-integration-test` on the master node.
+
+The canonical source of the test suite's results is the continuous integration system.
+There may be differences between the results of running the integration tests as described in this document and the results given by the continuous integration system.
+In particular, some tests may pass on the continuous integration system and fail locally or vice versa.
 
 ## Minimum Requirements
 
@@ -119,7 +127,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 1. Configure the tests
 
     ```
-    source /opt/mesosphere/active/dcos-integration-test/test_env.export
+    source /opt/mesosphere/active/dcos-integration-test/util/test_env.export
     export SLAVE_HOSTS=<PRIVATE-AGENT-IP-1>,<PRIVATE-AGENT-IP-2>
     export PUBLIC_SLAVE_HOSTS=<PUBLIC-AGENT-IP-1>,<PUBLIC-AGENT-IP-2>
     ```
@@ -133,6 +141,42 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     py.test
     ```
 
+## Using DC/OS Docker
+
+One way to run the integration tests is to use [DC/OS Docker](https://github.com/dcos/dcos-docker).
+
+1. Setup DC/OS in containers using [DC/OS Docker](https://github.com/dcos/dcos-docker).
+
+1. `exec` into the master node
+
+	```
+	docker exec -it dcos-docker-master1 /bin/bash
+	```
+
+1. Configure the tests
+
+    ```
+	export DCOS_DNS_ADDRESS=http://172.17.0.2
+	export MASTER_HOSTS=172.17.0.2
+	export PUBLIC_MASTER_HOSTS=172.17.0.2
+	export SLAVE_HOSTS=172.17.0.3
+	export PUBLIC_SLAVE_HOSTS=172.17.0.4
+	export DCOS_PROVIDER=onprem
+	export DNS_SEARCH=false
+	export DCOS_LOGIN_PW=admin
+	export PYTHONUNBUFFERED=true
+	export PYTHONDONTWRITEBYTECODE=true
+	export DCOS_LOGIN_UNAME=admin
+	export TEST_DCOS_RESILIENCY=false
+	source /opt/mesosphere/environment.export
+    ```
+
+1. Run the tests with Pytest
+
+    ```
+    cd /opt/mesosphere/active/dcos-integration-test
+    py.test
+    ```
 
 # Build
 
@@ -191,7 +235,7 @@ storage:
     path: /home/cmaloney/dcos-artifacts
 ```
 
-Sample config that will store to a local archive path as wll as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
+Sample config that will store to a local archive path as well as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
 ```yaml
 storage:
   aws:

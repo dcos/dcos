@@ -1,8 +1,12 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+import os
+from contextlib import contextmanager
+
 import requests
 
+from mocker.endpoints.mesos import AGENT1_ID
 from util import LineBufferFilter
 
 log = logging.getLogger(__name__)
@@ -12,7 +16,7 @@ def ping_mesos_agent(ar,
                      auth_header,
                      endpoint_id='http://127.0.0.2:15001',
                      expect_status=200,
-                     agent_id='de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1',
+                     agent_id=AGENT1_ID,
                      timeout=60,
                      ):
     """Test if agent is reachable or not
@@ -56,9 +60,11 @@ def generic_no_slash_redirect_test(ar, path):
     r = requests.get(url, allow_redirects=False)
 
     assert r.status_code == 301
+    assert r.headers['Location'] == url + '/'
 
 
-def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=None):
+def generic_upstream_headers_verify_test(
+        ar, auth_header, path, assert_headers=None, assert_headers_absent=None):
     """Test if headers sent upstream are correct
 
     Helper function meant to simplify writing multiple tests testing the
@@ -71,6 +77,8 @@ def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=N
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
+        assert_headers_absent (dict): headers that *MUST NOT* be present in the
+            upstream request
     """
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
@@ -85,9 +93,12 @@ def generic_upstream_headers_verify_test(ar, auth_header, path, assert_headers=N
     verify_header(req_data['headers'], 'X-Forwarded-Proto', 'http')
     verify_header(req_data['headers'], 'X-Real-IP', '127.0.0.1')
 
-    if assert_headers:
+    if assert_headers is not None:
         for name, value in assert_headers.items():
             verify_header(req_data['headers'], name, value)
+    if assert_headers_absent is not None:
+        for name in assert_headers_absent:
+            header_is_absent(req_data['headers'], name)
 
 
 def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
@@ -140,6 +151,43 @@ def generic_correct_upstream_request_test(
     assert req_data['method'] == 'GET'
     assert req_data['path'] == expected_path
     assert req_data['request_version'] == http_ver
+
+
+def generic_location_header_during_redirect_is_adjusted_test(
+        ar,
+        mocker,
+        auth_header,
+        endpoint_id,
+        basepath,
+        location_set,
+        location_expected,
+        ):
+    mocker.send_command(endpoint_id=endpoint_id,
+                        func_name='always_redirect',
+                        aux_data=location_set)
+
+    url = ar.make_url_from_path(basepath)
+    r = requests.get(url, allow_redirects=False, headers=auth_header)
+
+    assert r.status_code == 307
+    assert r.headers['Location'] == location_expected
+
+
+def header_is_absent(headers, header_name):
+    """Test if given header is present in the request headers list
+
+    Arguments:
+        headers (list): list of tuples containing all the headers present in
+            the reflected request data
+        header_name (string): name of the header that should not be present/must
+            not be set.
+
+    Raises:
+        AssertionError: header with the name "header_name" was found in
+            supplied header list.
+    """
+    for header in headers:
+        assert header[0] != header_name
 
 
 def verify_header(headers, header_name, header_value):
@@ -220,3 +268,36 @@ def assert_endpoint_response(
         assert lbf.extra_matches == {}
     else:
         body()
+
+
+@contextmanager
+def overriden_file_content(file_path, new_content=None):
+    with open(file_path, 'r+') as fh:
+        old_content = fh.read()
+        if new_content is not None:
+            fh.seek(0)
+            fh.write(new_content)
+            fh.truncate()
+
+    yield
+
+    with open(file_path, 'w') as fh:
+        fh.write(old_content)
+
+
+def repo_is_ee():
+    """Determine the flavour of the repository
+
+    Return:
+        True if repository is EE
+    """
+    cur_dir = os.path.dirname(__file__)
+    ee_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "ee"))
+    open_tests_dir = os.path.abspath(os.path.join(cur_dir, "..", "..", "tests", "open"))
+
+    is_ee = os.path.isdir(ee_tests_dir) and not os.path.isdir(open_tests_dir)
+    is_open = os.path.isdir(open_tests_dir) and not os.path.isdir(ee_tests_dir)
+
+    assert is_ee or is_open, "Unable to determine the variant of the repo"
+
+    return is_ee

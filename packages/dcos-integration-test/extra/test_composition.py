@@ -9,7 +9,7 @@ import kazoo.client
 import pytest
 import requests
 
-from test_helpers import dcos_config
+from test_helpers import expanded_config
 
 from pkgpanda.util import load_json, load_string
 
@@ -21,7 +21,7 @@ def test_dcos_cluster_is_up(dcos_api_session):
 
 def test_leader_election(dcos_api_session):
     mesos_resolver = dns.resolver.Resolver()
-    mesos_resolver.nameservers = dcos_api_session.public_masters
+    mesos_resolver.nameservers = dcos_api_session.masters
     mesos_resolver.port = 61053
     try:
         mesos_resolver.query('leader.mesos', 'A')
@@ -53,7 +53,7 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
 
     correct_data = sorted(r.json(), key=lambda k: k['hostname'])
 
-    for zk_ip in dcos_api_session.public_masters:
+    for zk_ip in dcos_api_session.masters:
         resp = requests.get('http://{}:8181/exhibitor/v1/cluster/status'.format(zk_ip))
         assert resp.status_code == 200
 
@@ -115,8 +115,8 @@ def test_signal_service(dcos_api_session):
 
     # Generic properties which are the same between all tracks
     generic_properties = {
-        'platform': dcos_config['platform'],
-        'provider': dcos_config['provider'],
+        'platform': expanded_config['platform'],
+        'provider': expanded_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
         'customerKey': customer_key,
@@ -156,7 +156,6 @@ def test_signal_service(dcos_api_session):
         'gen-resolvconf-timer',
         'navstar-service',
         'pkgpanda-api-service',
-        'pkgpanda-api-socket',
         'signal-timer',
         'spartan-service',
         'spartan-watchdog-service',

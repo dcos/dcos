@@ -90,13 +90,12 @@ cat <<EOF > test_wrapper.sh
 source /opt/mesosphere/environment.export
 export DCOS_DNS_ADDRESS=$DCOS_DNS_ADDRESS
 export MASTER_HOSTS=$MASTER_HOSTS
-export PUBLIC_MASTER_HOSTS=$MASTER_HOSTS
 export SLAVE_HOSTS=192.168.65.111,192.168.65.121
 export PUBLIC_SLAVE_HOSTS=192.168.65.60
 export TEAMCITY_VERSION="${TEAMCITY_VERSION:-}"
 export DCOS_DEFAULT_OS_USER=root
 cd /opt/mesosphere/active/dcos-integration-test
-/opt/mesosphere/bin/dcos-shell py.test -vv -rs -m "not ccm" ${CI_FLAGS:-}
+/opt/mesosphere/bin/dcos-shell py.test -vv -rs ${CI_FLAGS:-}
 EOF
 chmod +x test_wrapper.sh
 echo "Running integration test"

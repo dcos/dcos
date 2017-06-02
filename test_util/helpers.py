@@ -13,14 +13,16 @@ from collections import namedtuple
 from typing import Union
 from urllib.parse import urlsplit, urlunsplit
 
+import pkg_resources
 import pytest
-
 import requests
 import retrying
 from botocore.exceptions import ClientError, WaiterError
 
 Host = namedtuple('Host', ['private_ip', 'public_ip'])
 SshInfo = namedtuple('SshInfo', ['user', 'home_dir'])
+
+log = logging.getLogger(__name__)
 
 
 # Token valid until 2036 for user albert@bekstil.net
@@ -106,7 +108,7 @@ class ApiClientSession:
         self.session = requests.Session()
 
     def api_request(self, method, path_extension, *, scheme=None, host=None, query=None,
-                    fragment=None, port=None, **kwargs):
+                    fragment=None, port=None, **kwargs) -> requests.Response:
         """ Direct wrapper for requests.session.request. This method is kept deliberatly
         simple so that child classes can alter this behavior without much copying
 
@@ -136,7 +138,7 @@ class ApiClientSession:
             fragment=fragment,
             port=port))
 
-        logging.info('Request method {}: {}'.format(method, request_url))
+        log.debug('Request method {}: {}. Arguments: {}'.format(method, request_url, repr(kwargs)))
         r = self.session.request(method, request_url, **kwargs)
         self.session.cookies.clear()
         return r
@@ -170,6 +172,43 @@ class ApiClientSession:
         return self.api_request('OPTIONS', *args, **kwargs)
 
 
+def is_retryable_exception(exception: Exception) -> bool:
+    """ Helper method to catch HTTP errors that are likely safe to retry.
+    Args:
+        exception: exception raised from ApiClientSession.api_request instance
+    """
+    for ex in [requests.exceptions.ConnectionError, requests.exceptions.Timeout]:
+        if isinstance(exception, ex):
+            return True
+    return False
+
+
+class RetryCommonHttpErrorsMixin:
+    """ Mixin for ApiClientSession so that random disconnects from network
+    instability do not derail entire scripts. This functionality is configured
+    through the retry_timeout keyword
+    """
+    def api_request(self, *args, retry_timeout: int=60, **kwargs) -> requests.Response:
+        """ Adds 'retry_timeout' keyword to API requests.
+        Args:
+            *args: args to be passed to super()'s api_request method
+            **kwargs: keyword args to be passed to super()'s api_request method
+            retry_timeout: total number of seconds to keep retrying after
+                the initial exception was raised
+        """
+        @retrying.retry(
+            stop_max_delay=retry_timeout * 1000,
+            retry_on_exception=is_retryable_exception)
+        def retry_errors():
+            try:
+                return super(RetryCommonHttpErrorsMixin, self).api_request(*args, **kwargs)
+            except:
+                log.exception('Retrying common HTTP error...')
+                raise
+
+        return retry_errors()
+
+
 def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
     """Decorator to make boto functions resilient to AWS rate limiting and throttling.
     If one of these errors is encounterd, the function will sleep for a geometrically
@@ -191,8 +230,8 @@ def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
                 else:
                     raise
                 if error_code in ['Throttling', 'RequestLimitExceeded']:
-                    logging.warn('AWS API Limiting error: {}'.format(error_code))
-                    logging.warn('Sleeping for {} seconds before retrying'.format(local_wait))
+                    log.warn('AWS API Limiting error: {}'.format(error_code))
+                    log.warn('Sleeping for {} seconds before retrying'.format(local_wait))
                     time_to_next = next_time - time.time()
                     if time_to_next > 0:
                         time.sleep(time_to_next)
@@ -212,7 +251,7 @@ def wait_for_pong(url, timeout):
     """
     @retrying.retry(wait_fixed=3000, stop_max_delay=timeout * 1000)
     def ping_app():
-        logging.info('Attempting to ping test application')
+        log.info('Attempting to ping test application')
         r = requests.get('http://{}/ping'.format(url), timeout=10)
         r.raise_for_status()
         assert r.json() == {"pong": True}, 'Unexpected response from server: ' + repr(r.json())
@@ -259,7 +298,14 @@ def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
     try:
         strategy = response['uiConfiguration']['plugins']['mesos']['logging-strategy']
     except Exception:
-        logging.error('Unable to find logging strategy')
+        log.error('Unable to find logging strategy')
         raise
     if not strategy.startswith('journald'):
         pytest.skip('Skipping a test since journald logging is disabled')
+
+
+def ip_detect_script(preset_name):
+    try:
+        return pkg_resources.resource_string('gen', 'ip-detect/{}.sh'.format(preset_name)).decode('utf-8')
+    except OSError as exc:
+        raise Exception('Failed to read ip-detect script preset {}: {}'.format(preset_name, exc)) from exc
