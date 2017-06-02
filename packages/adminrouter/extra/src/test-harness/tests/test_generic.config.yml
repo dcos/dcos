@@ -709,5 +709,16 @@ endpoint_tests:
             sent: /marathon
           - expected: /
             sent: /marathon/
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /marathon/v2/reflect/me
+        endpoint_id: http://127.0.0.1:8080
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: http://127.0.0.1/marathon/v2/reflect/me
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: http://127.0.0.1/v2/reflect/me
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: /v2/reflect/me
     type:
       - master
