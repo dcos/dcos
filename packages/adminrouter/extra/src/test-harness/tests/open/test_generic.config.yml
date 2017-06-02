@@ -1,4 +1,5 @@
 endpoint_tests:
+######### /system/health/
   - tests:
       is_upstream_correct:
         enabled: true
@@ -15,7 +16,7 @@ endpoint_tests:
         upstream: http:///run/dcos/3dt.sock
     type:
       - agent
-####### /acs/api/v1/auth/
+######### /acs/api/v1/auth/
   - tests:
       are_upstream_req_headers_ok:
         enabled: true
@@ -35,7 +36,7 @@ endpoint_tests:
             sent: /acs/api/v1/reflect/me
     type:
       - master
-###### /dcos-metadata/ui-config.json
+######### /dcos-metadata/ui-config.json
   - tests:
       are_upstream_req_headers_ok:
         enabled: true
@@ -55,34 +56,3 @@ endpoint_tests:
             sent: /dcos-metadata/ui-config.json
     type:
       - master
-###### /marathon
-  - tests:
-      are_upstream_req_headers_ok:
-        enabled: true
-        jwt_should_be_forwarded: true
-        test_paths:
-          - /marathon
-          - /marathon/
-          - /marathon/v2/reflect/me
-      is_upstream_correct:
-        enabled: true
-        test_paths:
-          - /marathon
-          - /marathon/
-          - /marathon/v2/reflect/me
-        upstream: http://127.0.0.1:8080
-      is_upstream_req_ok:
-        enabled: true
-        expected_http_ver: HTTP/1.1
-        test_paths:
-          - expected: /v2/reflect/me
-            sent: /marathon/v2/reflect/me
-          - expected: /
-            sent: /marathon
-          - expected: /
-            sent: /marathon/
-    type:
-      - master
-
-location_header_rewrite_tests: []
-redirect_tests: []
