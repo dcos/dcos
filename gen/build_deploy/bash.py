@@ -588,7 +588,7 @@ def make_installer_docker(variant, variant_info, installer_info):
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     # Put a random string in the tar UUID so that we can have multiple installer
     # containers running simultaneously.
-    genconf_tar = "dcos-genconf.version={version}.uuid={tar_uuid}.tar".format(
+    genconf_tar = "dcos-genconf.version_{version}.uuid_{tar_uuid}.tar".format(
         version=image_version,
         tar_uuid=''.join(random.choice(string.ascii_lowercase) for _ in range(10)),
     )
