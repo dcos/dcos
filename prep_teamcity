@@ -33,13 +33,13 @@ pip install -U pip
 pip install wheel
 
 # Download distro independent artifacts
-pip install --download wheelhouse $DIR/ext/dcos-image
+pip -vvv install --download wheelhouse $DIR/ext/dcos-image
 
 # Make the wheels, they will be output into the folder `wheelhouse` by default.
-pip wheel --wheel-dir=wheelhouse --no-index --find-links=wheelhouse $DIR/ext/dcos-image
+pip -vvv wheel --wheel-dir=wheelhouse --no-index --find-links=wheelhouse $DIR/ext/dcos-image
 
 # Install the wheels
-pip install --no-index --find-links=wheelhouse dcos-image
+pip -vvv install --no-index --find-links=wheelhouse dcos-image
 
 # Cleanup the checkout
 rm -rf $DIR/ext/dcos-image
