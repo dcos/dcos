@@ -20,7 +20,7 @@ To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
 - Get Started - <https://dcos.io/get-started/>
 - Get Help - <http://chat.dcos.io/>
 - Join the Discussion - <https://groups.google.com/a/dcos.io/d/forum/users>
-- Report an Issue - <https://dcosjira.atlassian.net>
+- Report an Issue - <https://jira.dcos.io>
 - Contribute - <https://dcos.io/contribute/>
 
 
