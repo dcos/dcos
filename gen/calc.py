@@ -404,7 +404,7 @@ def calculate_config_yaml(user_arguments):
 
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
-                 'docker/runtime,docker/volume,volume/sandbox_path,posix/rlimits,'
+                 'docker/runtime,docker/volume,volume/sandbox_path,volume/secret,posix/rlimits,'
                  'namespaces/pid,com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'

@@ -2,9 +2,9 @@
   "requires": ["openssl", "libevent", "curl", "boost-libs"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/mesosphere/mesos",
-    "ref": "5724bfbf390502c79d7f53d6c9bb0ce92e6d9454",
-    "ref_origin" : "dcos-mesos-master-72752fc6"
+    "git": "https://github.com/mesosphere/mesos-private",
+    "ref": "de4dd1d8c26db7c8aa4a99666b58b224afe5fd1b",
+    "ref_origin" : "till/triage-dcos110-logging-failures"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
