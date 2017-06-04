@@ -94,7 +94,7 @@ fi
 
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
-pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
+pkgpanda activate --no-block {{ cluster_packages }}
 
 """
 
