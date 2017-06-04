@@ -2,9 +2,9 @@
 
 import json
 import os
+import string
 import subprocess
 import tempfile
-import uuid
 
 import pkg_resources
 
@@ -589,7 +589,7 @@ def make_installer_docker(variant, variant_info, installer_info):
     # containers running simultaneously.
     genconf_tar = "dcos-genconf.version={version}.uuid={tar_uuid}.tar".format(
         version=image_version,
-        tar_uuid=uuid.uuid4(),
+        tar_uuid=random.choice(string.ascii_lowercase) for _ in range(10),
     )
     installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
