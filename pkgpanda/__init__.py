@@ -11,6 +11,7 @@ environment variables from the package.
 """
 import grp
 import json
+import logging
 import os
 import os.path
 import pwd
@@ -70,6 +71,12 @@ class Systemd:
                     cmd.append("--no-block")
                 check_call(cmd)
             except CalledProcessError as ex:
+                msg = 'Command `{}` failed with status {}.'.format(' '.join(cmd), ex.returncode)
+                if ex.stdout:
+                    msg += '\nstdout:\n' + ex.stdout + '\n'
+                if ex.stderr:
+                    msg += '\nstderr:\n' + ex.stderr + '\n'
+                logging.exception(msg)
                 # If the service doesn't exist, don't error. This happens when a
                 # bootstrap tarball has just been extracted but nothing started
                 # yet during first activation.

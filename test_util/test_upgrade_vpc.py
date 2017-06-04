@@ -78,6 +78,11 @@ curl_cmd = [
 ]
 
 
+def sleep(seconds):
+    logging.info('Sleeping for {} seconds'.format(seconds))
+    time.sleep(seconds)
+
+
 def create_marathon_viplisten_app():
     return {
         "id": '/' + TEST_APP_NAME_FMT.format('viplisten-' + uuid.uuid4().hex),
@@ -480,6 +485,7 @@ class VpcClusterUpgradeTest:
                     logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
                     with cluster.ssher.tunnel(host) as tunnel:
                         self.upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
+                        sleep(60)
 
                         wait_metric = {
                             'master': 'registrar/log/recovered',
@@ -494,6 +500,7 @@ class VpcClusterUpgradeTest:
                                 'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.
                                 format(role_name, repr(host))
                             ) from exc
+                        sleep(60)
 
     def run_test(self) -> int:
         stack_suffix = os.getenv("CF_STACK_NAME_SUFFIX", "open-upgrade")
