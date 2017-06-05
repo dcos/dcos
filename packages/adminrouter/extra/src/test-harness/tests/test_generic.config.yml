@@ -57,7 +57,7 @@ endpoint_tests:
           - /service/scheduler-alwaysthere
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/scheduler-alwaysthere/foo/bar
@@ -73,7 +73,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:17000
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest1/scheduler-alwaysthere/foo/bar
@@ -91,7 +91,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18000
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-alwaysthere/foo/bar
@@ -109,7 +109,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18001
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymarathon/foo/bar
@@ -127,7 +127,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18002
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymesos/foo/bar
@@ -145,7 +145,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:18003
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
             sent: /service/nest2/nest1/scheduler-onlymesosdns/foo/bar
@@ -205,12 +205,16 @@ endpoint_tests:
         jwt_should_be_forwarded: true
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
       is_upstream_correct:
         enabled: true
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
+          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
-          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
         upstream: http://127.0.0.2:15001
       is_upstream_req_ok:
         enabled: true
@@ -222,6 +226,12 @@ endpoint_tests:
             sent: /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
           - expected: /foo/bar
             sent: /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - expected: /
+            sent: /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
+          - expected: /
+            sent: /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
+          - expected: /foo/bar
+            sent: /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
     type:
       - master
 
@@ -434,6 +444,11 @@ endpoint_tests:
 
 ######### /acs/api/v1/
   - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /acs/api/v1/reflect/me
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: true
@@ -668,7 +683,7 @@ endpoint_tests:
         upstream: http://127.0.0.1:8080
       is_upstream_req_ok:
         enabled: true
-        expected_http_ver: HTTP/1.1
+        expected_http_ver: websockets
         test_paths:
           - expected: /v2/reflect/me
             sent: /marathon/v2/reflect/me

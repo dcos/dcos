@@ -13,10 +13,16 @@ from generic_test_code.common import (
     generic_location_header_during_redirect_is_adjusted_test,
     generic_no_slash_redirect_test,
     generic_upstream_headers_verify_test,
-    repo_is_ee,
+    generic_response_headers_verify_test,
 )
 
 log = logging.getLogger(__name__)
+
+# Generalised tests were moved to a separate library included by
+# test-harness/tests/(open|ee)/test_generic.py files because they
+# may require fixtures from test-harness/tests/(open|ee)/conftest.py which
+# in turn is not reachable/included by test-harness/tests/test_generic.py
+# file.
 
 
 def _merge_testconfig(a, b):
@@ -78,8 +84,11 @@ def _verify_endpoint_tests_conf(endpoint_tests):
             _verify_is_upstream_req_ok_test_conf(
                 t['tests']['is_upstream_req_ok'])
         if 'are_upstream_req_headers_ok' in t['tests']:
-            _verify_jwt_should_be_forwarded_test_conf(
+            _verify_are_upstream_req_headers_ok(
                 t['tests']['are_upstream_req_headers_ok'])
+        if 'are_response_headers_ok' in t['tests']:
+            _verify_are_response_headers_ok(
+                t['tests']['are_response_headers_ok'])
         if 'is_unauthed_access_permitted' in t['tests']:
             _verify_is_unauthed_access_permitted(
                 t['tests']['is_unauthed_access_permitted'])
@@ -145,14 +154,14 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
         return
 
     assert 'expected_http_ver' in t_config
-    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1']
+    assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1', 'websockets']
 
     assert 'test_paths' in t_config
     for p in t_config['test_paths']:
         _check_all_keys_are_present_in_dict(p, ['expected', 'sent'])
 
 
-def _verify_jwt_should_be_forwarded_test_conf(t_config):
+def _verify_are_upstream_req_headers_ok(t_config):
     if not t_config['enabled']:
         return
 
@@ -164,19 +173,24 @@ def _verify_jwt_should_be_forwarded_test_conf(t_config):
         assert p.startswith('/')
 
 
-def _tests_configuration():
-    curdir = os.path.dirname(os.path.abspath(__file__))
-    common_tests_conf_file = os.path.join(curdir, "test_generic.config.yml")
+def _verify_are_response_headers_ok(t_config):
+    if not t_config['enabled']:
+        return
+
+    assert 'nocaching_headers_are_sent' in t_config
+    assert t_config['nocaching_headers_are_sent'] in [True, False, 'skip']
+
+    assert 'test_paths' in t_config
+    for p in t_config['test_paths']:
+        assert p.startswith('/')
+
+
+def _tests_configuration(path):
+    common_tests_conf_file = os.path.join(path, "..", "test_generic.config.yml")
     with open(common_tests_conf_file, 'r') as fh:
         common_tests_conf = yaml.load(fh)
 
-    if repo_is_ee():
-        flavour_dir = 'ee'
-    else:
-        flavour_dir = 'open'
-
-    flavoured_tests_conf_file = os.path.join(
-        curdir, flavour_dir, "test_generic.config.yml")
+    flavoured_tests_conf_file = os.path.join(path, "test_generic.config.yml")
     with open(flavoured_tests_conf_file, 'r') as fh:
         flavoured_tests_conf = yaml.load(fh)
 
@@ -293,6 +307,25 @@ def _testdata_to_is_unauthed_access_permitted(tests_config, node_type):
     return res
 
 
+def _testdata_to_are_response_headers_ok(tests_config, node_type):
+    res = []
+
+    for x in tests_config['endpoint_tests']:
+        if node_type not in x['type']:
+            continue
+
+        if 'are_response_headers_ok' not in x['tests']:
+            continue
+
+        h = x['tests']['are_response_headers_ok']
+        if h['enabled'] is not True:
+            continue
+
+        res.extend([(x, h['nocaching_headers_are_sent']) for x in h['test_paths']])
+
+    return res
+
+
 def _testdata_to_redirect_testdata(tests_config, node_type):
     res = []
 
@@ -312,8 +345,8 @@ def _testdata_to_redirect_testdata(tests_config, node_type):
     return res
 
 
-def pytest_generate_tests(metafunc):
-    tests_config = _tests_configuration()
+def create_tests(metafunc, path):
+    tests_config = _tests_configuration(path)
     if 'master_ar_process_perclass' in metafunc.fixturenames:
         ar_type = 'master'
     else:
@@ -350,8 +383,13 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("unauthed_path", args)
         return
 
+    if 'caching_headers_test' in metafunc.fixturenames:
+        args = _testdata_to_are_response_headers_ok(tests_config, ar_type)
+        metafunc.parametrize("path,caching_headers_test", args)
+        return
 
-class TestMasterGeneric:
+
+class GenericTestMasterClass:
     def test_if_request_is_sent_to_correct_upstream(
             self,
             master_ar_process_perclass,
@@ -374,28 +412,22 @@ class TestMasterGeneric:
             jwt_forwarded_test,
             ):
 
-        if jwt_forwarded_test is True:
-            generic_upstream_headers_verify_test(
-                master_ar_process_perclass,
-                valid_user_header,
-                path,
-                assert_headers=valid_user_header,
-            )
-        elif jwt_forwarded_test is False:
-            generic_upstream_headers_verify_test(
-                master_ar_process_perclass,
-                valid_user_header,
-                path,
-                assert_headers_absent=["Authorization"]
-                )
+        headers_present = {}
+        headers_absent = []
 
-        # None == 'skip'
-        else:
-            generic_upstream_headers_verify_test(
-                master_ar_process_perclass,
-                valid_user_header,
-                path,
-                )
+        if jwt_forwarded_test is True:
+            headers_present.update(valid_user_header)
+        elif jwt_forwarded_test is False:
+            headers_absent.append("Authorization")
+        # jwt_forwarded_test == "skip", do nothing
+
+        generic_upstream_headers_verify_test(
+            master_ar_process_perclass,
+            valid_user_header,
+            path,
+            assert_headers=headers_present,
+            assert_headers_absent=headers_absent,
+            )
 
     def test_if_upstream_request_is_correct(
             self,
@@ -438,8 +470,41 @@ class TestMasterGeneric:
             self, master_ar_process_perclass, redirect_path):
         generic_no_slash_redirect_test(master_ar_process_perclass, redirect_path)
 
+    def test_if_unauthn_user_is_granted_access(
+            self, master_ar_process_perclass, unauthed_path):
+        assert_endpoint_response(master_ar_process_perclass, unauthed_path, 200)
 
-class TestAgentGeneric:
+    def test_if_resp_headers_are_correct(
+            self,
+            master_ar_process_perclass,
+            valid_user_header,
+            path,
+            caching_headers_test,
+            ):
+
+        headers_present = {}
+        headers_absent = []
+
+        if caching_headers_test is True:
+            headers_present['Cache-Control'] = "no-cache, no-store, must-revalidate"
+            headers_present['Pragma'] = "no-cache"
+            headers_present['Expires'] = "0"
+        elif caching_headers_test is False:
+            headers_absent.append("Cache-Control")
+            headers_absent.append("Pragma")
+            headers_absent.append("Expires")
+        # caching_headers_test == "skip", do nothing
+
+        generic_response_headers_verify_test(
+            master_ar_process_perclass,
+            valid_user_header,
+            path,
+            assert_headers=headers_present,
+            assert_headers_absent=headers_absent,
+            )
+
+
+class GenericTestAgentClass:
     def test_if_request_is_sent_to_correct_upstream(
             self,
             agent_ar_process_perclass,
@@ -462,28 +527,22 @@ class TestAgentGeneric:
             jwt_forwarded_test,
             ):
 
-        if jwt_forwarded_test is True:
-            generic_upstream_headers_verify_test(
-                agent_ar_process_perclass,
-                valid_user_header,
-                path,
-                assert_headers=valid_user_header,
-            )
-        elif jwt_forwarded_test is False:
-            generic_upstream_headers_verify_test(
-                agent_ar_process_perclass,
-                valid_user_header,
-                path,
-                assert_headers_absent=["Authorization"]
-                )
+        headers_present = {}
+        headers_absent = []
 
-        # None == 'skip'
-        else:
-            generic_upstream_headers_verify_test(
-                agent_ar_process_perclass,
-                valid_user_header,
-                path,
-                )
+        if jwt_forwarded_test is True:
+            headers_present.update(valid_user_header)
+        elif jwt_forwarded_test is False:
+            headers_absent.append("Authorization")
+        # jwt_forwarded_test == "skip", do nothing
+
+        generic_upstream_headers_verify_test(
+            agent_ar_process_perclass,
+            valid_user_header,
+            path,
+            assert_headers=headers_present,
+            assert_headers_absent=headers_absent,
+            )
 
     def test_if_upstream_request_is_correct(
             self,
@@ -527,5 +586,34 @@ class TestAgentGeneric:
         generic_no_slash_redirect_test(agent_ar_process_perclass, redirect_path)
 
     def test_if_unauthn_user_is_granted_access(
-            self, master_ar_process_perclass, unauthed_path):
-        assert_endpoint_response(master_ar_process_perclass, unauthed_path, 200)
+            self, agent_ar_process_perclass, unauthed_path):
+        assert_endpoint_response(agent_ar_process_perclass, unauthed_path, 200)
+
+    def test_if_resp_headers_are_correct(
+            self,
+            agent_ar_process_perclass,
+            valid_user_header,
+            path,
+            caching_headers_test,
+            ):
+
+        headers_present = {}
+        headers_absent = []
+
+        if caching_headers_test is True:
+            headers_present['Cache-Control'] = "no-cache, no-store, must-revalidate"
+            headers_present['Pragma'] = "no-cache"
+            headers_present['Expires'] = "0"
+        elif caching_headers_test is False:
+            headers_absent.append("Cache-Control")
+            headers_absent.append("Pragma")
+            headers_absent.append("Expires")
+        # caching_headers_test == "skip", do nothing
+
+        generic_response_headers_verify_test(
+            agent_ar_process_perclass,
+            valid_user_header,
+            path,
+            assert_headers=headers_present,
+            assert_headers_absent=headers_absent,
+            )
