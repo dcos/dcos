@@ -124,7 +124,8 @@ COPY nested-metadata-testfile.json /opt/mesosphere/active/dcos-metadata/etc/nest
 # 127.0.0.1 instead of *. The reason for it is that some endpoints also need to
 # listen on TCP port 80 and this causes conflicts.
 COPY adminrouter-redirect-http-https.conf \
-     adminrouter-upstreams.conf \
+     adminrouter-upstreams-ee.conf \
+     adminrouter-upstreams-open.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
      adminrouter-tls.conf \
