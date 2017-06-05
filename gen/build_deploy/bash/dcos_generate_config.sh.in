@@ -44,9 +44,9 @@ PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
 
 if [ "$DCOS_INSTALLER_DAEMONIZE" == "true" ]; then
-    docker run --name={genconf_tar} -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --name={genconf_tar}$RANDOM -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 else
     trap 'docker kill {genconf_tar}' HUP QUIT INT TERM
-    docker run --rm --name={genconf_tar} -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --rm --name={genconf_tar}$RANDOM -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
 exit $?
