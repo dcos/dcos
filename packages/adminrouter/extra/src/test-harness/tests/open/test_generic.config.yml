@@ -16,6 +16,10 @@ endpoint_tests:
         test_paths:
           - /system/health/v1/foo/bar
         upstream: http:///run/dcos/3dt.sock
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/health/v1/foo/bar
     type:
       - agent
 ######### /acs/api/v1/auth/
@@ -66,3 +70,27 @@ endpoint_tests:
             sent: /dcos-metadata/ui-config.json
     type:
       - master
+######### /pkgpanda/
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /pkgpanda/foo/bar
+    type:
+      - agent
+######### /system/v1/metrics/
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/v1/metrics/foo/bar
+    type:
+      - agent
+######### /system/v1/logs/v1/
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/v1/logs/v1/foo/bar
+    type:
+      - agent
