@@ -42,7 +42,7 @@ fi
 
 PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
-DCOS_INSTALLER_CONTAINER_NAME=$${{DCOS_INSTALLER_CONTAINER_NAME:-{genconf_tar}}}
+DCOS_INSTALLER_CONTAINER_NAME=${{DCOS_INSTALLER_CONTAINER_NAME:-{genconf_tar}}}
 
 if [ "$DCOS_INSTALLER_DAEMONIZE" == "true" ]; then
     docker run --name=$DCOS_INSTALLER_CONTAINER_NAME -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
