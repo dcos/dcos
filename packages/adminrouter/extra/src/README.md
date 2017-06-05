@@ -4,7 +4,7 @@ Admin Router is an open-source NGINX configuration created by
 Mesosphere that provides central authentication and proxy to DC/OS services
 within the cluster.
 
-<img src="admin-router.png" alt="" width="100%" align="middle">
+<img src="docs/admin-router.png" alt="" width="100%" align="middle">
 
 ## Routes
 
@@ -29,7 +29,7 @@ Use `make api-docs` to regenerate the YAML and HTML files.
 Use `make check-api-docs` to validate that the YAML and HTML files are up to date.
 
 ## Ports summary
-<img src="admin-router-table.png" alt="" width="100%" align="middle">
+<img src="docs/admin-router-table.png" alt="" width="100%" align="middle">
 
 ## Service Endpoints
 
@@ -322,7 +322,7 @@ of the fact that there are many different kinds of endpoints that need to be
 employed by mocker, and that there is a lot of shared behaviour between them,
 they follow inheritance tree as below:
 
-<img src="endpoint_class_hierarchy.png" alt="" width="100%" align="middle">
+<img src="docs/endpoint_class_hierarchy.png" alt="" width="100%" align="middle">
 
 * `ReflectingUnixSocketEndpoint`, `ReflectingTCPIPEndpoint`: both of them send back
   the request data in the response body to the client for inspection. The only
