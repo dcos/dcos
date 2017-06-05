@@ -1,13 +1,5 @@
 ngindox: 0.1.0
 backends:
-  auth:
-    server: '127.0.0.1:8101'
-    name: DC/OS Authentication (OAuth)
-    reference: 'https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/'
-  cosmos:
-    server: '127.0.0.1:7070'
-    name: DC/OS Package Manager (Cosmos)
-    reference: 'https://dcos.io/docs/1.9/usage/managing-services/package-api/'
   dddt:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics (3DT)
@@ -17,14 +9,14 @@ backends:
     server: '127.0.0.1:8181'
     name: Exhibitor (Zookeeper)
     reference: 'https://github.com/soabase/exhibitor/wiki/REST-Introduction'
+  iam:
+    server: '127.0.0.1:8101'
+    name: DC/OS Authentication (OAuth)
+    reference: 'https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/'
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
     name: DC/OS Log
     reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
-  mesos:
-    server: 'leader.mesos:5050'
-    name: Apache Mesos
-    reference: 'https://mesos.apache.org/documentation/latest/endpoints/'
   mesos_dns:
     server: 'master.mesos:8123'
     name: Mesos DNS
@@ -74,7 +66,7 @@ routes:
     description: Access Control Service
     proxy:
       path: 'http://$backend/acs/api/v1'
-      backend: auth
+      backend: iam
     path: /acs/api/v1
   /acs/api/v1/auth/:
     group: Authentication
@@ -82,7 +74,7 @@ routes:
     description: Access Control Service (unauthenticated)
     proxy:
       path: 'http://$backend/acs/api/v1/auth/'
-      backend: auth
+      backend: iam
     path: /acs/api/v1/auth/
   /login:
     group: Authentication
@@ -99,16 +91,18 @@ routes:
     matcher: path
     description: List of capabilities supported by DC/OS
     proxy:
-      path: 'http://$backend/capabilities'
-      backend: cosmos
+      path: $upstream_cosmos
     path: /capabilities
   /cosmos/service/:
     group: Cosmos
     matcher: path
     description: Start a DC/OS service from a DC/OS package
     proxy:
-      path: 'http://$backend/service/'
-      backend: cosmos
+      path: $upstream_cosmos
+    rewrites:
+      - regex: ^/cosmos/(.*)
+        replacement: /$1
+        type: break
     path: /cosmos/service/
   /exhibitor:
     group: Exhibitor
@@ -172,8 +166,11 @@ routes:
     description: Cache of the Mesos master API
     cache: 5 seconds
     proxy:
-      path: 'http://$backend/master/'
-      backend: mesos
+      path: $upstream_mesos
+    rewrites:
+      - regex: ^/cache/(.*)
+        replacement: /$1
+        type: break
     path: /cache/master/
   /mesos:
     group: Mesos
@@ -190,8 +187,11 @@ routes:
     matcher: path
     description: Apache Mesos
     proxy:
-      path: 'http://$backend/'
-      backend: mesos
+      path: $upstream_mesos
+    rewrites:
+      - regex: ^/mesos/(.*)
+        replacement: /$1
+        type: break
     path: /mesos/
   /mesos_dns:
     group: Mesos DNS
@@ -206,6 +206,7 @@ routes:
   /mesos_dns/:
     group: Mesos DNS
     matcher: path
+    description: Domain-based service discovery
     proxy:
       path: 'http://$backend/'
       backend: mesos_dns
@@ -228,7 +229,7 @@ routes:
     description: DC/OS GUI configuration (unauthenticated)
     proxy:
       path: 'http://$backend/dcos-metadata/ui-config.json'
-      backend: auth
+      backend: iam
     path: /dcos-metadata/ui-config.json
   /metadata:
     group: Metadata
@@ -256,8 +257,7 @@ routes:
     matcher: path
     description: Package Management
     proxy:
-      path: 'http://$backend/package/'
-      backend: cosmos
+      path: $upstream_cosmos
     path: /package/
   /pkgpanda/:
     group: Pkgpanda
@@ -303,7 +303,8 @@ routes:
     matcher: regex
     description: System proxy to a specific agent node
     proxy:
-      path: '$agentaddr:61001/system/v1$type$url$is_args$query_string'
+      path: >-
+        $agentaddr:$adminrouter_agent_port/system/v1$type$url$is_args$query_string
     rewrites:
       - regex: '^/agent/[0-9a-zA-Z-]+(.*)$'
         replacement: $1
