@@ -18,7 +18,7 @@ backends:
     name: DC/OS Log
     reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
   mesos_dns:
-    server: 'master.mesos:8123'
+    server: '127.0.0.1:8123'
     name: Mesos DNS
     reference: 'https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/'
   metrics:
