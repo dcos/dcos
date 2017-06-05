@@ -250,6 +250,8 @@ def test_l4lb(dcos_api_session):
     numthreads = numapps * 4
     apps = []
     rvs = deque()
+    backends = []
+    dnsname = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
     with contextlib.ExitStack() as stack:
         for _ in range(numapps):
             origin_app, origin_uuid = get_test_app()
@@ -257,10 +259,16 @@ def test_l4lb(dcos_api_session):
             origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '/l4lbtest:5000'}
             apps.append(origin_app)
             sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app))
+            backends.append({'port': sp[0].port, 'ip': sp[0].host})
             # make sure that the service point responds
             geturl('http://{}:{}/ping'.format(sp[0].host, sp[0].port))
             # make sure that the VIP is responding too
-            geturl('http://l4lbtest.marathon.l4lb.thisdcos.directory:5000/ping')
+            geturl('http://{}/ping'.format(dnsname))
+        vips = geturl("http://localhost:62080/v1/vips")
+        [vip] = [vip for vip in vips if vip['vip'] == dnsname and vip['protocol'] == 'tcp']
+        for backend in vip['backend']:
+            backends.remove(backend)
+        assert backends == []
 
         # do many requests in parallel.
         def thread_request():
