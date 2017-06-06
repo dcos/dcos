@@ -210,9 +210,9 @@ endpoint_tests:
         enabled: true
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
-          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
-          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1
           - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/
           - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
         upstream: http://127.0.0.2:15001
@@ -625,6 +625,24 @@ endpoint_tests:
     type:
       - agent
 
+######### /pkgpanda/active.buildinfo.full.json
+  - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /pkgpanda/active.buildinfo.full.json
+    type:
+      - master
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /dcos-metadata/dcos-version.json
+    type:
+      - master
+      - agent
+
 ######### /system/v1/metrics endpoint
   - tests:
       are_upstream_req_headers_ok:
@@ -691,5 +709,16 @@ endpoint_tests:
             sent: /marathon
           - expected: /
             sent: /marathon/
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /marathon/v2/reflect/me
+        endpoint_id: http://127.0.0.1:8080
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: http://127.0.0.1/marathon/v2/reflect/me
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: http://127.0.0.1/v2/reflect/me
+          - location_expected: http://127.0.0.1/service/marathon/v2/reflect/me
+            location_set: /v2/reflect/me
     type:
       - master

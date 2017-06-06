@@ -3,8 +3,12 @@
 import logging
 
 import pytest
+import requests
 
-from generic_test_code.common import assert_endpoint_response
+from generic_test_code.common import (
+    assert_endpoint_response,
+    overriden_file_content,
+)
 from generic_test_code.open import assert_iam_queried_for_uid
 from mocker.endpoints.mesos import AGENT1_ID
 from util import SearchCriteria, iam_denies_all_requests
@@ -21,12 +25,14 @@ authed_endpoints = [
     '/mesos/reflect/me',
     '/mesos_dns/v1/reflect/me',
     '/metadata',
+    '/dcos-metadata/plain-metadata-testfile.json',
     '/navstar/lashup/key',
     '/package/foo/bar',
     '/pkgpanda/foo/bar',
     '/pkgpanda/active.buildinfo.full.json',
     '/service/scheduler-alwaysthere/foo/bar',
-    '/service/scheduler-alwaysthere/foo/bar',
+    '/service/nest1/scheduler-alwaysthere/foo/bar',
+    '/service/nest2/nest1/scheduler-alwaysthere/foo/bar',
     '/slave/{}'.format(AGENT1_ID),
     '/system/health/v1/foo/bar',
     '/system/v1/agent/{}/logs/v1/foo/bar'.format(AGENT1_ID),
@@ -67,3 +73,29 @@ class TestAuthEnforcementOpen:
                 200,
                 headers=valid_user_header,
                 )
+
+
+class TestDcosMetadata:
+    @pytest.mark.parametrize("uniq_content", ["(｡◕‿‿◕｡)", "plain text 1234"])
+    @pytest.mark.parametrize("path", ["plain-metadata-testfile.json",
+                                      "nest1/nested-metadata-testfile.json"])
+    def test_if_metadata_files_are_handled(
+            self,
+            master_ar_process,
+            valid_user_header,
+            uniq_content,
+            path):
+
+        url = master_ar_process.make_url_from_path('/dcos-metadata/{}'.format(path))
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-metadata/etc/{}'.format(path),
+                uniq_content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp.encoding = 'utf-8'
+        assert resp.text == uniq_content
