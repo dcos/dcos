@@ -31,6 +31,239 @@ Use `make check-api-docs` to validate that the YAML and HTML files are up to dat
 ## Ports summary
 <img src="docs/admin-router-table.png" alt="" width="100%" align="middle">
 
+## Repository structure
+
+There are two Admin Router "flavours" residing in DC/OS repos:
+  * [Opensource version or `Open` in short](https://github.com/dcos/dcos/tree/master/packages/adminrouter)
+  * [Enterprise version or `EE` in short](https://github.com/mesosphere/dcos-enterprise/tree/master/packages/adminrouter)
+
+The `Open` version is the base on top of which `EE` version is built. `EE` is in
+fact an overlay on top of `Open`, it re-uses some of its components.
+
+### Complexity vs. code re-use
+It is crucial to understand that the more generalised the AR repositories
+are, the more complicated they will become. Increased complexity will result in
+people making mistakes and/or situations where complex rules are violated in
+favour of development speed and thus copypasting code. It's all about striking
+the right balance so sometimes code *is* duplicated between repositories in order
+to make it easier for contributors to work with repositories.
+
+### Nginx includes
+All AR code, both Lua and non-Lua, can be divided into following groups:
+
+ * common code for masters and agents, both EE and Open
+ * agent-specific code, both EE and Open
+ * master-specific code, both EE and Open
+ * Open-specific code, both agent and master
+ * EE-specific code, both agent and master
+ * EE agent specific code
+ * EE master specific code
+ * Open agent specific code
+ * Open master specific code
+
+on top of that, Nginx-specific configuration is divided into three sections:
+
+ * main
+ * http
+ * server
+
+This gives us in total 27 possible "buckets" for Nginx directives. The
+differentiation between sections could be avoided if we decide to use some more
+advanced templating but this would further complicate configuration and
+make it more difficult for people to test, and develop AR on live clusters.
+
+Directly from it, stems the idea how the NGINX includes can be structured:
+
+* open:
+
+```
+includes
+├── http
+│   ├── agent.conf
+│   ├── common.conf
+│   ├── master.conf
+│   └── open
+│       ├── common.conf
+│       └── master.conf
+├── main
+│   ├── common.conf
+│   └── open
+│       └── common.conf
+├── server
+│   ├── common.conf
+│   ├── master.conf
+│   └── open
+│       ├── agent.conf
+│       └── master.conf
+├── snakeoil.crt
+└── snakeoil.key
+```
+
+* ee:
+
+```
+includes
+├── http
+│   └── ee
+│       ├── common.conf
+│       └── master.conf
+├── main
+│   └── ee
+│       └── common.conf
+└── server
+    └── ee
+        ├── agent.conf
+        ├── common.conf
+        └── master.conf
+```
+
+All Nginx related configuration directives reside in the `includes` directory which
+contains directories reflecting all the sections present in NGINX configuration
+(http|main|server). Because they are always present, no
+matter the flavour/server type, they are chosen as top-level directories
+in the `includes` dir. The `common.conf`, `agent.conf` and `master.conf`
+files are flavour-agnostic thus they reside in each section's main dir
+and are present/included only in the Open AR repository. EE repository re-uses them
+after being applied on top of the Open repository. Contents of each of the
+files are as follows:
+ * `common.conf` contains all the things that are common across all flavours
+   and server types for given section
+ * `agent.conf` contains all the things that are common for all agents across
+   all flavours
+ * `master.conf` contains all the things that are common for all masters across
+   all flavours
+
+Each section can have either `ee` or `open` directories, but never both. `ee`
+directory is only present in EE repo, Open repository contains only `open` directories.
+Contents of these directories may be as follows:
+ * `common.conf` contains all the things that are common for given flavour, no
+   matter the server type
+ * `agent.conf` contains all the things that are common for agents in given
+   flavour
+ * `master.conf` contains all the things that are common for masters in given
+   flavour
+
+The order of includes is for the time being hard-coded in nginx.\*.conf files.
+Within particular section though it does not matter that much as:
+ * [nginx by default orders the imports while globbing](https://serverfault.com/questions/361134/nginx-includes-config-files-not-in-order)
+ * location blocks *MUST NOT* rely on the order in which they appear
+   in the config file and define matching rules precise enough to avoid ambiguity.
+
+All the includes are bound together by `nginx.(master|agent).conf` files.
+`nginx.master.conf` for `Open` master looks like at the time of writing:
+```
+include includes/main/common.conf;
+include includes/main/open/common.conf;
+
+http {
+    include includes/http/common.conf;
+    include includes/http/master.conf;
+    include includes/http/open/common.conf;
+    include includes/http/open/master.conf;
+
+    server {
+        server_name master.mesos leader.mesos;
+
+        include includes/server/common.conf;
+        include includes/server/master.conf;
+        include includes/server/open/master.conf;
+
+        include /opt/mesosphere/etc/adminrouter-listen-open.conf;
+        include /opt/mesosphere/etc/adminrouter-upstreams-open.conf;
+        include /opt/mesosphere/etc/adminrouter-tls.conf;
+    }
+}
+```
+and for the agent:
+```
+include includes/main/common.conf;
+include includes/main/open/common.conf;
+
+http {
+    include includes/http/common.conf;
+    include includes/http/agent.conf;
+    include includes/http/open/common.conf;
+
+    server {
+        server_name agent.mesos;
+
+        include includes/server/common.conf;
+        include includes/server/open/agent.conf;
+
+        include /opt/mesosphere/etc/adminrouter-listen-open.conf;
+        include /opt/mesosphere/etc/adminrouter-tls.conf;
+    }
+}
+```
+
+### Enforcing code reuse
+The EE repository contains only EE directories, all common/agent-common/master-common
+code resides in Open repository. This way EE repository becomes an overlay on
+top of Open. Only `nginx.(master|agent).conf` are overwritten while applying EE
+repository on top of Open during DC/OS image build. EE DC/OS image build scripts
+remove all open directories from the Open repository before applying EE repository on
+top of it.
+
+This is not a bulletproof solution for preventing code
+duplication (developers can simply start putting copies of code to both
+`open/` and `ee/` directories) but it makes it easier to reuse the
+code and encourages good behaviours.
+
+### Lua code deduplication
+It is not strictly required to provide the same level of flexibility for Lua code
+as it is the case for Nginx includes and thus it's possible to simplify the code
+a bit. It is sufficient to just differentiate Lua code basing on the repository flavour.
+Both agents and masters can share the same Lua code.
+
+There are two possible reasons that may be preventing Lua code from being
+shared:
+* the same code is executed but with different call arguments. An example to
+  this may be `auth.validate_jwt_or_exit()` function. In the Open it takes no arguments,
+  in EE it takes more than one.
+* the code differs between EE and open but shares some common libraries/functions.
+  Great example for this is `auth.check_acl_or_exit()` which internally, among
+  many other things, calls argument-less `auth.check_jwt_or_exit()`.
+
+In order to address these issues, a couple of patterns were selected:
+ * modules which have flavour-specific function arguments export argument-less
+   functions for the NGINX configuration. They translate the original call into
+   a call with correct arguments. This approach requires splitting the module into
+   `ee.lua|open.lua|common.lua` parts which is described in next bullet point.
+   Depending on the flavour, either `ee.lua` or `open.lua` is imported and correct
+   argument-less function is used. This approach also enables to share some of
+   the NGINX `location` blocks between flavours - `location` code is the same,
+   even though the Lua code used by the block differs.
+ * some libraries/functions are structured in a way that extracts parts common for
+   both flavours and `ee/open` parts that are included only in EE and Open repos
+   respectively. An example of this approach is auth library which is splitted
+   into three parts:
+    * `lib/auth/common.lua` - present only in Open repository, with functions
+      shared by both EE and Open code.
+    * `lib/auth/ee.lua` - present only in EE repository, with functions specific
+      to EE that use boilerplate from lib/auth/common.lua.
+    * `lib/auth/open.lua` - as above but for Open repository.
+   `init_by_lua` OpenResty call in `includes/http/(open|ee)/common.conf` imports
+   `auth.open` or `auth.ee` modules as auth respectively.  The module is registered in
+   the global namespace so all other Lua code uses it. This approach also allows
+   for some degree of code separation enforcement as Open lua libs are removed
+   during EE repository apply.
+
+A special case of the "same code path, different call arguments"
+problem is when a module needs to be initialized differently depending
+on the flavour. A great example of it is `cache.lua` module which in Open
+does not require any extra authentication data. To solve it, modules are
+required to provide `.init()` function which is returned by require
+`<module-name>` statement. The init function accepts arguments which
+reconfigure module instance according to the flavour requirements.
+
+Modules that do not require any customization in regards of flavour are left
+as-is/usually do not follow any of these patterns. It is possible to standardise
+it, but it does not seem to be justified. For example:
+ * `util.lua` directly exposes its functions as they are stateless and shared
+   between both flavours
+ * `lib/auth/open.lua` uses the `.init()` pattern in order to achive different
+   behaviour depending on the flavour.
+
 ## Service Endpoints
 
 Admin Router allows Marathon tasks to define custom service UI and HTTP endpoints, which are made available via `<dcos-cluster>/service/<service-name>`. This can be achieved by setting the following Marathon task labels:
