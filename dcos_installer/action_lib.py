@@ -302,7 +302,7 @@ def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, asy
 # Run the DC/OS diagnostic script for up to 15 minutes (900 seconds) to ensure
 # we do not return ERROR on a cluster that hasn't fully achieved quorum.
 T=900
-until OUT=$(sudo /opt/mesosphere/bin/./3dt -diag) || [[ T -eq 0 ]]; do
+until OUT=$(sudo /opt/mesosphere/bin/./3dt --diag) || [[ T -eq 0 ]]; do
     sleep 1
     let T=T-1
 done
