@@ -1,7 +1,13 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
-from generic_test_code.common import assert_endpoint_response
-from util import SearchCriteria
+import pytest
+import requests
+
+from generic_test_code.common import (
+    assert_endpoint_response,
+    overriden_file_content,
+)
+from util import GuardedSubprocess, SearchCriteria
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
@@ -9,7 +15,7 @@ EXHIBITOR_PATH = "/exhibitor/foo/bar"
 class TestAuthzIAMBackendQuery:
     def test_if_iam_broken_resp_code_is_handled(
             self,
-            master_ar_process,
+            master_ar_process_perclass,
             valid_user_header,
             mocker,
             ):
@@ -25,7 +31,7 @@ class TestAuthzIAMBackendQuery:
                 SearchCriteria(1, True),
             }
         assert_endpoint_response(
-            master_ar_process,
+            master_ar_process_perclass,
             EXHIBITOR_PATH,
             500,
             assert_stderr=log_messages,
@@ -36,7 +42,7 @@ class TestAuthzIAMBackendQuery:
 class TestAuthnJWTValidatorOpen:
     def test_forged_auth_token(
             self,
-            master_ar_process,
+            master_ar_process_perclass,
             forged_user_header,
             ):
         # Different validators emit different log messages, so we create two
@@ -48,9 +54,44 @@ class TestAuthnJWTValidatorOpen:
             }
 
         assert_endpoint_response(
-            master_ar_process,
+            master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
             assert_stderr=log_messages,
             headers=forged_user_header,
             )
+
+
+class TestOauthLoginIntegration:
+    @pytest.mark.parametrize(
+        "oa_redir,oa_client_id,oa_cluster_id",
+        (["https://auth.dcos.io",
+          "GiVuhyheiccetcyudJooshac492341sd",
+          "fd615e91-2316-43e2-9f64-390c9256203f",
+          ],
+         ["https://test.abc.ef",
+          "dsaftq13435gssgfw342t2gwr4326uuw",
+          "bcde3e6d-a6dc-4269-abb7-252910e942f7",
+          ],
+         )
+        )
+    def test_if_login_url_works(
+            self,
+            nginx_class,
+            oa_redir,
+            oa_client_id,
+            oa_cluster_id,
+            ):
+        ar = nginx_class(
+            ouath_client_id=oa_client_id,
+            ouath_auth_redirector=oa_redir)
+        url = ar.make_url_from_path('/login?a=1&b=2')
+        expected_path = "{}/login?client={}&cluster_id={}&a=1&b=2".format(
+            oa_redir, oa_client_id, oa_cluster_id)
+
+        with overriden_file_content('/var/lib/dcos/cluster-id', oa_cluster_id):
+            with GuardedSubprocess(ar):
+                r = requests.get(url, allow_redirects=False)
+
+        assert r.status_code == 302
+        assert r.headers['Location'] == expected_path

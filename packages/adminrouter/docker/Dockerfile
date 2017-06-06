@@ -112,13 +112,20 @@ COPY cluster-id /var/lib/dcos/cluster-id
 COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
 RUN chmod -v a+x /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
+COPY plain-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/
+COPY nested-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/nest1/
+COPY plain-metadata-testfile.json \
+     dcos-version.json \
+        /opt/mesosphere/active/dcos-metadata/etc/
+COPY nested-metadata-testfile.json /opt/mesosphere/active/dcos-metadata/etc/nest1/
 
 # The contents of adminrouter-listen* files differ from the ones that are
 # shipped with DC/OS - the IP addresses Nginx binds to are limited to only
 # 127.0.0.1 instead of *. The reason for it is that some endpoints also need to
 # listen on TCP port 80 and this causes conflicts.
 COPY adminrouter-redirect-http-https.conf \
-     adminrouter-upstreams.conf \
+     adminrouter-upstreams-ee.conf \
+     adminrouter-upstreams-open.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
      adminrouter-tls.conf \
