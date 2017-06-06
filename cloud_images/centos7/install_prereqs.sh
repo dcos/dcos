@@ -9,6 +9,7 @@ sed -i -e 's/^#mirrorlist=/mirrorlist=/' -e 's/^baseurl=/#baseurl=/' /etc/yum.re
 
 echo ">>> Disabling SELinux"
 sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
+setenforce permissive
 
 echo ">>> Adjusting SSH Daemon Configuration"
 
@@ -17,10 +18,6 @@ echo -e "\nPermitRootLogin without-password" >> /etc/ssh/sshd_config
 
 sed -i '/^\s*UseDNS /d' /etc/ssh/sshd_config
 echo -e "\nUseDNS no" >> /etc/ssh/sshd_config
-
-echo ">>> Disabling IPV6"
-sysctl -w net.ipv6.conf.all.disable_ipv6=1
-sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
 echo ">>> Installing DC/OS dependencies and essential packages"
 yum -y --tolerant install perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync nfs-utils
