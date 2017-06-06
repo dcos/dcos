@@ -1,5 +1,6 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
+import copy
 import logging
 import os
 from contextlib import contextmanager
@@ -61,6 +62,38 @@ def generic_no_slash_redirect_test(ar, path):
 
     assert r.status_code == 301
     assert r.headers['Location'] == url + '/'
+
+
+def generic_response_headers_verify_test(
+        ar, auth_header, path, assert_headers=None, assert_headers_absent=None):
+    """Test if response sent by AR is correct
+
+    Helper function meant to simplify writing multiple tests testing the
+    same thing for different endpoints.
+
+    Arguments:
+        ar: Admin Router object, an instance of runner.(ee|open).Nginx
+        auth_header (dict): headers dict that contains JWT. The auth data it
+            contains is valid and the request should be accepted.
+        path (str): path for which request should be made
+        assert_headers (dict): additional headers to test where key is the
+            asserted header name and value is expected value
+        assert_headers_absent (dict): headers that *MUST NOT* be present in the
+            upstream request
+    """
+    url = ar.make_url_from_path(path)
+    resp = requests.get(url,
+                        allow_redirects=False,
+                        headers=auth_header)
+
+    assert resp.status_code == 200
+
+    if assert_headers is not None:
+        for name, value in assert_headers.items():
+            verify_header(resp.headers.items(), name, value)
+    if assert_headers_absent is not None:
+        for name in assert_headers_absent:
+            header_is_absent(resp.headers.items(), name)
 
 
 def generic_upstream_headers_verify_test(
@@ -141,16 +174,33 @@ def generic_correct_upstream_request_test(
         http_ver (str): http version string that the upstream request should be
             made with
     """
+    h = copy.deepcopy(auth_header)
+    if http_ver == 'HTTP/1.1':
+        # In case of HTTP/1.1 connections, we also need to test if Connection
+        # header is cleared.
+        h['Connection'] = 'close'
+    elif http_ver == 'websockets':
+        h['Connection'] = 'close'
+        h['Upgrade'] = 'Websockets'
+
     url = ar.make_url_from_path(given_path)
     resp = requests.get(url,
                         allow_redirects=False,
-                        headers=auth_header)
+                        headers=h)
 
     assert resp.status_code == 200
     req_data = resp.json()
     assert req_data['method'] == 'GET'
     assert req_data['path'] == expected_path
-    assert req_data['request_version'] == http_ver
+    if http_ver == 'HTTP/1.1':
+        header_is_absent(req_data['headers'], 'Connection')
+        assert req_data['request_version'] == 'HTTP/1.1'
+    elif http_ver == 'websockets':
+        verify_header(req_data['headers'], 'Connection', 'upgrade')
+        verify_header(req_data['headers'], 'Upgrade', 'Websockets')
+        assert req_data['request_version'] == 'HTTP/1.1'
+    else:
+        assert req_data['request_version'] == http_ver
 
 
 def generic_location_header_during_redirect_is_adjusted_test(
@@ -272,7 +322,23 @@ def assert_endpoint_response(
 
 @contextmanager
 def overriden_file_content(file_path, new_content=None):
-    with open(file_path, 'r+') as fh:
+    """Context manager meant to simplify static files testsing
+
+    While inside the context, file can be modified and/or modified content
+    may be injected by the context manager itself. Right after context is
+    exited, the original file contents are restored.
+
+    Arguments:
+        file_path: path the the file that should be "guarded"
+        new_content: new content for the file. If None - file contents are not
+            changed, "string" objects are translated to binary blob first,
+            assuming utf-8 encoding.
+    """
+
+    if new_content is not None and not isinstance(new_content, bytes):
+        new_content = new_content.encode('utf-8')
+
+    with open(file_path, 'rb+') as fh:
         old_content = fh.read()
         if new_content is not None:
             fh.seek(0)
@@ -281,7 +347,7 @@ def overriden_file_content(file_path, new_content=None):
 
     yield
 
-    with open(file_path, 'w') as fh:
+    with open(file_path, 'wb') as fh:
         fh.write(old_content)
 
 

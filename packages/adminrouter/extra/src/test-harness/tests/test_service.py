@@ -256,7 +256,7 @@ class TestServiceStateful:
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
-            http_ver='HTTP/1.1'
+            http_ver='websockets'
             )
 
         # Test webui_url entry with trailing slash:
@@ -278,7 +278,7 @@ class TestServiceStateful:
             valid_user_header,
             '/service/scheduler-alwaysthere/foo/bar/',
             '/foo/bar/',
-            http_ver='HTTP/1.1'
+            http_ver='websockets'
             )
 
     def test_if_broken_json_from_mesos_dns_is_handled(

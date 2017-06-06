@@ -13,42 +13,15 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_upstream_headers_verify_test,
     overriden_file_content,
+    verify_header,
 )
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 
 
-class TestLogsEndpoint:
-    def test_if_upstream_headers_are_correct(self,
-                                             master_ar_process_perclass,
-                                             valid_user_header):
-
-        accel_buff_header = {"X-Accel-Buffering": "TEST"}
-
-        req_headers = copy.deepcopy(valid_user_header)
-        req_headers.update(accel_buff_header)
-
-        generic_upstream_headers_verify_test(master_ar_process_perclass,
-                                             req_headers,
-                                             '/system/v1/logs/v1/foo/bar',
-                                             assert_headers=accel_buff_header,
-                                             )
-
-
-class TestService:
-    def test_if_websockets_conn_upgrade_is_supported(
-            self, master_ar_process_perclass, mocker, valid_user_header):
-        headers = copy.deepcopy(valid_user_header)
-        headers['Upgrade'] = 'WebSocket'
-        headers['Connection'] = 'upgrade'
-
-        generic_upstream_headers_verify_test(master_ar_process_perclass,
-                                             headers,
-                                             '/service/scheduler-alwaysthere/foo/bar/',
-                                             assert_headers=headers,
-                                             )
-
+class TestServiceEndpoint:
+    # Majority of /service endpoint tests are done with generic tests framework
     def test_if_accept_encoding_header_is_removed_from_upstream_request(
             self, master_ar_process_perclass, mocker, valid_user_header):
         headers = copy.deepcopy(valid_user_header)
@@ -59,6 +32,35 @@ class TestService:
                                              '/service/scheduler-alwaysthere/foo/bar/',
                                              assert_headers_absent=["Accept-Encoding"],
                                              )
+
+
+class TestAgentEndpoint:
+    # Tests for /agent endpoint routing are done in test_cache.py
+    def test_if_accept_encoding_header_is_removed_from_upstream_request(
+            self, master_ar_process_perclass, mocker, valid_user_header):
+        headers = copy.deepcopy(valid_user_header)
+        headers['Accept-Encoding'] = 'gzip'
+
+        generic_upstream_headers_verify_test(master_ar_process_perclass,
+                                             headers,
+                                             '/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/',
+                                             assert_headers_absent=["Accept-Encoding"],
+                                             )
+
+
+class TestSystemAgentEndpoint:
+    # Tests for /agent endpoint routing are done in test_cache.py
+    def test_if_accept_encoding_header_is_removed_from_upstream_request(
+            self, master_ar_process_perclass, mocker, valid_user_header):
+        headers = copy.deepcopy(valid_user_header)
+        headers['Accept-Encoding'] = 'gzip'
+
+        generic_upstream_headers_verify_test(
+            master_ar_process_perclass,
+            headers,
+            '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1',
+            assert_headers_absent=["Accept-Encoding"],
+            )
 
 
 class TestHistoryServiceRouting:
@@ -277,3 +279,68 @@ class TestMetadata:
         assert resp.status_code == 200
         resp_data = resp.json()
         assert resp_data['PUBLIC_IPV4'] == "127.0.0.1"
+
+
+class TestUiRoot:
+    @pytest.mark.parametrize("uniq_content", ["(｡◕‿‿◕｡)", "plain text 1234"])
+    @pytest.mark.parametrize("path", ["plain-ui-testfile.html",
+                                      "nest1/nested-ui-testfile.html"])
+    def test_if_ui_files_are_handled(
+            self,
+            master_ar_process_perclass,
+            valid_user_header,
+            uniq_content,
+            path):
+
+        url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
+                uniq_content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp.encoding = 'utf-8'
+        assert resp.text == uniq_content
+        verify_header(resp.headers.items(), 'X-Frame-Options', 'DENY')
+
+
+class TestMisc:
+    @pytest.mark.parametrize("content", ["{'data': '1234'}", "{'data': 'abcd'}"])
+    def test_if_buildinfo_is_served(
+            self, master_ar_process_perclass, valid_user_header, content):
+        url = master_ar_process_perclass.make_url_from_path(
+            '/pkgpanda/active.buildinfo.full.json')
+
+        with overriden_file_content(
+                '/opt/mesosphere/active.buildinfo.full.json',
+                content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header
+                )
+
+        assert resp.status_code == 200
+        assert resp.text == content
+
+    @pytest.mark.parametrize("content", ["{'data': '1234'}", "{'data': 'abcd'}"])
+    def test_if_dcos_metadata_is_served(
+            self, master_ar_process_perclass, valid_user_header, content):
+        url = master_ar_process_perclass.make_url_from_path(
+            '/dcos-metadata/dcos-version.json')
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-metadata/etc/dcos-version.json',
+                content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header
+                )
+
+        assert resp.status_code == 200
+        assert resp.text == content
