@@ -519,6 +519,97 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc/dcos-3dt-runner-config.json
+    content: |
+      {
+        "cluster_checks": {},
+        "node_checks": {
+          "checks": {
+            "components_health_master": {
+              "description": "Validate all components are healthy on the node. Using 3dt HTTP",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "--role", "master", "components"],
+              "timeout": "3s",
+              "roles": ["master"]
+            },
+            "components_health_agent": {
+              "description": "Validate all components are healthy on the node. Using 3dt HTTP",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "--role", "agent", "components", "--port", "61001"],
+              "timeout": "3s",
+              "roles": ["agent"]
+            },
+            "executable_xz": {
+              "description": "find if xz is available",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "executable", "xz"],
+              "timeout": "1s"
+            },
+            "executable_tar": {
+              "description": "find if tar is available",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "executable", "tar"],
+              "timeout": "1s"
+            },
+            "executable_curl": {
+              "description": "find if curl is available",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "executable", "curl"],
+              "timeout": "1s"
+            },
+            "executable_unzip": {
+              "description": "find if unzip is available",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "executable", "unzip"],
+              "timeout": "1s"
+            },
+            "check_ip": {
+              "description": "validate detect_ip script output",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "ip"],
+              "timeout": "1s"
+            },
+            "check_mesos_replog_synchronized_master": {
+              "description": "check if mesos replog is synchronized",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "--role", "master", "mesos-metrics"],
+              "timeout": "1s",
+              "roles": ["master"]
+            },
+            "check_mesos_agent_registered_with_masters": {
+              "description": "check if the Mesos agent has registered with the masters",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "--role", "agent", "mesos-metrics"],
+              "timeout": "1s",
+              "roles": ["agent"]
+            },
+{% switch check_time %}
+{% case "true" %}
+            "check_clock_sync": {
+              "description": "check if system clock is synced",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "time"],
+              "timeout": "1s"
+            },
+{% case "false" %}
+{% endswitch %}
+            "check_zk_quorum_master": {
+              "description": "check zookeper quorum",
+              "cmd": ["/opt/mesosphere/bin/dcos-checks", "--role", "master", "zk-quorum"],
+              "timeout": "3s",
+              "roles": ["master"]
+            }
+          },
+          "prestart": [],
+          "poststart": [
+            "components_health_master",
+            "components_health_agent",
+            "executable_xz",
+            "executable_tar",
+            "executable_curl",
+            "executable_unzip",
+            "check_ip",
+            "check_mesos_replog_synchronized_master",
+            "check_mesos_agent_registered_with_masters",
+{% switch check_time %}
+{% case "true" %}
+            "check_clock_sync",
+{% case "false" %}
+{% endswitch %}
+            "check_zk_quorum_master"
+          ]
+        }
+      }
   - path: /etc/dcos-3dt.env
     content: |
       DCOS_3DT_CONFIG_PATH=/opt/mesosphere/etc/dcos-3dt-config.json
