@@ -134,7 +134,17 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
             redirect_target = ctx.data['redirect_target']
 
             do_always_stall = ctx.data['always_stall']
+            response_headers = ctx.data['response_headers']
             stall_time = ctx.data['stall_time']
+
+        for h in response_headers:
+            msg_fmt = "Endpoint `%s` adding headers `%s` as requested"
+            log.debug(msg_fmt, ctx.data['endpoint_id'], response_headers)
+            self._finalize_request(200,
+                                   'text/plain; charset=utf-8',
+                                   blob,
+                                   extra_headers=response_headers)
+            return True
 
         if do_always_stall:
             msg_fmt = "Endpoint `%s` waiting `%f` seconds as requested"

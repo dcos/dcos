@@ -92,6 +92,7 @@ class Endpoint(abc.ABC):
                         "always_redirect": False,
                         "redirect_target": None,
                         "always_stall": False,
+                        "response_headers": {},
                         "stall_time": 0,
                         }
         self._context = EndpointContext(initial_data)
@@ -137,6 +138,15 @@ class Endpoint(abc.ABC):
 
             self._context.data["always_redirect"] = False
             self._context.data["redirect_target"] = None
+
+    def set_response_headers(self, aux_data):
+        """Make endpoint sent custom headers in the response
+
+        Args:
+            aux_data: a dict with header's name/content as keys/vals
+        """
+        with self._context.lock:
+            self._context.data["response_headers"].update(aux_data)
 
     def always_stall(self, aux_data=None):
         """Make endpoint always wait given time before answering the request

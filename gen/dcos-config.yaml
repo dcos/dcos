@@ -132,6 +132,30 @@ package:
         "name": "dummy",
         "type": "bridge"
       }
+  - path: /etc/dcos/network/cni/ucr-default-bridge.cni
+    content: |
+      {
+        "name": "mesos-bridge",
+        "type" : "mesos-cni-port-mapper",
+        "excludeDevices" : ["ucr-br0"],
+        "chain": "UCR-DEFAULT-BRIDGE",
+        "delegate": {
+          "type": "bridge",
+          "bridge": "ucr-br0",
+          "isDefaultGateway": true,
+          "forceAddress": false,
+          "ipMasq": true,
+          "hairpinMode": true,
+          "ipam": {
+            "type": "host-local",
+            "subnet": "{{ dcos_ucr_default_bridge_subnet }}",
+            "routes": [
+            { "dst":
+              "0.0.0.0/0" }
+            ]
+          }
+        }
+      }
   - path: /etc/overlay/config/agent.json
     content: |
       {
@@ -391,7 +415,7 @@ package:
       MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
-      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_WORK_DIR=/var/lib/mesos/slave
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
@@ -894,13 +918,19 @@ package:
   - path: /etc_master/dcos-history.env
     content: |
       STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
+  - path: /etc_master/adminrouter-upstreams-open.conf
+    content: |
+      # Just for compatibility/uniformity with EE:
+      set $adminrouter_agent_port 61001;
+      set $upstream_cosmos http://127.0.0.1:7070;
+      set $upstream_mesos http://leader.mesos:5050;
   - path: /etc_master/adminrouter-listen-open.conf
     content: |
       listen 80 default_server;
       listen 443 ssl default_server;
 
-      ssl_certificate common/snakeoil.crt;
-      ssl_certificate_key common/snakeoil.key;
+      ssl_certificate includes/snakeoil.crt;
+      ssl_certificate_key includes/snakeoil.key;
   - path: /etc/adminrouter-tls.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf

@@ -651,7 +651,7 @@ class NginxBase(ManagedSubprocess):
            basing on how the instance was configured
         """
         self._set_ar_env_from_val('ADMINROUTER_ACTIVATE_AUTH_MODULE',
-                                  str(auth_enabled).lower())
+                                  auth_enabled.lower())
         self._set_ar_env_from_val('DEFAULT_SCHEME', default_scheme)
         self._set_ar_env_from_val('UPSTREAM_MESOS', upstream_mesos)
         self._set_ar_env_from_val('HOST_IP', host_ip)
@@ -670,7 +670,7 @@ class NginxBase(ManagedSubprocess):
         self._set_ar_env_from_environment('AUTH_ERROR_PAGE_DIR_PATH')
 
     def __init__(self,
-                 auth_enabled=True,
+                 auth_enabled='True',
                  default_scheme="http://",
                  upstream_mesos="http://127.0.0.2:5050",
                  host_ip="127.0.0.2",
@@ -692,7 +692,7 @@ class NginxBase(ManagedSubprocess):
                 AR master or AR agent.
             log_catcher (object: LogCatcher()): a LogCatcher instance that is
                 going to be used by the mock to store captured messages.
-            auth_enabled (bool): translates to `ADMINROUTER_ACTIVATE_AUTH_MODULE`
+            auth_enabled (str): translates to `ADMINROUTER_ACTIVATE_AUTH_MODULE`
                 env var
             default_scheme (str),
             upstream_mesos (str),

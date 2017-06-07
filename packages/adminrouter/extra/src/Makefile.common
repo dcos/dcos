@@ -97,7 +97,7 @@ test: clean-devkit-container devkit
  		"
 
 .PHONY: api-docs
-api-docs:
+api-docs: clean-devkit-container devkit
 	@mkdir -p $(SRC_DIR)/$(API_DOCS_DIR)
 	@for prefix in nginx.master nginx.agent ; do \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.yaml" >&2 && \
