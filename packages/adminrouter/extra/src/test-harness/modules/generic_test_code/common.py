@@ -47,7 +47,7 @@ def ping_mesos_agent(ar,
         assert req_data['endpoint_id'] == endpoint_id
 
 
-def generic_no_slash_redirect_test(ar, path):
+def generic_no_slash_redirect_test(ar, path, code=301):
     """Test if request for location without trailing slash is redirected
 
     Helper function meant to simplify writing multiple tests testing the
@@ -56,11 +56,12 @@ def generic_no_slash_redirect_test(ar, path):
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
         path (str): path for which request should be made
+        code (int): expected http redirect code
     """
     url = ar.make_url_from_path(path)
     r = requests.get(url, allow_redirects=False)
 
-    assert r.status_code == 301
+    assert r.status_code == code
     assert r.headers['Location'] == url + '/'
 
 

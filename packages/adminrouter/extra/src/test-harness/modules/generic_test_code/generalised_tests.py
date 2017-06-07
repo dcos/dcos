@@ -123,7 +123,9 @@ def _verify_is_endpoint_redirecting_properly(t_config):
 
     assert len(t_config['locations']) > 0
     for p in t_config['locations']:
-        assert p.startswith('/')
+        _check_all_keys_are_present_in_dict(p, ['path', 'code'])
+        assert p['path'].startswith('/')
+        assert p['code'] in [301, 302, 303, 307, 308]
 
 
 def _verify_is_unauthed_access_permitted(t_config):
@@ -340,7 +342,8 @@ def _testdata_to_redirect_testdata(tests_config, node_type):
         if h['enabled'] is not True:
             continue
 
-        res.extend(h['locations'])
+        for l in h['locations']:
+            res.append((l['path'], l['code']))
 
     return res
 
@@ -375,7 +378,7 @@ def create_tests(metafunc, path):
 
     if 'redirect_path' in metafunc.fixturenames:
         args = _testdata_to_redirect_testdata(tests_config, ar_type)
-        metafunc.parametrize("redirect_path", args)
+        metafunc.parametrize("redirect_path, code", args)
         return
 
     if 'unauthed_path' in metafunc.fixturenames:
@@ -467,8 +470,11 @@ class GenericTestMasterClass:
             )
 
     def test_redirect_req_without_slash(
-            self, master_ar_process_perclass, redirect_path):
-        generic_no_slash_redirect_test(master_ar_process_perclass, redirect_path)
+            self, master_ar_process_perclass, redirect_path, code):
+        generic_no_slash_redirect_test(
+            master_ar_process_perclass,
+            redirect_path,
+            code)
 
     def test_if_unauthn_user_is_granted_access(
             self, master_ar_process_perclass, unauthed_path):
@@ -582,8 +588,11 @@ class GenericTestAgentClass:
             )
 
     def test_redirect_req_without_slash(
-            self, agent_ar_process_perclass, redirect_path):
-        generic_no_slash_redirect_test(agent_ar_process_perclass, redirect_path)
+            self, agent_ar_process_perclass, redirect_path, code):
+        generic_no_slash_redirect_test(
+            agent_ar_process_perclass,
+            redirect_path,
+            code)
 
     def test_if_unauthn_user_is_granted_access(
             self, agent_ar_process_perclass, unauthed_path):
