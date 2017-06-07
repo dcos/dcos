@@ -401,6 +401,11 @@ package:
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+{% switch has_mesos_max_completed_tasks_per_framework %}
+{% case "true" %}
+      MESOS_MAX_COMPLETED_TASKS_PER_FRAMEWORK={{ mesos_max_completed_tasks_per_framework }}
+{% case "false" %}
+{% endswitch %}
       GLOG_drop_log_memory=false
       SASL_PATH=/opt/mesosphere/lib/sasl2
   - path: /etc/mesos-master-provider
