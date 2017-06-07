@@ -877,7 +877,7 @@ package:
       LIBPROCESS_PORT=15101
 {% switch dcos_overlay_enable %}
 {% case "true" %}
-      MARATHON_CMD_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
+      MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
 {% case "false" %}
 {% endswitch %}
   - path: /etc/proxy.env
