@@ -130,7 +130,10 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-listen-agent.conf \
      adminrouter-tls.conf \
         /opt/mesosphere/etc/
+# Clean up duplicite copy of the `ca.crt` file once custom CA cert PR gets merged
+# See: DCOS-16017
 COPY ca.crt /run/dcos/pki/CA/certs/
+COPY ca.crt /run/dcos/pki/CA/ca-bundle.crt
 COPY adminrouter.crt /run/dcos/pki/tls/certs/
 COPY adminrouter.key /run/dcos/pki/tls/private/
 
