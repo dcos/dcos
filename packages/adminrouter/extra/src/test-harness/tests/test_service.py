@@ -23,6 +23,7 @@ from mocker.endpoints.mesos_dns import (
     EMPTY_SRV,
     SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT,
 )
+from util import GuardedSubprocess
 
 
 class TestServiceStateful:
@@ -553,3 +554,196 @@ class TestServiceStateful:
         assert resp.status_code == 200
         req_data = resp.json()
         assert req_data['endpoint_id'] == "https://127.0.0.4:443"
+
+    def test_if_ar_with_empty_cache_waits_for_marathon_during_service_resolve(
+            self, mocker, nginx_class, valid_user_header):
+        # Make service endpoint resolve only Marathon-related data:
+        mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='set_frameworks_response',
+            aux_data=[])
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Make Mock endpoint stall a little, make sure AR cache update timeouts
+        # are big enough to swallow it:
+        backend_request_timeout = 6
+        refresh_lock_timeout = backend_request_timeout * 2
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         cache_backend_request_timeout=backend_request_timeout,
+                         cache_refresh_lock_timeout=refresh_lock_timeout,
+                         )
+        url = ar.make_url_from_path("/service/scheduler-alwaysthere/")
+
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='always_stall',
+                            aux_data=backend_request_timeout * 0.5)
+
+        # Measure the time it took and the results:
+        with GuardedSubprocess(ar):
+            t_start = time.time()
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=valid_user_header)
+
+        t_spent = time.time() - t_start
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.1:16000'
+
+        # If AR waits for cache during resolve, then time spent should be
+        # greater than the stall time that has been set. Due to the fact
+        # that update coroutines are not separated yet, this will be
+        # slightly higher than: 2 * (backend_request_timeout * 0.5)
+        # as we have two calls to Marathon (svcapps + marathon leader) from
+        # the cache code.
+        assert t_spent > 2 * (backend_request_timeout * 0.5)
+
+    def test_if_ar_with_empty_cache_waits_for_mesos_during_service_resolve(
+            self, mocker, nginx_class, valid_user_header):
+        # Make service endpoint resolve only Mesos-related data:
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data={"apps": []})
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Make Mock endpoint stall a little, make sure AR cache update timeouts
+        # are big enough to swallow it:
+        backend_request_timeout = 6
+        refresh_lock_timeout = backend_request_timeout * 2
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         cache_backend_request_timeout=backend_request_timeout,
+                         cache_refresh_lock_timeout=refresh_lock_timeout,
+                         )
+        url = ar.make_url_from_path("/service/scheduler-alwaysthere/")
+
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='always_stall',
+                            aux_data=backend_request_timeout * 0.5)
+
+        # Measure the time it took and the results:
+        with GuardedSubprocess(ar):
+            t_start = time.time()
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=valid_user_header)
+
+            t_spent = time.time() - t_start
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data['endpoint_id'] == 'http://127.0.0.1:16000'
+
+        assert t_spent > backend_request_timeout * 0.5
+
+    def test_if_broken_marathon_prevents_resolving_via_mesos_state_summary(
+            self, mocker, nginx_class, valid_user_header):
+        # Bork Marathon Mock, DO NOT touch Mesos Mock:
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='always_bork',
+            aux_data=True)
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         )
+        url = ar.make_url_from_path("/service/scheduler-alwaysthere/")
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 503
+        assert '503 Service Unavailable: invalid Marathon svcapps cache' in resp.text
+
+    def test_if_broken_mesos_prevents_resolving_via_mesosdns(
+            self, mocker, nginx_class, valid_user_header):
+        # Bork Mesos Mock, Make Marathon mock respond with no apps, so that AR
+        # tries to resolve via Mesos /state-summary
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='set_apps_response',
+            aux_data={"apps": []})
+        mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='always_bork',
+            aux_data=True)
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         )
+        url = ar.make_url_from_path("/service/scheduler-alwaysthere/")
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 503
+        assert '503 Service Unavailable: invalid Mesos state cache' == resp.text.strip()
+
+    def test_if_broken_mesos_does_not_prevent_resolving_via_marathon(
+            self, mocker, nginx_class, valid_user_header):
+        # Bork Mesos Mock, Make MesosDNS mock respond with no apps, so that AR
+        # is able to resolve only via Marathon/we are certain that it resolved
+        # via Marathon.
+        mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='always_bork',
+            aux_data=True)
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8123',
+            func_name='set_srv_response',
+            aux_data=EMPTY_SRV)
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         )
+        url = ar.make_url_from_path("/service/scheduler-alwaysthere/")
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.1:16000'

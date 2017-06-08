@@ -32,6 +32,8 @@ def repo_is_ee():
     return generic_test_code.common.repo_is_ee()
 
 
+# We explicitly need dns_server_mock_s fixture here as Mock HTTP servers
+# require DNS to resolve their server_names.
 @pytest.fixture(scope='session')
 def mocker_s(repo_is_ee, syslog_mock, extra_lo_ips, dns_server_mock_s):
     """Provide a gc-ed mocker instance suitable for the repository flavour"""

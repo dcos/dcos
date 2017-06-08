@@ -809,7 +809,8 @@ class TestCacheMarathon:
             resp = requests.get(url,
                                 allow_redirects=False,
                                 headers=valid_user_header)
-            assert "cache state is invalid" in resp.content.decode('utf-8')
+            expected = "503 Service Unavailable: invalid Marathon svcapps cache"
+            assert expected == resp.content.decode('utf-8').strip()
             assert resp.status_code == 503
 
             lbf.scan_log_buffer()
