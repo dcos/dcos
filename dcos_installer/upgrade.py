@@ -96,6 +96,7 @@ echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
+dcos-shell 3dt --check post-nodestart
 """
 
 
@@ -116,7 +117,8 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
         'bootstrap_url': bootstrap_url,
         'cluster_packages': package_list,
         'installed_cluster_version': installed_cluster_version,
-        'installer_version': installer_version})
+        'installer_version': installer_version,
+        'dcos_check_runner_config_path': gen_out.arguments['dcos_check_runner_config_path']})
 
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
 
