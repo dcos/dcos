@@ -757,6 +757,7 @@ entry = {
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
+        'dcos_check_runner_config_path': '/opt/mesosphere/etc/dcos-3dt-runner-config.json',
     },
     'conditional': {
         'master_discovery': {
