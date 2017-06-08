@@ -1,3 +1,4 @@
+
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import time
@@ -651,7 +652,7 @@ class TestServiceStateful:
             t_spent = time.time() - t_start
             assert resp.status_code == 200
             data = resp.json()
-            assert data['endpoint_id'] == 'http://127.0.0.1:16000'
+            data['endpoint_id'] == 'http://127.0.0.15:16001'
 
         assert t_spent > backend_request_timeout * 0.5
 
