@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/master/dcos-checks.git",
+    "git": "https://github.com/dcos/dcos-checks.git",
     "ref": "43ee536d256959e202ceda988422255433ea25bf",
     "ref_origin": "master"
   },
