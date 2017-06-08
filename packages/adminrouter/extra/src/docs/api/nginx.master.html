@@ -765,31 +765,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>http://$backend/capabilities</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Server:
-                </td>
-                <td>
-                  <code>127.0.0.1:7070</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  DC/OS Package Manager (Cosmos)
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                  <code>$upstream_cosmos</code>
                 </td>
               </tr>
             </table>
@@ -818,34 +794,52 @@
             <table>
               <tr>
                 <td>
-                  Path:
+                  Rewrite:
                 </td>
                 <td>
-                  <code>http://$backend/service/</code>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/cosmos/(.*)</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
               <tr>
                 <td>
-                  Server:
+                  Proxy:
                 </td>
                 <td>
-                  <code>127.0.0.1:7070</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  DC/OS Package Manager (Cosmos)
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>$upstream_cosmos</code>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
             </table>
@@ -1112,6 +1106,39 @@
             <table>
               <tr>
                 <td>
+                  Rewrite:
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/cache/(.*)</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td>
                   Proxy:
                 </td>
                 <td>
@@ -1121,31 +1148,7 @@
                         Path:
                       </td>
                       <td>
-                        <code>http://$backend/master/</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Server:
-                      </td>
-                      <td>
-                        <code>leader.mesos:5050</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Backend:
-                      </td>
-                      <td>
-                        Apache Mesos
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        API Reference:
-                      </td>
-                      <td>
-                        <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                        <code>$upstream_mesos</code>
                       </td>
                     </tr>
                   </table>
@@ -1174,34 +1177,52 @@
             <table>
               <tr>
                 <td>
-                  Path:
+                  Rewrite:
                 </td>
                 <td>
-                  <code>http://$backend/</code>
+                  <table>
+                    <tr>
+                      <td>
+                        Regex:
+                      </td>
+                      <td>
+                        <code>^/mesos/(.*)</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Replacement:
+                      </td>
+                      <td>
+                        <code>/$1</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        Type:
+                      </td>
+                      <td>
+                        <code>break</code>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
               <tr>
                 <td>
-                  Server:
+                  Proxy:
                 </td>
                 <td>
-                  <code>leader.mesos:5050</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  Apache Mesos
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://mesos.apache.org/documentation/latest/endpoints/">https://mesos.apache.org/documentation/latest/endpoints/</a>
+                  <table>
+                    <tr>
+                      <td>
+                        Path:
+                      </td>
+                      <td>
+                        <code>$upstream_mesos</code>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
             </table>
@@ -1224,6 +1245,7 @@
               <span class="route-type">Proxy</span>
               <span class="route-path"><code>/mesos_dns/</code></span>
             </h3>
+            <span class="route-desc">Domain-based service discovery</span>
           </div>
           <div class="route-meta" style="display:none">
             <table>
@@ -1240,7 +1262,7 @@
                   Server:
                 </td>
                 <td>
-                  <code>master.mesos:8123</code>
+                  <code>127.0.0.1:8123</code>
                 </td>
               </tr>
               <tr>
@@ -1461,7 +1483,7 @@
                   Server:
                 </td>
                 <td>
-                  <code>master.mesos:8123</code>
+                  <code>127.0.0.1:8123</code>
                 </td>
               </tr>
               <tr>
@@ -1509,31 +1531,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>http://$backend/package/</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Server:
-                </td>
-                <td>
-                  <code>127.0.0.1:7070</code>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Backend:
-                </td>
-                <td>
-                  DC/OS Package Manager (Cosmos)
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  API Reference:
-                </td>
-                <td>
-                  <a href="https://dcos.io/docs/1.9/usage/managing-services/package-api/">https://dcos.io/docs/1.9/usage/managing-services/package-api/</a>
+                  <code>$upstream_cosmos</code>
                 </td>
               </tr>
             </table>
@@ -1758,7 +1756,7 @@
                         Path:
                       </td>
                       <td>
-                        <code>$agentaddr:61001/system/v1$type$url$is_args$query_string</code>
+                        <code>$agentaddr:$adminrouter_agent_port/system/v1$type$url$is_args$query_string</code>
                       </td>
                     </tr>
                   </table>
