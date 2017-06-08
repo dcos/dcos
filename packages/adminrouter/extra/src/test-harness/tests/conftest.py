@@ -33,7 +33,7 @@ def repo_is_ee():
 
 
 @pytest.fixture(scope='session')
-def mocker_s(repo_is_ee, syslog_mock, extra_lo_ips):
+def mocker_s(repo_is_ee, syslog_mock, extra_lo_ips, dns_server_mock_s):
     """Provide a gc-ed mocker instance suitable for the repository flavour"""
     if repo_is_ee:
         from mocker.ee import Mocker
