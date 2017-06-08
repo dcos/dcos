@@ -1,9 +1,9 @@
 {
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/amitaekbote/dcos-checks.git",
-    "ref": "db88542854dd7eccc67daead7b52183641f804d8",
-    "ref_origin": "zk_test"
+    "git": "https://github.com/dcos/dcos-checks.git",
+    "ref": "43ee536d256959e202ceda988422255433ea25bf",
+    "ref_origin": "master"
   },
   "state_directory": true,
   "username": "dcos_3dt",
