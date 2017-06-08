@@ -146,10 +146,6 @@ routes:
     description: Redirect to add trailing slash
     visibility: hidden
     deprecated: Use `/service/marathon/`
-    rewrites:
-      - regex: ^/marathon$
-        replacement: /service/marathon/
-        type: last
     path: /marathon
   /marathon/:
     group: Marathon
