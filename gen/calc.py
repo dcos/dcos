@@ -588,6 +588,26 @@ def validate_dns_forward_zones(dns_forward_zones):
             validate_int_in_range(port, 1, 65535)
 
 
+def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
+    if gpus_are_scarce == 'true':
+        return 'gpus'
+    return ''
+
+
+def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    return calculate_set(mesos_max_completed_tasks_per_framework)
+
+
+def validate_mesos_max_completed_tasks_per_framework(
+        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
+    if has_mesos_max_completed_tasks_per_framework == 'true':
+        try:
+            int(mesos_max_completed_tasks_per_framework)
+        except ValueError as ex:
+            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                                 "parameter as an integer: {}".format(ex)) from ex
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -634,6 +654,8 @@ entry = {
         validate_cosmos_config,
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
+        lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_tasks_per_framework
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -663,6 +685,7 @@ entry = {
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
+        'mesos_max_completed_tasks_per_framework': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -714,7 +737,8 @@ entry = {
         'cluster_docker_credentials_write_to_etc': 'false',
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
-        'cosmos_config': '{}'
+        'cosmos_config': '{}',
+        'gpus_are_scarce': 'true'
     },
     'must': {
         'custom_auth': 'false',
@@ -741,6 +765,7 @@ entry = {
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
+        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
@@ -757,6 +782,7 @@ entry = {
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
+        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
     },
     'conditional': {
         'master_discovery': {
