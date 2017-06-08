@@ -34,8 +34,8 @@ Use `make check-api-docs` to validate that the YAML and HTML files are up to dat
 ## Repository structure
 
 There are two Admin Router "flavours" residing in DC/OS repos:
-  * [Opensource version or `Open` in short](https://github.com/dcos/dcos/tree/master/packages/adminrouter)
-  * [Enterprise version or `EE` in short](https://github.com/mesosphere/dcos-enterprise/tree/master/packages/adminrouter)
+  * Opensource version or `Open` in short
+  * Enterprise version or `EE` in short
 
 The `Open` version is the base on top of which `EE` version is built. `EE` is in
 fact an overlay on top of `Open`, it re-uses some of its components.
