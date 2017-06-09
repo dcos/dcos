@@ -48,7 +48,7 @@ from subprocess import CalledProcessError
 from typing import Callable, List
 
 import retrying
-from retrying import retry, RetryError
+from retrying import retry
 from teamcity.messages import TeamcityServiceMessages
 
 import test_util.aws
@@ -479,21 +479,17 @@ class VpcClusterUpgradeTest:
                 for host in hosts:
                     logging.info('Upgrading {}: {}'.format(role_name, repr(host)))
                     with cluster.ssher.tunnel(host) as tunnel:
-                        self.upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
-
-                        wait_metric = {
-                            'master': 'registrar/log/recovered',
-                            'slave': 'slave/registered',
-                            'slave_public': 'slave/registered',
-                        }[role]
-                        logging.info('Waiting for {} to rejoin the cluster...'.format(role_name))
                         try:
-                            self.wait_for_mesos_metric(cluster, host, wait_metric, 1)
-                        except RetryError as exc:
-                            raise Exception(
-                                'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.
-                                format(role_name, repr(host))
-                            ) from exc
+                            self.upgrade_host(tunnel, role, bootstrap_url, upgrade_script_path)
+                        except CalledProcessError as e:
+                            returncode = e.returncode
+                            if returncode != 0:
+                                raise Exception(
+                                    'Timed out waiting for {} to rejoin the cluster after upgrade: {}'.
+                                    format(role_name, repr(host))
+                                )
+                            else:
+                                raise Exception("Dont know whats going on here")
 
     def run_test(self) -> int:
         stack_suffix = os.getenv("CF_STACK_NAME_SUFFIX", "open-upgrade")

@@ -101,11 +101,13 @@ while [[ $(date -u +%s) -le $end ]]
 do
   if dcos-shell 3dt check --check-config {{ dcos_check_runner_config_path }} node-poststart > /dev/null; then
      echo "Node checks passed"
-     break
+     exit 0
   fi
   echo "Waiting for node checks to pass"
   sleep 5
 done
+
+exit 1
 
 """
 
