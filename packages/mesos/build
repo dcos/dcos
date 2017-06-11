@@ -13,6 +13,7 @@ LIBS="-lssl -lcrypto" LDFLAGS="-L/opt/mesosphere/active/openssl/lib" "/pkg/src/m
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
+  --enable-xfs-disk-isolator \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
