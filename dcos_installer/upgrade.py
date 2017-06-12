@@ -99,7 +99,7 @@ pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 end=$(date -ud "5 minute" +%s)
 while [[ $(date -u +%s) -le $end ]]
 do
-  if dcos-shell 3dt check --check-config {{ dcos_check_runner_config_path }} node-poststart > /dev/null; then
+  if dcos-shell 3dt check --check-config {{ dcos_check_runner_config_path }} node-poststart; then
      echo "Node checks passed"
      exit 0
   fi
