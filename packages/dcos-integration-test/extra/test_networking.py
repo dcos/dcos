@@ -109,11 +109,10 @@ def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net
     failure_stack = []
     for test in setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
         cmd, origin_app, proxy_app, proxy_net = test
-        log.info('ORIGIN APP INFO')
-        log.info(wait_for_tasks_healthy(dcos_api_session, origin_app))
-        log.info('PROXY APP INFO')
+        log.info('Deploying origin app')
+        wait_for_tasks_healthy(dcos_api_session, origin_app)
+        log.info('Origin app successful, deploying proxy app..')
         proxy_info = wait_for_tasks_healthy(dcos_api_session, proxy_app)
-        log.info(proxy_info)
         proxy_task_info = proxy_info['app']['tasks'][0]
         if proxy_net == Network.USER:
             proxy_host = proxy_task_info['ipAddresses'][0]['ipAddress']
@@ -173,7 +172,7 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
 
 @retrying.retry(
     wait_fixed=5000,
-    stop_max_delay=240 * 1000,
+    stop_max_delay=360 * 1000,
     # the app monitored by this function typically takes 2 minutes when starting from
     # a fresh state, but in this case the previous app load may still be winding down,
     # so allow a larger buffer time
