@@ -371,7 +371,7 @@ function check_all() {
     if [[ $AGENT_ONLY -eq 0 ]]; then
         # master node service checks
         for service in \
-            "53 spartan" \
+            "53 dcos-net" \
             "80 adminrouter" \
             "443 adminrouter" \
             "1050 dcos-diagnostics" \
@@ -386,33 +386,29 @@ function check_all() {
             "9942 metronome" \
             "9990 cosmos" \
             "15055 dcos-history" \
-            "33107 navstar" \
             "36771 marathon" \
             "41281 zookeeper" \
-            "42819 spartan" \
-            "43911 minuteman" \
             "46839 metronome" \
             "61053 mesos-dns" \
             "61420 epmd" \
-            "61421 minuteman" \
-            "62053 spartan" \
-            "62080 navstar"
+            "62053 dcos-net" \
+            "62080 dcos-net" \
+            "62501 dcos-net" \
+            "63053 dcos-net"
         do
             check_service $service
         done
     else
         # agent / public agent node service checks
         for service in \
-            "53 spartan" \
+            "53 dcos-net" \
             "5051 mesos-agent" \
-            "34451 navstar" \
-            "39851 spartan" \
-            "43995 minuteman" \
             "61001 agent-adminrouter" \
             "61420 epmd" \
-            "61421 minuteman" \
-            "62053 spartan" \
-            "62080 navstar"
+            "62053 dcos-net" \
+            "62080 dcos-net" \
+            "62501 dcos-net" \
+            "63053 dcos-net"
         do
             check_service $service
         done

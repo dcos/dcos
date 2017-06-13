@@ -38,13 +38,10 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
-  - path: /etc/spartan-erl.env
+  - path: /etc/dcos-net-erl.env
     content: |
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
-  - path: /etc/navstar-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
-  - path: /etc_slave/spartan.json
+  - path: /etc_slave/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -54,7 +51,7 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_slave_public/spartan.json
+  - path: /etc_slave_public/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -64,7 +61,7 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_master/spartan.json
+  - path: /etc_master/dcos-dns.json
     content: |
       {
 {% switch master_dns_bindall %}
@@ -96,33 +93,48 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc_master/navstar.config.d/master.config
+  - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
-        {navstar,
+        {dcos_net,
           [
             {is_master, true}
           ]
         },
-        {navstar_l4lb,
+        {dcos_l4lb,
           [
             {agent_polling_enabled, false}
           ]
         }
       ].
-  - path: /etc/navstar.config.d/common.config
+  - path: /etc/dcos-net.config.d/common.config
     content: |
       [
-        {navstar_l4lb,
+        {dcos_dns,
           [
-            {enable_lb, {{ enable_lb }}},
-            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
-            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
+            {enable_dns, {{ dcos_dns_enable }}}
           ]
         },
-        {navstar_overlay,
+        {dcos_l4lb,
+          [
+            {enable_lb, {{ enable_lb }}},
+            {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
+            {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}}
+          ]
+        },
+        {dcos_overlay,
           [
             {enable_overlay, {{ dcos_overlay_enable }}}
+          ]
+        },
+        {dcos_rest,
+          [
+            {enable_rest, {{ dcos_net_rest_enable }}}
+          ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
@@ -498,11 +510,6 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/navstar/overrides.json
-    content: |
-      {
-        "forward_metrics": {{ minuteman_forward_metrics }}
-      }
   - path: /etc/dcos-signal-config.json
     content: |
       {

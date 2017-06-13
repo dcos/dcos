@@ -11,7 +11,7 @@ import dns.query
 
 # Constants
 MAX_SERVER_COUNT = 3
-SPARTANS = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
+DCOS_NETS = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
 
 
 if len(sys.argv) != 2:
@@ -57,17 +57,17 @@ options attempts:3
 if 'SEARCH' in os.environ:
     contents += "search {}\n".format(os.environ['SEARCH'])
 
-# Check if Spartan is up
-spartans_up = []
-for ns in SPARTANS:
+# Check if dcos-net is up
+dcos_nets_up = []
+for ns in DCOS_NETS:
     if check_server(ns):
-        spartans_up.append(ns)
+        dcos_nets_up.append(ns)
 
-if len(spartans_up) > 0:
-    for ns in spartans_up:
+if len(dcos_nets_up) > 0:
+    for ns in dcos_nets_up:
         contents += "nameserver {}\n".format(ns)
 
-# If Spartan is not up, fall back, and insert the upstreams
+# If dcos-net is not up, fall back, and insert the upstreams
 else:
     fallback_servers = []
 
