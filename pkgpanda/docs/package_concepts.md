@@ -17,12 +17,12 @@ environment variables provided by the package.
 
 pkginfo.json also stores all the sysctl requirements that are collected from buildinfo.json
 
-For e.g. `minuteman`'s pkginfo will have this information which is collected the packages buildinfo.json
+For e.g. `dcos-net`'s pkginfo will have this information which is collected the packages buildinfo.json
 
 ```bash
 {
   "sysctl": {
-      "minuteman": {
+      "dcos-net": {
           "net.netfilter.nf_conntrack_tcp_be_liberal": "1",
           "net.netfilter.ip_conntrack_tcp_be_liberal": "1",
           "net.ipv4.netfilter.ip_conntrack_tcp_be_liberal": "1"
@@ -31,7 +31,7 @@ For e.g. `minuteman`'s pkginfo will have this information which is collected the
 }
 ```
 
-* It denotes the `sysctl` required for the *service-name* `minuteman`
+* It denotes the `sysctl` required for the *service-name* `dcos-net`
 
 These configuration settings are accumulated for all packages in a file
 `/opt/mesosphere/etc/dcos-service-configuration.json`, and the dcos bootstrap process will apply these settings before
