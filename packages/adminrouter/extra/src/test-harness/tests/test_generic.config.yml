@@ -494,24 +494,24 @@ endpoint_tests:
     type:
       - master
 
-######### /navstar/lashup/key
+######### /dcos-net/lashup/key
   - tests:
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: skip
         test_paths:
-          - /navstar/lashup/key
+          - /dcos-net/lashup/key
       is_upstream_correct:
         enabled: true
         test_paths:
-          - /navstar/lashup/key
+          - /dcos-net/lashup/key
         upstream: http://127.0.0.1:62080
       is_upstream_req_ok:
         enabled: true
         expected_http_ver: HTTP/1.0
         test_paths:
           - expected: /lashup/key
-            sent: /navstar/lashup/key
+            sent: /dcos-net/lashup/key
     type:
       - master
 

@@ -97,7 +97,7 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /navstar/lashup/key
+    -- /dcos-net/lashup/key
     res.access_lashupkey_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end

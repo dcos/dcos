@@ -201,10 +201,10 @@ def test_if_overlay_ok(dcos_api_session):
 
 
 @pytest.mark.skipif(lb_enabled(), reason='Load Balancer enabled')
-def test_if_navstar_l4lb_disabled(dcos_api_session):
-    '''Test to make sure navstar_l4lb is disabled'''
+def test_if_dcos_l4lb_disabled(dcos_api_session):
+    '''Test to make sure dcos_l4lb is disabled'''
     data = check_output(['/usr/bin/env', 'ip', 'rule'])
-    # Minuteman creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
+    # dcos-net creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
     # We check it doesn't exist
     assert str(data).find('9999') == -1
 

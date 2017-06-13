@@ -1,0 +1,5 @@
+[Unit]
+Description=DC/OS Net Watchdog Timer: timer to periodically trigger DC/OS Net Watchdog
+[Timer]
+OnBootSec=5sec
+OnUnitActiveSec=2min

@@ -1,0 +1,15 @@
+[Unit]
+Description=DC/OS Networking: REST
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=15
+WorkingDirectory=/opt/mesosphere/active/dcos-net/dcos-net
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
+EnvironmentFile=-/opt/mesosphere/etc/dcos-net.env
+EnvironmentFile=-/run/dcos/etc/dcos-net_auth.env
+Environment=HOME=/opt/mesosphere
+ExecStart=/opt/mesosphere/active/dcos-net/bin/dcos-net-observer.py dcos_rest

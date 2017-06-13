@@ -61,7 +61,7 @@ class MockerBase:
         res.append(MarathonEndpoint(ip='127.0.0.2', port=8080))
         # cosmos
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=7070))
-        # navstar
+        # dcos-net
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=62080))
         # Mesos agents:
         # - plain/without TLS

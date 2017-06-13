@@ -26,7 +26,7 @@ authed_endpoints = [
     '/mesos_dns/v1/reflect/me',
     '/metadata',
     '/dcos-metadata/plain-metadata-testfile.json',
-    '/navstar/lashup/key',
+    '/dcos-net/lashup/key',
     '/package/foo/bar',
     '/pkgpanda/foo/bar',
     '/pkgpanda/active.buildinfo.full.json',

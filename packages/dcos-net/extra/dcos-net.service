@@ -1,0 +1,32 @@
+[Unit]
+Description=DC/OS Networking: A distributed systems & network overlay orchestration engine
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+LimitNOFILE=16384
+WorkingDirectory=${PKG_PATH}/dcos-net
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dns_config
+EnvironmentFile=/opt/mesosphere/etc/dns_search_config
+EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
+EnvironmentFile=-/opt/mesosphere/etc/dcos-net.env
+EnvironmentFile=-/run/dcos/etc/dcos-net_auth.env
+Environment=HOME=/opt/mesosphere
+ExecStartPre=/opt/mesosphere/bin/check-time
+ExecStartPre=-/usr/bin/env modprobe ip_vs_wlc
+ExecStartPre=/opt/mesosphere/bin/setup_iptables.sh
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-net
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/mnesia
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/navstar/lashup
+ExecStartPre=/usr/bin/env modprobe dummy
+ExecStartPre=-/usr/bin/env ip link add minuteman type dummy
+ExecStartPre=/usr/bin/env ip link set minuteman up
+ExecStartPre=-/usr/bin/env ip link add spartan type dummy
+ExecStartPre=/usr/bin/env ip link set spartan up
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.1/32 dev spartan
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.2/32 dev spartan
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.3/32 dev spartan
+ExecStart=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-env foreground
