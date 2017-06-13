@@ -1,0 +1,52 @@
+#!/bin/bash
+set -x
+
+source /opt/mesosphere/environment
+
+export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/libsodium/include"
+export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/libsodium/lib -Wl,-rpath=/opt/mesosphere/active/libsodium/lib"
+export CPPFLAGS=${CFLAGS}
+
+
+pushd /pkg/src/dcos-net
+./rebar3 update
+./rebar3 as prod release
+popd
+
+cp -r /pkg/src/dcos-net/_build/prod/rel/dcos-net ${PKG_PATH}
+
+mkdir -p $PKG_PATH/bin
+
+# Systemd
+
+dcos_net_service=${PKG_PATH}/dcos.target.wants/dcos-net.service
+mkdir -p $(dirname $dcos_net_service)
+envsubst '${PKG_PATH}' < "/pkg/extra/dcos-net.service" > "${dcos_net_service}"
+
+# Setup iptables
+
+setup_iptables="$PKG_PATH/bin/setup_iptables.sh"
+cp /pkg/extra/setup_iptables.sh "$setup_iptables"
+chmod +x "$setup_iptables"
+
+## Gen resolv
+resolvconf_service="$PKG_PATH/dcos.target.wants/dcos-gen-resolvconf.service"
+mkdir -p "$(dirname "$resolvconf_service")"
+cp /pkg/extra/dcos-gen-resolvconf.service "$resolvconf_service"
+
+resolvconf_timer="$PKG_PATH/dcos.target.wants/dcos-gen-resolvconf.timer"
+mkdir -p "$(dirname "$resolvconf_timer")"
+cp /pkg/extra/dcos-gen-resolvconf.timer "$resolvconf_timer"
+
+gen_resolvconf="$PKG_PATH/bin/gen_resolvconf.py"
+cp /pkg/extra/gen_resolvconf.py "$gen_resolvconf"
+chmod +x "$gen_resolvconf"
+
+### Watchdog
+dcos_net_watchdog_service="$PKG_PATH/dcos.target.wants/dcos-net-watchdog.service"
+mkdir -p "$(dirname "$dcos_net_watchdog_service")"
+cp /pkg/extra/dcos-net-watchdog.service "$dcos_net_watchdog_service"
+
+dcos_net_watchdog_timer="$PKG_PATH/dcos.target.wants/dcos-net-watchdog.timer"
+mkdir -p "$(dirname "$dcos_net_watchdog_timer")"
+cp /pkg/extra/dcos-net-watchdog.timer "$dcos_net_watchdog_timer"

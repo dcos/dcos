@@ -213,7 +213,7 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
                     assert marathon_addrs.host == dns_addrs.container
                     asserted = True
             if not asserted:
-                raise AssertionError("Not a valid navstar DNS combo")
+                raise AssertionError("Not a valid dcos-net DNS combo")
 
         _ensure_dns_converged()
 

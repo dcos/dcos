@@ -83,7 +83,7 @@ def syslog_mock(log_catcher):
 
 
 @pytest.fixture(scope='session')
-def dns_server_mock_s(navstar_ips, resolvconf_fixup):
+def dns_server_mock_s(dcos_net_ips, resolvconf_fixup):
     """Set-up DNS mocks, both for agent AR (port 53) and master AR (port 61053)"""
     dns_sockets = [
         ("198.51.100.1", 53),
@@ -115,8 +115,8 @@ def dns_server_mock(dns_server_mock_s):
 
 
 @pytest.fixture(scope='session')
-def navstar_ips():
-    """Setup IPs that help dns_mock mimic navstar"""
+def dcos_net_ips():
+    """Setup IPs that help dns_mock mimic dcos-net"""
     ips = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
     nflink = pyroute2.IPRoute()
 
