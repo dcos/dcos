@@ -4,6 +4,9 @@ backends:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics
     reference: 'https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint'
+  dcos_net:
+    server: '127.0.0.1:62080'
+    name: DC/OS Net
   exhibitor:
     server: '127.0.0.1:8181'
     name: Exhibitor (Zookeeper)
@@ -24,9 +27,6 @@ backends:
     server: 'unix:/run/dcos/dcos-metrics-master.sock'
     name: DC/OS Metrics
     reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
-  navstar:
-    server: '127.0.0.1:62080'
-    name: Navstar
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
@@ -246,11 +246,11 @@ routes:
       file: conf/lib/metadata.lua
     path: /metadata
   /navstar/lashup/key:
-    group: Navstar
+    group: DC/OS Net
     matcher: path
     proxy:
       path: 'http://$backend/lashup/key'
-      backend: navstar
+      backend: dcos_net
     path: /navstar/lashup/key
   /internal/mesos_dns/:
     group: Other
