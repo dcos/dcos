@@ -1,3 +1,4 @@
+import os
 from shutil import copytree
 from subprocess import check_call, check_output
 
@@ -165,6 +166,7 @@ def test_setup(tmpdir):
 
 def test_activate(tmpdir):
     repo_path = tmp_repository(tmpdir)
+    state_dir_root = tmpdir.join("package_state")
     tmpdir.join("root", "bootstrap").write("", ensure=True)
 
     # TODO(cmaloney): Depending on setup here is less than ideal, but meh.
@@ -238,6 +240,19 @@ def test_activate(tmpdir):
         "--config-dir=../resources/etc-active"]).decode().split())
 
     assert active == {"mesos--0.22.0"}
+
+    # Check that mesos--0.23.0 gets its state directory created.
+    assert not os.path.isdir(str(state_dir_root) + '/mesos')
+    assert run(["pkgpanda",
+                "activate",
+                "mesos--0.23.0",
+                "--root={0}/root".format(tmpdir),
+                "--rooted-systemd",
+                "--repository={}".format(repo_path),
+                "--config-dir=../resources/etc-active",
+                "--no-systemd",
+                "--state-dir-root={}".format(state_dir_root)]) == ""
+    assert os.path.isdir(str(state_dir_root) + '/mesos')
 
     # TODO(cmaloney): expect_fs
     # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
