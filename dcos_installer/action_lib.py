@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 def get_async_runner(config, hosts, async_delegate=None):
     # TODO(cmaloney): Delete these repeats. Use gen / expanded configuration to get all the values.
-    process_timeout = config.hacky_default_get('process_timeout', 120)
+    process_timeout = config.hacky_default_get('process_timeout', 600)
     extra_ssh_options = config.hacky_default_get('extra_ssh_options', '')
     ssh_key_path = config.hacky_default_get('ssh_key_path', SSH_KEY_PATH)
 
