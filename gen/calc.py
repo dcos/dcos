@@ -608,6 +608,100 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
+def calculate_check_config_contents(check_config):
+    return yaml.dump(check_config)
+
+
+def calculate_check_config(check_time):
+    check_config = {
+        'cluster_checks': {},
+        'node_checks': {
+            'checks': {
+                'components_master': {
+                    'description': 'All DC/OS components are healthy.',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components'],
+                    'timeout': '3s',
+                    'roles': ['master']
+                },
+                'components_agent': {
+                    'description': 'All DC/OS components are healthy',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001'],
+                    'timeout': '3s',
+                    'roles': ['agent']
+                },
+                'xz': {
+                    'description': 'The xz utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
+                    'timeout': '1s'
+                },
+                'tar': {
+                    'description': 'The tar utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
+                    'timeout': '1s'
+                },
+                'curl': {
+                    'description': 'The curl utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
+                    'timeout': '1s'
+                },
+                'unzip': {
+                    'description': 'The unzip utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
+                    'timeout': '1s'
+                },
+                'ip_detect_script': {
+                    'description': 'The IP detect script produces valid output',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
+                    'timeout': '1s'
+                },
+                'mesos_master_replog_synchronized': {
+                    'description': 'The Mesos master has synchronized its replicated log',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['master']
+                },
+                'mesos_agent_registered_with_masters': {
+                    'description': 'The Mesos agent has registered with the masters',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['agent']
+                },
+                'zookeeper_serving': {
+                    'description': 'The ZooKeeper instance is serving',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'zk-quorum'],
+                    'timeout': '3s',
+                    'roles': ['master']
+                },
+            },
+            'prestart': [],
+            'poststart': [
+                'components_master',
+                'components_agent',
+                'xz',
+                'tar',
+                'curl',
+                'unzip',
+                'ip_detect_script',
+                'mesos_master_replog_synchronized',
+                'mesos_agent_registered_with_masters',
+                'zookeeper_serving',
+            ],
+        },
+    }
+
+    if check_time == 'true':
+        # Add the clock sync check.
+        clock_sync_check_name = 'clock_sync'
+        check_config['node_checks']['checks'][clock_sync_check_name] = {
+            'description': 'System clock is in sync.',
+            'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
+            'timeout': '1s'
+        }
+        check_config['node_checks']['poststart'].append(clock_sync_check_name)
+
+    return json.dumps(check_config)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -738,7 +832,8 @@ entry = {
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
         'cosmos_config': '{}',
-        'gpus_are_scarce': 'true'
+        'gpus_are_scarce': 'true',
+        'check_config': calculate_check_config
     },
     'must': {
         'custom_auth': 'false',
@@ -782,7 +877,8 @@ entry = {
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
-        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
+        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
+        'check_config_contents': calculate_check_config_contents
     },
     'conditional': {
         'master_discovery': {
