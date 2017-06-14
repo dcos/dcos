@@ -156,7 +156,6 @@ def test_signal_service(dcos_api_session):
         'gen-resolvconf-timer',
         'navstar-service',
         'pkgpanda-api-service',
-        'pkgpanda-api-socket',
         'signal-timer',
         'spartan-service',
         'spartan-watchdog-service',

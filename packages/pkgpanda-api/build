@@ -6,10 +6,6 @@ cat <<EOF > $PKG_PATH/etc/pkgpanda-api.conf.py
 WORK_DIR = '/run/dcos/pkgpanda-api/'
 EOF
 
-systemd_socket=$PKG_PATH/dcos.target.wants/dcos-pkgpanda-api.socket
-mkdir -p $(dirname $systemd_socket)
-cp /pkg/extra/dcos-pkgpanda-api.socket $systemd_socket
-
 systemd_service=$PKG_PATH/dcos.target.wants/dcos-pkgpanda-api.service
 mkdir -p $(dirname $systemd_service)
 envsubst '${PKG_PATH}' < /pkg/extra/dcos-pkgpanda-api.service > "$systemd_service"
