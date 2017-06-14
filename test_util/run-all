@@ -33,7 +33,7 @@ else
 fi
 
 # Pin to just the right dcos-vagrant commit
-git -C dcos-vagrant checkout -qf 2b323c4c1942e3f6d484a7375e749929356a4417
+git -C dcos-vagrant checkout -qf 03de5522ba6da57b3f624fcd9985545f70a89497
 
 cp ../dcos_generate_config.sh dcos-vagrant/dcos_generate_config.sh
 
@@ -54,7 +54,7 @@ export MASTER_IP=192.168.65.90
 export DCOS_DNS_ADDRESS=http://$MASTER_IP
 export MASTER_HOSTS=192.168.65.90,192.168.65.95,192.168.65.101
 
-cp VagrantConfig.yaml.example VagrantConfig.yaml
+cp VagrantConfig-3m-6a-3p.yaml VagrantConfig.yaml
 export DCOS_INSTALL_METHOD="ssh_pull"
 export DCOS_CONFIG_PATH="etc/3_master.yaml"
 export DCOS_PRIVATE_REGISTRY="true"

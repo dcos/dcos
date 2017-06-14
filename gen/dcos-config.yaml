@@ -519,6 +519,8 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
+  - path: /etc/dcos-3dt-runner-config.json
+    content: {{ check_config_contents }}
   - path: /etc/dcos-3dt.env
     content: |
       DCOS_3DT_CONFIG_PATH=/opt/mesosphere/etc/dcos-3dt-config.json
