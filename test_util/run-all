@@ -26,14 +26,13 @@ echo "Fetching dcos-vagrant"
 # Get the dcos-vagrant
 # TODO(cmaloney): Have TeamCity do this for us.
 # If it already exists, fetch, otherwise clone
-if [ ! -d dcos-vagrant ]; then
-  git clone https://github.com/dcos/dcos-vagrant
-else
-  git -C dcos-vagrant fetch origin -t +refs/heads/*:refs/remotes/origin/*
+if [ -d dcos-vagrant ]; then
+    rm -rf dcos-vagrant
 fi
+git clone https://github.com/darkonie/dcos-vagrant
 
 # Pin to just the right dcos-vagrant commit
-git -C dcos-vagrant checkout -qf 2b323c4c1942e3f6d484a7375e749929356a4417
+git -C dcos-vagrant checkout -qf fe0f023b16619499ee1605abe3601740ee8e4fc7
 
 cp ../dcos_generate_config.sh dcos-vagrant/dcos_generate_config.sh
 
