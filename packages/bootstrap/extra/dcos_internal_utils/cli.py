@@ -69,8 +69,7 @@ bootstrappers = {
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
-    'dcos-navstar': noop,
-    'dcos-spartan': noop,
+    'dcos-net': noop,
 }
 
 
@@ -105,13 +104,13 @@ def main():
 
 def get_zookeeper_address_agent():
     if os.getenv('MASTER_SOURCE') == 'master_list':
-        # Spartan agents with static master list
+        # dcos-net agents with static master list
         with open('/opt/mesosphere/etc/master_list', 'r') as f:
             master_list = json.load(f)
         assert len(master_list) > 0
         return random.choice(master_list) + ':2181'
     elif os.getenv('EXHIBITOR_ADDRESS'):
-        # Spartan agents on AWS
+        # dcos-net agents on AWS
         return os.getenv('EXHIBITOR_ADDRESS') + ':2181'
     else:
         # any other agent service
@@ -119,7 +118,7 @@ def get_zookeeper_address_agent():
 
 
 def get_zookeeper_address():
-    # Masters use a special zk address since spartan and the like aren't up yet.
+    # Masters use a special zk address since dcos-net and the like aren't up yet.
     roles = get_roles()
     if 'master' in roles:
         return '127.0.0.1:2181'

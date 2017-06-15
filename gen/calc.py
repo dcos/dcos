@@ -433,24 +433,24 @@ def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
         "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
 
 
-def calculate_minuteman_min_named_ip_erltuple(minuteman_min_named_ip):
-    return ip_to_erltuple(minuteman_min_named_ip)
+def calculate_dcos_l4lb_min_named_ip_erltuple(dcos_l4lb_min_named_ip):
+    return ip_to_erltuple(dcos_l4lb_min_named_ip)
 
 
-def calculate_minuteman_max_named_ip_erltuple(minuteman_max_named_ip):
-    return ip_to_erltuple(minuteman_max_named_ip)
+def calculate_dcos_l4lb_max_named_ip_erltuple(dcos_l4lb_max_named_ip):
+    return ip_to_erltuple(dcos_l4lb_max_named_ip)
 
 
 def ip_to_erltuple(ip):
     return '{' + ip.replace('.', ',') + '}'
 
 
-def validate_minuteman_min_named_ip(minuteman_min_named_ip):
-    validate_ipv4_addresses([minuteman_min_named_ip])
+def validate_dcos_l4lb_min_named_ip(dcos_l4lb_min_named_ip):
+    validate_ipv4_addresses([dcos_l4lb_min_named_ip])
 
 
-def validate_minuteman_max_named_ip(minuteman_max_named_ip):
-    validate_ipv4_addresses([minuteman_max_named_ip])
+def validate_dcos_l4lb_max_named_ip(dcos_l4lb_max_named_ip):
+    validate_ipv4_addresses([dcos_l4lb_max_named_ip])
 
 
 def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
@@ -736,8 +736,8 @@ entry = {
         lambda rexray_config: validate_json_dictionary(rexray_config),
         lambda check_time: validate_true_false(check_time),
         lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
-        validate_minuteman_min_named_ip,
-        validate_minuteman_max_named_ip,
+        validate_dcos_l4lb_min_named_ip,
+        validate_dcos_l4lb_max_named_ip,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -809,8 +809,8 @@ entry = {
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
-        'minuteman_min_named_ip': '11.0.0.0',
-        'minuteman_max_named_ip': '11.255.255.255',
+        'dcos_l4lb_min_named_ip': '11.0.0.0',
+        'dcos_l4lb_max_named_ip': '11.255.255.255',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -856,9 +856,9 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'ui_telemetry_metadata': '{"openBuild": true}',
-        'minuteman_forward_metrics': 'false',
-        'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
-        'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
+        'dcos_l4lb_forward_metrics': 'false',
+        'dcos_l4lb_min_named_ip_erltuple': calculate_dcos_l4lb_min_named_ip_erltuple,
+        'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'config_yaml': calculate_config_yaml,

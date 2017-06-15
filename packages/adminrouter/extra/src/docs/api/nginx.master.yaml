@@ -1,5 +1,8 @@
 ngindox: 0.1.0
 backends:
+  dcos_net:
+    server: '127.0.0.1:62080'
+    name: DC/OS Net
   dddt:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics (3DT)
@@ -25,9 +28,6 @@ backends:
     server: 'unix:/run/dcos/dcos-metrics-master.sock'
     name: DC/OS Metrics
     reference: 'https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/'
-  navstar:
-    server: '127.0.0.1:62080'
-    name: Navstar
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
@@ -104,6 +104,13 @@ routes:
         replacement: /$1
         type: break
     path: /cosmos/service/
+  /dcos-net/lashup/key:
+    group: DC/OS Net
+    matcher: path
+    proxy:
+      path: 'http://$backend/lashup/key'
+      backend: dcos_net
+    path: /dcos-net/lashup/key
   /exhibitor:
     group: Exhibitor
     matcher: exact
@@ -234,13 +241,6 @@ routes:
     lua:
       file: conf/lib/metadata.lua
     path: /metadata
-  /navstar/lashup/key:
-    group: Navstar
-    matcher: path
-    proxy:
-      path: 'http://$backend/lashup/key'
-      backend: navstar
-    path: /navstar/lashup/key
   /internal/mesos_dns/:
     group: Other
     matcher: path

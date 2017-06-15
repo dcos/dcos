@@ -6,25 +6,24 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
 ### TCP
 
+ - 8053: dcos-net
  - 61053: dcos-mesos-dns
  - 61420: dcos-epmd
- - 61421: dcos-minuteman
- - 62053: dcos-spartan
- - 62080: dcos-navstar
- - 62501: dcos-spartan
- - 62502: dcos-navstar
- - 62503: dcos-minuteman
+ - 62053: dcos-net
+ - 62080: dcos-net
+ - 62502: dcos-net
 
 ### UDP
 
- - 62053: dcos-spartan
- - 64000: dcos-navstar
+ - 8053: dcos-net
+ - 62053: dcos-net
+ - 64000: dcos-net
 
 ## Master
 
 ### TCP
 
- - 53: dcos-spartan
+ - 53: dcos-net
  - 80: dcos-adminrouter
  - 443: dcos-adminrouter
  - 1050: dcos-3dt
@@ -44,7 +43,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
 ### UDP
 
- - 53: dcos-spartan
+ - 53: dcos-net
 
 ## Agent, Public Agent
 
