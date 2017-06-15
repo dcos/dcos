@@ -80,6 +80,7 @@ def assert_error(response, status_code, headers=None, **kwargs):
 def _set_test_config(app):
     app.config['TESTING'] = True
     app.config['DCOS_ROOT'] = resources_test_dir('install')
+    app.config['DCOS_STATE_DIR_ROOT'] = resources_test_dir('install/package_state')
     app.config['DCOS_REPO_DIR'] = resources_test_dir('packages')
 
 
@@ -165,6 +166,9 @@ def test_activate_packages(tmpdir):
         b'',
     )
     assert_json_response(client.get('/active/'), 200, new_packages)
+
+    # mesos--0.23.0 expects to have a state directory.
+    assert os.path.isdir(app.config['DCOS_STATE_DIR_ROOT'] + '/mesos')
 
     # Attempt to activate nonexistent packages.
     nonexistent_packages = [
