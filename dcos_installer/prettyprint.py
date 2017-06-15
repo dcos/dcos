@@ -2,6 +2,11 @@ import json
 import logging
 import pprint
 import re
+from typing import List
+
+from dcos_installer.check import CheckRunnerResult
+from dcos_installer.constants import CHECK_RUNNER_CMD
+
 
 log = logging.getLogger(__name__)
 
@@ -9,6 +14,10 @@ log = logging.getLogger(__name__)
 def print_header(string):
     delimiter = '====>'
     log.warning('{:5s} {:6s}'.format(delimiter, string))
+
+
+def is_check_command(cmd: List[str]):
+    return CHECK_RUNNER_CMD in ' '.join(cmd)
 
 
 class PrettyPrint():
@@ -52,14 +61,50 @@ class PrettyPrint():
             for host in hosts:
                 for ip, data in host.items():
                     log = logging.getLogger(str(ip))
-                    log.error('====> {} {}'.format(ip, status))
-                    log.debug('     CODE:\n{}'.format(data['returncode']))
-                    log.error('     TASK:\n{}'.format(' '.join(data['cmd'])))
-                    log.error('     STDERR:')
-                    self.color_preflight(host=ip, rc=data['returncode'], data_array=data['stderr'])
-                    log.error('     STDOUT:')
-                    self.color_preflight(host=ip, rc=data['returncode'], data_array=data['stdout'])
-                    log.info('')
+                    if is_check_command(data['cmd']):
+                        log.error('====> {} CHECK {}'.format(ip, status))
+                        self._print_check_result(ip, data)
+                    else:
+                        log.error('====> {} COMMAND {}'.format(ip, status))
+                        self._print_command_result(ip, data)
+
+    @classmethod
+    def _print_command_result(cls, ip, data):
+        log = logging.getLogger(str(ip))
+        log.debug('     CODE:\n{}'.format(data['returncode']))
+        log.error('     TASK:\n{}'.format(' '.join(data['cmd'])))
+        log.error('     STDERR:')
+        cls.color_preflight(host=ip, rc=data['returncode'], data_array=data['stderr'])
+        log.error('     STDOUT:')
+        cls.color_preflight(host=ip, rc=data['returncode'], data_array=data['stdout'])
+        log.info('')
+
+    @classmethod
+    def _print_check_result(cls, ip, data):
+        log = logging.getLogger(str(ip))
+
+        check_runner_response_body = '\n'.join(data['stdout'])
+        try:
+            check_runner_result = CheckRunnerResult(json.loads(check_runner_response_body))
+        except Exception as exc:
+            log.error('Failed to parse check runner response: {}'.format(exc))
+            log.error(check_runner_response_body)
+            raise
+
+        if check_runner_result.is_error:
+            log.error('     ERROR: ' + check_runner_result.error_message)
+        else:
+            log.error('     Overall status: {}'.format(check_runner_result.status_text))
+            for check_name, check_result in sorted(check_runner_result.checks.items()):
+                log.error('     {}: {}'.format(check_name, check_result.status_text))
+
+                log_func = log.error
+                if check_result.status == 0:
+                    log_func = log.debug
+                for line in check_result.output.split('\n'):
+                    log_func('          {}'.format(line))
+
+                log.info('')
 
     def print_data(self):
         print_header('OUTPUT FOR {}'.format(self.stage_name))
@@ -77,7 +122,8 @@ class PrettyPrint():
                 log.error('     {} failures detected.'.format(host))
         print_header('END OF SUMMARY FOR {}'.format(self.stage_name))
 
-    def color_preflight(self, host='NULL', rc=0, data_array=[]):
+    @staticmethod
+    def color_preflight(host='NULL', rc=0, data_array=[]):
         """
         A subroutine to parse the output from the dcos_install.sh script's pass or fail
         output.
