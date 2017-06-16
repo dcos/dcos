@@ -43,7 +43,7 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc/navstar-erl.env
     content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar_l4lb enable_lb {{ enable_lb }}
+      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
   - path: /etc_slave/spartan.json
     content: |
       {
@@ -115,8 +115,14 @@ package:
       [
         {navstar_l4lb,
           [
+            {enable_lb, {{ enable_lb }}},
             {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
             {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
+          ]
+        },
+        {navstar_overlay,
+          [
+            {enable_overlay, {{ dcos_overlay_enable }}}
           ]
         }
       ].
