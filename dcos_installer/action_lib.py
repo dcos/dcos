@@ -6,7 +6,7 @@ from typing import Optional
 
 import pkgpanda
 import ssh.utils
-from dcos_installer.constants import BOOTSTRAP_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR, SSH_KEY_PATH
+from dcos_installer.constants import BOOTSTRAP_DIR, CHECK_RUNNER_CMD, CLUSTER_PACKAGES_PATH, SERVE_DIR, SSH_KEY_PATH
 from ssh.runner import Node
 
 
@@ -289,39 +289,59 @@ def install_dcos(
 
 
 @asyncio.coroutine
-def run_postflight(config, dcos_diag=None, block=False, state_json_dir=None, async_delegate=None, retry=False,
-                   options=None):
+def run_postflight(config, block=False, state_json_dir=None, async_delegate=None, retry=False, options=None):
     targets = get_full_nodes_list(config)
-    pf = get_async_runner(config, targets, async_delegate=async_delegate)
-    postflight_chain = ssh.utils.CommandChain('postflight')
-    add_pre_action(postflight_chain, pf.user)
+    node_runner = get_async_runner(config, targets, async_delegate=async_delegate)
+    cluster_runner = get_async_runner(config, [targets[0]], async_delegate=async_delegate)
 
-    if dcos_diag is None:
-        dcos_diag = """
-#!/usr/bin/env bash
-# Run the DC/OS diagnostic script for up to 15 minutes (900 seconds) to ensure
-# we do not return ERROR on a cluster that hasn't fully achieved quorum.
+    # Run the check script for up to 15 minutes (900 seconds) to ensure we do not return failure on a cluster
+    # that is still booting.
+    check_script_template = """
 T=900
-until OUT=$(sudo /opt/mesosphere/bin/./3dt --diag) || [[ T -eq 0 ]]; do
+until OUT=$(sudo /opt/mesosphere/bin/dcos-shell {check_cmd} {check_type}) || [[ T -eq 0 ]]; do
     sleep 1
     let T=T-1
 done
 RETCODE=$?
-for value in $OUT; do
-    echo $value
-done
+echo $OUT
 exit $RETCODE"""
+    node_check_script = check_script_template.format(
+        check_cmd=CHECK_RUNNER_CMD,
+        check_type='node-poststart')
+    cluster_check_script = check_script_template.format(
+        check_cmd=CHECK_RUNNER_CMD,
+        check_type='cluster')
 
-    postflight_chain.add_execute([dcos_diag], stage='Executing post-flight check')
-    add_post_action(postflight_chain)
+    node_postflight_chain = ssh.utils.CommandChain('postflight')
+    node_postflight_chain.add_execute(
+        [node_check_script],
+        stage='Executing node postflight checks')
 
-    # Setup the cleanup chain
-    cleanup_chain = ssh.utils.CommandChain('postflight_cleanup')
-    add_post_action(cleanup_chain)
-    cleanup_chain.add_execute(['sudo', 'rm', '-f', '/opt/dcos-prereqs.installed'], stage='Removing prerequisites flag')
-    result = yield from pf.run_commands_chain_async([postflight_chain, cleanup_chain], block=block,
-                                                    state_json_dir=state_json_dir,
-                                                    delegate_extra_params=nodes_count_by_type(config))
+    node_cleanup_chain = ssh.utils.CommandChain('postflight_cleanup')
+    node_cleanup_chain.add_execute(
+        ['sudo', 'rm', '-f', '/opt/dcos-prereqs.installed'],
+        stage='Removing prerequisites flag')
+
+    cluster_postflight_chain = ssh.utils.CommandChain('cluster_postflight')
+    cluster_postflight_chain.add_execute(
+        [cluster_check_script],
+        stage='Executing cluster postflight checks')
+
+    node_check_result = yield from node_runner.run_commands_chain_async(
+        [node_postflight_chain, node_cleanup_chain],
+        block=block,
+        state_json_dir=state_json_dir,
+        delegate_extra_params=nodes_count_by_type(config))
+
+    cluster_check_result = yield from cluster_runner.run_commands_chain_async(
+        [cluster_postflight_chain],
+        block=block,
+        state_json_dir=state_json_dir)
+
+    if block:
+        result = node_check_result + cluster_check_result
+    else:
+        result = None
     return result
 
 
