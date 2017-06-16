@@ -18,6 +18,12 @@ backends:
     name: DC/OS Component Package Manager (Pkgpanda)
     reference: 'https://dcos.io/docs/1.9/administration/component-management/'
 routes:
+  /dcos-metadata/dcos-version.json:
+    group: Metadata
+    matcher: path
+    description: DC/OS version (unauthenticated)
+    file: /opt/mesosphere/active/dcos-metadata/etc/dcos-version.json
+    path: /dcos-metadata/dcos-version.json
   /pkgpanda/:
     group: Pkgpanda
     matcher: path
@@ -26,12 +32,6 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
-  /dcos-metadata/dcos-version.json:
-    group: System
-    matcher: path
-    description: DC/OS version (unauthenticated)
-    file: /opt/mesosphere/active/dcos-metadata/etc/dcos-version.json
-    path: /dcos-metadata/dcos-version.json
   /system/health/v1:
     group: System
     matcher: path

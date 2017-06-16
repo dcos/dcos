@@ -1,4 +1,7 @@
 endpoint_tests:
+######### /system/health/
+# there are differences in how upstreams are configured between EE and Open,
+# hence the tests separation
   - tests:
       is_upstream_correct:
         enabled: true
@@ -13,10 +16,18 @@ endpoint_tests:
         test_paths:
           - /system/health/v1/foo/bar
         upstream: http:///run/dcos/3dt.sock
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/health/v1/foo/bar
     type:
       - agent
-####### /acs/api/v1/auth/
+######### /acs/api/v1/auth/
   - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /acs/api/v1/auth/reflect/me
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: skip
@@ -31,12 +42,16 @@ endpoint_tests:
         enabled: true
         expected_http_ver: HTTP/1.0
         test_paths:
-          - expected: /acs/api/v1/reflect/me
-            sent: /acs/api/v1/reflect/me
+          - expected: /acs/api/v1/auth/reflect/me
+            sent: /acs/api/v1/auth/reflect/me
     type:
       - master
-###### /dcos-metadata/ui-config.json
+######### /dcos-metadata/ui-config.json
   - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /dcos-metadata/ui-config.json
       are_upstream_req_headers_ok:
         enabled: true
         jwt_should_be_forwarded: skip
@@ -55,34 +70,27 @@ endpoint_tests:
             sent: /dcos-metadata/ui-config.json
     type:
       - master
-###### /marathon
+######### /pkgpanda/
   - tests:
-      are_upstream_req_headers_ok:
+      is_unauthed_access_permitted:
         enabled: true
-        jwt_should_be_forwarded: true
-        test_paths:
-          - /marathon
-          - /marathon/
-          - /marathon/v2/reflect/me
-      is_upstream_correct:
-        enabled: true
-        test_paths:
-          - /marathon
-          - /marathon/
-          - /marathon/v2/reflect/me
-        upstream: http://127.0.0.1:8080
-      is_upstream_req_ok:
-        enabled: true
-        expected_http_ver: HTTP/1.1
-        test_paths:
-          - expected: /v2/reflect/me
-            sent: /marathon/v2/reflect/me
-          - expected: /
-            sent: /marathon
-          - expected: /
-            sent: /marathon/
+        locations:
+          - /pkgpanda/foo/bar
     type:
-      - master
-
-location_header_rewrite_tests: []
-redirect_tests: []
+      - agent
+######### /system/v1/metrics/
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/v1/metrics/foo/bar
+    type:
+      - agent
+######### /system/v1/logs/v1/
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /system/v1/logs/v1/foo/bar
+    type:
+      - agent

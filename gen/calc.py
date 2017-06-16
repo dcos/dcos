@@ -260,6 +260,15 @@ def validate_network_default_name(dcos_overlay_network_default_name, dcos_overla
             dcos_overlay_network_default_name))
 
 
+def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
+    try:
+        ipaddress.ip_network(dcos_ucr_default_bridge_subnet)
+    except ValueError as ex:
+        raise AssertionError(
+            "Incorrect value for dcos_ucr_default_bridge_subnet: {}."
+            " Only IPv4 subnets are allowed".format(dcos_ucr_default_bridge_subnet)) from ex
+
+
 def validate_dcos_overlay_network(dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -579,6 +588,120 @@ def validate_dns_forward_zones(dns_forward_zones):
             validate_int_in_range(port, 1, 65535)
 
 
+def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
+    if gpus_are_scarce == 'true':
+        return 'gpus'
+    return ''
+
+
+def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    return calculate_set(mesos_max_completed_tasks_per_framework)
+
+
+def validate_mesos_max_completed_tasks_per_framework(
+        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
+    if has_mesos_max_completed_tasks_per_framework == 'true':
+        try:
+            int(mesos_max_completed_tasks_per_framework)
+        except ValueError as ex:
+            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                                 "parameter as an integer: {}".format(ex)) from ex
+
+
+def calculate_check_config_contents(check_config):
+    return yaml.dump(check_config)
+
+
+def calculate_check_config(check_time):
+    check_config = {
+        'cluster_checks': {},
+        'node_checks': {
+            'checks': {
+                'components_master': {
+                    'description': 'All DC/OS components are healthy.',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components'],
+                    'timeout': '3s',
+                    'roles': ['master']
+                },
+                'components_agent': {
+                    'description': 'All DC/OS components are healthy',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001'],
+                    'timeout': '3s',
+                    'roles': ['agent']
+                },
+                'xz': {
+                    'description': 'The xz utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
+                    'timeout': '1s'
+                },
+                'tar': {
+                    'description': 'The tar utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
+                    'timeout': '1s'
+                },
+                'curl': {
+                    'description': 'The curl utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
+                    'timeout': '1s'
+                },
+                'unzip': {
+                    'description': 'The unzip utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
+                    'timeout': '1s'
+                },
+                'ip_detect_script': {
+                    'description': 'The IP detect script produces valid output',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
+                    'timeout': '1s'
+                },
+                'mesos_master_replog_synchronized': {
+                    'description': 'The Mesos master has synchronized its replicated log',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['master']
+                },
+                'mesos_agent_registered_with_masters': {
+                    'description': 'The Mesos agent has registered with the masters',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['agent']
+                },
+                'zookeeper_serving': {
+                    'description': 'The ZooKeeper instance is serving',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'zk-quorum'],
+                    'timeout': '3s',
+                    'roles': ['master']
+                },
+            },
+            'prestart': [],
+            'poststart': [
+                'components_master',
+                'components_agent',
+                'xz',
+                'tar',
+                'curl',
+                'unzip',
+                'ip_detect_script',
+                'mesos_master_replog_synchronized',
+                'mesos_agent_registered_with_masters',
+                'zookeeper_serving',
+            ],
+        },
+    }
+
+    if check_time == 'true':
+        # Add the clock sync check.
+        clock_sync_check_name = 'clock_sync'
+        check_config['node_checks']['checks'][clock_sync_check_name] = {
+            'description': 'System clock is in sync.',
+            'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
+            'timeout': '1s'
+        }
+        check_config['node_checks']['poststart'].append(clock_sync_check_name)
+
+    return json.dumps(check_config)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -603,6 +726,7 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        validate_dcos_ucr_default_bridge_subnet,
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
             validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
@@ -624,6 +748,8 @@ entry = {
         validate_cosmos_config,
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
+        lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_tasks_per_framework
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -653,6 +779,7 @@ entry = {
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
+        'mesos_max_completed_tasks_per_framework': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -680,6 +807,7 @@ entry = {
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
@@ -703,7 +831,9 @@ entry = {
         'cluster_docker_credentials_write_to_etc': 'false',
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
-        'cosmos_config': '{}'
+        'cosmos_config': '{}',
+        'gpus_are_scarce': 'true',
+        'check_config': calculate_check_config
     },
     'must': {
         'custom_auth': 'false',
@@ -730,6 +860,7 @@ entry = {
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
+        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
@@ -746,6 +877,8 @@ entry = {
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
+        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
+        'check_config_contents': calculate_check_config_contents
     },
     'conditional': {
         'master_discovery': {

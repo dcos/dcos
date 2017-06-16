@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import tempfile
+import uuid
 import zipfile
 
 import pytest
@@ -665,3 +666,47 @@ def test_diagnostics_bundle_status(dcos_api_session):
         )
         for required_status_field in required_status_fields:
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
+
+
+def test_3dt_runner_poststart(dcos_api_session):
+    cmd = [
+        "/opt/mesosphere/bin/3dt",
+        "check",
+        "--check-config",
+        "/opt/mesosphere/etc/dcos-3dt-runner-config.json",
+        "node-poststart"
+    ]
+    test_uuid = uuid.uuid4().hex
+    poststart_job = {
+        'id': 'test-dcos-3dt-runner-poststart-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(cmd)
+        }
+    }
+
+    dcos_api_session.metronome_one_off(poststart_job)
+
+
+def test_3dt_runner_cluster(dcos_api_session):
+    cmd = [
+        "/opt/mesosphere/bin/3dt",
+        "check",
+        "--check-config",
+        "/opt/mesosphere/etc/dcos-3dt-runner-config.json",
+        "cluster"
+    ]
+    test_uuid = uuid.uuid4().hex
+    job = {
+        'id': 'test-dcos-3dt-runner-cluster-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(cmd)
+        }
+    }
+
+    dcos_api_session.metronome_one_off(job)
