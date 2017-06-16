@@ -7,5 +7,6 @@ Restart=always
 RestartSec=15
 LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 Environment=REXRAY_HOME=/
 ExecStart=__PKG_PATH__/bin/rexray start -f
