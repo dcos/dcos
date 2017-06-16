@@ -170,7 +170,7 @@ region_to_ami_map = {
         'coreos': 'ami-a846fcc9',
         'stable': 'ami-a846fcc9',
         'el7': 'ami-8dce4bec',
-        'natami': ''
+        'natami': 'ami-e8ab1489'
     },
     'us-west-1': {
         'coreos': 'ami-1a1b457a',
