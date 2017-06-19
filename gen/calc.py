@@ -610,8 +610,49 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
-def calculate_check_config_contents(check_config):
-    return yaml.dump(check_config)
+def calculate_check_config_contents(check_config, custom_checks):
+
+    def merged_check_config(config_a, config_b):
+        # config_b overwrites config_a. Validation should assert that names won't conflict.
+
+        def cluster_checks(config):
+            return config.get('cluster_checks', {})
+
+        def node_checks_section(config):
+            return config.get('node_checks', {})
+
+        def node_checks(config):
+            return node_checks_section(config).get('checks', {})
+
+        def prestart_node_checks(config):
+            return node_checks_section(config).get('prestart', [])
+
+        def poststart_node_checks(config):
+            return node_checks_section(config).get('poststart', [])
+
+        def merged_dict(dict_a, dict_b):
+            merged = dict_a.copy()
+            merged.update(dict_b)
+            return merged
+
+        merged_cluster_checks = merged_dict(cluster_checks(config_a), cluster_checks(config_b))
+        merged_node_checks = {
+            'checks': merged_dict(node_checks(config_a), node_checks(config_b)),
+            'prestart': prestart_node_checks(config_a) + prestart_node_checks(config_b),
+            'poststart': poststart_node_checks(config_a) + poststart_node_checks(config_b),
+        }
+
+        merged_config = {}
+        if merged_cluster_checks:
+            merged_config['cluster_checks'] = merged_cluster_checks
+        if merged_node_checks['checks']:
+            merged_config['node_checks'] = merged_node_checks
+        return merged_config
+
+    dcos_checks = json.loads(check_config)
+    user_checks = json.loads(custom_checks)
+    merged_checks = merged_check_config(user_checks, dcos_checks)
+    return yaml.dump(json.dumps(merged_checks))
 
 
 def calculate_check_config(check_time):
@@ -761,6 +802,31 @@ def validate_check_config(check_config):
             node_checks.get('prestart', []) + node_checks.get('poststart', [])), (
             'All node checks must be referenced in either prestart or poststart, or both')
 
+    return check_config_obj
+
+
+def validate_custom_checks(custom_checks, check_config):
+
+    def cluster_check_names(config):
+        return set(config.get('cluster_checks', {}).keys())
+
+    def node_check_names(config):
+        return set(config.get('node_checks', {}).get('checks', {}).keys())
+
+    user_checks = json.loads(custom_checks)
+    dcos_checks = json.loads(check_config)
+    shared_cluster_check_names = cluster_check_names(user_checks).intersection(cluster_check_names(dcos_checks))
+    shared_node_check_names = node_check_names(user_checks).intersection(node_check_names(dcos_checks))
+
+    if shared_cluster_check_names or shared_node_check_names:
+        msg = 'Custom check names conflict with builtin checks.'
+        if shared_cluster_check_names:
+            msg += ' Reserved cluster check names: {}.'.format(', '.join(sorted(shared_cluster_check_names)))
+        if shared_node_check_names:
+            msg += ' Reserved node check names: {}.'.format(', '.join(sorted(shared_node_check_names)))
+        raise AssertionError(msg)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -809,7 +875,9 @@ entry = {
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
-        lambda check_config: validate_check_config(check_config)
+        lambda check_config: validate_check_config(check_config),
+        lambda custom_checks: validate_check_config(custom_checks),
+        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -893,7 +961,8 @@ entry = {
         'cluster_docker_credentials': "{}",
         'cosmos_config': '{}',
         'gpus_are_scarce': 'true',
-        'check_config': calculate_check_config
+        'check_config': calculate_check_config,
+        'custom_checks': '{}'
     },
     'must': {
         'custom_auth': 'false',

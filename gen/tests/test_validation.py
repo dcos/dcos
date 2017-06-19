@@ -557,3 +557,131 @@ def test_validate_check_config():
         'check_config',
         'roles must be a list containing master or agent or both',
     )
+
+
+def test_validate_custom_checks():
+    check_config = json.dumps({
+        'cluster_checks': {
+            'cluster-check-1': {
+                'description': 'Cluster check 1',
+                'cmd': ['echo', 'cluster-check-1'],
+                'timeout': '1s',
+            },
+        },
+        'node_checks': {
+            'checks': {
+                'node-check-1': {
+                    'description': 'Node check 1',
+                    'cmd': ['echo', 'node-check-1'],
+                    'timeout': '1s',
+                },
+                'node-check-2': {
+                    'description': 'Node check 2',
+                    'cmd': ['echo', 'node-check-2'],
+                    'timeout': '1s',
+                    'roles': ['agent']
+                },
+            },
+            'prestart': ['node-check-1'],
+            'poststart': ['node-check-1', 'node-check-2'],
+        },
+    })
+    custom_checks = json.dumps({
+        'cluster_checks': {
+            'custom-cluster-check-1': {
+                'description': 'Custom cluster check 1',
+                'cmd': ['echo', 'custom-cluster-check-1'],
+                'timeout': '1s',
+            },
+        },
+        'node_checks': {
+            'checks': {
+                'custom-node-check-1': {
+                    'description': 'Custom node check 1',
+                    'cmd': ['echo', 'custom-node-check-1'],
+                    'timeout': '1s',
+                },
+            },
+            'prestart': ['custom-node-check-1'],
+            'poststart': ['custom-node-check-1'],
+        }
+    })
+
+    # Empty and non-empty check_config and custom_checks.
+    validate_success({
+        'check_config': json.dumps({}),
+        'custom_checks': json.dumps({}),
+    })
+    validate_success({
+        'check_config': check_config,
+        'custom_checks': json.dumps({}),
+    })
+    validate_success({
+        'check_config': check_config,
+        'custom_checks': custom_checks,
+    })
+    validate_success({
+        'check_config': json.dumps({}),
+        'custom_checks': custom_checks,
+    })
+
+    # Invalid custom checks.
+    validate_error(
+        {
+            'custom_checks': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                        'node-check-2': {
+                            'description': 'Node check 2',
+                            'cmd': ['echo', 'node-check-2'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1', 'node-check-2', 'node-check-3'],
+                },
+            })
+        },
+        'custom_checks',
+        'All node checks must be referenced in either prestart or poststart, or both',
+    )
+
+    # Custom checks re-use check name used by builtin checks.
+    validate_error_multikey(
+        {
+            'check_config': check_config,
+            'custom_checks': json.dumps({
+                'cluster_checks': {
+                    'cluster-check-1': {
+                        'description': 'Cluster check 1',
+                        'cmd': ['echo', 'cluster-check-1'],
+                        'timeout': '1s',
+                    },
+                },
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                        'node-check-2': {
+                            'description': 'Node check 2',
+                            'cmd': ['echo', 'node-check-2'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1', 'node-check-2'],
+                },
+            }),
+        },
+        ['check_config', 'custom_checks'],
+        (
+            'Custom check names conflict with builtin checks. Reserved cluster check names: cluster-check-1. Reserved '
+            'node check names: node-check-1, node-check-2.'
+        ),
+    )
