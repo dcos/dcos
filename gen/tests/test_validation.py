@@ -194,3 +194,366 @@ def test_validate_default_overlay_network_name():
         }), 'dcos_overlay_network_default_name': 'foo'},
         ['dcos_overlay_network_default_name', 'dcos_overlay_network'],
         msg)
+
+
+def test_validate_check_config():
+    # No checks.
+    validate_success({'check_config': json.dumps({})})
+    # Valid node and cluster checks.
+    validate_success({
+        'check_config': json.dumps({
+            'cluster_checks': {
+                'cluster-check-1': {
+                    'description': 'Cluster check 1',
+                    'cmd': ['echo', 'cluster-check-1'],
+                    'timeout': '1s',
+                },
+            },
+            'node_checks': {
+                'checks': {
+                    'node-check-1': {
+                        'description': 'Node check 1',
+                        'cmd': ['echo', 'node-check-1'],
+                        'timeout': '1s',
+                    },
+                    'node-check-2': {
+                        'description': 'Node check 2',
+                        'cmd': ['echo', 'node-check-2'],
+                        'timeout': '1s',
+                        'roles': ['agent']
+                    },
+                },
+                'prestart': ['node-check-1'],
+                'poststart': ['node-check-1', 'node-check-2'],
+            },
+        })
+    })
+    # Valid node checks only.
+    validate_success({
+        'check_config': json.dumps({
+            'node_checks': {
+                'checks': {
+                    'node-check-1': {
+                        'description': 'Node check 1',
+                        'cmd': ['echo', 'node-check-1'],
+                        'timeout': '1s',
+                    },
+                    'node-check-2': {
+                        'description': 'Node check 2',
+                        'cmd': ['echo', 'node-check-2'],
+                        'timeout': '1s',
+                        'roles': ['agent']
+                    },
+                },
+                'prestart': ['node-check-1'],
+                'poststart': ['node-check-1', 'node-check-2'],
+            },
+        })
+    })
+    # Valid cluster checks only.
+    validate_success({
+        'check_config': json.dumps({
+            'cluster_checks': {
+                'cluster-check-1': {
+                    'description': 'Cluster check 1',
+                    'cmd': ['echo', 'cluster-check-1'],
+                    'timeout': '1s',
+                },
+            },
+        })
+    })
+
+    # Missing check definitions.
+    validate_error(
+        {'check_config': json.dumps({'cluster_checks': {}})},
+        'check_config',
+        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+    )
+    validate_error(
+        {'check_config': json.dumps({'node_checks': {}})},
+        'check_config',
+        "Key 'node_checks' error: Missing keys: 'checks'",
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {},
+                },
+            })
+        },
+        'check_config',
+        (
+            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "with no whitespace"
+        ),
+    )
+
+    # Invalid check names.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'cluster_checks': {
+                    'cluster check 1': {
+                        'description': 'Cluster check 1',
+                        'cmd': ['echo', 'cluster-check-1'],
+                        'timeout': '1s',
+                    },
+                },
+            })
+        },
+        'check_config',
+        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node check 1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'prestart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        (
+            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "with no whitespace"
+        ),
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'prestart': ['node check 1'],
+                },
+            })
+        },
+        'check_config',
+        'Check name must be a nonzero length string with no whitespace',
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node check 1'],
+                },
+            })
+        },
+        'check_config',
+        'Check name must be a nonzero length string with no whitespace',
+    )
+
+    # Invalid timeouts.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'cluster_checks': {
+                    'cluster-check-1': {
+                        'description': 'Cluster check 1',
+                        'cmd': ['echo', 'cluster-check-1'],
+                        'timeout': '1second',
+                    },
+                },
+            })
+        },
+        'check_config',
+        'Timeout must be a string containing an integer or float followed by a unit: ns, us, µs, ms, s, m, h',
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1 s',
+                        },
+                    },
+                    'poststart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        'Timeout must be a string containing an integer or float followed by a unit: ns, us, µs, ms, s, m, h',
+    )
+
+    # Missing check description.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'cluster_checks': {
+                    'cluster-check-1': {
+                        'cmd': ['echo', 'cluster-check-1'],
+                        'timeout': '1s',
+                    },
+                },
+            })
+        },
+        'check_config',
+        "Key 'cluster_checks' error: Key 'cluster-check-1' error: Missing keys: 'description'",
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Missing keys: 'description'",
+    )
+
+    # Check cmd is wrong type.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'cluster_checks': {
+                    'cluster-check-1': {
+                        'description': 'Cluster check 1',
+                        'cmd': 'echo cluster-check-1',
+                        'timeout': '1s',
+                    },
+                },
+            })
+        },
+        'check_config',
+        (
+            "Key 'cluster_checks' error: Key 'cluster-check-1' error: Key 'cmd' error: 'echo cluster-check-1' should "
+            "be instance of 'list'"
+        ),
+    )
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'cmd': 'echo node-check-1',
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        (
+            "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Key 'cmd' error: "
+            "'echo node-check-1' should be instance of 'list'"
+        ),
+    )
+
+    # Missing node prestart and poststart check lists.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                    },
+                },
+            })
+        },
+        'check_config',
+        'At least one of prestart or poststart must be defined in node_checks',
+    )
+    # Checks missing from both prestart and poststart.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                        'node-check-2': {
+                            'description': 'Node check 2',
+                            'cmd': ['echo', 'node-check-2'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        'All node checks must be referenced in either prestart or poststart, or both',
+    )
+    # Checks referenced in prestart or poststart but not defined.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                        },
+                        'node-check-2': {
+                            'description': 'Node check 2',
+                            'cmd': ['echo', 'node-check-2'],
+                            'timeout': '1s',
+                        },
+                    },
+                    'poststart': ['node-check-1', 'node-check-2', 'node-check-3'],
+                },
+            })
+        },
+        'check_config',
+        'All node checks must be referenced in either prestart or poststart, or both',
+    )
+    # Invalid node check role.
+    validate_error(
+        {
+            'check_config': json.dumps({
+                'node_checks': {
+                    'checks': {
+                        'node-check-1': {
+                            'description': 'Node check 1',
+                            'cmd': ['echo', 'node-check-1'],
+                            'timeout': '1s',
+                            'roles': ['master', 'foo'],
+                        },
+                    },
+                    'poststart': ['node-check-1'],
+                },
+            })
+        },
+        'check_config',
+        'roles must be a list containing master or agent or both',
+    )

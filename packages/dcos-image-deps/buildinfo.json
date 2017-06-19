@@ -128,6 +128,11 @@
       "url": "https://pypi.python.org/packages/3d/b9/895abf47ce871c80460727ba385d10d246a2d9ded1bc82ba3748d02e5196/requests_oauthlib-0.6.1-py2.py3-none-any.whl",
       "sha1": "f364a323b1a96dea6d0f1ef7286144613504c9d7"
     },
+    "schema": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/7b/46/657c4b2a4dbfd353df49cf39edf5955cd10a63a5111751e7e80d2676398d/schema-0.6.6-py2.py3-none-any.whl",
+      "sha1": "adb60d9b58d98b7d54cdf9f0498ab752185eebd2"
+    },
     "waitress": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/w/waitress/waitress-0.8.10.tar.gz",
