@@ -652,7 +652,7 @@ def calculate_check_config_contents(check_config, custom_checks):
     dcos_checks = json.loads(check_config)
     user_checks = json.loads(custom_checks)
     merged_checks = merged_check_config(user_checks, dcos_checks)
-    return yaml.dump(json.dumps(merged_checks))
+    return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
 def calculate_check_config(check_time):
