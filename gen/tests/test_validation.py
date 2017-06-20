@@ -27,12 +27,6 @@ def validate_error_multikey(new_arguments, keys, message, unset=None):
     }
 
 
-def validate_ok(new_arguments):
-    assert gen.validate(arguments=make_arguments(new_arguments)) == {
-        'status': 'ok',
-    }
-
-
 def test_invalid_telemetry_enabled():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(
@@ -61,9 +55,7 @@ def test_invalid_ports():
 def test_dns_bind_ip_blacklist():
     test_ips = '["52.37.192.49", "52.37.181.230", "52.37.163.105"]'
 
-    validate_success(
-        {'dns_bind_ip_blacklist': test_ips},
-        'dns_bind_ip_blacklist')
+    validate_success({'dns_bind_ip_blacklist': test_ips})
 
 
 def test_dns_forward_zones():
@@ -71,9 +63,7 @@ def test_dns_forward_zones():
     bad_zones = bad_dns_forward_zones_str
     err_msg = 'Invalid "dns_forward_zones": 1 not a valid IP address'
 
-    validate_success(
-        {'dns_forward_zones': zones},
-        'dns_forward_zones')
+    validate_success({'dns_forward_zones': zones})
 
     validate_error(
         {'dns_forward_zones': bad_zones},
@@ -163,10 +153,10 @@ def test_exhibitor_storage_master_discovery():
         "master ips doesn't `master_http_load_balancer` then exhibitor_storage_backend must not " \
         "be static."
 
-    validate_ok({
+    validate_success({
         'exhibitor_storage_backend': 'static',
         'master_discovery': 'static'})
-    validate_ok({
+    validate_success({
         'exhibitor_storage_backend': 'aws_s3',
         'master_discovery': 'master_http_loadbalancer',
         'aws_region': 'foo',
@@ -175,7 +165,7 @@ def test_exhibitor_storage_master_discovery():
         'num_masters': '5',
         's3_bucket': 'baz',
         's3_prefix': 'mofo'})
-    validate_ok({
+    validate_success({
         'exhibitor_storage_backend': 'aws_s3',
         'master_discovery': 'static',
         'exhibitor_explicit_keys': 'false',
