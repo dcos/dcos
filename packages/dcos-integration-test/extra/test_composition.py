@@ -74,7 +74,7 @@ def test_signal_service(dcos_api_session):
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
     """
-    # This is due to caching done by 3DT / Signal service
+    # This is due to caching done by dcos-diagnostics / Signal service
     # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
     dcos_version = os.environ["DCOS_VERSION"]
     with open('/opt/mesosphere/etc/dcos-signal-config.json', 'r') as f:
@@ -149,8 +149,8 @@ def test_signal_service(dcos_api_session):
         'metronome-service',
         'signal-service']
     all_node_units = [
-        '3dt-service',
-        '3dt-socket',
+        'diagnostics-service',
+        'diagnostics-socket',
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',

@@ -6,6 +6,6 @@
     "ref_origin": "master"
   },
   "state_directory": true,
-  "username": "dcos_3dt",
+  "username": "dcos_diagnostics",
   "group": "systemd-journal"
 }
