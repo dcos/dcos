@@ -11,8 +11,6 @@ import requests
 
 from test_helpers import expanded_config
 
-from pkgpanda.util import load_json, load_string
-
 
 @pytest.mark.first
 def test_dcos_cluster_is_up(dcos_api_session):
@@ -79,10 +77,12 @@ def test_signal_service(dcos_api_session):
     # This is due to caching done by 3DT / Signal service
     # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
     dcos_version = os.environ["DCOS_VERSION"]
-    signal_config_data = load_json('/opt/mesosphere/etc/dcos-signal-config.json')
+    with open('/opt/mesosphere/etc/dcos-signal-config.json', 'r') as f:
+        signal_config_data = json.load(f)
     customer_key = signal_config_data.get('customer_key', '')
     enabled = signal_config_data.get('enabled', 'false')
-    cluster_id = load_string('/var/lib/dcos/cluster-id').strip()
+    with open('/var/lib/dcos/cluster-id', 'r') as f:
+        cluster_id = f.read().strip()
 
     if enabled == 'false':
         pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
