@@ -14,7 +14,6 @@ from retrying import retry
 
 import pkgpanda.util
 from ssh.runner import MultiRunner, Node
-from ssh.ssher import open_tunnel, Ssher
 from ssh.utils import AbstractSSHLibDelegate, CommandChain
 
 
@@ -317,31 +316,3 @@ def test_tags_async(sshd_manager, loop):
                     "sleep",
                     "1"
                 ]
-
-
-@pytest.fixture
-def tunnel_args(sshd_manager):
-    with sshd_manager.run(1) as sshd_ports:
-        yield {
-            'user': getpass.getuser(),
-            'key': sshd_manager.key,
-            'host': '127.0.0.1',
-            'port': sshd_ports[0]}
-
-
-def test_ssh_tunnel(tunnel_args, tmpdir):
-    """ Copies data to 'remote' (localhost) and then commands to cat that data back
-    """
-    src_text = str(uuid.uuid4())
-    src_file = tmpdir.join('src')
-    src_file.write(src_text)
-    dst_file = tmpdir.join('dst')
-    read_cmd = ['cat', str(dst_file)]
-    with open_tunnel(**tunnel_args) as t:
-        t.copy_file(str(src_file), str(dst_file))
-        dst_text = t.command(read_cmd).decode().strip()
-    assert dst_text == src_text, 'retrieved destination file did not match source!'
-
-    ssher = Ssher(tunnel_args['user'], tunnel_args['key'])
-    ssher_out = ssher.command(tunnel_args['host'], read_cmd, port=tunnel_args['port']).decode().strip()
-    assert ssher_out == src_text, 'Ssher did not produce the expected result!'
