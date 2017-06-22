@@ -14,7 +14,6 @@ pushd "/pkg/src/openssl"
   no-rc4 \
   no-ssl2 \
   no-ssl3 \
-  no-des \
   no-descbcm \
   enable-ec_nistp_64_gcc_128 \
   -Wa,--noexecstack \
