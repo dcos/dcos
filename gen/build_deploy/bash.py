@@ -374,7 +374,7 @@ function check_all() {
             "53 spartan" \
             "80 adminrouter" \
             "443 adminrouter" \
-            "1050 dcos-diagnostics" \
+            "1050 3dt" \
             "2181 zookeeper" \
             "5050 mesos-master" \
             "7070 cosmos" \

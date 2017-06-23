@@ -72,15 +72,15 @@ if [ "$found_version" != "{{ installed_cluster_version }}" ]; then
 fi
 
 # Check if the node has node/cluster checks and run them
-if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+if [ -f /opt/mesosphere/etc/dcos-3dt-runner-config.json ]; then
    # command exists
-   if !(output=$(dcos-diagnostics check node-poststart)); then
+   if !(output=$(3dt check node-poststart)); then
       echo "Cannot proceed with upgrade, node checks failed"
       echo $output
       exit 1
    fi
 
-   if !(clusteroutput=$(dcos-diagnostics check cluster)); then
+   if !(clusteroutput=$(3dt check cluster)); then
       echo "Cannot proceed with upgrade, cluster checks failed"
       echo $clusteroutput
       exit 1
@@ -114,7 +114,7 @@ pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /de
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 T=300
-until OUT=$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster) || [[ T -eq 0 ]]; do
+until OUT=$(3dt check node-poststart && 3dt check cluster) || [[ T -eq 0 ]]; do
     sleep 1
     let T=T-1
 done

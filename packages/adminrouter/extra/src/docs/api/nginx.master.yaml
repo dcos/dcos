@@ -1,8 +1,8 @@
 ngindox: 0.1.0
 backends:
-  dcos_diagnostics:
+  dddt:
     server: '127.0.0.1:1050'
-    name: DC/OS Diagnostics
+    name: DC/OS Diagnostics (3DT)
     reference: >-
       https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint
   exhibitor:
@@ -292,7 +292,7 @@ routes:
     description: Component service status
     proxy:
       path: 'http://$backend/system/health/v1'
-      backend: dcos_diagnostics
+      backend: dddt
     path: /system/health/v1
   '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)':
     group: System

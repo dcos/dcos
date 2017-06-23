@@ -3,8 +3,9 @@ import uuid
 
 import pytest
 
-from dcos_test_utils.marathon import Container, get_test_app, Healthcheck, Network
 from test_helpers import expanded_config
+
+from test_util.marathon import Container, get_test_app, Healthcheck, Network
 
 log = logging.getLogger(__name__)
 

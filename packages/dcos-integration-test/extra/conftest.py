@@ -4,7 +4,7 @@ import pytest
 
 from api_session_fixture import make_session_fixture
 
-from dcos_test_utils.marathon import get_test_app
+from test_util.marathon import get_test_app
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)

@@ -525,36 +525,36 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-diagnostics-runner-config.json
+  - path: /etc/dcos-3dt-runner-config.json
     content: {{ check_config_contents }}
-  - path: /etc/dcos-diagnostics.env
+  - path: /etc/dcos-3dt.env
     content: |
-      DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
-  - path: /etc_master/dcos-diagnostics-config.json
+      DCOS_3DT_CONFIG_PATH=/opt/mesosphere/etc/dcos-3dt-config.json
+  - path: /etc_master/dcos-3dt-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "diagnostics-bundle-dir": "/var/lib/dcos/3dt/diag-bundles",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
       }
-  - path: /etc_slave/dcos-diagnostics-config.json
+  - path: /etc_slave/dcos-3dt-config.json
     content: |
       {
         "role": "agent",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc_slave_public/dcos-diagnostics-config.json
+  - path: /etc_slave_public/dcos-3dt-config.json
     content: |
       {
         "role": "agent_public",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc/dcos-diagnostics-endpoint-config.json
+  - path: /etc/dcos-3dt-endpoint-config.json
     content: |
         {
           "HTTPEndpoints": [

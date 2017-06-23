@@ -6,8 +6,10 @@ import socket
 import pytest
 import requests
 import retrying
-from dcos_test_utils.marathon import Container, get_test_app, Healthcheck, Network
+
 from test_helpers import expanded_config
+
+from test_util.marathon import Container, get_test_app, Healthcheck, Network
 
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 

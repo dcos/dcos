@@ -32,7 +32,7 @@ def test_validate_username():
     good('dcos_a')
     good('dcos__')
     good('dcos_a_b_c')
-    good('dcos_diagnostics')
+    good('dcos_3dt')
     good('dcos_a1')
     good('dcos_1')
 
