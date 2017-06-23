@@ -31,7 +31,8 @@ setup(
         'pkgpanda.http',
         'release',
         'release.storage',
-        'ssh'],
+        'ssh',
+        'test_util'],
     install_requires=[
         'aiohttp==0.22.5',
         'analytics-python',
@@ -60,6 +61,11 @@ setup(
     entry_points={
         'console_scripts': [
             'release=release:main',
+            # Note: This test does not touch CCM, but this is here for backward compatible CI
+            'ccm-deploy-test=test_util.test_aws_vpc:main',
+            'test-aws-cf-deploy=test_util.test_aws_cf:main',
+            'test-upgrade-vpc=test_util.test_upgrade_vpc:main',
+            'test-azure-rm-deploy=test_util.test_azure:main',
             'pkgpanda=pkgpanda.cli:main',
             'mkpanda=pkgpanda.build.cli:main',
             'dcos_installer=dcos_installer.cli:main',
@@ -92,6 +98,10 @@ setup(
         ] + get_advanced_templates(),
         'pkgpanda': [
             'docker/dcos-builder/Dockerfile'
+        ],
+        'test_util': [
+            'templates/vpc-cluster-template.json',
+            'templates/vpc-ebs-only-cluster-template.json'
         ]
     },
     zip_safe=False

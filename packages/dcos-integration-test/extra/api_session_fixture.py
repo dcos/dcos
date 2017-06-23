@@ -2,10 +2,10 @@
 DcosApiSession object that will be injected into the pytest 'dcos_api_session' fixture
 via the make_session_fixture() method
 """
-from dcos_test_utils.dcos_api_session import DcosApiSession, DcosUser
-from dcos_test_utils.helpers import CI_CREDENTIALS
-
 from test_helpers import expanded_config
+
+from test_util.dcos_api_session import DcosApiSession, DcosUser
+from test_util.helpers import CI_CREDENTIALS
 
 
 def make_session_fixture():

@@ -1,0 +1,28 @@
+#!/bin/bash
+mkdir -p /pkg/src/github.com/dcos
+# Create the GOPATH for the go tool to work properly
+mv /pkg/src/3dt /pkg/src/github.com/dcos/
+cd /pkg/src/github.com/dcos/3dt/
+go get
+make install
+# Copy the build from the bin to the correct place
+cp -r /pkg/bin/ "$PKG_PATH"
+
+master_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.service
+slave_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.service
+slave_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.service
+
+master_socket_service=${PKG_PATH}/dcos.target.wants_master/dcos-3dt.socket
+slave_socket_service=${PKG_PATH}/dcos.target.wants_slave/dcos-3dt.socket
+slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-3dt.socket
+
+mkdir -p $(dirname $master_service)
+mkdir -p $(dirname $slave_service)
+mkdir -p $(dirname $slave_public_service)
+
+cp /pkg/extra/dcos-3dt-master.service "$master_service"
+cp /pkg/extra/dcos-3dt-agent.service "$slave_service"
+cp /pkg/extra/dcos-3dt-agent.service "$slave_public_service"
+cp /pkg/extra/dcos-3dt.socket "$master_socket_service"
+cp /pkg/extra/dcos-3dt.socket "$slave_socket_service"
+cp /pkg/extra/dcos-3dt.socket "$slave_public_socket_service"

@@ -9,7 +9,7 @@ import botocore
 import requests
 import retrying
 
-from dcos_test_utils.helpers import retry_boto_rate_limits
+from test_util.helpers import retry_boto_rate_limits
 
 
 @contextlib.contextmanager

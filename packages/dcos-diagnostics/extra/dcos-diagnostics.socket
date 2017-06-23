@@ -1,8 +1,0 @@
-[Unit]
-Description=DC/OS Diagnostics Agent Socket: socket for DC/OS Diagnostics Agent
-
-[Socket]
-ListenStream=/run/dcos/dcos-diagnostics.sock
-SocketUser=root
-SocketGroup=dcos_adminrouter
-SocketMode=0660

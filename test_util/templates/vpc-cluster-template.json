@@ -1,0 +1,269 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "VPC with custom OS",
+  "Mappings": {
+    "SubnetConfig" : {
+      "VPC"     : { "CIDR" : "10.10.0.0/16" },
+      "Public"  : { "CIDR" : "10.10.0.0/24" }
+    }
+  },
+  "Parameters": {
+
+    "InstanceType": {
+      "Description": "EC2 PV instance type (m3.medium, etc).",
+      "Type": "String",
+      "Default": "m4.xlarge",
+      "ConstraintDescription": "Must be a valid EC2 PV instance type."
+    },
+    "AmiCode": {
+        "Description": "Image id of desired OS",
+        "Type": "String"
+    },
+    "ClusterSize": {
+      "Default": "3",
+      "MinValue": "1",
+      "MaxValue": "100",
+      "Description": "Number of nodes in cluster (1-100).",
+      "Type": "Number"
+    },
+    "AllowAccessFrom": {
+      "Description": "The (CIDR) from which cluster is available",
+      "Default": "0.0.0.0/0",
+      "Type": "String"
+    },
+    "KeyName": {
+      "Description": "The name of an EC2 Key Pair to allow SSH access to the instance.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+
+    "VPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "VPC", "CIDR" ]},
+        "EnableDnsSupport" : "true",
+        "EnableDnsHostnames" : "true",
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicSubnet" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "Public", "CIDR" ]},
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "GatewayToInternet" : {
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "VPC" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+       }
+    },
+
+    "PublicRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "Tags" : [
+          { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+          { "Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "DependsOn" : "GatewayToInternet",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+
+    "PublicSubnetRouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+
+    "BareSecurityGroup": {
+
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Bare SecurityGroup",
+        "VpcId" : { "Ref" : "VPC" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": {
+              "Ref": "AllowAccessFrom"
+            }
+          },
+          {
+            "IpProtocol": "udp",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": {
+              "Ref": "AllowAccessFrom"
+            }
+          },
+          {
+            "IpProtocol": "icmp",
+            "FromPort": "-1",
+            "ToPort": "-1",
+            "CidrIp": {
+              "Ref": "AllowAccessFrom"
+            }
+          }
+        ]
+      }
+    },
+    "BareRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version" : "2012-10-17",
+          "Statement": [ {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [ "ec2.amazonaws.com" ]
+            },
+            "Action": [ "sts:AssumeRole" ]
+          } ]
+        },
+        "Policies": [ {
+          "PolicyName": "BareServers",
+          "PolicyDocument": {
+            "Version" : "2012-10-17",
+            "Statement": [ {
+              "Resource": [
+                  { "Ref" : "AWS::StackId" },
+                  { "Fn::Join" : ["", [{ "Ref" : "AWS::StackId" }, "/*" ]]}
+              ],
+              "Action": [
+                  "cloudformation:*"
+              ],
+              "Effect": "Allow"
+            },
+            {
+              "Resource": "*",
+              "Action": [
+                "ec2:CreateTags",
+                "ec2:DescribeInstances",
+                "ec2:CreateVolume",
+                "ec2:DeleteVolume",
+                "ec2:AttachVolume",
+                "ec2:DetachVolume",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeVolumeStatus",
+                "ec2:DescribeVolumeAttribute",
+                "ec2:CreateSnapshot",
+                "ec2:CopySnapshot",
+                "ec2:DeleteSnapshot",
+                "ec2:DescribeSnapshots",
+                "ec2:DescribeSnapshotAttribute"
+              ],
+              "Effect": "Allow"
+            }
+            ]
+          }
+        } ]
+      }
+    },
+    "BareInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [ {
+          "Ref": "BareRole"
+        } ]
+      }
+    },
+    "BareServerAutoScale": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "DependsOn" : "PublicRoute",
+      "Properties": {
+        "AvailabilityZones" : [{ "Fn::GetAtt" : [ "PublicSubnet", "AvailabilityZone" ] }],
+        "VPCZoneIdentifier" : [{ "Ref" : "PublicSubnet" }],
+        "LaunchConfigurationName": {
+          "Ref": "BareServerLaunchConfig"
+        },
+        "MinSize": "1",
+        "MaxSize": "100",
+        "DesiredCapacity": {
+          "Ref": "ClusterSize"
+        },
+        "Tags" : [
+          {
+            "Key" : "Network",
+            "Value" : "Public",
+            "PropagateAtLaunch" : "true"
+            }
+          ]
+      }
+    },
+    "BareServerLaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress" : "true",
+        "ImageId": {
+          "Ref": "AmiCode"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "BareSecurityGroup"
+          }
+        ],
+        "IamInstanceProfile": {
+            "Ref": "BareInstanceProfile"
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "VolumeSize": "30",
+              "DeleteOnTermination": "true",
+              "VolumeType": "gp2"
+            }
+          },
+          {
+            "DeviceName": "/dev/sdb",
+            "VirtualName": "ephemeral0"
+          }
+        ]
+      }
+    }
+  }
+}

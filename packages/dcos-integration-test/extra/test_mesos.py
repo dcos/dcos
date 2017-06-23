@@ -4,8 +4,8 @@ import uuid
 
 import retrying
 
-from dcos_test_utils.marathon import Container, get_test_app
-from dcos_test_utils.recordio import Decoder, Encoder
+from test_util.marathon import Container, get_test_app
+from test_util.recordio import Decoder, Encoder
 
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,

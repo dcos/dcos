@@ -1,6 +1,6 @@
 import uuid
 
-from dcos_test_utils.marathon import get_test_app
+from test_util.marathon import get_test_app
 
 
 def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):

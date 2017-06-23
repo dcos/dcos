@@ -1,5 +1,3 @@
-import json
+from pkgpanda.util import load_json
 
-
-with open('/opt/mesosphere/etc/expanded.config.json', 'r') as f:
-    expanded_config = json.load(f)
+expanded_config = load_json('/opt/mesosphere/etc/expanded.config.json')

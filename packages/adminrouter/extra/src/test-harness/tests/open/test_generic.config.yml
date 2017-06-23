@@ -15,7 +15,7 @@ endpoint_tests:
         enabled: true
         test_paths:
           - /system/health/v1/foo/bar
-        upstream: http:///run/dcos/dcos-diagnostics.sock
+        upstream: http:///run/dcos/3dt.sock
       is_unauthed_access_permitted:
         enabled: true
         locations:

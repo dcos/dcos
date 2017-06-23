@@ -9,9 +9,7 @@ import pytest
 from kazoo.client import KazooClient, KazooRetry
 
 from dcos_internal_utils import bootstrap
-
-zookeeper_docker_image = 'jplock/zookeeper'
-zookeeper_docker_run_args = ['--publish=2181:2181', '--publish=2888:2888', '--publish=3888:3888']
+from test_util.cluster import zookeeper_docker_image, zookeeper_docker_run_args
 
 logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
 log = logging.getLogger(__name__)
