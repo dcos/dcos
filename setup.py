@@ -55,6 +55,7 @@ setup(
         'pyyaml',
         'requests==2.10.0',
         'retrying',
+        'schema',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
         'teamcity-messages'],
     entry_points={
