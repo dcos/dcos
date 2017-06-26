@@ -44,6 +44,7 @@ EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 EnvironmentFile=-/var/lib/dcos/marathon/environment
 Environment=JAVA_HOME=${JAVA_HOME}
 ExecStartPre=/bin/ping -c1 leader.mesos
+ExecStartPre=/bin/ping -c1 zk-1.zk
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStart=/opt/mesosphere/bin/marathon.sh
 EOF
