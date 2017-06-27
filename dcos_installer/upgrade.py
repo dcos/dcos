@@ -73,19 +73,20 @@ fi
 
 # Check if the node has node/cluster checks and run them
 if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-   # command exists
-   if !(output=$(dcos-diagnostics check node-poststart)); then
-      echo "Cannot proceed with upgrade, node checks failed"
-      echo $output
-      exit 1
-   fi
+    # command exists
+    output=$(dcos-diagnostics check node-poststart)
+    if [ $? -ne 0 ]; then
+        echo "Cannot proceed with upgrade, node checks failed"
+        echo $output
+        exit 1
+    fi
 
-   if !(clusteroutput=$(dcos-diagnostics check cluster)); then
-      echo "Cannot proceed with upgrade, cluster checks failed"
-      echo $clusteroutput
-      exit 1
-   fi
-
+    clusteroutput=$(dcos-diagnostics check cluster)
+    if [ $? -ne 0 ]; then
+        echo "Cannot proceed with upgrade, cluster checks failed"
+        echo $clusteroutput
+        exit 1
+    fi
 fi
 
 # Determine this node's role.
