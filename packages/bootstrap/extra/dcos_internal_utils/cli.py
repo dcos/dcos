@@ -61,6 +61,8 @@ bootstrappers = {
     'dcos-metrics-agent': dcos_metrics_agent,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
+    'dcos-checks-master': noop,
+    'dcos-checks-agent': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,
     'dcos-mesos-slave': noop,
