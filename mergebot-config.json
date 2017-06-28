@@ -7,5 +7,6 @@
         "enabled": true,
         "default": "Work In Progress",
         "pr-creator-can-apply": ["Ready For Review", "Work In Progress"]
-    }
+    },
+    "pr-status-checks": true
 }
