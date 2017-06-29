@@ -9,7 +9,7 @@ local util = require "common.util"
 local SECRET_KEY = nil
 local BODY_AUTH_ERROR_RESPONSE = nil
 
-
+local basichttpcred = os.getenv("MESOSPHERE_HTTP_CREDENTIALS")
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
     ngx.log(ngx.WARN, "AUTH_ERROR_PAGE_DIR_PATH not set.")
@@ -84,7 +84,25 @@ local function validate_jwt_or_exit()
     local token = nil
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
-        _, _, token = string.find(auth_header, "token=(.+)")
+        if string.find(auth_header, "Basic") then
+          ngx.log(
+              ngx.DEBUG, "Basic authentication header found " ..
+              "look for token in cookie and override."
+              )
+          local cookie, err = cookiejar:new()
+          token = cookie:get("dcos-acs-auth-cookie")
+          if token == nil then
+              ngx.log(ngx.DEBUG, "dcos-acs-auth-cookie not found.")
+          else
+              ngx.log(
+                  ngx.DEBUG, "Use token from dcos-acs-auth-cookie, " ..
+                  "set corresponding Authorization header for upstream."
+                  )
+              ngx.req.set_header("Authorization", "token=" .. token)
+          end
+        else
+          _, _, token = string.find(auth_header, "token=(.+)")
+        end
     else
         ngx.log(ngx.DEBUG, "Authorization header not found.")
         -- Presence of Authorization header overrides cookie method entirely.
@@ -112,7 +130,6 @@ local function validate_jwt_or_exit()
     -- Parse and verify token (also validate expiration time).
     local jwt_obj = jwt:verify(SECRET_KEY, token)
     ngx.log(ngx.DEBUG, "JSONnized JWT table: " .. cjson.encode(jwt_obj))
-
     -- .verified is False even for messed up tokens whereas .valid can be nil.
     -- So, use .verified as reference.
     if jwt_obj.verified == false then
@@ -134,6 +151,23 @@ local function validate_jwt_or_exit()
     if res.status ~= ngx.HTTP_OK then
         ngx.log(ngx.ERR, "User not found: `" .. uid .. "`")
         return exit_401()
+    end
+    -- set authorization header back to basic
+    if auth_header ~= nil then
+        if string.find(auth_header, "Basic") then
+            ngx.log(ngx.DEBUG, "Setting authorization header back to basic.")
+            ngx.req.set_header("Authorization", auth_header)
+        else
+            if basichttpcred ~= nil then
+	        ngx.log(ngx.DEBUG, "auth_header is token type set authorization to basic.")
+	        ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+            end
+        end
+    else
+        if basichttpcred ~= nil then
+            ngx.log(ngx.DEBUG, "auth_header nil set authorization to basic.")
+            ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+        end
     end
 
     return uid
