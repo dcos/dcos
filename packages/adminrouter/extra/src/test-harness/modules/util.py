@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class GuardedSubprocess:
-    """Context manager for Subproces instances
+    """Context manager for Subprocess instances
 
        The purpose of this class is to provide reliable cleanup for all Subprocess
        class instances (AR & friends), no matter the tests results or errors.
