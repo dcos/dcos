@@ -552,6 +552,11 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_s3_prefix(s3_prefix):
+    # See DCOS_OSS-1353
+    assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
+
+
 def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
 
@@ -832,6 +837,7 @@ __dcos_overlay_network_default_name = 'dcos'
 
 entry = {
     'validate': [
+        validate_s3_prefix,
         validate_num_masters,
         validate_bootstrap_url,
         validate_channel_name,
