@@ -53,7 +53,6 @@ end
 
 
 local function exit_401()
-    ngx.log(ngx.DEBUG, "ETHOS: exit 401 called")
     ngx.status = ngx.HTTP_UNAUTHORIZED
     ngx.header["Content-Type"] = "text/html; charset=UTF-8"
     ngx.header["WWW-Authenticate"] = "oauthjwt"
