@@ -1,7 +1,9 @@
 local cjson_safe = require "cjson.safe"
 local shmlock = require "resty.lock"
 local http = require "resty.http"
+local basichttpcred = os.getenv("MESOSPHERE_HTTP_CREDENTIALS")
 
+local util = require "master.util"
 
 local _M = {}
 
@@ -61,6 +63,11 @@ local function request(url, accept_404_reply, auth_token)
     local headers = {}
     if auth_token ~= nil then
         headers = {["Authorization"] = "token=" .. auth_token}
+    end
+    if basichttpcred ~= nil then
+        if string.find(url, ":8080") then
+            headers = {["Authorization"] = "Basic " .. util.base64encode(basichttpcred)}
+        end
     end
 
     -- Use cosocket-based HTTP library, as ngx subrequests are not available
