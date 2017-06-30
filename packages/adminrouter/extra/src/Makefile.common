@@ -115,8 +115,8 @@ check-api-docs: api-docs
 	@git ls-files --exclude-standard --others || (echo 'Found untracked and unignored changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
 	@echo 'No changes found -- Admin Router API docs are up to date.' >&2
 
-.PHONY: flake8
-flake8: clean-devkit-container devkit
+.PHONY: lint
+lint: clean-devkit-container devkit
 	#FIXME - split it into two targets
 	docker run \
 		$(DEVKIT_DOCKER_OPTS) \

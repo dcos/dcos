@@ -660,7 +660,7 @@ It exposes a couple of targets:
    equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should
   be used when fine grained control of the tests is necessary or during debugging.
-* `make flake8` - launch flake8 which will check all the tests and test-harness
+* `make lint` - launch flake8 which will check all the tests and test-harness
   files by default.
 
 ### Docker container
