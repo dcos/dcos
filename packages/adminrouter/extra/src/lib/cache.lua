@@ -4,7 +4,6 @@ local http = require "resty.http"
 local resolver = require "resty.resolver"
 local util = require "util"
 
-
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
 --
@@ -37,7 +36,6 @@ for key, value in pairs(env_vars) do
         _CONFIG[key] = env_var_val
     end
 end
-
 
 local function cache_data(key, value)
     -- Store key/value pair to SHM cache (shared across workers).
@@ -94,6 +92,14 @@ local function request(url, accept_404_reply, auth_token)
     return res, nil
 end
 
+local function is_ip_per_task(app)
+    return app["ipAddress"] ~= cjson_safe.null
+end
+
+local function is_user_network(app)
+    local container = app["container"]
+    return container and container["type"] == "DOCKER" and container["docker"]["network"] == "USER"
+end
 
 local function fetch_and_store_marathon_apps(auth_token)
     -- Access Marathon through localhost.
@@ -169,13 +175,43 @@ local function fetch_and_store_marathon_apps(auth_token)
           "Reading state for appId '" .. appId .. "' from task with id '" .. task["id"] .. "'"
           )
 
-       local host = task["host"]
-       if not host then
-          ngx.log(ngx.NOTICE, "Cannot find host for app '" .. appId .. "'")
+       local host_or_ip = task["host"] --take host  by default
+       if is_ip_per_task(app) then
+          ngx.log(ngx.NOTICE, "app '" .. appId .. "' is using ip-per-task")
+          -- override with the ip of the task 
+          local task_ip_addresses = task["ipAddresses"]
+          if task_ip_addresses then
+             host_or_ip = task_ip_addresses[1]["ipAddress"] 
+          else
+             ngx.log(ngx.NOTICE, "no ip address allocated yet for app '" .. appId .. "'")
+             goto continue
+          end
+       end
+
+       if not host_or_ip then
+          ngx.log(ngx.NOTICE, "Cannot find host or ip for app '" .. appId .. "'")
           goto continue
        end
 
-       local ports = task["ports"]
+       local ports = task["ports"] --task host port mapping by default
+       if is_ip_per_task(app) then
+         ports = {}
+         if is_user_network(app) then
+            -- override with ports from the container's portMappings
+            local port_mappings = app["container"]["docker"]["portMappings"] or app["portDefinitions"] or {}
+            local port_attr = app["container"]["docker"]["portMappings"] and "containerPort" or "port"
+            for _, port_mapping in ipairs(port_mappings) do
+               table.insert(ports, port_mapping[port_attr])
+            end               
+         else
+            --override with the discovery ports
+            local discovery_ports = app["ipAddress"]["discovery"]["ports"]
+            for _, discovery_port in ipairs(discovery_ports) do
+                table.insert(ports, discovery_port["number"])
+            end
+         end
+       end      
+
        if not ports then
           ngx.log(ngx.NOTICE, "Cannot find ports for app '" .. appId .. "'")
           goto continue
@@ -187,7 +223,7 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
-       local url = scheme .. "://" .. host .. ":" .. port
+       local url = scheme .. "://" .. host_or_ip .. ":" .. port
        svcApps[svcId] = {scheme=scheme, url=url}
 
        ::continue::
@@ -209,7 +245,6 @@ local function fetch_and_store_marathon_apps(auth_token)
 
     return
 end
-
 
 local function fetch_and_store_marathon_leader(auth_token)
     -- Fetch Marathon leader address. If successful, store to SHM cache.
