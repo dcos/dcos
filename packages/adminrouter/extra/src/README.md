@@ -623,10 +623,13 @@ by pytest.
 
 Below, there is a general overview of all the components of the test harness.
 More detailed documentation can be found in docstrings and comments in the code
-itself. If in doubt, it also may be very helpful to look for examples among
-existing tests.
+itself.
 
-### Quickstart
+Additionally there is a guick howto on basic tests writting. Unfortunatelly it
+is impossible to fully cover all aspects of the test harnes, so it also may be
+helpful to look for examples among existing tests.
+
+### Running tests
 To execute all the tests, just issue:
 
 	make test
@@ -651,13 +654,13 @@ It exposes a couple of targets:
   remove the images themselves though as the layer cache may be useful later
   on and the user may remove them themselves.
 * `make devkit` - creates the `adminrouter-devkit` container. By default other
-   targets execute this step automatically if devkit container image does not
-   exist yet.
+  targets execute this step automatically if devkit container image does not
+  exist yet.
 * `make update-devkit` - updates `adminrouter-devkit`. Should be run every time
-   the Dockerfile or its dependencies change.
+  the Dockerfile or its dependencies (e.g. requirements.txt fileds) change.
 * `make tests` - launch all the tests. Worth noting is the fact that McCabe
-   complexity of the code is also verified, and an error is raised if it's
-   equal to or above 10.
+  complexity of the code is also verified, and an error is raised if it's
+  equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should
   be used when fine grained control of the tests is necessary or during debugging.
 * `make lint` - launch flake8 which will check all the tests and test-harness
@@ -671,9 +674,6 @@ contains some basic debugging tools, pytest related dependencies and
 files that help pytest mimic the DC/OS environment. Their location is then
 exported via environment variables to the pytest code, so changing their location
 can be done by edition only the Dockerfile.
-
-Due to some issues with overlayfs on older kernels, the container links
-/tmp directory to /dev/shm.
 
 ### Repository flavours
 Admin Router repository can come in two variants/flavours - Enterprise and Opensource.
@@ -696,8 +696,8 @@ DC/OS IAM relies on JSON Web Tokens for transmitting security information betwee
 components. Open repository flavour uses HS256 tokens, while EE relies on RS256.
 Test harness needs to have a way to create them for use in the tests. This is
 done by `test-harness/modules/mocker/jwt.py` module, which together with
-`repo_is_ee` fixture provides abstracts away the type of the
-token used by Admin Router itself.
+`repo_is_ee` fixture provides abstracts away the type of the token used by
+Admin Router itself.
 
 ### Mocker
 Mocker takes care of simulating DC/OS HTTP endpoints that Admin Router uses. It's
@@ -723,7 +723,7 @@ they follow inheritance tree as below:
   difference between them is that the former is listening on Unix Socket
   and the latter is listening on TCP/IP socket. They are useful for very simple
   tests that only check if the request is hitting the right upstream and the
-  headers are correct.
+  NGINX upstream request headers are correct.
 * `IAMEndpoint`, `MarathonEndpoint`, `MesosEndpoint`: specialized endpoints that
   are mimicking IAM, Marathon and Mesos respectively. Apart from the basic
   functionality (reset, bork, etc...), they are also capable of recording requests
@@ -736,8 +736,8 @@ Each endpoint has an id, that it basically it's http address (i.e.
 `http://127.0.0.1:8080` or `http:///run/dcos/dcos-metrics-agent.sock`). It's
 available via the `.id()` method. They are started and stopped via `.start()`
 and `.stop()` methods during the start and stop of mocker instance
-respectively. Each endpoint can be set to respond to each and every request
-with an error (`500 Internal server error`).
+respectively. In the "Tests writting guide" a rudimentary description has been
+provided of all the commands/methods that are exposed for unittesting.
 
 #### DNS mock
 
@@ -821,18 +821,16 @@ with the line length limit hard-coded to 4096 bytes.
 ##### NGINX
 The NGINX subprocess is different from others in regard to its lifetime. Pytest
 fixture that pulls it into the test is module-scoped by default. If there is a
-need to have custom lifetime or just single-test scoped lifetime, then it's
-necessary to use `nginx_class` fixture instead of simple `master_ar_process` or
-`agent_ar_process` ones.
+need to have custom lifetime, then it's necessary to use `nginx_class`
+fixture which provides maximum flexibility.
 
 NGINX instances have the `.make_url_from_path` method which is a convenient way
-to generate AR URLs for tests. It uses exhibitor endpoint as it's present in
-all DC/OS configurations and uses auth features as well.
+to generate AR URLs for tests. User does not have to worry whether this is
+agent or master instance nor know the TCP port that given instance listens on.
 
-#### pytest tests
-Directly from the fact that Admin Router subprocess fixture is module scoped,
-stems some of the current structure of the tests directory. There are three
-different files where tests reside:
+#### AR instance reuse
+Some of the tests can share the same AR instance as it is not being mutated by
+them. There are currently three files which contain:
 * `test_agent.py`: all the tests related to agent Admin Router, which do not
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
@@ -841,9 +839,10 @@ different files where tests reside:
 
 `test_agent.py` and `test_master.py` may be splitted apart into smaller units,
 but with each unit an extra start and stop of AR master or agent is required.
-This slows down the tests. Running session-scoped AR is impossible. For now,
-each endpoint has tests grouped on class level.
+This slows down the tests so a compromise has been made and per-class and
+per-test AR instances are launched only if necessary.
 
+#### pytest tests
 Test files are grouped into repository flavour directories, which
 group the tests that are specific for given version:
 * `test-harness/modules/ee/test_*.py` for Enterprise
