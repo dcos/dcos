@@ -30,16 +30,16 @@ def lb_enabled():
 
 
 @retrying.retry(wait_fixed=2000,
-                stop_max_delay=90 * 1000,
-                retry_on_result=lambda ret: ret is False,
-                retry_on_exception=lambda x: True)
+                stop_max_delay=1200 * 1000,
+                retry_on_result=lambda ret: ret is None)
 def ensure_routable(cmd, host, port):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
     log.debug('Sending {} data: {}'.format(proxy_uri, cmd))
-    r = requests.post(proxy_uri, data=cmd)
-    log.debug('Requests Response: %s', repr(r.json()))
-    assert r.json()['status'] == 0
-    return json.loads(r.json()['output'])
+    response = requests.post(proxy_uri, data=cmd, timeout=5).json()
+    log.debug('Requests Response: {}'.format(repr(response)))
+    if response['status'] != 0:
+        return None
+    return json.loads(response['output'])
 
 
 def vip_app(container: Container, network: Network, host: str, vip: str):
@@ -78,21 +78,9 @@ def generate_vip_app_permutations():
     return permutations
 
 
-@pytest.fixture(scope='module')
-def clean_state_for_test_vip(dcos_api_session):
-    """ This fixture is intended only for use with only test_vip so that the
-    test suite only blocks on ensuring marathon has a clean state before and
-    after the all test_vip cases are invoked rather than per-case
-    """
-    dcos_api_session.marathon.ensure_deployments_complete()
-    yield
-    dcos_api_session.marathon.ensure_deployments_complete()
-
-
 @pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 @pytest.mark.parametrize('container,vip_net,proxy_net', generate_vip_app_permutations())
-@pytest.mark.usefixtures('clean_state_for_test_vip')
 def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net: Network):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
@@ -109,10 +97,7 @@ def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net
     failure_stack = []
     for test in setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
         cmd, origin_app, proxy_app, proxy_net = test
-        log.info('Deploying origin app')
-        wait_for_tasks_healthy(dcos_api_session, origin_app)
-        log.info('Origin app successful, deploying proxy app..')
-        proxy_info = wait_for_tasks_healthy(dcos_api_session, proxy_app)
+        proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(proxy_app['id'])).json()
         proxy_task_info = proxy_info['app']['tasks'][0]
         if proxy_net == Network.USER:
             proxy_host = proxy_task_info['ipAddresses'][0]['ipAddress']
@@ -124,7 +109,7 @@ def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net
             proxy_host = proxy_task_info['host']
             proxy_port = proxy_task_info['ports'][0]
         try:
-            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app['env']['DCOS_TEST_UUID']
+            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app['env']['DCOS_TEST_UUID']
         except Exception as ex:
             failure_stack.append('RemoteCommand:{}\n\nOriginApp:{}\n\nProxyApp:{}\n\nException:'.format(*test))
             failure_stack.append(str(repr(ex)))
@@ -167,21 +152,22 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
                 r.raise_for_status()
                 apps.append(app_definition)
             tests.append((cmd, origin_app, proxy_app, proxy_net))
+        log.info('Deploying origin app')
+        wait_for_tasks_healthy(dcos_api_session, origin_app)
+        log.info('Origin app successful, deploying proxy app..')
+        wait_for_tasks_healthy(dcos_api_session, proxy_app)
     return tests
 
 
 @retrying.retry(
     wait_fixed=5000,
-    stop_max_delay=360 * 1000,
-    # the app monitored by this function typically takes 2 minutes when starting from
-    # a fresh state, but in this case the previous app load may still be winding down,
-    # so allow a larger buffer time
-    retry_on_result=lambda res: res is None)
+    stop_max_delay=20 * 60 * 1000,
+    retry_on_result=lambda res: res is False)
 def wait_for_tasks_healthy(dcos_api_session, app_definition):
     proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
     if proxy_info['app']['tasksHealthy'] == app_definition['instances']:
-        return proxy_info
-    return None
+        return True
+    return False
 
 
 @retrying.retry(wait_fixed=2000,
