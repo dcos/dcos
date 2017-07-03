@@ -134,6 +134,13 @@ def test_invalid_oauth_enabled():
         true_false_msg)
 
 
+def test_invalid_mesos_dns_set_truncate_bit():
+    validate_error(
+        {'mesos_dns_set_truncate_bit': 'foo'},
+        'mesos_dns_set_truncate_bit',
+        true_false_msg)
+
+
 def test_cluster_docker_credentials():
     validate_error(
         {'cluster_docker_credentials': 'foo'},
