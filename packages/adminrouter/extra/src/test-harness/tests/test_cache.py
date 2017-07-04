@@ -871,6 +871,34 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
+    def test_ip_per_task_app_with_unspecified_ip_address_DCOS_16592(
+            self, nginx_class, mocker, valid_user_header):
+        """
+        Test that an app that, instead of specifying 'ipAddress: null' does not
+        specify 'ipAddress' at all, is successfully cached.
+        """
+        app = self._scheduler_alwaysthere_app()
+
+        # Remove the 'ipAddress' key completely, thereby triggering DCOS-16592.
+        del(app["ipAddress"])
+
+        ar = nginx_class()
+
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data={"apps": [app]})
+
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
+        with GuardedSubprocess(ar):
+            # Trigger cache update by issuing request:
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=valid_user_header)
+
+            assert resp.status_code == 200
+            req_data = resp.json()
+            assert req_data['endpoint_id'] == 'http://127.0.0.1:16000'
+
     def test_upstream_wrong_json(
             self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
