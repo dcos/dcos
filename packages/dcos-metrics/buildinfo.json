@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-metrics.git",
-    "ref": "cdd30f703685b017ea1ce3964b8144a95ee9af5d",
-    "ref_origin": "mrb/fix-supports-nesting"
+    "ref": "b0330aa8742e08cee795c249c27b5bb1198c020b",
+    "ref_origin": "master"
   },
   "username": "dcos_metrics"
 }
