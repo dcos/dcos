@@ -871,7 +871,7 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
-    def test_ip_per_task_app_with_unspecified_ip_address_DCOS_16592(
+    def test_ip_per_task_app_with_unspecified_ip_address_DCOS_OSS_1366(
             self, nginx_class, mocker, valid_user_header):
         """
         Test that an app that, instead of specifying 'ipAddress: null' does not
@@ -879,7 +879,7 @@ class TestCacheMarathon:
         """
         app = self._scheduler_alwaysthere_app()
 
-        # Remove the 'ipAddress' key completely, thereby triggering DCOS-16592.
+        # Remove the 'ipAddress' key completely, thereby triggering DCOS_OSS-1366.
         del(app["ipAddress"])
 
         ar = nginx_class()
