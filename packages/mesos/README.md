@@ -7,3 +7,4 @@ These commits can be found in the repository at <a href="https://github.com/meso
 <li>[44eec8e7935d6de83afe80f22bdd4fd979b63fc7] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
 <li>[dbd3bc2947efe0a1f66bb645f6bc48c154a9f130] Revert "Fixed the broken metrics information of master in WebUI."
 <li>[9cc627d9f32d56f14f277e823a759183ef4b234d] Updated mesos containerizer to ignore GPU isolator creation failure.
+<li>[08f0b6b3aee032998c66bbc3abe8b5863a900c43] Fixed the broken 'Roles' tab of the webui.
