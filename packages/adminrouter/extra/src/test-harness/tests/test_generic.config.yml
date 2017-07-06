@@ -86,6 +86,15 @@ endpoint_tests:
     type:
       - master
   - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /service////nest1////scheduler-alwaysthere///foo/bar
+    type:
+      - master
+  - tests:
       is_upstream_correct:
         enabled: true
         test_paths:
