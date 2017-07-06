@@ -93,7 +93,7 @@ local function request(url, accept_404_reply, auth_token)
 end
 
 local function is_ip_per_task(app)
-    return app["ipAddress"] ~= cjson_safe.null
+    return app["ipAddress"] ~= nil and app["ipAddress"] ~= cjson_safe.null
 end
 
 local function is_user_network(app)
@@ -178,10 +178,10 @@ local function fetch_and_store_marathon_apps(auth_token)
        local host_or_ip = task["host"] --take host  by default
        if is_ip_per_task(app) then
           ngx.log(ngx.NOTICE, "app '" .. appId .. "' is using ip-per-task")
-          -- override with the ip of the task 
+          -- override with the ip of the task
           local task_ip_addresses = task["ipAddresses"]
           if task_ip_addresses then
-             host_or_ip = task_ip_addresses[1]["ipAddress"] 
+             host_or_ip = task_ip_addresses[1]["ipAddress"]
           else
              ngx.log(ngx.NOTICE, "no ip address allocated yet for app '" .. appId .. "'")
              goto continue
@@ -202,7 +202,7 @@ local function fetch_and_store_marathon_apps(auth_token)
             local port_attr = app["container"]["docker"]["portMappings"] and "containerPort" or "port"
             for _, port_mapping in ipairs(port_mappings) do
                table.insert(ports, port_mapping[port_attr])
-            end               
+            end
          else
             --override with the discovery ports
             local discovery_ports = app["ipAddress"]["discovery"]["ports"]
@@ -210,7 +210,7 @@ local function fetch_and_store_marathon_apps(auth_token)
                 table.insert(ports, discovery_port["number"])
             end
          end
-       end      
+       end
 
        if not ports then
           ngx.log(ngx.NOTICE, "Cannot find ports for app '" .. appId .. "'")
