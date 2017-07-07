@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-metrics.git",
-    "ref": "62702c3396deb5b47f4492a5a39d9dfb6f95ab0b",
-    "ref_origin": "master"
+    "ref": "25415a022e5d86b2001acb3e46da7197b1636811",
+    "ref_origin": "ignore-debug-containers"
   },
   "username": "dcos_metrics"
 }
