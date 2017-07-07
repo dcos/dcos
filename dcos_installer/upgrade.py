@@ -38,15 +38,6 @@ set -o errexit -o nounset -o pipefail
 
 source /opt/mesosphere/environment.export
 
-# bash should trap the ERR signal and run err_report, which prints the line number
-# of failure to STDERR.
-
-err_report() {
-    echo "ERROR: Upgrade failed at line ${BASH_LINENO}"
-} >&2
-
-trap err_report ERR
-
 # Check if this is a terminal, and if colors are supported, set some basic
 # colors for outputs
 if [ -t 1 ]; then
