@@ -72,12 +72,14 @@ if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
         exit 1
     fi
 
+    echo $output
     clusteroutput=$(dcos-diagnostics check cluster)
     if [ $? -ne 0 ]; then
         echo "Cannot proceed with upgrade, cluster checks failed"
         echo $clusteroutput
         exit 1
     fi
+    echo $clusteroutput
 fi
 
 # Determine this node's role.
@@ -107,9 +109,11 @@ pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 T=300
 until OUT=$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster) || [[ T -eq 0 ]]; do
+    echo $OUT
     sleep 1
     let T=T-1
 done
+echo $OUT
 RETCODE=$?
 if [ $RETCODE -ne 0 ]; then
     echo "Node upgrade not successful, checks failed"
