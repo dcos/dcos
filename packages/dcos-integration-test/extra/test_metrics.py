@@ -166,16 +166,23 @@ def test_metrics_containers(dcos_api_session):
 
                     # Ensure all /container/<id>/app data is correct
                     assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
+
+                    # We expect three datapoints, could be in any order
+                    uptime_dp = None
+                    for dp in app_response.json()['datapoints']:
+                        if dp['name'] == 'statsd_tester.time.uptime':
+                            uptime_dp = dp
+                            break
+
+                    # If this metric is missing, statsd-emitter's metrics were not received
+                    assert uptime_dp is not None, 'got {}'.format(app_response.json())
+
                     assert len(app_response.json()['datapoints']) == 3, 'got {}'.format(
                         len(app_response.json()['datapoints']))
 
                     datapoint_keys = ['name', 'value', 'unit', 'timestamp']
                     for k in datapoint_keys:
-                        assert k in app_response.json()['datapoints'][0], 'got {}'.format(
-                            app_response.json()['datapoints'][0])
-
-                        assert app_response.json()['datapoints'][0]['name'] == 'statsd_tester.time.uptime', 'got '
-                        '{}'.format(app_response.json()['datapoints'][0]['name'])
+                        assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
                     assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
                     assert 'labels' in app_response.json()['dimensions'], 'got {}'.format(
