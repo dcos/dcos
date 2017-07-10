@@ -166,7 +166,7 @@ def test_metrics_containers(dcos_api_session):
 
                     # Ensure all /container/<id>/app data is correct
                     assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
-                    assert len(app_response.json()['datapoints']) == 1, 'got {}'.format(
+                    assert len(app_response.json()['datapoints']) == 3, 'got {}'.format(
                         len(app_response.json()['datapoints']))
 
                     datapoint_keys = ['name', 'value', 'unit', 'timestamp']
