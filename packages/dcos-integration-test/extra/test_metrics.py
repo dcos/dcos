@@ -177,9 +177,6 @@ def test_metrics_containers(dcos_api_session):
                     # If this metric is missing, statsd-emitter's metrics were not received
                     assert uptime_dp is not None, 'got {}'.format(app_response.json())
 
-                    assert len(app_response.json()['datapoints']) == 3, 'got {}'.format(
-                        len(app_response.json()['datapoints']))
-
                     datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
                     for k in datapoint_keys:
                         assert k in uptime_dp, 'got {}'.format(uptime_dp)
