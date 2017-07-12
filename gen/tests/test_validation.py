@@ -171,13 +171,26 @@ def test_exhibitor_storage_master_discovery():
         'exhibitor_explicit_keys': 'false',
         's3_bucket': 'foo',
         'aws_region': 'bar',
-        's3_prefix': 'baz'})
+        's3_prefix': 'baz/bar'})
     validate_error_multikey(
         {'exhibitor_storage_backend': 'static',
          'master_discovery': 'master_http_loadbalancer'},
         ['exhibitor_storage_backend', 'master_discovery'],
         msg_master_discovery,
         unset={'exhibitor_address', 'num_masters'})
+
+
+def test_validate_s3_prefix():
+    validate_error({
+        'exhibitor_storage_backend': 'aws_s3',
+        'exhibitor_explicit_keys': 'false',
+        'aws_region': 'bar',
+        's3_bucket': 'baz',
+        's3_prefix': 'baz/'},
+        's3_prefix',
+        'Must be a file path and cannot end in a /')
+    validate_success({'s3_prefix': 'baz'})
+    validate_success({'s3_prefix': 'bar/baz'})
 
 
 def test_validate_default_overlay_network_name():
