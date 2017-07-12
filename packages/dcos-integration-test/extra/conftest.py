@@ -31,6 +31,13 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
+@pytest.fixture(autouse=True)
+def clean_marathon_state(dcos_api_session):
+    dcos_api_session.marathon.purge()
+    yield
+    dcos_api_session.marathon.purge()
+
+
 @pytest.fixture
 def vip_apps(dcos_api_session):
     vip1 = '6.6.6.1:6661'
