@@ -94,7 +94,7 @@ package:
         "listener": "0.0.0.0",
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }},
-        "SetTruncateBit": false
+        "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
   - path: /etc_master/navstar.config.d/master.config
     content: |
