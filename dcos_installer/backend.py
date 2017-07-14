@@ -226,7 +226,7 @@ aws_advanced_source = gen.internals.Source({
     'conditional': {
         'aws_template_upload': {
             'true': {
-                'must': {
+                'default': {
                     'aws_template_storage_region_name': calculate_aws_template_storage_region_name
                 }
             },
