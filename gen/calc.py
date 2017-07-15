@@ -713,12 +713,6 @@ def calculate_check_config(check_time):
                     'timeout': '1s',
                     'roles': ['agent']
                 },
-                'zookeeper_serving': {
-                    'description': 'The ZooKeeper instance is serving',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'zk-quorum'],
-                    'timeout': '3s',
-                    'roles': ['master']
-                },
             },
             'prestart': [],
             'poststart': [
@@ -731,7 +725,6 @@ def calculate_check_config(check_time):
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
-                'zookeeper_serving',
             ],
         },
     }
