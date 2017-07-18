@@ -132,12 +132,6 @@ package:
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
         "network": {{ dcos_overlay_network }}
        }
-  - path: /etc/dcos/network/cni/dummy.conf
-    content: |
-      {
-        "name": "dummy",
-        "type": "bridge"
-      }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
       {
