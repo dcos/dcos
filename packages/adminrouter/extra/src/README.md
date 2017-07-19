@@ -751,7 +751,7 @@ queries:
 
 Mocking library comes with a simple DNS in-memory programmable server that
 can be used to mock various DNS query responses and also to simulate leader
-instance changes.
+instance changes. Please check test-harness/modules/mocker/dns.py for details.
 
 #### Subprocess management
 Pytest fixture starts an `Admin Router` subprocess.
