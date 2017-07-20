@@ -33,10 +33,8 @@ def test_dcos_diagnostics_health(dcos_api_session):
     """
     test health endpoint /system/health/v1
     """
-    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', 'dcos_diagnostics_version',
-                       'system']
+    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', 'dcos_diagnostics_version']
     required_fields_unit = ['id', 'health', 'output', 'description', 'help', 'name']
-    required_system_fields = ['memory', 'load_avarage', 'partitions', 'disk_usage']
 
     # Check all masters dcos-diagnostics instances on base port since this is extra-cluster request (outside localhost)
     for host in dcos_api_session.masters:
@@ -66,14 +64,6 @@ def test_dcos_diagnostics_health(dcos_api_session):
             assert required_field in response, '{} field not found'.format(required_field)
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
-        # check system metrics
-        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
-            ', '.join(required_system_fields))
-
-        for sys_field in required_system_fields:
-            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
-            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
-
     # Check all agents running dcos-diagnostics behind agent-adminrouter on 61001
     for host in dcos_api_session.slaves:
         response = check_json(dcos_api_session.health.get('/', node=host))
@@ -101,14 +91,6 @@ def test_dcos_diagnostics_health(dcos_api_session):
         for required_field in required_fields[1:]:
             assert required_field in response, '{} field not found'.format(required_field)
             assert response[required_field], '{} cannot be empty'.format(required_field)
-
-        # check system metrics
-        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
-            ', '.join(required_system_fields))
-
-        for sys_field in required_system_fields:
-            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
-            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
 
 
 def validate_node(nodes):
