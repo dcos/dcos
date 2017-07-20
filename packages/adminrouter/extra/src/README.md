@@ -605,6 +605,35 @@ update.
 Worth noting is that NGINX reload resets all the timers. Cache is left intact
 though.
 
+## DNS resolution
+
+Some of the AR configuration depends on a correct DNS resolution of the current
+Mesos leader instance. NGINX comes with its own DNS resolver component that can
+be configured to resolve names from a particular DNS server. The configuration
+refers to DC/OS DNS names (e.g. `leader.mesos`, `master.mesos`) and expects
+that a DNS server used as a resolver backend resolves the name to the IP address
+of the coresponding server/servers.
+
+The open source version of NGINX does not support periodic re-resolution of
+hostnames used in the upstream definitions. In Admin Router, we use
+[a workaround](https://www.jethrocarr.com/2013/11/02/nginx-reverse-proxies-and-dns-resolution/)
+to overcome this limitation, so that hostnames used in
+[`proxy_pass`](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass)
+configuration directives are guaranteed to be re-resolved periodically, either according to
+the TTL emitted by the DNS server or, if given, according to the `valid=`
+argument of the
+[resolver](http://nginx.org/en/docs/http/ngx_http_core_module.html#resolver)
+configuration.
+
+AR currently uses a `mesos-dns` as a DNS server backend, direclty or through
+Spartan. It expects the server to run on a port `61053` and respond at least
+to following type `A` queries:
+* `leader.mesos`
+* `master.mesos`
+
+Related links:
+* http://serverfault.com/questions/240476/how-to-force-nginx-to-resolve-dns-of-a-dynamic-hostname-everytime-when-doing-p
+
 ## Testing
 
 Admin Router repository includes a test harness that is meant to make

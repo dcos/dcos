@@ -59,10 +59,10 @@ class DcosDnsResolver(BaseResolver):
 
         log.info(
             "DNS query for `{}`, type `{}`, reply `{}`, ttl `{}`".format(
-            query,
-            request.q.qtype,
-            self._records[query]['ip'],
-            self._records[query]['ttl'])
+                query,
+                request.q.qtype,
+                self._records[query]['ip'],
+                self._records[query]['ttl'])
         )
 
         reply.add_answer(
