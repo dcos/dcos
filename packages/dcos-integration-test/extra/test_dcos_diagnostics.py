@@ -676,6 +676,10 @@ def test_dcos_diagnostics_runner_poststart(dcos_api_session):
 
 def test_dcos_diagnostics_runner_cluster(dcos_api_session):
     cmd = [
+        # Set PATH and LD_LIBRARY_PATH to bad values to assert we're using their values from check config.
+        "env",
+        "PATH=badvalue",
+        "LD_LIBRARY_PATH=badvalue",
         "/opt/mesosphere/bin/dcos-diagnostics",
         "check",
         "--check-config",
