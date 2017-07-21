@@ -254,7 +254,7 @@
       "Properties" : {
         "RouteTableId" : { "Ref" : "PrivateRouteTable" },
         "DestinationCidrBlock" : "0.0.0.0/0",
-        "InstanceId" : { "Ref" : "NATInstance" }
+        "NatGatewayId" : { "Ref" : "NATGateway" }
       }
     },
 
@@ -311,23 +311,19 @@
       }
     },
 
-    "NATInstance" : {
-      "Type" : "AWS::EC2::Instance",
+    "NATGateway" : {
       "DependsOn" : "GatewayToInternet",
+      "Type" : "AWS::EC2::NatGateway",
       "Properties" : {
-        "SourceDestCheck" : "false",
-        "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m3.medium",
-        "NetworkInterfaces" : [
-          {
-            "SubnetId" : { "Ref" : "PublicSubnet" },
-            "AssociatePublicIpAddress" : "true",
-            "DeviceIndex" : "0",
-            "GroupSet" : [ { "Ref" : "SlaveSecurityGroup" }, { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
-            "DeleteOnTermination" : "true"
-          }
-        ]
+        "AllocationId" : { "Fn::GetAtt" : ["NATEIP", "AllocationId"]},
+        "SubnetId" : { "Ref" : "PublicSubnet"}
+      }
+    },
+
+    "NATEIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "Domain" : "vpc"
       }
     },
 
