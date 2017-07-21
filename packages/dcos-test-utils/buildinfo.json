@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/margaret/dcos-test-utils.git",
-    "ref": "2a067894e9dabc9bd5c5fdcbb491a6c3d1d407e2",
+    "ref": "c015c85f5cf8c363a494786eeba10ffd2953892d",
     "ref_origin": "package_api_support"
   }
 }
