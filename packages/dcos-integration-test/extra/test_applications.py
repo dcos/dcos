@@ -227,7 +227,7 @@ def test_pkgpanda_api(dcos_api_session):
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
-    install_response = dcos_api_session.cosmos.add_package('kafka', '1.1.9-0.10.0.0')
+    install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
     data = install_response.json()
 
     dcos_api_session.marathon.poll_marathon_for_app_deployment(data['appId'], 1,
@@ -237,7 +237,7 @@ def test_packaging_api(dcos_api_session):
     packages = list_response.json()['packages']
     assert len(packages) == 1 and packages[0]['appId'] == data['appId']
 
-    dcos_api_session.cosmos.remove_package('kafka', data['appId'])
+    dcos_api_session.cosmos.uninstall_package('kafka', data['appId'])
 
     list_response = dcos_api_session.cosmos.list_packages()
     packages = list_response.json()['packages']
