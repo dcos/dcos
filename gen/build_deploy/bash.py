@@ -657,12 +657,8 @@ def make_installer_docker(variant, variant_info, installer_info):
                 variant=variant) + '\n#EOF#\n')
         subprocess.check_call(
             ['docker', 'save', docker_image_name],
-            stdout=open(genconf_tar, 'w'))
-        subprocess.check_call(['tar', 'cvf', '-', genconf_tar], stdout=open(installer_filename, 'a'))
+            stdout=open(installer_filename, 'a'))
         subprocess.check_call(['chmod', '+x', installer_filename])
-
-        # Cleanup
-        subprocess.check_call(['rm', genconf_tar])
 
     return installer_filename
 
