@@ -207,7 +207,7 @@ class TestCache:
                 SearchCriteria(1, False),
             'Mesos state cache has been successfully updated':
                 SearchCriteria(2, False),
-            'Using stale `svcapps` cache entry to fulfill the request':
+            'Cache entry `svcapps` is stale':
                 SearchCriteria(1, True),
         }
 
@@ -300,7 +300,7 @@ class TestCache:
                 SearchCriteria(1, False),
             'Marathon apps cache has been successfully updated':
                 SearchCriteria(2, False),
-            'Using stale `mesosstate` cache entry to fulfill the request':
+            'Cache entry `mesosstate` is stale':
                 SearchCriteria(1, True),
         }
 
