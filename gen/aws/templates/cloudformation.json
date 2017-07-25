@@ -254,7 +254,7 @@
       "Properties" : {
         "RouteTableId" : { "Ref" : "PrivateRouteTable" },
         "DestinationCidrBlock" : "0.0.0.0/0",
-        "InstanceId" : { "Ref" : "NATInstance" }
+        "GatewayId" : { "Ref" : "InternetGateway" }
       }
     },
 
@@ -308,26 +308,6 @@
       "Properties" : {
         "SubnetId" : { "Ref" : "PrivateSubnet" },
         "NetworkAclId" : { "Ref" : "PrivateNetworkAcl" }
-      }
-    },
-
-    "NATInstance" : {
-      "Type" : "AWS::EC2::Instance",
-      "DependsOn" : "GatewayToInternet",
-      "Properties" : {
-        "SourceDestCheck" : "false",
-        "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m3.medium",
-        "NetworkInterfaces" : [
-          {
-            "SubnetId" : { "Ref" : "PublicSubnet" },
-            "AssociatePublicIpAddress" : "true",
-            "DeviceIndex" : "0",
-            "GroupSet" : [ { "Ref" : "SlaveSecurityGroup" }, { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
-            "DeleteOnTermination" : "true"
-          }
-        ]
       }
     },
 
@@ -728,7 +708,7 @@
         "SecurityGroups" : [ { "Ref" : "SlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
-        "AssociatePublicIpAddress" : "false",
+        "AssociatePublicIpAddress" : "true",
         "InstanceType" : { "Fn::FindInMap" : [ "Parameters", "SlaveInstanceType", "default" ] },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
           {{ agent_private_cloud_config }}
