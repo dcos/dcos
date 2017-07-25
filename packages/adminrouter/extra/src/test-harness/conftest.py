@@ -23,7 +23,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     util.setup_thread_debugger()
-    util.configure_logger(config)
+    util.configure_logger(config.getoption('tests_log_level'))
 
 
 pytest.register_assert_rewrite('generic_test_code.common')
