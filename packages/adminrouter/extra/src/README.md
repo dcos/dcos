@@ -1108,3 +1108,553 @@ expressions/statements:
 This is why the context of each endpoint is not protected by locks, in
 case when it's only about fetching a single value from context dict or
 storing/appending one there.
+
+## Tests writing howto
+
+This section is intended to quickly enable contributors to start writing tests.
+All the test harness components and concepts are described here with a "bigger picture"
+in mind so that it is easier to understand how they relate to each other.
+
+It is divided into three sections:
+* generic tests which can be covered by simply updating test harness' YAML
+  configuration
+* standard tests that do not fit into YAML-described generic tests
+* advanced usage
+
+It is possible that some of the paragraphs will be repeating the information
+already provided earlier in the text, while some others may require reading or
+re-reading earlier paragraphs. It is very much recommended though to read all the
+preceding sections before reading this one.
+
+
+### Generic tests
+Let's imagine that we need to add support for `SchmetterlingDB` to AR. The DB
+will be available only on Masters. Assuming that we omit `main/server/http`
+config sections for clarity, the configuration may look like this:
+
+```
+upstream schmetterlingdb {
+    server 127.0.0.1:12345;
+}
+
+location = /schmetterlingdb {
+    return 307 /schmetterlingdb/;
+}
+
+location /schmetterlingdb/ {
+    # This endpoint:
+    # * requires auth
+    # * Server-Sent-Events must be supported
+    # * redirects must be properly rewritten as the backend always assumes it
+    # owns root of the namespace
+    proxy_pass http://schmetterlingdb/;
+}
+
+location /schmetterlingdb/stats/ {
+    # This endpoint:
+    # * does not require auth
+    # * response must not be cached by client
+    # * websockets must be supported
+    rewrite ^/schmetterlingdb/(.*) /$1 break;
+    proxy_pass http://schmetterlingdb;
+}
+```
+
+Steps are as follows:
+* in order to be able to test anything, we need to add a mock HTTP server
+  that will simulate our SchmetterlingDB. In 95% of the cases it should be
+  sufficient to use `ReflectingUnixSocketEndpoint` or `ReflectingTCPIPEndpoint`
+  classes depending on whether we connect to our backend via Unix socket or
+  TCP/IP. Please check [endpoints documentation](#endpoints) for more
+  information. Our mock endpoint may be present in Open, EE or both flavours:
+  * `test-harness/modules/mocker/common.py` - for both EE and Open. Add:
+    ```
+    res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `MockerBase._create_common_endpoints()`.
+  * `test-harness/modules/mocker/common.py` - for Open only. Add
+    ```
+    extra_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+  * `test-harness/modules/mocker/open.py` - for Open only. Add
+    ```
+    extra_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+  * `test-harness/modules/mocker/ee.py` - for Open only. Add
+    ```
+    ee_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+
+* we need to add new auth wrapper to `auth/(open|ee).lua`. For example, for
+  Open it is going to be:
+  ```
+  res.access_cockroachdb_endpoint = function()
+    return res.do_authn_and_authz_or_exit()
+  end
+  ```
+  and the endpoint configuration will now look like this:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_cockroachdb_endpoint();
+      }
+      proxy_pass http://schmetterlingdb/;
+  }
+  ```
+
+* with the mock endpoint working and authentication in place, we can add
+  authentication tests. Depending on the flavour where our SchmetterlingDB is
+  present (open/ee/both), this must be done in either one of these or both:
+  * for EE, add endpoint path and RID to either `acl_endpoints` or
+    `authed_endpoints` lists from `test-harness/tests/ee/test_master.py`. See
+    the comments in the file for more details.
+  * for Open, add your endpoint to `authed_endpoints` list in
+    `test-harness/tests/open/test_master.py`
+* even though `/schmetterlingdb/stats/` does not require authentication it still
+  needs to be tested. This should be done using generic tests. Depending on the
+  AR flavour which `SchmetterlingDB` is designed to work with, we need
+  following:
+  ```
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  ```
+  in one of the files:
+  * EE: `test-harness/tests/ee/test_generic.config.yml`
+  * Open: `test-harness/tests/open/test_generic.config.yml`
+  * both: `test-harness/tests/test_generic.config.yml`
+
+  See section describing [generic tests syntax](#yaml-file-syntax) for more
+  details. In all following examples, there is going to be implicit assumption
+  that the user already knows the file/place where generic tests belong to.
+
+* next - we need to make sure that our endpoints are proxing to correct upstreams.
+  This should be done using `is_upstream_correct` test:
+  ```
+  - tests:
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+    type:
+      - master
+  ```
+  We need to test *both* locations as each one of them is a separate block in
+  AR configuration, which may point to a different upstream.
+
+* next - we need to make sure that `/schmetterlingdb` request is properly
+  redirected to `/schmetterlingdb/`. It is important to point out that all
+  redirects should be done using `307 Temporary Redirect` as:
+  * 301,302 redirects do not preserve request method (clients change POST to
+    GET)
+  * 308 redirect is not supported by all clients
+
+  The test is as follows:
+  ```
+  - tests:
+      is_endpoint_redirecting_properly:
+        enabled: true
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+    type:
+      - master
+  ```
+* next - each request needs to set standardised set of headers to upstream.
+  This list includes:
+  * `Host`
+  * `X-Real-IP`
+  * `X-Forwarded-For`
+  * `X-Forwarded-Proto`
+
+  On top of that, our SchmetterlingDB does not neet JWT, so it is going to be
+  more secure if we do not pass it in upstream request. Generic test to confirm
+  this behaviour:
+  ```
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: true
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+    type:
+      - master
+  ```
+  Adding it will cause tests to fail though. This is because the endpoints were
+  missing some important bits of information. Let's fix it:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_cockroachdb_endpoint();
+      }
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+  In all following examples there is going to be implicit assumption
+  that user should be using predefined includes instead of trying to manually
+  specify configuration for common use cases (e.g. headers, caching,
+  websockets, etc..).
+* next - we need to make sure that `/schmetterlingdb/stats/` endpoint results
+  are not cached. Test:
+  ```
+  - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  ```
+  This needs to be matched by reconfiguring the location block a bit:
+  ```
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      include includes/disable-response_caching.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+* next - we need to makre sure that upstream request is made in a correct way.
+  This includes:
+    * HTTP version is correct
+    * upstream request path has been adjusted (or not) as necessary
+
+  In case of request path, usually, it is all about whether `proxy_pass` ends
+  with [a path component or not](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass).
+  HTTP version is important in cases when one needs to support e.g. Server
+  Sent Events. The tests are as follows:
+  ```
+  - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+  ```
+  We cannot add these two test paths into single test block as each one needs
+  a different http version. Our configuration needs to be modified to match it:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_cockroachdb_endpoint();
+      }
+
+      # Websockets:
+      include includes/websockets.conf;
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      # SSE config:
+      include includes/disable-request-response-buffering.conf;
+      include includes/http-11.conf;
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      include includes/disable-response_caching.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+
+* and finally the last thing - we need to make sure that redirects are adjusted
+  by AR. SchmetterlingDB always assumes that it owns root of the webpage and
+  all the redirects it responds with are anchored at root `/`. The tests:
+  ```
+  - tests:
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+  ```
+  and the configuration:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_cockroachdb_endpoint();
+      }
+
+      # Websockets:
+      include includes/websockets.conf;
+
+      # Adjust redirects from SchmetterlingDB:
+      proxy_redirect http://$host/schmetterlingdb/ /schmetterlingdb/;
+      proxy_redirect http://$host/ /schmetterlingdb/;
+      proxy_redirect / /schmetterlingdb/;
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+  ```
+
+To sum up, our test configuration should look as follows:
+```
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+    type:
+      - master
+  - tests:
+      is_endpoint_redirecting_properly:
+        enabled: true
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        enabled: true
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+    type:
+      - master
+  - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+  - tests:
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+
+```
+which can be simplified into:
+```
+  - tests:
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+      is_endpoint_redirecting_properly:
+        enabled: true
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+      are_upstream_req_headers_ok:
+        enabled: true
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+```
+and the endpoint configuration:
+```
+upstream schmetterlingdb {
+    server 127.0.0.1:12345;
+}
+
+location = /schmetterlingdb {
+    return 307 /schmetterlingdb/;
+}
+
+location /schmetterlingdb/ {
+    access_by_lua_block {
+      auth.access_cockroachdb_endpoint();
+    }
+
+    # Websockets:
+    include includes/websockets.conf;
+
+    # Adjust redirects from SchmetterlingDB:
+    proxy_redirect http://$host/schmetterlingdb/ /schmetterlingdb/;
+    proxy_redirect http://$host/ /schmetterlingdb/;
+    proxy_redirect / /schmetterlingdb/;
+
+    include includes/proxy-headers.conf;
+    proxy_set_header Authorization "";
+    proxy_pass http://schmetterlingdb/;
+}
+
+location /schmetterlingdb/stats/ {
+    # This endpoint does not require auth
+
+    # SSE config:
+    include includes/disable-request-response-buffering.conf;
+    include includes/http-11.conf;
+
+    rewrite ^/schmetterlingdb/(.*) /$1 break;
+    include includes/proxy-headers.conf;
+    include includes/disable-response_caching.conf;
+    proxy_set_header Authorization "";
+    proxy_pass http://schmetterlingdb;
+}
+```
+
+### Standard tests
+* resolver settings test/verification that upstream records are re-resolved
+  on each request
+
+### Advanced usage
+There are no general guidelines on how to add advanced test cases to test
+harness, as each case is different. Sometimes one needs to add support for a
+new sideeffect to Mocker endpoints, sometimes it's adding a custom benchmarking
+tool to the harness in order to stress AR in certain way, sometimes it is
+just a simple tests checking >40 endpoint, every one of them in a slighly
+different way, etc...
+
+In such cases it is important to keep in mind few simple rules, with which
+the whole test harness was designed and implemented:
+* *try to avoid creating custom/very specialized DSL*
+
+The more abstractions there are, the more AR test-harness-specific
+functions/shortcuts there are, the more difficult it is for people to start
+lerning it effectivelly and/or not to try to invent their own indirection
+layers. Try to keep things simple!
+
+* *try to keep the code DRY*
+
+Admin Router tests can be very repetitive. As trivial and simple it sounds, the
+more tests there are the more difficult is to refactor code and to keep it
+tidy. This increases the barier of entry for new contributors and makes them
+feel that `it is OK to do it` - it is not. If you wrote the same tests more
+than three times, then maybe it is time to implement another generic tests in YAML
+config file and start operating only on the test's input data instead.
+
+* *check for a-prior art*
+
+It is possible that the solution that you are looking for has already been found
+by somebody else. Try to search for tests that check similar behaviour or feature.
+If you need to implement new sidefect/functionality - try looking at existing
+test-harness features and try following the "general design". Nothing is writen
+in stone but "There should be one-- and preferably only one --obvious way to do
+it."
+
+Good luck!
