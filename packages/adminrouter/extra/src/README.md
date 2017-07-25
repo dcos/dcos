@@ -36,9 +36,9 @@ using nginxdox and embedded into the repository is up to date. If not, the CI
 job is failed and the user needs to regenerate the docs and re-submit the PR.
 
 The check is done by generating the documentation also during the build stage.
-If, after the nginxdox run, git detects uncommited changes, then this means
+If, after the nginxdox run, git detects uncommitted changes, then this means
 that the Admin Router configuration differs from the HTML documents that
-are commited into repository. This is done using `make check-api-docs` target.
+are committed into repository. This is done using `make check-api-docs` target.
 
 In order to regenerate the documentation files, one needs to execute
 `make api-docs` file and commit the changes into the repository.
