@@ -1,0 +1,16 @@
+#!/bin/bash
+set -o nounset -o pipefail
+# Install glide
+apt-get update && \
+  apt-get install -y software-properties-common
+
+add-apt-repository ppa:masterminds/glide && \
+  apt-get update && \
+  apt-get install -y glide
+
+# Build and install DC/OS CNI plugins.
+pushd /pkg/src/dcos-cni/
+make
+popd
+
+cp /pkg/src/dcos-cni/bin/* $PKG_PATH

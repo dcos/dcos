@@ -4,4 +4,4 @@ Description=Admin Router Reloader: reloads Admin Router to pick up domain resolu
 [Service]
 Type=oneshot
 EnvironmentFile=/opt/mesosphere/environment
-ExecStart=-$PKG_PATH/nginx/sbin/nginx -c $PKG_PATH/nginx/conf/nginx.master.conf -s reload
+ExecStart=-$PKG_PATH/nginx/sbin/adminrouter.sh -c $PKG_PATH/nginx/conf/nginx.master.conf -s reload

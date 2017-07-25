@@ -48,7 +48,6 @@ RUN set -ex \
 RUN set -ex \
     && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
     && apt-get install -y --no-install-recommends \
-        dnsmasq \
         gcc \
         gettext-base \
         libdigest-sha-perl \
@@ -79,6 +78,13 @@ ENV PATH ${VENV_DIR}/bin:$PATH
 COPY ./requirements-tests.txt .
 RUN pip install -r requirements-tests.txt
 
+# Install Node & NPM
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs
+
+# Install Ngindox for API doc generation
+RUN npm install -g ngindox@0.2.0
+
 # Download Vegeta tool for benchmarking
 RUN curl -fsSL "$VEGETA_DOWNLOAD_URL" -o vegeta.tar.gz \
     && echo "$VEGETA_DOWNLOAD_SHA256  vegeta.tar.gz" | sha256sum -c - \
@@ -100,32 +106,36 @@ COPY build-resty.sh $OPENRESTY_COMPILE_SCRIPT
 COPY iam.jwt-key.pub \
      iam.jwt-key.priv \
      iam.jwt-key.shared-secret \
+     detect_ip_public_data.txt \
         /usr/local/
 COPY cluster-id /var/lib/dcos/cluster-id
 COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
+RUN chmod -v a+x /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
+COPY plain-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/
+COPY nested-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/nest1/
+COPY plain-metadata-testfile.json \
+     dcos-version.json \
+        /opt/mesosphere/active/dcos-metadata/etc/
+COPY nested-metadata-testfile.json /opt/mesosphere/active/dcos-metadata/etc/nest1/
 
 # The contents of adminrouter-listen* files differ from the ones that are
 # shipped with DC/OS - the IP addresses Nginx binds to are limited to only
 # 127.0.0.1 instead of *. The reason for it is that some endpoints also need to
 # listen on TCP port 80 and this causes conflicts.
 COPY adminrouter-redirect-http-https.conf \
-     adminrouter-upstreams.conf \
+     adminrouter-upstreams-ee.conf \
+     adminrouter-upstreams-open.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
+     adminrouter-tls.conf \
         /opt/mesosphere/etc/
+# Clean up duplicite copy of the `ca.crt` file once custom CA cert PR gets merged
+# See: DCOS-16017
 COPY ca.crt /run/dcos/pki/CA/certs/
+COPY ca.crt /run/dcos/pki/CA/ca-bundle.crt
 COPY adminrouter.crt /run/dcos/pki/tls/certs/
 COPY adminrouter.key /run/dcos/pki/tls/private/
-
-# dnsmasq stuff:
-COPY ./dnsmasq.conf /etc/dnsmasq.conf
-# In case if Docker someday decides to solve:
-# https://github.com/docker/docker/issues/1297
-# and container's /etc/resolv.conf becomes visible and not bind-mounted.
-RUN echo "nameserver 127.0.0.1" > /etc/resolv.conf
-RUN echo "nameserver 8.8.8.8\nnameserver 8.8.4.4\n" > /etc/resolv.conf.dnsmasq
-COPY ./hosts.dnsmasq /etc/hosts.dnsmasq
 
 # Workers run as the dcos_adminrouter group.
 RUN groupadd --system dcos_adminrouter

@@ -31,6 +31,6 @@ class Nginx(NginxBase):
         """
         NginxBase.__init__(self, **base_kwargs)
 
-        self._set_ar_env_from_val("OUATH_CLIENT_ID", ouath_client_id)
-        self._set_ar_env_from_val("OUATH_AUTH_REDIRECTOR", ouath_auth_redirector)
+        self._set_ar_env_from_val("OAUTH_CLIENT_ID", ouath_client_id)
+        self._set_ar_env_from_val("OAUTH_AUTH_REDIRECTOR", ouath_auth_redirector)
         self._set_ar_env_from_val('SECRET_KEY_FILE_PATH', secret_key_file_path)

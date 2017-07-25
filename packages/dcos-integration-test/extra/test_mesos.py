@@ -2,9 +2,10 @@ import json
 import logging
 import uuid
 
+import retrying
 
-from test_util.marathon import get_test_app, get_test_app_in_ucr
-from test_util.recordio import Decoder, Encoder
+from dcos_test_utils.marathon import Container, get_test_app
+from dcos_test_utils.recordio import Decoder, Encoder
 
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
@@ -148,7 +149,7 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
     # doesn't support running docker images with the UCR. We need this
     # functionality in order to test that the pid namespace isolator
     # is functioning correctly.
-    app, test_uuid = get_test_app_in_ucr()
+    app, test_uuid = get_test_app(container_type=Container.MESOS)
 
     ps_output_file = 'ps_output'
     app['cmd'] = 'ps ax -o pid= > {}; sleep 1000'.format(ps_output_file)
@@ -157,7 +158,12 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
         marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
         app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
 
-        content = dcos_api_session.mesos_sandbox_file(
-            app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
+        # There is a short delay between the `app_task` starting and it writing
+        # its output to the `pd_output_file`. Because of this, we wait up to 10
+        # seconds for this file to appear before throwing an exception.
+        @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
+        def get_ps_output():
+            return dcos_api_session.mesos_sandbox_file(
+                app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
 
-        assert len(content.split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
+        assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'

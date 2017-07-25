@@ -1,5 +1,10 @@
 #!/bin/bash
 # variant: {variant}
+#
+# All logging and tool output should be redirected to stderr
+# as the Docker container might output json that would
+# otherwise be tainted.
+#
 set -o errexit -o nounset -o pipefail
 
 # preflight checks
@@ -7,17 +12,27 @@ docker version >/dev/null 2>&1 || {{ echo >&2 "docker should be installed and ru
 
 backout(){{
     if [ -f "{genconf_tar}" ]; then
-        rm {genconf_tar}
+        rm -f {genconf_tar}
     fi
     exit 1
 }}
 trap 'backout' INT
+
+# if the tarball was previously extracted
+if [ -f "{genconf_tar}" ]; then
+    # but not successfully loaded into Docker
+    if [ -z "$(docker images -q {docker_image_name} 2>/dev/null)" ]; then
+        # remove the potentially corrupted tarball and
+        # cause it to be re-extracted in the next step
+        rm -f {genconf_tar}
+    fi
+fi
+
 # extract payload and load into docker if not extracted
-if [ ! -f "{genconf_tar}" ]
-then
-    echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
-    sed '0,/^#EOF#$/d' $0 | tar xv
-    docker load -i {genconf_tar}
+if [ ! -f "{genconf_tar}" ]; then
+    >&2 echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
+    sed '1,/^#EOF#$/d' $0 | tar xv
+    >&2 docker load -i {genconf_tar}
 fi
 trap - INT
 
@@ -27,11 +42,12 @@ fi
 
 PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
+DCOS_INSTALLER_CONTAINER_NAME=${{DCOS_INSTALLER_CONTAINER_NAME:-{genconf_tar}}}
 
 if [ "$DCOS_INSTALLER_DAEMONIZE" == "true" ]; then
-    docker run --name={genconf_tar} -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --name=$DCOS_INSTALLER_CONTAINER_NAME -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 else
     trap 'docker kill {genconf_tar}' HUP QUIT INT TERM
-    docker run --rm --name={genconf_tar} -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
 exit $?

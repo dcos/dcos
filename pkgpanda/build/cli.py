@@ -45,7 +45,7 @@ def main():
         # Check that the folder is a package folder (the name was found by the package store as a
         # valid package with 1+ variants).
         if name not in package_store.packages_by_name:
-            print("Not a valid package folder. Didn't find any 'buildinfo.json' files.")
+            print("Not a valid package folder. Didn't find any 'buildinfo.json' files.", file=sys.stderr)
             sys.exit(1)
 
         clean_after_build = not arguments['--dont-clean-after-build']

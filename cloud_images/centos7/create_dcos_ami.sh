@@ -5,7 +5,7 @@ set -o errexit -o nounset -o pipefail
 export AWS_PROFILE=${AWS_PROFILE:-"development"}
 
 # Base CentOS 7 AMI and region
-export SOURCE_AMI=${SOURCE_AMI:-"ami-c5af54a5"}
+export SOURCE_AMI=${SOURCE_AMI:-"ami-31a8ca51"}
 export SOURCE_AMI_REGION=${SOURCE_AMI_REGION:-"us-west-2"}
 
 # Comma separated string of AWS regions to copy the resulting DC/OS AMI to

@@ -93,7 +93,9 @@ def set_app_attrs_from_config():
         current_app.config['DCOS_CONFIG_DIR'],
         current_app.config['DCOS_ROOTED_SYSTEMD'],
         manage_systemd=True,
-        block_systemd=False)
+        block_systemd=False,
+        manage_state_dir=True,
+        state_dir_root=current_app.config['DCOS_STATE_DIR_ROOT'])
     current_app.repository = Repository(
         current_app.config['DCOS_REPO_DIR'])
 

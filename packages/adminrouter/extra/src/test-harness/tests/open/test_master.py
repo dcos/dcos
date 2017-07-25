@@ -1,37 +1,42 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import logging
+
 import pytest
+import requests
 
 from generic_test_code.common import (
     assert_endpoint_response,
-    generic_correct_upstream_dest_test,
+    overriden_file_content,
 )
 from generic_test_code.open import assert_iam_queried_for_uid
+from mocker.endpoints.mesos import AGENT1_ID
 from util import SearchCriteria, iam_denies_all_requests
 
 log = logging.getLogger(__name__)
 
 authed_endpoints = [
-    '/acs/api/v1/foo/bar',
+    '/acs/api/v1/reflect/me',
     '/capabilities',
     '/cosmos/service/foo/bar',
     '/dcos-history-service/foo/bar',
     '/exhibitor/foo/bar',
-    '/marathon/v2/apps',
-    '/mesos/master/state-summary',
-    '/mesos_dns/foo/bar',
+    '/marathon/v2/reflect/me',
+    '/mesos/reflect/me',
+    '/mesos_dns/v1/reflect/me',
     '/metadata',
+    '/dcos-metadata/plain-metadata-testfile.json',
     '/navstar/lashup/key',
     '/package/foo/bar',
     '/pkgpanda/foo/bar',
     '/pkgpanda/active.buildinfo.full.json',
-    '/service/nginx-alwaysthere/foo/bar',
-    '/service/nginx-alwaysthere/foo/bar',
-    '/slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1',
+    '/service/scheduler-alwaysthere/foo/bar',
+    '/service/nest1/scheduler-alwaysthere/foo/bar',
+    '/service/nest2/nest1/scheduler-alwaysthere/foo/bar',
+    '/slave/{}'.format(AGENT1_ID),
     '/system/health/v1/foo/bar',
-    '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/foo/bar',
-    '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar',
+    '/system/v1/agent/{}/logs/v1/foo/bar'.format(AGENT1_ID),
+    '/system/v1/agent/{}/metrics/v0/foo/bar'.format(AGENT1_ID),
     '/system/v1/leader/marathon/foo/bar',
     '/system/v1/leader/mesos/foo/bar',
     '/system/v1/logs/v1/foo/bar',
@@ -70,13 +75,27 @@ class TestAuthEnforcementOpen:
                 )
 
 
-class TestHealthEndpointOpen:
-    def test_if_request_is_sent_to_correct_upstream(self,
-                                                    master_ar_process,
-                                                    valid_user_header):
+class TestDcosMetadata:
+    @pytest.mark.parametrize("uniq_content", ["(｡◕‿‿◕｡)", "plain text 1234"])
+    @pytest.mark.parametrize("path", ["plain-metadata-testfile.json",
+                                      "nest1/nested-metadata-testfile.json"])
+    def test_if_metadata_files_are_handled(
+            self,
+            master_ar_process,
+            valid_user_header,
+            uniq_content,
+            path):
 
-        generic_correct_upstream_dest_test(master_ar_process,
-                                           valid_user_header,
-                                           '/system/health/v1/foo/bar',
-                                           'http://127.0.0.1:1050',
-                                           )
+        url = master_ar_process.make_url_from_path('/dcos-metadata/{}'.format(path))
+
+        with overriden_file_content(
+                '/opt/mesosphere/active/dcos-metadata/etc/{}'.format(path),
+                uniq_content):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        resp.encoding = 'utf-8'
+        assert resp.text == uniq_content

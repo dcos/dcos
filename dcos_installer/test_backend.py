@@ -104,7 +104,7 @@ def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
-        'version': '1.9-dev',
+        'version': '1.10-dev',
         'variant': 'some-variant'
     }
 
@@ -307,25 +307,38 @@ aws_template_upload: true
 
 
 def test_do_aws_cf_configure_valid_storage_config(config_aws, tmpdir, monkeypatch):
+    bucket = str(uuid.uuid4())
+    config_str = valid_storage_config.format(
+        key_id=config_aws["access_key_id"],
+        bucket=bucket,
+        access_key=config_aws["secret_access_key"])
+    assert aws_cf_configure(bucket, config_str, config_aws, tmpdir, monkeypatch) == 0
+    # TODO: add an assertion that the config that was resolved inside do_aws_cf_configure
+    # ended up with the correct region where the above testing bucket was created.
+
+
+def test_override_aws_template_storage_region_name(config_aws, tmpdir, monkeypatch):
+    bucket = str(uuid.uuid4())
+    config_str = valid_storage_config.format(
+        key_id=config_aws["access_key_id"],
+        bucket=bucket,
+        access_key=config_aws["secret_access_key"])
+    config_str += '\naws_template_storage_region_name: {}'.format(config_aws['region_name'])
+    assert aws_cf_configure(bucket, config_str, config_aws, tmpdir, monkeypatch) == 0
+
+
+def aws_cf_configure(s3_bucket_name, config, config_aws, tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
     session = gen.build_deploy.aws.get_test_session(config_aws)
     s3 = session.resource('s3')
-    bucket = str(uuid.uuid4())
-    s3_bucket = s3.Bucket(bucket)
+    s3_bucket = s3.Bucket(s3_bucket_name)
     s3_bucket.create(CreateBucketConfiguration={'LocationConstraint': config_aws['region_name']})
 
+    create_config(config, tmpdir)
+    create_fake_build_artifacts(tmpdir)
     try:
-        config_str = valid_storage_config.format(
-            key_id=config_aws["access_key_id"],
-            bucket=bucket,
-            access_key=config_aws["secret_access_key"])
-        create_config(config_str, tmpdir)
-        create_fake_build_artifacts(tmpdir)
-
         with tmpdir.as_cwd():
-            assert backend.do_aws_cf_configure() == 0
-            # TODO: add an assertion that the config that was resolved inside do_aws_cf_configure
-            # ended up with the correct region where the above testing bucket was created.
+            return backend.do_aws_cf_configure()
     finally:
         objects = [{'Key': o.key} for o in s3_bucket.objects.all()]
         s3_bucket.delete_objects(Delete={'Objects': objects})

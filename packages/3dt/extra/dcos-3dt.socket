@@ -1,8 +1,0 @@
-[Unit]
-Description=DC/OS Diagnostics (3DT) Agent Socket: socket for DC/OS Diagnostics Agent
-
-[Socket]
-ListenStream=/run/dcos/3dt.sock
-SocketUser=root
-SocketGroup=dcos_adminrouter
-SocketMode=0660

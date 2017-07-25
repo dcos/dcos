@@ -2,7 +2,7 @@ FROM alpine:3.4
 MAINTAINER help@dcos.io
 
 WORKDIR /
-RUN apk add --update curl ca-certificates git openssh tar xz zlib && rm -rf /var/cache/apk/*
+RUN apk add --update curl ca-certificates git openssh openssl tar xz zlib && rm -rf /var/cache/apk/*
 RUN curl -fLsS --retry 20 -Y 100000 -y 60 -o glibc-2.23-r3.apk https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk && apk --allow-untrusted add glibc-2.23-r3.apk && rm glibc-2.23-r3.apk && rm -rf /var/cache/apk/*
 VOLUME ["/genconf"]
 

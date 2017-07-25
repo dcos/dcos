@@ -6,7 +6,6 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
 ### TCP
 
- - 61003: dcos-rexray (default)
  - 61053: dcos-mesos-dns
  - 61420: dcos-epmd
  - 61421: dcos-minuteman
@@ -28,7 +27,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 53: dcos-spartan
  - 80: dcos-adminrouter
  - 443: dcos-adminrouter
- - 1050: dcos-3dt
+ - 1050: dcos-diagnostics
  - 1801: dcos-oauth
  - 2181: dcos-exhibitor
  - 2888: dcos-exhibitor

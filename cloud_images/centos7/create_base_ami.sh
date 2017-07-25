@@ -43,7 +43,7 @@ touch "${ROOTFS}/etc/resolv.conf"
 
 cat > "${ROOTFS}/etc/sysconfig/network" << END
 NETWORKING=yes
-NOZEROCONF=yes
+NETWORKING_IPV6=yes
 END
 
 cat > "${ROOTFS}/etc/sysconfig/network-scripts/ifcfg-eth0" << END
@@ -53,7 +53,9 @@ ONBOOT="yes"
 TYPE="Ethernet"
 USERCTL="yes"
 PEERDNS="yes"
-IPV6INIT="no"
+IPV6INIT="yes"
+DHCPV6C="yes"
+NM_CONTROLLED="no"
 PERSISTENT_DHCLIENT="1"
 END
 

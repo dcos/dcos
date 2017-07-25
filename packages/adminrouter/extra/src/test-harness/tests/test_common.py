@@ -12,7 +12,7 @@ import pytest
         'master_ar_process_pertest'
     ])
 def ar_process(request):
-    return request.getfuncargvalue(request.param)
+    return request.getfixturevalue(request.param)
 
 
 class TestNginxWorkersGroup:

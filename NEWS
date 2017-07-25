@@ -1,6 +1,6 @@
 Documentation of changes which may break some install environments
 
-1.9-dev
+1.9
  - DC/OS binaries / config is no longer injected to user environment via /etc/profile.d/dcos.sh. New installs have just a single binary, `dcos-shell` added to $PATH. Can be used as `dcos-shell <cmd>` to run a single command or `dcos-shell` to start a new shell which has the environment variables sourced in which arbitrary commands can be run.
 
 1.8

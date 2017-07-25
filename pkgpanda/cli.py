@@ -18,6 +18,8 @@ Options:
     --no-systemd                Don't try starting/stopping systemd services
     --no-block-systemd          Don't block waiting for systemd services to come up.
     --root=<root>               Testing only: Use an alternate root [default: {default_root}]
+    --state-dir-root=<root>     Testing only: Use an alternate package state directory root
+                                [default: {default_state_dir_root}]
     --repository=<repository>   Testing only: Use an alternate local package
                                 repository directory [default: {default_repository}]
     --rooted-systemd            Use $ROOT/dcos.target.wants for systemd management
@@ -74,8 +76,8 @@ def uninstall(install, repository):
     assert len(all_names) > 0
 
     if '/' in all_names + [install.root]:
-        print("Cowardly refusing to rm -rf '/' as part of uninstall.")
-        print("Uninstall directories: ", ','.join(all_names + [install.root]))
+        print("Cowardly refusing to rm -rf '/' as part of uninstall.", file=sys.stderr)
+        print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
     check_call(['rm', '-rf'] + all_names)
@@ -117,7 +119,7 @@ def run_checks(checks, install, repository):
             try:
                 check_call([os.path.join(check_dir, check_file)])
             except CalledProcessError:
-                print('Check failed: {}'.format(check_file))
+                print('Check failed: {}'.format(check_file), file=sys.stderr)
                 exit_code = 1
     return exit_code
 
@@ -128,6 +130,7 @@ def main():
             default_config_dir=constants.config_dir,
             default_root=constants.install_root,
             default_repository=constants.repository_base,
+            default_state_dir_root=constants.STATE_DIR_ROOT,
         ),
     )
     umask(0o022)
@@ -141,7 +144,8 @@ def main():
         not arguments['--no-block-systemd'],
         manage_users=True,
         add_users=not os.path.exists('/etc/mesosphere/manual_host_users'),
-        manage_state_dir=True)
+        manage_state_dir=True,
+        state_dir_root=os.path.abspath(arguments['--state-dir-root']))
 
     repository = Repository(os.path.abspath(arguments['--repository']))
 
@@ -210,16 +214,16 @@ def main():
             # Run all checks
             sys.exit(run_checks(checks, install, repository))
     except ValidationError as ex:
-        print("Validation Error: {0}".format(ex))
+        print("Validation Error: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
     except PackageError as ex:
-        print("Package Error: {0}".format(ex))
+        print("Package Error: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
     except Exception as ex:
-        print("ERROR: {0}".format(ex))
+        print("ERROR: {0}".format(ex), file=sys.stderr)
         sys.exit(1)
 
-    print("unknown command")
+    print("unknown command", file=sys.stderr)
     sys.exit(1)
 
 

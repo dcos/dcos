@@ -599,7 +599,6 @@ def mock_make_tar(result_filename, folder):
 def test_make_channel_artifacts(monkeypatch):
     logging.basicConfig(level=logging.DEBUG)
     monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
-    monkeypatch.setattr('gen.build_deploy.bash.fetch_dcos_launch_bin', lambda v, l_i: 'dcos-launch')
     monkeypatch.setattr('pkgpanda.util.make_tar.__code__', mock_make_tar.__code__)
 
     metadata = {

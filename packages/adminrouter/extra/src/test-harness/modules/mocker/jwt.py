@@ -7,10 +7,10 @@
             time.time(), expressed in seconds
 """
 
-import jwt
 import logging
 import time
 
+import jwt
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
