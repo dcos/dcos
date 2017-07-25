@@ -640,18 +640,18 @@ Below, there is a general overview of all the components of the test harness.
 More detailed documentation can be found in docstrings and comments in the code
 itself.
 
-Additionally there is a guick howto on basic tests writting. Unfortunatelly it
-is impossible to fully cover all aspects of the test harnes, so it also may be
+Additionally there is a quick howto on basic tests writing. Unfortunately it
+is impossible to fully cover all aspects of the test harness, so it also may be
 helpful to look for examples among existing tests.
 
 ### Running tests
 To execute all the tests, just issue:
 
-	make test
+    make test
 
 In order have fine-grained control over the pytest command, execute:
 
-	make shell
+    make shell
 
 This command will launch an interactive environment inside the container that
 has all the dependencies installed. The developer may now run the `pytest`
@@ -713,6 +713,230 @@ Test harness needs to have a way to create them for use in the tests. This is
 done by `test-harness/modules/mocker/jwt.py` module, which together with
 `repo_is_ee` fixture provides abstracts away the type of the token used by
 Admin Router itself.
+
+### Tests code reuse and deduplication
+Lots of endpoints exposed by Admin Router share the common behaviour. Usually, it
+is something simple like testing for correct headers, right upstream, etc...
+This results in tests covering them being very repetitive.
+
+In order to keep the code DRY, common code was extracted into a library with
+generic tests & helpers and a testing framework using YAML configuration files
+was developed.
+
+#### Generic tests
+Tests shared by most of the endpoints are as follow:
+* `generic_no_slash_redirect_test` - test if request for location without
+  trailing slash is redirected to the one that ends with `/`
+* `generic_response_headers_verify_test` - test if response sent by AR is correct,
+  this mostly involves checking response headers
+* `generic_upstream_headers_verify_test` - test if the request sent by NGINX to
+  the upstream is correct. Again - this is mostly about the headers now.
+* `generic_correct_upstream_dest_test` - test if the upstream request done by
+  Admin Router is sent to the correct upstream
+* `generic_correct_upstream_request_test` - test if path component of the request
+  sent upstream by AR along with HTTP version is correct
+* `generic_location_header_during_redirect_is_adjusted_test` - test if `Location`
+  headers are being rewritten/adjusted by NGINX in a situation when the upstream
+  performs a redirect
+
+All of these tests can be found in `test-harness/modules/generic_test_code/\*.py`
+together with extensive docstrings which explain all the call parameters.
+
+#### Helpers
+Helpers shared by most of the tests are as follow:
+* `overriden_file_content` - temporarily, while in the scope of the context manager,
+  substitute the contents of the given file with a given content. At the end of
+  the context, the original file contents are restored.
+* `verify_header` and `header_is_absent` - these functions check if the given
+  list of header tuples contains or does not contain given header.
+* `GuardedSubprocess` - launches given ar instance and makes sure that it is
+  terminated at the end of the context.
+* `iam_denies_all_requests` - makes sure that within of the context, IAM denies
+  all PolicyQuery requests.
+* `ping_mesos_agent` - tests if agent with a given ID (`mocker.endpoints.mesos.AGENT1_ID`
+   by default) can be reached.
+* `repo_is_ee` - function, upon which, all remaining test harness code
+  determines repository flavour
+* `assert_iam_queried_for_uid` - asserts that within the context, IAM has been
+  queried for given UID
+* `assert_endpoint_response` - asserts response code and log messages in Admin
+  Router stderr for request against specified path
+
+Please check corresponding helpers' source code for more information,
+all of them are pretty well documented using docstrings.
+
+This list does not include LogCatcher helper which is complex enough to
+deserve a separate paragraph.
+
+#### YAML configuration
+Generic tests are useful when one wants to re-use certain tests, but with
+dozens of tests using the generic tests, tests can still become hard to read
+and maintain. On top fo that, the fact that tests need to be differentiated
+by repository flavour(Open|EE) and by AR type (master|slave), makes tests even
+more prone to duplication and bitrot.
+
+This is the reason why majority of tests are written using YAML configuration
+files which are read by `./test-harness/tests/(open|ee)/test_generic.py`
+pytest file. Both the configuration shared between the flavours from
+`./test-harness/tests/test_generic.config.yml` and flavour-specific one
+from `./test-harness/tests/(open|ee)/test_generic.config.yml` are merged
+by the test code and thus the full configuration for given flavour is created.
+
+#### YAML file syntax
+Let's analyse a very simplified YAML configuration that covers only the exhibitor
+endpoint:
+```
+endpoint_tests:
+  - tests:
+      are_response_headers_ok:
+        enabled: true
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /exhibitor/foo/bar
+      are_upstream_req_headers_ok:
+        enabled: true
+        jwt_should_be_forwarded: skip
+        test_paths:
+          - /exhibitor/foo/bar
+      is_upstream_correct:
+        enabled: true
+        test_paths:
+          - /exhibitor/foo/bar
+        upstream: http://127.0.0.1:8181
+      is_upstream_req_ok:
+        enabled: true
+        expected_http_ver: HTTP/1.0
+        test_paths:
+          - expected: /foo/bar
+            sent: /exhibitor/foo/bar
+          - expected: /
+            sent: /exhibitor/
+          - expected: /exhibitor/v1/cluster/status
+            sent: /exhibitor/exhibitor/v1/cluster/status
+      is_endpoint_redirecting_properly:
+        enabled: true
+        locations:
+          - path: /exhibitor
+            code: 301
+      is_unauthed_access_permitted:
+        enabled: true
+        locations:
+          - /exhibitor/exhibitor/v1/cluster/status
+      is_location_header_rewritten:
+        enabled: true
+        basepath: /exhibitor/v1/ui/index.html
+        endpoint_id: http://127.0.0.1:8181
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/exhibitor/exhibitor/v1/ui/index.html
+            location_set: http://127.0.0.1/exhibitor/v1/ui/index.html
+    type:
+      - master
+      - agent
+```
+The syntax is as follows:
+* each file contains a dictionary, currently with only one key: `endpoint_tests`.
+  This is justified by the fact that we may add more generic configuration keys
+  in the future.
+* the value of the `endpoint_tests` key is a list of endpoint tests
+* lists of endpoint tests from `(open|ee)/test_generic.config.yml` and
+  `test_generic.config.yml` files are simply joined together while calculating
+  the set of tests for given AR flavour
+* the are no checks for uniqueness when it comes to endpoint tests - given
+  test can be added more than once in more than one file
+* each endpoint test is a dict which consists of:
+    * `tests`: a dict with entries describing individual tests (subtests for
+      short) of which particular endpoint test consists of
+    * `type`: a list which defines whether the subtests defined in the `tests` dict
+      can be run on `master` or `agent` or both (both keys are present in the list
+      then).
+* each subtest entry is a dictionary itself with at least one key:
+  `enabled`. If it is equal to `false` then the test is skipped/not executed.
+* at the time of writing this text, following subtests are supported:
+  * `are_response_headers_ok`
+    * calls `generic_response_headers_verify_test` generic test underneath
+    * tests if:
+      * response code is 200
+      * depending on the value of `nocaching_headers_are_sent` parameter:
+        * `true` - caching headers are present (`Cache-Control`, `Pragma`,
+          `Expires`) and set to disable all caching
+        * `false` - caching headers are absent (`Cache-Control`, `Pragma`,
+          `Expires`)
+        * `skip` - the presence of caching headers is not checked
+    * supports following parameters:
+      * `nocaching_headers_are_sent` - see above
+      * `test_paths` - list of AR locations that should be tested
+  * `are_upstream_req_headers_ok`
+    * calls `generic_upstream_headers_verify_test` generic test underneath
+    * tests if:
+      * response code is 200
+      * standard set of headers is present in the request to the upstream (
+        `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Real-IP`)
+      * depending on the value of `jwt_should_be_forwarded` parameter:
+        * `true` - the `Authorization` header is present in the upstream
+          request
+        * `false` - the `Authorization` header is absent in the upstream
+          request
+        * `skip` - the presence of the `Authorization` header is not checked
+    * supports following parameters:
+      * `jwt_should_be_forwarded` - see above
+      * `test_paths` - list of AR locations that should be tested
+  * `is_upstream_correct`
+    * calls `generic_correct_upstream_dest_test` generic test underneath
+    * tests if:
+      * response code is 200
+      * request has been sent to the correct upstream
+    * supports following parameters:
+      * `upstream` - name of the upstream that schould be handling requests
+      * `test_paths` - list of AR locations that should be tested
+  * `is_upstream_req_ok`
+    * calls `generic_correct_upstream_request_test` generic test underneath
+    * tests if:
+      * response code is 200
+      * depending on the `expected_http_ver` parameter:
+        * `HTTP/1.1` - verifies that the upstream request has been made using
+          HTTP/1.1
+        * `websockets` - apart from verifying that upstream connection is using
+          `HTTP/1.1`, it also makes sure that `Connection: upgrade` and
+          `Upgrade: websockets` headers are present
+        * anything else is compared directly to the request's HTTP version
+          string (e.g. `HTTP/1.0`)
+      * upstream request path is equal to the one specified in
+        `test_paths[expected]`
+      * upstream request method is `GET`
+    * supports following parameters:
+      * `expected_http_ver` - see above
+      * `test_paths` - each entry in the list is a dict with two keys:
+        * `sent` - request path sent in the request to the AR
+        * `expected` - see above
+  * `is_endpoint_redirecting_properly`
+    * calls `generic_no_slash_redirect_test` generic test underneath
+    * tests if the request for given path (without trailing slash) ends with a
+      redirect to the same locaion but with the trailing slash added. For example:
+        `/exhibitor -> /exhibitor/`
+      The status code of the redirect is also verified.
+    * supports following parameters:
+      * `locations` - each entry in the list is a dict with two keys:
+        * `path` - request path for the request sent to AR
+        * `code` - the response code of the redirect that is expected
+  * `is_location_header_rewritten`
+    * calls `generic_location_header_during_redirect_is_adjusted_test` generic
+      test underneath
+    * tests that `Location` header is properly rewritten during a redirect
+      issued by upstream.
+    * supports following parameters:
+      * `endpoint_id` - id of the upstream that should answer with a redirect
+        that is meant to be fixed by AR
+      * `basepath` - the base path of the request issued to AR.
+      * `location_set` - the initial `Location` header contents that should be
+        set by the upstream
+      * `location_expected` - the value of `Location` header that AR should
+        rewrite contents of `Location` header to.
+  * `is_unauthed_access_permitted`
+    * calls `assert_endpoint_response` generic test underneath
+    * tests if unauthenticated access is permitted while accessing given
+      location
+    * supports following parameters:
+      * `locations`: list of AR locations that should be tested
 
 ### Mocker
 Mocker takes care of simulating DC/OS HTTP endpoints that Admin Router uses. It's
@@ -850,7 +1074,7 @@ them. There are currently three files which contain:
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
   require custom AR fixtures
-* `test_boot_envvars.py`: tests that verify Admin Router startup variables
+* `test_boot_envvars.py`: tests that verify Admin Router's startup variables
 
 `test_agent.py` and `test_master.py` may be splitted apart into smaller units,
 but with each unit an extra start and stop of AR master or agent is required.
