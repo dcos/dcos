@@ -62,7 +62,7 @@ def _verify_endpoint_tests_conf(endpoint_tests):
         _verify_type_specification(t['type'])
 
         at_least_one_test_enabled = False
-        assert 0 < len(t['tests'].keys()) < 7
+        assert 0 < len(t['tests'].keys()) < 8
         for k in t['tests']:
             assert 'enabled' in t['tests'][k]
             assert t['tests'][k]['enabled'] in [True, False]
