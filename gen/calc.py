@@ -26,11 +26,13 @@ import ipaddress
 import json
 import os
 import socket
+import string
 import textwrap
 from math import floor
 from subprocess import check_output
 from urllib.parse import urlparse
 
+import schema
 import yaml
 
 import gen.internals
@@ -414,7 +416,7 @@ def calculate_config_yaml(user_arguments):
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
                  'docker/runtime,docker/volume,volume/sandbox_path,volume/secret,posix/rlimits,'
-                 'namespaces/pid,com_mesosphere_MetricsIsolatorModule')
+                 'namespaces/pid,linux/capabilities,com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators
@@ -550,6 +552,11 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_s3_prefix(s3_prefix):
+    # See DCOS_OSS-1353
+    assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
+
+
 def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
 
@@ -608,11 +615,222 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
+def calculate_check_config_contents(check_config, custom_checks):
+
+    def merged_check_config(config_a, config_b):
+        # config_b overwrites config_a. Validation should assert that names won't conflict.
+
+        def cluster_checks(config):
+            return config.get('cluster_checks', {})
+
+        def node_checks_section(config):
+            return config.get('node_checks', {})
+
+        def node_checks(config):
+            return node_checks_section(config).get('checks', {})
+
+        def prestart_node_checks(config):
+            return node_checks_section(config).get('prestart', [])
+
+        def poststart_node_checks(config):
+            return node_checks_section(config).get('poststart', [])
+
+        def merged_dict(dict_a, dict_b):
+            merged = dict_a.copy()
+            merged.update(dict_b)
+            return merged
+
+        merged_cluster_checks = merged_dict(cluster_checks(config_a), cluster_checks(config_b))
+        merged_node_checks = {
+            'checks': merged_dict(node_checks(config_a), node_checks(config_b)),
+            'prestart': prestart_node_checks(config_a) + prestart_node_checks(config_b),
+            'poststart': poststart_node_checks(config_a) + poststart_node_checks(config_b),
+        }
+
+        merged_config = {}
+        if merged_cluster_checks:
+            merged_config['cluster_checks'] = merged_cluster_checks
+        if merged_node_checks['checks']:
+            merged_config['node_checks'] = merged_node_checks
+        return merged_config
+
+    dcos_checks = json.loads(check_config)
+    user_checks = json.loads(custom_checks)
+    merged_checks = merged_check_config(user_checks, dcos_checks)
+    return yaml.dump(json.dumps(merged_checks, indent=2))
+
+
+def calculate_check_config(check_time):
+    check_config = {
+        'node_checks': {
+            'checks': {
+                'components_master': {
+                    'description': 'All DC/OS components are healthy.',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components'],
+                    'timeout': '3s',
+                    'roles': ['master']
+                },
+                'components_agent': {
+                    'description': 'All DC/OS components are healthy',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001'],
+                    'timeout': '3s',
+                    'roles': ['agent']
+                },
+                'xz': {
+                    'description': 'The xz utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
+                    'timeout': '1s'
+                },
+                'tar': {
+                    'description': 'The tar utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
+                    'timeout': '1s'
+                },
+                'curl': {
+                    'description': 'The curl utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
+                    'timeout': '1s'
+                },
+                'unzip': {
+                    'description': 'The unzip utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
+                    'timeout': '1s'
+                },
+                'ip_detect_script': {
+                    'description': 'The IP detect script produces valid output',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
+                    'timeout': '1s'
+                },
+                'mesos_master_replog_synchronized': {
+                    'description': 'The Mesos master has synchronized its replicated log',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['master']
+                },
+                'mesos_agent_registered_with_masters': {
+                    'description': 'The Mesos agent has registered with the masters',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
+                    'timeout': '1s',
+                    'roles': ['agent']
+                },
+            },
+            'prestart': [],
+            'poststart': [
+                'components_master',
+                'components_agent',
+                'xz',
+                'tar',
+                'curl',
+                'unzip',
+                'ip_detect_script',
+                'mesos_master_replog_synchronized',
+                'mesos_agent_registered_with_masters',
+            ],
+        },
+    }
+
+    if check_time == 'true':
+        # Add the clock sync check.
+        clock_sync_check_name = 'clock_sync'
+        check_config['node_checks']['checks'][clock_sync_check_name] = {
+            'description': 'System clock is in sync.',
+            'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
+            'timeout': '1s'
+        }
+        check_config['node_checks']['poststart'].append(clock_sync_check_name)
+
+    return json.dumps(check_config)
+
+
+def validate_check_config(check_config):
+
+    class PrettyReprAnd(schema.And):
+
+        def __repr__(self):
+            return self._error
+
+    check_name = PrettyReprAnd(
+        str,
+        lambda val: len(val) > 0,
+        lambda val: not any(w in val for w in string.whitespace),
+        error='Check name must be a nonzero length string with no whitespace')
+
+    timeout_units = ['ns', 'us', 'µs', 'ms', 's', 'm', 'h']
+    timeout = schema.Regex(
+        '^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
+        error='Timeout must be a string containing an integer or float followed by a unit: {}'.format(
+            ', '.join(timeout_units)))
+
+    check_config_schema = schema.Schema({
+        schema.Optional('cluster_checks'): {
+            check_name: {
+                'description': str,
+                'cmd': [str],
+                'timeout': timeout,
+            },
+        },
+        schema.Optional('node_checks'): {
+            'checks': {
+                check_name: {
+                    'description': str,
+                    'cmd': [str],
+                    'timeout': timeout,
+                    schema.Optional('roles'): schema.Schema(
+                        ['master', 'agent'],
+                        error='roles must be a list containing master or agent or both',
+                    ),
+                },
+            },
+            schema.Optional('prestart'): [check_name],
+            schema.Optional('poststart'): [check_name],
+        },
+    })
+
+    check_config_obj = validate_json_dictionary(check_config)
+    try:
+        check_config_schema.validate(check_config_obj)
+    except schema.SchemaError as exc:
+        raise AssertionError(str(exc).replace('\n', ' ')) from exc
+
+    if 'node_checks' in check_config_obj.keys():
+        node_checks = check_config_obj['node_checks']
+        assert any(k in node_checks.keys() for k in ['prestart', 'poststart']), (
+            'At least one of prestart or poststart must be defined in node_checks')
+        assert node_checks['checks'].keys() == set(
+            node_checks.get('prestart', []) + node_checks.get('poststart', [])), (
+            'All node checks must be referenced in either prestart or poststart, or both')
+
+    return check_config_obj
+
+
+def validate_custom_checks(custom_checks, check_config):
+
+    def cluster_check_names(config):
+        return set(config.get('cluster_checks', {}).keys())
+
+    def node_check_names(config):
+        return set(config.get('node_checks', {}).get('checks', {}).keys())
+
+    user_checks = json.loads(custom_checks)
+    dcos_checks = json.loads(check_config)
+    shared_cluster_check_names = cluster_check_names(user_checks).intersection(cluster_check_names(dcos_checks))
+    shared_node_check_names = node_check_names(user_checks).intersection(node_check_names(dcos_checks))
+
+    if shared_cluster_check_names or shared_node_check_names:
+        msg = 'Custom check names conflict with builtin checks.'
+        if shared_cluster_check_names:
+            msg += ' Reserved cluster check names: {}.'.format(', '.join(sorted(shared_cluster_check_names)))
+        if shared_node_check_names:
+            msg += ' Reserved node check names: {}.'.format(', '.join(sorted(shared_node_check_names)))
+        raise AssertionError(msg)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
 entry = {
     'validate': [
+        validate_s3_prefix,
         validate_num_masters,
         validate_bootstrap_url,
         validate_channel_name,
@@ -627,6 +845,7 @@ entry = {
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
+        lambda mesos_dns_set_truncate_bit: validate_true_false(mesos_dns_set_truncate_bit),
         validate_mesos_log_retention_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
@@ -655,7 +874,10 @@ entry = {
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
-        validate_mesos_max_completed_tasks_per_framework
+        validate_mesos_max_completed_tasks_per_framework,
+        lambda check_config: validate_check_config(check_config),
+        lambda custom_checks: validate_check_config(custom_checks),
+        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -682,6 +904,7 @@ entry = {
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
+        'mesos_dns_set_truncate_bit': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
@@ -738,7 +961,9 @@ entry = {
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
         'cosmos_config': '{}',
-        'gpus_are_scarce': 'true'
+        'gpus_are_scarce': 'true',
+        'check_config': calculate_check_config,
+        'custom_checks': '{}'
     },
     'must': {
         'custom_auth': 'false',
@@ -782,7 +1007,8 @@ entry = {
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
-        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
+        'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
+        'check_config_contents': calculate_check_config_contents
     },
     'conditional': {
         'master_discovery': {

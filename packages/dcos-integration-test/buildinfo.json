@@ -1,6 +1,7 @@
 {
   "requires": [
       "dcos-image-deps",
+      "dcos-test-utils",
       "pytest",
       "python"]
 }

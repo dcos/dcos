@@ -4,13 +4,14 @@ import json
 import logging
 import os
 import tempfile
+import uuid
 import zipfile
 
 import pytest
 
 import retrying
 
-# Expected latency for all 3dt units to refresh after postflight plus
+# Expected latency for all dcos-diagnostics units to refresh after postflight plus
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
 LATENCY = 120
 
@@ -23,20 +24,19 @@ def check_json(response):
     except ValueError:
         logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
         raise
-    assert len(json_response) > 0, 'Empty JSON returned from 3DT request'
+    assert len(json_response) > 0, 'Empty JSON returned from dcos-diagnostics request'
     return json_response
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_health(dcos_api_session):
+def test_dcos_diagnostics_health(dcos_api_session):
     """
     test health endpoint /system/health/v1
     """
-    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', '3dt_version', 'system']
+    required_fields = ['units', 'hostname', 'ip', 'dcos_version', 'node_role', 'mesos_id', 'dcos_diagnostics_version']
     required_fields_unit = ['id', 'health', 'output', 'description', 'help', 'name']
-    required_system_fields = ['memory', 'load_avarage', 'partitions', 'disk_usage']
 
-    # Check all masters 3DT instances on base port since this is extra-cluster request (outside localhost)
+    # Check all masters dcos-diagnostics instances on base port since this is extra-cluster request (outside localhost)
     for host in dcos_api_session.masters:
         response = check_json(dcos_api_session.health.get('/', node=host))
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
@@ -64,15 +64,7 @@ def test_3dt_health(dcos_api_session):
             assert required_field in response, '{} field not found'.format(required_field)
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
-        # check system metrics
-        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
-            ', '.join(required_system_fields))
-
-        for sys_field in required_system_fields:
-            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
-            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
-
-    # Check all agents running 3DT behind agent-adminrouter on 61001
+    # Check all agents running dcos-diagnostics behind agent-adminrouter on 61001
     for host in dcos_api_session.slaves:
         response = check_json(dcos_api_session.health.get('/', node=host))
         assert len(response) == len(required_fields), 'response must have the following fields: {}'.format(
@@ -100,14 +92,6 @@ def test_3dt_health(dcos_api_session):
             assert required_field in response, '{} field not found'.format(required_field)
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
-        # check system metrics
-        assert len(response['system']) == len(required_system_fields), 'fields required: {}'.format(
-            ', '.join(required_system_fields))
-
-        for sys_field in required_system_fields:
-            assert sys_field in response['system'], 'system metric {} is missing'.format(sys_field)
-            assert response['system'][sys_field], 'system metric {} cannot be empty'.format(sys_field)
-
 
 def validate_node(nodes):
     assert isinstance(nodes, list), 'input argument must be a list'
@@ -127,7 +111,7 @@ def validate_node(nodes):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_nodes(dcos_api_session):
+def test_dcos_diagnostics_nodes(dcos_api_session):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
@@ -144,7 +128,7 @@ def test_3dt_nodes(dcos_api_session):
         validate_node(response['nodes'])
 
 
-def test_3dt_nodes_node(dcos_api_session):
+def test_dcos_diagnostics_nodes_node(dcos_api_session):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
     """
@@ -193,7 +177,7 @@ def validate_unit(unit):
     assert unit['help'], 'help field cannot be empty'
 
 
-def test_3dt_nodes_node_units(dcos_api_session):
+def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
     """
@@ -210,7 +194,7 @@ def test_3dt_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-def test_3dt_nodes_node_units_unit(dcos_api_session):
+def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
     """
@@ -227,7 +211,7 @@ def test_3dt_nodes_node_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units(dcos_api_session):
+def test_dcos_diagnostics_units(dcos_api_session):
     """
     test a list of collected units, endpoint /system/health/v1/units
     """
@@ -250,15 +234,16 @@ def test_3dt_units(dcos_api_session):
 
         pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
         logging.info('collected units: {}'.format(pulled_units))
-        assert set(pulled_units) == all_units, 'not all units have been collected by 3dt puller, missing: {}'.format(
-            set(pulled_units).symmetric_difference(all_units))
+        diff = set(pulled_units).symmetric_difference(all_units)
+        assert set(pulled_units) == all_units, ('not all units have been collected by dcos-diagnostics '
+                                                'puller, missing: {}'.format(diff))
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(dcos_api_session):
     """
     test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
-    meaning it focuses on making sure the dcos_api_session is healthy, rather then testing 3dt itself.
+    meaning it focuses on making sure the dcos_api_session is healthy, rather then testing dcos-diagnostics itself.
     """
     unhealthy_output = []
     assert dcos_api_session.masters, "Must have at least 1 master node"
@@ -285,7 +270,7 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-def test_3dt_units_unit(dcos_api_session):
+def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
     """
@@ -314,7 +299,7 @@ def make_nodes_ip_map(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_units_unit_nodes(dcos_api_session):
+def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
@@ -357,7 +342,7 @@ def test_3dt_units_unit_nodes(dcos_api_session):
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
-def test_3dt_units_unit_nodes_node(dcos_api_session):
+def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
     """
@@ -387,9 +372,9 @@ def test_3dt_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-def test_3dt_selftest(dcos_api_session):
+def test_dcos_diagnostics_selftest(dcos_api_session):
     """
-    test invokes 3dt `self test` functionality
+    test invokes dcos-diagnostics `self test` functionality
     """
     for node in dcos_api_session.masters:
         response = check_json(dcos_api_session.health.get('/selftest/info', node=node))
@@ -399,9 +384,9 @@ def test_3dt_selftest(dcos_api_session):
             assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
 
 
-def test_3dt_report(dcos_api_session):
+def test_dcos_diagnostics_report(dcos_api_session):
     """
-    test 3dt report endpoint /system/health/v1/report
+    test dcos-diagnostics report endpoint /system/health/v1/report
     """
     for master in dcos_api_session.masters:
         report_response = check_json(dcos_api_session.health.get('report', node=master))
@@ -422,7 +407,7 @@ def _get_bundle_list(dcos_api_session):
     return bundles
 
 
-def test_3dt_bundle_create(dcos_api_session):
+def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
     """
@@ -492,14 +477,14 @@ def verify_unit_response(zip_ext_file, min_lines):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_3dt_bundle_download_and_extract(dcos_api_session):
+def test_dcos_diagnostics_bundle_download_and_extract(dcos_api_session):
     """
     test bundle download and validate zip file
     """
     _download_bundle_from_master(dcos_api_session, 0)
 
 
-def test_3dt_bundle_download_and_extract_from_another_master(dcos_api_session):
+def test_dcos_diagnostics_bundle_download_and_extract_from_another_master(dcos_api_session):
     """
     test bundle download and validate zip file
     """
@@ -521,9 +506,9 @@ def _download_bundle_from_master(dcos_api_session, master_index):
     bundles = _get_bundle_list(dcos_api_session)
     assert bundles
 
-    expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz', '3dt-health.json',
+    expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
                              'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
-                             'opt/mesosphere/etc/user.config.yaml.gz']
+                             'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json']
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
@@ -545,8 +530,8 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
         return item_content
 
-    def _get_3dt_health(z: zipfile.ZipFile, item: str):
-        # try to load 3dt health report and validate the report is for this host
+    def _get_dcos_diagnostics_health(z: zipfile.ZipFile, item: str):
+        # try to load dcos-diagnostics health report and validate the report is for this host
         try:
             _health_report = _read_from_zip(z, item)
         except KeyError:
@@ -566,7 +551,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             raise
 
         except ValueError:
-            logging.info("Could not deserialize 3dt-health")
+            logging.info("Could not deserialize dcos-diagnostics-health")
             raise
 
         return _health_report
@@ -592,8 +577,8 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             for master_ip in dcos_api_session.masters:
                 master_folder = master_ip + '_master/'
 
-                # try to load 3dt health report and validate the report is for this host
-                health_report = _get_3dt_health(z, master_folder + '3dt-health.json')
+                # try to load dcos-diagnostics health report and validate the report is for this host
+                health_report = _get_dcos_diagnostics_health(z, master_folder + 'dcos-diagnostics-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == master_ip
 
@@ -609,8 +594,8 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             for slave_ip in dcos_api_session.slaves:
                 agent_folder = slave_ip + '_agent/'
 
-                # try to load 3dt health report and validate the report is for this host
-                health_report = _get_3dt_health(z, agent_folder + '3dt-health.json')
+                # try to load dcos-diagnostics health report and validate the report is for this host
+                health_report = _get_dcos_diagnostics_health(z, agent_folder + 'dcos-diagnostics-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == slave_ip
 
@@ -626,8 +611,8 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             for public_slave_ip in dcos_api_session.public_slaves:
                 agent_public_folder = public_slave_ip + '_agent_public/'
 
-                # try to load 3dt health report and validate the report is for this host
-                health_report = _get_3dt_health(z, agent_public_folder + '3dt-health.json')
+                # try to load dcos-diagnostics health report and validate the report is for this host
+                health_report = _get_dcos_diagnostics_health(z, agent_public_folder + 'dcos-diagnostics-health.json')
                 assert 'ip' in health_report
                 assert health_report['ip'] == public_slave_ip
 
@@ -665,3 +650,47 @@ def test_diagnostics_bundle_status(dcos_api_session):
         )
         for required_status_field in required_status_fields:
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
+
+
+def test_dcos_diagnostics_runner_poststart(dcos_api_session):
+    cmd = [
+        "/opt/mesosphere/bin/dcos-diagnostics",
+        "check",
+        "--check-config",
+        "/opt/mesosphere/etc/dcos-diagnostics-runner-config.json",
+        "node-poststart"
+    ]
+    test_uuid = uuid.uuid4().hex
+    poststart_job = {
+        'id': 'test-dcos-diagnostics-runner-poststart-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(cmd)
+        }
+    }
+
+    dcos_api_session.metronome_one_off(poststart_job)
+
+
+def test_dcos_diagnostics_runner_cluster(dcos_api_session):
+    cmd = [
+        "/opt/mesosphere/bin/dcos-diagnostics",
+        "check",
+        "--check-config",
+        "/opt/mesosphere/etc/dcos-diagnostics-runner-config.json",
+        "cluster"
+    ]
+    test_uuid = uuid.uuid4().hex
+    job = {
+        'id': 'test-dcos-diagnostics-runner-cluster-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(cmd)
+        }
+    }
+
+    dcos_api_session.metronome_one_off(job)

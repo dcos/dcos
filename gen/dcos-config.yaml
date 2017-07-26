@@ -43,7 +43,7 @@ package:
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc/navstar-erl.env
     content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502 -navstar_l4lb enable_lb {{ enable_lb }}
+      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
   - path: /etc_slave/spartan.json
     content: |
       {
@@ -94,7 +94,7 @@ package:
         "listener": "0.0.0.0",
         "email": "root.mesos-dns.mesos",
         "IPSources": {{ mesos_dns_ip_sources }},
-        "SetTruncateBit": false
+        "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
   - path: /etc_master/navstar.config.d/master.config
     content: |
@@ -115,8 +115,14 @@ package:
       [
         {navstar_l4lb,
           [
+            {enable_lb, {{ enable_lb }}},
             {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
             {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
+          ]
+        },
+        {navstar_overlay,
+          [
+            {enable_overlay, {{ dcos_overlay_enable }}}
           ]
         }
       ].
@@ -126,13 +132,7 @@ package:
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
         "network": {{ dcos_overlay_network }}
        }
-  - path: /etc/dcos/network/cni/dummy.cni
-    content: |
-      {
-        "name": "dummy",
-        "type": "bridge"
-      }
-  - path: /etc/dcos/network/cni/ucr-default-bridge.cni
+  - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
       {
         "name": "mesos-bridge",
@@ -519,34 +519,36 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-3dt.env
+  - path: /etc/dcos-diagnostics-runner-config.json
+    content: {{ check_config_contents }}
+  - path: /etc/dcos-diagnostics.env
     content: |
-      DCOS_3DT_CONFIG_PATH=/opt/mesosphere/etc/dcos-3dt-config.json
-  - path: /etc_master/dcos-3dt-config.json
+      DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
+  - path: /etc_master/dcos-diagnostics-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/3dt/diag-bundles",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
+        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
       }
-  - path: /etc_slave/dcos-3dt-config.json
+  - path: /etc_slave/dcos-diagnostics-config.json
     content: |
       {
         "role": "agent",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc_slave_public/dcos-3dt-config.json
+  - path: /etc_slave_public/dcos-diagnostics-config.json
     content: |
       {
         "role": "agent_public",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-3dt-endpoint-config.json",
+        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc/dcos-3dt-endpoint-config.json
+  - path: /etc/dcos-diagnostics-endpoint-config.json
     content: |
         {
           "HTTPEndpoints": [

@@ -2,11 +2,11 @@
   "requires": ["exhibitor"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/3dt.git",
-    "ref": "206ba11a3ec02d02f95bab6aa3cec39cd7395bb3",
+    "git": "https://github.com/dcos/dcos-diagnostics.git",
+    "ref": "422d00ed1a3a47ecb605f4d3adcafe5945d4e3bc",
     "ref_origin": "master"
   },
-  "username": "dcos_3dt",
+  "username": "dcos_diagnostics",
   "group": "systemd-journal",
   "state_directory": true
 }

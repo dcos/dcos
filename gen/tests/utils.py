@@ -47,7 +47,7 @@ def validate_error(new_arguments, key, message, unset=None):
     }
 
 
-def validate_success(new_arguments, key):
+def validate_success(new_arguments):
     assert gen.validate(arguments=make_arguments(new_arguments)) == {
         'status': 'ok',
     }

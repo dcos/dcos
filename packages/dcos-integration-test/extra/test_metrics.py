@@ -166,27 +166,25 @@ def test_metrics_containers(dcos_api_session):
 
                     # Ensure all /container/<id>/app data is correct
                     assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
-                    assert len(app_response.json()['datapoints']) == 1, 'got {}'.format(
-                        len(app_response.json()['datapoints']))
 
-                    datapoint_keys = ['name', 'value', 'unit', 'timestamp']
+                    # We expect three datapoints, could be in any order
+                    uptime_dp = None
+                    for dp in app_response.json()['datapoints']:
+                        if dp['name'] == 'statsd_tester.time.uptime':
+                            uptime_dp = dp
+                            break
+
+                    # If this metric is missing, statsd-emitter's metrics were not received
+                    assert uptime_dp is not None, 'got {}'.format(app_response.json())
+
+                    datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
                     for k in datapoint_keys:
-                        assert k in app_response.json()['datapoints'][0], 'got {}'.format(
-                            app_response.json()['datapoints'][0])
+                        assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                        assert app_response.json()['datapoints'][0]['name'] == 'statsd_tester.time.uptime', 'got '
-                        '{}'.format(app_response.json()['datapoints'][0]['name'])
+                    assert 'test_tag_key' in uptime_dp['tags'], 'got {}'.format(uptime_dp)
+                    assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
 
                     assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
-                    assert 'labels' in app_response.json()['dimensions'], 'got {}'.format(
-                        app_response.json()['dimensions'])
-
-                    assert 'test_tag_key' in app_response.json()['dimensions']['labels'], 'got {}'.format(
-                        app_response.json()['dimensions']['labels'])
-
-                    assert app_response.json()['dimensions']['labels']['test_tag_key'] == "test_tag_value", ''
-                    'got {}'.format(
-                        app_response.json()['dimensions']['labels']['test_tag_key'])
 
                     return True
 

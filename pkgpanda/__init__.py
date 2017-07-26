@@ -23,7 +23,8 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
-                                RESERVED_UNIT_NAMES)
+                                RESERVED_UNIT_NAMES,
+                                STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
@@ -591,7 +592,8 @@ class Install:
             skip_systemd_dirs=False,
             manage_users=False,
             add_users=False,
-            manage_state_dir=False):
+            manage_state_dir=False,
+            state_dir_root=STATE_DIR_ROOT):
 
         assert type(rooted_systemd) == bool
         assert type(fake_path) == bool
@@ -622,6 +624,9 @@ class Install:
         self.__manage_users = manage_users
         self.__add_users = add_users
         self.__manage_state_dir = manage_state_dir
+
+        assert not state_dir_root.endswith('/')
+        self.__state_dir_root = state_dir_root
 
     def _get_dcos_configuration_template(self):
         return {"sysctl": {}}
@@ -792,10 +797,10 @@ class Install:
             if package.username is not None:
                 sysusers.add_user(package.username, package.group)
 
-            # Ensure the state directory in `/var/lib/dcos` exists
+            # Ensure the state directory exists
             # TODO(cmaloney): On upgrade take a snapshot?
             if self.__manage_state_dir:
-                state_dir_path = '/var/lib/dcos/{}'.format(package.name)
+                state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
                     check_call(['mkdir', '-p', state_dir_path])
 

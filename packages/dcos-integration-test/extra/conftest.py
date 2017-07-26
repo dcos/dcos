@@ -4,7 +4,7 @@ import pytest
 
 from api_session_fixture import make_session_fixture
 
-from test_util.marathon import get_test_app
+from dcos_test_utils.marathon import get_test_app
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -29,6 +29,13 @@ def pytest_collection_modifyitems(session, config, items):
         else:
             new_items.append(item)
     items[:] = new_items + last_items
+
+
+@pytest.fixture(autouse=True)
+def clean_marathon_state(dcos_api_session):
+    dcos_api_session.marathon.purge()
+    yield
+    dcos_api_session.marathon.purge()
 
 
 @pytest.fixture

@@ -18,6 +18,8 @@ Options:
     --no-systemd                Don't try starting/stopping systemd services
     --no-block-systemd          Don't block waiting for systemd services to come up.
     --root=<root>               Testing only: Use an alternate root [default: {default_root}]
+    --state-dir-root=<root>     Testing only: Use an alternate package state directory root
+                                [default: {default_state_dir_root}]
     --repository=<repository>   Testing only: Use an alternate local package
                                 repository directory [default: {default_repository}]
     --rooted-systemd            Use $ROOT/dcos.target.wants for systemd management
@@ -128,6 +130,7 @@ def main():
             default_config_dir=constants.config_dir,
             default_root=constants.install_root,
             default_repository=constants.repository_base,
+            default_state_dir_root=constants.STATE_DIR_ROOT,
         ),
     )
     umask(0o022)
@@ -141,7 +144,8 @@ def main():
         not arguments['--no-block-systemd'],
         manage_users=True,
         add_users=not os.path.exists('/etc/mesosphere/manual_host_users'),
-        manage_state_dir=True)
+        manage_state_dir=True,
+        state_dir_root=os.path.abspath(arguments['--state-dir-root']))
 
     repository = Repository(os.path.abspath(arguments['--repository']))
 

@@ -7,6 +7,7 @@ Restart=always
 RestartSec=15
 LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 Environment=REXRAY_HOME=/
 # REX-Ray fails to clean up stale lock files by itself.
 ExecStartPre=/bin/rm -f /var/run/libstorage/lsx.lock

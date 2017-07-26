@@ -94,7 +94,7 @@ local function resolve_via_marathon_apps_state(service_name, marathon_cache)
     --  - err_code, err_text - if an error occured these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     if marathon_cache == nil then
-        return nil, ngx.HTTP_SERVICE_UNAVAILABLE, "503 Service Unavailable: cache state is invalid"
+        return nil, ngx.HTTP_SERVICE_UNAVAILABLE, "503 Service Unavailable: invalid Marathon svcapps cache"
     end
 
     if marathon_cache[service_name] == nil then

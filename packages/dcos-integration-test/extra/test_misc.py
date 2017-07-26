@@ -1,15 +1,16 @@
 # Various tests that don't fit into the other categories and don't make their own really.
 import os
 
-from test_helpers import expanded_config
+import yaml
 
-from pkgpanda.util import load_yaml
+from test_helpers import expanded_config
 
 
 # Test that user config is loadable
 # TODO(cmaloney): Validate it contains some settings we expact.
 def test_load_user_config():
-    user_config = load_yaml("/opt/mesosphere/etc/user.config.yaml")
+    with open('/opt/mesosphere/etc/user.config.yaml', 'r') as f:
+        user_config = yaml.load(f)
 
     # Calculated parameters shouldn't be in the user config
     assert 'master_quorum' not in user_config

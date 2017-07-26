@@ -71,6 +71,24 @@ if [ "$found_version" != "{{ installed_cluster_version }}" ]; then
     exit 1
 fi
 
+# Check if the node has node/cluster checks and run them
+if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+    # command exists
+    output=$(dcos-diagnostics check node-poststart)
+    if [ $? -ne 0 ]; then
+        echo "Cannot proceed with upgrade, node checks failed"
+        echo $output
+        exit 1
+    fi
+
+    clusteroutput=$(dcos-diagnostics check cluster)
+    if [ $? -ne 0 ]; then
+        echo "Cannot proceed with upgrade, cluster checks failed"
+        echo $clusteroutput
+        exit 1
+    fi
+fi
+
 # Determine this node's role.
 ROLE_DIR=/etc/mesosphere/roles
 
@@ -96,6 +114,17 @@ echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
+T=300
+until OUT=$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster) || [[ T -eq 0 ]]; do
+    sleep 1
+    let T=T-1
+done
+RETCODE=$?
+if [ $RETCODE -ne 0 ]; then
+    echo "Node upgrade not successful, checks failed"
+    echo $OUT
+fi
+exit $RETCODE
 """
 
 
