@@ -105,7 +105,7 @@ def agent_has_resources(agent, node_requirements):
 
 
 @pytest.mark.skipif(
-    not enough_resources_for_package(get_cluster_resources(), KAFKA_PACKAGE_REQUIREMENTS),
+    not enough_resources_for_package(get_cluster_resources(dcos_api_session), KAFKA_PACKAGE_REQUIREMENTS),
     reason='Package installation would fail on this cluster. Not enough resources to install test app')
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
