@@ -109,7 +109,7 @@ def test_packaging_api(dcos_api_session):
     """
     # Can't access dcos_api_session from through the pytest.mark.skipif decorator
     if not enough_resources_for_package(get_cluster_resources(dcos_api_session), KAFKA_PACKAGE_REQUIREMENTS):
-        pytest.skip('Package installation would fail on this cluster. Not enough resources to install test app')
+        pytest.skip(msg='Package installation would fail on this cluster. Not enough resources to install test app')
 
     install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
     data = install_response.json()
