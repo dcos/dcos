@@ -4,6 +4,7 @@ import pytest
 
 log = logging.getLogger(__name__)
 
+
 def test_pkgpanda_api(dcos_api_session):
 
     def get_and_validate_package_ids(path, node):
@@ -42,6 +43,7 @@ def test_pkgpanda_api(dcos_api_session):
         assert set(active_package_ids) <= set(package_ids)
         assert_packages_match_active_buildinfo(active_package_ids)
 
+
 # There is no standardized way of getting package requirements from the package description json,
 # e.g. nodes could be called 'brokers' or 'nodes' or something else. This was created by looking at
 # https://github.com/mesosphere/universe/blob/version-3.x/repo/packages/K/kafka/39/config.json
@@ -77,7 +79,7 @@ def enough_resources_for_package(state_summary, package_requirements):
 
     Returns:
         bool
-    
+
     Notes:
         This is a sanity check meant for use with pytest.mark.skipif
         This only verifies that there were enough resources at the time state_summary was queried
@@ -105,6 +107,7 @@ def agent_has_resources(agent, node_requirements):
     resources = ['mem', 'disk', 'cpus']
     return all(unreserved[resource] >= node_requirements[resource] for resource in resources)
 
+
 @pytest.mark.skipif(
     not enough_resources_for_package(get_cluster_resources(), KAFKA_PACKAGE_REQUIREMENTS),
     reason='Package installation would fail on this cluster. Not enough resources to install test app')
@@ -126,4 +129,3 @@ def test_packaging_api(dcos_api_session):
     list_response = dcos_api_session.cosmos.list_packages()
     packages = list_response.json()['packages']
     assert len(packages) == 0
-
