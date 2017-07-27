@@ -681,6 +681,81 @@ class TestCache:
                 time.sleep(backend_request_timeout * 0.3 + 1)  # let it warm-up!
                 ping_mesos_agent(ar, valid_user_header)
 
+    def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
+            self, nginx_class, dns_server_mock, valid_user_header):
+        filter_regexp_pre = {
+            'Marathon leader cache has been successfully updated':
+                SearchCriteria(1, True),
+            'Marathon apps cache has been successfully updated':
+                SearchCriteria(1, True),
+            'Mesos state cache has been successfully updated':
+                SearchCriteria(1, True),
+            '`Mesos Leader` state cache has been successfully updated':
+                SearchCriteria(1, True),
+        }
+
+        filter_regexp_post = {
+            'Marathon leader cache has been successfully updated':
+                SearchCriteria(1, True),
+            'Marathon apps cache has been successfully updated':
+                SearchCriteria(1, True),
+            'Mesos state cache has been successfully updated':
+                SearchCriteria(1, True),
+            # The problem here is that there may occur two updated, one after
+            # another, and failed one will be retried. This stems directly from
+            # how cache.lua works. Let's permit multiple occurences for now.
+            'DNS server returned error code':
+                SearchCriteria(1, False),
+            'Cache entry `mesos_leader` is stale':
+                SearchCriteria(1, True),
+        }
+        cache_max_age_soft_limit = 3
+
+        ar = nginx_class(cache_max_age_soft_limit=cache_max_age_soft_limit,
+                         cache_max_age_hard_limit=1200,
+                         cache_expiration=2,
+                         cache_poll_period=3,
+                         cache_first_poll_delay=1,
+                         )
+
+        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(filter_regexp_pre,
+                                   timeout=5,  # Just to give LBF enough time
+                                   line_buffer=ar.stderr_line_buffer)
+
+            with lbf:
+                # Trigger cache update by issuing request:
+                resp = requests.get(url,
+                                    allow_redirects=False,
+                                    headers=valid_user_header)
+                assert resp.status_code == 200
+
+            assert lbf.extra_matches == {}
+
+            lbf = LineBufferFilter(filter_regexp_post,
+                                   timeout=5,  # Just to give LBF enough time
+                                   line_buffer=ar.stderr_line_buffer)
+            with lbf:
+                # Break `leader.mesos` DNS entry
+                dns_server_mock.remove_dns_entry('leader.mesos.')
+
+                # Wait for the cache to be old enough to be considered stale by
+                # AR:
+                # cache_max_age_soft_limit + extra delay in order to avoid
+                # race conditions
+                delay = 2
+                time.sleep(cache_max_age_soft_limit + delay)
+
+                # Perform the main/test request:
+                resp = requests.get(url,
+                                    allow_redirects=False,
+                                    headers=valid_user_header)
+                assert resp.status_code == 200
+
+            assert lbf.extra_matches == {}
+
 
 class TestCacheMesosLeader:
     def test_if_unset_hostip_var_is_handled(self, nginx_class, valid_user_header):
