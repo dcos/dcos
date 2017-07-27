@@ -48,7 +48,7 @@ favour of development speed and thus copypasting code. It's all about striking
 the right balance so sometimes code *is* duplicated between repositories in order
 to make it easier for contributors to work with repositories.
 
-### Nginx includes
+### NGINX includes
 All AR code, both Lua and non-Lua, can be divided into following groups:
 
  * common code for masters and agents, both EE and Open
@@ -61,13 +61,13 @@ All AR code, both Lua and non-Lua, can be divided into following groups:
  * Open agent specific code
  * Open master specific code
 
-on top of that, Nginx-specific configuration is divided into three sections:
+on top of that, NGINX-specific configuration is divided into three sections:
 
  * main
  * http
  * server
 
-This gives us in total 27 possible "buckets" for Nginx directives. The
+This gives us in total 27 possible "buckets" for NGINX directives. The
 differentiation between sections could be avoided if we decide to use some more
 advanced templating but this would further complicate configuration and
 make it more difficult for people to test, and develop AR on live clusters.
@@ -117,7 +117,7 @@ includes
         └── master.conf
 ```
 
-All Nginx related configuration directives reside in the `includes` directory which
+All NGINX related configuration directives reside in the `includes` directory which
 contains directories reflecting all the sections present in NGINX configuration
 (http|main|server). Because they are always present, no
 matter the flavour/server type, they are chosen as top-level directories
@@ -145,7 +145,7 @@ Contents of these directories may be as follows:
 
 The order of includes is for the time being hard-coded in nginx.\*.conf files.
 Within particular section though it does not matter that much as:
- * [nginx by default orders the imports while globbing](https://serverfault.com/questions/361134/nginx-includes-config-files-not-in-order)
+ * [nginx by default orders the imports while globing](https://serverfault.com/questions/361134/nginx-includes-config-files-not-in-order)
  * location blocks *MUST NOT* rely on the order in which they appear
    in the config file and define matching rules precise enough to avoid ambiguity.
 
@@ -211,7 +211,7 @@ code and encourages good behaviours.
 
 ### Lua code deduplication
 It is not strictly required to provide the same level of flexibility for Lua code
-as it is the case for Nginx includes and thus it's possible to simplify the code
+as it is the case for NGINX includes and thus it's possible to simplify the code
 a bit. It is sufficient to just differentiate Lua code basing on the repository flavour.
 Both agents and masters can share the same Lua code.
 
@@ -261,31 +261,192 @@ as-is/usually do not follow any of these patterns. It is possible to standardise
 it, but it does not seem to be justified. For example:
  * `util.lua` directly exposes its functions as they are stateless and shared
    between both flavours
- * `lib/auth/open.lua` uses the `.init()` pattern in order to achive different
+ * `lib/auth/open.lua` uses the `.init()` pattern in order to achieve different
    behaviour depending on the flavour.
 
-## Service Endpoints
+## Service Endpoint
+Admin Router offers the `/service` endpoint which enables users to easily
+access some of the tasks launched on DC/OS. AR internally pre-fetches data from
+Mesos and root Marathon and stores it in the internal cache for later use when
+routing an incoming request.
 
-Admin Router allows Marathon tasks to define custom service UI and HTTP endpoints, which are made available via `<dcos-cluster>/service/<service-name>`. This can be achieved by setting the following Marathon task labels:
+Marathon tasks can be accessed by application ID, Mesos frameworks can be
+accessed by application ID or by framework ID. For example - let's deploy a
+SchmetterlingDB framework with application ID of
+`/group1/group2/schmetterlingA`. It will be accessible using its framework ID
+(let's assume that Mesos assigned it a framework ID of
+`819aed93-4143-4291-8ced-5afb5c726803-0000`):
+```
+/service/819aed93-4143-4291-8ced-5afb5c726803-0000/
+```
+and using its application ID:
+```
+/service/group1/group2/schmetterlingA/
+```
+
+The `/service` endpoint supports WebSockets. By default, it disables NGINX
+request and response buffering. All redirects from services are rewritten in
+order to support the `/service` URL path prefix clients are using.
+
+### Intended use
+It is important to remember that the `/service` endpoint was designed to work
+with root Marathon only. Tasks launched by Marathon-on-Marathon instances will
+not be reachable via it.
+
+In the case of Mesos frameworks, this becomes a bit more complex - all the
+frameworks are visible in Mesos' `/state-summary` endpoint output so in theory
+it is possible to access a framework launched using Marathon-on-Marathon or by
+hand.  Unfortunately, Mesos as of now does not enforce framework name
+uniqueness and thus it is possible to launch multiple frameworks with the same
+name. AR in such case will route in a non-deterministic manner. Root Marathon
+by default enforces unique names for all the tasks and frameworks it has under
+control.
+
+Please check the [Limitations](#limitations) section for more details.
+
+### Operation
+Under the hood, the `/service` endpoint implementation uses non-trivial logic in
+order to resolve the cluster-internal socket address to route the HTTP request
+to.
+
+#### Iterative resolving
+There is no way to tell which part of the path is the application ID and
+which one is just a resource address. For example, assuming that the request
+path is `/foo/bar/baz/picture.jpg` we can have:
+* application ID: `foo`, resource address: `/bar/baz/picture.jpg`
+* application ID: `foo/bar`, resource address: `/baz/picture.jpg`
+* application ID: `foo/bar/baz`, resource address: `/picture.jpg`
+* application ID: `foo/bar/baz/picture.jpg`, resource address: `/`
+
+So the algorithm iteratively tries to resolve each "candidate" namespace and
+name and assumes that first-match wins.
+
+Assuming that we deployed an NGINX task with application ID `foo/bar`, we will
+see two iterations:
+* The first one with `foo` candidate application ID, which is not present in
+  the cluster
+* The second one with `foo/bar` candidate application ID, which results in the
+  request being routed to the correct backend. In the case when user is trying
+  to access a non-existent service, there are going to be four iterations, each
+  one unsuccessful. After the fourth one the code will give up.
+
+There is a limit on the number of iterations that AR makes. At the time of
+writing, it is set to `10`. This means that an application ID cannot nest more
+than ten times and that everything after the tenth segment is always treated as
+a resource component.
+
+#### Resolving individual components
+During each iteration described in [previous paragraph](#iterative-resolving),
+AR tries to resolve the component using the data stored in the cache and if
+necessary - from MesosDNS:
+* first step is to:
+  * check if a root Marathon task has following labels set:
+    * `DCOS_SERVICE_NAME` label contents is equal to given application ID string
+    * `DCOS_SERVICE_SCHEME` label is set
+    * `DCOS_SERVICE_PORT_INDEX` label is set
+  * task is in the state `TASK_RUNNING`.
+  If all the conditions are met then the request is routed using root Marathon
+  data. Please check the [section below](#recommended-way-to-expose-services)
+  for details on the meaning of these labels.
+* if the name of the service couldn't be resolved using root Marathon data, AR
+  scans the list of Mesos frameworks in search for the one with either
+  framework ID (higher priority) or framework name(lower priority) equal to
+  application ID string. If found, the next steps depend on the value of
+  `webui_url` field:
+  * field contains an empty string - algorithm tries to resolve the application
+    ID using MesosDNS
+  * field is `null` - resolving process for given application ID ends, MesosDNS
+    step is NOT executed
+  * field contains a valid address - request is proxied to the address pointed
+    by the field contents
+* resolving via MesosDNS relies on issuing an HTTP SRV query to MesosDNS. For
+  application ID string equal to `foo/bar/baz`, the request that is going to be
+  made to MesosDNS is:
+  ```
+  http://localhost:8123/baz.bar.foo._tcp.marathon.mesos
+  ```
+  In the case where MesosDNS returns no results, AR assumes that there is no
+  task nor framework with the given application ID running on DC/OS.
+
+#### Stale cache/broken cache cases
+The `/service` endpoint internally uses the AR cache, so a failure to refresh
+the cache has the same effects on the `/service` endpoint like any other
+endpoint. Please check the [Cache timers](#cache-timers) section for details.
+
+The thing worth remembering though, is that this endpoint uses more than one
+cache entry. Because of that, if for example root Marathon fails, and Mesos is
+fine, requests will not be routed. This is because there has to be a strict
+priority enforcement, and without root Marathon, it is impossible to decide
+whether AR should use Mesos data or not and request routing becomes ambiguous.
+The reverse is possible though - a failed Mesos cache update will not prevent
+requests from being routed as long as they can be handled *only* using Marathon
+data.
+
+### Limitations
+Apart from the one mentioned earlier - that the `/service` endpoint should be
+routing only to the tasks launched by root Marathon, there is one more
+limitation that needs to be kept in mind.
+
+To properly remove a framework, a cleanup procedure needs to be followed:
+* the framework needs to be removed from root Marathon
+* it needs to be unregistered with Mesos
+* ZooKeeper state has to be cleaned up
+* Mesos reservations (if any), need to be deleted
+
+Without this cleanup, the Mesos framework will still be present in the output of
+`/state-summary` endpoint and thus Admin Router will try to route it instead of
+simply replying with a 404. It is impossible for AR to differentiate between
+frameworks that:
+* have been removed by root Marathon
+* become disconnected from Mesos for some reason, but *MAY* come back at some
+  point
+
+What is more - continuous installation and removal of a framework using the same
+name will cause Mesos to keep entries for them in `/state-summary`. There is no
+enforcement of unique framework names, and thus AR will try to route to one of
+the frameworks (not necessarily the one that is *really* alive) in an undefined
+manner.
+
+Until unique service names are implemented, or a proper cleanup is done by the client,
+a workaround is to launch frameworks always with a different name, for example:
+* `/hello-world-1`
+* `/hello-world-2`
+* `/hello-world-3`
+* `/hello-world-4`
+* ...
+
+### Recommended way to expose services
+Admin Router allows Marathon tasks to define custom service UI and HTTP
+endpoints, which are made available via `<dcos-cluster>/service/<application ID>`.
+This can be achieved by setting the following Marathon task labels:
 
 ```
-"labels": {
-    "DCOS_SERVICE_NAME": "service-name",
-    "DCOS_SERVICE_PORT_INDEX": "0",
-    "DCOS_SERVICE_SCHEME": "http"
-  }
+"labels": { "DCOS_SERVICE_NAME": "application ID", "DCOS_SERVICE_PORT_INDEX": "0", "DCOS_SERVICE_SCHEME": "http" }
 ```
 
-When your container/task has its own IP (typically when running in a virtual network), `http://<dcos-cluster>/service/service-name` would be forwarded to the container/task's IP using one of the ports in the port mapping or port definition when USER networking is enabled or one of the discovery ports otherwise. When your task/container is mapped to the host, it would be forwarded to the host running the task using the one of the ports allocated to the task. The chosen port is defined by the DCOS_SERVICE_PORT_INDEX label.
+When your container/task has its own IP (typically when running in a virtual
+network), `http://<dcos-cluster>/service/<application ID>` is forwarded to the
+container/task's IP using one of the ports in the port mapping or port
+definition when USER networking is enabled or one of the discovery ports
+otherwise. When your task/container is mapped to the host, it is forwarded to
+the host running the task using the one of the ports allocated to the task.
+The chosen port is defined by the `DCOS_SERVICE_PORT_INDEX` label.
 
-In order for the forwarding to work reliably across task failures, we recommend co-locating the endpoints with the task. This way, if the task is restarted on a potentially other host and with different ports, Admin Router will pick up the new labels and update the routing. NOTE: Due to caching there might be an up to 30-second delay until the new routing is working.
+In order for the forwarding to work reliably across task failures, we recommend
+co-locating the endpoints with the task. This way, if the task is restarted on a
+potentially different host and with different ports, Admin Router will pick up the
+new labels and update the routing. Due to caching there might be an up to
+30-second delay before the new routing is working.
 
-We would recommend having only a single task setting these labels for a given `service-name`.
-In the case of multiple task instances with the same `service-name` label, Admin Router will pick one of the tasks instances deterministically, but this might make debugging issues more difficult.
+We recommend having only a single task setting these labels for a given
+application ID. In the case of multiple task instances with the same
+application ID label, Admin Router will pick one of the task instances
+deterministically, but this might make debugging issues more difficult.
 
-The endpoint should only use relative links for links and referenced assets such as .js and .css files. This is due to the fact, that the linked resources will be reachable only in their relative location `<dcos-cluster>/services/<service-name><link>`.
-
-Tasks running in nested [Marathon app groups](https://mesosphere.github.io/marathon/docs/application-groups.html) will be available only using their service name (i.e, `<dcos-cluster>/service/<service-name>`) and not considering the marathon app group name (i.e., `<dcos-cluster>/service/app-group/<service-name>`).
+The endpoint should only use relative links for links and referenced assets such
+as `.js` and `.css` files. This is due to the fact that the linked resources will
+be reachable only in their relative location
+`<dcos-cluster>/services/<application ID><link>`.
 
 ## Authorization and authentication
 
@@ -611,13 +772,13 @@ The internal buffer is available through
 `stdout_line_buffer`/`stderr_line_buffer` methods of AR object and Syslog
 object(available through a fixture). The buffer itself is implemented as a
 plain python list where each log line represents a single entry. This list is
-shared across all the objects that are groking the buffer, and there is no
+shared across all the objects that are grokking the buffer, and there is no
 extra protection from manipulating it from within tests so extra care needs
 to be taken.
 
 In order to simplify handling of the log lines buffers, `LineBufferFilter` class
 has been created. It exposes two interfaces:
-* context manager that allows for groking the buffer entries that were created
+* context manager that allows for grokking the buffer entries that were created
   while executing the context:
 
   ```
@@ -676,7 +837,7 @@ different files where tests reside:
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
   require custom AR fixtures
-* `test_boot_envvars.py`: tests that verify adminrouter startup variables
+* `test_boot_envvars.py`: tests that verify Admin Router startup variables
 
 `test_agent.py` and `test_master.py` may be splitted apart into smaller units,
 but with each unit an extra start and stop of AR master or agent is required.
@@ -706,6 +867,6 @@ expressions/statements:
 
     https://docs.python.org/3.6/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
 
-This is why the context of each endpont is not protected by locks, in
+This is why the context of each endpoint is not protected by locks, in
 case when it's only about fetching a single value from context dict or
 storing/appending one there.
