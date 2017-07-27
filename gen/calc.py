@@ -615,7 +615,7 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
-def calculate_check_config_contents(check_config, custom_checks):
+def calculate_check_config_contents(check_config, custom_checks, check_search_path, check_ld_library_path):
 
     def merged_check_config(config_a, config_b):
         # config_b overwrites config_a. Validation should assert that names won't conflict.
@@ -657,6 +657,10 @@ def calculate_check_config_contents(check_config, custom_checks):
     dcos_checks = json.loads(check_config)
     user_checks = json.loads(custom_checks)
     merged_checks = merged_check_config(user_checks, dcos_checks)
+    merged_checks['check_env'] = {
+        'PATH': check_search_path,
+        'LD_LIBRARY_PATH': check_ld_library_path,
+    }
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
@@ -1008,7 +1012,9 @@ entry = {
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
-        'check_config_contents': calculate_check_config_contents
+        'check_config_contents': calculate_check_config_contents,
+        'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
+        'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'conditional': {
         'master_discovery': {
