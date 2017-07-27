@@ -26,21 +26,22 @@ Admin Router runs on both master and agent nodes, each with different configurat
 
 ## Endpoints documentation
 
-All Admin Router endpoints are documented using [nginxdox](https://github.com/karlkfi/ngindox)
-tool, which uses special format of the comments in order to describe endpoint
-configuration, and automatically parse it into HTML documents. Please check the
-project documentation for more details.
+All Admin Router endpoints are documented using the
+[nginxdox](https://github.com/karlkfi/ngindox) tool, which uses special format
+of the comments in order to describe endpoint configuration, and automatically
+parse it into HTML documents. Please check the project documentation for more
+details.
 
 Admin Router CI automatically checks if the endpoint documentation generated
-using nginxdox and embedded into the repository is up to date. If not, the CI
-job is failed and the user needs to regenerate the docs and re-submit the PR.
+using `nginxdox` and embedded into the repository is up to date. If not, the CI
+job fails and the user needs to regenerate the docs and re-submit the PR.
 
 The check is done by generating the documentation also during the build stage.
-If, after the nginxdox run, git detects uncommitted changes, then this means
+If, after the `nginxdox` run, `git` detects uncommitted changes, then this means
 that the Admin Router configuration differs from the HTML documents that
 are committed into repository. This is done using `make check-api-docs` target.
 
-In order to regenerate the documentation files, one needs to execute
+In order to regenerate the documentation files, one needs to execute the
 `make api-docs` file and commit the changes into the repository.
 
 ## Ports summary
@@ -669,10 +670,11 @@ It exposes a couple of targets:
   remove the images themselves though as the layer cache may be useful later
   on and the user may remove them themselves.
 * `make devkit` - creates the `adminrouter-devkit` container. By default other
-  targets execute this step automatically if devkit container image does not
+  targets execute this step automatically if the devkit container image does not
   exist yet.
-* `make update-devkit` - updates `adminrouter-devkit`. Should be run every time
-  the Dockerfile or its dependencies (e.g. requirements.txt fileds) change.
+* `make update-devkit` - updates `adminrouter-devkit`. This should be run every
+  time the Dockerfile or its dependencies (e.g. requirements.txt fields)
+  change.
 * `make tests` - launch all the tests. Worth noting is the fact that McCabe
   complexity of the code is also verified, and an error is raised if it's
   equal to or above 10.
@@ -715,12 +717,12 @@ done by `test-harness/modules/mocker/jwt.py` module, which together with
 Admin Router itself.
 
 ### Tests code reuse and deduplication
-Lots of endpoints exposed by Admin Router share the common behaviour. Usually, it
-is something simple like testing for correct headers, right upstream, etc...
+Lots of endpoints exposed by Admin Router share common behaviour. Usually, it
+is something simple like testing for correct headers, the right upstream, etc...
 This results in tests covering them being very repetitive.
 
 In order to keep the code DRY, common code was extracted into a library with
-generic tests & helpers and a testing framework using YAML configuration files
+generic tests and helpers and a testing framework using YAML configuration files
 was developed.
 
 #### Generic tests
@@ -771,12 +773,12 @@ deserve a separate paragraph.
 #### YAML configuration
 Generic tests are useful when one wants to re-use certain tests, but with
 dozens of tests using the generic tests, tests can still become hard to read
-and maintain. On top fo that, the fact that tests need to be differentiated
-by repository flavour(Open|EE) and by AR type (master|slave), makes tests even
+and maintain. On top of that, the fact that tests need to be differentiated
+by repository flavour (Open|EE) and by AR type (master|slave), makes tests even
 more prone to duplication and bitrot.
 
-This is the reason why majority of tests are written using YAML configuration
-files which are read by `./test-harness/tests/(open|ee)/test_generic.py`
+This is the reason why the majority of tests are written using YAML configuration
+files which are read by the `./test-harness/tests/(open|ee)/test_generic.py`
 pytest file. Both the configuration shared between the flavours from
 `./test-harness/tests/test_generic.config.yml` and flavour-specific one
 from `./test-harness/tests/(open|ee)/test_generic.config.yml` are merged
@@ -1191,7 +1193,7 @@ Steps are as follows:
 * we need to add new auth wrapper to `auth/(open|ee).lua`. For example, for
   Open it is going to be:
   ```
-  res.access_cockroachdb_endpoint = function()
+  res.access_schmetterlingdb_endpoint = function()
     return res.do_authn_and_authz_or_exit()
   end
   ```
@@ -1199,7 +1201,7 @@ Steps are as follows:
   ```
   location /schmetterlingdb/ {
       access_by_lua_block {
-        auth.access_cockroachdb_endpoint();
+        auth.access_schmetterlingdb_endpoint();
       }
       proxy_pass http://schmetterlingdb/;
   }
@@ -1295,7 +1297,7 @@ Steps are as follows:
   ```
   location /schmetterlingdb/ {
       access_by_lua_block {
-        auth.access_cockroachdb_endpoint();
+        auth.access_schmetterlingdb_endpoint();
       }
 
       include includes/proxy-headers.conf;
@@ -1374,7 +1376,7 @@ Steps are as follows:
   ```
   location /schmetterlingdb/ {
       access_by_lua_block {
-        auth.access_cockroachdb_endpoint();
+        auth.access_schmetterlingdb_endpoint();
       }
 
       # Websockets:
@@ -1423,7 +1425,7 @@ Steps are as follows:
   ```
   location /schmetterlingdb/ {
       access_by_lua_block {
-        auth.access_cockroachdb_endpoint();
+        auth.access_schmetterlingdb_endpoint();
       }
 
       # Websockets:
@@ -1587,7 +1589,7 @@ location = /schmetterlingdb {
 
 location /schmetterlingdb/ {
     access_by_lua_block {
-      auth.access_cockroachdb_endpoint();
+      auth.access_schmetterlingdb_endpoint();
     }
 
     # Websockets:
@@ -1619,9 +1621,320 @@ location /schmetterlingdb/stats/ {
 ```
 
 ### Standard tests
-* resolver settings test/verification that upstream records are re-resolved
-  on each request
+We will be analysing two cases here, in order to show how to solve the most
+common problems.
 
+#### Testing stale "Mesos Leader" cache entry
+Let's assume that we need to test whether a failure to refresh "Mesos Leader"
+cache entry will not result in AR dropping requests. The correct behaviour
+would be to continue serving requests using the stale cache.
+
+The test can be divided into following stages:
+1. let AR start normally
+2. issue a request in order to force AR to fill the cache
+3. remove the DNS entry for `leader.mesos.`
+4. wait for scheduled AR cache refresh, `leader.mesos` cache entry refresh will
+   fail
+5. perform another request, make sure that it succeeded.
+
+Additionally, we will be checking log messages emitted by AR in order to confirm
+that we indeed achieved desired state in 2) and that in 5) AR issued a warning
+about the stale cache.
+
+The test can be split into a series of steps/stages:
+* prepare AR object, but do not start it yet.
+  There are pleanty of fixtures one can choose from when it comes to AR
+  instance life time:
+  * `master_ar_process` - module scope
+  * `master_ar_process_perclass` - class scope
+  * `master_ar_process_pertest` - test scope
+  * `agent_ar_process` - module scope
+  * `agent_ar_process_perclass` - class scope
+  * `agent_ar_process_pertest` - test scope
+
+  In this particular case we need to create our own instance as we have to
+  take control of the contents of the AR cache - it needs to be empty
+  at the begining of the test. We also need to be able to reconfigure cache
+  in a way that will make the test fast (low value for soft cache expiry
+  threshold and frequent cache polling/refresh) and remove unwanted side-effects
+  (hard cache expiry threshold set to very high value). This can be done only
+  by launching custom AR instance:
+  ```
+  ar = nginx_class(cache_max_age_soft_limit=3,
+                   cache_max_age_hard_limit=1200,
+                   cache_expiration=2,
+                   cache_poll_period=3,
+                   cache_first_poll_delay=1,
+                   )
+
+  with GuardedSubprocess(ar):
+      ...
+  ```
+  The GuardedSubprocess context manager makes sure that AR is started at the
+  begining of the context and stopped no matter the results/exceptions raised at the end of the context.
+* the test will require us to grep through AR logs, so we need an instance of
+  LogBufferFilter class:
+  * for stage 3)
+  ```
+  filter_regexp_pre = {
+      'Marathon leader cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Marathon apps cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Mesos state cache has been successfully updated':
+          SearchCriteria(1, True),
+      '`Mesos Leader` state cache has been successfully updated':
+          SearchCriteria(1, True),
+  }
+
+  lbf = LineBufferFilter(filter_regexp_pre,
+                         timeout=5,  # Just to give LBF enough time
+                         line_buffer=ar.stderr_line_buffer)
+
+  with lbf:
+      ...
+  assert lbf.extra_matches == {}
+  ```
+  * for stage 5):
+  ```
+  filter_regexp_post = {
+      'Marathon leader cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Marathon apps cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Mesos state cache has been successfully updated':
+          SearchCriteria(1, True),
+      'DNS server returned error code':
+          SearchCriteria(1, True),
+      'Using stale `mesos_leader` cache entry to fulfill the request':
+          SearchCriteria(1, True),
+  }
+
+  lbf = LineBufferFilter(filter_regexp_post,
+                        timeout=5,  # Just to give LBF enough time
+                        line_buffer=ar.stderr_line_buffer)
+  with lbf:
+      ...
+  assert lbf.extra_matches == {}
+  ```
+  Please check the paragraph about [LineBufferFilter](#logcatcher) for more
+  details on the usage of this tool.
+* in order to "break" `leader.mesos.` entry, we can simply remove it from the
+  programmable DNS:
+  ```
+  dns_server_mock.remove_dns_entry('leader.mesos.')
+  ```
+* the final thing is to make the requests. We can do it using plain `requests`
+  module. The only gotcha is the URL that schould be used. Depending on the
+  type of AR (agent/master) and configuration (listen address), different URLs
+  may be needed. In order to abstract it away, AR instance's `.make_url_from_path()`
+  method should be used:
+  ```
+  url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+  resp = requests.get(url,
+                      allow_redirects=False,
+                      headers=valid_user_header)
+  assert resp.status_code == 200
+  ```
+* now, lets put it all together in order:
+  ```
+  # pull in all the necessary mocks into the scope:
+  # * nginx_class - AR class. Automatically adjusted to repository flavour.
+  # * dns_server_mock - programmable DNS server
+  # * valid_user_header - JWT that will be accepted by AR authn/authz code
+  def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
+          self, nginx_class, dns_server_mock, valid_user_header):
+      # Let's try to put all non-essential stuff outside of context managers
+      # scopes:
+      filter_regexp_pre = {
+          'Marathon leader cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Marathon apps cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Mesos state cache has been successfully updated':
+              SearchCriteria(1, True),
+          '`Mesos Leader` state cache has been successfully updated':
+              SearchCriteria(1, True),
+      }
+
+      filter_regexp_post = {
+          'Marathon leader cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Marathon apps cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Mesos state cache has been successfully updated':
+              SearchCriteria(1, True),
+          'DNS server returned error code':
+              SearchCriteria(1, True),
+          'Using stale `mesos_leader` cache entry to fulfill the request':
+              SearchCriteria(1, True),
+      }
+
+      ar = nginx_class(cache_max_age_soft_limit=3,
+                       cache_max_age_hard_limit=1200,
+                       cache_expiration=2,
+                       cache_poll_period=3,
+                       cache_first_poll_delay=1,
+                       )
+
+      url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+
+      # AR lifetime is equal to the lenght of this context manager's scope
+      with GuardedSubprocess(ar):
+          lbf = LineBufferFilter(filter_regexp_pre,
+                                 timeout=5,  # Just to give LBF enough time
+                                 line_buffer=ar.stderr_line_buffer)
+
+          with lbf:
+              # Trigger cache update by issuing request:
+              resp = requests.get(url,
+                                  allow_redirects=False,
+                                  headers=valid_user_header)
+              assert resp.status_code == 200
+
+          assert lbf.extra_matches == {}
+
+          lbf = LineBufferFilter(filter_regexp_post,
+                                 timeout=5,  # Just to give LBF enough time
+                                 line_buffer=ar.stderr_line_buffer)
+          with lbf:
+              # Break `leader.mesos` DNS entry
+              dns_server_mock.remove_dns_entry('leader.mesos.')
+
+              # Wait for the cache to be old enough to be considered stale by AR:
+              # cache_max_age_soft_limit + 1s for a good measure
+              time.sleep(3 + 2)
+
+              # Perform the main/test request:
+              resp = requests.get(url,
+                                  allow_redirects=False,
+                                  headers=valid_user_header)
+              assert resp.status_code == 200
+
+          assert lbf.extra_matches == {}
+  ```
+
+#### Testing if `leader.mesos` DNS record is re-resolved by `cache.lua` code
+This case will reuse some of the concepts from a previous one. The idea here is
+to make sure tha that a change of `leader.mesos.` DNS entry is properly handled
+by cache.lua code. To achieve that, we set up two Mesos HTTP mocks, one with
+enabled extra agent, other with not. Initially `leader.mesos.` points to the one
+without extra agent enabled and we expect 404 reply, then we update the DNS,
+wait for DNS cache refresh and try again. This time the response status should
+be 200.
+
+The extra difficulty here is the fact that we are overriding TTL value of the DNS
+records using `resolver ... valid=5s` statement in nginx.
+
+The test can be split into a series of steps/stages:
+* first of all we need to change the TTL of the `leader.mesos.` record so that
+  it is high enough that we can be sure it is being overriden by `resolver ...`
+  statement (or the test should fail because DNS entry will not be re-resolved).
+  ```
+  dns_server_mock.set_dns_entry('leader.mesos.', ip='127.0.0.2', ttl=self.LONG_TTL)
+  ```
+  The IP to which the entry is pointing to is the IP of the Mesos mock with extra
+  agent not enabled.
+* lets prepare custom AR instance the same way we did in previous example:
+  ```
+  # This should be equal or greater than 1.5 times the value of `valid=`
+  # DNS TTL override in `resolver` config option -> 5s * 1.5 = 7.5s
+  cache_poll_period = 8
+  cache_expiration = cache_poll_period - 1
+  cache_first_poll = 1
+
+  ar = nginx_class(
+      cache_first_poll_delay=cache_first_poll,
+      cache_poll_period=cache_poll_period,
+      cache_expiration=cache_expiration,
+      upstream_mesos="http://leader.mesos:5050",
+      )
+  with GuardedSubprocess(ar):
+      ...
+  ```
+* now, we need to enable extra agent in second Mesos Mock
+  ```
+  mocker.send_command(
+      endpoint_id='http://127.0.0.3:5050',
+      func_name='enable_extra_agent',
+      )
+  ```
+* instead of using `requests` module here, we can take advantage of `ping_mesos_agent`
+  helper which will do some of the work for us:
+  * first call, where we expect 404
+  ```
+  ping_mesos_agent(
+      ar,
+      valid_user_header,
+      expect_status=404,
+      agent_id=AGENT_EXTRA_ID)
+  ```
+  * second call, when we expect 200
+  ```
+  ping_mesos_agent(
+      ar,
+      valid_user_header,
+      expect_status=200,
+      endpoint_id='http://127.0.0.4:15003',
+      agent_id=AGENT_EXTRA_ID)
+  ```
+* changing of the DNS entry to the Mesos mock with extra agent will be done
+  also using `.set_dns_entry()` call:
+  ```
+  dns_server_mock.set_dns_entry(
+    'leader.mesos.', ip='127.0.0.3', ttl=self.LONG_TTL)
+  ```
+
+And now, putting it all together:
+```
+def test_if_mesos_leader_is_reresolved_by_lua(
+        self, nginx_class, mocker, dns_server_mock, valid_user_header):
+    # Change the TTL of `leader.mesos.` entry
+    dns_server_mock.set_dns_entry(
+        'leader.mesos.', ip='127.0.0.2', ttl=self.LONG_TTL)
+
+    # This should be equal or greater than 1.5 times the value of `valid=`
+    # DNS TTL override in `resolver` config option -> 5s * 1.5 = 7.5s
+    cache_poll_period = 8
+    cache_expiration = cache_poll_period - 1
+    cache_first_poll = 1
+
+    mocker.send_command(
+        endpoint_id='http://127.0.0.3:5050',
+        func_name='enable_extra_agent',
+        )
+
+    ar = nginx_class(
+        cache_first_poll_delay=cache_first_poll,
+        cache_poll_period=cache_poll_period,
+        cache_expiration=cache_expiration,
+        upstream_mesos="http://leader.mesos:5050",
+        )
+
+    with GuardedSubprocess(ar):
+        # Force cache update by issuing a request
+        ping_mesos_agent(
+            ar,
+            valid_user_header,
+            expect_status=404,
+            agent_id=AGENT_EXTRA_ID)
+
+        # Now, let's change DNS entry to point to other Mesos master
+        dns_server_mock.set_dns_entry(
+            'leader.mesos.', ip='127.0.0.3', ttl=self.LONG_TTL)
+
+        # Wait for cache to expire and let DNS entry be re-resolved
+        # during the refresh
+        time.sleep(cache_poll_period + cache_first_poll + 1)
+
+        # Make sure that cache now used the right upstream
+        ping_mesos_agent(
+            ar,
+            valid_user_header,
+            expect_status=200,
+            endpoint_id='http://127.0.0.4:15003',
+            agent_id=AGENT_EXTRA_ID)
+```
 ### Advanced usage
 There are no general guidelines on how to add advanced test cases to test
 harness, as each case is different. Sometimes one needs to add support for a
@@ -1652,7 +1965,7 @@ config file and start operating only on the test's input data instead.
 
 It is possible that the solution that you are looking for has already been found
 by somebody else. Try to search for tests that check similar behaviour or feature.
-If you need to implement new sidefect/functionality - try looking at existing
+If you need to implement a new side effect/functionality - try looking at existing
 test-harness features and try following the "general design". Nothing is writen
 in stone but "There should be one-- and preferably only one --obvious way to do
 it."
