@@ -104,12 +104,13 @@ def agent_has_resources(agent, node_requirements):
     return all(unreserved[resource] >= node_requirements[resource] for resource in resources)
 
 
-@pytest.mark.skipif(
-    not enough_resources_for_package(get_cluster_resources(dcos_api_session), KAFKA_PACKAGE_REQUIREMENTS),
-    reason='Package installation would fail on this cluster. Not enough resources to install test app')
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
+    # Can't access dcos_api_session from through the pytest.mark.skipif decorator
+    if not enough_resources_for_package(get_cluster_resources(dcos_api_session), KAFKA_PACKAGE_REQUIREMENTS):
+        pytest.skip('Package installation would fail on this cluster. Not enough resources to install test app')
+
     install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
     data = install_response.json()
 
