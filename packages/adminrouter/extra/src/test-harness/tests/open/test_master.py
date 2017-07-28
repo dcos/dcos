@@ -35,11 +35,11 @@ authed_endpoints = [
     '/service/nest2/nest1/scheduler-alwaysthere/foo/bar',
     '/slave/{}'.format(AGENT1_ID),
     '/system/health/v1/foo/bar',
-    '/system/v1/agent/{}/logs/v1/foo/bar'.format(AGENT1_ID),
+    '/system/v1/agent/{}/logs/foo/bar'.format(AGENT1_ID),
     '/system/v1/agent/{}/metrics/v0/foo/bar'.format(AGENT1_ID),
     '/system/v1/leader/marathon/foo/bar',
     '/system/v1/leader/mesos/foo/bar',
-    '/system/v1/logs/v1/foo/bar',
+    '/system/v1/logs/foo/bar',
     '/system/v1/metrics/foo/bar',
 ]
 

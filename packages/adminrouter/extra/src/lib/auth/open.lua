@@ -130,7 +130,7 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /system/v1/logs/v1/
+    -- /system/v1/logs/
     res.access_system_logs_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end
@@ -180,7 +180,7 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))
+    -- /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))
     res.access_system_agent_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end
