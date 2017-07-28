@@ -4,6 +4,7 @@ import pytest
 
 log = logging.getLogger(__name__)
 
+
 def test_pkgpanda_api(dcos_api_session):
 
     def get_and_validate_package_ids(path, node):
