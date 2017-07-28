@@ -791,22 +791,18 @@ endpoint:
 endpoint_tests:
   - tests:
       are_response_headers_ok:
-        enabled: true
         nocaching_headers_are_sent: true
         test_paths:
           - /exhibitor/foo/bar
       are_upstream_req_headers_ok:
-        enabled: true
         jwt_should_be_forwarded: skip
         test_paths:
           - /exhibitor/foo/bar
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /exhibitor/foo/bar
         upstream: http://127.0.0.1:8181
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.0
         test_paths:
           - expected: /foo/bar
@@ -816,16 +812,13 @@ endpoint_tests:
           - expected: /exhibitor/v1/cluster/status
             sent: /exhibitor/exhibitor/v1/cluster/status
       is_endpoint_redirecting_properly:
-        enabled: true
         locations:
           - path: /exhibitor
             code: 301
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /exhibitor/exhibitor/v1/cluster/status
       is_location_header_rewritten:
-        enabled: true
         basepath: /exhibitor/v1/ui/index.html
         endpoint_id: http://127.0.0.1:8181
         redirect_testscases:
@@ -851,8 +844,8 @@ The syntax is as follows:
     * `type`: a list which defines whether the subtests defined in the `tests` dict
       can be run on `master` or `agent` or both (both keys are present in the list
       then).
-* each subtest entry is a dictionary itself with at least one key:
-  `enabled`. If it is equal to `false` then the test is skipped/not executed.
+* each subtest entry is a dictionary itself. There has to be at least one
+  subtest entry.
 * at the time of writing this text, following subtests are supported:
   * `are_response_headers_ok`
     * calls `generic_response_headers_verify_test` generic test underneath
@@ -1222,7 +1215,6 @@ Steps are as follows:
   ```
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /schmetterlingdb/stats/foo/bar
     type:
@@ -1242,7 +1234,6 @@ Steps are as follows:
   ```
   - tests:
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
@@ -1264,7 +1255,6 @@ Steps are as follows:
   ```
   - tests:
       is_endpoint_redirecting_properly:
-        enabled: true
         locations:
           - path: /schmetterlingdb
             code: 307
@@ -1284,7 +1274,6 @@ Steps are as follows:
   ```
   - tests:
       are_upstream_req_headers_ok:
-        enabled: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1323,7 +1312,6 @@ Steps are as follows:
   ```
   - tests:
       are_response_headers_ok:
-        enabled: true
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1354,7 +1342,6 @@ Steps are as follows:
   ```
   - tests:
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
           - expected: /stats/foo/bar
@@ -1363,7 +1350,6 @@ Steps are as follows:
       - master
   - tests:
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
@@ -1408,7 +1394,6 @@ Steps are as follows:
   ```
   - tests:
       is_location_header_rewritten:
-        enabled: true
         basepath: /schmetterlingdb/foo/bar
         endpoint_id: http://127.0.0.1:12345
         redirect_testscases:
@@ -1446,14 +1431,12 @@ To sum up, our test configuration should look as follows:
 ```
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /schmetterlingdb/stats/foo/bar
     type:
       - master
   - tests:
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
@@ -1462,7 +1445,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       is_endpoint_redirecting_properly:
-        enabled: true
         locations:
           - path: /schmetterlingdb
             code: 307
@@ -1470,7 +1452,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       are_upstream_req_headers_ok:
-        enabled: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1479,7 +1460,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       are_response_headers_ok:
-        enabled: true
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1487,7 +1467,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
           - expected: /stats/foo/bar
@@ -1496,7 +1475,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
@@ -1505,7 +1483,6 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       is_location_header_rewritten:
-        enabled: true
         basepath: /schmetterlingdb/foo/bar
         endpoint_id: http://127.0.0.1:12345
         redirect_testscases:
@@ -1523,39 +1500,32 @@ which can be simplified into:
 ```
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /schmetterlingdb/stats/foo/bar
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
         upstream: http://127.0.0.1:12345
       is_endpoint_redirecting_properly:
-        enabled: true
         locations:
           - path: /schmetterlingdb
             code: 307
       are_upstream_req_headers_ok:
-        enabled: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
       are_response_headers_ok:
-        enabled: true
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
           - expected: /stats/foo/bar
             sent: /schmetterlingdb/stats/foo/bar
       is_location_header_rewritten:
-        enabled: true
         basepath: /schmetterlingdb/foo/bar
         endpoint_id: http://127.0.0.1:12345
         redirect_testscases:
@@ -1569,7 +1539,6 @@ which can be simplified into:
       - master
   - tests:
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: websockets
         test_paths:
           - expected: /foo/bar
