@@ -17,7 +17,7 @@ setup(
     py_modules=["check_rules", "checker"],
     install_requires=[
         'pycodestyle==2.2.0',
-        'flake8',
+        'flake8==3.3.0',
         'flake8-import-order==0.9.2',
         'pep8-naming'
     ],
