@@ -1,5 +1,8 @@
+import logging
+
 import pytest
 
+log = logging.getLogger(__name__)
 
 def test_pkgpanda_api(dcos_api_session):
 
@@ -82,6 +85,9 @@ def enough_resources_for_package(state_summary, package_requirements):
     """
     agents = state_summary['slaves']
     if len(agents) < package_requirements['number_of_nodes']:
+        log.debug('Not enough agents for this package. Need {required}, have {available}'.format(
+            required=package_requirements['number_of_nodes'],
+            available=len(agents)))
         return False
     usable_nodes = 0
     for agent in agents:
@@ -89,6 +95,10 @@ def enough_resources_for_package(state_summary, package_requirements):
             usable_nodes += 1
         if usable_nodes == package_requirements['number_of_nodes']:
             return True
+    log.info('Only {available} usable agents. This package needs {required} with these resources {resources}.'.format(
+        available=usable_nodes,
+        required=package_requirements['number_of_nodes'],
+        resources=package_requirements['node']))
     return False
 
 
@@ -101,16 +111,29 @@ def agent_has_resources(agent, node_requirements):
     """
     unreserved = agent['unreserved_resources']
     resources = ['mem', 'disk', 'cpus']
-    return all(unreserved[resource] >= node_requirements[resource] for resource in resources)
+    enough_resources = True
+    for resource in resources:
+        log.debug('{resource}: unreserved {unreserved}, required {required}'.format(
+            resource=resource,
+            unreserved=unreserved[resource],
+            required=node_requirements[resource]))
+        if unreserved[resource] < node_requirements[resource]:
+            enough_resources = False
+    log.debug('Agent has enough resources: {}'.format(enough_resources))
+    return enough_resources
+
+
+def skipif_insufficient_resources(dcos_api_session, requirements):
+    """Can't access dcos_api_session from through the pytest.mark.skipif decorator, so call this in each test instead
+    """
+    if not enough_resources_for_package(get_cluster_resources(dcos_api_session), requirements):
+        return pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
 
 
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
-    # Can't access dcos_api_session from through the pytest.mark.skipif decorator
-    if not enough_resources_for_package(get_cluster_resources(dcos_api_session), KAFKA_PACKAGE_REQUIREMENTS):
-        pytest.skip(msg='Package installation would fail on this cluster. Not enough resources to install test app')
-
+    skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
     install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
     data = install_response.json()
 
