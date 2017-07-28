@@ -21,6 +21,11 @@
         "kind": "url",
         "url": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.2.2/jna-4.2.2.jar",
         "sha1": "5012450aee579c3118ff09461d5ce210e0cdc2a9"
+    },
+    "azkaban": {
+        "kind": "url",
+        "url": "https://repo1.maven.org/maven2/com/linkedin/azkaban/azkaban/2.5.0/azkaban-2.5.0.jar",
+        "sha1": "e73c5850c98b333f9b4b4d6bebf1823b7e6f404c"
     }
   },
   "username": "dcos_exhibitor",
