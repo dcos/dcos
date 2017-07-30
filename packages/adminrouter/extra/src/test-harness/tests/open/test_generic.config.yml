@@ -86,11 +86,11 @@ endpoint_tests:
           - /system/v1/metrics/foo/bar
     type:
       - agent
-######### /system/v1/logs/v1/
+######### /system/v1/logs/
   - tests:
       is_unauthed_access_permitted:
         enabled: true
         locations:
-          - /system/v1/logs/v1/foo/bar
+          - /system/v1/logs/foo/bar
     type:
       - agent

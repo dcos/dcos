@@ -294,7 +294,7 @@ routes:
       path: 'http://$backend/system/health/v1'
       backend: dcos_diagnostics
     path: /system/health/v1
-  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)':
+  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))(?<url>.*)':
     group: System
     matcher: regex
     description: System proxy to a specific agent node
@@ -306,7 +306,7 @@ routes:
         replacement: $1
         type: break
     path: >-
-      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs/v1|/metrics/v0))(?<url>.*)
+      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))(?<url>.*)
   /system/v1/leader/marathon(?<url>.*):
     group: System
     matcher: regex
@@ -321,14 +321,14 @@ routes:
     proxy:
       path: 'http://leader.mesos/system/v1$url$is_args$query_string'
     path: /system/v1/leader/mesos(?<url>.*)
-  /system/v1/logs/v1/:
+  /system/v1/logs/:
     group: System
     matcher: path
     description: 'Node, component service, and container (task) logs'
     proxy:
       path: 'http://$backend'
       backend: log
-    path: /system/v1/logs/v1/
+    path: /system/v1/logs/
   /system/v1/metrics/:
     group: System
     matcher: path

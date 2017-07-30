@@ -266,32 +266,32 @@ endpoint_tests:
         enabled: true
         jwt_should_be_forwarded: skip
         test_paths:
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/foo/bar?key=value&var=num
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar?key=value&var=num
       is_upstream_correct:
         enabled: true
         test_paths:
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/foo/bar?key=value&var=num
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar?key=value&var=num
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0
         upstream: http://127.0.0.2:61001
       is_upstream_req_ok:
         enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
-          - expected: /system/v1/logs/v1/foo/bar?key=value&var=num
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/foo/bar?key=value&var=num
+          - expected: /system/v1/logs/foo/bar?key=value&var=num
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
           - expected: /system/v1/metrics/v0/foo/bar?key=value&var=num
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar?key=value&var=num
-          - expected: /system/v1/logs/v1/
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1/
+          - expected: /system/v1/logs/
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/
           - expected: /system/v1/metrics/v0/
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/
-          - expected: /system/v1/logs/v1
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/v1
+          - expected: /system/v1/logs
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs
           - expected: /system/v1/metrics/v0
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0
     type:
@@ -302,32 +302,32 @@ endpoint_tests:
         enabled: true
         jwt_should_be_forwarded: skip
         test_paths:
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1/foo/bar?key=value&var=num
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/foo/bar?key=value&var=num
       is_upstream_correct:
         enabled: true
         test_paths:
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1/foo/bar?key=value&var=num
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/foo/bar?key=value&var=num
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1/
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/
-          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0
         upstream: http://127.0.0.3:61001
       is_upstream_req_ok:
         enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
-          - expected: /system/v1/logs/v1/foo/bar?key=value&var=num
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1/foo/bar?key=value&var=num
+          - expected: /system/v1/logs/foo/bar?key=value&var=num
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/foo/bar?key=value&var=num
           - expected: /system/v1/metrics/v0/foo/bar?key=value&var=num
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/foo/bar?key=value&var=num
-          - expected: /system/v1/logs/v1/
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1/
+          - expected: /system/v1/logs/
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/
           - expected: /system/v1/metrics/v0/
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/
-          - expected: /system/v1/logs/v1
-            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1
+          - expected: /system/v1/logs
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs
           - expected: /system/v1/metrics/v0
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0
     type:
@@ -376,25 +376,25 @@ endpoint_tests:
         enabled: true
         jwt_should_be_forwarded: skip
         test_paths:
-          - /system/v1/logs/v1/foo/bar
+          - /system/v1/logs/foo/bar
       is_upstream_correct:
         enabled: true
         test_paths:
-          - /system/v1/logs/v1/foo/bar
-          - /system/v1/logs/v1/
+          - /system/v1/logs/foo/bar
+          - /system/v1/logs/
         upstream: http:///run/dcos/dcos-log.sock
       is_upstream_req_ok:
         enabled: true
         expected_http_ver: HTTP/1.1
         test_paths:
           - expected: /foo/bar
-            sent: /system/v1/logs/v1/foo/bar
+            sent: /system/v1/logs/foo/bar
           - expected: /
-            sent: /system/v1/logs/v1/
+            sent: /system/v1/logs/
       is_endpoint_redirecting_properly:
         enabled: true
         locations:
-          - path: /system/v1/logs/v1
+          - path: /system/v1/logs
             code: 301
     type:
       - master

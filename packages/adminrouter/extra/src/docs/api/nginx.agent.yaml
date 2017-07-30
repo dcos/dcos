@@ -40,14 +40,14 @@ routes:
       path: 'http://$backend'
       backend: dcos_diagnostics
     path: /system/health/v1
-  /system/v1/logs/v1/:
+  /system/v1/logs/:
     group: System
     matcher: path
     description: 'Node, component service, and container (task) logs'
     proxy:
       path: 'http://$backend'
       backend: log
-    path: /system/v1/logs/v1/
+    path: /system/v1/logs/
   /system/v1/metrics/:
     group: System
     matcher: path

@@ -59,7 +59,7 @@ class TestSystemAgentEndpoint:
         generic_upstream_headers_verify_test(
             master_ar_process_perclass,
             headers,
-            '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/v1',
+            '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs',
             assert_headers_absent=["Accept-Encoding"],
             )
 
@@ -362,6 +362,6 @@ class TestMisc:
 
         generic_response_headers_verify_test(master_ar_process_perclass,
                                              valid_user_header,
-                                             '/system/v1/logs/v1/foo/bar',
+                                             '/system/v1/logs/foo/bar',
                                              assert_headers=accel_buff_header,
                                              )
