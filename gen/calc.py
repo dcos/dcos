@@ -135,9 +135,13 @@ def validate_ip_port_list(json_str: str):
 
 def calculate_bootstrap_download_command(bootstrap_tmp_dir, bootstrap_url, bootstrap_id):
     if 's3://' in bootstrap_url:
-        return 'aws s3 cp {}/bootstrap/{}.bootstrap.tar.xz /{}/bootstrap.tar.xz'.format(bootstrap_url, bootstrap_id, bootstrap_tmp_dir)
+        return 'aws s3 cp {}/bootstrap/{}.bootstrap.tar.xz /{}/bootstrap.tar.xz'.format(
+            bootstrap_url,
+            bootstrap_id,
+            bootstrap_tmp_dir)
 
-    return '/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{}/bootstrap.tar.xz {}/bootstrap/{}.bootstrap.tar.xz'.format(bootstrap_tmp_dir, bootstrap_url, bootstrap_id)
+    return '/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{}/bootstrap.tar.xz'
+    '{}/bootstrap/{}.bootstrap.tar.xz'.format(bootstrap_tmp_dir, bootstrap_url, bootstrap_id)
 
 
 def calculate_environment_variable(name):
