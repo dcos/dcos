@@ -85,7 +85,7 @@ def _agent_has_resources(agent, node_requirements):
             unreserved=unreserved[resource],
             required=node_requirements[resource]))
         if unreserved[resource] < node_requirements[resource]:
-            log.debug('Agent does not have has enough {}'.format())
+            log.debug('Agent does not have has enough {}'.format(resource))
             return False
     return True
 
