@@ -63,47 +63,14 @@ KAFKA_PACKAGE_REQUIREMENTS = {
 }
 
 
-def get_cluster_resources(dcos_api_session):
+def _get_cluster_resources(dcos_api_session):
     """Return the mesos state summary
     """
     r = dcos_api_session.get('mesos/state-summary')
     return r.json()
 
 
-def enough_resources_for_package(state_summary, package_requirements):
-    """SANITY CHECK that there are enough unreserved_resources in a state to run a package.
-
-    Args:
-        state_summary: dict
-        package_requirements: dict
-
-    Returns:
-        bool
-
-    Notes:
-        This is a sanity check meant for use with pytest.mark.skipif
-        This only verifies that there were enough resources at the time state_summary was queried
-    """
-    agents = state_summary['slaves']
-    if len(agents) < package_requirements['number_of_nodes']:
-        log.debug('Not enough agents for this package. Need {required}, have {available}'.format(
-            required=package_requirements['number_of_nodes'],
-            available=len(agents)))
-        return False
-    usable_nodes = 0
-    for agent in agents:
-        if agent_has_resources(agent, package_requirements['node']):
-            usable_nodes += 1
-        if usable_nodes == package_requirements['number_of_nodes']:
-            return True
-    log.info('Only {available} usable agents. This package needs {required} with these resources {resources}.'.format(
-        available=usable_nodes,
-        required=package_requirements['number_of_nodes'],
-        resources=package_requirements['node']))
-    return False
-
-
-def agent_has_resources(agent, node_requirements):
+def _agent_has_resources(agent, node_requirements):
     """Check that an agent has at least as much resources as requried for one node
 
     Args:
@@ -124,17 +91,50 @@ def agent_has_resources(agent, node_requirements):
     return enough_resources
 
 
-def skipif_insufficient_resources(dcos_api_session, requirements):
+def _enough_resources_for_package(state_summary, package_requirements):
+    """Sanity check that there are enough unreserved_resources in a state to run a package.
+
+    Args:
+        state_summary: dict
+        package_requirements: dict
+
+    Returns:
+        bool
+
+    Notes:
+        This is a sanity check meant for use with pytest.mark.skipif
+        This only verifies that there were enough resources at the time state_summary was queried
+    """
+    agents = state_summary['slaves']
+    if len(agents) < package_requirements['number_of_nodes']:
+        log.debug('Not enough agents for this package. Need {required}, have {available}'.format(
+            required=package_requirements['number_of_nodes'],
+            available=len(agents)))
+        return False
+    usable_nodes = 0
+    for agent in agents:
+        if _agent_has_resources(agent, package_requirements['node']):
+            usable_nodes += 1
+        if usable_nodes == package_requirements['number_of_nodes']:
+            return True
+    log.info('Only {available} usable agents. This package needs {required} with these resources {resources}.'.format(
+        available=usable_nodes,
+        required=package_requirements['number_of_nodes'],
+        resources=package_requirements['node']))
+    return False
+
+
+def _skipif_insufficient_resources(dcos_api_session, requirements):
     """Can't access dcos_api_session from through the pytest.mark.skipif decorator, so call this in each test instead
     """
-    if not enough_resources_for_package(get_cluster_resources(dcos_api_session), requirements):
+    if not _enough_resources_for_package(_get_cluster_resources(dcos_api_session), requirements):
         return pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
 
 
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
-    skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
+    _skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
     install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
     data = install_response.json()
 
