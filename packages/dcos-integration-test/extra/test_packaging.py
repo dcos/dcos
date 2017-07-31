@@ -79,16 +79,15 @@ def _agent_has_resources(agent, node_requirements):
     """
     unreserved = agent['unreserved_resources']
     resources = ['mem', 'disk', 'cpus']
-    enough_resources = True
     for resource in resources:
         log.debug('{resource}: unreserved {unreserved}, required {required}'.format(
             resource=resource,
             unreserved=unreserved[resource],
             required=node_requirements[resource]))
         if unreserved[resource] < node_requirements[resource]:
-            enough_resources = False
-    log.debug('Agent has enough resources: {}'.format(enough_resources))
-    return enough_resources
+            log.debug('Agent does not have has enough {}'.format())
+            return False
+    return True
 
 
 def _enough_resources_for_package(state_summary, package_requirements):
