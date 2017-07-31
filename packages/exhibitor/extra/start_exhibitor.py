@@ -112,7 +112,7 @@ log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppenderWithLayout
 log4j.appender.journal.logStacktrace=true
 log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
-log4j.appender.journal.layout=azkaban.utils.PatternLayoutEscaped
+log4j.appender.journal.layout=com.netflix.exhibitor.core.utils.PatternLayoutEscaped
 log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m%n
 """)
 
