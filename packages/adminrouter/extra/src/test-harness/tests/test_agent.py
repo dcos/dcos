@@ -21,6 +21,6 @@ class TestLogsEndpoint:
         generic_response_headers_verify_test(
             agent_ar_process,
             valid_user_header,
-            '/system/v1/logs/v1/foo/bar',
+            '/system/v1/logs/foo/bar',
             assert_headers=accel_buff_header,
             )
