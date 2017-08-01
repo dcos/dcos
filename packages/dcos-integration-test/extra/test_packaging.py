@@ -130,15 +130,19 @@ def _skipif_insufficient_resources(dcos_api_session, requirements):
         return pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
 
 
+def _install_and_verify_app(dcos_api_session, app_name, app_version):
+    response = dcos_api_session.cosmos.install_package(app_name, app_version)
+    data = response.json()
+    # TODO what are the rest of these args again? Can these be default kwargs?
+    dcos_api_session.poll_marathon_for_app_deployment(data['appId'], 1, True, False)
+
+
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
     _skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
-    install_response = dcos_api_session.cosmos.install_package('kafka', '1.1.9-0.10.0.0')
-    data = install_response.json()
-
-    dcos_api_session.marathon.poll_marathon_for_app_deployment(data['appId'], 1,
-                                                               True, False)
+   
+    _install_and_verify_app(dcos_api_session, 'kafka', '1.1.9-0.10.0.0')
 
     list_response = dcos_api_session.cosmos.list_packages()
     packages = list_response.json()['packages']
