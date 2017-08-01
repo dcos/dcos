@@ -3,9 +3,9 @@
   "sources": {
     "exhibitor": {
       "kind": "git",
-      "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "f6654479de96e898e7ed20a5fbef6b18ac88ff24",
-      "ref_origin": "master"
+      "git": "https://github.com/rdeliallisi/exhibitor.git",
+      "ref": "1c2d7811dee5c94f923a6c351252a5544ceab977",
+      "ref_origin": "rdeliallisi/pattern-layout-escaped"
     },
     "zookeeper": {
       "kind": "url_extract",
