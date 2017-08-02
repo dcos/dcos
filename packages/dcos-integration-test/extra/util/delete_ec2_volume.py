@@ -1,52 +1,25 @@
 #!/usr/bin/env python3
 import contextlib
-import copy
-import functools
 import os
 import sys
-import time
 
 import boto3
 import botocore
 import requests
 import retrying
-from botocore.exceptions import ClientError, WaiterError
+from botocore import exceptions
 
 
-def retry_boto_rate_limits(boto_fn, wait=2, timeout=60 * 60):
-    """Decorator to make boto functions resilient to AWS rate limiting and throttling.
-    If one of these errors is encounterd, the function will sleep for a geometrically
-    increasing amount of time
-    """
-    @functools.wraps(boto_fn)
-    def ignore_rate_errors(*args, **kwargs):
-        local_wait = copy.copy(wait)
-        local_timeout = copy.copy(timeout)
-        while local_timeout > 0:
-            next_time = time.time() + local_wait
-            try:
-                return boto_fn(*args, **kwargs)
-            except (ClientError, WaiterError) as e:
-                if isinstance(e, ClientError):
-                    error_code = e.response['Error']['Code']
-                elif isinstance(e, WaiterError):
-                    error_code = e.last_response['Error']['Code']
-                else:
-                    raise
-                if error_code in ['Throttling', 'RequestLimitExceeded']:
-                    print('AWS API Limiting error: {}'.format(error_code))
-                    print('Sleeping for {} seconds before retrying'.format(local_wait))
-                    time_to_next = next_time - time.time()
-                    if time_to_next > 0:
-                        time.sleep(time_to_next)
-                    else:
-                        local_timeout += time_to_next
-                    local_timeout -= local_wait
-                    local_wait *= 2
-                    continue
-                raise
-        raise Exception('Rate-limit timeout encountered waiting for {}'.format(boto_fn.__name__))
-    return ignore_rate_errors
+def is_rate_limit_error(exception):
+    if exception in [exceptions.ClientError, exceptions.WaiterError]:
+        if isinstance(exception, exceptions.ClientError):
+            error_code = exception.response['Error']['Code']
+        elif isinstance(exception, exceptions.WaiterError):
+            error_code = exception.last_response['Error']['Code']
+        if error_code in ['Throttling', 'RequestLimitExceeded']:
+            print('AWS rate-limit encountered!')
+            return True
+    return False
 
 
 @contextlib.contextmanager
@@ -66,7 +39,11 @@ def _remove_env_vars(*env_vars):
         os.environ.update(environ)
 
 
-@retry_boto_rate_limits
+@retrying.retry(
+    wait_exponential_multiplier=1000,
+    wait_exponential_max=300000,
+    stop_max_delay=1800000,
+    retry_on_exception=is_rate_limit_error)
 def delete_ec2_volume(name, timeout=300):
     """Delete an EC2 EBS volume by its "Name" tag
 
