@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/suanmiao/mesos",
-    "ref": "39b2e5f8442f8548e9af21757da17eaa20ae702c",
-    "ref_origin" : "quinn/heartbeat"
+    "ref": "68098920e0de5c8da45a4e5f5f00f76ae4adceaa",
+    "ref_origin" : "quinn/dcos-build"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
