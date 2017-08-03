@@ -213,7 +213,7 @@ def generic_location_header_during_redirect_is_adjusted_test(
         location_set,
         location_expected,
         ):
-    """Test if the Location header is rewriten by AR on redirect
+    """Test if the Location header is rewritten by AR on redirect
 
     This generic test issues a request to AR for a given path and verifies that
     redirect has occurred with the `Location` header contents equal to
