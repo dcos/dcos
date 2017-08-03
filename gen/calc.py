@@ -416,7 +416,7 @@ def calculate_config_yaml(user_arguments):
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
                  'docker/runtime,docker/volume,volume/sandbox_path,volume/secret,posix/rlimits,'
-                 'namespaces/pid,com_mesosphere_MetricsIsolatorModule')
+                 'namespaces/pid,linux/capabilities,com_mesosphere_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',cgroups/devices,gpu/nvidia'
     return isolators
@@ -615,7 +615,7 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
-def calculate_check_config_contents(check_config, custom_checks):
+def calculate_check_config_contents(check_config, custom_checks, check_search_path, check_ld_library_path):
 
     def merged_check_config(config_a, config_b):
         # config_b overwrites config_a. Validation should assert that names won't conflict.
@@ -657,6 +657,10 @@ def calculate_check_config_contents(check_config, custom_checks):
     dcos_checks = json.loads(check_config)
     user_checks = json.loads(custom_checks)
     merged_checks = merged_check_config(user_checks, dcos_checks)
+    merged_checks['check_env'] = {
+        'PATH': check_search_path,
+        'LD_LIBRARY_PATH': check_ld_library_path,
+    }
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
@@ -973,7 +977,7 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.10-dev',
+        'dcos_version': '1.10.0-beta2',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
@@ -1008,7 +1012,9 @@ entry = {
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
-        'check_config_contents': calculate_check_config_contents
+        'check_config_contents': calculate_check_config_contents,
+        'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
+        'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'conditional': {
         'master_discovery': {

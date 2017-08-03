@@ -226,7 +226,7 @@ class TestAuthPrecedence:
 
         assert resp.status_code == 404
 
-    @pytest.mark.parametrize("path", ["/system/v1/agent/{}/logs/v1{}", "/agent/{}{}"])
+    @pytest.mark.parametrize("path", ["/system/v1/agent/{}/logs{}", "/agent/{}{}"])
     def test_if_agent_endpoint_auth_precedence_is_enforced(
             self,
             valid_user_header,

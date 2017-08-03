@@ -25,6 +25,6 @@ RestartSec=5
 LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}
 EnvironmentFile=/opt/mesosphere/environment
-ExecStart=${PKG_PATH}/bin/epmd -port 61420
+ExecStart=${PKG_PATH}/bin/epmd -port 61420 -relaxed_command_check
 Environment=HOME=/opt/mesosphere
 EOF

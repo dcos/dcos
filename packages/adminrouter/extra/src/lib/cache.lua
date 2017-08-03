@@ -617,7 +617,7 @@ local function get_cache_entry(name, auth_token)
 
     -- Cache is stale, but still usable:
     if cache_age > _CONFIG.CACHE_MAX_AGE_SOFT_LIMIT then
-        ngx.log(ngx.NOTICE, "Using stale `" .. name .. "` cache entry to fulfill the request")
+        ngx.log(ngx.NOTICE, "Cache entry `" .. name .. "` is stale")
     end
 
     local entry_json = cache:get(name)
