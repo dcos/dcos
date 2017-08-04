@@ -1,7 +1,5 @@
 import uuid
 
-from dcos_test_utils.marathon import get_test_app
-
 
 def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer.
@@ -15,22 +13,25 @@ def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
     of 'alpine' which is used for UCR whiteout support testing. See:
     https://hub.docker.com/r/mesosphere/whiteout/
     """
-    app, test_uuid = get_test_app()
-    app['container'] = {
-        'type': 'MESOS',
-        'docker': {
-            'image': 'mesosphere/whiteout:test'
-        }
+    app = {
+        'id': '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus': 0.1,
+        'mem': 32,
+        'instances': 1,
+        'cmd': 'while true; do sleep 1; done',
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'mesosphere/whiteout:test'}
+        },
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {'value': 'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3'},
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
     }
-    app['cmd'] = 'while true; do sleep 1; done'
-    app['healthChecks'] = [{
-        'protocol': 'COMMAND',
-        'command': {'value': 'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3'},
-        'gracePeriodSeconds': 5,
-        'intervalSeconds': 10,
-        'timeoutSeconds': 10,
-        'maxConsecutiveFailures': 3,
-    }]
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
         pass
@@ -42,22 +43,27 @@ def test_if_ucr_app_can_be_deployed_with_image_digest(dcos_api_session):
     This test verifies that a marathon ucr app can execute a docker image
     by digest.
     """
-    app, test_uuid = get_test_app()
-    app['container'] = {
-        'type': 'MESOS',
-        'docker': {
-            'image': 'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a'
-        }
+    app = {
+        'id': '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus': 0.1,
+        'mem': 32,
+        'instances': 1,
+        'cmd': 'while true; do sleep 1; done',
+        'container': {
+            'type': 'MESOS',
+            'docker': {
+                'image': 'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a'
+            }
+        },
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {'value': 'test -d $MESOS_SANDBOX'},
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
     }
-    app['cmd'] = 'while true; do sleep 1; done'
-    app['healthChecks'] = [{
-        'protocol': 'COMMAND',
-        'command': {'value': 'test -d $MESOS_SANDBOX'},
-        'gracePeriodSeconds': 5,
-        'intervalSeconds': 10,
-        'timeoutSeconds': 10,
-        'maxConsecutiveFailures': 3,
-    }]
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
         pass

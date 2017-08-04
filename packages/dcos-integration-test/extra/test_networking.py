@@ -11,8 +11,8 @@ import pytest
 import requests
 import retrying
 
-from dcos_test_utils.marathon import Container, get_test_app, Network
-from test_helpers import expanded_config
+import test_helpers
+from dcos_test_utils import marathon
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def unused_port(network):
 
 
 def lb_enabled():
-    return expanded_config['enable_lb'] == 'true'
+    return test_helpers.expanded_config['enable_lb'] == 'true'
 
 
 @retrying.retry(wait_fixed=2000,
@@ -42,20 +42,20 @@ def ensure_routable(cmd, host, port):
     return json.loads(response['output'])
 
 
-def vip_app(container: Container, network: Network, host: str, vip: str):
+def vip_app(container: marathon.Container, network: marathon.Network, host: str, vip: str):
     # user_net_port is only actually used for USER network because this cannot be assigned
     # by marathon
-    if network in [Network.HOST, Network.BRIDGE]:
+    if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
         # both of these cases will rely on marathon to assign ports
-        return get_test_app(
+        return test_helpers.marathon_test_app(
             network=network,
             host_constraint=host,
             vip=vip,
             container_type=container)
-    elif network == Network.USER:
-        return get_test_app(
+    elif network == marathon.Network.USER:
+        return test_helpers.marathon_test_app(
             network=network,
-            host_port=unused_port(Network.USER),
+            host_port=unused_port(marathon.Network.USER),
             host_constraint=host,
             vip=vip,
             container_type=container)
@@ -66,12 +66,12 @@ def vip_app(container: Container, network: Network, host: str, vip: str):
 def generate_vip_app_permutations():
     """ Generate all possible network interface permutations for applying vips
     """
-    network_options = [Network.USER, Network.BRIDGE, Network.HOST]
+    network_options = [marathon.Network.USER, marathon.Network.BRIDGE, marathon.Network.HOST]
     permutations = []
-    for container in [Container.NONE, Container.MESOS, Container.DOCKER]:
+    for container in [marathon.Container.NONE, marathon.Container.MESOS, marathon.Container.DOCKER]:
         for vip_net in network_options:
             for proxy_net in network_options:
-                if container != Container.DOCKER and Network.BRIDGE in (vip_net, proxy_net):
+                if container != marathon.Container.DOCKER and marathon.Network.BRIDGE in (vip_net, proxy_net):
                     # only DOCKER containers support BRIDGE network
                     continue
                 permutations.append((container, vip_net, proxy_net))
@@ -81,7 +81,7 @@ def generate_vip_app_permutations():
 @pytest.mark.slow
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 @pytest.mark.parametrize('container,vip_net,proxy_net', generate_vip_app_permutations())
-def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net: Network):
+def test_vip(dcos_api_session, container: marathon.Container, vip_net: marathon.Network, proxy_net: marathon.Network):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE (docker only), HOST
@@ -99,9 +99,9 @@ def test_vip(dcos_api_session, container: Container, vip_net: Network, proxy_net
         cmd, origin_app, proxy_app, proxy_net = test
         proxy_info = dcos_api_session.marathon.get('v2/apps/{}'.format(proxy_app['id'])).json()
         proxy_task_info = proxy_info['app']['tasks'][0]
-        if proxy_net == Network.USER:
+        if proxy_net == marathon.Network.USER:
             proxy_host = proxy_task_info['ipAddresses'][0]['ipAddress']
-            if container == Container.DOCKER:
+            if container == marathon.Container.DOCKER:
                 proxy_port = proxy_task_info['ports'][0]
             else:
                 proxy_port = proxy_app['ipAddress']['discovery']['ports'][0]['number']
@@ -199,14 +199,18 @@ def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
     # Launch the test_server in ip-per-container mode (user network)
-    app_definition, test_uuid = get_test_app(container_type=Container.DOCKER, network=Network.USER, host_port=9080)
+    app_definition, test_uuid = test_helpers.marathon_test_app(
+        container_type=marathon.Container.DOCKER,
+        network=marathon.Network.USER,
+        host_port=9080)
 
     assert len(dcos_api_session.slaves) >= 2, 'IP Per Container tests require 2 private agents to work'
 
     app_definition['instances'] = 2
     app_definition['constraints'] = [['hostname', 'UNIQUE']]
 
-    with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=True) as service_points:
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=True):
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(app_definition['id'])
         app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
@@ -239,11 +243,12 @@ def test_l4lb(dcos_api_session):
     dnsname = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
     with contextlib.ExitStack() as stack:
         for _ in range(numapps):
-            origin_app, origin_uuid = get_test_app()
+            origin_app, origin_uuid = test_helpers.marathon_test_app()
             # same vip for all the apps
             origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '/l4lbtest:5000'}
             apps.append(origin_app)
-            sp = stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app))
+            stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app))
+            sp = dcos_api_session.marathon.get_app_service_endpoints(origin_app['id'])
             backends.append({'port': sp[0].port, 'ip': sp[0].host})
             # make sure that the service point responds
             geturl('http://{}:{}/ping'.format(sp[0].host, sp[0].port))

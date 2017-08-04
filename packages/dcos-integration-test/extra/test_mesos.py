@@ -4,14 +4,14 @@ import uuid
 
 import retrying
 
-from dcos_test_utils.marathon import Container, get_test_app
-from dcos_test_utils.recordio import Decoder, Encoder
+import test_helpers
+from dcos_test_utils import marathon, recordio
 
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
 # then an empty data chunk to indicate end-of-stream.
 def input_streamer(nested_container_id):
-    encoder = Encoder(lambda s: bytes(json.dumps(s, ensure_ascii=False), "UTF-8"))
+    encoder = recordio.Encoder(lambda s: bytes(json.dumps(s, ensure_ascii=False), "UTF-8"))
     message = {
         'type': 'ATTACH_CONTAINER_INPUT',
         'attach_container_input': {
@@ -35,7 +35,7 @@ def input_streamer(nested_container_id):
 def test_if_marathon_app_can_be_debugged(dcos_api_session):
     # Launch a basic marathon app (no image), so we can debug into it!
     # Cannot use deploy_and_cleanup because we must attach to a running app/task/container.
-    app, test_uuid = get_test_app()
+    app, test_uuid = test_helpers.marathon_test_app()
     app_id = 'integration-test-{}'.format(test_uuid)
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Fetch the mesos master state once the task is running
@@ -110,7 +110,7 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
 
         # Verify the streamed output from the launch session
         meowed = False
-        decoder = Decoder(lambda s: json.loads(s.decode("UTF-8")))
+        decoder = recordio.Decoder(lambda s: json.loads(s.decode("UTF-8")))
         for chunk in launch_output.iter_content():
             for r in decoder.decode(chunk):
                 if r['type'] == 'DATA':
@@ -131,7 +131,7 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
 
 
 def test_files_api(dcos_api_session):
-    app, test_uuid = get_test_app()
+    app, test_uuid = test_helpers.marathon_test_app()
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
@@ -149,7 +149,7 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
     # doesn't support running docker images with the UCR. We need this
     # functionality in order to test that the pid namespace isolator
     # is functioning correctly.
-    app, test_uuid = get_test_app(container_type=Container.MESOS)
+    app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
 
     ps_output_file = 'ps_output'
     app['cmd'] = 'ps ax -o pid= > {}; sleep 1000'.format(ps_output_file)

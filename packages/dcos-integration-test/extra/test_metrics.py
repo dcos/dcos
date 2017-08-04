@@ -197,6 +197,7 @@ def test_metrics_containers(dcos_api_session):
         "mem": 128.0,
         "instances": 1
     }
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False) as app:
-        assert len(app) == 1, 'The marathon app should have been deployed exactly once.'
-        test_containers(app)
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        test_containers(endpoints)
