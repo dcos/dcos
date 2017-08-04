@@ -7,7 +7,7 @@ import requests
 
 from generic_test_code.common import (
     assert_endpoint_response,
-    overriden_file_content,
+    overridden_file_content,
 )
 from generic_test_code.open import assert_iam_queried_for_uid
 from mocker.endpoints.mesos import AGENT1_ID
@@ -88,7 +88,7 @@ class TestDcosMetadata:
 
         url = master_ar_process.make_url_from_path('/dcos-metadata/{}'.format(path))
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/opt/mesosphere/active/dcos-metadata/etc/{}'.format(path),
                 uniq_content):
             resp = requests.get(
