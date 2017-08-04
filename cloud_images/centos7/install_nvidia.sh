@@ -7,7 +7,6 @@ SRCROOT=""
 
 # Prepare target directory configuration
 DST_USERSPACE_DIR="${TARGETROOT}/usr"
-DST_USERSPACE_LOCAL_DIR="${TARGETROOT}/usr/local"
 DST_BOOT_DIR="${TARGETROOT}/boot"
 DST_ETC_DIR="${TARGETROOT}/etc"
 TEMP_DIR="/tmp"
@@ -35,10 +34,11 @@ fi
 NVIDIA_VERSION=$1
 
 # The nVidia driver files to download and install
-NVIDIA_KERNEL_DRIVER_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/${NVIDIA_VERSION}-Linux-x86_64/nvidia.run"
-NVIDIA_GPU_GDK_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/${NVIDIA_VERSION}-Linux-x86_64/gdk.run"
-NVIDIA_CUDA_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/${NVIDIA_VERSION}-Linux-x86_64/cuda.run"
-NVIDIA_CUDNN_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/${NVIDIA_VERSION}-Linux-x86_64/cudnn.tgz"
+NVIDIA_KERNEL_DRIVER_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/NVIDIA-Linux-x86_64-${NVIDIA_VERSION}.run"
+NVIDIA_CUDA_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cuda_8.0.61_${NVIDIA_VERSION}_linux-run"
+NVIDIA_CUDA_PATCH_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cuda_8.0.61.2_linux-run"
+NVIDIA_CUDNN_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cudnn-8.0-linux-x64-v6.0.tgz"
+
 #
 # WARNING: Some nVidia's hard-links will require authorization, making
 #          the link impossible to use. On production, please downoad all
@@ -58,7 +58,7 @@ yum install -y kernel-devel-${KERNEL} kernel-headers-${KERNEL} gcc make pciutils
 DST_KERNEL_DIR="${TARGETROOT}/lib/modules/${KERNEL}/kernel/drivers/video"
 SRC_KERNEL_DIR="${SRCROOT}/lib/modules/${KERNEL}/build"
 
-# Crawl latest URL from here: http://www.nvidia.com/Download/index.aspx?lang=en-us
+# Crawl latest URL from here: http://www.nvidia.com/object/linux-amd64-display-archive.html
 echo ""
 echo ">>> Downloading nvidia kernel modules..."
 curl -s ${NVIDIA_KERNEL_DRIVER_URL} > ${TEMP_DIR}/NVIDIA-kernel.run
@@ -77,17 +77,6 @@ ${TEMP_DIR}/NVIDIA-kernel.run \
   --kernel-install-path=${DST_KERNEL_DIR} \
   --kernel-name=${KERNEL}
 
-# Crawl latest URL from here: https://developer.nvidia.com/gpu-deployment-kit
-echo ""
-echo ">>> Downloading nvidia GPU GDK..."
-curl -s ${NVIDIA_GPU_GDK_URL} > ${TEMP_DIR}/NVIDIA-gdk.run
-chmod +x ${TEMP_DIR}/NVIDIA-gdk.run
-
-echo ">>> Installing nvidia GPU GDK..."
-${TEMP_DIR}/NVIDIA-gdk.run \
-  --silent \
-  --installdir=${TARGETROOT}/
-
 # Crawl latest URL from here: https://developer.nvidia.com/cuda-downloads
 echo ""
 echo ">>> Downloading CUDA..."
@@ -98,11 +87,19 @@ echo ">>> Installing CUDA..."
 ${TEMP_DIR}/NVIDIA-cuda.run \
   --silent \
   --kernel-source-path=${SRC_KERNEL_DIR} \
-  --toolkit \
-  --toolkitpath=${DST_USERSPACE_LOCAL_DIR}
+  --toolkit
 
+echo ""
+echo ">>> Downloading CUDA Patch..."
+curl -s ${NVIDIA_CUDA_PATCH_URL} > ${TEMP_DIR}/NVIDIA-cuda-patch.run
+chmod +x ${TEMP_DIR}/NVIDIA-cuda-patch.run
 
-# Crawl latest URL from here:
+echo ">>> Installing CUDA Patch..."
+${TEMP_DIR}/NVIDIA-cuda-patch.run \
+  --silent \
+  --accept-eula
+
+# Crawl latest URL from here: https://developer.nvidia.com/rdp/cudnn-download
 echo ""
 echo ">>> Downloading cuDNN..."
 curl -s ${NVIDIA_CUDNN_URL} > ${TEMP_DIR}/NVIDIA-cudnn.tgz
@@ -173,8 +170,8 @@ systemctl enable nvidia.service
 # Clean-up
 echo ">>> Remove temporary files"
 rm ${TEMP_DIR}/NVIDIA-kernel.run
-rm ${TEMP_DIR}/NVIDIA-gdk.run
 rm ${TEMP_DIR}/NVIDIA-cuda.run
+rm ${TEMP_DIR}/NVIDIA-cuda-patch.run
 rm ${TEMP_DIR}/NVIDIA-cudnn.tgz
 rm -rf /tmp/* /var/tmp/*
 rm /usr/local/sbin/install_nvidia.sh

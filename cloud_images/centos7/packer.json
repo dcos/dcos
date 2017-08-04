@@ -85,27 +85,70 @@
     "ssh_pty": true,
     "region": "{{user `source_ami_region`}}",
     "source_ami": "{{user `source_ami`}}",
-    "instance_type": "g2.2xlarge",
+    "instance_type": "g3.4xlarge",
     "ssh_username": "centos",
     "ami_name": "dcos-centos7-gpu-nvidia-{{user `nvidia_version`}}-{{isotime \"200601021504\"}}",
     "ami_description": "DC/OS Cloud Image for CentOS 7, with nVidia {{user `nvidia_version`}} GPU Drivers",
-    "ami_regions": "{{user `deploy_regions`}}",
     "ebs_optimized": true,
     "ami_block_device_mappings": [
       {
+        "device_name": "/dev/sda1",
+        "volume_size": 16,
+        "volume_type": "gp2",
+        "delete_on_termination": true
+      },
+      {
         "device_name": "/dev/sde",
         "volume_type": "gp2",
-        "volume_size": 20,
+        "volume_size": 50,
         "delete_on_termination": true
       },
       {
         "device_name": "/dev/sdf",
         "volume_type": "gp2",
-        "volume_size": 20,
+        "volume_size": 100,
         "delete_on_termination": true
       },
       {
         "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdh",
+        "volume_type": "gp2",
+        "volume_size": 20,
+        "delete_on_termination": true
+      }
+    ],
+    "launch_block_device_mappings": [
+      {
+        "device_name": "/dev/sda1",
+        "volume_size": 16,
+        "volume_type": "gp2",
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sde",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdf",
+        "volume_type": "gp2",
+        "volume_size": 100,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdg",
+        "volume_type": "gp2",
+        "volume_size": 50,
+        "delete_on_termination": true
+      },
+      {
+        "device_name": "/dev/sdh",
         "volume_type": "gp2",
         "volume_size": 20,
         "delete_on_termination": true
