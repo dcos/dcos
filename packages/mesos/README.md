@@ -2,8 +2,7 @@
 
 These commits can be found in the repository at <a href="https://github.com/mesosphere/mesos/">https://github.com/mesosphere/mesos/</a>:
 
-<li>[103c78c43acd7df0fe7252963333be00e7aef02b] Set LIBPROCESS_IP into docker container.
-<li>[202dc73803a3e681e31dd30ca68a44fdae2ba902] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
-<li>[6bbab709eb09aeecac705ff4ce5e5867bbe7df30] Revert "Fixed the broken metrics information of master in WebUI."
-<li>[a9678f06a8e222d97b1f784edf96030beb643552] Updated mesos containerizer to ignore GPU isolator creation failure.
-<li>[80928eaf1d66e2d06d4f301ac197c12d08eaa533] Changed an absolute path to relative in the Mesos UI.
+<li>[007d2e4f9161c40d096195bcd5c0069a1d87dddb] Set LIBPROCESS_IP into docker container.
+<li>[c646bbfcfc6218052720220021f2a38603315243] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
+<li>[d43d9e160e8241d5d36134057e8533dd8bca6499] Revert "Fixed the broken metrics information of master in WebUI."
+<li>[5540240ff5023564de1e2c003685309b9557f5bb] Updated mesos containerizer to ignore GPU isolator creation failure.
