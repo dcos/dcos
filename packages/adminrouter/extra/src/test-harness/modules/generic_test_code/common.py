@@ -340,7 +340,7 @@ def assert_endpoint_response(
 
 
 @contextmanager
-def overriden_file_content(file_path, new_content=None):
+def overridden_file_content(file_path, new_content=None):
     """Context manager meant to simplify static files testsing
 
     While inside the context, file can be modified and/or modified content
