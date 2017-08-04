@@ -650,10 +650,10 @@ class TestServiceStateful:
                                 headers=valid_user_header)
 
             t_spent = time.time() - t_start
-            assert resp.status_code == 200
-            data = resp.json()
-            data['endpoint_id'] == 'http://127.0.0.15:16001'
 
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.1:16000'
         assert t_spent > backend_request_timeout * 0.5
 
     def test_if_broken_marathon_prevents_resolving_via_mesos_state_summary(
