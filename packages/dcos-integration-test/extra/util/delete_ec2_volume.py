@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import contextlib
-import logging
 import os
 import sys
 
@@ -8,8 +7,19 @@ import boto3
 import botocore
 import requests
 import retrying
+from botocore import exceptions
 
-from dcos_test_utils.helpers import retry_boto_rate_limits
+
+def is_rate_limit_error(exception):
+    if exception in [exceptions.ClientError, exceptions.WaiterError]:
+        if isinstance(exception, exceptions.ClientError):
+            error_code = exception.response['Error']['Code']
+        elif isinstance(exception, exceptions.WaiterError):
+            error_code = exception.last_response['Error']['Code']
+        if error_code in ['Throttling', 'RequestLimitExceeded']:
+            print('AWS rate-limit encountered!')
+            return True
+    return False
 
 
 @contextlib.contextmanager
@@ -29,7 +39,11 @@ def _remove_env_vars(*env_vars):
         os.environ.update(environ)
 
 
-@retry_boto_rate_limits
+@retrying.retry(
+    wait_exponential_multiplier=1000,
+    wait_exponential_max=300000,
+    stop_max_delay=1800000,
+    retry_on_exception=is_rate_limit_error)
 def delete_ec2_volume(name, timeout=300):
     """Delete an EC2 EBS volume by its "Name" tag
 
@@ -55,7 +69,7 @@ def delete_ec2_volume(name, timeout=300):
         try:
             return requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text.strip()[:-1]
         except requests.RequestException as ex:
-            logging.warning("Can't get AWS region from instance metadata: {}".format(ex))
+            print("Can't get AWS region from instance metadata: {}".format(ex))
             return None
 
     # Remove AWS environment variables to force boto to use IAM credentials.
