@@ -24,9 +24,26 @@ Admin Router runs on both master and agent nodes, each with different configurat
 - HMTL: [docs/api/nginx.agent.html](docs/api/nginx.agent.html)
 - Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
 
-Use `make api-docs` to regenerate the YAML and HTML files.
 
-Use `make check-api-docs` to validate that the YAML and HTML files are up to date.
+## Endpoints documentation
+
+All Admin Router endpoints are documented using the
+[ngindox](https://github.com/karlkfi/ngindox) tool, which uses specially
+formatted comments in order to describe endpoint configurations, and
+automatically parses them into HTML documents. Please check the project's
+documentation for more details.
+
+Admin Router's CI automatically checks if the endpoint documentation generated
+using `ngindox` and embedded into the repository is up to date. If not, the CI
+job fails and the user needs to regenerate the docs and re-submit the PR.
+
+The check is done by generating the documentation during the build stage.
+If, after the `ngindox` run, `git` detects uncommitted changes, then this means
+that the Admin Router configuration differs from the HTML documents that
+are committed into repository. This is done using `make check-api-docs` target.
+
+In order to regenerate the documentation files, one needs to execute the
+`make api-docs` target and commit the changes into the repository.
 
 ## Ports summary
 <img src="docs/admin-router-table.png" alt="" width="100%" align="middle">
@@ -660,8 +677,8 @@ It exposes a couple of targets:
    equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should
   be used when fine grained control of the tests is necessary or during debugging.
-* `make flake8` - launch flake8 which will check all the tests and test-harness
-  files by default.
+* `make lint` - launch linters which will check the tests code and test-harness
+  code by default.
 
 ### Docker container
 As mentioned earlier, all the commands are executed inside the `adminrouter-devkit`
