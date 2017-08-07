@@ -757,6 +757,9 @@ package:
                   "Location": "/opt/mesosphere/etc/user.config.yaml"
               },
               {
+                  "Location": "/var/lib/dcos/cluster-id"
+              },
+              {
                   "Location": "/var/lib/dcos/exhibitor/zookeeper/snapshot/myid",
                   "Role": ["master"]
               },
