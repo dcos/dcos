@@ -8,7 +8,10 @@ within the cluster.
 
 ## Routes
 
-Admin Router runs on both master and agent nodes, each with different configurations. From these NGINX config files, [Ngindox](https://github.com/karlkfi/ngindox) is used to generates swagger-like docs:
+Admin Router runs on both master and agent nodes, each with different
+configurations. From these NGINX config files,
+[ngindox](https://github.com/karlkfi/ngindox) is used to generates Swagger-like
+documentation:
 
 **Master Routes:**
 
@@ -66,7 +69,7 @@ the right balance so sometimes code *is* duplicated between repositories in orde
 to make it easier for contributors to work with repositories.
 
 ### NGINX includes
-All AR code, both Lua and non-Lua, can be divided into following groups:
+All AR code, both Lua and non-Lua, can be divided into the following groups:
 
  * common code for masters and agents, both EE and Open
  * agent-specific code, both EE and Open
@@ -134,14 +137,14 @@ includes
         └── master.conf
 ```
 
-All NGINX related configuration directives reside in the `includes` directory which
-contains directories reflecting all the sections present in NGINX configuration
-(http|main|server). Because they are always present, no
-matter the flavour/server type, they are chosen as top-level directories
-in the `includes` dir. The `common.conf`, `agent.conf` and `master.conf`
-files are flavour-agnostic thus they reside in each section's main dir
-and are present/included only in the Open AR repository. EE repository re-uses them
-after being applied on top of the Open repository. Contents of each of the
+All the NGINX related configuration directives reside in the `includes`
+directory which contains directories reflecting all the sections present in
+NGINX configuration (http|main|server). Because they are always present, no
+matter the flavour/server type, they are chosen as top-level directories in the
+`includes` directory. The `common.conf`, `agent.conf` and `master.conf` files
+are flavour-agnostic, thus they reside in each section's main directory and are
+present only in the Open DC/OS repository. The EE repository re-uses them after
+being applied on top of the Open DC/OS repository. Contents of each of the
 files are as follows:
  * `common.conf` contains all the things that are common across all flavours
    and server types for given section
@@ -151,8 +154,8 @@ files are as follows:
    all flavours
 
 Each section can have either `ee` or `open` directories, but never both. `ee`
-directory is only present in EE repo, Open repository contains only `open` directories.
-Contents of these directories may be as follows:
+directory is only present in EE repository, Open repository contains only `open`
+directories. Contents of these directories may be as follows:
  * `common.conf` contains all the things that are common for given flavour, no
    matter the server type
  * `agent.conf` contains all the things that are common for agents in given
@@ -160,11 +163,11 @@ Contents of these directories may be as follows:
  * `master.conf` contains all the things that are common for masters in given
    flavour
 
-The order of includes is for the time being hard-coded in nginx.\*.conf files.
+The order of includes is for the time being hard-coded in `nginx.\*.conf` files.
 Within particular section though it does not matter that much as:
  * [nginx by default orders the imports while globing](https://serverfault.com/questions/361134/nginx-includes-config-files-not-in-order)
- * location blocks *MUST NOT* rely on the order in which they appear
-   in the config file and define matching rules precise enough to avoid ambiguity.
+ * location blocks *MUST NOT* rely on the order in which they appear in the
+   config file and define matching rules precise enough to avoid ambiguity.
 
 All the includes are bound together by `nginx.(master|agent).conf` files.
 `nginx.master.conf` for `Open` master looks like at the time of writing:
@@ -214,12 +217,12 @@ http {
 ```
 
 ### Enforcing code reuse
-The EE repository contains only EE directories, all common/agent-common/master-common
-code resides in Open repository. This way EE repository becomes an overlay on
-top of Open. Only `nginx.(master|agent).conf` are overwritten while applying EE
-repository on top of Open during DC/OS image build. EE DC/OS image build scripts
-remove all open directories from the Open repository before applying EE repository on
-top of it.
+The EE repository contains only EE directories, all
+common/agent-common/master-common code resides in Open repository. This way EE
+repository becomes an overlay on top of Open. Only `nginx.(master|agent).conf`
+are overwritten while applying EE repository on top of Open during DC/OS image
+build. EE DC/OS image build scripts remove all open directories from the Open
+repository before applying the EE repository on top of it.
 
 This is not a bulletproof solution for preventing code
 duplication (developers can simply start putting copies of code to both
@@ -227,43 +230,45 @@ duplication (developers can simply start putting copies of code to both
 code and encourages good behaviours.
 
 ### Lua code deduplication
-It is not strictly required to provide the same level of flexibility for Lua code
-as it is the case for NGINX includes and thus it's possible to simplify the code
-a bit. It is sufficient to just differentiate Lua code basing on the repository flavour.
-Both agents and masters can share the same Lua code.
+It is not required to provide the same level of flexibility for Lua code as it
+is the case for NGINX includes and thus it's possible to simplify the code a
+bit. It is sufficient to just differentiate Lua code basing on the repository
+flavour.  Both agents and masters can share the same Lua code.
 
 There are two possible reasons that may be preventing Lua code from being
 shared:
 * the same code is executed but with different call arguments. An example to
-  this may be `auth.validate_jwt_or_exit()` function. In the Open it takes no arguments,
-  in EE it takes more than one.
+  this may be `auth.validate_jwt_or_exit()` function. In the Open repository it
+  takes no arguments, in EE it takes more than one.
 * the code differs between EE and open but shares some common libraries/functions.
   Great example for this is `auth.check_acl_or_exit()` which internally, among
   many other things, calls argument-less `auth.check_jwt_or_exit()`.
 
 In order to address these issues, a couple of patterns were selected:
  * modules which have flavour-specific function arguments export argument-less
-   functions for the NGINX configuration. They translate the original call into
-   a call with correct arguments. This approach requires splitting the module into
-   `ee.lua|open.lua|common.lua` parts which is described in next bullet point.
-   Depending on the flavour, either `ee.lua` or `open.lua` is imported and correct
-   argument-less function is used. This approach also enables to share some of
-   the NGINX `location` blocks between flavours - `location` code is the same,
-   even though the Lua code used by the block differs.
- * some libraries/functions are structured in a way that extracts parts common for
-   both flavours and `ee/open` parts that are included only in EE and Open repos
-   respectively. An example of this approach is auth library which is splitted
-   into three parts:
+   functions for the NGINX configuration. They translate the original call into
+   a call with correct arguments. This approach requires splitting the module
+   into `ee.lua|open.lua|common.lua` parts which is described in the next
+   bullet point.  Depending on the flavour, either `ee.lua` or `open.lua` is
+   imported and the correct argument-less function is used. This approach also
+   enables to share some of the NGINX `location` blocks between flavours -
+   `location` code is the same, even though the Lua code used by the block
+   differs.
+ * some libraries/functions are structured in a way that extracts parts common
+   among both flavours and `ee/open` parts that are included only in EE and
+   Open repos respectively. An example of this approach is `auth.lua` library
+   which is splitted into three parts:
     * `lib/auth/common.lua` - present only in Open repository, with functions
       shared by both EE and Open code.
     * `lib/auth/ee.lua` - present only in EE repository, with functions specific
       to EE that use boilerplate from lib/auth/common.lua.
     * `lib/auth/open.lua` - as above but for Open repository.
-   `init_by_lua` OpenResty call in `includes/http/(open|ee)/common.conf` imports
-   `auth.open` or `auth.ee` modules as auth respectively.  The module is registered in
-   the global namespace so all other Lua code uses it. This approach also allows
-   for some degree of code separation enforcement as Open lua libs are removed
-   during EE repository apply.
+   `init_by_lua` OpenResty call in `includes/http/(open|ee)/common.conf`
+   imports `auth.open` or `auth.ee` modules as auth respectively.  The module
+   is registered in the global namespace so all other Lua code uses it. This
+   approach also allows for some degree of code separation enforcement as lua
+   libs from Open DC/OS repository are removed during the application of EE
+   DC/OS repository.
 
 A special case of the "same code path, different call arguments"
 problem is when a module needs to be initialized differently depending
@@ -357,7 +362,7 @@ During each iteration described in [previous paragraph](#iterative-resolving),
 AR tries to resolve the component using the data stored in the cache and if
 necessary - from MesosDNS:
 * first step is to:
-  * check if a root Marathon task has following labels set:
+  * check if a root Marathon task has the following labels set:
     * `DCOS_SERVICE_NAME` label contents is equal to given application ID string
     * `DCOS_SERVICE_SCHEME` label is set
     * `DCOS_SERVICE_PORT_INDEX` label is set
@@ -424,8 +429,9 @@ enforcement of unique framework names, and thus AR will try to route to one of
 the frameworks (not necessarily the one that is *really* alive) in an undefined
 manner.
 
-Until unique service names are implemented, or a proper cleanup is done by the client,
-a workaround is to launch frameworks always with a different name, for example:
+Until unique service names are implemented, or a proper cleanup is done by the
+client, a workaround is to launch frameworks always with a different name, for
+example:
 * `/hello-world-1`
 * `/hello-world-2`
 * `/hello-world-3`
@@ -450,10 +456,10 @@ the host running the task using the one of the ports allocated to the task.
 The chosen port is defined by the `DCOS_SERVICE_PORT_INDEX` label.
 
 In order for the forwarding to work reliably across task failures, we recommend
-co-locating the endpoints with the task. This way, if the task is restarted on a
-potentially different host and with different ports, Admin Router will pick up the
-new labels and update the routing. Due to caching there might be an up to
-30-second delay before the new routing is working.
+co-locating the endpoints with the task. This way, if the task is restarted on
+a potentially different host and with different ports, Admin Router will pick
+up the new labels and update the routing. Due to caching there might be an up
+to 30-second delay before the new routing is working.
 
 We recommend having only a single task setting these labels for a given
 application ID. In the case of multiple task instances with the same
@@ -479,18 +485,18 @@ README.md in EE Admin Router repository.
 
 ### Authentication
 
-For Admin Router to establish the identity of the subject issuing a
-request, it looks for JWT token in the request. It may be present in following
-places:
+For Admin Router to establish the identity of the subject issuing a request, it
+looks for JWT in the request. It may be present in the following places:
 * request headers: client needs to set `Authorization` header with
   `token=<token payload>` value.
 * client sets `dcos-acs-auth-cookie` cookie with the token payload as a value
 
-In the case when both request header and the cookie is set, request header token takes
-priority. Admin Router does not issue JWT tokens itself as this is the task of
-the IAM service. Please consult DC/OS documentation for more details.
+In the case when both request header and the cookie is set, request header
+token takes priority. Admin Router does not issue JWT itself as this is
+the task of the IAM service. Please consult DC/OS documentation for more
+details.
 
-Currently, DC/OS uses/sets following mandatory claims:
+Currently, DC/OS uses/sets the following mandatory claims:
 * `uid` which is ID of the user/subject making the request as defined in IAM
 * `exp` claim as defined in section 4.1.4 of RFC7519
 
@@ -578,7 +584,8 @@ shared memory will still be considered fresh.
 The `freshness` of the cache is governed by few variables:
 * `CACHE_EXPIRATION` - if the age of the cached data is smaller than
   `CACHE_EXPIRATION` seconds, then the cache refresh will not occur if it's
-  ngx.timer context and request processing code will use the data stored in shared memory.
+  ngx.timer context and request processing code will use the data stored in
+  shared memory.
 * `CACHE_MAX_AGE_SOFT_LIMIT` - between `CACHE_EXPIRATION` seconds and
   `CACHE_MAX_AGE_SOFT_LIMIT` seconds, cache is still considered "usable" in
   request context, but the ngx.timer context will try to update it with fresh
@@ -595,10 +602,10 @@ The relation between these is:
 
 The reason why we put `<<` in front of `CACHE_MAX_AGE_HARD_LIMIT` is to make
 the cache a bit of a "best-effort" one - In the case when Mesos and/or Marathon
-dies, the cache should still be able to serve data for a reasonable amount of time
-and thus give the operator some time to solve the underlying issue. For example
-Mesos tasks do not move that often and the data stored in NGINX should still be
-usable, at least partially.
+dies, the cache should still be able to serve data for a reasonable amount of
+time and thus give the operator some time to solve the underlying issue. For
+example Mesos tasks do not move that often and the data stored in NGINX should
+still be usable, at least partially.
 
 ### Locking and error handling
 
@@ -608,16 +615,17 @@ well. In order to coordinate it, locking was introduced.
 
 There are two different locking behaviours, depending on the context from which
 the update was triggered:
-* for timer-based refreshes, the lock is non-blocking. If there is an update already
-  in progress, execution is aborted, and next timer-based refresh is scheduled.
-* in case of request-triggered update, lock is blocking and the lock timeout
-  is equal to `CACHE_REFRESH_LOCK_TIMEOUT` seconds. This way, during
-  `<0, CACHE_FIRST_POLL_DELAY>` period, requests are queued while waiting for the
+* for timer-based refreshes, the lock is non-blocking. If there is an update
+  already in progress, execution is aborted, and next timer-based refresh is
+  scheduled.
+* in case of request-triggered update, lock is blocking and the lock timeout is
+  equal to `CACHE_REFRESH_LOCK_TIMEOUT` seconds. This way, during `<0,
+  CACHE_FIRST_POLL_DELAY>` period, requests are queued while waiting for the
   first, refresh to succeed.
 
-Request to Mesos/Marathon can take at most `CACHE_BACKEND_REQUEST_TIMEOUT` seconds.
-After that, the request is considered failed, and it is retried during the next
-update.
+Request to Mesos/Marathon can take at most `CACHE_BACKEND_REQUEST_TIMEOUT`
+seconds.  After that, the request is considered failed, and it is retried
+during the next update.
 
 Worth noting is that NGINX reload resets all the timers. Cache is left intact
 though.
@@ -640,17 +648,16 @@ by pytest.
 
 Below, there is a general overview of all the components of the test harness.
 More detailed documentation can be found in docstrings and comments in the code
-itself. If in doubt, it also may be very helpful to look for examples among
-existing tests.
+itself.
 
-### Quickstart
+### Running tests
 To execute all the tests, just issue:
 
-	make test
+    make test
 
 In order have fine-grained control over the pytest command, execute:
 
-	make shell
+    make shell
 
 This command will launch an interactive environment inside the container that
 has all the dependencies installed. The developer may now run the `pytest`
@@ -659,46 +666,45 @@ the dependencies.
 
 ### Makefile
 Makefile provides an easy way to start the testing environment without the need
-to worry about the correct docker commands. Its core concept is `adminrouter-devkit`
-container which is contains all the dependencies that are needed to run
-Admin Router, and inside which all tests-related commands are run.
+to worry about the correct docker commands. Its core concept is
+`adminrouter-devkit` container which is contains all the dependencies that are
+needed to run Admin Router, and inside which all tests-related commands are
+run.
 
 It exposes a couple of targets:
 * `make clean` - remove all containers created by the test harness. It does not
   remove the images themselves though as the layer cache may be useful later
   on and the user may remove them themselves.
 * `make devkit` - creates the `adminrouter-devkit` container. By default other
-   targets execute this step automatically if devkit container image does not
-   exist yet.
-* `make update-devkit` - updates `adminrouter-devkit`. Should be run every time
-   the Dockerfile or its dependencies change.
+  targets execute this step automatically if the devkit container image does not
+  exist yet.
+* `make update-devkit` - updates `adminrouter-devkit`. This should be run every
+  time the Dockerfile or its dependencies (e.g. requirements.txt fields)
+  change.
 * `make tests` - launch all the tests. Worth noting is the fact that McCabe
-   complexity of the code is also verified, and an error is raised if it's
-   equal to or above 10.
+  complexity of the code is also verified, and an error is raised if it's
+  equal to or above 10.
 * `make shell` - launch an interactive shell within the devkit container. Should
   be used when fine grained control of the tests is necessary or during debugging.
 * `make lint` - launch linters which will check the tests code and test-harness
   code by default.
 
 ### Docker container
-As mentioned earlier, all the commands are executed inside the `adminrouter-devkit`
-container. It follows the same build process for NGINX that happens during
-DC/OS build with the exception of setting the  `--with-debug` flag. It also
-contains some basic debugging tools, pytest related dependencies and
-files that help pytest mimic the DC/OS environment. Their location is then
-exported via environment variables to the pytest code, so changing their location
-can be done by edition only the Dockerfile.
-
-Due to some issues with overlayfs on older kernels, the container links
-/tmp directory to /dev/shm.
+As mentioned earlier, all the commands are executed inside the
+`adminrouter-devkit` container. It follows the same build process for NGINX
+that happens during DC/OS build with the exception of setting the
+`--with-debug` flag. It also contains some basic debugging tools, pytest
+related dependencies and files that help pytest mimic the DC/OS environment.
+Their location is then exported via environment variables to the pytest code,
+so changing their location can be done by edition only the Dockerfile.
 
 ### Repository flavours
-Admin Router repository can come in two variants/flavours - Enterprise and Opensource.
-Tests determine it basing on the directory structure - if tests contain
-`test-harness/tests/open/` directory then the repo is treated as Opensource one,
-and in case when `test-harness/tests/ee/` directory is present - as the
-enterprise one. Pytest fixture `repo_is_ee` takes care of it and is pulled in
-as dependencies by all the fixtures that need this information.
+Admin Router repository can come in two variants/flavours - Enterprise and
+Opensource.  Tests determine it basing on the directory structure - if tests
+contain `test-harness/tests/open/` directory then the repo is treated as
+Opensource one, and in case when `test-harness/tests/ee/` directory is present
+- as the enterprise one. Pytest fixture `repo_is_ee` takes care of it and is
+pulled in as dependencies by all the fixtures that need this information.
 
 ### Service startup ordering and cleanup
 Mocking out DC/OS is a complex task, and a huge part in it have pytest
@@ -709,12 +715,13 @@ Tracking the chain of fixtures and how they use each other may provide better
 understanding of how the test harness works.
 
 ### JWT
-DC/OS IAM relies on JSON Web Tokens for transmitting security information between DC/OS
-components. Open repository flavour uses HS256 tokens, while EE relies on RS256.
-Test harness needs to have a way to create them for use in the tests. This is
-done by `test-harness/modules/mocker/jwt.py` module, which together with
-`repo_is_ee` fixture provides abstracts away the type of the
-token used by Admin Router itself.
+The DC/OS IAM relies on JSON Web Tokens (JWTs) for transmitting authentication
+data between DC/OS components. Open repository flavour uses JWTs of type HS256,
+while EE relies on JWTs of type RS256. Test harness needs to have a way to
+create them for use in the tests. This is done by
+`test-harness/modules/mocker/jwt.py` module, which together with the
+`repo_is_ee` fixture, provides abstracts away the type of the token used by
+Admin Router itself.
 
 ### Mocker
 Mocker takes care of simulating DC/OS HTTP endpoints that Admin Router uses. It's
@@ -740,7 +747,7 @@ they follow inheritance tree as below:
   difference between them is that the former is listening on Unix Socket
   and the latter is listening on TCP/IP socket. They are useful for very simple
   tests that only check if the request is hitting the right upstream and the
-  headers are correct.
+  NGINX upstream request headers are correct.
 * `IAMEndpoint`, `MarathonEndpoint`, `MesosEndpoint`: specialized endpoints that
   are mimicking IAM, Marathon and Mesos respectively. Apart from the basic
   functionality (reset, bork, etc...), they are also capable of recording requests
@@ -798,7 +805,7 @@ has been created. It exposes two interfaces:
 * context manager that allows for grokking the buffer entries that were created
   while executing the context:
 
-  ```
+  ```python
     filter_regexp = 'validate_jwt_or_exit\(\): User not found: `{}`'.format(uid)
     lbf = LineBufferFilter(filter_regexp,
                            line_buffer=master_ar_process.stderr_line_buffer)
@@ -811,7 +818,7 @@ has been created. It exposes two interfaces:
   ```
 * `scan_log_buffer()` method that scans all the entries, since the subprocess
   start.
-  ```
+  ```python
     filter_regexp = 'Secret key not set or empty string.'
 
     lbf = LineBufferFilter(filter_regexp,
@@ -838,29 +845,28 @@ with the line length limit hard-coded to 4096 bytes.
 ##### NGINX
 The NGINX subprocess is different from others in regard to its lifetime. Pytest
 fixture that pulls it into the test is module-scoped by default. If there is a
-need to have custom lifetime or just single-test scoped lifetime, then it's
-necessary to use `nginx_class` fixture instead of simple `master_ar_process` or
-`agent_ar_process` ones.
+need to have custom lifetime, then it's necessary to use `nginx_class`
+fixture which provides maximum flexibility.
 
 NGINX instances have the `.make_url_from_path` method which is a convenient way
-to generate AR URLs for tests. It uses exhibitor endpoint as it's present in
-all DC/OS configurations and uses auth features as well.
+to generate AR URLs for tests. Users do not have to worry whether this is an
+agent or master instance nor know the TCP port that given instance listens on.
 
-#### pytest tests
-Directly from the fact that Admin Router subprocess fixture is module scoped,
-stems some of the current structure of the tests directory. There are three
-different files where tests reside:
+#### AR instance reuse
+Some of the tests can share the same AR instance as it is not being mutated by
+them. There are currently three files which contain:
 * `test_agent.py`: all the tests related to agent Admin Router, which do not
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
   require custom AR fixtures
-* `test_boot_envvars.py`: tests that verify Admin Router startup variables
+* `test_boot_envvars.py`: tests that verify Admin Router's startup variables
 
 `test_agent.py` and `test_master.py` may be splitted apart into smaller units,
 but with each unit an extra start and stop of AR master or agent is required.
-This slows down the tests. Running session-scoped AR is impossible. For now,
-each endpoint has tests grouped on class level.
+This slows down the tests so a compromise has been made and per-class and
+per-test AR instances are launched only if necessary.
 
+#### pytest tests
 Test files are grouped into repository flavour directories, which
 group the tests that are specific for given version:
 * `test-harness/modules/ee/test_*.py` for Enterprise
