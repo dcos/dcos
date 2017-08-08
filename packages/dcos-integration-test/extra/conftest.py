@@ -1,12 +1,10 @@
-import logging
+import os
 
+import api_session_fixture
 import pytest
+from dcos_test_utils import logger
 
-from api_session_fixture import make_session_fixture
-
-logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("botocore").setLevel(logging.WARNING)
+logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 
 
 def pytest_configure(config):
@@ -38,7 +36,7 @@ def clean_marathon_state(dcos_api_session):
 
 @pytest.fixture(scope='session')
 def dcos_api_session():
-    return make_session_fixture()
+    return api_session_fixture.make_session_fixture()
 
 
 @pytest.fixture(scope='session')
