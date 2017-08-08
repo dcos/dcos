@@ -74,6 +74,18 @@ endpoint_tests:
     type:
       - master
   - tests:
+      # This test checks whether AR's `/service` endpoint is able to route to
+      # the correct service even though the request url contains duplicate
+      # slashes.  Duplicate slashes is AFAIK not a valid RFC behaviour, but
+      # let's be sure this is handled as well.
+      is_upstream_req_ok:
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /service////nest1////scheduler-alwaysthere///foo/bar
+    type:
+      - master
+  - tests:
       is_upstream_correct:
         test_paths:
           - /service/nest2/nest1/scheduler-alwaysthere/foo/bar
