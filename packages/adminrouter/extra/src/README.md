@@ -8,7 +8,7 @@ within the cluster.
 
 ## Routes
 
-Admin Router runs on both master and agent nodes, each with different
+Admin Router runs on both master and agent nodes, each with different NGINX
 configurations. From these NGINX config files,
 [ngindox](https://github.com/karlkfi/ngindox) is used to generates Swagger-like
 documentation:
@@ -854,7 +854,8 @@ agent or master instance nor know the TCP port that given instance listens on.
 
 #### AR instance reuse
 Some of the tests can share the same AR instance as it is not being mutated by
-them. There are currently three files which contain:
+them. There are currently at least three files which contain tests which share
+AR instance:
 * `test_agent.py`: all the tests related to agent Admin Router, which do not
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
