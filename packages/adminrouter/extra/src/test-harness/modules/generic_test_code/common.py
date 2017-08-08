@@ -213,6 +213,27 @@ def generic_location_header_during_redirect_is_adjusted_test(
         location_set,
         location_expected,
         ):
+    """Test if the `Location` header is rewritten by AR on redirect.
+
+    This generic test issues a request to AR for a given path and verifies that
+    redirect has occurred with the `Location` header contents equal to
+    `location_expected` argument.
+
+    Arguments:
+        mocker (Mocker): instance of the Mocker class, used for controlling
+            upstream HTTP endpoint/mock
+        ar: Admin Router object, an instance of `runner.(ee|open).Nginx`.
+        auth_header (dict): headers dict that contains JWT.
+        endpoint_id (str): id of the endpoint where the upstream request should
+            have been sent.
+        basepath (str): the URI used by the test harness to issue the request
+            to AR, and to which we are expecting AR to respond with rewritten
+            `Location` header redirect.
+        location_set (str): upstream will send the response with the `Location`
+            header set to this value.
+        location_expected (str): the expected value of the `Location` header
+            after being rewritten/adjusted by AR.
+    """
     mocker.send_command(endpoint_id=endpoint_id,
                         func_name='always_redirect',
                         aux_data=location_set)
