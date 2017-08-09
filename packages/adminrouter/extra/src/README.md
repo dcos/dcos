@@ -8,7 +8,7 @@ within the cluster.
 
 ## Routes
 
-Admin Router runs on both master and agent nodes, each with different
+Admin Router runs on both master and agent nodes, each with different NGINX
 configurations. From these NGINX config files,
 [ngindox](https://github.com/karlkfi/ngindox) is used to generates Swagger-like
 documentation:
@@ -653,11 +653,15 @@ itself.
 ### Running tests
 To execute all the tests, just issue:
 
-    make test
+```sh
+make test
+```
 
 In order have fine-grained control over the pytest command, execute:
 
-    make shell
+```sh
+make shell
+```
 
 This command will launch an interactive environment inside the container that
 has all the dependencies installed. The developer may now run the `pytest`
@@ -976,8 +980,9 @@ Each endpoint has an id, that it basically it's http address (i.e.
 `http://127.0.0.1:8080` or `http:///run/dcos/dcos-metrics-agent.sock`). It's
 available via the `.id()` method. They are started and stopped via `.start()`
 and `.stop()` methods during the start and stop of mocker instance
-respectively. Each endpoint can be set to respond to each and every request
-with an error (`500 Internal server error`).
+respectively. In the (How to write tests)[#how-to-write-tests] section a rudimentary
+description has been provided of all the commands/methods that are exposed for
+unit testing.
 
 #### DNS mock
 
@@ -1070,7 +1075,8 @@ agent or master instance nor know the TCP port that given instance listens on.
 
 #### AR instance reuse
 Some of the tests can share the same AR instance as it is not being mutated by
-them. There are currently three files which contain:
+them. There are currently at least three files which contain tests which share
+AR instance:
 * `test_agent.py`: all the tests related to agent Admin Router, which do not
   require custom AR fixtures
 * `test_master.py`: all the tests related to master Admin Router, which do not
@@ -1109,3 +1115,835 @@ expressions/statements:
 This is why the context of each endpoint is not protected by locks, in
 case when it's only about fetching a single value from context dict or
 storing/appending one there.
+
+## How to write tests
+
+This section intends to enable contributors to write tests.  All the test
+harness components and concepts are described here with a "bigger picture" in
+mind so that it is easier to understand how they relate to each other.
+
+It is divided into three subsections:
+* generic tests which can be covered by simply updating the test harness' YAML
+  configuration
+* standard tests that do not fit into YAML-described generic tests
+* advanced usage
+
+### Generic tests
+Let's imagine that we need to add support for `SchmetterlingDB` to AR. The DB
+will be running on DC/OS Masters. Assuming that we omit `main/server/http`
+config section markers for clarity, the configuration may look like this:
+
+```
+upstream schmetterlingdb {
+    server 127.0.0.1:12345;
+}
+
+location = /schmetterlingdb {
+    return 307 /schmetterlingdb/;
+}
+
+location /schmetterlingdb/ {
+    # This endpoint:
+    # * requires auth
+    # * Server-Sent-Events must be supported
+    # * redirects must be properly rewritten as the backend always assumes it
+    # owns root of the namespace
+    proxy_pass http://schmetterlingdb/;
+}
+
+location /schmetterlingdb/stats/ {
+    # This endpoint:
+    # * does not require auth
+    # * response must not be cached by client
+    # * websockets must be supported
+    rewrite ^/schmetterlingdb/(.*) /$1 break;
+    proxy_pass http://schmetterlingdb;
+}
+```
+
+Steps are as follows:
+* in order to be able to test anything, we need to add a mock HTTP server
+  that will simulate our SchmetterlingDB. In 95% of the cases it should be
+  sufficient to use `ReflectingUnixSocketEndpoint` or `ReflectingTCPIPEndpoint`
+  classes depending on whether we connect to our backend via a Unix socket or
+  via an IP socket. Please check [endpoints documentation](#endpoints) for more
+  information. Our mock endpoint may be present in Open, EE or both flavours:
+  * `test-harness/modules/mocker/common.py` - for both EE and Open. Add:
+    ```python
+    res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `MockerBase._create_common_endpoints()`.
+  * `test-harness/modules/mocker/common.py` - for Open only. Add
+    ```python
+    extra_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+  * `test-harness/modules/mocker/open.py` - for Open only. Add
+    ```python
+    extra_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+  * `test-harness/modules/mocker/ee.py` - for Open only. Add
+    ```python
+    ee_endpoints.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=12345))
+    ```
+    in function `Mocker.__init__`.
+
+* we need to add new auth wrapper to `auth/(open|ee).lua`. For example, for
+  Open it is going to be:
+  ```python
+  res.access_schmetterlingdb_endpoint = function()
+    return res.do_authn_and_authz_or_exit()
+  end
+  ```
+  and the endpoint configuration will now look like this:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_schmetterlingdb_endpoint();
+      }
+      proxy_pass http://schmetterlingdb/;
+  }
+  ```
+
+* with the mock endpoint working and authentication in place, we can add
+  authentication tests. Depending on the flavour where our SchmetterlingDB is
+  present (open/ee/both), this must be done in either one of these or both:
+  * for EE, add endpoint path and RID to either `acl_endpoints` or
+    `authed_endpoints` lists from `test-harness/tests/ee/test_master.py`. See
+    the comments in the file for more details.
+  * for Open, add your endpoint to `authed_endpoints` list in
+    `test-harness/tests/open/test_master.py`
+* even though `/schmetterlingdb/stats/` does not require authentication it still
+  needs to be tested. This should be done using generic tests. Depending on the
+  AR flavour which `SchmetterlingDB` is designed to work with, we need
+  the following:
+  ```
+  - tests:
+      is_unauthed_access_permitted:
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  ```
+  in one of the files:
+  * EE: `test-harness/tests/ee/test_generic.config.yml`
+  * Open: `test-harness/tests/open/test_generic.config.yml`
+  * both: `test-harness/tests/test_generic.config.yml`
+
+  See section describing [generic tests syntax](#yaml-file-syntax) for more
+  details. In all the following examples, there is going to be implicit assumption
+  that the user already knows the file/place where generic tests belong to.
+
+* next - we need to make sure that our endpoints are proxing to correct upstreams.
+  This should be done using `is_upstream_correct` test:
+  ```
+  - tests:
+      is_upstream_correct:
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+    type:
+      - master
+  ```
+  We need to test *both* locations as each one of them is a separate block in
+  AR configuration, which may point to a different upstream.
+
+* next - we need to make sure that `/schmetterlingdb` request is properly
+  redirected to `/schmetterlingdb/`. It is important to point out that all
+  redirects should be done using `307 Temporary Redirect` as:
+  * 301,302 redirects do not preserve request method (clients change POST to
+    GET)
+  * 308 redirect is not supported by all clients
+
+  The test is as follows:
+  ```
+  - tests:
+      is_endpoint_redirecting_properly:
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+    type:
+      - master
+  ```
+* next - each request needs to set standardised set of headers to upstream.
+  This list includes:
+  * `Host`
+  * `X-Real-IP`
+  * `X-Forwarded-For`
+  * `X-Forwarded-Proto`
+
+  On top of that, our SchmetterlingDB does not need a JWT, so it is going to be
+  more secure if we do not pass it in upstream request. Generic test to confirm
+  this behaviour:
+  ```
+  - tests:
+      are_upstream_req_headers_ok:
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+    type:
+      - master
+  ```
+  Adding it will cause tests to fail though. This is because the endpoints were
+  missing some important bits of information. Let's fix it:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_schmetterlingdb_endpoint();
+      }
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+  In all the following examples there is going to be implicit assumption
+  that user should be using predefined includes instead of trying to manually
+  specify configuration for common use cases (e.g. headers, caching,
+  websockets, etc..).
+* next - we need to make sure that `/schmetterlingdb/stats/` endpoint results
+  are not cached. Test:
+  ```
+  - tests:
+      are_response_headers_ok:
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  ```
+  This needs to be matched by reconfiguring the location block a bit:
+  ```
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      include includes/disable-response_caching.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+* next - we need to makre sure that upstream request is made in a correct way.
+  This includes:
+    * HTTP version is correct
+    * upstream request path has been adjusted (or not) as necessary
+
+  In case of request path, usually, it is all about whether `proxy_pass` ends
+  with [a path component or not](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass).
+  HTTP version is important in cases when one needs to support e.g. Server
+  Sent Events. The tests are as follows:
+  ```
+  - tests:
+      is_upstream_req_ok:
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+  ```
+  We cannot add these two test paths into single test block as each one needs
+  a different http version. Our configuration needs to be modified to match it:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_schmetterlingdb_endpoint();
+      }
+
+      # Websockets:
+      include includes/websockets.conf;
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+
+  location /schmetterlingdb/stats/ {
+      # This endpoint does not require auth
+
+      # SSE config:
+      include includes/disable-request-response-buffering.conf;
+      include includes/http-11.conf;
+
+      rewrite ^/schmetterlingdb/(.*) /$1 break;
+      include includes/proxy-headers.conf;
+      include includes/disable-response_caching.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb;
+  }
+  ```
+
+* and finally the last thing - we need to make sure that redirects are adjusted
+  by AR. SchmetterlingDB always assumes that it owns root of the webpage and
+  all the redirects it responds with are anchored at root `/`. The tests:
+  ```
+  - tests:
+      is_location_header_rewritten:
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+  ```
+  and the configuration:
+  ```
+  location /schmetterlingdb/ {
+      access_by_lua_block {
+        auth.access_schmetterlingdb_endpoint();
+      }
+
+      # Websockets:
+      include includes/websockets.conf;
+
+      # Adjust redirects from SchmetterlingDB:
+      proxy_redirect http://$host/schmetterlingdb/ /schmetterlingdb/;
+      proxy_redirect http://$host/ /schmetterlingdb/;
+      proxy_redirect / /schmetterlingdb/;
+
+      include includes/proxy-headers.conf;
+      proxy_set_header Authorization "";
+      proxy_pass http://schmetterlingdb/;
+  }
+  ```
+
+To sum up, our test configuration should look as follows:
+```
+  - tests:
+      is_unauthed_access_permitted:
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_correct:
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+    type:
+      - master
+  - tests:
+      is_endpoint_redirecting_properly:
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+    type:
+      - master
+  - tests:
+      are_upstream_req_headers_ok:
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+    type:
+      - master
+  - tests:
+      are_response_headers_ok:
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+  - tests:
+      is_location_header_rewritten:
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+
+```
+which can be simplified into:
+```
+  - tests:
+      is_unauthed_access_permitted:
+        locations:
+          - /schmetterlingdb/stats/foo/bar
+      is_upstream_correct:
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+        upstream: http://127.0.0.1:12345
+      is_endpoint_redirecting_properly:
+        locations:
+          - path: /schmetterlingdb
+            code: 307
+      are_upstream_req_headers_ok:
+        jwt_should_be_forwarded: false
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+          - /schmetterlingdb/foo/bar
+      are_response_headers_ok:
+        nocaching_headers_are_sent: true
+        test_paths:
+          - /schmetterlingdb/stats/foo/bar
+      is_upstream_req_ok:
+        expected_http_ver: HTTP/1.1
+        test_paths:
+          - expected: /stats/foo/bar
+            sent: /schmetterlingdb/stats/foo/bar
+      is_location_header_rewritten:
+        basepath: /schmetterlingdb/foo/bar
+        endpoint_id: http://127.0.0.1:12345
+        redirect_testscases:
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/schmetterlingdb/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: http://127.0.0.1/foo/bar
+          - location_expected: http://127.0.0.1/schmetterlingdb/foo/bar
+            location_set: /foo/bar
+    type:
+      - master
+  - tests:
+      is_upstream_req_ok:
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /foo/bar
+            sent: /schmetterlingdb/foo/bar
+    type:
+      - master
+```
+and the endpoint configuration:
+```
+upstream schmetterlingdb {
+    server 127.0.0.1:12345;
+}
+
+location = /schmetterlingdb {
+    return 307 /schmetterlingdb/;
+}
+
+location /schmetterlingdb/ {
+    access_by_lua_block {
+      auth.access_schmetterlingdb_endpoint();
+    }
+
+    # Websockets:
+    include includes/websockets.conf;
+
+    # Adjust redirects from SchmetterlingDB:
+    proxy_redirect http://$host/schmetterlingdb/ /schmetterlingdb/;
+    proxy_redirect http://$host/ /schmetterlingdb/;
+    proxy_redirect / /schmetterlingdb/;
+
+    include includes/proxy-headers.conf;
+    proxy_set_header Authorization "";
+    proxy_pass http://schmetterlingdb/;
+}
+
+location /schmetterlingdb/stats/ {
+    # This endpoint does not require auth
+
+    # SSE config:
+    include includes/disable-request-response-buffering.conf;
+    include includes/http-11.conf;
+
+    rewrite ^/schmetterlingdb/(.*) /$1 break;
+    include includes/proxy-headers.conf;
+    include includes/disable-response_caching.conf;
+    proxy_set_header Authorization "";
+    proxy_pass http://schmetterlingdb;
+}
+```
+
+### Standard tests
+We will be analysing two cases here, in order to show how to solve the most
+common problems.
+
+#### Testing stale "Mesos Leader" cache entry
+Let's assume that we need to test whether a failure to refresh "Mesos Leader"
+cache entry will not result in AR dropping requests. The correct behaviour
+would be to continue serving requests using the stale cache.
+
+The test can be divided into the following stages:
+1. let AR start normally
+2. issue a request in order to force AR to fill the cache
+3. remove the DNS entry for `leader.mesos.`
+4. wait for scheduled AR cache refresh, `leader.mesos` cache entry refresh will
+   fail
+5. perform another request, make sure that it succeeded.
+
+Additionally, we will be checking log messages emitted by AR in order to confirm
+that we indeed achieved desired state in 2) and that in 5) AR issued a warning
+about the stale cache.
+
+The test can be split into a series of steps/stages:
+* prepare AR object, but do not start it yet.
+  There are pleanty of fixtures one can choose from when it comes to AR
+  instance life time:
+  * `master_ar_process` - module scope
+  * `master_ar_process_perclass` - class scope
+  * `master_ar_process_pertest` - test scope
+  * `agent_ar_process` - module scope
+  * `agent_ar_process_perclass` - class scope
+  * `agent_ar_process_pertest` - test scope
+
+  In this particular case we need to create our own instance as we have to
+  take control of the contents of the AR cache - it needs to be empty
+  at the begining of the test. We also need to be able to reconfigure cache
+  in a way that will make the test fast (low value for soft cache expiry
+  threshold and frequent cache polling/refresh) and remove unwanted side-effects
+  (hard cache expiry threshold set to very high value). This can be done only
+  by launching custom AR instance:
+  ```python
+  ar = nginx_class(cache_max_age_soft_limit=3,
+                   cache_max_age_hard_limit=1200,
+                   cache_expiration=2,
+                   cache_poll_period=3,
+                   cache_first_poll_delay=1,
+                   )
+
+  with GuardedSubprocess(ar):
+      ...
+  ```
+  The GuardedSubprocess context manager makes sure that AR is started at the
+  begining of the context and stopped no matter the results/exceptions raised
+  at the end of the context.
+* the test will require us to grep through AR logs, so we need an instance of
+  LogBufferFilter class:
+  * for stage 3)
+  ```python
+  filter_regexp_pre = {
+      'Marathon leader cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Marathon apps cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Mesos state cache has been successfully updated':
+          SearchCriteria(1, True),
+      '`Mesos Leader` state cache has been successfully updated':
+          SearchCriteria(1, True),
+  }
+
+  lbf = LineBufferFilter(filter_regexp_pre,
+                         timeout=5,  # Just to give LBF enough time
+                         line_buffer=ar.stderr_line_buffer)
+
+  with lbf:
+      ...
+  assert lbf.extra_matches == {}
+  ```
+  * for stage 5):
+  ```python
+  filter_regexp_post = {
+      'Marathon leader cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Marathon apps cache has been successfully updated':
+          SearchCriteria(1, True),
+      'Mesos state cache has been successfully updated':
+          SearchCriteria(1, True),
+      'DNS server returned error code':
+          SearchCriteria(1, True),
+      'Using stale `mesos_leader` cache entry to fulfill the request':
+          SearchCriteria(1, True),
+  }
+
+  lbf = LineBufferFilter(filter_regexp_post,
+                        timeout=5,  # Just to give LBF enough time
+                        line_buffer=ar.stderr_line_buffer)
+  with lbf:
+      ...
+  assert lbf.extra_matches == {}
+  ```
+  Please check the paragraph about [LineBufferFilter](#logcatcher) for more
+  details on the usage of this tool.
+* in order to "break" `leader.mesos.` entry, we can simply remove it from the
+  programmable DNS:
+  ```python
+  dns_server_mock.remove_dns_entry('leader.mesos.')
+  ```
+* the final thing is to make the requests. We can do it using plain `requests`
+  module. The only gotcha is the URL that schould be used. Depending on the
+  type of AR (agent/master) and configuration (listen address), different URLs
+  may be needed. In order to abstract it away, AR instance's `.make_url_from_path()`
+  method should be used:
+  ```python
+  url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+  resp = requests.get(url,
+                      allow_redirects=False,
+                      headers=valid_user_header)
+  assert resp.status_code == 200
+  ```
+* now, lets put it all together in order:
+  ```
+  # pull in all the necessary mocks into the scope:
+  # * nginx_class - AR class. Automatically adjusted to repository flavour.
+  # * dns_server_mock - programmable DNS server
+  # * valid_user_header - JWT that will be accepted by AR authn/authz code
+  def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
+          self, nginx_class, dns_server_mock, valid_user_header):
+      # Let's try to put all non-essential stuff outside of context managers
+      # scopes:
+      filter_regexp_pre = {
+          'Marathon leader cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Marathon apps cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Mesos state cache has been successfully updated':
+              SearchCriteria(1, True),
+          '`Mesos Leader` state cache has been successfully updated':
+              SearchCriteria(1, True),
+      }
+
+      filter_regexp_post = {
+          'Marathon leader cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Marathon apps cache has been successfully updated':
+              SearchCriteria(1, True),
+          'Mesos state cache has been successfully updated':
+              SearchCriteria(1, True),
+          'DNS server returned error code':
+              SearchCriteria(1, True),
+          'Using stale `mesos_leader` cache entry to fulfill the request':
+              SearchCriteria(1, True),
+      }
+
+      ar = nginx_class(cache_max_age_soft_limit=3,
+                       cache_max_age_hard_limit=1200,
+                       cache_expiration=2,
+                       cache_poll_period=3,
+                       cache_first_poll_delay=1,
+                       )
+
+      url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+
+      # AR lifetime is equal to the lenght of this context manager's scope
+      with GuardedSubprocess(ar):
+          lbf = LineBufferFilter(filter_regexp_pre,
+                                 timeout=5,  # Just to give LBF enough time
+                                 line_buffer=ar.stderr_line_buffer)
+
+          with lbf:
+              # Trigger cache update by issuing request:
+              resp = requests.get(url,
+                                  allow_redirects=False,
+                                  headers=valid_user_header)
+              assert resp.status_code == 200
+
+          assert lbf.extra_matches == {}
+
+          lbf = LineBufferFilter(filter_regexp_post,
+                                 timeout=5,  # Just to give LBF enough time
+                                 line_buffer=ar.stderr_line_buffer)
+          with lbf:
+              # Break `leader.mesos` DNS entry
+              dns_server_mock.remove_dns_entry('leader.mesos.')
+
+              # Wait for the cache to be old enough to be considered stale by AR:
+              # cache_max_age_soft_limit + 1s for a good measure
+              time.sleep(3 + 2)
+
+              # Perform the main/test request:
+              resp = requests.get(url,
+                                  allow_redirects=False,
+                                  headers=valid_user_header)
+              assert resp.status_code == 200
+
+          assert lbf.extra_matches == {}
+  ```
+
+#### Testing if `leader.mesos` DNS record is re-resolved by `cache.lua` code
+This case will reuse some of the concepts from a previous one. The idea here is
+to make sure tha that a change of `leader.mesos.` DNS entry is properly handled
+by cache.lua code. To achieve that, we set up two Mesos HTTP mocks, one with
+enabled extra agent, other with not. Initially `leader.mesos.` points to the one
+without extra agent enabled and we expect 404 reply, then we update the DNS,
+wait for DNS cache refresh and try again. This time the response status should
+be 200.
+
+The extra difficulty here is the fact that we are overriding TTL value of the DNS
+records using `resolver ... valid=5s` statement in nginx.
+
+The test can be split into a series of steps/stages:
+* first of all we need to change the TTL of the `leader.mesos.` record so that
+  it is high enough that we can be sure it is being overridden by `resolver ...`
+  statement (or the test should fail because DNS entry will not be re-resolved).
+  ```python
+  dns_server_mock.set_dns_entry('leader.mesos.', ip='127.0.0.2', ttl=self.LONG_TTL)
+  ```
+  The IP to which the entry is pointing to is the IP of the Mesos mock with extra
+  agent not enabled.
+* lets prepare custom AR instance the same way we did in previous example:
+  ```python
+  # This should be equal or greater than 1.5 times the value of `valid=`
+  # DNS TTL override in `resolver` config option -> 5s * 1.5 = 7.5s
+  cache_poll_period = 8
+  cache_expiration = cache_poll_period - 1
+  cache_first_poll = 1
+
+  ar = nginx_class(
+      cache_first_poll_delay=cache_first_poll,
+      cache_poll_period=cache_poll_period,
+      cache_expiration=cache_expiration,
+      upstream_mesos="http://leader.mesos:5050",
+      )
+  with GuardedSubprocess(ar):
+      ...
+  ```
+* now, we need to enable extra agent in second Mesos Mock
+  ```python
+  mocker.send_command(
+      endpoint_id='http://127.0.0.3:5050',
+      func_name='enable_extra_agent',
+      )
+  ```
+* instead of using `requests` module here, we can take advantage of `ping_mesos_agent`
+  helper which will do some of the work for us:
+  * first call, where we expect 404
+  ```python
+  ping_mesos_agent(
+      ar,
+      valid_user_header,
+      expect_status=404,
+      agent_id=AGENT_EXTRA_ID)
+  ```
+  * second call, when we expect 200
+  ```python
+  ping_mesos_agent(
+      ar,
+      valid_user_header,
+      expect_status=200,
+      endpoint_id='http://127.0.0.4:15003',
+      agent_id=AGENT_EXTRA_ID)
+  ```
+* changing of the DNS entry to the Mesos mock with extra agent will be done
+  also using `.set_dns_entry()` call:
+  ```python
+  dns_server_mock.set_dns_entry(
+    'leader.mesos.', ip='127.0.0.3', ttl=self.LONG_TTL)
+  ```
+
+And now, putting it all together:
+```python
+def test_if_mesos_leader_is_reresolved_by_lua(
+        self, nginx_class, mocker, dns_server_mock, valid_user_header):
+    # Change the TTL of `leader.mesos.` entry
+    dns_server_mock.set_dns_entry(
+        'leader.mesos.', ip='127.0.0.2', ttl=self.LONG_TTL)
+
+    # This should be equal or greater than 1.5 times the value of `valid=`
+    # DNS TTL override in `resolver` config option -> 5s * 1.5 = 7.5s
+    cache_poll_period = 8
+    cache_expiration = cache_poll_period - 1
+    cache_first_poll = 1
+
+    mocker.send_command(
+        endpoint_id='http://127.0.0.3:5050',
+        func_name='enable_extra_agent',
+        )
+
+    ar = nginx_class(
+        cache_first_poll_delay=cache_first_poll,
+        cache_poll_period=cache_poll_period,
+        cache_expiration=cache_expiration,
+        upstream_mesos="http://leader.mesos:5050",
+        )
+
+    with GuardedSubprocess(ar):
+        # Force cache update by issuing a request
+        ping_mesos_agent(
+            ar,
+            valid_user_header,
+            expect_status=404,
+            agent_id=AGENT_EXTRA_ID)
+
+        # Now, let's change DNS entry to point to other Mesos master
+        dns_server_mock.set_dns_entry(
+            'leader.mesos.', ip='127.0.0.3', ttl=self.LONG_TTL)
+
+        # Wait for cache to expire and let DNS entry be re-resolved
+        # during the refresh
+        time.sleep(cache_poll_period + cache_first_poll + 1)
+
+        # Make sure that cache now used the right upstream
+        ping_mesos_agent(
+            ar,
+            valid_user_header,
+            expect_status=200,
+            endpoint_id='http://127.0.0.4:15003',
+            agent_id=AGENT_EXTRA_ID)
+```
+### Advanced usage
+There are no general guidelines on how to add advanced test cases to the test
+harness, as each case is different. Sometimes one needs to add support for a
+new side effect to `Mocker` endpoints, sometimes it's adding a custom
+benchmarking tool to the harness in order to stress AR in certain way,
+sometimes it is just a simple test checking >40 endpoints, every one of them in
+a slightly different way, etc...
+
+In such cases it is important to keep in mind few simple guidelines, with which
+the whole test harness was designed and implemented:
+* *try to avoid creating custom/very specialized DSL*
+
+The more abstractions there are, the more AR test-harness-specific
+functions/shortcuts there are, the more difficult it is for people to start
+learning it effectively and/or not to try to invent their own indirection
+layers. Try to keep things simple!
+
+* *try to keep the code DRY*
+
+Admin Router tests can be very repetitive. As trivial as it sounds, the more
+tests there are the more difficult is to refactor code and to keep it tidy.
+This increases the barrier of entry for new contributors and makes them feel
+that `it is OK to do it` - it is not. If you wrote the same tests more than
+three times, then maybe it is time to implement another generic tests in YAML
+config file and start operating only on the test's input data instead.
+
+* *check for a-prior art*
+
+It is possible that the solution that you are looking for has already been
+found by somebody else. Try to search for tests that check similar behaviour or
+feature.  If you need to implement a new side effect/new functionality - try
+looking at existing test-harness features and try to follow the "general
+design". Nothing is writen in stone but "There should be one-- and preferably
+only one --obvious way to do it."
+
+Good luck!
