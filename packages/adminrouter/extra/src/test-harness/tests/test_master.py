@@ -251,7 +251,7 @@ class TestMetadata:
 
         ts_start = time.time()
         with overridden_file_content('/usr/local/detect_ip_public_data.txt',
-                                    "timeout 10"):
+                                     "timeout 10"):
             requests.get(
                 url,
                 allow_redirects=False,
