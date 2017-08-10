@@ -78,7 +78,9 @@ def marathon_test_app(
                 'gracePeriodSeconds': 5,
                 'intervalSeconds': 10,
                 'timeoutSeconds': 10,
-                'maxConsecutiveFailures': 3
+                'maxConsecutiveFailures': 120  # ~20 minutes until restarting
+                # killing the container will rarely, if ever, help this application
+                # reach a healthy state, so do not trigger a restart if unhealthy
             }
         ],
     })
