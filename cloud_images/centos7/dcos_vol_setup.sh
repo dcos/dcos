@@ -67,7 +67,7 @@ function main {
       rm -rf /var/log
       mkdir -p /var/log
       echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location" || :; done
       echo
       systemd-tmpfiles --create --prefix /var/log/journal || :
       systemctl restart systemd-journald || :
@@ -75,7 +75,7 @@ function main {
       systemctl is-enabled chronyd > /dev/null && systemctl start chronyd || :
     else
       echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location" || :; done
       echo
     fi
   else
