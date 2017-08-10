@@ -2,11 +2,56 @@ import logging
 import uuid
 
 import pytest
+import requests
 
-from dcos_test_utils.marathon import Container, get_test_app, Healthcheck, Network
-from test_helpers import expanded_config
+import test_helpers
+from dcos_test_utils import marathon
 
 log = logging.getLogger(__name__)
+
+
+def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
+    """This method deploys the test server app and then
+    pings its /operating_environment endpoint to retrieve the container
+    user running the task.
+
+    In a mesos container, this will be the marathon user
+    In a docker container this user comes from the USER setting
+    from the app's Dockerfile, which, for the test application
+    is the default, root
+    """
+    default_os_user = 'nobody' if test_helpers.expanded_config.get('security') == 'strict' else 'root'
+
+    if 'container' in app and app['container']['type'] == 'DOCKER':
+        marathon_user = 'root'
+    else:
+        marathon_user = app.get('user', default_os_user)
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
+        r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host, service_points[0].port))
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            raise Exception(msg.format(r.status_code, r.reason, r.text))
+
+        r_data = r.json()
+
+        assert r_data['test_uuid'] == test_uuid
+
+        r = requests.get('http://{}:{}/operating_environment'.format(
+            service_points[0].host,
+            service_points[0].port))
+
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            raise Exception(msg.format(r.status_code, r.reason, r.text))
+
+        json_uid = r.json()['uid']
+        if marathon_user == 'root':
+            assert json_uid == 0, "App running as root should have uid 0."
+        else:
+            assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
 
 
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
@@ -23,7 +68,7 @@ def test_if_marathon_app_can_be_deployed(dcos_api_session):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeeds.
     """
-    dcos_api_session.marathon.deploy_test_app_and_check(*get_test_app())
+    deploy_test_app_and_check(dcos_api_session, *test_helpers.marathon_test_app())
 
 
 def test_if_docker_app_can_be_deployed(dcos_api_session):
@@ -32,13 +77,17 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected.
     """
-    dcos_api_session.marathon.deploy_test_app_and_check(
-        *get_test_app(network=Network.BRIDGE, container_type=Container.DOCKER, container_port=9080))
+    deploy_test_app_and_check(
+        dcos_api_session,
+        *test_helpers.marathon_test_app(
+            network=marathon.Network.BRIDGE,
+            container_type=marathon.Container.DOCKER,
+            container_port=9080))
 
 
 @pytest.mark.parametrize('healthcheck', [
-    Healthcheck.HTTP,
-    Healthcheck.MESOS_HTTP,
+    marathon.Healthcheck.HTTP,
+    marathon.Healthcheck.MESOS_HTTP,
 ])
 def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     """Marathon app inside ucr deployment integration test.
@@ -46,8 +95,11 @@ def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     Verifies that a marathon docker app inside of a ucr container can be
     deployed and accessed as expected.
     """
-    dcos_api_session.marathon.deploy_test_app_and_check(
-        *get_test_app(container_type=Container.MESOS, healthcheck_protocol=healthcheck))
+    deploy_test_app_and_check(
+        dcos_api_session,
+        *test_helpers.marathon_test_app(
+            container_type=marathon.Container.MESOS,
+            healthcheck_protocol=healthcheck))
 
 
 def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
@@ -64,8 +116,9 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
     When port mapping is available (MESOS-4777), this test should be updated to
     reflect that.
     """
-    app, test_uuid = get_test_app(container_type=Container.MESOS)
-    dcos_api_session.marathon.deploy_test_app_and_check(app, test_uuid)
+    deploy_test_app_and_check(
+        dcos_api_session,
+        *test_helpers.marathon_test_app(container_type=marathon.Container.MESOS))
 
 
 def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session):
@@ -105,7 +158,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
 
 
 @pytest.mark.skipif(
-    expanded_config.get('security') == 'strict',
+    test_helpers.expanded_config.get('security') == 'strict',
     reason='See: https://jira.mesosphere.com/browse/DCOS-14760')
 def test_octarine(dcos_api_session, timeout=30):
     # This app binds to port 80. This is only required by the http (not srv)
@@ -115,11 +168,12 @@ def test_octarine(dcos_api_session, timeout=30):
     # reaches the proxy, the port is not used, and a request is made
     # to port 80.
 
-    app, uuid = get_test_app(host_port=80)
+    app, uuid = test_helpers.marathon_test_app(host_port=80)
     app['acceptedResourceRoles'] = ["slave_public"]
     app['requirePorts'] = True
 
-    with dcos_api_session.marathon.deploy_and_cleanup(app) as service_points:
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
         port_number = service_points[0].port
         # It didn't actually grab port 80 when requirePorts was unset
         assert port_number == app['portDefinitions'][0]["port"]
@@ -169,7 +223,7 @@ def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
     check_cmd = """sh -c '[ {} = {} ]'""".format(curl_cmd, expected_output)
     log.info("Check: {}".format(check_cmd))
 
-    app, uuid = get_test_app()
+    app, uuid = test_helpers.marathon_test_app()
     app['requirePorts'] = True
     app['cmd'] = server_cmd
     app['healthChecks'] = [{
@@ -183,42 +237,3 @@ def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         pass
-
-
-def test_pkgpanda_api(dcos_api_session):
-
-    def get_and_validate_package_ids(path, node):
-        r = dcos_api_session.get(path, node=node)
-        assert r.status_code == 200
-        package_ids = r.json()
-        assert isinstance(package_ids, list)
-        for package_id in package_ids:
-            r = dcos_api_session.get(path + package_id, node=node)
-            assert r.status_code == 200
-            name, version = package_id.split('--')
-            assert r.json() == {'id': package_id, 'name': name, 'version': version}
-        return package_ids
-
-    active_buildinfo = dcos_api_session.get('/pkgpanda/active.buildinfo.full.json').json()
-    active_buildinfo_packages = sorted(
-        # Setup packages don't have a buildinfo.
-        (package_name, info['package_version'] if info else None)
-        for package_name, info in active_buildinfo.items()
-    )
-
-    def assert_packages_match_active_buildinfo(package_ids):
-        packages = sorted(map(lambda id_: tuple(id_.split('--')), package_ids))
-        assert len(packages) == len(active_buildinfo_packages)
-        for package, buildinfo_package in zip(packages, active_buildinfo_packages):
-            if buildinfo_package[1] is None:
-                # No buildinfo for this package, so we can only compare names.
-                assert package[0] == buildinfo_package[0]
-            else:
-                assert package == buildinfo_package
-
-    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        package_ids = get_and_validate_package_ids('pkgpanda/repository/', node)
-        active_package_ids = get_and_validate_package_ids('pkgpanda/active/', node)
-
-        assert set(active_package_ids) <= set(package_ids)
-        assert_packages_match_active_buildinfo(active_package_ids)

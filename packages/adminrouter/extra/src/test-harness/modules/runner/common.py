@@ -298,8 +298,11 @@ class LogCatcher:
         the tests, and appending to old log files could confuse tests developers.
         """
         for f_name in os.listdir(self._LOG_DIR):
-            if f_name == self._GIT_KEEP_FILE:
-                log.debug("Skipping git keep-file: `%s`", f_name)
+            # Test harness logs are created before this code has a chance to run,
+            # so we make an exception so that cleanup does not remove test's
+            # harnes log.
+            if f_name == self._GIT_KEEP_FILE or f_name == 'test-harness.log':
+                log.debug("Skipping file: `%s`", f_name)
                 continue
 
             f_path = os.path.join(self._LOG_DIR, f_name)

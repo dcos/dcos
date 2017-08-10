@@ -1,14 +1,10 @@
-import logging
+import os
 
+import api_session_fixture
 import pytest
+from dcos_test_utils import logger
 
-from api_session_fixture import make_session_fixture
-
-from dcos_test_utils.marathon import get_test_app
-
-logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', level=logging.INFO)
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("botocore").setLevel(logging.WARNING)
+logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 
 
 def pytest_configure(config):
@@ -38,22 +34,9 @@ def clean_marathon_state(dcos_api_session):
     dcos_api_session.marathon.purge()
 
 
-@pytest.fixture
-def vip_apps(dcos_api_session):
-    vip1 = '6.6.6.1:6661'
-    test_app1, _ = get_test_app(vip=vip1)
-    name = 'myvipapp'
-    port = 5432
-    test_app2, _ = get_test_app(vip='{}:{}'.format(name, port))
-    vip2 = '{}.marathon.l4lb.thisdcos.directory:{}'.format(name, port)
-    with dcos_api_session.marathon.deploy_and_cleanup(test_app1):
-        with dcos_api_session.marathon.deploy_and_cleanup(test_app2):
-            yield ((test_app1, vip1), (test_app2, vip2))
-
-
 @pytest.fixture(scope='session')
 def dcos_api_session():
-    return make_session_fixture()
+    return api_session_fixture.make_session_fixture()
 
 
 @pytest.fixture(scope='session')
