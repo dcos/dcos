@@ -319,7 +319,7 @@ routes:
     matcher: regex
     description: System proxy to the master node with the Mesos leader
     proxy:
-      path: 'http://leader.mesos/system/v1$url$is_args$query_string'
+      path: $system_v1_leader_mesos
     path: /system/v1/leader/mesos(?<url>.*)
   /system/v1/logs/:
     group: System

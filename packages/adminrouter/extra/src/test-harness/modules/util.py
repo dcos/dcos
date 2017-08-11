@@ -251,30 +251,46 @@ class LineBufferFilter:
         return left
 
 
-def configure_logger(pytest_config):
+def configure_logger(tests_log_level):
     """ Set up a logging basing on pytest cmd line args.
 
     Configure log verbosity basing on the --log-level command line
-    argument (INFO by default).
+    argument (disabled by default). Additionally write all logs to a file
+    (inc. DEBUG loglevel information).
+
+    Arguments:
+        tests_log_level: log level to use for STDOUT output
     """
 
-    tests_log_level = pytest_config.getoption('tests_log_level')
     rootlogger = logging.getLogger()
+    rootlogger.handlers = []
 
     # Set up a stderr handler for the root logger, and specify the format.
     fmt = "%(asctime)s.%(msecs)03d %(name)s:%(lineno)s %(levelname)s: %(message)s"
-    logging.basicConfig(
-        level=logging.INFO,
-        format=fmt,
+    formatter = logging.Formatter(
+        fmt=fmt,
         datefmt="%y%m%d-%H:%M:%S"
         )
 
+    # Root logger should pass everything
+    rootlogger.setLevel(logging.DEBUG)
+
+    # create file handler which logs everything to a file
+    cur_dir = os.path.dirname(__file__)
+    log_path = os.path.abspath(os.path.join(
+        cur_dir, "..", "logs", "test-harness.log"))
+    fh = logging.FileHandler(log_path, mode='w', encoding='utf8')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    rootlogger.addHandler(fh)
+
     if tests_log_level != 'disabled':
+        # create console handler with a higher log level
+        ch = logging.StreamHandler()
         level = getattr(logging, tests_log_level.upper())
-        rootlogger.setLevel(level)
-    else:
-        rootlogger.handlers = []
-        rootlogger.addHandler(logging.NullHandler())
+        ch.setLevel(level)
+        ch.setFormatter(formatter)
+        rootlogger.addHandler(ch)
 
 
 def add_lo_ipaddr(nflink, ip_addr, prefix_len):

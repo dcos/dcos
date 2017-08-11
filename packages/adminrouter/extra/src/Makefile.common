@@ -19,11 +19,20 @@ BRIDGE_DEVNAME := $(shell docker network inspect -f '{{ index .Options "com.dock
 # Using a docker container for this allows the docker daemon to run locally or remotely in a VM, like docker-machine.
 BRIDGE_IP := $(shell docker run --net=host --rm alpine ifconfig $(BRIDGE_DEVNAME) | grep 'inet addr:' | cut -d: -f2 | cut -d' ' -f1)
 
+# Vary the name of the container on the per-flavour basis.
+# The way we detect the repository flavour is consistent with how test harness
+# does it.
+ifeq ($(wildcard test-harness/tests/ee/), test-harness/tests/ee/)
+    DEVKIT_NAME=adminrouter-devkit-ee
+else
+    DEVKIT_NAME=adminrouter-devkit-open
+endif
+
 # FIXME: some problems with dns queries timing out, use hosts caching dns as a
 # workaround for now
 # DNS_DOCKER_OPTS := --dns=8.8.8.8 --dns=8.8.4.4
 DNS_DOCKER_OPTS := --dns=$(BRIDGE_IP) --dns=8.8.8.8 --dns=8.8.4.4
-DEVKIT_BASE_DOCKER_OPTS := --name adminrouter-devkit \
+DEVKIT_BASE_DOCKER_OPTS := --name $(DEVKIT_NAME) \
 	$(DNS_DOCKER_OPTS) \
 	-e NUM_CORES=2 \
 	-e PYTHONDONTWRITEBYTECODE=true
@@ -33,7 +42,7 @@ DEVKIT_DOCKER_OPTS := $(DEVKIT_BASE_DOCKER_OPTS) \
 .PHONY: clean-devkit-container
 clean-devkit-container:
 	@# Let's suppress ALL the output:
-	@docker rm -vf adminrouter-devkit &> /dev/null || true
+	@docker rm -vf $(DEVKIT_NAME) &> /dev/null || true
 
 .PHONY: clean-containers
 clean-containers: clean-devkit-container
@@ -45,56 +54,56 @@ clean:
 
 .PHONY: devkit
 devkit:
-	@if $$(docker images | grep mesosphere/adminrouter-devkit | grep -q full); then \
+	@if $$(docker images | grep mesosphere/$(DEVKIT_NAME) | grep -q full); then \
 		echo "Devkit image is present, not rebuilding it."; \
 	else \
 		echo "Building devkit image"; \
 		docker build \
 			--rm --force-rm \
-			-t mesosphere/adminrouter-devkit:noresty \
+			-t mesosphere/$(DEVKIT_NAME):noresty \
 			-f ../../docker/Dockerfile \
 				../../docker/ && \
 		docker run \
 			$(DEVKIT_BASE_DOCKER_OPTS) \
-			mesosphere/adminrouter-devkit:noresty \
+			mesosphere/$(DEVKIT_NAME):noresty \
 				/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT" && \
-		docker commit $$(docker ps -a -q -f name=adminrouter-devkit) \
-			mesosphere/adminrouter-devkit:full && \
-		docker rm adminrouter-devkit && \
-		docker rmi -f mesosphere/adminrouter-devkit:noresty; \
+		docker commit $$(docker ps -a -q -f name=$(DEVKIT_NAME)) \
+			mesosphere/$(DEVKIT_NAME):full && \
+		docker rm $(DEVKIT_NAME) && \
+		docker rmi -f mesosphere/$(DEVKIT_NAME):noresty; \
 	fi
 
 .PHONY: update-devkit
 update-devkit: clean-devkit-container
 	@# Let's suppress ALL the output:
-	@docker rm adminrouter-devkit &> /dev/null || true
+	@docker rm $(DEVKIT_NAME) &> /dev/null || true
 	@docker build \
 		--rm --force-rm \
-		-t mesosphere/adminrouter-devkit:noresty \
+		-t mesosphere/$(DEVKIT_NAME):noresty \
 		-f ../../docker/Dockerfile \
 			../../docker/
 	@docker run \
 		$(DEVKIT_BASE_DOCKER_OPTS) \
-		mesosphere/adminrouter-devkit:noresty \
+		mesosphere/$(DEVKIT_NAME):noresty \
 			/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT" && \
-	docker commit $$(docker ps -a -q -f name=adminrouter-devkit) \
-		mesosphere/adminrouter-devkit:full
-	@docker rm adminrouter-devkit
-	@docker rmi -f mesosphere/adminrouter-devkit:noresty
+	docker commit $$(docker ps -a -q -f name=$(DEVKIT_NAME)) \
+		mesosphere/$(DEVKIT_NAME):full
+	@docker rm $(DEVKIT_NAME)
+	@docker rmi -f mesosphere/$(DEVKIT_NAME):noresty
 
 .PHONY: shell
 shell: clean-devkit-container devkit
 	@docker run --rm -it \
 		$(DEVKIT_DOCKER_OPTS) \
 		--privileged \
-		mesosphere/adminrouter-devkit:full /bin/bash
+		mesosphere/$(DEVKIT_NAME):full /bin/bash
 
 .PHONY: test
 test: clean-devkit-container devkit
 	@docker run \
 		$(DEVKIT_DOCKER_OPTS) \
 		--privileged \
-		mesosphere/adminrouter-devkit:full /bin/bash -x -c " \
+		mesosphere/$(DEVKIT_NAME):full /bin/bash -x -c " \
  			py.test \
  		"
 
@@ -103,10 +112,10 @@ api-docs: clean-devkit-container devkit
 	@mkdir -p $(SRC_DIR)/$(API_DOCS_DIR)
 	@for prefix in nginx.master nginx.agent ; do \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.yaml" >&2 && \
-		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/$(DEVKIT_NAME):full \
 			ngindox parse -f $${prefix}.conf > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.yaml && \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.html" >&2 && \
-		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/$(DEVKIT_NAME):full \
 			ngindox ui -f $(API_DOCS_DIR)/$${prefix}.yaml > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.html ; \
 	done
 
@@ -128,7 +137,7 @@ endif
 lint: clean-devkit-container devkit
 	@docker run \
 		$(DEVKIT_DOCKER_OPTS) \
-		mesosphere/adminrouter-devkit:full /bin/bash -x -c "flake8"
+		mesosphere/$(DEVKIT_NAME):full /bin/bash -x -c "flake8"
 
 .PHONY: help
 help:
