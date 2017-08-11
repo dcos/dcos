@@ -13,6 +13,9 @@ local util = require "util"
 --
 -- CACHE_BACKEND_REQUEST_TIMEOUT << CACHE_REFRESH_LOCK_TIMEOUT
 --
+-- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
+-- statement configuration in includes/http/master.conf
+--
 -- All are in units of seconds. Below are the defaults:
 local _CONFIG = {}
 local env_vars = {CACHE_FIRST_POLL_DELAY = 2,
