@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-metrics.git",
-    "ref": "1b4e0138bf6615583cf69ccfe7aa5230dfd30917",
-    "ref_origin": "master"
+    "ref": "c97dbf6d69237f8d2fdf376d5b00ef79cf0f8fa9",
+    "ref_origin": "philipnrmn/http-fallback"
   },
   "username": "dcos_metrics"
 }
