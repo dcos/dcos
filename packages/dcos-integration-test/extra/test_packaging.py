@@ -127,7 +127,7 @@ def _enough_resources_for_package(state_summary, package_requirements):
     return False
 
 
-def _skipif_insufficient_resources(dcos_api_session, requirements):
+def skipif_insufficient_resources(dcos_api_session, requirements):
     """Can't access dcos_api_session from through the pytest.mark.skipif decorator, so call this in each test instead
     """
     if not _enough_resources_for_package(_get_cluster_resources(dcos_api_session), requirements):
@@ -137,7 +137,7 @@ def _skipif_insufficient_resources(dcos_api_session, requirements):
 def test_packaging_api(dcos_api_session):
     """Test the Cosmos API (/package) wrapper
     """
-    _skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
+    skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
     install_response = dcos_api_session.cosmos.install_package('kafka', package_version='1.1.9-0.10.0.0')
     data = install_response.json()
 
