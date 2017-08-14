@@ -246,9 +246,6 @@ def test_service_discovery_docker_host(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('platform') == 'vagrant',
-    reason='See: https://jira.mesosphere.com/browse/DCOS_OSS-1532')
 def test_service_discovery_docker_bridge(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
@@ -258,9 +255,6 @@ def test_service_discovery_docker_bridge(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('platform') == 'vagrant',
-    reason='See: https://jira.mesosphere.com/browse/DCOS_OSS-1532')
 def test_service_discovery_docker_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
@@ -270,9 +264,6 @@ def test_service_discovery_docker_overlay(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('platform') == 'vagrant',
-    reason='See: https://jira.mesosphere.com/browse/DCOS_OSS-1532')
 def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
