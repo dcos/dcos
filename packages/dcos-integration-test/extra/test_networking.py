@@ -195,9 +195,6 @@ def test_if_navstar_l4lb_disabled(dcos_api_session):
     assert str(data).find('9999') == -1
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('platform') == 'vagrant',
-    reason='See: https://jira.mesosphere.com/browse/DCOS_OSS-1532')
 def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
