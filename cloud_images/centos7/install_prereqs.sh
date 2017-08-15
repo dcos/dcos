@@ -25,6 +25,7 @@ yum -y --tolerant install perl tar xz unzip curl bind-utils net-tools ipset libt
 echo ">>> Set up filesystem mounts"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
 [Unit]
+Before=docker.service chronyd.service tuned.service rsyslog.service dcos-mesos-master.service dcos-mesos-slave.service dcos-mesos-slave-public.service
 Description=Initial setup of volume mounts
 
 [Service]
