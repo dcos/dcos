@@ -13,7 +13,7 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_response_headers_verify_test,
     generic_upstream_headers_verify_test,
-    overriden_file_content,
+    overridden_file_content,
     verify_header,
 )
 from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
@@ -169,7 +169,7 @@ class TestMetadata:
             self, master_ar_process_perclass, valid_user_header, public_ip):
         url = master_ar_process_perclass.make_url_from_path('/metadata')
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/usr/local/detect_ip_public_data.txt',
                 "return ip {}".format(public_ip)):
             resp = requests.get(
@@ -194,7 +194,7 @@ class TestMetadata:
         resp_data = resp.json()
         assert resp_data['CLUSTER_ID'] == 'fdb1d7c0-06cf-4d65-bb9b-a8920bb854ef'
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/var/lib/dcos/cluster-id',
                 "fd21689b-4fe2-4779-8c30-9125149eef11"):
             resp = requests.get(
@@ -210,7 +210,7 @@ class TestMetadata:
             self, master_ar_process_perclass, valid_user_header):
         url = master_ar_process_perclass.make_url_from_path('/metadata')
 
-        with overriden_file_content('/var/lib/dcos/cluster-id'):
+        with overridden_file_content('/var/lib/dcos/cluster-id'):
             os.unlink('/var/lib/dcos/cluster-id')
             resp = requests.get(
                 url,
@@ -232,7 +232,7 @@ class TestMetadata:
         lbf = LineBufferFilter(filter_regexp,
                                line_buffer=master_ar_process_perclass.stderr_line_buffer)
 
-        with lbf, overriden_file_content('/usr/local/detect_ip_public_data.txt'):
+        with lbf, overridden_file_content('/usr/local/detect_ip_public_data.txt'):
             os.unlink('/usr/local/detect_ip_public_data.txt')
             resp = requests.get(
                 url,
@@ -250,8 +250,8 @@ class TestMetadata:
         url = master_ar_process_perclass.make_url_from_path('/metadata')
 
         ts_start = time.time()
-        with overriden_file_content('/usr/local/detect_ip_public_data.txt',
-                                    "timeout 10"):
+        with overridden_file_content('/usr/local/detect_ip_public_data.txt',
+                                     "timeout 10"):
             requests.get(
                 url,
                 allow_redirects=False,
@@ -269,7 +269,7 @@ class TestMetadata:
             self, master_ar_process_perclass, valid_user_header):
         url = master_ar_process_perclass.make_url_from_path('/metadata')
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/usr/local/detect_ip_public_data.txt',
                 "break with 1"):
             resp = requests.get(
@@ -295,7 +295,7 @@ class TestUiRoot:
 
         url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
                 uniq_content):
             resp = requests.get(
@@ -316,7 +316,7 @@ class TestMisc:
         url = master_ar_process_perclass.make_url_from_path(
             '/pkgpanda/active.buildinfo.full.json')
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/opt/mesosphere/active.buildinfo.full.json',
                 content):
             resp = requests.get(
@@ -334,7 +334,7 @@ class TestMisc:
         url = master_ar_process_perclass.make_url_from_path(
             '/dcos-metadata/dcos-version.json')
 
-        with overriden_file_content(
+        with overridden_file_content(
                 '/opt/mesosphere/active/dcos-metadata/etc/dcos-version.json',
                 content):
             resp = requests.get(
