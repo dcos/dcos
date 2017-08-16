@@ -38,15 +38,6 @@ set -o errexit -o nounset -o pipefail
 
 source /opt/mesosphere/environment.export
 
-# bash should trap the ERR signal and run err_report, which prints the line number
-# of failure to STDERR.
-
-err_report() {
-    echo "ERROR: Upgrade failed at line ${BASH_LINENO}"
-} >&2
-
-trap err_report ERR
-
 # Check if this is a terminal, and if colors are supported, set some basic
 # colors for outputs
 if [ -t 1 ]; then
@@ -81,12 +72,14 @@ if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
         exit 1
     fi
 
+    echo $output
     clusteroutput=$(dcos-diagnostics check cluster)
     if [ $? -ne 0 ]; then
         echo "Cannot proceed with upgrade, cluster checks failed"
         echo $clusteroutput
         exit 1
     fi
+    echo $clusteroutput
 fi
 
 # Determine this node's role.
@@ -116,9 +109,11 @@ pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
 T=300
 until OUT=$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster) || [[ T -eq 0 ]]; do
+    echo $OUT
     sleep 1
     let T=T-1
 done
+echo $OUT
 RETCODE=$?
 if [ $RETCODE -ne 0 ]; then
     echo "Node upgrade not successful, checks failed"
