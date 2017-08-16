@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/suanmiao/mesos",
-    "ref": "68098920e0de5c8da45a4e5f5f00f76ae4adceaa",
+    "ref": "1dd4480f445ee0f75893b693962e4a9a6411b551",
     "ref_origin" : "quinn/dcos-build"
   },
   "environment": {
