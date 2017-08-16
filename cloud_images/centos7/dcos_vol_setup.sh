@@ -1,6 +1,9 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+# ignore SIGPIPE when losing our reader during systemd-journald restart
+trap '' PIPE
+
 export device=${1:-}
 export mount_location=${2:-}
 
@@ -57,25 +60,19 @@ function main {
       mkdir -p /var/log-prep
       mount $device /var/log-prep
       mkdir -p /var/log-prep/journal
-      systemctl is-active chronyd > /dev/null && systemctl stop chronyd || :
-      systemctl is-active tuned > /dev/null && systemctl stop tuned || :
-      # rsyslog shouldn't be active but in case it is stop it as well
-      systemctl is-active rsyslog > /dev/null && systemctl stop rsyslog || :
       cp -a /var/log/. /var/log-prep/
       umount /var/log-prep
       rmdir /var/log-prep
       rm -rf /var/log
       mkdir -p /var/log
       echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location" || :; done
       echo
       systemd-tmpfiles --create --prefix /var/log/journal || :
       systemctl restart systemd-journald || :
-      systemctl is-enabled tuned > /dev/null && systemctl start tuned || :
-      systemctl is-enabled chronyd > /dev/null && systemctl start chronyd || :
     else
       echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
+      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location" || :; done
       echo
     fi
   else
