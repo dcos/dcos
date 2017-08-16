@@ -695,7 +695,7 @@
     },
     "SlaveServerGroup" : {
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
-      "DependsOn" : "GatewayToInternet",
+      "DependsOn" : ["PrivateOutboundNetworkAclEntry", "NATInstance"],
       "Properties" : {
         "AvailabilityZones" : [{ "Fn::GetAtt" : [ "PrivateSubnet", "AvailabilityZone" ] }],
         "LaunchConfigurationName" : { "Ref" : "SlaveLaunchConfig" },
