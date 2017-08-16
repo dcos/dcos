@@ -1,6 +1,9 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+# ignore SIGPIPE when losing our reader during systemd-journald restart
+trap '' PIPE
+
 export device=${1:-}
 export mount_location=${2:-}
 
