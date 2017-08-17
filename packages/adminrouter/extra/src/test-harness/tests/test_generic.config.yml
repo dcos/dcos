@@ -521,7 +521,7 @@ endpoint_tests:
           - /mesos/reflect/me
         upstream: http://127.0.0.2:5050
       is_upstream_req_ok:
-        expected_http_ver: HTTP/1.0
+        expected_http_ver: HTTP/1.1
         test_paths:
           - expected: /reflect/me
             sent: /mesos/reflect/me
