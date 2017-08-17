@@ -19,6 +19,10 @@ mkdir -p $PKG_PATH/bin
 
 # Systemd
 
+dcos_net_setup="$PKG_PATH/dcos-net/bin/dcos-net-setup.py"
+cp /pkg/extra/dcos-net-setup.py "$dcos_net_setup"
+chmod +x "$dcos_net_setup"
+
 dcos_net_service=${PKG_PATH}/dcos.target.wants/dcos-net.service
 mkdir -p $(dirname $dcos_net_service)
 envsubst '${PKG_PATH}' < "/pkg/extra/dcos-net.service" > "${dcos_net_service}"
