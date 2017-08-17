@@ -1,8 +1,8 @@
 FROM ubuntu:16.04
 
 # Let's try to limit the number of layers to minimum:
-ENV OPENRESTY_VERSION=1.9.15.1 \
-    OPENRESTY_DOWNLOAD_SHASUM=491a84d70ed10b79abb9d1a7496ee57a9244350b \
+ENV OPENRESTY_VERSION=1.11.2.4 \
+    OPENRESTY_DOWNLOAD_SHASUM=7449c57cf53e3ac963736b7e0333c929688b5bfc \
     OPENRESTY_DIR=/usr/local/src/openresty \
     OPENRESTY_COMPILE_SCRIPT=/usr/local/src/build-resty.sh \
     OPENRESTY_COMPILE_OPTS="" \
@@ -56,6 +56,7 @@ RUN set -ex \
         libpcre++-dev \
         libssl-dev \
         make \
+        patch \
         python3 \
         python3-dev \
         python3-pip \
@@ -93,12 +94,14 @@ RUN curl -fsSL "$VEGETA_DOWNLOAD_URL" -o vegeta.tar.gz \
 
 # Prepare Openresty. Compilation is done in Makefile itself so that
 # this container can be reused during DC/OS build.
+COPY openresty-1.11.2.4-no_sse42.patch /usr/local/src/
 RUN set -ex \
     && curl -fsSL "$OPENRESTY_DOWNLOAD_URL" -o openresty.tar.gz \
     && echo "$OPENRESTY_DOWNLOAD_SHASUM  openresty.tar.gz" | shasum -c - \
     && mkdir -pv $OPENRESTY_DIR \
     && tar --strip-components=1 -C $OPENRESTY_DIR -xzf openresty.tar.gz \
-    && rm openresty.tar.gz
+    && rm openresty.tar.gz \
+    && patch -p1 openresty/configure openresty-1.11.2.4-no_sse42.patch
 
 COPY build-resty.sh $OPENRESTY_COMPILE_SCRIPT
 
