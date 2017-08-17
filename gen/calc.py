@@ -717,6 +717,11 @@ def calculate_check_config(check_time):
                     'timeout': '1s',
                     'roles': ['agent']
                 },
+                'journald_dir_permissions': {
+                    'description': 'Journald directory has the right owners and permissions',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
+                    'timeout': '1s',
+                },
             },
             'prestart': [],
             'poststart': [
@@ -729,6 +734,7 @@ def calculate_check_config(check_time):
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
+                'journald_dir_permissions',
             ],
         },
     }
