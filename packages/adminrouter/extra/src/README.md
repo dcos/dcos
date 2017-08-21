@@ -771,8 +771,10 @@ Tests shared by most of the endpoints are as follows:
   slash is redirected to one that ends with `/`.
 * `generic_response_headers_verify_test` - test that the response sent by AR is
   correct, this mostly involves checking response headers.
-* `generic_upstream_headers_verify_test` - test that the request sent by NGINX to
-  the upstream is correct. Again - this is mostly about the headers now.
+* `generic_upstream_headers_verify_test` - test that the headers of the request
+  sent by NGINX to the upstream is correct.
+* `generic_upstream_cookies_verify_test` - check if the cookies set in the
+  request to the upstream are correct.
 * `generic_correct_upstream_dest_test` - test that the upstream request done by
   Admin Router is sent to the correct upstream.
 * `generic_correct_upstream_request_test` - test that the path component of the
@@ -834,6 +836,7 @@ endpoint_tests:
         test_paths:
           - /exhibitor/foo/bar
       are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: false
         jwt_should_be_forwarded: skip
         test_paths:
           - /exhibitor/foo/bar
@@ -900,7 +903,8 @@ The syntax is as follows:
       * `nocaching_headers_are_sent` - see above.
       * `test_paths` - list of AR locations that should be tested>
   * `are_upstream_req_headers_ok`
-    * Calls `generic_upstream_headers_verify_test` generic test underneath.
+    * Calls `generic_upstream_headers_verify_test` and
+      generic_upstream_cookies_verify_test tests underneath.
     * Tests if:
       * Response code is 200.
       * Standard set of headers is present in the request to the upstream (
@@ -911,6 +915,11 @@ The syntax is as follows:
         * `false` - The `Authorization` header is absent in the upstream
           request.
         * `skip` - The presence of the `Authorization` header is not checked.
+      * Depending on the value of `skip_authcookie_filtering_test` parameter:
+        * `false` - test harness verifies that `dcos-acs-info-cookie` and
+          `dcos-acs-auth-cookie` cookie are not forwarded to the upstream
+        * `true` - test harness does not perform any tests wrt. upstream
+          request cookies
     * Supports the following parameters:
       * `jwt_should_be_forwarded` - see above.
       * `test_paths` - list of AR locations that should be tested.
@@ -1304,11 +1313,13 @@ Steps are as follows:
   * `X-Forwarded-Proto`
 
   On top of that, our SchmetterlingDB does not need a JWT, so it is going to be
-  more secure if we do not pass it in upstream request. Generic test to confirm
+  more secure if we do not pass it in upstream request. There is also no reason
+  why `dcos-acs-*-cookie` cookies should be forwarded. Generic test to confirm
   this behaviour:
   ```
   - tests:
       are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1487,6 +1498,7 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1547,6 +1559,7 @@ which can be simplified into:
           - path: /schmetterlingdb
             code: 307
       are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: true
         jwt_should_be_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
