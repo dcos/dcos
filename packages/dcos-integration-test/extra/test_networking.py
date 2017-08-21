@@ -1,6 +1,5 @@
 import collections
 import contextlib
-import ipaddress
 import json
 import logging
 import random
@@ -312,13 +311,13 @@ def test_dcos_cni_l4lb(dcos_api_session):
 
     https://docs.google.com/document/d/1xxvkFknC56hF-EcDmZ9tzKsGiZdGKBUPfrPKYs85j1k/edit?usp=sharing
 
-    In order to test `dcos-l4lb` CNI plugin we emulate a virtual network that lacks
-    routes for spartan interface and minuteman VIPs. In this test, we first install
-    a virtual network called `spartan-net` on one of the agents. The `spartan-net`
-    is a CNI network that is a simple BRIDGE network with the caveat that it
-    doesn't have any default routes. `spartan-net` has routes only for the agent
-    network and the DC/OS overlay (9.x.x.x/8) In other words it doesn't have any
-    routes towards the spartan-interfaces or minuteman VIPs.
+    In order to test `dcos-l4lb` CNI plugin we emulate a virtual network that
+    lacks routes for spartan interface and minuteman VIPs. In this test, we
+    first install a virtual network called `spartan-net` on one of the agents.
+    The `spartan-net` is a CNI network that is a simple BRIDGE network with the
+    caveat that it doesn't have any default routes. `spartan-net` has routes
+    only for the agent network. In other words it doesn't have any routes
+    towards the spartan-interfaces or minuteman VIPs.
 
     We then run a server (our python ping-pong server) on the DC/OS overlay.
     Finally to test that the `dcos-l4lb` plugin, which is also part of
@@ -329,40 +328,36 @@ def test_dcos_cni_l4lb(dcos_api_session):
     would fail, with a successful `curl` execution on the VIP allowing the
     test-case to PASS.
     '''
-    # Get the first agent. We will run our apps on this specific agent.
-    log.debug("Retrieving agent network")
-    agent_network = None
-    try:
-        agent_network = ipaddress.IPv4Interface(dcos_api_session.slave_list[1] + '/8').network
-    except Exception as ex:
-        raise AssertionError(
-            "Couldn't retrieve the agent network':{}".format(agent_network)) from ex
 
-    log.info("Agent network is:{}".format(agent_network))
-
-    '''
-    Test the l4lb CNI plugin
-    * create an app that will install a CNI configuration for `spartan-net` network on all the agents.
-    * launch a server container on an agent on the `spartan-net` network.
-    * launch a client on the `spartan-net` network on the same agent as the server was launched.
-    * make the client get information from the server using the VIP.
-    '''
+    # CNI configuration of `spartan-net`.
     spartan_net = {
         'cniVersion': '0.2.0',
         'name': 'spartan-net',
         'type': 'dcos-l4lb',
         'delegate': {
-            'type': 'bridge',
-            'bridge': 'sprt-cni0',
-            'ipMasq': True,
-            'isGateway': True,
-            'ipam': {
-                'type': 'host-local',
-                'subnet': '192.168.250.0/24',
-                'routes': [
-                    {'dst': '9.0.0.0/8'},  # Reachability to the default `dcos` overlay subnet.
-                    {'dst': str(agent_network)}  # Reachability to the agent subnet.
-                ]
+            'type': 'mesos-cni-port-mapper',
+            'excludeDevices': ['sprt-cni0'],
+            'chain': 'spartan-net',
+            'delegate': {
+                'type': 'bridge',
+                'bridge': 'sprt-cni0',
+                'ipMasq': True,
+                'isGateway': True,
+                'ipam': {
+                    'type': 'host-local',
+                    'subnet': '192.168.250.0/24',
+                    'routes': [
+                     # Reachability to DC/OS overlay.
+                     {'dst': '9.0.0.0/8'},
+                     # Reachability to all private address subnet. We need
+                     # this reachability since different cloud providers use
+                     # different private address spaces to launch tenant
+                     # networks.
+                     {'dst': '10.0.0.0/8'},
+                     {'dst': '172.16.0.0/12'},
+                     {'dst': '192.168.0.0/16'}
+                    ]
+                }
             }
         }
     }
@@ -399,7 +394,7 @@ def test_dcos_cni_l4lb(dcos_api_session):
     # We only have one instance of `cni_config_app_service`.
     spartan_net_host = cni_config_app_service[0].host
 
-    # Launch the test-app on spartan-net, with a VIP.
+    # Launch the test-app on DC/OS overlay, with a VIP.
     server_vip_port = unused_port('spartanvip')
     server_vip = '/spartanvip:{}'.format(server_vip_port)
     server_vip_addr = 'spartanvip.marathon.l4lb.thisdcos.directory:{}'.format(server_vip_port)
@@ -423,59 +418,51 @@ def test_dcos_cni_l4lb(dcos_api_session):
         raise AssertionError(
             "Couldn't launch server on 'dcos':{}".format(server['ipAddress']['networkName'])) from ex
 
-    # NOTE: We can't use the `ensure_routable` semantics here since the client
-    # that is deployed on `spartan-net`is not reachable from anywhere other
-    # than the agent.  The `ensure_routable` semantics would require us to send
-    # a command to the client that we launched on the `spartan-net`, from
-    # outside the agent, making the client than query the server running on
-    # `DC/OS overlay`. Since the connectivity to the client from outside the
-    # agent is not available it makes sense to just invoke the command directly
-    # to `curl` the server we deployed in the client task itself rather than
-    # running the python server in the client and using the semantics presented
-    # by `ensure_routable`.
-    #
-    # However, before launching the `curl` command from `spartan-net` we need
-    # to make sure that the VIP has been added to spartan on the host where
-    # `spartan-net` is installed. In order to verify that the VIP is accessible
-    # from that host, we first launch a client app on the same host and use the
-    # `ensure_routable` semantics to verify that the VIP is accessible and than
-    # launch a task on `spartan-net` to curl the VIP from `spartan-net` to
-    # ensure that `dcos-l4lb` making the VIP accessible from `spartan-net as
-    # well.
-
-    # Launch a client to test if the VIP has been setup correctly and is
-    # accesible from the agent on which `spartan-net` was installed.
-    check_server_port = 9081
-    check_server, _ = test_helpers.marathon_test_app(
-        container_type=marathon.Container.MESOS,
-        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
-        network=marathon.Network.HOST,
-        host_port=check_server_port,
-        host_constraint=spartan_net_host)
-
-    
-    with dcos_api_session.marathon.deploy_and_cleanup(check_server, check_health=False):
-        check_server_cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/ping'.format(server_vip_addr)
-        if (ensure_routable(check_server_cmd, spartan_net_host, check_server_port) is None):
-            raise AssertionError("Couldn't check the health of the `server`")
-
     # Get the client app on the 'spartan-net' network.
     #
-    # NOTE: At this point the server is up and the VIP should be resolvable
-    # from `spartan_net_host`.
-    client, _ = test_helpers.marathon_test_app(
+    # NOTE: Currently, we are creating the app-def by hand instead of relying
+    # on the harness to create this app-def since the marathon harness does not
+    # allow any port-mapping for CNI networks at this point.
+    client_port = 9081
+    client, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS,
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER,
-        host_port=9081,
+        host_port=client_port,
+        vip=server_vip,
         host_constraint=spartan_net_host)
 
-    # Launch the client on the `spartan-net`
-    client['ipAddress']['networkName'] = 'spartan-net'
+    client["container"]["portMappings"] = [
+        {
+            'containerPort': client_port,
+            'hostPort': client_port,
+            'protocol': 'tcp',
+            'name': 'http'
+        }
+    ]
 
-    # Change the client command task to do a curl on the server we just deployed.
-    #
-    client['cmd'] = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/ping'.format(server_vip_addr)
+    # Remove the `ipAddress` entry for DC/OS overlay.
+    del client["ipAddress"]
+
+    # Attach this container to the `spartan-net` network. We are using the v2
+    # network API here.
+    client["networks"] = [
+        {
+            "mode": "container",
+            "name": "spartan-net"
+        }
+    ]
+
     try:
         dcos_api_session.marathon.deploy_app(client, check_health=False)
     except Exception as ex:
         raise AssertionError("Couldn't launch client on 'spartan-net':{}".format(client)) from ex
+
+    # Change the client command task to do a curl on the server we just deployed.
+    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/ping'.format(server_vip_addr)
+
+    try:
+        response = ensure_routable(cmd, spartan_net_host, client_port)
+        log.info("Received a response from {}: {}".format(server_vip_addr, response))
+    except Exception as ex:
+        raise AssertionError("Unable to query VIP: {}".format(server_vip_addr)) from ex
