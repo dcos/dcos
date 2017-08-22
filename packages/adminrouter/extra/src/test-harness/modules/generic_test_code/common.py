@@ -27,8 +27,8 @@ def ping_mesos_agent(ar,
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is invalid.
+        auth_header (dict): headers dict that contains DC/OS authentication
+            token. The auth data it contains is invalid.
         expect_status (int): HTTP status to expect
         endpoint_id (str): if expect_status==200 - id of the endpoint that
             should respoind to the request
@@ -74,8 +74,9 @@ def generic_response_headers_verify_test(
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is valid and the request should be accepted.
+        auth_header (dict): headers dict that contains DC/OS authentication
+            token. The auth data it contains is valid and the request should be
+            accepted.
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
@@ -106,8 +107,9 @@ def generic_upstream_headers_verify_test(
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is valid and the request should be accepted.
+        auth_header (dict): headers dict that contains DC/OS authentication
+            token. The auth data it contains is valid and the request should be
+            accepted.
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
@@ -143,8 +145,9 @@ def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is valid and the request should be accepted.
+        auth_header (dict): headers dict that contains DC/OS authentication
+            token. The auth data it contains is valid and the request should be
+            accepted.
         path (str): path for which request should be made
         endpoint_id (str): id of the endpoint where the upstream request should
             have been sent
@@ -168,8 +171,9 @@ def generic_correct_upstream_request_test(
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains JWT. The auth data it
-            contains is valid and the request should be accepted.
+        auth_header (dict): headers dict that contains DC/OS authentication
+            token. The auth data it contains is valid and the request should be
+            accepted.
         given_path (str): path for which request should be made
         expected_path (str): path that is expected to be sent to upstream
         http_ver (str): http version string that the upstream request should be
@@ -223,7 +227,7 @@ def generic_location_header_during_redirect_is_adjusted_test(
         mocker (Mocker): instance of the Mocker class, used for controlling
             upstream HTTP endpoint/mock
         ar: Admin Router object, an instance of `runner.(ee|open).Nginx`.
-        auth_header (dict): headers dict that contains JWT.
+        auth_header (dict): headers dict that contains DC/OS authentication token.
         endpoint_id (str): id of the endpoint where the upstream request should
             have been sent.
         basepath (str): the URI used by the test harness to issue the request
