@@ -142,8 +142,8 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
 
 
 def _verify_are_upstream_req_headers_ok(t_config):
-    assert 'jwt_should_be_forwarded' in t_config
-    assert t_config['jwt_should_be_forwarded'] in [True, False, 'skip']
+    assert 'auth_token_is_forwarded' in t_config
+    assert t_config['auth_token_is_forwarded'] in [True, False, 'skip']
 
     assert 'skip_authcookie_filtering_test' in t_config
     assert t_config['skip_authcookie_filtering_test'] in [True, False, 'skip']
@@ -229,7 +229,7 @@ def _testdata_to_are_upstream_req_headers_ok_testdata(tests_config, node_type):
 
         for p in h['test_paths']:
             e = (p,
-                 h['jwt_should_be_forwarded'],
+                 h['auth_token_is_forwarded'],
                  h['skip_authcookie_filtering_test'])
             res.append(e)
 

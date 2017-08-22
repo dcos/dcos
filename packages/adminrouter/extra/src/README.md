@@ -473,10 +473,10 @@ be reachable only in their relative location
 
 ## Authorization and authentication
 
-DC/OS uses JWT at the core of its authentication and authorization features and
-Admin Router performs a vital role in facilitating it. Lots of services which
-constitute DC/OS do not have their own authorizers and rely on Admin Router to
-provide them with authn/authn+authz enforcement.
+DC/OS uses DC/OS authentication token at the core of its authentication and
+authorization features and Admin Router performs a vital role in facilitating
+it. Lots of services which constitute DC/OS do not have their own authorizers
+and rely on Admin Router to provide them with authn/authn+authz enforcement.
 
 Authn and authz code differs considerably between Open Source and Enterprise
 versions of Admin Router. This documentation focuses on describing common and
@@ -486,22 +486,23 @@ README.md in EE Admin Router repository.
 ### Authentication
 
 For Admin Router to establish the identity of the subject issuing a request, it
-looks for JWT in the request. It may be present in the following places:
+looks for DC/OS authentication token in the request. It may be present in the
+following places:
 * request headers: client needs to set `Authorization` header with
   `token=<token payload>` value.
 * client sets `dcos-acs-auth-cookie` cookie with the token payload as a value
 
 In the case when both request header and the cookie is set, request header
-token takes priority. Admin Router does not issue JWT itself as this is
-the task of the IAM service. Please consult DC/OS documentation for more
-details.
+token takes priority. Admin Router does not issue DC/OS authentication token
+itself as this is the task of the IAM service. Please consult DC/OS
+documentation for more details.
 
 Currently, DC/OS uses/sets the following mandatory claims:
 * `uid` which is ID of the user/subject making the request as defined in IAM
 * `exp` claim as defined in section 4.1.4 of RFC7519
 
-If the JWT signature is valid and token has not expired, then uid claim is used
-while communicating with IAM to make authz decisions.
+If the DC/OS authentication token signature is valid and token has not expired,
+then uid claim is used while communicating with IAM to make authz decisions.
 
 The way tokens are validated is shared between EE and Open, with the only
 difference being the signing algorithm used by the tokens. In case of Open it's
@@ -514,9 +515,10 @@ that is required to finish the authn.
 ### Authorization
 
 Open Source Admin Router performs authorization basing on the sole fact that
-user identity was transferred to Open Source IAM. This is done in by checking if
-the user with given `uid` extracted from JWT claim is present and active in the
-IAM using the `do_authn_and_authz_or_exit` LUA auth module method.
+user identity was transferred to Open Source IAM. This is done in by checking
+if the user with given `uid` extracted from DC/OS authentication token claim is
+present and active in the IAM using the `do_authn_and_authz_or_exit` LUA auth
+module method.
 
 ### Parameter-less interface
 
@@ -747,7 +749,7 @@ cleanup and the cleanup ordering itself.
 Tracking the chain of fixtures and how they use each other may provide better
 understanding of how the test harness works.
 
-### JWT
+### DC/OS authentication token
 The DC/OS IAM relies on JSON Web Tokens (JWTs) for transmitting authentication
 data between DC/OS components. Open repository flavour uses JWTs of type HS256,
 while EE relies on JWTs of type RS256. Test harness needs to have a way to
@@ -837,7 +839,7 @@ endpoint_tests:
           - /exhibitor/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /exhibitor/foo/bar
       is_upstream_correct:
@@ -909,7 +911,7 @@ The syntax is as follows:
       * Response code is 200.
       * Standard set of headers is present in the request to the upstream (
         `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Real-IP`).
-      * Depending on the value of `jwt_should_be_forwarded` parameter:
+      * Depending on the value of `auth_token_is_forwarded` parameter:
         * `true` - The `Authorization` header is present in the upstream
           request.
         * `false` - The `Authorization` header is absent in the upstream
@@ -921,7 +923,7 @@ The syntax is as follows:
         * `true` - test harness does not perform any tests wrt. upstream
           request cookies
     * Supports the following parameters:
-      * `jwt_should_be_forwarded` - see above.
+      * `auth_token_is_forwarded` - see above.
       * `test_paths` - list of AR locations that should be tested.
   * `is_upstream_correct`
     * Calls `generic_correct_upstream_dest_test` generic test underneath.
@@ -1312,15 +1314,15 @@ Steps are as follows:
   * `X-Forwarded-For`
   * `X-Forwarded-Proto`
 
-  On top of that, our SchmetterlingDB does not need a JWT, so it is going to be
-  more secure if we do not pass it in upstream request. There is also no reason
-  why `dcos-acs-*-cookie` cookies should be forwarded. Generic test to confirm
-  this behaviour:
+  On top of that, our SchmetterlingDB does not need a DC/OS authentication
+  token, so it is going to be more secure if we do not pass it in upstream
+  request. There is also no reason why `dcos-acs-*-cookie` cookies should be
+  forwarded. Generic test to confirm this behaviour:
   ```
   - tests:
       are_upstream_req_headers_ok:
-        skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: false
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
@@ -1498,8 +1500,8 @@ To sum up, our test configuration should look as follows:
       - master
   - tests:
       are_upstream_req_headers_ok:
-        skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: false
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
@@ -1559,8 +1561,8 @@ which can be simplified into:
           - path: /schmetterlingdb
             code: 307
       are_upstream_req_headers_ok:
-        skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: false
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: false
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
@@ -1759,7 +1761,8 @@ The test can be split into a series of steps/stages:
   # pull in all the necessary mocks into the scope:
   # * nginx_class - AR class. Automatically adjusted to repository flavour.
   # * dns_server_mock - programmable DNS server
-  # * valid_user_header - JWT that will be accepted by AR authn/authz code
+  # * valid_user_header - DC/OS authentication token that will be accepted by
+  #   AR authn/authz code
   def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
           self, nginx_class, dns_server_mock, valid_user_header):
       # Let's try to put all non-essential stuff outside of context managers
