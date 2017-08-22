@@ -2,8 +2,8 @@
   "requires": ["mesos", "boost-libs"],
     "single_source" : {
       "kind": "git",
-      "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "d3d7215f4efee2807b68afce030c9c9dab386324",
-      "ref_origin": "master"
+      "git": "https://github.com/kaysoky/dcos-mesos-modules.git",
+      "ref": "8dbaa0bf87cabbcfc6b7e9ddd4a2d670ca350189",
+      "ref_origin": "nested-check-fix"
     }
 }
