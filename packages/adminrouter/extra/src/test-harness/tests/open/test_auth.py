@@ -26,7 +26,7 @@ class TestAuthzIAMBackendQuery:
             )
 
         log_messages = {
-            'UID from valid JWT: `bozydar`': SearchCriteria(1, True),
+            'DC/OS authentication token: `bozydar`': SearchCriteria(1, True),
             "Unexpected response from IAM: ":
                 SearchCriteria(1, True),
             }
