@@ -3,7 +3,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /exhibitor/foo/bar
       is_upstream_correct:
@@ -39,7 +39,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /service/scheduler-alwaysthere/foo/bar
       is_upstream_correct:
@@ -195,7 +195,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
           - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
@@ -230,7 +230,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/health/v1/foo/bar
     type:
@@ -238,7 +238,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/health/v1/foo/bar
     type:
@@ -263,7 +263,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar?key=value&var=num
@@ -297,7 +297,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs/foo/bar?key=value&var=num
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/foo/bar?key=value&var=num
@@ -332,7 +332,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/leader/mesos/foo/bar?key=value&var=num
           - /system/v1/leader/marathon/foo/bar?key=value&var=num
@@ -367,7 +367,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/logs/foo/bar
     type:
@@ -375,7 +375,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/logs/foo/bar
     type:
@@ -405,7 +405,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /cosmos/service/foo/bar
       is_upstream_correct:
@@ -427,7 +427,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /capabilities
       is_upstream_correct:
@@ -450,7 +450,7 @@ endpoint_tests:
           - /acs/api/v1/reflect/me
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /acs/api/v1/reflect/me
       is_upstream_correct:
@@ -469,7 +469,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /package/foo/bar
       is_upstream_correct:
@@ -490,7 +490,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /navstar/lashup/key
       is_upstream_correct:
@@ -509,7 +509,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /dcos-history-service/foo/bar
       is_upstream_correct:
@@ -528,7 +528,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: false
+        auth_token_is_forwarded: false
         test_paths:
           - /mesos_dns/v1/reflect/me
       is_upstream_correct:
@@ -551,7 +551,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /mesos/reflect/me
       is_upstream_correct:
@@ -587,7 +587,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /pkgpanda/foo/bar
       is_location_header_rewritten:
@@ -601,7 +601,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /pkgpanda/foo/bar
       is_location_header_rewritten:
@@ -644,7 +644,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: true
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/metrics/foo/bar
       is_upstream_correct:
@@ -657,7 +657,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: skip
+        auth_token_is_forwarded: skip
         test_paths:
           - /system/v1/metrics/foo/bar
       is_upstream_correct:
@@ -675,7 +675,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        jwt_should_be_forwarded: true
+        auth_token_is_forwarded: true
         test_paths:
           - /marathon/
           - /marathon/v2/reflect/me
