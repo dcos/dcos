@@ -4,6 +4,7 @@ import copy
 import logging
 import os
 from contextlib import contextmanager
+from http import cookies
 
 import requests
 
@@ -95,6 +96,67 @@ def generic_response_headers_verify_test(
     if assert_headers_absent is not None:
         for name in assert_headers_absent:
             header_is_absent(resp.headers.items(), name)
+
+
+def generic_upstream_cookies_verify_test(
+        ar,
+        headers,
+        path,
+        cookies_to_send=None,
+        assert_cookies_present=None,
+        assert_cookies_absent=None):
+    """Test if cookies that are passed to the upstream by AR are correct
+
+    Helper function meant to simplify writing multiple tests testing the
+    same thing for different endpoints.
+
+    Arguments:
+        ar: Admin Router object, an instance of runner.(ee|open).Nginx
+        headers (dict): headers dict that contains DC/OS authentication token
+            and cookies. The auth data it contains must be valid.
+        path (str): path for which request should be made
+        cookies_to_send (dict): dictionary containing all the cookies that should
+            be send in the request
+        assert_cookies_present (dict): cookies to test where key is the
+            asserted cookie name and value is expected value of the cookie
+        assert_cookies_absent (list or set): cookies that *MUST NOT* be present
+            in the upstream request
+    """
+    url = ar.make_url_from_path(path)
+    resp = requests.get(url,
+                        cookies=cookies_to_send,
+                        allow_redirects=False,
+                        headers=headers)
+
+    assert resp.status_code == 200
+
+    req_data = resp.json()
+
+    # Let's make sure that we got not more than one 'Cookie' header:
+    # https://tools.ietf.org/html/rfc6265#section-5.4
+    cookie_headers = []
+    for header in req_data['headers']:
+        if header[0] == 'Cookie':
+            cookie_headers.append(header)
+    assert len(cookie_headers) <= 1
+
+    if len(cookie_headers) == 1:
+        jar = cookies.SimpleCookie()
+        # It is a list containing a single tuple (`header name`, `header value`),
+        # we need the second element of it - the value of the header:
+        jar.load(cookie_headers[0][1])
+    else:
+        jar = {}
+
+    if assert_cookies_present is not None:
+        jar_cookies_dict = {x: jar[x].value for x in jar if x in assert_cookies_present}
+        # We only want to check the keys present in cookies_present_dict
+        assert jar_cookies_dict == assert_cookies_present
+
+    if assert_cookies_absent is not None:
+        jar_cookies_set = set(jar.keys())
+        cookies_absent_set = set(assert_cookies_absent)
+        assert jar_cookies_set.intersection(cookies_absent_set) == set()
 
 
 def generic_upstream_headers_verify_test(
