@@ -152,12 +152,15 @@ def test_signal_service(dcos_api_session):
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'navstar-service',
+        'net-service',
+        'net-watchdog-service',
+        'net-watchdog-timer',
+        'net-dns-service',
+        'net-l4lb-service',
+        'net-overlay-service',
+        'net-rest-service',
         'pkgpanda-api-service',
-        'signal-timer',
-        'spartan-service',
-        'spartan-watchdog-service',
-        'spartan-watchdog-timer']
+        'signal-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [

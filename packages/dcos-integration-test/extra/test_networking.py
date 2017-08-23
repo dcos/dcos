@@ -51,14 +51,16 @@ def vip_app(container: marathon.Container, network: marathon.Network, host: str,
             network=network,
             host_constraint=host,
             vip=vip,
-            container_type=container)
+            container_type=container,
+            healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
     elif network == marathon.Network.USER:
         return test_helpers.marathon_test_app(
             network=network,
             host_port=unused_port(marathon.Network.USER),
             host_constraint=host,
             vip=vip,
-            container_type=container)
+            container_type=container,
+            healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
     else:
         raise AssertionError('Unexpected network: {}'.format(network.value))
 
@@ -187,10 +189,10 @@ def test_if_overlay_ok(dcos_api_session):
 
 
 @pytest.mark.skipif(lb_enabled(), reason='Load Balancer enabled')
-def test_if_navstar_l4lb_disabled(dcos_api_session):
-    '''Test to make sure navstar_l4lb is disabled'''
+def test_if_dcos_l4lb_disabled(dcos_api_session):
+    '''Test to make sure dcos_l4lb is disabled'''
     data = check_output(['/usr/bin/env', 'ip', 'rule'])
-    # Minuteman creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
+    # dcos-net creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
     # We check it doesn't exist
     assert str(data).find('9999') == -1
 
@@ -200,6 +202,7 @@ def test_ip_per_container(dcos_api_session):
     '''
     # Launch the test_server in ip-per-container mode (user network)
     app_definition, test_uuid = test_helpers.marathon_test_app(
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.USER,
         host_port=9080)
@@ -243,7 +246,9 @@ def test_l4lb(dcos_api_session):
     dnsname = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
     with contextlib.ExitStack() as stack:
         for _ in range(numapps):
-            origin_app, origin_uuid = test_helpers.marathon_test_app()
+            origin_app, origin_uuid = \
+                test_helpers.marathon_test_app(
+                    healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
             # same vip for all the apps
             origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '/l4lbtest:5000'}
             apps.append(origin_app)
