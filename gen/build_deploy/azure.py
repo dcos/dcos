@@ -206,7 +206,7 @@ azure_dcos_source = Source({
 azure_acs_source = Source({
     'must': {
         'ui_tracking': 'false',
-        'telemetry_enabled': 'false',
+        'telemetry_enabled': 'true',
         'exhibitor_azure_prefix': Late("[[[variables('masterPublicIPAddressName')]]]"),
         'exhibitor_azure_account_name': Late("[[[variables('masterStorageAccountExhibitorName')]]]"),
         'exhibitor_azure_account_key': Late(
