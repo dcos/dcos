@@ -1,8 +1,64 @@
 local cjson_safe = require "cjson.safe"
+local cookiejar = require "resty.cookie"
 
 
 local util = {}
 
+
+function util.clear_dcos_cookies()
+    -- This function removes dcos-specific cookies from the request header.
+    --
+    -- This prevents forwarding these cookies upstream as they are an internal
+    -- implementation detail and services behind AR must only rely on
+    -- Authorization header.
+    --
+    -- Cookie filtering was implemented in Lua because:
+    -- * the `$cookie_<cookie_name>` variables are read-only
+    --   (http://nginx.org/en/docs/http/ngx_http_core_module.html#variables)
+    -- * reliable editing of Cookie header using Nginx requires using Ifs
+    --   (https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/)
+    --   and the regexps themselves are not trivial. E.g.
+    --   ```
+    --   set $new_cookie $http_cookie;
+    --   if ($new_cookie ~ "(.*)(?:^|;)\s*dcos-acs-auth-cookie=[^;]+(.*)") {
+    --      set $new_cookie $1$2;
+    --   }
+    --   if ($new_cookie ~ "(.*)(?:^|;)\s*dcos-acs-info-cookie=[^;]+(.*)") {
+    --      set $new_cookie $1$2;
+    --   }
+    --   proxy_set_header Cookie "new_cookie";
+    --   ```
+    --
+    -- Besides that, the `resty.cookie` library can't remove cookies from the
+    -- request, but has pretty good cookie parser. So the idea is to use the
+    -- parser and re-assemble the header without the dcos-* cookies.
+
+    local filtered_cookies = {}
+    local cookie_obj = cookiejar:new()
+
+    local cookies, err = cookie_obj:get_all()
+    if err then
+        -- Cookie header is not present
+        return
+    end
+
+    for k, v in pairs(cookies) do
+        if k ~= "dcos-acs-auth-cookie" and k ~= "dcos-acs-info-cookie" then
+            filtered_cookies[#filtered_cookies+1] = k .. "=" .. v
+        end
+    end
+
+    -- Upstream request will inherit headers, so lets adjust the Cookie header
+    -- before sending it upstream:
+    -- https://github.com/openresty/lua-nginx-module/issues/437#issuecomment-65697745
+    if filtered_cookies == {} then
+        -- There were only DC/OS specific cookies
+        ngx.req.set_header("Cookie", nil)
+    else
+        -- Forward user's cookies as-is
+        ngx.req.set_header("Cookie", table.concat(filtered_cookies, "; "))
+    end
+end
 
 function util.get_stripped_first_line_from_file(path)
     -- Return nil when file is emtpy.
