@@ -29,9 +29,9 @@ def validate_error_multikey(new_arguments, keys, message, unset=None):
 
 def test_invalid_telemetry_enabled():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
-    validate_error(
+    validate_error_multikey(
         {'telemetry_enabled': 'foo'},
-        'telemetry_enabled',
+        ['telemetry_enabled', 'dcos_version'],
         err_msg)
 
 

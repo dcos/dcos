@@ -835,6 +835,12 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def validate_telemetry_enabled(telemetry_enabled, dcos_version):
+    validate_true_false(telemetry_enabled)
+    if 'beta' in dcos_version and telemetry_enabled == 'false':
+        raise AssertionError("telemetry_enabled must be true for all beta releases")
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -857,7 +863,7 @@ entry = {
         validate_mesos_dns_ip_sources,
         lambda mesos_dns_set_truncate_bit: validate_true_false(mesos_dns_set_truncate_bit),
         validate_mesos_log_retention_mb,
-        lambda telemetry_enabled: validate_true_false(telemetry_enabled),
+        validate_telemetry_enabled,
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
