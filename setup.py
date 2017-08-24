@@ -72,6 +72,7 @@ setup(
             'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
             'ip-detect/vagrant.sh',
+            'fault-domain-detect/aws.sh',
             'cloud-config.yaml',
             'dcos-config.yaml',
             'dcos-metadata.yaml',
