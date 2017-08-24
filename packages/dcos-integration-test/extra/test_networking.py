@@ -34,9 +34,9 @@ def lb_enabled():
                 retry_on_result=lambda ret: ret is None)
 def ensure_routable(cmd, host, port):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
-    log.debug('Sending {} data: {}'.format(proxy_uri, cmd))
+    log.info('Sending {} data: {}'.format(proxy_uri, cmd))
     response = requests.post(proxy_uri, data=cmd, timeout=5).json()
-    log.debug('Requests Response: {}'.format(repr(response)))
+    log.info('Requests Response: {}'.format(repr(response)))
     if response['status'] != 0:
         return None
     return json.loads(response['output'])
@@ -51,14 +51,16 @@ def vip_app(container: marathon.Container, network: marathon.Network, host: str,
             network=network,
             host_constraint=host,
             vip=vip,
-            container_type=container)
+            container_type=container,
+            healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
     elif network == marathon.Network.USER:
         return test_helpers.marathon_test_app(
             network=network,
             host_port=unused_port(marathon.Network.USER),
             host_constraint=host,
             vip=vip,
-            container_type=container)
+            container_type=container,
+            healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
     else:
         raise AssertionError('Unexpected network: {}'.format(network.value))
 
@@ -200,6 +202,7 @@ def test_ip_per_container(dcos_api_session):
     '''
     # Launch the test_server in ip-per-container mode (user network)
     app_definition, test_uuid = test_helpers.marathon_test_app(
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.USER,
         host_port=9080)
@@ -243,7 +246,9 @@ def test_l4lb(dcos_api_session):
     dnsname = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
     with contextlib.ExitStack() as stack:
         for _ in range(numapps):
-            origin_app, origin_uuid = test_helpers.marathon_test_app()
+            origin_app, origin_uuid = \
+                test_helpers.marathon_test_app(
+                    healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
             # same vip for all the apps
             origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '/l4lbtest:5000'}
             apps.append(origin_app)
