@@ -52,7 +52,7 @@ fi
 SKIP_CHECKS=false
 
 if [[ $# -ne 0 ]]; then
-  if [[ "$1" = "skip-checks" ]]; then
+  if [[ "$1" = "--skip-checks" ]]; then
      echo "Skipping checks"
      SKIP_CHECKS=true
   fi
