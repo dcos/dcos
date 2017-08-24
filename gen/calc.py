@@ -206,8 +206,9 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 
 def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
-    assert os.path.exists(fault_domain_detect_filename), "ip-detect script `{}` must exist".format(fault_domain_detect_filename)
-    return json.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+    assert os.path.exists(fault_domain_detect_filename), (
+        "fault_domain_detect script `{}` must exist".format(fault_domain_detect_filename))
+    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
 
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
