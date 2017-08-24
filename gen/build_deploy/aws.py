@@ -23,6 +23,10 @@ def get_ip_detect(name):
     return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
 
 
+def get_fault_domain_detect(name):
+    return yaml.dump(resource_string('gen', 'fault-domain-detect/{}.sh'.format(name)).decode())
+
+
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
     return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
 
@@ -42,7 +46,8 @@ aws_base_source = Source(entry={
         'num_public_slaves': '1',
         'os_type': '',
         'aws_masters_have_public_ip': 'true',
-        'enable_docker_gc': 'true'
+        'enable_docker_gc': 'true',
+        'fault_domain_detect_filename': get_fault_domain_detect('aws'),
     },
     'must': {
         'aws_region': Late('{ "Ref" : "AWS::Region" }'),
