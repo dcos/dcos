@@ -206,8 +206,8 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 
 def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
-    assert os.path.exists(fault_domain_detect_filename), (
-        "fault_domain_detect script `{}` must exist".format(fault_domain_detect_filename))
+    if not os.path.exists(fault_domain_detect_filename):
+        return ''
     return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
 
 
@@ -981,6 +981,7 @@ entry = {
         'check_config': calculate_check_config,
         'custom_checks': '{}',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_filename': ''
     },
     'must': {
         'custom_auth': 'false',
