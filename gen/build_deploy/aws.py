@@ -46,8 +46,7 @@ aws_base_source = Source(entry={
         'num_public_slaves': '1',
         'os_type': '',
         'aws_masters_have_public_ip': 'true',
-        'enable_docker_gc': 'true',
-        'fault_domain_detect_filename': get_fault_domain_detect('aws'),
+        'enable_docker_gc': 'true'
     },
     'must': {
         'aws_region': Late('{ "Ref" : "AWS::Region" }'),
@@ -73,7 +72,8 @@ aws_base_source = Source(entry={
         'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
-        'rexray_config_preset': 'aws'
+        'rexray_config_preset': 'aws',
+        'fault_domain_detect_filename': get_fault_domain_detect('aws')
     },
     'conditional': {
         'oauth_available': {
