@@ -49,7 +49,8 @@ azure_base_source = Source(entry={
     ],
     'default': {
         'platform': 'azure',
-        'enable_docker_gc': 'true'
+        'enable_docker_gc': 'true',
+        'fault_domain_detect_filename': yaml.dump(pkg_resources.resource_string('gen', 'fault-domain-detect/azure.sh').decode()),
     },
     'must': {
         'resolvers': '["168.63.129.16"]',
