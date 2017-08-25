@@ -23,7 +23,7 @@ def get_ip_detect(name):
     return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
 
 
-def get_fault_domain_detect(name):
+def get_fault_domain_detect_contents(name):
     return yaml.dump(resource_string('gen', 'fault-domain-detect/{}.sh'.format(name)).decode())
 
 
@@ -73,7 +73,7 @@ aws_base_source = Source(entry={
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
-        'fault_domain_detect_filename': get_fault_domain_detect('aws')
+        'fault_domain_detect_contents': get_fault_domain_detect_contents('aws')
     },
     'conditional': {
         'oauth_available': {
