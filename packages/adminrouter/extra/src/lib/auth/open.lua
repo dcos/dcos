@@ -108,9 +108,13 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /metadata
     -- /pkgpanda/active.buildinfo.full.json
     -- /dcos-metadata/
+    res.access_misc_metadata_endpoint = function()
+        return res.do_authn_and_authz_or_exit()
+    end
+
+    -- /metadata
     res.access_metadata_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end
