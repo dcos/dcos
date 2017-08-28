@@ -133,9 +133,16 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-listen-agent.conf \
      adminrouter-tls.conf \
         /opt/mesosphere/etc/
-# Clean up duplicite copy of the `ca.crt` file once custom CA cert PR gets merged
-# See: DCOS-16017
+
+# The `ca.crt` file is copied into two places due to the fact that
+# `ca-bundle.crt` file is used by AR Lua code for certificate verification
+# (trust anchors, see below) and the ca.crt is a cert that was used to actually
+# sign all other certificates and together with `ca.key` file is copied into
+# the container for conveniance.  The `ca-bundle.crt` in a real DC/OS cluster
+# may contain more than one trust anchor, but in our case there is only one
+# certifcate - root CA cert that should be trusted.
 COPY ca.crt /run/dcos/pki/CA/certs/
+COPY ca.key /run/dcos/pki/CA/private/
 COPY ca.crt /run/dcos/pki/CA/ca-bundle.crt
 COPY adminrouter.crt /run/dcos/pki/tls/certs/
 COPY adminrouter.key /run/dcos/pki/tls/private/
