@@ -204,11 +204,22 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     --  - err_code, err_text - if an error occured these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     ngx.log(ngx.DEBUG, "Trying to resolve service name `".. service_name .. "`")
-    res, err_code, err_text = resolve_via_marathon_apps_state(
-        service_name, marathon_cache)
 
-    if err_code ~= nil then
-        return nil, err_code, err_text
+	res = false
+
+    -- `marathon` and `metronome` service names belong to the Root Marathon and
+    -- Root Metronome respectively. They will never be present in Root
+    -- Marathon's tasks list hence we skip the search. This improves the
+    -- reliability a bit as the failure of the local Root Marathon/Root
+    -- Metronome does not prevent `/service` endpoint to route to the healthy
+    -- leader running on some other hosts (provided that there is a leader).
+    if service_name ~= 'marathon' and service_name ~= 'metronome' then
+        res, err_code, err_text = resolve_via_marathon_apps_state(
+            service_name, marathon_cache)
+
+		if err_code ~= nil then
+			return nil, err_code, err_text
+		end
     end
 
     if res == false then

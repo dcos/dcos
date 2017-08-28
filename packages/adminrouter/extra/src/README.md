@@ -390,6 +390,14 @@ necessary - from MesosDNS:
   In the case where MesosDNS returns no results, AR assumes that there is no
   task nor framework with the given application ID running on DC/OS.
 
+A bit of a special case is `/service/marathon` and `/service/metronome`. They
+will never be present in Root Marathon's taks list hence we skip the first step
+of the iteration. The reason for that is the fact that these frameworks are
+launched on Master nodes using systemd. This improves the reliability a bit as
+the failure of the local Root Marathon/Root Metronome does not prevent
+`/service` entpoint to route to the healthy leader running on some other hosts
+(provided that there is a leader).
+
 #### Stale cache/broken cache cases
 The `/service` endpoint internally uses the AR cache, so a failure to refresh
 the cache has the same effects on the `/service` endpoint like any other
