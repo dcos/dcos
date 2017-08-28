@@ -21,6 +21,7 @@ echo -e "\nUseDNS no" >> /etc/ssh/sshd_config
 
 echo ">>> Installing DC/OS dependencies and essential packages"
 yum -y --tolerant install perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync nfs-utils
+curl -L -o jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 && chmod +x ./jq && mv ./jq /usr/bin
 
 echo ">>> Set up filesystem mounts"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
