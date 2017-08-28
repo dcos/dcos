@@ -73,6 +73,7 @@ aws_base_source = Source(entry={
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
+        'fault_domain_enabled': 'true',
         'fault_domain_detect_contents': get_fault_domain_detect_contents('aws')
     },
     'conditional': {

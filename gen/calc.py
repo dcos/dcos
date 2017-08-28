@@ -205,12 +205,6 @@ def calculate_ip_detect_contents(ip_detect_filename):
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
 
 
-def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
-    if not os.path.exists(fault_domain_detect_filename):
-        return ''
-    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
-
-
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
         return calculate_ip_detect_contents(ip_detect_public_filename)
@@ -980,8 +974,7 @@ entry = {
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
         'custom_checks': '{}',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
-        'fault_domain_detect_filename': ''
+        'fault_domain_enabled': "false"
     },
     'must': {
         'custom_auth': 'false',
