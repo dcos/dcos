@@ -291,6 +291,8 @@ endpoint_tests:
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs
           - expected: /system/v1/metrics/v0
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0
+          - expected: /dcos-metadata/dcos-version.json
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/dcos-metadata/dcos-version.json
     type:
       - master
 # Agent B
@@ -325,6 +327,8 @@ endpoint_tests:
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs
           - expected: /system/v1/metrics/v0
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0
+          - expected: /dcos-metadata/dcos-version.json
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/dcos-metadata/dcos-version.json
     type:
       - master
 
