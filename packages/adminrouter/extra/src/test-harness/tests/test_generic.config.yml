@@ -701,3 +701,26 @@ endpoint_tests:
             code: 307
     type:
       - master
+######### This is a special case of a service behind /service endpoint:
+######### /service/metronome
+  - tests:
+      are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: true
+        test_paths:
+          - /service/metronome/
+          - /service/metronome/v2/reflect/me
+      is_upstream_correct:
+        test_paths:
+          - /service/metronome/
+          - /service/metronome/v2/reflect/me
+        upstream: http://127.0.0.1:9000
+      is_upstream_req_ok:
+        expected_http_ver: websockets
+        test_paths:
+          - expected: /v2/reflect/me
+            sent: /service/metronome/v2/reflect/me
+          - expected: /
+            sent: /service/metronome/
+    type:
+      - master
