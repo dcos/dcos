@@ -41,6 +41,9 @@ from pkgpanda import PackageId
 from pkgpanda.util import hash_checkout
 
 
+CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
+
+
 def type_str(value):
     return type(value).__name__
 
@@ -975,6 +978,7 @@ entry = {
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
         'custom_checks': '{}',
+        'check_search_path': CHECK_SEARCH_PATH,
         'fault_domain_enabled': 'false'
     },
     'must': {
@@ -1021,7 +1025,6 @@ entry = {
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'conditional': {

@@ -19,7 +19,6 @@ import os.path
 import pprint
 import textwrap
 from copy import copy, deepcopy
-from tempfile import TemporaryDirectory
 from typing import List
 
 import yaml
@@ -27,9 +26,10 @@ import yaml
 import gen.calc
 import gen.internals
 import gen.template
+import gen.util
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, json_prettyprint, load_string, make_tar, split_by_token, write_json, write_yaml
+from pkgpanda.util import hash_checkout, json_prettyprint, load_string, split_by_token, write_json, write_yaml
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -262,12 +262,7 @@ def write_to_non_taken(base_filename, json):
 def do_gen_package(config, package_filename):
     # Generate the specific dcos-config package.
     # Version will be setup-{sha1 of contents}
-    # Forcibly set umask so that os.makedirs() always makes directories with
-    # uniform permissions
-    os.umask(0o000)
-
-    with TemporaryDirectory("gen_tmp_pkg") as tmpdir:
-
+    with gen.util.pkgpanda_package_tmpdir() as tmpdir:
         # Only contains package, root
         assert config.keys() == {"package"}
 
@@ -294,16 +289,7 @@ def do_gen_package(config, package_filename):
             else:
                 os.chmod(path, 0o644)
 
-        # Ensure the output directory exists
-        if os.path.dirname(package_filename):
-            os.makedirs(os.path.dirname(package_filename), exist_ok=True)
-
-        # Make the package top level directory readable by users other than the owner (root).
-        os.chmod(tmpdir, 0o755)
-
-        make_tar(package_filename, tmpdir)
-
-    log.info("Package filename: %s", package_filename)
+        gen.util.make_pkgpanda_package(tmpdir, package_filename)
 
 
 def render_late_content(content, late_values):
