@@ -109,6 +109,24 @@ def validate_absolute_path(path):
         raise AssertionError('Must be an absolute filesystem path starting with /')
 
 
+def valid_ipv6_address(ip6):
+    try:
+        socket.inet_pton(socket.AF_INET6, ip6)
+        return True
+    except OSError:
+        return False
+    except TypeError:
+        return False
+
+
+def validate_ipv6_addresses(ip6s: list):
+    invalid_ip6s = []
+    for ip6 in ip6s:
+        if not valid_ipv6_address(ip6):
+            invalid_ip6s.append(ip6)
+    assert not invalid_ip6s, 'Invalid IPv6 addresses in list: {}'.format(', '.join(invalid_ip6s))
+
+
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
@@ -452,6 +470,27 @@ def validate_dcos_l4lb_min_named_ip(dcos_l4lb_min_named_ip):
 
 def validate_dcos_l4lb_max_named_ip(dcos_l4lb_max_named_ip):
     validate_ipv4_addresses([dcos_l4lb_max_named_ip])
+
+
+def calculate_dcos_l4lb_min_named_ip6_erltuple(dcos_l4lb_min_named_ip6):
+    return ip6_to_erltuple(dcos_l4lb_min_named_ip6)
+
+
+def calculate_dcos_l4lb_max_named_ip6_erltuple(dcos_l4lb_max_named_ip6):
+    return ip6_to_erltuple(dcos_l4lb_max_named_ip6)
+
+
+def ip6_to_erltuple(ip6):
+    expanded_ip6 = ipaddress.ip_address(ip6).exploded.replace('000', '')
+    return '{16#' + expanded_ip6.replace(':', ',16#') + '}'
+
+
+def validate_dcos_l4lb_min_named_ip6(dcos_l4lb_min_named_ip6):
+    validate_ipv6_addresses([dcos_l4lb_min_named_ip6])
+
+
+def validate_dcos_l4lb_max_named_ip6(dcos_l4lb_max_named_ip6):
+    validate_ipv6_addresses([dcos_l4lb_max_named_ip6])
 
 
 def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
@@ -835,6 +874,8 @@ entry = {
         lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
         validate_dcos_l4lb_min_named_ip,
         validate_dcos_l4lb_max_named_ip,
+        validate_dcos_l4lb_min_named_ip6,
+        validate_dcos_l4lb_max_named_ip6,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -906,11 +947,18 @@ entry = {
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
+            'vtep_subnet6': 'fd01:a::/64',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
                 'name': __dcos_overlay_network_default_name,
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
+            }, {
+                'name': 'dcos6',
+                'subnet': '12.0.0.0/8',
+                'prefix': 24,
+                'subnet6': 'fd01:b::/64',
+                'prefix6': 96
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
@@ -918,6 +966,8 @@ entry = {
         'dcos_remove_dockercfg_enable': "false",
         'dcos_l4lb_min_named_ip': '11.0.0.0',
         'dcos_l4lb_max_named_ip': '11.255.255.255',
+        'dcos_l4lb_min_named_ip6': 'fd01:c::',
+        'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -972,6 +1022,8 @@ entry = {
         'dcos_l4lb_forward_metrics': 'false',
         'dcos_l4lb_min_named_ip_erltuple': calculate_dcos_l4lb_min_named_ip_erltuple,
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
+        'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
+        'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'config_yaml': calculate_config_yaml,
