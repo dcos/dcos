@@ -4,8 +4,8 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "ce160d474c885ef74510beda7321993ef29078c2",
-      "ref_origin": "master"
+      "ref": "94e92d0edfa68f10dae309d159142ed3b7f18e05",
+      "ref_origin": "ipv6_support"
     }
   },
   "sysctl": {
