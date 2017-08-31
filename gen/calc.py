@@ -938,11 +938,18 @@ entry = {
         'dcos_overlay_enable': "true",
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
+            'vtep_subnet6': 'fd03::/64',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
                 'name': __dcos_overlay_network_default_name,
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
+            }, {
+                'name': 'dcos6',
+                'subnet': '12.0.0.0/8',
+                'prefix': 24,
+                'subnet6': 'fd01::/64',
+                'prefix6': 96
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
