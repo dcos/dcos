@@ -1,6 +1,10 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+# Avoid getting killed due to https://bugs.freedesktop.org/show_bug.cgi?id=84923 if
+# systemd-journald is restarted while we are running.
+trap '' PIPE
+
 export device=${1:-}
 export mount_location=${2:-}
 
@@ -24,10 +28,28 @@ EXAMPLES:
 EOUSAGE
 }
 
+# Try to be resilient to SIGPIPE, incase anyone restarts journald while we are running.
+function noncritical {
+  set +e; ${*}; set -e
+}
+
+function checked_mount() {
+  local dev="$1"
+  local location="$2"
+  noncritical echo -n "Mounting: $dev to $location"
+  until grep "^$dev" /etc/mtab > /dev/null; do
+    noncritical sleep 1
+    noncritical echo -n .
+    # mount might think the device is already mounted, so accept nonzero exit status
+    mount "$location" || :
+  done
+  noncritical echo
+}
+
 for i in "$@"
 do
   case "$i" in                                      # Munging globals, beware
-    -h|--help)                usage                 ;;
+    -h|--help)                noncritical usage     ;;
     --)                       break                 ;;
     *)                        # unknown option      ;;
   esac
@@ -36,50 +58,40 @@ done
 function main {
   if [[ -z "$mount_location" || -z "$device" ]]
   then
-    usage
+    noncritical usage
     exit 1
   fi
 
-  echo -n "Waiting for $device to come online"
-  until test -b "$device"; do sleep 1; echo -n .; done
-  echo
+  noncritical echo -n "Waiting for $device to come online"
+  until test -b "$device"; do noncritical sleep 1; noncritical echo -n .; done
+  noncritical echo
   local formated
   mkfs.xfs -n ftype=1 $device > /dev/null 2>&1 && formated=true || formated=false
   if [ "$formated" = true ]
   then
-    echo "Setting up device mount"
+    noncritical echo "Setting up device mount"
     mkdir -p "$mount_location"
     fstab="$device $mount_location xfs defaults 0 2"
-    echo "Adding entry to fstab: $fstab"
+    noncritical echo "Adding entry to fstab: $fstab"
     echo "$fstab" >> /etc/fstab
     if [ "$mount_location" = "/var/log" ]; then
-      echo "Preparing $device by migrating logs from $mount_location"
+      noncritical echo "Preparing $device by migrating logs from $mount_location"
       mkdir -p /var/log-prep
-      mount $device /var/log-prep
+      mount "$device" /var/log-prep
       mkdir -p /var/log-prep/journal
-      systemctl is-active chronyd > /dev/null && systemctl stop chronyd || :
-      systemctl is-active tuned > /dev/null && systemctl stop tuned || :
-      # rsyslog shouldn't be active but in case it is stop it as well
-      systemctl is-active rsyslog > /dev/null && systemctl stop rsyslog || :
       cp -a /var/log/. /var/log-prep/
       umount /var/log-prep
       rmdir /var/log-prep
       rm -rf /var/log
       mkdir -p /var/log
-      echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
-      echo
-      systemd-tmpfiles --create --prefix /var/log/journal || :
-      systemctl restart systemd-journald || :
-      systemctl is-enabled tuned > /dev/null && systemctl start tuned || :
-      systemctl is-enabled chronyd > /dev/null && systemctl start chronyd || :
+      checked_mount "$device" "$mount_location"
+      systemd-tmpfiles --create --prefix /var/log/journal
+      systemctl kill --signal=SIGUSR1 systemd-journald
     else
-      echo -n "Mounting: $device to $mount_location"
-      until grep ^$device /etc/mtab > /dev/null; do sleep 1; echo -n .; mount "$mount_location"; done
-      echo
+      checked_mount "$device" "$mount_location"
     fi
   else
-    echo "Device $device contains a filesystem: no action taken"
+    noncritical echo "Device $device contains a filesystem: no action taken"
     exit
   fi
 }
