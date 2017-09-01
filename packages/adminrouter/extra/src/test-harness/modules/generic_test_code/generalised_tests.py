@@ -142,8 +142,8 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
 
 
 def _verify_are_upstream_req_headers_ok(t_config):
-    assert 'jwt_should_be_forwarded' in t_config
-    assert t_config['jwt_should_be_forwarded'] in [True, False, 'skip']
+    assert 'auth_token_is_forwarded' in t_config
+    assert t_config['auth_token_is_forwarded'] in [True, False, 'skip']
 
     assert 'skip_authcookie_filtering_test' in t_config
     assert t_config['skip_authcookie_filtering_test'] in [True, False, 'skip']
@@ -229,7 +229,7 @@ def _testdata_to_are_upstream_req_headers_ok_testdata(tests_config, node_type):
 
         for p in h['test_paths']:
             e = (p,
-                 h['jwt_should_be_forwarded'],
+                 h['auth_token_is_forwarded'],
                  h['skip_authcookie_filtering_test'])
             res.append(e)
 
@@ -345,15 +345,16 @@ def _universal_test_if_upstream_headers_are_correct(
     # both dcos-* cookies should be removed by AR
     # the dcos-acs-auth-cookie cookie is simply the DC/OS authentication token:
     jar['dcos-acs-auth-cookie'] = valid_user_header['Authorization']
-    # the dcos-acs-info-cookie is base64-encoded data for dc/os UI,
-    # currently set to default user and password
+    # the dcos-acs-info-cookie is a base64-encoded JSON-encoded dictionary
+    # which contains `uid`, `descrption` and `is_remote` fields which relate to
+    # the DC/OS authentication token from the `dcos-acs-auth-cookie` cookie.
     jar['dcos-acs-info-cookie'] = (
         'eyJ1aWQiOiAiYm9vdHN0cmFwdXNlciIsICJkZX'
         'NjcmlwdGlvbiI6ICJCb290c3RyYXAgc3VwZXJ1c2VyIiwgImlzX3JlbW90ZSI6IGZ'
         'hbHNlfQ==')
 
     # First case - cookie contains ONLY dcos-specific cookies, `Cookie` header
-    # should not be send
+    # should not be sent
     generic_upstream_cookies_verify_test(
         ar_process,
         valid_user_header,
