@@ -118,6 +118,8 @@ package:
             {enable_lb, {{ enable_lb }}},
             {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
             {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
+            {min_named_ip6, {{ minuteman_min_named_ip6_erltuple }}},
+            {max_named_ip6, {{ minuteman_max_named_ip6_erltuple }}}
           ]
         },
         {navstar_overlay,

@@ -200,14 +200,19 @@ def test_if_overlay_master_is_up(dcos_api_session):
 
     dcos_overlay_network = {
         'vtep_subnet': '44.128.0.0/20',
+        'vtep_subnet6': 'fd01:a::/64',
         'vtep_mac_oui': '70:B3:D5:00:00:00',
-        'overlays': [
-            {
-                'name': 'dcos',
-                'subnet': '9.0.0.0/8',
-                'prefix': 24
-            }
-        ]
+        'overlays': [{
+            'name': 'dcos',
+            'subnet': '9.0.0.0/8',
+            'prefix': 24
+        }, {
+            'name': 'dcos6',
+            'subnet': '12.0.0.0/8',
+            'prefix': 24,
+            'subnet6': 'fd01:b::/64',
+            'prefix6': 96
+        }]
     }
 
     assert json['network'] == dcos_overlay_network
@@ -230,7 +235,7 @@ def test_if_overlay_master_agent_is_up(dcos_api_session):
     agent_ip = agent_overlay_json['ip']
 
     assert 'overlays' in agent_overlay_json
-    assert len(agent_overlay_json['overlays']) == 1
+    assert len(agent_overlay_json['overlays']) == 2
 
     agent_dcos_overlay = agent_overlay_json['overlays'][0]
     # Remove 'subnet' from the dict.
@@ -254,7 +259,7 @@ def test_if_overlay_master_agent_is_up(dcos_api_session):
     for agent in master_overlay_json['agents']:
         assert 'ip' in agent
         if agent['ip'] == agent_ip:
-            assert len(agent['overlays']) == 1
+            assert len(agent['overlays']) == 2
             agent_overlay = agent['overlays'][0]
 
     # Pop mesos and docker bridge if they have been configured on the
@@ -318,7 +323,7 @@ def test_if_overlay_master_agent_is_up(dcos_api_session):
         }
     ]
 
-    assert agent_overlay_json['overlays'] == dcos_overlay_network
+    assert agent_dcos_overlay == dcos_overlay_network
 
 
 def test_if_cosmos_is_only_available_locally(dcos_api_session):
