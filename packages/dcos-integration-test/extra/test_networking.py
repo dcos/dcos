@@ -181,7 +181,7 @@ def pod_vip_app(network: marathon.Network, host: str, vip: str):
     test_uuid = uuid.uuid4().hex
     app = {
         'id': '/integration-test-{}'.format(test_uuid),
-        'placement': {'acceptedResourceRoles': ['*', 'slave_public']},
+        'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
         'containers': [{
             'name': 'app-{}'.format(test_uuid),
             'resources': {'cpus': 0.01, 'mem': 32},
@@ -199,7 +199,8 @@ def pod_vip_app(network: marathon.Network, host: str, vip: str):
         'volumes': [{'name': 'opt', 'host': '/opt/mesosphere'}]
     }
     if host is not None:
-        app['placement']['constraints'] = [{'fieldName': 'hostname', 'operator': 'CLUSTER', 'value': host}]
+        app['scheduling']['placement']['constraints'] = [{
+            'fieldName': 'hostname', 'operator': 'CLUSTER', 'value': host}]
     if vip is not None:
         app['containers'][0]['endpoints'][0]['labels'] = {'VIP_0': vip}
     if network == marathon.Network.USER:
@@ -257,7 +258,9 @@ def test_pod_vip(dcos_api_session, vip_net: marathon.Network, proxy_net: maratho
 
 
 def setup_pod_vip_workload_tests(dcos_api_session, vip_net, proxy_net):
-    same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
+    if len(dcos_api_session.all_slaves) < 2 and vip_net is marathon.Network.BRIDGE:
+        return []
+    same_hosts = [True, False] if vip_net is not marathon.Network.BRIDGE else [False]
     tests = [pod_vip_workload_test(dcos_api_session, vip_net, proxy_net, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]
