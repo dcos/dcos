@@ -26,6 +26,8 @@ echo ">>> Set up filesystem mounts"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
 [Unit]
 Description=Initial setup of volume mounts
+DefaultDependencies=no
+Before=local-fs-pre.target
 
 [Service]
 Type=oneshot
@@ -35,7 +37,7 @@ ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0
 ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdh /var/log
 
 [Install]
-WantedBy=local-fs.target
+RequiredBy=local-fs-pre.target
 EOF
 systemctl enable dcos_vol_setup
 
