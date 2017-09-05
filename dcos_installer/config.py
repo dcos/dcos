@@ -45,6 +45,20 @@ def normalize_config_validation(messages):
     return validation
 
 
+def normalize_config_validation_exception(error):
+    """
+    Accepts ValidationError which is transofmed to dict and processed by
+    `normalize_config_validation` function.
+
+    :param exception: An exception raised during the config validation
+    :type exception: ValidationError
+    """
+    messages = {}
+    messages['errors'] = error.errors
+    messages['unset'] = error.unset
+    return normalize_config_validation(messages)
+
+
 def make_default_config_if_needed(config_path):
     if os.path.exists(config_path):
         return
