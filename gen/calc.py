@@ -973,7 +973,8 @@ entry = {
         'cosmos_config': '{}',
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
-        'custom_checks': '{}'
+        'custom_checks': '{}',
+        'fault_domain_enabled': "false"
     },
     'must': {
         'custom_auth': 'false',

@@ -4,7 +4,7 @@ import json
 import os
 import subprocess
 import tempfile
-
+import yaml
 import pkg_resources
 
 import dcos_installer.config_util
@@ -16,6 +16,15 @@ from gen.calc import calculate_environment_variable
 from gen.internals import Source
 from pkgpanda.util import logger
 
+
+def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
+    if not os.path.exists(fault_domain_detect_filename):
+        return ""
+    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+
+def calculate_fault_domain_enabled():
+    # check if the file exists
+    return "false"
 
 onprem_source = Source(entry={
     'default': {
@@ -30,6 +39,9 @@ onprem_source = Source(entry={
         'package_ids': lambda bootstrap_variant: json.dumps(
             dcos_installer.config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
         ),
+        'fault_domain_enabled': calculate_fault_domain_enabled,
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
     }
 })
 
