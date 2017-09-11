@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.com/pkgpanda-artifact-cache/boost_1_53_0.tar.gz",
-    "sha1": "0e4ef26cc7780c6bbc63987ef2f29be920e2395b"
+    "url": "https://dl.bintray.com/boostorg/release/1.65.1/source/boost_1_65_1.tar.gz",
+    "sha1": "c066ac5c2f42fa2b870362c3c931ef73ffc6f24f"
   }
 }
