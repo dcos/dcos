@@ -7,6 +7,7 @@ import yaml
 import gen
 import ssh.validate
 from gen.build_deploy.bash import onprem_source
+from gen.exceptions import ValidationError
 from pkgpanda.util import load_yaml, write_string, YamlParseError
 
 log = logging.getLogger(__name__)
@@ -45,13 +46,13 @@ def normalize_config_validation(messages):
     return validation
 
 
-def normalize_config_validation_exception(error):
+def normalize_config_validation_exception(error: ValidationError) -> dict:
     """
-    Accepts ValidationError which is transofmed to dict and processed by
+    A ValidationError is transformed to dict and processed by
     `normalize_config_validation` function.
 
-    :param exception: An exception raised during the config validation
-    :type exception: ValidationError
+    Args:
+        exception: An exception raised during the config validation
     """
     messages = {}
     messages['errors'] = error.errors
