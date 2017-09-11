@@ -887,7 +887,8 @@ entry = {
         validate_mesos_max_completed_tasks_per_framework,
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
-        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config)
+        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
+        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -973,7 +974,8 @@ entry = {
         'cosmos_config': '{}',
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
-        'custom_checks': '{}'
+        'custom_checks': '{}',
+        'fault_domain_enabled': 'false'
     },
     'must': {
         'custom_auth': 'false',
