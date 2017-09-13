@@ -156,7 +156,6 @@ def test_signal_service(dcos_api_session):
         'l4lb-watchdog-service',
         'net-service',
         'net-watchdog-service',
-        'net-watchdog-timer',
         'overlay-watchdog-service',
         'pkgpanda-api-service',
         'signal-timer']
