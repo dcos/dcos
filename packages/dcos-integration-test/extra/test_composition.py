@@ -51,8 +51,10 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
 
     correct_data = sorted(r.json(), key=lambda k: k['hostname'])
 
-    for zk_ip in dcos_api_session.masters:
-        resp = requests.get('http://{}:8181/exhibitor/v1/cluster/status'.format(zk_ip))
+    for master_node_ip in dcos_api_session.masters:
+        # This relies on the fact that Admin Router always proxies the local
+        # Exhibitor.
+        resp = requests.get('http://{}/exhibitor/exhibitor/v1/cluster/status'.format(master_node_ip), verify=False)
         assert resp.status_code == 200
 
         tested_data = sorted(resp.json(), key=lambda k: k['hostname'])
