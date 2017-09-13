@@ -37,6 +37,10 @@ exhibitor_start_wrapper="$PKG_PATH/usr/exhibitor/start_exhibitor.py"
 envsubst '$PKG_PATH' < /pkg/extra/start_exhibitor.py > "$exhibitor_start_wrapper"
 chmod +x "$exhibitor_start_wrapper"
 
+exhibitor_artifact_permission_setter="$PKG_PATH/bin/set_exhibitor_file_permissions.py"
+envsubst '$PKG_PATH' < /pkg/extra/set_exhibitor_file_permissions.py > "$exhibitor_artifact_permission_setter"
+chmod +x "$exhibitor_artifact_permission_setter"
+
 mkdir -p "$PKG_PATH/usr/zookeeper/build/lib/"
 cp /pkg/src/log4j/log4j-systemd-journal-appender-1.3.2.jar "$PKG_PATH/usr/zookeeper/lib/"
 # DCOS-308: Renaming "jna-4.2.2" to "log4j-jna-4.2.2.jar" will

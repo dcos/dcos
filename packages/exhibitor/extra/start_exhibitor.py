@@ -175,7 +175,24 @@ else:
     print("ERROR: No known exhibitor backend:", exhibitor_backend)
     sys.exit(1)
 
+truststore_path = '/var/lib/dcos/exhibitor-tls-artifacts/truststore.jks'
+clientstore_path = '/var/lib/dcos/exhibitor-tls-artifacts/clientstore.jks'
+serverstore_path = '/var/lib/dcos/exhibitor-tls-artifacts/serverstore.jks'
+
+exhibitor_env = os.environ.copy()
+if os.path.exists(truststore_path) and \
+   os.path.exists(clientstore_path) and \
+   os.path.exists(serverstore_path):
+    exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PATH'] = truststore_path
+    exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PATH'] = clientstore_path
+    exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PATH'] = serverstore_path
+    exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_REQUIRE_CLIENT_CERT'] = 'true'
+    exhibitor_env['EXHIBITOR_TLS_VERIFY_PEER_CERT'] = 'true'
+
 # Start exhibitor
 print("Running exhibitor as command:", exhibitor_cmdline)
 sys.stdout.flush()
-os.execv('/opt/mesosphere/bin/java', exhibitor_cmdline)
+os.execve('/opt/mesosphere/bin/java', exhibitor_cmdline, exhibitor_env)
