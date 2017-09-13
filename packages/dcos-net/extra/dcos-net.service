@@ -4,6 +4,7 @@ Description=DC/OS Net: A distributed systems & network overlay orchestration eng
 [Service]
 Restart=always
 StartLimitInterval=0
+KillSignal=SIGKILL
 RestartSec=5
 LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}/dcos-net

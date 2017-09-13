@@ -1,5 +1,5 @@
 {
-  "requires": ["openssl", "ncurses", "erlang", "libsodium", "toybox"],
+  "requires": ["openssl", "ncurses", "erlang", "libsodium"],
   "sources": {
     "dcos-net": {
       "kind": "git",

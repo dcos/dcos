@@ -90,6 +90,9 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
+  - path: /etc/dcos-net-watchdog
+    content: |
+      DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
   - path: /etc/dcos-net-erl.env
     content: |
       ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
