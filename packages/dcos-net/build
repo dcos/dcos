@@ -47,13 +47,13 @@ cp "/pkg/extra/$(basename $gen_resolvconf)" "$gen_resolvconf"
 chmod +x "$gen_resolvconf"
 
 ### Watchdogs
+dcos_net_watchdog="$PKG_PATH/bin/dcos-net-watchdog.py"
+cp "/pkg/extra/$(basename $dcos_net_watchdog)" "$dcos_net_watchdog"
+chmod +x "$dcos_net_watchdog"
+
 dcos_net_watchdog_service="$PKG_PATH/dcos.target.wants/dcos-net-watchdog.service"
 mkdir -p "$(dirname "$dcos_net_watchdog_service")"
 cp "/pkg/extra/$(basename $dcos_net_watchdog_service)" "$dcos_net_watchdog_service"
-
-dcos_net_watchdog_timer="$PKG_PATH/dcos.target.wants/dcos-net-watchdog.timer"
-mkdir -p "$(dirname "$dcos_net_watchdog_timer")"
-cp "/pkg/extra/$(basename $dcos_net_watchdog_timer)" "$dcos_net_watchdog_timer"
 
 ### Observers
 dcos_net_observer="$PKG_PATH/bin/dcos-net-observer.py"
