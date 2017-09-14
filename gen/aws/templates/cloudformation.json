@@ -1,16 +1,13 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-
   "Description" : "DC/OS AWS CloudFormation Template",
-
   "Metadata": {
     "DcosImageCommit": "unset",
     "TemplateGenerationDate": "unset"
   },
-
   "Parameters" : {
     "KeyName" : {
-      "Description" : "Required: Specify your AWS EC2 Key Pair.",
+      "Description" : "Required: EC2 Key Pair.",
       "Type" : "AWS::EC2::KeyPair::KeyName"
     },
     "AdminLocation": {
@@ -23,12 +20,12 @@
       "ConstraintDescription" : "must be a valid CIDR."
     },
     "SlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of private agent nodes or accept the default.",
+      "Description" : "Required: Specify the number of private agent nodes",
       "Type" : "Number",
       "Default" : "{{ num_private_slaves }}"
     },
     "PublicSlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of public agent nodes or accept the default.",
+      "Description" : "Required: Specify the number of public agent nodes",
       "Type" : "Number",
       "Default" : "{{ num_public_slaves }}"
     }
@@ -556,7 +553,7 @@
     "MasterSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Masters",
+        "GroupDescription" : "Masters",
         "VpcId" : { "Ref" : "Vpc" },
         "SecurityGroupIngress" : [
           { "IpProtocol" : "tcp", "FromPort" : "5050", "ToPort" : "5050", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
@@ -581,7 +578,7 @@
     "LbSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Master LB",
+        "GroupDescription" : "Master LB",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -783,7 +780,7 @@
     "SlaveSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Slaves",
+        "GroupDescription" : "Slaves",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -862,7 +859,7 @@
     "PublicSlaveSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Slaves Public",
+        "GroupDescription" : "Public slave",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -947,15 +944,13 @@
         }
     }
   },
-
   "Outputs" : {
     "DnsAddress" : {
-      "Description" : "Mesos Master",
+      "Description" : "Master",
       "Value" : { "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ]}
     },
     "PublicSlaveDnsAddress" : {
-      "Description" : "Public slaves",
-      "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
+      "Description" : "Public slaves", "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
     },
     "ExhibitorS3Bucket" : {
       "Description" : "Exhibitor S3 bucket name",
