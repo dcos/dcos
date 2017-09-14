@@ -64,3 +64,32 @@ Base (source) AMI:
 
 DC/OS AMI's:
 * us-gov-west-1: ami-4e02bd2f
+
+#### centos7-201709062029
+
+Base (source) AMI:
+* ami-6eed1a16
+
+DC/OS AMI's:
+* ap-northeast-1:ami-e21fd884
+* ap-northeast-2:ami-94a378fa
+* ap-south-1:ami-59276036
+* ap-southeast-1:ami-3b8ee058
+* ap-southeast-2:ami-c2e501a0
+* ca-central-1:ami-3801bf5c
+* eu-central-1:ami-868531e9
+* eu-west-1:ami-5f03c426
+* eu-west-2:ami-0da4b469
+* sa-east-1:ami-5d2f5d31
+* us-east-1:ami-abb1a2d0
+* us-east-2:ami-807d5fe5
+* us-west-1:ami-f6427596
+* us-west-2:ami-6eed1a16
+
+#### dcos-centos7-201709062024
+
+Base (source) AMI:
+* ami-e58c0f84
+
+DC/OS AMI's:
+* us-gov-west-1: ami-e58c0f84
