@@ -540,7 +540,13 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sda1",
+                                    "Ebs" : {
+                                        "VolumeSize": 150,
+                                        "VolumeType": "gp2",
+                                        "DeleteOnTermination": true
+                                    }
+                                  } ],
         "SecurityGroups" : [ { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
@@ -724,7 +730,13 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sda1",
+                                    "Ebs" : {
+                                        "VolumeSize": 150,
+                                        "VolumeType": "gp2",
+                                        "DeleteOnTermination": true
+                                    }
+                                  } ],          
         "SecurityGroups" : [ { "Ref" : "SlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
@@ -768,7 +780,13 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sda1",
+                                    "Ebs" : {
+                                        "VolumeSize": 150,
+                                        "VolumeType": "gp2",
+                                        "DeleteOnTermination": true
+                                    }
+                                  } ],
         "SecurityGroups" : [ { "Ref" : "PublicSlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
