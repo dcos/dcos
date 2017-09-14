@@ -20,12 +20,12 @@
       "ConstraintDescription" : "must be a valid CIDR."
     },
     "SlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of private agent nodes",
+      "Description" : "Required: # of private agents",
       "Type" : "Number",
       "Default" : "{{ num_private_slaves }}"
     },
     "PublicSlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of public agent nodes",
+      "Description" : "Required: # of public agents",
       "Type" : "Number",
       "Default" : "{{ num_public_slaves }}"
     }
@@ -33,7 +33,7 @@
 {% case "true" %}
     ,
     "OAuthEnabled": {
-      "Description": "\nEnable OAuth authentication",
+      "Description": "\nEnable OAuth",
       "Type": "String",
       "Default": "true",
       "AllowedValues": ["true", "false"]
@@ -953,7 +953,7 @@
       "Description" : "Public slaves", "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
     },
     "ExhibitorS3Bucket" : {
-      "Description" : "Exhibitor S3 bucket name",
+      "Description" : "Exhibitor bucket",
       "Value" : { "Ref" : "ExhibitorS3Bucket" }
     }
   }
