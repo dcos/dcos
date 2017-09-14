@@ -31,6 +31,27 @@
       "Description" : "Required: Specify the number of public agent nodes or accept the default.",
       "Type" : "Number",
       "Default" : "{{ num_public_slaves }}"
+    },
+    "MasterInstanceType": {
+      "Type": "String",
+      "Default": "m3.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "PublicSlaveInstanceType": {
+      "Type": "String",
+      "Default": "m3.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "PrivateSlaveInstanceType": {
+      "Type": "String",
+      "Default": "m3.xlarge",
+      "Description" : "\nRegion-specific instance type. E.g. m3.xlarge"
+    },
+    "CustomAMI": {
+      "Default": "default",
+      "Type": "String",
+      "Description": "\nExisting AMI in the deploy region which has all DC/OS pre-requisites installed or 'default'",
+      "AllowedPattern": "(default|ami-[a-f0-9]{8})"
     }
 {% switch oauth_available %}
 {% case "true" %}
@@ -49,12 +70,6 @@
     "RegionToAmi": {{ region_to_ami_mapping }},
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
-      "MasterInstanceType": {
-        "default": "m3.xlarge"
-      },
-      "SlaveInstanceType": {
-        "default": "m3.xlarge"
-      },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
       },
@@ -63,9 +78,6 @@
       },
       "VPCSubnetRange": {
         "default": "10.0.0.0/16"
-      },
-      "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -79,6 +91,18 @@
       "Fn::Equals" : [
         { "Ref" : "AWS::Region" },
         "us-gov-west-1"
+      ]
+    },
+    "UseCustomAMI": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "CustomAMI"
+            },
+            "default"
+          ]
+        }
       ]
     }
   },
@@ -539,7 +563,23 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "ImageId": {
+          "Fn::If": [
+            "UseCustomAMI",
+            {
+              "Ref": "CustomAMI"
+            },
+            {
+              "Fn::FindInMap": [
+                "RegionToAmi",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "{{ os_type }}"
+              ]
+            }
+          ]
+        },
         "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
         "SecurityGroups" : [ { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
@@ -723,7 +763,23 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "ImageId": {
+          "Fn::If": [
+            "UseCustomAMI",
+            {
+              "Ref": "CustomAMI"
+            },
+            {
+              "Fn::FindInMap": [
+                "RegionToAmi",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "{{ os_type }}"
+              ]
+            }
+          ]
+        },
         "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
         "SecurityGroups" : [ { "Ref" : "SlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
@@ -767,7 +823,23 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
-        "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
+        "ImageId": {
+          "Fn::If": [
+            "UseCustomAMI",
+            {
+              "Ref": "CustomAMI"
+            },
+            {
+              "Fn::FindInMap": [
+                "RegionToAmi",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "{{ os_type }}"
+              ]
+            }
+          ]
+        },
         "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
         "SecurityGroups" : [ { "Ref" : "PublicSlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
