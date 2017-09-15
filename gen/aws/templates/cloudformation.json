@@ -47,10 +47,10 @@
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m4.xlarge"
+        "default": "m4.large"
       },
       "SlaveInstanceType": {
-        "default": "m4.xlarge"
+        "default": "m4.large"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -62,7 +62,7 @@
         "default": "10.0.0.0/16"
       },
       "PublicSlaveInstanceType": {
-        "default": "m4.xlarge"
+        "default": "m4.large"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
