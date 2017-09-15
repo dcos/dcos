@@ -2,6 +2,8 @@ import json
 import logging
 import uuid
 
+import pytest
+
 import retrying
 
 import test_helpers
@@ -167,3 +169,54 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
                 app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
 
         assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
+
+
+def get_region_zone(domain):
+    assert isinstance(domain, dict), 'input must be dict'
+
+    assert 'fault_domain' in domain, 'fault_domain is missing. {}'.format(domain)
+
+    # check region set correctly
+    assert 'region' in domain['fault_domain'], 'missing region. {}'.format(domain)
+    assert 'name' in domain['fault_domain']['region'], 'missing region. {}'.format(domain)
+    region = domain['fault_domain']['region']['name']
+
+    # check zone set correctly
+    assert 'zone' in domain['fault_domain'], 'missing zone. {}'.format(domain)
+    assert 'name' in domain['fault_domain']['zone'], 'missing zone. {}'.format(domain)
+    zone = domain['fault_domain']['zone']['name']
+
+    return region, zone
+
+
+@pytest.mark.skipif(
+    test_helpers.expanded_config['fault_domain_enabled'] == 'false',
+    reason='fault domain is not set')
+def test_fault_domain(dcos_api_session):
+    master_ip = dcos_api_session.masters[0]
+    r = dcos_api_session.get('/state', host=master_ip, port=5050)
+    assert r.status_code == 200
+    state = r.json()
+
+    # check flags and get the domain parameters mesos master was started with.
+    assert 'flags' in state, 'missing flags in state json'
+    assert 'domain' in state['flags'], 'missing domain in state json flags'
+    cli_flag = json.loads(state['flags']['domain'])
+    expected_region, expected_zone = get_region_zone(cli_flag)
+
+    # check master top level keys
+    assert 'leader_info' in state, 'leader_info is missing in state json'
+    assert 'domain' in state['leader_info'], 'domain is missing in state json'
+    leader_region, leader_zone = get_region_zone(state['leader_info']['domain'])
+
+    assert leader_region == expected_region, 'expect region {}. Got {}'.format(expected_region, leader_region)
+    assert leader_zone == expected_zone, 'expect zone {}. Got {}'.format(expected_zone, leader_zone)
+
+    for agent in state['slaves']:
+        assert 'domain' in agent, 'missing domain field for agent. {}'.format(agent)
+        agent_region, agent_zone = get_region_zone(agent['domain'])
+
+        assert agent_region == expected_region, 'expect region {}. Got {}'.format(expected_region, agent_region)
+
+        # agent_zone might be different on agents, so we just make sure it's a sane value
+        assert agent_zone, 'agent_zone cannot be empty'
