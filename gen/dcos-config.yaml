@@ -1005,3 +1005,10 @@ package:
 {% endswitch %}
   - path: /etc/rexray.conf
     content: {{ rexray_config_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: /bin/detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}

@@ -23,6 +23,10 @@ def get_ip_detect(name):
     return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
 
 
+def calculate_fault_domain_detect_contents(name):
+    return yaml.dump(resource_string('gen', 'fault-domain-detect/{}.sh'.format(name)).decode())
+
+
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
     return get_ip_detect({'true': 'aws_public', 'false': 'aws'}[aws_masters_have_public_ip])
 
@@ -68,7 +72,9 @@ aws_base_source = Source(entry={
         'agent_public_cloud_config': '{{ slave_public_cloud_config }}',
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
-        'rexray_config_preset': 'aws'
+        'rexray_config_preset': 'aws',
+        'fault_domain_enabled': 'true',
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents('aws')
     },
     'conditional': {
         'oauth_available': {
