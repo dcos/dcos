@@ -27,6 +27,30 @@ def validate_error_multikey(new_arguments, keys, message, unset=None):
     }
 
 
+def test_invalid_logrotate_max_stdout_size():
+    err_msg = "Logrotate STDOUT size must have MB suffix"
+    validate_error(
+        {'logrotate_max_stdout_size': '10s'},
+        'logrotate_max_stdout_size',
+        err_msg)
+
+
+def test_valid_logrotate_max_stdout_size():
+    validate_success({'logrotate_max_stdout_size': '10MB'})
+
+
+def test_invalid_logrotate_max_stderr_size():
+    err_msg = "Logrotate STDERR size must have MB suffix"
+    validate_error(
+        {'logrotate_max_stderr_size': '10s'},
+        'logrotate_max_stderr_size',
+        err_msg)
+
+
+def test_valid_logrotate_max_stderr_size():
+    validate_success({'logrotate_max_stderr_size': '10MB'})
+
+
 def test_invalid_telemetry_enabled():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(

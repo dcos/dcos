@@ -315,13 +315,13 @@ package:
                     "value": "2"
                   }, {
                     "key": "logrotate_max_stdout_size",
-                    "value": "2MB"
+                    "value": "{{ logrotate_max_stdout_size }}"
                   }, {
                     "key": "logrotate_stdout_options",
                     "value": "rotate 9"
                   }, {
                     "key": "logrotate_max_stderr_size",
-                    "value": "2MB"
+                    "value": "{{ logrotate_max_stderr_size }}"
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"

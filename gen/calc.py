@@ -185,6 +185,18 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
         "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
 
 
+def validate_logrotate_max_stdout_size(logrotate_max_stdout_size):
+    # TODO(malnick) Mesos logrotate module appears to support a separate set of
+    # suffixes than the standard logrotate utility. What other suffixes should
+    # we add?
+    assert logrotate_max_stdout_size.endswith("MB"), "Logrotate STDOUT size must have MB suffix"
+
+
+def validate_logrotate_max_stderr_size(logrotate_max_stderr_size):
+    # TODO(malnick) See above comment on validate_logrotate_max_stdout_size
+    assert logrotate_max_stderr_size.endswith("MB"), "Logrotate STDERR size must have MB suffix"
+
+
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
     # Determine how many 256 MB log chunks can be fit into the given size.
     # We assume a 90% compression factor; logs are compressed after 2 rotations.
@@ -852,6 +864,8 @@ entry = {
         validate_zk_hosts,
         validate_zk_path,
         validate_cluster_packages,
+        validate_logrotate_max_stdout_size,
+        validate_logrotate_max_stderr_size,
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -919,6 +933,8 @@ entry = {
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
+        'logrotate_max_stdout_size': '2MB',
+        'logrotate_max_stderr_size': '2MB',
         'mesos_max_completed_tasks_per_framework': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
