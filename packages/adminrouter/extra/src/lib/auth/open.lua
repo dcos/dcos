@@ -32,6 +32,23 @@ local function validate_jwt_or_exit()
         ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
+    -- set authorization header back to basic
+    if auth_header ~= nil then
+        if string.find(auth_header, "Basic") then
+            ngx.log(ngx.DEBUG, "Setting authorization header back to basic.")
+            ngx.req.set_header("Authorization", auth_header)
+        else
+            if basichttpcred ~= nil then
+            ngx.log(ngx.DEBUG, "auth_header is token type set authorization to basic.")
+            ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+            end 
+        end 
+    else
+        if basichttpcred ~= nil then
+            ngx.log(ngx.DEBUG, "auth_header nil set authorization to basic.")
+            ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+        end 
+    end
     return uid
 end
 
@@ -110,15 +127,11 @@ function _M.init(use_auth)
 
     -- /pkgpanda/active.buildinfo.full.json
     -- /dcos-metadata/
-    res.access_misc_metadata_endpoint = function()
-        return res.do_authn_and_authz_or_exit()
-    end
-
-    -- /metadata
     res.access_metadata_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end
 
+    -- /metadata
     -- /dcos-history-service/
     res.access_historyservice_endpoint = function()
         return res.do_authn_and_authz_or_exit()

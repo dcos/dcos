@@ -3,6 +3,7 @@ local shmlock = require "resty.lock"
 local http = require "resty.http"
 local resolver = require "resty.resolver"
 local util = require "util"
+local basichttpcred = os.getenv("MESOSPHERE_HTTP_CREDENTIALS")
 
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
@@ -63,6 +64,11 @@ local function request(url, accept_404_reply, auth_token)
     if auth_token ~= nil then
         headers = {["Authorization"] = "token=" .. auth_token}
     end
+    if basichttpcred ~= nil then
+        if string.find(url, ":8080") or string.find(url, ":5050") then
+            headers = {["Authorization"] = "Basic " .. util.base64encode(basichttpcred)}
+        end 
+    end 
 
     -- Use cosocket-based HTTP library, as ngx subrequests are not available
     -- from within this code path (decoupled from nginx' request processing).

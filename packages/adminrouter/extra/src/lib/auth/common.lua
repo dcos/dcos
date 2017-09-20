@@ -5,7 +5,7 @@ local jwt_validators = require "resty.jwt-validators"
 
 local util = require "util"
 
-
+local basichttpcred = os.getenv("MESOSPHERE_HTTP_CREDENTIALS")
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
     ngx.log(ngx.WARN, "AUTH_ERROR_PAGE_DIR_PATH not set.")
@@ -64,7 +64,25 @@ local function validate_jwt(secret_key)
     local token = nil
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
-        _, _, token = string.find(auth_header, "token=(.+)")
+        if string.find(auth_header, "Basic") then
+            ngx.log(
+                ngx.DEBUG, "Basic authentication header found " ..
+                "look for token in cookie and override."
+                )   
+            local cookie, err = cookiejar:new()
+            token = cookie:get("dcos-acs-auth-cookie")
+            if token == nil then
+                ngx.log(ngx.DEBUG, "dcos-acs-auth-cookie not found.")
+            else
+                ngx.log(
+                    ngx.DEBUG, "Use token from dcos-acs-auth-cookie, " ..
+                    "set corresponding Authorization header for upstream."
+                    )   
+                ngx.req.set_header("Authorization", "token=" .. token)
+            end 
+        else
+            _, _, token = string.find(auth_header, "token=(.+)")
+        end 
     else
         ngx.log(ngx.DEBUG, "Authorization header not found.")
         -- Presence of Authorization header overrides cookie method entirely.
@@ -87,7 +105,6 @@ local function validate_jwt(secret_key)
         ngx.log(ngx.NOTICE, "No auth token in request.")
         return nil, 401
     end
-
     -- ngx.log(ngx.DEBUG, "Token: `" .. token .. "`")
 
     -- By default, lua-resty-jwt does not validate claims, so we build up a
@@ -118,7 +135,28 @@ local function validate_jwt(secret_key)
         return nil, 401
     end
 
-    ngx.log(ngx.NOTICE, "UID from the valid DC/OS authentication token: `".. uid .. "`")
+    if auth_header ~= nil then
+        if string.find(auth_header, "Basic") then
+            ngx.log(ngx.DEBUG, "Setting authorization header back to basic.")
+            ngx.req.set_header("Authorization", auth_header)
+        else
+            if basichttpcred ~= nil then
+                if string.find(ngx.var.request_uri, "/service/marathon/") or string.find(ngx.var.request_uri, "/mesos/") then
+                    ngx.log(ngx.DEBUG, "auth_header is token type set authorization to basic.")
+                    ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+                end
+            end
+        end
+    else
+        if basichttpcred ~= nil then
+            ngx.log(ngx.DEBUG, "request_uri: " .. ngx.var.request_uri)
+            if string.find(ngx.var.request_uri, "/service/marathon/") or string.find(ngx.var.request_uri, "/mesos/") then
+                ngx.log(ngx.DEBUG, "marathon/mesos proxy auth_header nil set authorization to basic.")
+                ngx.req.set_header("Authorization" , "Basic " .. util.base64encode(basichttpcred))
+            end
+        end
+    end	
+    ngx.log(ngx.NOTICE, "UID from valid JWT: `".. uid .. "`")
     return uid, nil
 end
 
