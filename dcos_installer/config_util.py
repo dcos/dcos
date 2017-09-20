@@ -33,11 +33,6 @@ def parent_dirs(filename):
         yield '/'.join(dirs)
 
 
-def do_configure(config):
-    gen_out = onprem_generate(config)
-    make_serve_dir(gen_out)
-
-
 def do_move_atomic(src_dir, dest_dir, filenames):
     assert os.path.exists(src_dir)
     assert os.path.exists(dest_dir)
