@@ -33,11 +33,3 @@ class EndpointException(ARTestHarnessException):
         self.code = code
         self.reason = reason
         self.content_type = content_type
-
-
-class LogSourceEmpty(ARTestHarnessException):
-    """Signal the end of data for log lines source.
-
-    Exception used to signalize that the application producing the logs has
-    terminated and that log gathering structures for it should be cleaned up"""
-    pass

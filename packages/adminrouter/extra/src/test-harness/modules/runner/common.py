@@ -8,6 +8,7 @@ import abc
 import copy
 import logging
 import os
+import queue
 import select
 import signal
 import socket
@@ -17,7 +18,6 @@ import time
 
 import pytest
 
-from exceptions import LogSourceEmpty
 from util import LOG_LINE_SEARCH_INTERVAL
 
 log = logging.getLogger(__name__)
@@ -158,16 +158,6 @@ class LogWriter:
 
         return line_bytes
 
-    def _raise_if_source_is_empty(self, event_type):
-        """Helper method used for determining if given log fd is empty or not"""
-
-        if isinstance(self._fd, socket.socket):
-            if event_type == select.POLLNVAL:
-                raise LogSourceEmpty()
-        else:
-            if event_type == select.POLLHUP:
-                raise LogSourceEmpty()
-
     def __init__(self, fd, log_file, log_level=None):
         """Initialize new LogWriter instance
 
@@ -197,17 +187,11 @@ class LogWriter:
         delimiter = u"\u2704".encode('utf-8')
         msg = delimiter * 10 + b" Logging of this instance ends here " + delimiter * 10
         self._append_line_to_log_file(msg)
+        self._fd.close()
         self._log_fd.close()
 
-    def write(self, event_type):
-        """Method used by LogCatcher instance for sending the data to
-        LogWriter for storing
-
-        Args:
-            event_type (int): event type as described by pool() objects interface
-                (https://docs.python.org/3/library/select.html#poll-objects)
-        """
-        self._raise_if_source_is_empty(event_type)
+    def drain_all_input(self):
+        """Drain all the input from the writer's file descriptor"""
 
         line_bytes = self._read_line_from_fd()
         if self._log_fd is not None:
@@ -237,6 +221,10 @@ class LogWriter:
         """
         return self._line_buffer
 
+    def fileno(self):
+        """Return the number of the file descrption assigned to this writer"""
+        return self._fd.fileno()
+
 
 class LogCatcher:
     """A central log-gathering facility.
@@ -256,38 +244,99 @@ class LogCatcher:
     _termination_flag = None
     _poll = None
     _writers = None
+    _add_writers_queue = None
 
-    def _monitor_process_outputs(self):
-        """A main loop where event are demultiplexed
+    def _event_processing(self):
+        """The main loop where all LogCatcher operations are handled
 
-        The purpose of this function is to monitor all registered file
-        descriptors and in case when new data is available - hand of
-        taking care of it to LogWriter instance that is responsible
-        for given file descriptor.
+        This is the main loop of the LogCatcher instance. Its purpose is to
+        monitor all registered file descriptors and in case when new data is
+        available - hand of taking care of it to LogWriter instance that is
+        responsible for given file descriptor. On top of that it also
+        synchronizes adding and removing file descriptors to/from the set of
+        the ones that are monitored for input.
 
-        poll() call generally seems to be easier to use and better fits
-        our use case than e.g. plain select() (no need for global lock
-        while updating FD lists):
+        Due to the limitations of `select.pool()` call, we can only operate on
+        file descriptors here - integers provided by operating system. The
+        `select.pool()` call returns a list of file descriptors which are
+        waiting for servicing. This implies the use of a python dict
+        `self._writers` which maps file descriptors to `LogWriter` objects.
+        The operating system can close a file descriptor and open a new one
+        with the same number so adding new writers to the `self._writers` needs
+        to be synchronised with with the `select.pool()` call. The
+        synchronisation relies on two simple conditions:
+         a) all additions and removals to/from `self._writers` dict happen in
+            a single thread, communication with the thread is done using
+            thread-safe queue.
+         b) before any new LogWriter object is added to the `self._writers` dict,
+            we first check the `select.pool()` call to see if any tracked file
+            descriptors were closed and if they were - remove corresponding
+            LogWriter object from `self._writers`.
+
+        Bulletpoint b) prevents a race condition when some thread closed a file
+        descriptor and immediately after that another one opened a new FD and
+        submitted it to LogCatcher for monitoring. LogCatcher in this case will
+        always gracefully remove LogWriter object related to the old FD before
+        adding the new LogWriter in its place. Bulletpoint a) guarantees that
+        all these operations will be done in predefined order.
+
+         poll() call generally seems to be easier to use and better fits
+         our use case than e.g. plain select() (no need for global lock
+         while updating FD lists):
         * http://stackoverflow.com/a/25249958
         * http://www.greenend.org.uk/rjk/tech/poll.html
         """
         while True:
-            ready_to_read = self._poll.poll(self._POLL_TIMEOUT)
+            writers_to_add = self._add_writers_queue.qsize()
+            fds_ready = self._poll.poll(self._POLL_TIMEOUT)
 
-            if not len(ready_to_read) and self._termination_flag.is_set():
+            if len(fds_ready) == 0 and writers_to_add == 0 and self._termination_flag.is_set():
                 # Nothing else to read, termination requested
                 return
 
-            for fd_tuple in ready_to_read:
+            for fd_tuple in fds_ready:
                 fd_no, event = fd_tuple
-                writer = self._writers[fd_no]
 
-                try:
-                    writer.write(event)
-                except LogSourceEmpty:
-                    self._poll.unregister(fd_no)
-                    writer.stop()
-                    log.info("LogCatcher unregistered fd `%s`", fd_tuple[0])
+                # Can select.POLLIN be set for a closed connection?
+                mask = select.POLLNVAL + select.POLLHUP
+                if event & mask > 0:
+                    self._remove_writer(fd_no)
+                    continue
+
+                # Here we catch the case where POLLERR is set:
+                assert event == select.POLLIN
+
+                writer = self._writers[fd_no]
+                writer.drain_all_input()
+
+            while writers_to_add > 0:
+                writer = self._add_writers_queue.get_nowait()
+                self._register_writer(writer)
+                self._add_writers_queue.task_done()
+                writers_to_add -= 1
+
+    def _register_writer(self, writer):
+        """ Register new LogWriter object for monitoring
+
+        Args:
+            writer (obj: LogWriter): LogWriter object that should be registered
+        """
+        assert writer.fileno() not in self._writers
+        self._writers[writer.fileno()] = writer
+        self._poll.register(writer.fileno(), select.POLLIN)
+        log.info("LogCatcher registered fd `%d`", writer.fileno())
+
+    def _remove_writer(self, fd_no):
+        """Remove LogWriter object from monitoring
+
+        Args:
+            fd_no (int): file descriptor assigned to LogWriter that should be
+                unregistered
+        """
+        self._poll.unregister(fd_no)
+        writer = self._writers.pop(fd_no)
+        writer.stop()
+        log.info("LogCatcher unregistered fd `%s`", fd_no)
 
     def _cleanup_log_dir(self):
         """Remove all the old log file from the log directory
@@ -320,9 +369,10 @@ class LogCatcher:
         self._writers = {}
 
         self._cleanup_log_dir()
+        self._add_writers_queue = queue.Queue()
 
         self._logger_thread = threading.Thread(
-            target=self._monitor_process_outputs, name='LogCatcher')
+            target=self._event_processing, name='LogCatcher')
         self._logger_thread.start()
         log.info("LogCatcher thread has started")
 
@@ -340,19 +390,14 @@ class LogCatcher:
             log_level (int): log level with which all the log lines should be
                 logged with, do not log to stdout if None
         """
-        assert fd.fileno() not in self._writers
-
         if log_file is not None:
             log_path = os.path.join(self._LOG_DIR, log_file)
         else:
             log_path = None
 
         writer = LogWriter(fd, log_path, log_level)
-
-        self._writers[fd.fileno()] = writer
-
-        self._poll.register(fd, select.POLLIN | select.POLLHUP)
-        log.info("LogCatcher registered fd `%d`", fd.fileno())
+        self._add_writers_queue.put(writer)
+        self._add_writers_queue.join()
 
     def stop(self):
         """Stop the LogCatcher instance and perform resource cleanup."""
