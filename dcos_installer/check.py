@@ -63,7 +63,7 @@ class CheckRunnerResult:
         return 'error' in response.keys()
 
     @staticmethod
-    def _validate_check_error_response(response):
+    def _validate_check_runner_error_response(response):
         if 'error' not in response.keys():
             raise Exception('Check runner error response is missing expected key \'error\'')
 
