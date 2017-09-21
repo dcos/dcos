@@ -473,7 +473,6 @@ package:
       {
         "PATH": "/usr/bin:/bin",
         "SHELL": "/usr/bin/bash",
-        "SASL_PATH": "/opt/mesosphere/lib/sasl2",
         "LIBPROCESS_NUM_WORKER_THREADS": "8"
       }
   - path: /etc/dcos-log.env
