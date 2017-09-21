@@ -1,16 +1,13 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-
   "Description" : "DC/OS AWS CloudFormation Template",
-
   "Metadata": {
     "DcosImageCommit": "unset",
     "TemplateGenerationDate": "unset"
   },
-
   "Parameters" : {
     "KeyName" : {
-      "Description" : "Required: Specify your AWS EC2 Key Pair.",
+      "Description" : "Required: EC2 Key Pair.",
       "Type" : "AWS::EC2::KeyPair::KeyName"
     },
     "AdminLocation": {
@@ -23,12 +20,12 @@
       "ConstraintDescription" : "must be a valid CIDR."
     },
     "SlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of private agent nodes or accept the default.",
+      "Description" : "Required: # of private agents",
       "Type" : "Number",
       "Default" : "{{ num_private_slaves }}"
     },
     "PublicSlaveInstanceCount" : {
-      "Description" : "Required: Specify the number of public agent nodes or accept the default.",
+      "Description" : "Required: # of public agents",
       "Type" : "Number",
       "Default" : "{{ num_public_slaves }}"
     }
@@ -36,7 +33,7 @@
 {% case "true" %}
     ,
     "OAuthEnabled": {
-      "Description": "\nEnable OAuth authentication",
+      "Description": "\nEnable OAuth",
       "Type": "String",
       "Default": "true",
       "AllowedValues": ["true", "false"]
@@ -50,10 +47,10 @@
     "NATAmi" : {{ nat_ami_mapping }},
     "Parameters": {
       "MasterInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.large"
       },
       "SlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.large"
       },
       "PublicSubnetRange": {
         "default": "10.0.4.0/22"
@@ -65,7 +62,7 @@
         "default": "10.0.0.0/16"
       },
       "PublicSlaveInstanceType": {
-        "default": "m3.xlarge"
+        "default": "m4.large"
       },
       "StackCreationTimeout": {
           "default": "PT45M"
@@ -540,7 +537,7 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/xvda", "Ebs" : { "VolumeSize": 150, "VolumeType": "gp2", "DeleteOnTermination": true} } ],
         "SecurityGroups" : [ { "Ref" : "MasterSecurityGroup" }, { "Ref" : "AdminSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "MasterInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
@@ -556,7 +553,7 @@
     "MasterSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Masters",
+        "GroupDescription" : "Masters",
         "VpcId" : { "Ref" : "Vpc" },
         "SecurityGroupIngress" : [
           { "IpProtocol" : "tcp", "FromPort" : "5050", "ToPort" : "5050", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
@@ -581,7 +578,7 @@
     "LbSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Master LB",
+        "GroupDescription" : "Master LB",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -724,7 +721,7 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/xvda", "Ebs" : { "VolumeSize": 150, "VolumeType": "gp2", "DeleteOnTermination": true} } ],
         "SecurityGroups" : [ { "Ref" : "SlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "EbsOptimized": "true",
@@ -768,7 +765,7 @@
       "Properties" : {
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "RegionToAmi", { "Ref" : "AWS::Region" }, "stable" ] },
-        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sdb", "VirtualName" : "ephemeral0" } ],
+        "BlockDeviceMappings" : [ { "DeviceName" : "/dev/xvda", "Ebs" : { "VolumeSize": 150, "VolumeType": "gp2", "DeleteOnTermination": true} } ],
         "SecurityGroups" : [ { "Ref" : "PublicSlaveSecurityGroup" } ],
         "IamInstanceProfile" : { "Ref" : "SlaveInstanceProfile" },
         "AssociatePublicIpAddress" : "true",
@@ -783,7 +780,7 @@
     "SlaveSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Slaves",
+        "GroupDescription" : "Slaves",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -862,7 +859,7 @@
     "PublicSlaveSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupDescription" : "Mesos Slaves Public",
+        "GroupDescription" : "Public slave",
         "VpcId" : { "Ref" : "Vpc" }
       }
     },
@@ -947,18 +944,16 @@
         }
     }
   },
-
   "Outputs" : {
     "DnsAddress" : {
-      "Description" : "Mesos Master",
+      "Description" : "Master",
       "Value" : { "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ]}
     },
     "PublicSlaveDnsAddress" : {
-      "Description" : "Public slaves",
-      "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
+      "Description" : "Public slaves", "Value" : { "Fn::GetAtt" : [ "PublicSlaveLoadBalancer", "DNSName" ]}
     },
     "ExhibitorS3Bucket" : {
-      "Description" : "Exhibitor S3 bucket name",
+      "Description" : "Exhibitor bucket",
       "Value" : { "Ref" : "ExhibitorS3Bucket" }
     }
   }
