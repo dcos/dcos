@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import subprocess
+import textwrap
 import uuid
 
 import passlib.hash
@@ -343,6 +345,52 @@ def aws_cf_configure(s3_bucket_name, config, config_aws, tmpdir, monkeypatch):
         objects = [{'Key': o.key} for o in s3_bucket.objects.all()]
         s3_bucket.delete_objects(Delete={'Objects': objects})
         s3_bucket.delete()
+
+
+def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, caplog):
+    """
+    Log messages are logged exactly once.
+    """
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
+    create_config(simple_full_config, tmpdir)
+    create_fake_build_artifacts(tmpdir)
+    with tmpdir.as_cwd():
+        assert backend.do_configure(config_path='genconf/config.yaml') == 0
+
+    # The message comes from gen.get_dcosconfig_source_target_and_templates() function
+    expected_message = 'Generating configuration files...'
+    filtered_messages = [rec.message for rec in caplog.records if rec.message == expected_message]
+    assert [expected_message] == filtered_messages
+
+
+def test_do_configure_logs_validation_errors(tmpdir, monkeypatch, caplog):
+    """
+    Configuration validation errors are logged as `error` messages.
+    """
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
+    invalid_config = textwrap.dedent("""---
+    cluster_name: DC/OS
+    master_discovery: static
+    # Remove `exhibitor_storage_backend` from configuration
+    # exhibitor_storage_backend: static
+    master_list:
+    - 127.0.0.1
+    bootstrap_url: http://example.com
+    """)
+    create_config(invalid_config, tmpdir)
+    create_fake_build_artifacts(tmpdir)
+    with tmpdir.as_cwd():
+        assert backend.do_configure(config_path='genconf/config.yaml') == 1
+
+    expected_error_message = (
+        'exhibitor_storage_backend: Must set exhibitor_storage_backend, '
+        'no way to calculate value.'
+    )
+    error_logs = [rec for rec in caplog.records if rec.message == expected_error_message]
+    assert len(error_logs) == 1
+
+    error_log = error_logs[0]
+    assert error_log.levelno == logging.ERROR
 
 
 def create_config(config_str, tmpdir):
