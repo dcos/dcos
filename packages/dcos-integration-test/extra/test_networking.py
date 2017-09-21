@@ -17,7 +17,13 @@ from dcos_test_utils import marathon
 
 log = logging.getLogger(__name__)
 
-GLOBAL_PORT_POOL = collections.defaultdict(lambda: list(range(10000, 32000)))
+# NOTE: linux kernel 3.10.0-327 (rh/centos 7.2) and 3.10.0-514 (rh/centos 7.3)
+# drop outgoing vxlan tcp packets if the destination port is in the range
+# from 14849 (0x3a01) to 15103 (0x3aff).
+# For more information please see the following link:
+# https://jira.mesosphere.com/browse/DCOS_OSS-1463?focusedCommentId=119792#comment-119792
+# TODO: please check this port range on newer linux kernel
+GLOBAL_PORT_POOL = collections.defaultdict(lambda: list(range(10000, 14849)) + list(range(15104, 32000)))
 
 
 def unused_port(network):
