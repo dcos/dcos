@@ -12,7 +12,7 @@
     "ssh_pty": true,
     "region": "{{user `source_ami_region`}}",
     "source_ami": "{{user `source_ami`}}",
-    "instance_type": "m3.xlarge",
+    "instance_type": "m4.xlarge",
     "ssh_username": "centos",
     "ami_name": "dcos-centos7-{{isotime \"200601021504\"}}",
     "ami_description": "DC/OS Cloud Image for CentOS 7",
