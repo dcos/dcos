@@ -297,6 +297,8 @@ def test_l4lb(dcos_api_session):
 
 
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
+@pytest.mark.xfail(test_helpers.expanded_config.get('security') == 'strict',
+                   reason='Cannot setup CNI config with EE strict mode enabled', strict=True)
 def test_dcos_cni_l4lb(dcos_api_session):
     '''
     This tests the `dcos - l4lb` CNI plugins:
@@ -374,7 +376,7 @@ def test_dcos_cni_l4lb(dcos_api_session):
     # alive for the test harness to make sure that the task got deployed.
     # Ideally we should be able to deploy one of tasks using the test harness
     # but that doesn't seem to be the case here.
-    cni_config_app['cmd'] = 'echo \'{}\' > /opt/mesosphere/etc/dcos/network/cni/spartan.cni; sleep 10000'.format(
+    cni_config_app['cmd'] = 'echo \'{}\' > /opt/mesosphere/etc/dcos/network/cni/spartan.cni && sleep 10000'.format(
         json.dumps(spartan_net))
 
     log.info("App for setting CNI config: {}".format(json.dumps(cni_config_app)))
