@@ -2,8 +2,8 @@
   "requires": ["java"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.io/marathon/v1.4.6/marathon-1.4.6.tgz",
-    "sha1": "2cf376dd77618a2c9a373fb0ddfba90339fb25ea"
+    "url": "https://downloads.mesosphere.io/marathon/v1.4.8/marathon-1.4.8.tgz",
+    "sha1": "dd1c3a8e796ca48e1fa229620bae1081303e55be"
   },
   "username": "dcos_marathon",
   "state_directory": true
