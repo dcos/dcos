@@ -288,13 +288,13 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, download_ur
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
-            arm_template_name='dcos-{}master.azuredeploy.json'.format(x)))
+            arm_template_name='{}dcos-{}master.azuredeploy.json'.format(pkgpanda.util.variant_prefix(bootstrap_name), x)))
         for x in [1, 3, 5]]
     acs_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
-            arm_template_name='acs-{}master.azuredeploy.json'.format(x)))
+            arm_template_name='{}acs-{}master.azuredeploy.json'.format(pkgpanda.util.variant_prefix(bootstrap_name), x)))
         for x in [1, 3, 5]]
 
     return gen.template.parse_resources('azure/templates/azure.html').render({
