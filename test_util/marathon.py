@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import requests
 import retrying
 
-from test_util.helpers import ApiClientSession, RetryCommonHttpErrorsMixin, path_join
+from test_util.helpers import ApiClientSession, path_join, RetryCommonHttpErrorsMixin
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
 REQUIRED_HEADERS = {'Accept': 'application/json, text/plain, */*'}
