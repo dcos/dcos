@@ -112,8 +112,8 @@ log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppenderWithLayout
 log4j.appender.journal.logStacktrace=true
 log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
-log4j.appender.journal.layout=org.apache.log4j.PatternLayout
-log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m%n
+log4j.appender.journal.layout=org.apache.log4j.EnhancedPatternLayout
+log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m%n%throwable
 """)
 
 # Add backend specific arguments
