@@ -4,7 +4,6 @@ endpoint_tests:
 # hence the tests separation
   - tests:
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /system/health/v1/foo/bar
         upstream: http://127.0.0.1:1050
@@ -12,12 +11,10 @@ endpoint_tests:
       - master
   - tests:
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /system/health/v1/foo/bar
         upstream: http:///run/dcos/dcos-diagnostics.sock
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /system/health/v1/foo/bar
     type:
@@ -25,21 +22,18 @@ endpoint_tests:
 ######### /acs/api/v1/auth/
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /acs/api/v1/auth/reflect/me
       are_upstream_req_headers_ok:
-        enabled: true
-        jwt_should_be_forwarded: skip
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: skip
         test_paths:
           - /acs/api/v1/auth/reflect/me
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /acs/api/v1/auth/reflect/me
         upstream: http://127.0.0.1:8101
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.0
         test_paths:
           - expected: /acs/api/v1/auth/reflect/me
@@ -49,21 +43,18 @@ endpoint_tests:
 ######### /dcos-metadata/ui-config.json
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /dcos-metadata/ui-config.json
       are_upstream_req_headers_ok:
-        enabled: true
-        jwt_should_be_forwarded: skip
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: skip
         test_paths:
           - /dcos-metadata/ui-config.json
       is_upstream_correct:
-        enabled: true
         test_paths:
           - /dcos-metadata/ui-config.json
         upstream: http://127.0.0.1:8101
       is_upstream_req_ok:
-        enabled: true
         expected_http_ver: HTTP/1.0
         test_paths:
           - expected: /dcos-metadata/ui-config.json
@@ -73,7 +64,6 @@ endpoint_tests:
 ######### /pkgpanda/
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /pkgpanda/foo/bar
     type:
@@ -81,7 +71,6 @@ endpoint_tests:
 ######### /system/v1/metrics/
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /system/v1/metrics/foo/bar
     type:
@@ -89,7 +78,6 @@ endpoint_tests:
 ######### /system/v1/logs/
   - tests:
       is_unauthed_access_permitted:
-        enabled: true
         locations:
           - /system/v1/logs/foo/bar
     type:

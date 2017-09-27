@@ -3,8 +3,7 @@ backends:
   dcos_diagnostics:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics
-    reference: >-
-      https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint
+    reference: 'https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint'
   exhibitor:
     server: '127.0.0.1:8181'
     name: Exhibitor (Zookeeper)
@@ -12,26 +11,26 @@ backends:
   iam:
     server: '127.0.0.1:8101'
     name: DC/OS Authentication (OAuth)
-    reference: 'https://dcos.io/docs/1.9/administration/id-and-access-mgt/iam-api/'
+    reference: 'https://dcos.io/docs/1.10/security/iam-api/'
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
     name: DC/OS Log
-    reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
+    reference: 'https://dcos.io/docs/1.10/monitoring/logging/logging-api/'
   mesos_dns:
     server: '127.0.0.1:8123'
     name: Mesos DNS
-    reference: 'https://dcos.io/docs/1.9/usage/service-discovery/mesos-dns/http-interface/'
+    reference: 'https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/'
   metrics:
     server: 'unix:/run/dcos/dcos-metrics-master.sock'
     name: DC/OS Metrics
-    reference: 'https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/'
+    reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
   navstar:
     server: '127.0.0.1:62080'
     name: Navstar
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
-    reference: 'https://dcos.io/docs/1.9/administration/component-management/'
+    reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
 routes:
   /:
     group: Root
@@ -319,7 +318,7 @@ routes:
     matcher: regex
     description: System proxy to the master node with the Mesos leader
     proxy:
-      path: 'http://leader.mesos/system/v1$url$is_args$query_string'
+      path: $system_v1_leader_mesos
     path: /system/v1/leader/mesos(?<url>.*)
   /system/v1/logs/:
     group: System

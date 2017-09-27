@@ -19,11 +19,20 @@ BRIDGE_DEVNAME := $(shell docker network inspect -f '{{ index .Options "com.dock
 # Using a docker container for this allows the docker daemon to run locally or remotely in a VM, like docker-machine.
 BRIDGE_IP := $(shell docker run --net=host --rm alpine ifconfig $(BRIDGE_DEVNAME) | grep 'inet addr:' | cut -d: -f2 | cut -d' ' -f1)
 
+# Vary the name of the container on the per-flavour basis.
+# The way we detect the repository flavour is consistent with how test harness
+# does it.
+ifeq ($(wildcard test-harness/tests/ee/), test-harness/tests/ee/)
+    DEVKIT_NAME=adminrouter-devkit-ee
+else
+    DEVKIT_NAME=adminrouter-devkit-open
+endif
+
 # FIXME: some problems with dns queries timing out, use hosts caching dns as a
 # workaround for now
 # DNS_DOCKER_OPTS := --dns=8.8.8.8 --dns=8.8.4.4
 DNS_DOCKER_OPTS := --dns=$(BRIDGE_IP) --dns=8.8.8.8 --dns=8.8.4.4
-DEVKIT_BASE_DOCKER_OPTS := --name adminrouter-devkit \
+DEVKIT_BASE_DOCKER_OPTS := --name $(DEVKIT_NAME) \
 	$(DNS_DOCKER_OPTS) \
 	-e NUM_CORES=2 \
 	-e PYTHONDONTWRITEBYTECODE=true
@@ -32,67 +41,69 @@ DEVKIT_DOCKER_OPTS := $(DEVKIT_BASE_DOCKER_OPTS) \
 
 .PHONY: clean-devkit-container
 clean-devkit-container:
-	-docker rm -vf adminrouter-devkit > /dev/null 2>&1
+	@# Let's suppress ALL the output:
+	@docker rm -vf $(DEVKIT_NAME) &> /dev/null || true
 
 .PHONY: clean-containers
 clean-containers: clean-devkit-container
 
 .PHONY: clean
 clean:
-	@echo "+ Cleaning up..."
+	@echo "Cleaning up..."
 	-sudo find . -type f -name '*.pyc' -delete
 
 .PHONY: devkit
 devkit:
-	if $$(docker images | grep mesosphere/adminrouter-devkit | grep -q full); then \
-		echo "+ Devkit image already build"; \
+	@if $$(docker images | grep mesosphere/$(DEVKIT_NAME) | grep -q full); then \
+		echo "Devkit image is present, not rebuilding it."; \
 	else \
-		echo "+ Building devkit image"; \
+		echo "Building devkit image"; \
 		docker build \
 			--rm --force-rm \
-			-t mesosphere/adminrouter-devkit:noresty \
+			-t mesosphere/$(DEVKIT_NAME):noresty \
 			-f ../../docker/Dockerfile \
 				../../docker/ && \
 		docker run \
 			$(DEVKIT_BASE_DOCKER_OPTS) \
-			mesosphere/adminrouter-devkit:noresty \
+			mesosphere/$(DEVKIT_NAME):noresty \
 				/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT" && \
-		docker commit $$(docker ps -a -q -f name=adminrouter-devkit) \
-			mesosphere/adminrouter-devkit:full && \
-		docker rm adminrouter-devkit && \
-		docker rmi -f mesosphere/adminrouter-devkit:noresty; \
+		docker commit $$(docker ps -a -q -f name=$(DEVKIT_NAME)) \
+			mesosphere/$(DEVKIT_NAME):full && \
+		docker rm $(DEVKIT_NAME) && \
+		docker rmi -f mesosphere/$(DEVKIT_NAME):noresty; \
 	fi
 
 .PHONY: update-devkit
 update-devkit: clean-devkit-container
-	-docker rm adminrouter-devkit
-	docker build \
+	@# Let's suppress ALL the output:
+	@docker rm $(DEVKIT_NAME) &> /dev/null || true
+	@docker build \
 		--rm --force-rm \
-		-t mesosphere/adminrouter-devkit:noresty \
+		-t mesosphere/$(DEVKIT_NAME):noresty \
 		-f ../../docker/Dockerfile \
 			../../docker/
-	docker run \
+	@docker run \
 		$(DEVKIT_BASE_DOCKER_OPTS) \
-		mesosphere/adminrouter-devkit:noresty \
+		mesosphere/$(DEVKIT_NAME):noresty \
 			/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT" && \
-	docker commit $$(docker ps -a -q -f name=adminrouter-devkit) \
-		mesosphere/adminrouter-devkit:full
-	docker rm adminrouter-devkit
-	docker rmi -f mesosphere/adminrouter-devkit:noresty
+	docker commit $$(docker ps -a -q -f name=$(DEVKIT_NAME)) \
+		mesosphere/$(DEVKIT_NAME):full
+	@docker rm $(DEVKIT_NAME)
+	@docker rmi -f mesosphere/$(DEVKIT_NAME):noresty
 
 .PHONY: shell
 shell: clean-devkit-container devkit
-	docker run --rm -it \
+	@docker run --rm -it \
 		$(DEVKIT_DOCKER_OPTS) \
 		--privileged \
-		mesosphere/adminrouter-devkit:full /bin/bash
+		mesosphere/$(DEVKIT_NAME):full /bin/bash
 
 .PHONY: test
 test: clean-devkit-container devkit
-	docker run \
+	@docker run \
 		$(DEVKIT_DOCKER_OPTS) \
 		--privileged \
-		mesosphere/adminrouter-devkit:full /bin/bash -x -c " \
+		mesosphere/$(DEVKIT_NAME):full /bin/bash -x -c " \
  			py.test \
  		"
 
@@ -101,29 +112,33 @@ api-docs: clean-devkit-container devkit
 	@mkdir -p $(SRC_DIR)/$(API_DOCS_DIR)
 	@for prefix in nginx.master nginx.agent ; do \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.yaml" >&2 && \
-		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/$(DEVKIT_NAME):full \
 			ngindox parse -f $${prefix}.conf > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.yaml && \
 		echo "Generating $(API_DOCS_DIR)/$${prefix}.html" >&2 && \
-		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/adminrouter-devkit:full \
+		docker run --rm $(DEVKIT_DOCKER_OPTS) mesosphere/$(DEVKIT_NAME):full \
 			ngindox ui -f $(API_DOCS_DIR)/$${prefix}.yaml > $(SRC_DIR)/$(API_DOCS_DIR)/$${prefix}.html ; \
 	done
 
 .PHONY: check-api-docs
+DOCS_TEXT := See https://github.com/dcos/dcos/tree/master/packages/adminrouter/extra/src\#endpoints-documentation for more info.
 check-api-docs: api-docs
-	@git update-index --refresh || (echo 'Found local changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
-	@git diff-files --quiet || (echo 'Found unstaged changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
-	@git ls-files --exclude-standard --others || (echo 'Found untracked and unignored changes. Please run `make api-docs` and commit the result.' >&2 && exit 1)
+ifneq ($(shell git update-index --refresh; echo $$?),0)
+	$(error "Found local changes. Please run `make api-docs` and commit the result. $(DOCS_TEXT)")
+endif
+ifneq ($(shell git diff-files --quiet; echo $$?),0)
+	$(error 'Found unstaged changes. Please run `make api-docs` and commit the result. $(DOCS_TEXT)')
+endif
+ifneq ($(shell git ls-files --exclude-standard --others; echo $$?),0)
+	$(error 'Found untracked and unignored changes. Please run `make api-docs` and commit the result. $(DOCS_TEXT)')
+endif
 	@echo 'No changes found -- Admin Router API docs are up to date.' >&2
 
-.PHONY: flake8
-flake8: clean-devkit-container devkit
-	#FIXME - split it into two targets
-	docker run \
+.PHONY: lint
+lint: clean-devkit-container devkit
+	@docker run \
 		$(DEVKIT_DOCKER_OPTS) \
-		mesosphere/adminrouter-devkit:full /bin/bash -x -c " \
-			flake8 -v \
- 		"
+		mesosphere/$(DEVKIT_NAME):full /bin/bash -x -c "flake8"
 
 .PHONY: help
 help:
-	@echo "Please see README.md file."
+	@echo "Please see README.md file for help and a howto."

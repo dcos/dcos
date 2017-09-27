@@ -5,7 +5,7 @@ import requests
 
 from generic_test_code.common import (
     assert_endpoint_response,
-    overriden_file_content,
+    overridden_file_content,
 )
 from util import GuardedSubprocess, SearchCriteria
 
@@ -26,7 +26,8 @@ class TestAuthzIAMBackendQuery:
             )
 
         log_messages = {
-            'UID from valid JWT: `bozydar`': SearchCriteria(1, True),
+            'UID from the valid DC/OS authentication token: `bozydar`':
+                SearchCriteria(1, True),
             "Unexpected response from IAM: ":
                 SearchCriteria(1, True),
             }
@@ -89,7 +90,7 @@ class TestOauthLoginIntegration:
         expected_path = "{}/login?client={}&cluster_id={}&a=1&b=2".format(
             oa_redir, oa_client_id, oa_cluster_id)
 
-        with overriden_file_content('/var/lib/dcos/cluster-id', oa_cluster_id):
+        with overridden_file_content('/var/lib/dcos/cluster-id', oa_cluster_id):
             with GuardedSubprocess(ar):
                 r = requests.get(url, allow_redirects=False)
 

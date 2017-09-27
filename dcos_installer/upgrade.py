@@ -34,18 +34,9 @@ node_upgrade_template = """#!/bin/bash
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit -o nounset -o pipefail
+set -o errexit -o pipefail -o nounset
 
 source /opt/mesosphere/environment.export
-
-# bash should trap the ERR signal and run err_report, which prints the line number
-# of failure to STDERR.
-
-err_report() {
-    echo "ERROR: Upgrade failed at line ${BASH_LINENO}"
-} >&2
-
-trap err_report ERR
 
 # Check if this is a terminal, and if colors are supported, set some basic
 # colors for outputs
@@ -58,6 +49,15 @@ if [ -t 1 ]; then
     fi
 fi
 
+SKIP_CHECKS=false
+
+if [[ $# -ne 0 ]]; then
+  if [[ "$1" = "--skip-checks" ]]; then
+     echo "Skipping checks"
+     SKIP_CHECKS=true
+  fi
+fi
+
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -65,28 +65,28 @@ fi
 
 # check for version of dc/os upgrading from
 found_version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
-if [ "$found_version" != "{{ installed_cluster_version }}" ]; then
+if [[ "$found_version" != "{{ installed_cluster_version }}" ]]; then
     echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}." \
          "Version found on node: $found_version"
     exit 1
 fi
 
-# Check if the node has node/cluster checks and run them
-if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-    # command exists
-    output=$(dcos-diagnostics check node-poststart)
-    if [ $? -ne 0 ]; then
-        echo "Cannot proceed with upgrade, node checks failed"
-        echo $output
-        exit 1
-    fi
+if [[ "$SKIP_CHECKS" = "false" ]]; then
+   # Check if the node has node/cluster checks and run them
+   if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+      # command exists
+      if ! output="$(dcos-diagnostics check node-poststart 2>&1)"; then
+          echo "Cannot proceed with upgrade, node checks failed"
+          echo >&2 "$output"
+          exit 1
+      fi
 
-    clusteroutput=$(dcos-diagnostics check cluster)
-    if [ $? -ne 0 ]; then
-        echo "Cannot proceed with upgrade, cluster checks failed"
-        echo $clusteroutput
-        exit 1
-    fi
+      if ! clusteroutput="$(dcos-diagnostics check cluster 2>&1)"; then
+          echo "Cannot proceed with upgrade, cluster checks failed"
+          echo >&2 "$clusteroutput"
+          exit 1
+      fi
+   fi
 fi
 
 # Determine this node's role.
@@ -114,17 +114,19 @@ echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
 pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
 
-T=300
-until OUT=$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster) || [[ T -eq 0 ]]; do
-    sleep 1
-    let T=T-1
-done
-RETCODE=$?
-if [ $RETCODE -ne 0 ]; then
-    echo "Node upgrade not successful, checks failed"
-    echo $OUT
+if [[ "$SKIP_CHECKS" = "false" ]]; then
+    T=300
+    until OUT="$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster 2>&1)" || [[ $T -eq 0 ]]; do
+      sleep 1
+      let T=T-1
+    done
+    RETCODE=$?
+    if [[ $RETCODE -ne 0 ]]; then
+       echo "Node upgrade not successful, checks failed"
+       echo >&2 "$OUT"
+    fi
+    exit $RETCODE
 fi
-exit $RETCODE
 """
 
 

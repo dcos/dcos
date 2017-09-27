@@ -3,20 +3,19 @@ backends:
   dcos_diagnostics:
     server: 'unix:/run/dcos/dcos-diagnostics.sock'
     name: DC/OS Diagnostics
-    reference: >-
-      https://dcos.io/docs/1.9/administration/monitoring/#system-health-http-api-endpoint
+    reference: 'https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint'
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
     name: DC/OS Log
-    reference: 'https://dcos.io/docs/1.9/administration/logging/logging-api/'
+    reference: 'https://dcos.io/docs/1.10/monitoring/logging/logging-api/'
   metrics:
     server: 'unix:/run/dcos/dcos-metrics-agent.sock'
     name: DC/OS Metrics
-    reference: 'https://dcos.io/docs/1.9/administration/monitoring/metrics/metrics-api/'
+    reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
-    reference: 'https://dcos.io/docs/1.9/administration/component-management/'
+    reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
 routes:
   /dcos-metadata/dcos-version.json:
     group: Metadata

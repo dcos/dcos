@@ -13,6 +13,7 @@ from generic_test_code.common import (
     generic_location_header_during_redirect_is_adjusted_test,
     generic_no_slash_redirect_test,
     generic_response_headers_verify_test,
+    generic_upstream_cookies_verify_test,
     generic_upstream_headers_verify_test,
 )
 
@@ -61,15 +62,7 @@ def _verify_endpoint_tests_conf(endpoint_tests):
         _check_all_keys_are_present_in_dict(t, ['tests', 'type'])
         _verify_type_specification(t['type'])
 
-        at_least_one_test_enabled = False
-        assert 0 < len(t['tests'].keys()) < 7
-        for k in t['tests']:
-            assert 'enabled' in t['tests'][k]
-            assert t['tests'][k]['enabled'] in [True, False]
-            at_least_one_test_enabled = at_least_one_test_enabled or \
-                t['tests'][k]['enabled']
-
-        assert at_least_one_test_enabled
+        assert 0 < len(t['tests'].keys()) < 8
 
         if 'is_endpoint_redirecting_properly' in t['tests']:
             _verify_is_endpoint_redirecting_properly(
@@ -95,12 +88,9 @@ def _verify_endpoint_tests_conf(endpoint_tests):
 
 
 def _verify_is_location_header_rewritten(t_config):
-    if not t_config['enabled']:
-        return
-
     _check_all_keys_are_present_in_dict(
         t_config,
-        ['basepath', 'endpoint_id', 'redirect_testscases', 'enabled'])
+        ['basepath', 'endpoint_id', 'redirect_testscases'])
 
     assert t_config['endpoint_id'].startswith('http')
     assert t_config['basepath'].startswith('/')
@@ -116,9 +106,6 @@ def _verify_is_location_header_rewritten(t_config):
 
 
 def _verify_is_endpoint_redirecting_properly(t_config):
-    if not t_config['enabled']:
-        return
-
     assert 'locations' in t_config
 
     assert len(t_config['locations']) > 0
@@ -129,9 +116,6 @@ def _verify_is_endpoint_redirecting_properly(t_config):
 
 
 def _verify_is_unauthed_access_permitted(t_config):
-    if not t_config['enabled']:
-        return
-
     assert 'locations' in t_config
 
     assert len(t_config['locations']) > 0
@@ -140,9 +124,6 @@ def _verify_is_unauthed_access_permitted(t_config):
 
 
 def _verify_is_upstream_correct_test_conf(t_config):
-    if not t_config['enabled']:
-        return
-
     assert 'upstream' in t_config
     assert t_config['upstream'].startswith('http')
 
@@ -152,9 +133,6 @@ def _verify_is_upstream_correct_test_conf(t_config):
 
 
 def _verify_is_upstream_req_ok_test_conf(t_config):
-    if not t_config['enabled']:
-        return
-
     assert 'expected_http_ver' in t_config
     assert t_config['expected_http_ver'] in ['HTTP/1.0', 'HTTP/1.1', 'websockets']
 
@@ -164,11 +142,11 @@ def _verify_is_upstream_req_ok_test_conf(t_config):
 
 
 def _verify_are_upstream_req_headers_ok(t_config):
-    if not t_config['enabled']:
-        return
+    assert 'auth_token_is_forwarded' in t_config
+    assert t_config['auth_token_is_forwarded'] in [True, False, 'skip']
 
-    assert 'jwt_should_be_forwarded' in t_config
-    assert t_config['jwt_should_be_forwarded'] in [True, False, 'skip']
+    assert 'skip_authcookie_filtering_test' in t_config
+    assert t_config['skip_authcookie_filtering_test'] in [True, False, 'skip']
 
     assert 'test_paths' in t_config
     for p in t_config['test_paths']:
@@ -176,9 +154,6 @@ def _verify_are_upstream_req_headers_ok(t_config):
 
 
 def _verify_are_response_headers_ok(t_config):
-    if not t_config['enabled']:
-        return
-
     assert 'nocaching_headers_are_sent' in t_config
     assert t_config['nocaching_headers_are_sent'] in [True, False, 'skip']
 
@@ -213,8 +188,6 @@ def _testdata_to_is_upstream_correct_testdata(tests_config, node_type):
             continue
 
         h = x['tests']['is_upstream_correct']
-        if h['enabled'] is not True:
-            continue
 
         for p in h['test_paths']:
             e = (p, h['upstream'])
@@ -234,8 +207,6 @@ def _testdata_to_is_upstream_req_ok_testdata(tests_config, node_type):
             continue
 
         h = x['tests']['is_upstream_req_ok']
-        if h['enabled'] is not True:
-            continue
 
         for p in h['test_paths']:
             e = (p['sent'], p['expected'], h['expected_http_ver'])
@@ -255,11 +226,11 @@ def _testdata_to_are_upstream_req_headers_ok_testdata(tests_config, node_type):
             continue
 
         h = x['tests']['are_upstream_req_headers_ok']
-        if h['enabled'] is not True:
-            continue
 
         for p in h['test_paths']:
-            e = (p, h['jwt_should_be_forwarded'])
+            e = (p,
+                 h['auth_token_is_forwarded'],
+                 h['skip_authcookie_filtering_test'])
             res.append(e)
 
     return res
@@ -276,8 +247,6 @@ def _testdata_to_location_header_rewrite_testdata(tests_config, node_type):
             continue
 
         h = x['tests']['is_location_header_rewritten']
-        if h['enabled'] is not True:
-            continue
 
         for l in h['redirect_testscases']:
             res.append(
@@ -301,8 +270,6 @@ def _testdata_to_is_unauthed_access_permitted(tests_config, node_type):
             continue
 
         h = x['tests']['is_unauthed_access_permitted']
-        if h['enabled'] is not True:
-            continue
 
         res.extend(h['locations'])
 
@@ -320,8 +287,6 @@ def _testdata_to_are_response_headers_ok(tests_config, node_type):
             continue
 
         h = x['tests']['are_response_headers_ok']
-        if h['enabled'] is not True:
-            continue
 
         res.extend([(x, h['nocaching_headers_are_sent']) for x in h['test_paths']])
 
@@ -339,13 +304,77 @@ def _testdata_to_redirect_testdata(tests_config, node_type):
             continue
 
         h = x['tests']['is_endpoint_redirecting_properly']
-        if h['enabled'] is not True:
-            continue
 
         for l in h['locations']:
             res.append((l['path'], l['code']))
 
     return res
+
+
+def _universal_test_if_upstream_headers_are_correct(
+        self,
+        ar_process,
+        valid_user_header,
+        path,
+        jwt_forwarded_test,
+        skip_authcookie_filtering_test,
+        ):
+
+    headers_present = {}
+    headers_absent = []
+
+    if jwt_forwarded_test is True:
+        headers_present.update(valid_user_header)
+    elif jwt_forwarded_test is False:
+        headers_absent.append("Authorization")
+    # jwt_forwarded_test == "skip", do nothing
+
+    generic_upstream_headers_verify_test(
+        ar_process,
+        valid_user_header,
+        path,
+        assert_headers=headers_present,
+        assert_headers_absent=headers_absent,
+        )
+
+    if skip_authcookie_filtering_test:
+        return
+
+    filtered_cookies = ['dcos-acs-info-cookie', 'dcos-acs-auth-cookie']
+    jar = {}
+    # both dcos-* cookies should be removed by AR
+    # the dcos-acs-auth-cookie cookie is simply the DC/OS authentication token:
+    jar['dcos-acs-auth-cookie'] = valid_user_header['Authorization']
+    # the dcos-acs-info-cookie is a base64-encoded JSON-encoded dictionary
+    # which contains `uid`, `descrption` and `is_remote` fields which relate to
+    # the DC/OS authentication token from the `dcos-acs-auth-cookie` cookie.
+    jar['dcos-acs-info-cookie'] = (
+        'eyJ1aWQiOiAiYm9vdHN0cmFwdXNlciIsICJkZX'
+        'NjcmlwdGlvbiI6ICJCb290c3RyYXAgc3VwZXJ1c2VyIiwgImlzX3JlbW90ZSI6IGZ'
+        'hbHNlfQ==')
+
+    # First case - cookie contains ONLY dcos-specific cookies, `Cookie` header
+    # should not be sent
+    generic_upstream_cookies_verify_test(
+        ar_process,
+        valid_user_header,
+        path,
+        cookies_to_send=jar,
+        assert_cookies_absent=filtered_cookies,
+    )
+
+    # Second case - apart from dcos-specific cookies, client also sends
+    # a cookie that must be forwarded upstream:
+    cookies_present = {'some-random-cookie': 'some-random-value'}
+    jar.update(cookies_present)
+    generic_upstream_cookies_verify_test(
+        ar_process,
+        valid_user_header,
+        path,
+        cookies_to_send=jar,
+        assert_cookies_absent=filtered_cookies,
+        assert_cookies_present=cookies_present,
+    )
 
 
 def create_tests(metafunc, path):
@@ -362,7 +391,7 @@ def create_tests(metafunc, path):
 
     if set(['path', 'jwt_forwarded_test']) <= set(metafunc.fixturenames):
         args = _testdata_to_are_upstream_req_headers_ok_testdata(tests_config, ar_type)
-        metafunc.parametrize("path,jwt_forwarded_test", args)
+        metafunc.parametrize("path,jwt_forwarded_test,skip_authcookie_filtering_test", args)
         return
 
     if set(['path', 'upstream_path', 'http_ver']) <= set(metafunc.fixturenames):
@@ -413,23 +442,16 @@ class GenericTestMasterClass:
             valid_user_header,
             path,
             jwt_forwarded_test,
+            skip_authcookie_filtering_test,
             ):
 
-        headers_present = {}
-        headers_absent = []
-
-        if jwt_forwarded_test is True:
-            headers_present.update(valid_user_header)
-        elif jwt_forwarded_test is False:
-            headers_absent.append("Authorization")
-        # jwt_forwarded_test == "skip", do nothing
-
-        generic_upstream_headers_verify_test(
+        _universal_test_if_upstream_headers_are_correct(
+            self,
             master_ar_process_perclass,
             valid_user_header,
             path,
-            assert_headers=headers_present,
-            assert_headers_absent=headers_absent,
+            jwt_forwarded_test,
+            skip_authcookie_filtering_test,
             )
 
     def test_if_upstream_request_is_correct(
@@ -531,23 +553,16 @@ class GenericTestAgentClass:
             valid_user_header,
             path,
             jwt_forwarded_test,
+            skip_authcookie_filtering_test,
             ):
 
-        headers_present = {}
-        headers_absent = []
-
-        if jwt_forwarded_test is True:
-            headers_present.update(valid_user_header)
-        elif jwt_forwarded_test is False:
-            headers_absent.append("Authorization")
-        # jwt_forwarded_test == "skip", do nothing
-
-        generic_upstream_headers_verify_test(
+        _universal_test_if_upstream_headers_are_correct(
+            self,
             agent_ar_process_perclass,
             valid_user_header,
             path,
-            assert_headers=headers_present,
-            assert_headers_absent=headers_absent,
+            jwt_forwarded_test,
+            skip_authcookie_filtering_test=skip_authcookie_filtering_test,
             )
 
     def test_if_upstream_request_is_correct(

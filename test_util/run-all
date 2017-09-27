@@ -33,7 +33,7 @@ else
 fi
 
 # Pin to just the right dcos-vagrant commit
-git -C dcos-vagrant checkout -qf 3f216d6558d84f94f337d97ed0c6a92286242480
+git -C dcos-vagrant checkout -qf 8e15ef498b2dca62f29fb1c0950b5ae854315e53
 
 cp ../dcos_generate_config.sh dcos-vagrant/dcos_generate_config.sh
 

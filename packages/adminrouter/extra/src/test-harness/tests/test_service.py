@@ -650,10 +650,10 @@ class TestServiceStateful:
                                 headers=valid_user_header)
 
             t_spent = time.time() - t_start
-            assert resp.status_code == 200
-            data = resp.json()
-            data['endpoint_id'] == 'http://127.0.0.15:16001'
 
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.1:16000'
         assert t_spent > backend_request_timeout * 0.5
 
     def test_if_broken_marathon_prevents_resolving_via_mesos_state_summary(
@@ -682,6 +682,73 @@ class TestServiceStateful:
 
         assert resp.status_code == 503
         assert '503 Service Unavailable: invalid Marathon svcapps cache' in resp.text
+
+    def test_if_broken_marathon_does_not_prevent_resolving_root_marathon(
+            self, mocker, nginx_class, valid_user_header):
+        # Bork Marathon Mock, DO NOT touch Mesos Mock:
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='always_bork',
+            aux_data=True)
+        # Change the Root Marathon's endpoint address as reported by Mesos mock,
+        # so that we do not get the reply from the original endpoint (i.e.
+        # http://127.0.0.1:8080 as it will always respond with broken responses
+        # (see `mocker.send_command` call above).
+        fwrk = framework_from_template(
+            SCHEDULER_FWRK_ALWAYSTHERE_ID,
+            "marathon",
+            "http://127.0.0.2:8080/")
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[fwrk])
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         )
+        url = ar.make_url_from_path("/service/marathon/v2/reflect/me")
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.2:8080'
+
+    def test_if_broken_marathon_does_not_prevent_resolving_root_metronome(
+            self, mocker, nginx_class, valid_user_header):
+        # Bork Marathon Mock, DO NOT touch Mesos Mock:
+        mocker.send_command(
+            endpoint_id='http://127.0.0.1:8080',
+            func_name='always_bork',
+            aux_data=True)
+
+        # Make period cache refreshes so rare that they do not get into
+        # picture:
+        ar = nginx_class(cache_first_poll_delay=1200,
+                         cache_poll_period=1200,
+                         cache_expiration=1200,
+                         cache_max_age_soft_limit=1200,
+                         cache_max_age_hard_limit=1800,
+                         )
+        url = ar.make_url_from_path("/service/metronome/foo/bar")
+
+        with GuardedSubprocess(ar):
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['endpoint_id'] == 'http://127.0.0.1:9000'
 
     def test_if_broken_mesos_prevents_resolving_via_mesosdns(
             self, mocker, nginx_class, valid_user_header):

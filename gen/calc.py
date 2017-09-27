@@ -717,6 +717,11 @@ def calculate_check_config(check_time):
                     'timeout': '1s',
                     'roles': ['agent']
                 },
+                'journald_dir_permissions': {
+                    'description': 'Journald directory has the right owners and permissions',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
+                    'timeout': '1s',
+                },
             },
             'prestart': [],
             'poststart': [
@@ -729,6 +734,7 @@ def calculate_check_config(check_time):
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
+                'journald_dir_permissions',
             ],
         },
     }
@@ -881,7 +887,8 @@ entry = {
         validate_mesos_max_completed_tasks_per_framework,
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
-        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config)
+        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
+        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled)
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -967,7 +974,8 @@ entry = {
         'cosmos_config': '{}',
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
-        'custom_checks': '{}'
+        'custom_checks': '{}',
+        'fault_domain_enabled': 'false'
     },
     'must': {
         'custom_auth': 'false',
