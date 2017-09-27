@@ -15,8 +15,13 @@ import release
 import release.storage.aws
 import release.storage.local
 from dcos_installer import config_util, upgrade
-from dcos_installer.config import Config, normalize_config_validation
+from dcos_installer.config import (
+    Config,
+    normalize_config_validation,
+    normalize_config_validation_exception,
+)
 from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
+from gen.exceptions import ValidationError
 
 log = logging.getLogger()
 
@@ -24,17 +29,6 @@ log = logging.getLogger()
 def print_messages(messages):
     for key, error in messages.items():
         log.error('{}: {}'.format(key, error))
-
-
-def validate_gen(config):
-    """ Returns True on success
-    """
-    validate = config.do_validate(include_ssh=False)
-    if len(validate) > 0:
-        for key, error in validate.items():
-            log.error('{}: {}'.format(key, error))
-        return False
-    return True
 
 
 def do_configure(config_path=CONFIG_PATH):
@@ -45,12 +39,14 @@ def do_configure(config_path=CONFIG_PATH):
     """
     config = Config(config_path)
 
-    validation = validate_gen(config)
-
-    if not validation:
+    try:
+        gen_out = config_util.onprem_generate(config)
+    except ValidationError as e:
+        validation = normalize_config_validation_exception(e)
+        print_messages(validation)
         return 1
 
-    config_util.do_configure(config)
+    config_util.make_serve_dir(gen_out)
 
     return 0
 
@@ -62,10 +58,13 @@ def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_P
         return 1
 
     config = Config(config_path)
-    validation = validate_gen(config)
-    if not validation:
+    try:
+        gen_out = config_util.onprem_generate(config)
+    except ValidationError as e:
+        validation = normalize_config_validation_exception(e)
+        print_messages(validation)
         return 1
-    gen_out = config_util.onprem_generate(config)
+
     config_util.make_serve_dir(gen_out)
 
     # generate the upgrade script
