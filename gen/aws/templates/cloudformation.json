@@ -32,7 +32,7 @@
     "DefaultInstanceType" : {
       "Description" : "default instance",
       "Type" : "String",
-      "Default" : "m4.xlarge"
+      "Default" : "m4.large"
     }
 {% switch oauth_available %}
 {% case "true" %}
