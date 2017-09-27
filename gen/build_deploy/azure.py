@@ -275,7 +275,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
             reproducible_artifact_path,
             tag,
             commit,
-            pkgpanda.util.variant_prefix(variant_arguments.items(0)[0]),
+            pkgpanda.util.variant_prefix(variant_arguments.items()[0]),
             next(iter(variant_arguments.values()))['azure_download_url']),
         'content_type': 'text/html; charset=utf-8'
     }
