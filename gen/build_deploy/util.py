@@ -1,5 +1,6 @@
 import json
 import os
+import os.path
 import shutil
 from datetime import datetime
 from subprocess import check_output
@@ -38,7 +39,7 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
 
     # Copy the extra_files
     for filename in extra_files:
-        shutil.copy(filename, output_dir + filename)
+        copy_makedirs(filename, output_dir + filename)
 
     # Copy the config packages
     for package_name in json.loads(gen_out.arguments['config_package_names']):

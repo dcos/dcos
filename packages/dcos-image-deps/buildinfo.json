@@ -83,6 +83,11 @@
       "url": "https://pypi.python.org/packages/source/c/chardet/chardet-2.3.0.tar.gz",
       "sha1": "50af8f8771ecbeb7a22567129c6c281b8bec3b1c"
     },
+    "checksumdir": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/84/8b/0e800a118ed64091245feddef0159d7979bb42915f65db5d2dafd6b12864/checksumdir-1.1.4.tar.gz",
+      "sha1": "8179d445521bcd7930d036f708caa014a65d9960"
+    },
     "coloredlogs": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/c/coloredlogs/coloredlogs-3.5.tar.gz",
