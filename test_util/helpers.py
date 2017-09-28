@@ -263,3 +263,38 @@ def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
         raise
     if not strategy.startswith('journald'):
         pytest.skip('Skipping a test since journald logging is disabled')
+
+
+def is_retryable_exception(exception: Exception) -> bool:
+    """ Helper method to catch HTTP errors that are likely safe to retry.
+    Args:
+        exception: exception raised from ApiClientSession.api_request instance
+    """
+    for ex in [requests.exceptions.ConnectionError, requests.exceptions.Timeout]:
+        if isinstance(exception, ex):
+            logging.debug('Retrying common HTTP error: {}'.format(repr(exception)))
+            return True
+    return False
+
+
+class RetryCommonHttpErrorsMixin:
+    """ Mixin for ApiClientSession so that random disconnects from network
+    instability do not derail entire scripts. This functionality is configured
+    through the retry_timeout keyword
+    """
+    def api_request(self, *args, retry_timeout: int=60, **kwargs) -> requests.Response:
+        """ Adds 'retry_timeout' keyword to API requests.
+        Args:
+        *args: args to be passed to super()'s api_request method
+        **kwargs: keyword args to be passed to super()'s api_request method
+        retry_timeout: total number of seconds to keep retrying after
+        the initial exception was raised
+        """
+        @retrying.retry(
+            wait_fixed=1000,
+            stop_max_delay=retry_timeout * 1000,
+            retry_on_exception=is_retryable_exception)
+        def retry_errors():
+            return super(RetryCommonHttpErrorsMixin, self).api_request(*args, **kwargs)
+
+        return retry_errors()
