@@ -47,6 +47,7 @@ setup(
         'azure-mgmt-resource==0.30.0rc4',
         'boto3',
         'botocore',
+        'checksumdir',
         'coloredlogs',
         'docopt',
         'passlib',
