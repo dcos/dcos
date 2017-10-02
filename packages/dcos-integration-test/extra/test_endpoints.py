@@ -155,42 +155,6 @@ def test_if_we_have_capabilities(dcos_api_session):
     assert {'name': 'PACKAGE_MANAGEMENT'} in r.json()['capabilities']
 
 
-def test_cosmos_package_add(dcos_api_session):
-    r = dcos_api_session.post(
-        '/package/add',
-        headers={
-            'Accept': (
-                'application/vnd.dcos.package.add-response+json;'
-                'charset=utf-8;version=v1'
-            ),
-            'Content-Type': (
-                'application/vnd.dcos.package.add-request+json;'
-                'charset=utf-8;version=v1'
-            )
-        },
-        json={
-            'packageName': 'cassandra',
-            'packageVersion': '1.0.20-3.0.10'
-        }
-    )
-
-    if (expanded_config['cosmos_staged_package_storage_uri_flag'] and
-            expanded_config['cosmos_package_storage_uri_flag']):
-        # if the config is enabled then Cosmos should accept the request and
-        # return 202
-        assert r.status_code == 202, 'status = {}, content = {}'.format(
-            r.status_code,
-            r.content
-        )
-    else:
-        # if the config is disabled then Cosmos should accept the request and
-        # return Not Implemented 501
-        assert r.status_code == 501, 'status = {}, content = {}'.format(
-            r.status_code,
-            r.content
-        )
-
-
 def test_if_overlay_master_is_up(dcos_api_session):
     r = dcos_api_session.get('/mesos/overlay-master/state')
     assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
