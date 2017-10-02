@@ -98,13 +98,13 @@ onprem_source = Source(entry={
         'ip_detect_filename': 'genconf/ip-detect',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
         'enable_docker_gc': 'false',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_enabled': calculate_fault_domain_enabled
     },
     'must': {
         'provider': 'onprem',
         'package_ids': calculate_package_ids,
         'fault_domain_detect_filename': 'genconf/fault_domain_detect',
-        'fault_domain_enabled': calculate_fault_domain_enabled,
         'custom_check_bins_dir': 'genconf/check_bins/',
         'custom_check_bins_package_name': 'custom-check-bins',
         'custom_check_bins_provided': calculate_custom_check_bins_provided,
