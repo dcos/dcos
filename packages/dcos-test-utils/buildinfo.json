@@ -2,8 +2,8 @@
   "requires": ["dcos-image-deps"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "f7c1446b86349ac07693d279a4db0d5d6238a1c3",
-    "ref_origin": "master"
+    "git": "https://github.com/adamtheturtle/dcos-test-utils.git",
+    "ref": "889db16f0e5f85c0880d6acb5f8f636c8e9815ea",
+    "ref_origin": "adamdangoor/history-wait-empty"
   }
 }
