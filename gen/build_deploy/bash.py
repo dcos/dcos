@@ -27,19 +27,16 @@ from gen.internals import Source
 from pkgpanda.util import logger
 
 
-def calculate_fault_domain_detect_contents(fault_domain_detect_filename, fault_domain_enabled):
-    if fault_domain_enabled == 'false':
-        return ''
-    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
+    if os.path.exists(fault_domain_detect_filename):
+        return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+    return ''
 
 
-def calculate_fault_domain_enabled(fault_domain_detect_filename):
-    try:
-        with open(fault_domain_detect_filename):
-            pass
-    except FileNotFoundError:
-        return 'false'
-    return 'true'
+def calculate_fault_domain_enabled(fault_domain_detect_contents):
+    if fault_domain_detect_contents:
+        return 'true'
+    return 'false'
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
