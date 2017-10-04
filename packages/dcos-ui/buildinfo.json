@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-ui.git",
-    "ref": "ca735b81db20b4e6b10ae016e7639259f5d8df1c",
-    "ref_origin": "v1.10.1"
+    "ref": "1a23a93b05991ed703464622cac22205942bfff9",
+    "ref_origin": "v1.10.2"
   }
 }
