@@ -11,3 +11,6 @@ These commits can be found in the repository at <a href="https://github.com/meso
 <li>[2f3a182d91952f0db30883acda0ef222affa6477] Included nested command check output in the executor logs.
 <li>[86ee162326172bffcf7f264c5e46ce3d155c1636] Made the log output handling of TCP and HTTP checks consistent.
 <li>[b0fd885dbf02a61b5635184df19905695b4bba96] Raised the logging level of some check and health check messages.
+
+<h2>Patches added for debugging</h2>
+<li>[8fff16cc34b9ef45f2554c997d1d4187c8e4e35c] Additional verbose logging for the fetcher.
