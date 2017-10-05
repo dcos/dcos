@@ -554,36 +554,33 @@ def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
 
 def validate_dns_forward_zones(dns_forward_zones):
     """
-     "forward_zones": [["a.contoso.com", [["1.1.1.1", 53],
-                                          ["2.2.2.2", 53]]],
-                       ["b.contoso.com", [["3.3.3.3", 53],
-                                          ["4.4.4.4", 53]]]]
+     "forward_zones": {"a.contoso.com": ["1.1.1.1:53", "2.2.2.2"],
+                       "b.contoso.com": ["3.3.3.3:53", "4.4.4.4"]}
     """
 
-    def fz_err(msg):
+    def fz_err(msg, *argv):
+        msg = msg.format(*argv)
         return 'Invalid "dns_forward_zones": {}'.format(msg)
 
     zone_defs = None
     try:
         zone_defs = json.loads(dns_forward_zones)
     except ValueError as ex:
-        raise AssertionError(fz_err("{} is not valid JSON: {}".format(dns_forward_zones, ex))) from ex
-    assert isinstance(zone_defs, list), fz_err("{} is not a list".format(zone_defs))
+        error = fz_err("{} is not valid JSON: {}", dns_forward_zones, ex)
+        raise AssertionError(error) from ex
 
-    for z in zone_defs:
-        assert isinstance(z, list), fz_err("{} is not a list".format(z))
-        assert len(z) == 2, fz_err("{} is not length 2".format(z))
-        assert isinstance(z[0], str), fz_err("{} is not a string".format(z))
+    assert isinstance(zone_defs, dict), fz_err("{} is not a a dict", zone_defs)
 
-        upstreams = z[1]
-        for u in upstreams:
-            assert isinstance(u, list), fz_err("{} not a list".format(u))
-            assert len(u) == 2, fz_err("{} not length 2".format(u))
-
-            ip = u[0]
-            port = u[1]
-            assert valid_ipv4_address(ip), fz_err("{} not a valid IP address".format(ip))
-            validate_int_in_range(port, 1, 65535)
+    for k, upstreams in zone_defs.items():
+        assert isinstance(upstreams, list), fz_err("{} is not a list", upstreams)
+        for upstr in upstreams:
+            assert isinstance(upstr, str), fz_err("{} is not a string", upstr)
+            ip, sep, port = upstr.rpartition(':')
+            if sep:
+                validate_int_in_range(port, 1, 65535)
+            else:
+                ip = upstr
+            assert valid_ipv4_address(ip), fz_err("{} not a valid IP address", ip)
 
 
 def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
@@ -911,7 +908,7 @@ entry = {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'dns_bind_ip_blacklist': '[]',
-        'dns_forward_zones': '[]',
+        'dns_forward_zones': '{}',
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
