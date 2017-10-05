@@ -2,6 +2,10 @@
 
 What features does this change enable? What bugs does this change fix? High-Level description of how things changed.
 
+## Related JIRA
+
+Please link the JIRA issue requiring this bump so it can be closed once the PR is merged.
+
 ## Related Issues
 
   - [DCOS_OSS-<number>](https://jira.dcos.io/browse/DCOS_OSS-<number>) Foo the Bar so it stops Bazzing.
