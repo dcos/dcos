@@ -19,3 +19,5 @@ coreos:
       command: stop
     - name: systemd-modules-load.service
       command: restart
+    - name: systemd-networkd.service
+      command: stop
