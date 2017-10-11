@@ -383,7 +383,7 @@ if [[ -f /opt/dcos-prereqs.installed ]]; then
 fi
 
 echo "Validating distro..."
-distro=$(cat /etc/os-release | sed -n 's@^ID="\(.*\)"$@\1@p')
+distro=$(cat /etc/os-release | sed -n 's/^ID="\(.*\)"$/\1/p')
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
   echo "CoreOS includes all prerequisites by default." >&2
@@ -453,45 +453,47 @@ sudo /usr/sbin/setenforce 0
 sudo sed -i --follow-symlinks 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 echo "Detecting Docker..."
-INSTALL_DOCKER='true'
+install_docker='true'
 if hash docker 2>/dev/null; then
-  DOCKER_CLIENT_VERSION="$(docker --version | sed -e 's/Docker version \(.*\),.*/\1/')"
-  echo "Docker Client Version: ${DOCKER_CLIENT_VERSION}"
+  docker_client_version="$(docker --version | sed -e 's/Docker version \(.*\),.*/\1/')"
+  echo "Docker Client Version: ${docker_client_version}"
 
   if ! docker info &>/dev/null; then
     echo "Docker Server not found. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
-  DOCKER_SERVER_VERSION="$(docker info | grep 'Server Version:' | sed -e 's/Server Version: \(.*\)/\1/')"
-  echo "Docker Server Version: ${DOCKER_SERVER_VERSION}"
+  docker_server_version="$(docker info | grep 'Server Version:' | sed -e 's/Server Version: \(.*\)/\1/')"
+  echo "Docker Server Version: ${docker_server_version}"
 
-  if [[ "${DOCKER_CLIENT_VERSION}" != "${DOCKER_SERVER_VERSION}" ]]; then
+  if [[ "${docker_client_version}" != "${docker_server_version}" ]]; then
     echo "Docker Server and Client versions do not match. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
-  if echo "${DOCKER_SERVER_VERSION}" | grep -q '\-ce'; then
+  if echo "${docker_server_version}" | grep -q '\-ce'; then
     echo "Docker Community Edition not yet supported. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
-  if echo "${DOCKER_SERVER_VERSION}" | grep -q '\-ee'; then
+  if echo "${docker_server_version}" | grep -q '\-ee'; then
     echo "Docker Enterprise Edition not yet supported. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
-  DOCKER_MAJOR_VERSION="$(echo "${DOCKER_SERVER_VERSION}" | sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')"
-  if ! [[ "${DOCKER_MAJOR_VERSION}" == '1.11' || "${DOCKER_MAJOR_VERSION}" == '1.12' || "${DOCKER_MAJOR_VERSION}" == '1.13' ]]; then
-    echo "Docker "${DOCKER_SERVER_VERSION}" not supported. Please uninstall Docker and try again." >&2
+  docker_major_version="$(echo "${docker_server_version}" | sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')"
+  if ! [[ "${docker_major_version}" == '1.11' ||
+          "${docker_major_version}" == '1.12' ||
+          "${docker_major_version}" == '1.13' ]]; then
+    echo "Docker "${docker_server_version}" not supported. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
-  INSTALL_DOCKER='false'
+  install_docker='false'
 fi
 
-if [[ "${INSTALL_DOCKER}" == 'true' ]]; then
-  echo "Installing Docker..."
+if [[ "${install_docker}" == 'true' ]]; then
+  echo "Installing Docker 1.13.1..."
 
   # Add Docker Yum Repo
   sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
