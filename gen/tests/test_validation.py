@@ -1,5 +1,7 @@
 import json
 
+import pkg_resources
+
 import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
 
@@ -764,3 +766,14 @@ def test_validate_mesos_work_dir():
         'mesos_agent_work_dir',
         'Must be an absolute filesystem path starting with /',
     )
+
+
+def test_fault_domain_disabled():
+    arguments = make_arguments(new_arguments={
+        'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
+    })
+
+    generated = gen.generate(arguments=arguments)
+
+    assert generated.arguments['fault_domain_enabled'] == 'false'
+    assert 'fault_domain_detect_contents' not in generated.arguments
