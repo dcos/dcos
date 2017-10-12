@@ -1,0 +1,10 @@
+[upgrade]
+TEST_LAUNCH_CONFIG_INSTALLER_URL=https://downloads.dcos.io/dcos/stable/dcos_generate_config.sh
+TEST_CREATE_CLUSTER=true
+TEST_UPGRADE_ENTERPRISE=false
+TEST_UPGRADE_USE_CHECKS=true
+
+[installer-cli]
+TEST_CREATE_CLUSTER=true
+TEST_CUSTOM_CHECKS=true
+TEST_INSTALL_PREREQS=false
