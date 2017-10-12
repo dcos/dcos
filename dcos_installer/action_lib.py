@@ -371,7 +371,7 @@ def uninstall_dcos(config, block=False, state_json_dir=None, async_delegate=None
 
 
 def _add_prereqs_script(chain):
-    inline_script = """
+    inline_script = r"""
 #!/usr/bin/env bash
 
 # Exit on error, unset variable, or error in pipe chain
