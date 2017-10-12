@@ -733,3 +733,34 @@ def test_validate_custom_checks():
             'node check names: node-check-1, node-check-2.'
         ),
     )
+
+
+def test_validate_mesos_work_dir():
+    validate_success({
+        'mesos_master_work_dir': '/var/foo',
+        'mesos_agent_work_dir': '/var/foo',
+    })
+
+    # Relative path.
+    validate_error(
+        {'mesos_master_work_dir': 'foo'},
+        'mesos_master_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+    validate_error(
+        {'mesos_agent_work_dir': 'foo'},
+        'mesos_agent_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+
+    # Empty work dir.
+    validate_error(
+        {'mesos_master_work_dir': ''},
+        'mesos_master_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+    validate_error(
+        {'mesos_agent_work_dir': ''},
+        'mesos_agent_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
