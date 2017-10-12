@@ -377,6 +377,9 @@ def _add_prereqs_script(chain):
 # Exit on error, unset variable, or error in pipe chain
 set -o errexit -o nounset -o pipefail
 
+# For setenforce & xfs_info
+PATH=$PATH:/usr/sbin:/sbin
+
 if [[ -f /opt/dcos-prereqs.installed ]]; then
   echo "install_prereqs has been already executed on this host, exiting..."
   exit 0
@@ -450,7 +453,7 @@ sudo yum install -y xz
 sudo yum install -y ipset
 
 echo "Disabling SELinux..."
-sudo /usr/sbin/setenforce 0
+sudo setenforce 0
 sudo sed -i --follow-symlinks 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 echo "Detecting Docker..."
