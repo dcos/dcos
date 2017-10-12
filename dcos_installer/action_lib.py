@@ -417,7 +417,7 @@ kernel_major_version="$(uname -r | sed -e 's/\([0-9][0-9]*\).*/\1/')"
 kernel_minor_version="$(uname -r | sed -e "s/${kernel_major_version}\.\([0-9][0-9]*\).*/\1/")"
 if [[ ${docker_major_version} -lt 1 || ${docker_major_version} -eq 1 && ${kernel_minor_version} -lt 11 ]]; then
   echo "Error: Kernel version ${kernel_major_version}.${kernel_minor_version} is not supported. "\
-       "Only >= 3.10 is supported." >&2
+"Only >= 3.10 is supported." >&2
   exit 1
 fi
 
