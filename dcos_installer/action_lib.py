@@ -383,7 +383,7 @@ if [[ -f /opt/dcos-prereqs.installed ]]; then
 fi
 
 echo "Validating distro..."
-distro=$(cat /etc/os-release | sed -n 's/^ID="\(.*\)"$/\1/p')
+distro="$(cat /etc/os-release | sed -n 's/^ID="\(.*\)"$/\1/p')"
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
   echo "CoreOS includes all prerequisites by default." >&2
@@ -400,7 +400,7 @@ fi
 
 echo "Validating distro version..."
 # CentOS & RHEL < 7 have inconsistent release file locations
-distro_major_version=$(cat /etc/*elease | sed -n 's/^VERSION_ID="\([0-9][0-9]*\).*"$/\1/p')
+distro_major_version="$(cat /etc/*elease | sed -n 's/^VERSION_ID="\([0-9][0-9]*\).*"$/\1/p')"
 if [[ ${distro_major_version} -lt 7 ]]; then
   echo "Error: Distro version ${distro_major_version} is not supported. Only >= 7 is supported." >&2
   exit 1
