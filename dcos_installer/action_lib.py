@@ -471,21 +471,11 @@ if hash docker 2>/dev/null; then
     exit 1
   fi
 
-  if echo "${docker_server_version}" | grep -q '\-ce'; then
-    echo "Docker Community Edition not yet supported. Please uninstall Docker and try again." >&2
-    exit 1
-  fi
-
-  if echo "${docker_server_version}" | grep -q '\-ee'; then
-    echo "Docker Enterprise Edition not yet supported. Please uninstall Docker and try again." >&2
-    exit 1
-  fi
-
-  docker_major_version="$(echo "${docker_server_version}" | sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')"
-  if ! [[ "${docker_major_version}" == '1.11' ||
-          "${docker_major_version}" == '1.12' ||
-          "${docker_major_version}" == '1.13' ]]; then
-    echo "Docker "${docker_server_version}" not supported. Please uninstall Docker and try again." >&2
+  # Require Docker >= 1.11
+  docker_major_version="$(echo "${docker_server_version}" | sed -e 's/\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/')"
+  docker_minor_version="$(echo "${docker_server_version}" | sed -e 's/\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/')"
+  if [[ ${docker_major_version} -lt 1 || ${kernel_minor_version} -lt 11 ]]; then
+    echo "Docker version ${docker_server_version} not supported. Please uninstall Docker and try again." >&2
     exit 1
   fi
 
@@ -493,7 +483,7 @@ if hash docker 2>/dev/null; then
 fi
 
 if [[ "${install_docker}" == 'true' ]]; then
-  echo "Installing Docker 1.13.1..."
+  echo "Installing Docker..."
 
   # Add Docker Yum Repo
   sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
