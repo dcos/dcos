@@ -424,7 +424,7 @@ ExecStart=
 ExecStart=/usr/bin/dockerd --storage-driver=overlay
 EOF
 
-sudo yum install -y docker-engine-1.13.1 docker-engine-selinux-1.13.1
+sudo yum install -y docker-engine-17.05.0.ce docker-engine-selinux-17.05.0.ce
 sudo systemctl start docker
 sudo systemctl enable docker
 

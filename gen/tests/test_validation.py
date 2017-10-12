@@ -141,6 +141,34 @@ def test_invalid_mesos_dns_set_truncate_bit():
         true_false_msg)
 
 
+def test_validate_mesos_recovery_timeout():
+    validate_success(
+        {'mesos_recovery_timeout': '24hrs'})
+
+    validate_success(
+        {'mesos_recovery_timeout': '24.5hrs'})
+
+    validate_error(
+        {'mesos_recovery_timeout': '2.4.5hrs'},
+        'mesos_recovery_timeout',
+        "Invalid decimal format.")
+
+    validate_error(
+        {'mesos_recovery_timeout': 'asdf'},
+        'mesos_recovery_timeout',
+        "Error parsing 'mesos_recovery_timeout' value: asdf.")
+
+    validate_error(
+        {'mesos_recovery_timeout': '9999999999999999999999999999999999999999999ns'},
+        'mesos_recovery_timeout',
+        "Value 9999999999999999999999999999999999999999999 not in supported range.")
+
+    validate_error(
+        {'mesos_recovery_timeout': '1hour'},
+        'mesos_recovery_timeout',
+        "Unit 'hour' not in ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks'].")
+
+
 def test_cluster_docker_credentials():
     validate_error(
         {'cluster_docker_credentials': 'foo'},
