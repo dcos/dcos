@@ -114,6 +114,11 @@ def validate_url(url: str):
         ) from ex
 
 
+def validate_absolute_path(path):
+    if not path.startswith('/'):
+        raise AssertionError('Must be an absolute filesystem path starting with /')
+
+
 def validate_ip_list(json_str: str):
     nodes_list = validate_json_list(json_str)
     check_duplicates(nodes_list)
@@ -907,7 +912,9 @@ entry = {
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
         lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
-        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled)
+        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
+        lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
+        lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -996,7 +1003,9 @@ entry = {
         'check_config': calculate_check_config,
         'custom_checks': '{}',
         'check_search_path': CHECK_SEARCH_PATH,
-        'fault_domain_enabled': 'false'
+        'fault_domain_enabled': 'false',
+        'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
+        'mesos_agent_work_dir': '/var/lib/mesos/slave',
     },
     'must': {
         'custom_auth': 'false',
