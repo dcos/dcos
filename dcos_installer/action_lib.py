@@ -410,14 +410,17 @@ if [[ ${distro_major_version} -lt 7 ]]; then
 fi
 # CentOS & RHEL >= 7 both have the full version in /etc/redhat-release
 distro_minor_version="$(cat /etc/redhat-release | sed -e 's/[^0-9]*[0-9][0-9]*\.\([0-9][0-9]*\).*/\1/')"
-if [[ ${distro_minor_version} -lt 2 ]]; then
-  echo "Error: Distro version ${distro_minor_version} is not supported. Only >= 7.2 is supported." >&2
+echo "Distro Version: ${distro_major_version}.${distro_minor_version}"
+if [[ ${distro_major_version} -eq 7 && ${distro_minor_version} -lt 2 ]]; then
+  echo "Error: Distro version ${distro_major_version}.${distro_minor_version} is not supported. "\
+"Only >= 7.2 is supported." >&2
   exit 1
 fi
 
 echo "Validating kernel version..."
 kernel_major_version="$(uname -r | sed -e 's/\([0-9][0-9]*\).*/\1/')"
 kernel_minor_version="$(uname -r | sed -e "s/${kernel_major_version}\.\([0-9][0-9]*\).*/\1/")"
+echo "Kernel Version: ${kernel_major_version}.${kernel_minor_version}"
 if [[ ${kernel_major_version} -lt 1 || ${kernel_major_version} -eq 1 && ${kernel_minor_version} -lt 11 ]]; then
   echo "Error: Kernel version ${kernel_major_version}.${kernel_minor_version} is not supported. "\
 "Only >= 3.10 is supported." >&2
