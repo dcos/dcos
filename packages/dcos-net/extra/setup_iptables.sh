@@ -27,4 +27,3 @@ if ! iptables --wait -t nat -C ${RULE}; then
 else
   echo "Minuteman IPTables rule found"
 fi
-
