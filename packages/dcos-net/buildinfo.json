@@ -1,15 +1,15 @@
 {
   "requires": ["openssl", "ncurses", "erlang", "libsodium"],
   "sources": {
-    "navstar": {
+    "dcos-net": {
       "kind": "git",
-      "git": "https://github.com/dcos/navstar.git",
-      "ref": "ce160d474c885ef74510beda7321993ef29078c2",
+      "git": "git@github.com:dcos/dcos-net.git",
+      "ref": "b750a52f036dcc5b16bfbcf28edb05886cb9360f",
       "ref_origin": "master"
     }
   },
   "sysctl": {
-    "dcos-navstar": {
+    "dcos-net": {
       "net.ipv4.vs.conntrack": "1"
     }
   }
