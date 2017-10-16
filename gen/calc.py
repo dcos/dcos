@@ -858,6 +858,12 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
+    if os.path.exists(fault_domain_detect_filename):
+        return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+    return ''
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -1003,11 +1009,13 @@ entry = {
         'check_config': calculate_check_config,
         'custom_checks': '{}',
         'check_search_path': CHECK_SEARCH_PATH,
-        'fault_domain_enabled': 'false',
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
     },
     'must': {
+        'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
