@@ -17,6 +17,12 @@ cp -r /pkg/src/dcos-net/_build/prod/rel/dcos-net ${PKG_PATH}
 
 mkdir -p $PKG_PATH/bin
 
+# dcos-net-env
+
+dcos_net_env="$PKG_PATH/bin/dcos-net-env"
+cp "/pkg/extra/$(basename $dcos_net_env)" "$dcos_net_env"
+chmod +x "$dcos_net_env"
+
 # Systemd
 
 dcos_net_setup="$PKG_PATH/dcos-net/bin/dcos-net-setup.py"

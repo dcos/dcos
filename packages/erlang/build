@@ -11,20 +11,6 @@ make -j$NUM_CORES
 make install
 popd
 
-service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
-mkdir -p $(dirname $service)
-cat <<EOF > $service
-[Unit]
-Description=Erlang Port Mapping Daemon (EPMD): facilitates communication between distributed Erlang programs
-
-[Service]
-User=dcos_epmd
-Restart=always
-StartLimitInterval=0
-RestartSec=5
-LimitNOFILE=16384
-WorkingDirectory=${PKG_PATH}
-EnvironmentFile=/opt/mesosphere/environment
-ExecStart=${PKG_PATH}/bin/epmd -port 61420 -relaxed_command_check
-Environment=HOME=/opt/mesosphere
-EOF
+dcos_epmd_service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
+mkdir -p $(dirname $dcos_epmd_service)
+envsubst '${PKG_PATH}' < "/pkg/extra/$(basename $dcos_epmd_service)" > "${dcos_epmd_service}"
