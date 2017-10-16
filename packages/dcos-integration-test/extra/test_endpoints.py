@@ -6,8 +6,6 @@ import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
-from test_helpers import expanded_config
-
 
 def test_if_dcos_ui_is_up(dcos_api_session):
     r = dcos_api_session.get('/')
