@@ -238,6 +238,16 @@ def test_service_discovery_mesos_overlay(dcos_api_session):
 
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
+def test_service_discovery_mesos_overlay_ipv6(dcos_api_session):
+    app_definition, test_uuid = test_helpers.marathon_test_app(
+        container_type=marathon.Container.MESOS,
+        container_port=80,
+        host_port=9080,
+        network=marathon.Network.USER)
+    app_definition['ipAddress']['networkName'] = 'dcos6'
+
+    assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
+
 
 def test_service_discovery_docker_host(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
