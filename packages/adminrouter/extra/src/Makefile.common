@@ -12,12 +12,15 @@ DEV_PATH := /usr/local/src
 DCOSAR_AR_LOCAL_PATH := $(CURDIR)
 DCOSAR_AR_CTR_MOUNT := /usr/local/adminrouter/nginx/conf/
 
-# Detect the docker network interface bridge name.
-BRIDGE_DEVNAME := $(shell docker network inspect -f '{{ index .Options "com.docker.network.bridge.name" }}' bridge | awk 'NF')
-
-# Detect the docker network interface bridge IP.
-# Using a docker container for this allows the docker daemon to run locally or remotely in a VM, like docker-machine.
-BRIDGE_IP := $(shell docker run --net=host --rm alpine ifconfig $(BRIDGE_DEVNAME) | grep 'inet addr:' | cut -d: -f2 | cut -d' ' -f1)
+# Allow for overriding DNS resolver used by AR devkit with a one specified by
+# the user. Google's DNS servers sometimes time out/are not super-reliable :(
+ifdef LOCAL_DNS
+    $(info Using `$(LOCAL_DNS)` resolver for resolving hostnames in the container)
+    DNS_DOCKER_OPTS := --dns=$(LOCAL_DNS)
+else
+    $(info Using default resolvers for resolving hostnames in the container)
+    DNS_DOCKER_OPTS := --dns=8.8.8.8 --dns=8.8.4.4
+endif
 
 # Vary the name of the container on the per-flavour basis.
 # The way we detect the repository flavour is consistent with how test harness
@@ -28,10 +31,6 @@ else
     DEVKIT_NAME=adminrouter-devkit-open
 endif
 
-# FIXME: some problems with dns queries timing out, use hosts caching dns as a
-# workaround for now
-# DNS_DOCKER_OPTS := --dns=8.8.8.8 --dns=8.8.4.4
-DNS_DOCKER_OPTS := --dns=$(BRIDGE_IP) --dns=8.8.8.8 --dns=8.8.4.4
 DEVKIT_BASE_DOCKER_OPTS := --name $(DEVKIT_NAME) \
 	$(DNS_DOCKER_OPTS) \
 	-e NUM_CORES=2 \

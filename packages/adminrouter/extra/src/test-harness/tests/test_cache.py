@@ -6,7 +6,7 @@ import time
 
 import requests
 
-from generic_test_code.common import ping_mesos_agent
+from generic_test_code.common import ping_mesos_agent, verify_header
 from mocker.endpoints.marathon import (
     SCHEDULER_APP_ALWAYSTHERE,
     SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT,
@@ -856,6 +856,42 @@ class TestCacheMesosLeader:
             lbf.scan_log_buffer()
 
             assert lbf.extra_matches == {}
+
+    def test_if_backend_requests_have_useragent_set_correctly(
+            self, nginx_class, mocker, valid_user_header):
+        # Enable recording for marathon
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='record_requests')
+        # Enable recording for Mesos
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='record_requests')
+
+        # Make regular polling occur later than usual, so that we get a single
+        # cache refresh:
+        ar = nginx_class(cache_poll_period=60, cache_expiration=55)
+
+        with GuardedSubprocess(ar):
+            # Initiate cache refresh by issuing a request:
+            ping_mesos_agent(ar, valid_user_header)
+
+        mesos_requests = mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                                             func_name='get_recorded_requests')
+        marathon_requests = mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                                                func_name='get_recorded_requests')
+
+        assert len(mesos_requests) == 1
+        assert len(marathon_requests) == 2
+
+        # We could use a loop here, but let's make it a bit easier to debug:
+        verify_header(mesos_requests[0]['headers'],
+                      'User-Agent',
+                      'Master Admin Router')
+        verify_header(marathon_requests[0]['headers'],
+                      'User-Agent',
+                      'Master Admin Router')
+        verify_header(marathon_requests[1]['headers'],
+                      'User-Agent',
+                      'Master Admin Router')
 
 
 class TestCacheMarathon:
