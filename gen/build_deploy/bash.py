@@ -10,7 +10,6 @@ from typing import List
 
 import checksumdir
 import pkg_resources
-import yaml
 
 import dcos_installer.config_util
 import gen.build_deploy.util as util
@@ -25,21 +24,6 @@ from gen.calc import (
 )
 from gen.internals import Source
 from pkgpanda.util import logger
-
-
-def calculate_fault_domain_detect_contents(fault_domain_detect_filename, fault_domain_enabled):
-    if fault_domain_enabled == 'false':
-        return ''
-    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
-
-
-def calculate_fault_domain_enabled(fault_domain_detect_filename):
-    try:
-        with open(fault_domain_detect_filename):
-            pass
-    except FileNotFoundError:
-        return 'false'
-    return 'true'
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
@@ -97,14 +81,11 @@ onprem_source = Source(entry={
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
-        'enable_docker_gc': 'false',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
+        'enable_docker_gc': 'false'
     },
     'must': {
         'provider': 'onprem',
         'package_ids': calculate_package_ids,
-        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
-        'fault_domain_enabled': calculate_fault_domain_enabled,
         'custom_check_bins_dir': 'genconf/check_bins/',
         'custom_check_bins_package_name': 'custom-check-bins',
         'custom_check_bins_provided': calculate_custom_check_bins_provided,

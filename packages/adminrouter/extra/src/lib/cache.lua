@@ -59,9 +59,9 @@ end
 
 
 local function request(url, accept_404_reply, auth_token)
-    local headers = {}
+    local headers = {["User-Agent"] = "Master Admin Router"}
     if auth_token ~= nil then
-        headers = {["Authorization"] = "token=" .. auth_token}
+        headers["Authorization"] = "token=" .. auth_token
     end
 
     -- Use cosocket-based HTTP library, as ngx subrequests are not available

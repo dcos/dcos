@@ -75,6 +75,18 @@ routes:
       path: 'http://$backend/acs/api/v1/auth/'
       backend: iam
     path: /acs/api/v1/auth/
+  /internal/acs/api/v1/:
+    group: Authentication
+    matcher: path
+    description: 'Access Control Service policy query (unauthenticated, internal-only)'
+    proxy:
+      path: 'http://$backend/internal/acs/api/v1/'
+      backend: iam
+    rewrites:
+      - regex: ^/internal/(.*)
+        replacement: /$1
+        type: break
+    path: /internal/acs/api/v1/
   /login:
     group: Authentication
     matcher: exact
@@ -293,19 +305,21 @@ routes:
       path: 'http://$backend/system/health/v1'
       backend: dcos_diagnostics
     path: /system/health/v1
-  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))(?<url>.*)':
+  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json)':
     group: System
     matcher: regex
     description: System proxy to a specific agent node
     proxy:
-      path: >-
-        $agentaddr:$adminrouter_agent_port/system/v1$type$url$is_args$query_string
+      path: '$agentaddr:$adminrouter_agent_port'
     rewrites:
-      - regex: '^/agent/[0-9a-zA-Z-]+(.*)$'
-        replacement: $1
+      - regex: '^/system/v1/agent/[0-9a-zA-Z-]+/(logs.*|metrics/v0.*)'
+        replacement: /system/v1$url
+        type: break
+      - regex: '^/system/v1/agent/[0-9a-zA-Z-]+/dcos-metadata/dcos-version.json'
+        replacement: /dcos-metadata/dcos-version.json
         type: break
     path: >-
-      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))(?<url>.*)
+      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json)
   /system/v1/leader/marathon(?<url>.*):
     group: System
     matcher: regex
