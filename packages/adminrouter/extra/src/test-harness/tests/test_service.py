@@ -9,6 +9,7 @@ from generic_test_code.common import (
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
     header_is_absent,
+    verify_header,
 )
 from mocker.endpoints.marathon import (
     SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT,
@@ -815,3 +816,29 @@ class TestServiceStateful:
         assert resp.status_code == 200
         data = resp.json()
         assert data['endpoint_id'] == 'http://127.0.0.1:16000'
+
+    def test_if_ar_sets_correct_useragent_while_resolving_via_mesosdns(
+            self, master_ar_process_pertest, mocker, valid_user_header):
+        # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data={"apps": []})
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
+
+        # Make mesos-dns record requests:
+        mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                            func_name='record_requests')
+
+        url = master_ar_process_pertest.make_url_from_path("/service/scheduler-alwaysthere/")
+        requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        r_reqs = mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                                     func_name='get_recorded_requests')
+
+        assert len(r_reqs) == 1
+        verify_header(r_reqs[0]['headers'], 'User-Agent', 'Master Admin Router')
