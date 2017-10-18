@@ -1,8 +1,6 @@
-import collections
 import contextlib
 import json
 import logging
-import random
 import threading
 from collections import deque
 from subprocess import check_output
@@ -17,12 +15,12 @@ from dcos_test_utils import marathon
 
 log = logging.getLogger(__name__)
 
-GLOBAL_PORT_POOL = collections.defaultdict(lambda: list(range(10000, 32000)))
+GLOBAL_PORT_POOL = iter(range(10000, 32000))
 
 
-def unused_port(network):
+def unused_port():
     global GLOBAL_PORT_POOL
-    return GLOBAL_PORT_POOL[network].pop(random.choice(range(len(GLOBAL_PORT_POOL[network]))))
+    return next(GLOBAL_PORT_POOL)
 
 
 def lb_enabled():
@@ -56,7 +54,7 @@ def vip_app(container: marathon.Container, network: marathon.Network, host: str,
     elif network == marathon.Network.USER:
         return test_helpers.marathon_test_app(
             network=network,
-            host_port=unused_port(marathon.Network.USER),
+            host_port=unused_port(),
             host_constraint=host,
             vip=vip,
             container_type=container,
@@ -151,14 +149,13 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
 
 
 def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip, same_host):
+    vip_port = unused_port()
     origin_host = dcos_api_session.all_slaves[0]
     proxy_host = dcos_api_session.all_slaves[0] if same_host else dcos_api_session.all_slaves[1]
     if named_vip:
-        vip_port = unused_port('namedvip')
         vip = '/namedvip:{}'.format(vip_port)
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
     else:
-        vip_port = unused_port('1.1.1.7')
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
     cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
