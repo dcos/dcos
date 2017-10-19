@@ -11,7 +11,8 @@ docker ps
 # Cleanup from previous build
 rm -rf /tmp/dcos_build_venv
 
-# Force Python stdout/err to be unbuffered.
+# Force Python stdout/err to be unbuffered to have immediate
+# feedback in e.g. a TeamCity build environment.
 export PYTHONUNBUFFERED="notemtpy"
 
 # Write a DC/OS Release tool configuration file which specifies where the build
@@ -29,8 +30,8 @@ options:
 EOF
 fi
 
-# Create a python virtual environment to install the DC/OS tools to
-python3.6 -m venv /tmp/dcos_build_venv
+# Create a Python virtual environment to install the DC/OS tools to.
+python3.5 -m venv /tmp/dcos_build_venv
 . /tmp/dcos_build_venv/bin/activate
 
 # Install the DC/OS tools
