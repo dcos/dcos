@@ -6,10 +6,30 @@ import time
 import pytest
 import requests
 
-from generic_test_code.common import assert_endpoint_response
+from generic_test_code.common import assert_endpoint_response, verify_header
 from util import GuardedSubprocess, SearchCriteria, auth_type_str, jwt_type_str
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
+
+
+class TestAuthzIAMBackendQueryCommon:
+    def test_if_master_ar_sets_correct_useragent_while_quering_iam(
+            self, master_ar_process_pertest, mocker, valid_user_header):
+        mocker.send_command(endpoint_id='http://127.0.0.1:8101',
+                            func_name='record_requests')
+
+        assert_endpoint_response(
+            master_ar_process_pertest,
+            '/mesos_dns/v1/reflect/me',
+            200,
+            headers=valid_user_header,
+            )
+
+        r_reqs = mocker.send_command(endpoint_id='http://127.0.0.1:8101',
+                                     func_name='get_recorded_requests')
+
+        assert len(r_reqs) == 1
+        verify_header(r_reqs[0]['headers'], 'User-Agent', 'Master Admin Router')
 
 
 class TestAuthnJWTValidator:

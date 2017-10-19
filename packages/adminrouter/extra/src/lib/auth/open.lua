@@ -40,7 +40,8 @@ local function do_authn_and_authz_or_exit()
     local uid = validate_jwt_or_exit()
 
     -- Authz using authn :)
-    res = ngx.location.capture("/acs/api/v1/users/" .. uid)
+    res = ngx.location.capture("/internal/acs/api/v1/users/" .. uid)
+
     if res.status == ngx.HTTP_NOT_FOUND then
         ngx.log(ngx.ERR, "User not found: `" .. uid .. "`")
         return authcommon.exit_401()
