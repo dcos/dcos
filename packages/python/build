@@ -31,7 +31,7 @@ echo "pip version: $($PKG_PATH/bin/pip3 --version)"
 
 # Setup helper symlinks, force overwrite if link name exists.
 ln -fs "$PKG_PATH/bin/python3" "$PKG_PATH/bin/python"
-ln -fs "$PKG_PATH/bin/easy_install-3.5" "$PKG_PATH/bin/easy_install-3"
+ln -fs "$PKG_PATH/bin/easy_install-3.6" "$PKG_PATH/bin/easy_install-3"
 ln -fs "$PKG_PATH/bin/easy_install-3" "$PKG_PATH/bin/easy_install"
 ln -fs "$PKG_PATH/bin/pip3" "$PKG_PATH/bin/pip"
 ln -fs "$PKG_PATH/bin/python3-config" "$PKG_PATH/bin/python-config"
