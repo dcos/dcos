@@ -60,8 +60,8 @@ To find the git SHA of any given release, check the latest commit in the version
     - Ubuntu 16.04 LTS:
         - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
         - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev python3-venv`
-        - Install Python 3.5.2: `pyenv install 3.5.2`
-        - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
+        - Install Python 3.6.3: `pyenv install 3.6.3`
+        - Create DC/OS virtualenv: `pyenv virtualenv 3.6.3 dcos`
         - Activate environment: `pyenv activate dcos`
 1. Over 10GB of free disk space and 8GB of RAM
     - The build makes use of hard links, so if you're using VirtualBox the disk space cannot be a synced folder.
