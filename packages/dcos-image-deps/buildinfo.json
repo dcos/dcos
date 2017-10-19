@@ -55,13 +55,13 @@
     },
     "msrest": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/f5/b6/176a2109be5354bbcb31bf52e32ed91b1fc398f1a30ed12db0b429c64928/msrest-0.4.0-py3-none-any.whl",
-      "sha1": "fdd0ae8546202f817f1bbddf2828bc0af1720514"
+      "url": "https://pypi.python.org/packages/a4/79/956d2475af557ccc7de76ef67087fc8e7b591162748ab7783d88e9b685d7/msrest-0.4.17-py2.py3-none-any.whl",
+      "sha1": "f979991d34fdb8389abfddb4a73f6eef753abc47"
     },
     "msrestazure": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/d3/37/6bf15f4e322bd2aa84ed98630a6e265f04784e40124aac5dae2e000553b0/msrestazure-0.4.1-py3-none-any.whl",
-      "sha1": "dfa52c208f423a1614a1a5dd2910e0a2295f1cb7"
+      "url": "https://pypi.python.org/packages/34/3d/4ed39efc7e833a84fa07561903750e64dcbd0cbea59b5be19ebd608f15fe/msrestazure-0.4.15-py2.py3-none-any.whl",
+      "sha1": "eb9bbdadbc1897950b95bb2e653dcc8cce2e50f6"
     },
     "beautifulsoup4": {
       "kind": "url",
