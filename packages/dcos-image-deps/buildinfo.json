@@ -53,11 +53,6 @@
       "url": "https://pypi.python.org/packages/cf/23/ef729d6ef3a9d19732d480eaaf94a72799a99a38ed25eda10f8e68ffd408/azure_storage-0.32.0-py3-none-any.whl",
       "sha1": "3cc425a291fe6359f6d786aa040059004082795d"
     },
-    "enum34": {
-        "kind": "url",
-        "url": "https://pypi.python.org/packages/af/42/cb9355df32c69b553e72a2e28daee25d1611d2c0d9c272aa1d34204205b2/enum34-1.1.6-py3-none-any.whl",
-        "sha1": "d8746baffb8d5f6af9aacc4d563d202f0bb9c334"
-    },
     "msrest": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/f5/b6/176a2109be5354bbcb31bf52e32ed91b1fc398f1a30ed12db0b429c64928/msrest-0.4.0-py3-none-any.whl",
