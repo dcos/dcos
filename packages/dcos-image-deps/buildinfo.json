@@ -70,8 +70,8 @@
     },
     "certifi": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/db/60/1ed0106bde7b14b363b15b17cc308aad93ba57d3582570f3ad7180ae0fae/certifi-2016.2.28-py2.py3-none-any.whl",
-      "sha1": "23b05f0c710004493ef65f9aa25aa44829f02aae"
+      "url": "https://pypi.python.org/packages/40/66/06130724e8205fc8c105db7edb92871c7fff7d31324d7f4405c762624a43/certifi-2017.7.27.1-py2.py3-none-any.whl",
+      "sha1": "aeb9761eb1231d8309a0b593747d0c95303467b5"
     },
     "chardet": {
       "kind": "url_extract",
