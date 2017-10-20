@@ -2,10 +2,6 @@
 set -o errexit -o nounset -o pipefail
 
 echo ">>> Kernel: $(uname -r)"
-echo ">>> Updating system to 7.3.1611"
-sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#baseurl=/baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
-yum -y --releasever=7.3.1611 update
-sed -i -e 's/^#mirrorlist=/mirrorlist=/' -e 's/^baseurl=/#baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
 
 echo ">>> Disabling SELinux"
 sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
@@ -18,9 +14,6 @@ echo -e "\nPermitRootLogin without-password" >> /etc/ssh/sshd_config
 
 sed -i '/^\s*UseDNS /d' /etc/ssh/sshd_config
 echo -e "\nUseDNS no" >> /etc/ssh/sshd_config
-
-echo ">>> Installing DC/OS dependencies and essential packages"
-yum -y --tolerant install perl tar xz unzip curl bind-utils net-tools ipset libtool-ltdl rsync nfs-utils
 
 echo ">>> Set up filesystem mounts"
 cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
@@ -51,29 +44,7 @@ echo -e "[Journal]\nSystemMaxUse=15G" > /etc/systemd/journald.conf.d/dcos-el7-am
 echo ">>> Removing tty requirement for sudo"
 sed -i'' -E 's/^(Defaults.*requiretty)/#\1/' /etc/sudoers
 
-echo ">>> Install Docker"
-curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-engine-17.05.0.ce-1.el7.centos.x86_64.rpm \
-  https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-17.05.0.ce-1.el7.centos.x86_64.rpm
-curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-engine-selinux-17.05.0.ce-1.el7.centos.noarch.rpm \
-  https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-17.05.0.ce-1.el7.centos.noarch.rpm
-yum -y localinstall /tmp/docker*.rpm || true
-systemctl enable docker
-
-echo ">>> Creating docker group"
-/usr/sbin/groupadd -f docker
-
-echo ">>> Customizing Docker storage driver to use Overlay"
-docker_service_d=/etc/systemd/system/docker.service.d
-mkdir -p "$docker_service_d"
-cat << 'EOF' > "${docker_service_d}/execstart.conf"
-[Service]
-Restart=always
-StartLimitInterval=0
-RestartSec=15
-ExecStartPre=-/sbin/ip link del docker0
-ExecStart=
-ExecStart=/usr/bin/dockerd --graph=/var/lib/docker --storage-driver=overlay
-EOF
+. /tmp/install_docker.sh
 
 echo ">>> Adding group [nogroup]"
 /usr/sbin/groupadd -f nogroup
@@ -88,7 +59,6 @@ rm -f /var/run/utmp
 >/var/log/btmp
 
 echo ">>> Remove temporary files"
-yum clean all
 rm -rf /tmp/* /var/tmp/*
 
 echo ">>> Remove ssh client directories"
@@ -114,9 +84,9 @@ echo "Adding $fqdn if $ip is not in /etc/hosts"
 grep ^$ip /etc/hosts > /dev/null || echo -e "$ip\t$fqdn ${fqdn%%.*}" >> /etc/hosts
 EOF
 
-chmod +x "$update_hosts_script"
+chmod +x "${update_hosts_script}"
 
-cat << EOF > "$update_hosts_unit"
+cat << EOF > "${update_hosts_unit}"
 [Unit]
 Description=Update /etc/hosts with local FQDN if necessary
 After=network.target
@@ -124,13 +94,13 @@ After=network.target
 [Service]
 Restart=no
 Type=oneshot
-ExecStart=$update_hosts_script
+ExecStart=${update_hosts_script}
 
 [Install]
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable $(basename "$update_hosts_unit")
+systemctl enable $(basename "${update_hosts_unit}")
 
 
 # Make sure we wait until all the data is written to disk, otherwise
