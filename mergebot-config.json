@@ -3,6 +3,7 @@
    "ship-it": false,
    "test": false,
    "bump-ee": true,
+   "merge-it": true,
     "label": {
         "enabled": true,
         "default": "Work In Progress",
