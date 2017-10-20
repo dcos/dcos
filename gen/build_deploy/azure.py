@@ -59,7 +59,6 @@ azure_base_source = Source(entry={
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
-        'fault_domain_enabled': 'true',
         'fault_domain_detect_contents': yaml.dump(
             pkg_resources.resource_string('gen', 'fault-domain-detect/azure.sh').decode())
     },

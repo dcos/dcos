@@ -25,6 +25,7 @@ import collections
 import ipaddress
 import json
 import os
+import re
 import socket
 import string
 import textwrap
@@ -39,6 +40,9 @@ import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
 from pkgpanda.util import hash_checkout
+
+
+CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
 
 def type_str(value):
@@ -108,6 +112,11 @@ def validate_url(url: str):
         raise AssertionError(
             "Couldn't parse given value `{}` as an URL".format(url)
         ) from ex
+
+
+def validate_absolute_path(path):
+    if not path.startswith('/'):
+        raise AssertionError('Must be an absolute filesystem path starting with /')
 
 
 def validate_ip_list(json_str: str):
@@ -615,6 +624,20 @@ def validate_mesos_max_completed_tasks_per_framework(
                                  "parameter as an integer: {}".format(ex)) from ex
 
 
+def validate_mesos_recovery_timeout(mesos_recovery_timeout):
+    units = ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks']
+
+    match = re.match("([\d\.]+)(\w+)", mesos_recovery_timeout)
+    assert match is not None, "Error parsing 'mesos_recovery_timeout' value: {}.".format(mesos_recovery_timeout)
+
+    value = match.group(1)
+    unit = match.group(2)
+
+    assert value.count('.') <= 1, "Invalid decimal format."
+    assert float(value) <= 2**64, "Value {} not in supported range.".format(value)
+    assert unit in units, "Unit '{}' not in {}.".format(unit, units)
+
+
 def calculate_check_config_contents(check_config, custom_checks, check_search_path, check_ld_library_path):
 
     def merged_check_config(config_a, config_b):
@@ -835,6 +858,12 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
+    if os.path.exists(fault_domain_detect_filename):
+        return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+    return ''
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -885,10 +914,13 @@ entry = {
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
+        validate_mesos_recovery_timeout,
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
         lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
-        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled)
+        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
+        lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
+        lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -920,6 +952,7 @@ entry = {
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
         'mesos_max_completed_tasks_per_framework': '',
+        'mesos_recovery_timeout': '24hrs',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -975,9 +1008,14 @@ entry = {
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
         'custom_checks': '{}',
-        'fault_domain_enabled': 'false'
+        'check_search_path': CHECK_SEARCH_PATH,
+        'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
+        'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
     },
     'must': {
+        'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
@@ -1021,7 +1059,6 @@ entry = {
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'conditional': {

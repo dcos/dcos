@@ -393,7 +393,7 @@ package:
       MESOS_REGISTRY_STRICT=false
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
-      MESOS_WORK_DIR=/var/lib/dcos/mesos/master
+      MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
@@ -423,11 +423,12 @@ package:
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
-      MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_WORK_DIR={{ mesos_agent_work_dir }}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
@@ -473,8 +474,6 @@ package:
       {
         "PATH": "/usr/bin:/bin",
         "SHELL": "/usr/bin/bash",
-        "LD_LIBRARY_PATH": "/opt/mesosphere/lib",
-        "SASL_PATH": "/opt/mesosphere/lib/sasl2",
         "LIBPROCESS_NUM_WORKER_THREADS": "8"
       }
   - path: /etc/dcos-log.env
@@ -756,6 +755,9 @@ package:
               },
               {
                   "Location": "/opt/mesosphere/etc/user.config.yaml"
+              },
+              {
+                  "Location": "/var/lib/dcos/cluster-id"
               },
               {
                   "Location": "/var/lib/dcos/exhibitor/zookeeper/snapshot/myid",
