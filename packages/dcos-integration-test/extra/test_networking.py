@@ -1,8 +1,6 @@
-import collections
 import contextlib
 import json
 import logging
-import random
 import threading
 from collections import deque
 from subprocess import check_output
@@ -16,18 +14,12 @@ from dcos_test_utils import marathon
 
 log = logging.getLogger(__name__)
 
-# NOTE: linux kernel 3.10.0-327 (rh/centos 7.2) and 3.10.0-514 (rh/centos 7.3)
-# drop outgoing vxlan tcp packets if the destination port is in the range
-# from 14849 (0x3a01) to 15103 (0x3aff).
-# For more information please see the following link:
-# https://jira.mesosphere.com/browse/DCOS_OSS-1463?focusedCommentId=119792#comment-119792
-# TODO: please check this port range on newer linux kernel
-GLOBAL_PORT_POOL = collections.defaultdict(lambda: list(range(10000, 14849)) + list(range(15104, 32000)))
+GLOBAL_PORT_POOL = iter(range(10000, 32000))
 
 
-def unused_port(network):
+def unused_port():
     global GLOBAL_PORT_POOL
-    return GLOBAL_PORT_POOL[network].pop(random.choice(range(len(GLOBAL_PORT_POOL[network]))))
+    return next(GLOBAL_PORT_POOL)
 
 
 def lb_enabled():
@@ -61,7 +53,7 @@ def vip_app(container: marathon.Container, network: marathon.Network, host: str,
     elif network == marathon.Network.USER:
         return test_helpers.marathon_test_app(
             network=network,
-            host_port=unused_port(marathon.Network.USER),
+            host_port=unused_port(),
             host_constraint=host,
             vip=vip,
             container_type=container,
@@ -156,14 +148,13 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
 
 
 def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip, same_host):
+    vip_port = unused_port()
     origin_host = dcos_api_session.all_slaves[0]
     proxy_host = dcos_api_session.all_slaves[0] if same_host else dcos_api_session.all_slaves[1]
     if named_vip:
-        vip_port = unused_port('namedvip')
         vip = '/namedvip:{}'.format(vip_port)
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
     else:
-        vip_port = unused_port('1.1.1.7')
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
     cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
@@ -397,7 +388,7 @@ def test_dcos_cni_l4lb(dcos_api_session):
     spartan_net_host = cni_config_app_service[0].host
 
     # Launch the test-app on DC/OS overlay, with a VIP.
-    server_vip_port = unused_port('spartanvip')
+    server_vip_port = unused_port()
     server_vip = '/spartanvip:{}'.format(server_vip_port)
     server_vip_addr = 'spartanvip.marathon.l4lb.thisdcos.directory:{}'.format(server_vip_port)
 
