@@ -1,3 +1,9 @@
+root:
+  - path: /etc/modules-load.d/br.conf
+    permissions: "0644"
+    owner: root
+    content: br_netfilter
+
 coreos:
   update:
     reboot-strategy: "off"
@@ -11,5 +17,7 @@ coreos:
     - name: locksmithd.service
       mask: true
       command: stop
-    - name: systemd-resolved.service
+    - name: systemd-modules-load.service
+      command: restart
+    - name: systemd-networkd.service
       command: stop
