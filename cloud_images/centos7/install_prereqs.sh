@@ -2,9 +2,9 @@
 set -o errexit -o nounset -o pipefail
 
 echo ">>> Kernel: $(uname -r)"
-echo ">>> Updating system to 7.3.1611"
+echo ">>> Updating system to $CENTOS_VERSION"
 sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#baseurl=/baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
-yum -y --releasever=7.3.1611 update
+yum -y --releasever=$CENTOS_VERSION update
 sed -i -e 's/^#mirrorlist=/mirrorlist=/' -e 's/^baseurl=/#baseurl=/' /etc/yum.repos.d/CentOS-Base.repo
 
 echo ">>> Disabling SELinux"
