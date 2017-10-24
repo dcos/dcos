@@ -1,5 +1,20 @@
 ## Changelog
 
+### 2017-10-20
+
+#### cloud_images
+
+Support for building on Red Hat Linux
+* new `redhat7/` folder/image and build scripts
+* added `lib` folder with shared provisioning scripts
+* reworked `centos7/` scripts to use shared provisioning scripts
+* updated `README.md` to be more platform-agnostic
+
+#### dcos-redhat7-201710202314
+
+Base (source) AMI:
+* ami-1f8a4767
+
 ### 2017-05-29
 
 #### dcos-centos7-201705292021
