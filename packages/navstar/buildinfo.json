@@ -4,8 +4,8 @@
     "navstar": {
       "kind": "git",
       "git": "https://github.com/dcos/navstar.git",
-      "ref": "ce160d474c885ef74510beda7321993ef29078c2",
-      "ref_origin": "master"
+      "ref": "4c868e19532048661a5517f371bf72d4df4b5d49",
+      "ref_origin": "deepak/reconcile"
     }
   },
   "sysctl": {
