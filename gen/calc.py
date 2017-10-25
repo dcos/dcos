@@ -910,8 +910,8 @@ entry = {
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_remove_dockercfg_enable': "true",
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
-        'dcos_remove_dockercfg_enable': "false",
         'minuteman_min_named_ip': '11.0.0.0',
         'minuteman_max_named_ip': '11.255.255.255',
         'no_proxy': '',
