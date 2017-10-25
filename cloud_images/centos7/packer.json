@@ -1,6 +1,7 @@
 {
   "min_packer_version": "0.10.1",
   "variables": {
+    "centos_version": "{{env `CENTOS_VERSION`}}",
     "cloud_builder_version": "0.1",
     "deploy_regions": "{{env `DEPLOY_REGIONS`}}",
     "source_ami": "{{env `SOURCE_AMI`}}",
@@ -94,7 +95,7 @@
       "inline": [
         "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
         "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_prereqs.sh",
-        "sudo /tmp/install_prereqs.sh"
+        "sudo CENTOS_VERSION={{user `centos_version`}} /tmp/install_prereqs.sh"
       ]
     }
   ]

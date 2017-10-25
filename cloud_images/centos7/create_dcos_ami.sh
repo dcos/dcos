@@ -7,7 +7,8 @@ export AWS_PROFILE=${AWS_PROFILE:-"development"}
 # Base CentOS 7 AMI and region
 export SOURCE_AMI=${SOURCE_AMI:-"ami-31a8ca51"}
 export SOURCE_AMI_REGION=${SOURCE_AMI_REGION:-"us-west-2"}
-
+# Version upgraded to in install_prereqs.sh
+export CENTOS_VERSION=${CENTOS_VERSION:-"7.4.1708"}
 # Comma separated string of AWS regions to copy the resulting DC/OS AMI to
 export DEPLOY_REGIONS=${DEPLOY_REGIONS:-"us-west-2"}
 
