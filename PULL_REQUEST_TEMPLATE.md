@@ -14,7 +14,7 @@ These DC/OS JIRA ticket(s) must be updated in the moment this PR lands:
 
 These tickets are related to this change:
 
-  - [DCOS_OSS-<number>](https://jira.dcos.io/browse/DCOS_OSS-<number>) Foo the Bar so it stops Bazzing.
+  - [DCOS_OSS-<number>](https://jira.mesosphere.com/browse/DCOS_OSS-<number>) Foo the Bar so it stops Bazzing.
   - [DCOS-<number>](https://jira.mesosphere.com/browse/DCOS-<number>) Foo the Bar so it stops Bazzing.
 
 
