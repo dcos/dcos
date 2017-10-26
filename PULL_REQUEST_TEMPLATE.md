@@ -2,7 +2,15 @@
 
 What features does this change enable? What bugs does this change fix? High-Level description of how things changed.
 
-## Related Issues
+## Corresponding DC/OS ticket(s)
+
+These DC/OS JIRA ticket(s) must be updated in the moment this PR lands:
+
+  - https://jira.mesosphere.com/browse/DCOS_OSS-<number>
+
+## Related tickets
+
+These tickets are related to this change:
 
   - [DCOS_OSS-<number>](https://jira.dcos.io/browse/DCOS_OSS-<number>) Foo the Bar so it stops Bazzing.
   - [DCOS-<number>](https://jira.mesosphere.com/browse/DCOS-<number>) Foo the Bar so it stops Bazzing.
