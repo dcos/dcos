@@ -1,0 +1,34 @@
+[Unit]
+Description=DC/OS Net: A distributed systems & network overlay orchestration engine
+
+[Service]
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=5
+LimitNOFILE=16384
+WorkingDirectory=${PKG_PATH}/dcos-net
+EnvironmentFile=/opt/mesosphere/etc/dcos-net-erl.env
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dns_config
+EnvironmentFile=/opt/mesosphere/etc/dns_search_config
+EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
+EnvironmentFile=-/opt/mesosphere/etc/dcos-net.env
+EnvironmentFile=-/run/dcos/etc/dcos-net_auth.env
+Environment=HOME=/opt/mesosphere
+ExecStartPre=/opt/mesosphere/bin/check-time
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py modprobe ip_vs_wlc
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py /opt/mesosphere/bin/setup_iptables.sh
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py mkdir -p /var/lib/dcos/navstar/mnesia
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py mkdir -p /var/lib/dcos/navstar/lashup
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py modprobe dummy
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link add minuteman type dummy
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link set minuteman up
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link add spartan type dummy
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link set spartan up
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.1/32 dev spartan
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.2/32 dev spartan
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.3/32 dev spartan
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-net
+ExecStart=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-env foreground

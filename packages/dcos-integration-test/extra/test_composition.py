@@ -162,15 +162,16 @@ def test_signal_service(dcos_api_session):
     all_node_units = [
         'diagnostics-service',
         'diagnostics-socket',
+        'dns-watchdog-service',
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'navstar-service',
+        'l4lb-watchdog-service',
+        'net-service',
+        'net-watchdog-service',
+        'overlay-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer',
-        'spartan-service',
-        'spartan-watchdog-service',
-        'spartan-watchdog-timer']
+        'signal-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [
