@@ -188,6 +188,9 @@ class Package:
     def __repr__(self):
         return str(self.__id)
 
+    def __lt__(self,other):
+        return (self.name < other.name)
+
 
 def expand_require(require: Union[str, dict]):
     name = None
@@ -737,7 +740,7 @@ class Install:
             return list(map(lambda name: os.path.splitext(name)[0], service_files))
 
         # Add the folders, config in each package.
-        for package in packages:
+        for package in sorted(packages):
             # Package folders
             # NOTE: Since active is at the end of the folder list it will be
             # removed by the zip. This is the desired behavior, since it will be
