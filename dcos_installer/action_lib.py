@@ -389,6 +389,23 @@ echo "Validating distro..."
 distro="$(source /etc/os-release && echo "${ID}")"
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
+  networkd = 'systemctl is-enabled systemd-networkd; echo $?'
+
+  if [ "$networkd" -eq "0" ]; then
+    network_config="/etc/systemd/network/dcos.network"
+
+    /bin/cat <<EOM >$network_config
+    [Match]
+    Type=bridge
+    Name=docker* m-* d-* vtep*
+
+    [Link]
+    Unmanaged=yes
+    EOM
+
+    echo "Installed DC/OS network config for systemd-networkd."
+  fi
+
   echo "CoreOS includes all prerequisites by default." >&2
   exit 0
 elif [[ "${distro}" == 'rhel' ]]; then
