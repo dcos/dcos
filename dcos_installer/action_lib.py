@@ -376,9 +376,27 @@ def _add_prereqs_script(chain):
 # setenforce is in this path
 PATH=$PATH:/sbin
 
-dist=$(cat /etc/os-release | sed -n 's@^ID="\(.*\)"$@\\1@p')
+dist="$(source /etc/os-release && echo "${ID}")"
 
 if ([ x$dist == 'xcoreos' ]); then
+   echo "Distro: CoreOS"
+   networkd = 'systemctl is-enabled systemd-networkd; echo $?'
+
+   if [ "$networkd" -eq "0" ]; then
+     network_config="/etc/systemd/network/dcos.network"
+
+     /bin/cat <<EOM >$network_config
+     [Match]
+     Type=bridge
+     Name=docker* m-* d-* vtep*
+
+     [Link]
+     Unmanaged=yes
+     EOM
+ 
+     systemctl restart systemd-networkd
+     echo "Installed DC/OS network config for systemd-networkd and restarted systemd-network"
+   fi
   echo "Detected CoreOS. All prerequisites already installed" >&2
   exit 0
 fi
