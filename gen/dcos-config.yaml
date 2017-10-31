@@ -423,6 +423,21 @@ package:
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
+  - path: /etc/mesos-slave-dns.json 
+    content: |
+    {
+            "docker": [
+            {
+                    "network_mode": "USER",
+                    "dns": {
+                            "nameservers": [ 
+                                "198.51.100.1",
+                                "fd01:c::c633:6401"
+                             ]
+                    }
+            }
+            ]
+    }
   - path: /etc/mesos-slave-common
     content: |
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
