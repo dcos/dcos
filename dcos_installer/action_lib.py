@@ -353,18 +353,48 @@ def uninstall_dcos(config, block=False, state_json_dir=None, async_delegate=None
 def _add_prereqs_script(chain):
     inline_script = """
 #/bin/sh
-# setenforce is in this path
+
+# For setenforce
 PATH=$PATH:/sbin
 
-dist=$(cat /etc/os-release | sed -n 's@^ID="\(.*\)"$@\\1@p')
+# Helper to configure `networkd` on CoreOS to ignore all DC/OS overlay interfaces.
+function coreos_networkd_config() {
 
-if ([ x$dist == 'xcoreos' ]); then
-  echo "Detected CoreOS. All prerequisites already installed" >&2
+network_config="/etc/systemd/network/dcos.network"
+sudo tee $network_config > /dev/null<<'EOF'
+[Match]
+Type=bridge
+Name=docker* m-* d-* vtep*
+
+[Link]
+Unmanaged=yes
+EOF
+
+}
+
+echo "Validating distro..."
+distro="$(source /etc/os-release && echo "${ID}")"
+if [[ "${distro}" == 'coreos' ]]; then
+  echo "Distro: CoreOS"
+
+  if systemctl list-unit-files | grep systemd-networkd.service > /dev/null; then
+    echo "Configuring systemd-networkd to ignore docker bridge and DC/OS overlay interfaces..."
+    coreos_networkd_config
+
+    if systemctl is-enabled systemd-networkd > /dev/null; then
+        echo "Restarting systemd-networkd...."
+        sudo systemctl restart systemd-networkd
+    fi
+
+    echo "CoreOS network setup complete."
+  else
+    echo "All prerequisites already installed"
+  fi
   exit 0
 fi
 
-if ([ x$dist != 'xrhel' ] && [ x$dist != 'xcentos' ]); then
-  echo "$dist is not supported. Only RHEL and CentOS are supported" >&2
+if ([ "$distro" != 'rhel' ] && [ "$distro" != 'centos' ]); then
+  echo "$distro is not supported. Only RHEL and CentOS are supported" >&2
   exit 0
 fi
 
