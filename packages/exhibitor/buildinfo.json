@@ -4,7 +4,7 @@
     "exhibitor": {
       "kind": "git",
       "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "2c0f5e2a9d9962d0b02dd022fe8980a95cb5f53b",
+      "ref": "8887bfff076f4d48dcae2ddb3e3159bda4787783",
       "ref_origin": "master"
     },
     "zookeeper": {
