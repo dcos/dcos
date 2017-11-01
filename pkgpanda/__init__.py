@@ -465,7 +465,7 @@ def symlink_tree(src, dest):
         else:
             try:
                 os.symlink(src_path, dest_path)
-            except FileNotFoundError as ex:
+            except (FileNotFoundError, FileExistsError) as ex:
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
 
@@ -777,7 +777,10 @@ class Install:
                     raise ValidationError("Two packages are trying to install the same file {0} or "
                                           "two roles in the set of roles {1} are causing a package "
                                           "to try activating multiple versions of the same file. "
-                                          "One of the package files is {2}.".format(ex.dest,
+                                          "One of the package files is {2}. "
+                                          "This might also be caused by modified content of an installed "
+                                          "package. You can try to fix it by using `pkgpanda fetch --force-reinstall ...` "
+                                          "on the packge(s) stated in this message.".format(ex.dest,
                                                                                     self.__roles,
                                                                                     ex.src))
 
