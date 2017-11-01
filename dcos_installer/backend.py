@@ -208,10 +208,12 @@ aws_advanced_source = gen.internals.Source({
         'num_masters': '5',
         'aws_template_upload': 'true',
         'aws_template_storage_bucket_path_autocreate': 'true',
-        'bootstrap_id': lambda: gen.calc.calculate_environment_variable('BOOTSTRAP_ID')
+        'bootstrap_id': lambda: gen.calc.calculate_environment_variable('BOOTSTRAP_ID'),
         # TODO(cmaloney): Add defaults for getting AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY from the
         # environment to set as keys. Not doing for now since they would need to be passed through
         # the `docker run` inside dcos_generate_config.sh
+        'aws_template_storage_access_key_id': '',
+        'aws_template_storage_secret_access_key': '',
     },
     'must': {
         'provider': 'aws',
@@ -223,6 +225,10 @@ aws_advanced_source = gen.internals.Source({
         'bootstrap_url': calculate_base_repository_url,
         'reproducible_artifact_path': calculate_reproducible_artifact_path,
     },
+    'secret': [
+        'aws_template_storage_access_key_id',
+        'aws_template_storage_secret_access_key',
+    ],
     'conditional': {
         'aws_template_upload': {
             'true': {

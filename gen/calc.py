@@ -754,6 +754,10 @@ entry = {
         'profile_symlink_cmd': calculate_profile_symlink_cmd,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
     },
+    'secret': [
+        'cluster_docker_credentials',
+        'exhibitor_admin_password',
+    ],
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},
