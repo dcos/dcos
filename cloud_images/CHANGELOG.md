@@ -95,3 +95,79 @@ Base (source) AMI:
 
 DC/OS AMI's:
 * us-gov-west-1: ami-4e02bd2f
+
+#### centos7-201709062029
+
+Base (source) AMI:
+* ami-6eed1a16
+
+DC/OS AMI's:
+* ap-northeast-1:ami-e21fd884
+* ap-northeast-2:ami-94a378fa
+* ap-south-1:ami-59276036
+* ap-southeast-1:ami-3b8ee058
+* ap-southeast-2:ami-c2e501a0
+* ca-central-1:ami-3801bf5c
+* eu-central-1:ami-868531e9
+* eu-west-1:ami-5f03c426
+* eu-west-2:ami-0da4b469
+* sa-east-1:ami-5d2f5d31
+* us-east-1:ami-abb1a2d0
+* us-east-2:ami-807d5fe5
+* us-west-1:ami-f6427596
+* us-west-2:ami-6eed1a16
+
+#### dcos-centos7-201709062024
+
+Base (source) AMI:
+* ami-e58c0f84
+
+DC/OS AMI's:
+* us-gov-west-1: ami-e58c0f84
+
+#### dcos-centos7-201709252313
+
+Update to CentOS 7.4.1708
+
+Base (source) AMI from centos:
+* ami-a9b24bd1
+
+DC/OS AMIs (with prereqs)
+
+* ap-northeast-1:ami-72f93314
+* ap-northeast-2:ami-94b369fa
+* ap-south-1:ami-ac1455c3
+* ap-southeast-1:ami-cac2b2a9
+* ap-southeast-2:ami-a0d736c2
+* ca-central-1:ami-7d7ac319
+* eu-central-1:ami-b371c1dc
+* eu-west-1:ami-4d4f8634
+* eu-west-2:ami-0b889b6f
+* sa-east-1:ami-1264187e
+* us-east-1:ami-b05aadca
+* us-east-2:ami-08765b6d
+* us-west-1:ami-63cafb03
+* us-west-2:ami-1de01e65
+
+#### centos7-201709262005
+
+Update to CentOS 7.4.1708 (no DC/OS prereqs)
+
+* ap-northeast-1: ami-965345f8
+* ap-southeast-1: ami-8af586e9
+* ap-southeast-2: ami-427d9c20
+* eu-central-1: ami-2d0cbc42
+* eu-west-1: ami-e46ea69d
+* sa-east-1: ami-a5acd0c9
+* us-east-1: ami-771beb0d
+* us-west-1: ami-866151e6
+* us-west-2: ami-a9b24bd1
+
+#### dcos-centos7-201710122205
+
+Update GovCloud CentOS AMI to 7.4
+
+DC/OS AMIs (with prereqs)
+
+* us-gov-west-1: ami-9923a1f8
+

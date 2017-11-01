@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import subprocess
 
 import dns.exception
@@ -14,7 +15,19 @@ from test_helpers import expanded_config
 
 @pytest.mark.first
 def test_dcos_cluster_is_up(dcos_api_session):
-    pass
+    def _docker_info(component):
+        # sudo is required for non-coreOS installs
+        return subprocess.check_output(['sudo', 'docker', 'version', '-f', component]).decode('utf-8').rstrip()
+
+    cluster_environment = {
+        "docker_client_version": _docker_info('{{.Client.Version}}'),
+        "docker_server_version": _docker_info('{{.Server.Version}}'),
+        "system_platform": platform.platform(),
+        "system_platform_system": platform.system(),
+        "system_platform_release": platform.release(),
+        "system_platform_version": platform.version()
+    }
+    logging.info(json.dumps(cluster_environment, sort_keys=True, indent=4))
 
 
 def test_leader_election(dcos_api_session):
@@ -149,15 +162,16 @@ def test_signal_service(dcos_api_session):
     all_node_units = [
         'diagnostics-service',
         'diagnostics-socket',
+        'dns-watchdog-service',
         'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'navstar-service',
+        'l4lb-watchdog-service',
+        'net-service',
+        'net-watchdog-service',
+        'overlay-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer',
-        'spartan-service',
-        'spartan-watchdog-service',
-        'spartan-watchdog-timer']
+        'signal-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [

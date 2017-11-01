@@ -2,34 +2,96 @@
 
 import json
 import os
+import os.path
+import shutil
 import subprocess
 import tempfile
+from typing import List
 
+import checksumdir
 import pkg_resources
 
 import dcos_installer.config_util
 import gen.build_deploy.util as util
 import gen.template
+import gen.util
 import pkgpanda
 import pkgpanda.util
-from gen.calc import calculate_environment_variable
+from gen.calc import (
+    calculate_environment_variable,
+    CHECK_SEARCH_PATH as DEFAULT_CHECK_SEARCH_PATH,
+    validate_true_false,
+)
 from gen.internals import Source
 from pkgpanda.util import logger
 
 
+def calculate_custom_check_bins_provided(custom_check_bins_dir):
+    if os.path.isdir(custom_check_bins_dir):
+        return 'true'
+    return 'false'
+
+
+def calculate_custom_check_bins_hash(custom_check_bins_provided, custom_check_bins_dir):
+    if custom_check_bins_provided == 'true':
+        return checksumdir.dirhash(custom_check_bins_dir, 'sha1')
+    return ''
+
+
+def calculate_custom_check_bins_package_id(
+        custom_check_bins_provided,
+        custom_check_bins_package_name,
+        custom_check_bins_hash):
+    if custom_check_bins_provided == 'true':
+        assert custom_check_bins_hash
+        return '{}--{}'.format(custom_check_bins_package_name, custom_check_bins_hash)
+    return ''
+
+
+def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
+    if custom_check_bins_provided == 'true':
+        assert custom_check_bins_package_id != ''
+        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/packages/{}'.format(custom_check_bins_package_id)
+    return DEFAULT_CHECK_SEARCH_PATH
+
+
+def calculate_package_ids(bootstrap_variant, custom_check_bins_provided, custom_check_bins_package_id):
+    package_ids = dcos_installer.config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
+    if custom_check_bins_provided == 'true':
+        assert custom_check_bins_package_id != ''
+        package_ids.append(custom_check_bins_package_id)
+    return json.dumps(package_ids)
+
+
+def validate_custom_check_bins_dir(custom_check_bins_dir):
+    assert len(custom_check_bins_dir) > 0, 'custom_check_bins_dir must be a valid directory name'
+    if os.path.exists(custom_check_bins_dir):
+        assert os.path.isdir(custom_check_bins_dir), '{} must be a directory'.format(custom_check_bins_dir)
+        for entry in os.scandir(custom_check_bins_dir):
+            assert entry.is_file(), '{} must not contain any subdirectories'.format(custom_check_bins_dir)
+
+
 onprem_source = Source(entry={
+    'validate': [
+        validate_custom_check_bins_dir,
+        lambda custom_check_bins_provided: validate_true_false(custom_check_bins_provided),
+    ],
     'default': {
         'platform': 'onprem',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
-        'enable_docker_gc': 'false',
+        'enable_docker_gc': 'false'
     },
     'must': {
         'provider': 'onprem',
-        'package_ids': lambda bootstrap_variant: json.dumps(
-            dcos_installer.config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
-        ),
+        'package_ids': calculate_package_ids,
+        'custom_check_bins_dir': 'genconf/check_bins/',
+        'custom_check_bins_package_name': 'custom-check-bins',
+        'custom_check_bins_provided': calculate_custom_check_bins_provided,
+        'custom_check_bins_hash': calculate_custom_check_bins_hash,
+        'custom_check_bins_package_id': calculate_custom_check_bins_package_id,
+        'check_search_path': calculate_check_search_path,
     }
 })
 
@@ -371,7 +433,7 @@ function check_all() {
     if [[ $AGENT_ONLY -eq 0 ]]; then
         # master node service checks
         for service in \
-            "53 spartan" \
+            "53 dcos-net" \
             "80 adminrouter" \
             "443 adminrouter" \
             "1050 dcos-diagnostics" \
@@ -386,33 +448,29 @@ function check_all() {
             "9942 metronome" \
             "9990 cosmos" \
             "15055 dcos-history" \
-            "33107 navstar" \
             "36771 marathon" \
             "41281 zookeeper" \
-            "42819 spartan" \
-            "43911 minuteman" \
             "46839 metronome" \
             "61053 mesos-dns" \
             "61420 epmd" \
-            "61421 minuteman" \
-            "62053 spartan" \
-            "62080 navstar"
+            "62053 dcos-net" \
+            "62080 dcos-net" \
+            "62501 dcos-net" \
+            "63053 dcos-net"
         do
             check_service $service
         done
     else
         # agent / public agent node service checks
         for service in \
-            "53 spartan" \
+            "53 dcos-net" \
             "5051 mesos-agent" \
-            "34451 navstar" \
-            "39851 spartan" \
-            "43995 minuteman" \
             "61001 agent-adminrouter" \
             "61420 epmd" \
-            "61421 minuteman" \
-            "62053 spartan" \
-            "62080 navstar"
+            "62053 dcos-net" \
+            "62080 dcos-net" \
+            "62501 dcos-net" \
+            "63053 dcos-net"
         do
             check_service $service
         done
@@ -513,17 +571,26 @@ fi
 
 def generate(gen_out, output_dir):
     print("Generating Bash configuration files for DC/OS")
-    make_bash(gen_out)
-    util.do_bundle_onprem(['dcos_install.sh'], gen_out, output_dir)
+    extra_files = make_bash(gen_out)
+    util.do_bundle_onprem(extra_files, gen_out, output_dir)
 
 
-def make_bash(gen_out):
-    """
-    Reformat the cloud-config into bash heredocs
-    Assert the cloud-config is only write_files
-    """
+def make_bash(gen_out) -> List[str]:
+    """Build bash deployment artifacts and return a list of their filenames."""
+    artifacts = []
+
+    # Build custom check bins package
+    if gen_out.arguments['custom_check_bins_provided'] == 'true':
+        package_filename = 'packages/{}/{}.tar.xz'.format(
+            gen_out.arguments['custom_check_bins_package_name'],
+            gen_out.arguments['custom_check_bins_package_id'],
+        )
+        make_custom_check_bins_package(gen_out.arguments['custom_check_bins_dir'], package_filename)
+        artifacts.append(package_filename)
+
     setup_flags = ""
     cloud_config = gen_out.templates['cloud-config.yaml']
+    # Assert the cloud-config is only write_files.
     assert len(cloud_config) == 1
     for file_dict in cloud_config['write_files']:
         # NOTE: setup-packages is explicitly disallowed. Should all be in extra
@@ -574,9 +641,32 @@ def make_bash(gen_out):
         'setup_services': setup_services})
 
     # Output the dcos install script
-    pkgpanda.util.write_string('dcos_install.sh', bash_script)
+    install_script_filename = 'dcos_install.sh'
+    pkgpanda.util.write_string(install_script_filename, bash_script)
+    artifacts.append(install_script_filename)
 
-    return 'dcos_install.sh'
+    return artifacts
+
+
+def make_custom_check_bins_package(source_dir, package_filename):
+    with gen.util.pkgpanda_package_tmpdir() as tmpdir:
+        tmp_source_dir = os.path.join(tmpdir, 'check_bins')
+        shutil.copytree(source_dir, tmp_source_dir)
+
+        # Apply permissions
+        for entry in os.scandir(tmp_source_dir):
+            # source_dir should have no subdirs.
+            assert entry.is_file()
+            os.chmod(entry.path, 0o755)
+
+        # Add an empty pkginfo.json.
+        pkginfo_filename = os.path.join(tmp_source_dir, 'pkginfo.json')
+        assert not os.path.isfile(pkginfo_filename)
+        with open(pkginfo_filename, 'w') as f:
+            f.write('{}')
+        os.chmod(pkginfo_filename, 0o644)
+
+        gen.util.make_pkgpanda_package(tmp_source_dir, package_filename)
 
 
 def make_installer_docker(variant, variant_info, installer_info):

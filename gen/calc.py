@@ -25,12 +25,12 @@ import collections
 import ipaddress
 import json
 import os
+import re
 import socket
 import string
 import textwrap
 from math import floor
 from subprocess import check_output
-from urllib.parse import urlparse
 
 import schema
 import yaml
@@ -39,6 +39,9 @@ import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
 from pkgpanda.util import hash_checkout
+
+
+CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
 
 def type_str(value):
@@ -101,13 +104,9 @@ def validate_ipv4_addresses(ips: list):
     assert not invalid_ips, 'Invalid IPv4 addresses in list: {}'.format(', '.join(invalid_ips))
 
 
-def validate_url(url: str):
-    try:
-        urlparse(url)
-    except ValueError as ex:
-        raise AssertionError(
-            "Couldn't parse given value `{}` as an URL".format(url)
-        ) from ex
+def validate_absolute_path(path):
+    if not path.startswith('/'):
+        raise AssertionError('Must be an absolute filesystem path starting with /')
 
 
 def validate_ip_list(json_str: str):
@@ -435,24 +434,24 @@ def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):
         "Must be an absolute path to a directory, although leave off the `/` at the beginning and end."
 
 
-def calculate_minuteman_min_named_ip_erltuple(minuteman_min_named_ip):
-    return ip_to_erltuple(minuteman_min_named_ip)
+def calculate_dcos_l4lb_min_named_ip_erltuple(dcos_l4lb_min_named_ip):
+    return ip_to_erltuple(dcos_l4lb_min_named_ip)
 
 
-def calculate_minuteman_max_named_ip_erltuple(minuteman_max_named_ip):
-    return ip_to_erltuple(minuteman_max_named_ip)
+def calculate_dcos_l4lb_max_named_ip_erltuple(dcos_l4lb_max_named_ip):
+    return ip_to_erltuple(dcos_l4lb_max_named_ip)
 
 
 def ip_to_erltuple(ip):
     return '{' + ip.replace('.', ',') + '}'
 
 
-def validate_minuteman_min_named_ip(minuteman_min_named_ip):
-    validate_ipv4_addresses([minuteman_min_named_ip])
+def validate_dcos_l4lb_min_named_ip(dcos_l4lb_min_named_ip):
+    validate_ipv4_addresses([dcos_l4lb_min_named_ip])
 
 
-def validate_minuteman_max_named_ip(minuteman_max_named_ip):
-    validate_ipv4_addresses([minuteman_max_named_ip])
+def validate_dcos_l4lb_max_named_ip(dcos_l4lb_max_named_ip):
+    validate_ipv4_addresses([dcos_l4lb_max_named_ip])
 
 
 def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
@@ -471,65 +470,6 @@ def calculate_cluster_docker_credentials_path(cluster_docker_credentials_dcos_ow
 
 def calculate_cluster_docker_registry_enabled(cluster_docker_registry_url):
     return 'false' if cluster_docker_registry_url == '' else 'true'
-
-
-def validate_cosmos_config(cosmos_config):
-    """The schema for this configuration is.
-    {
-      "schema": "http://json-schema.org/draft-04/schema#",
-      "type": "object",
-      "properties": {
-        "staged_package_storage_uri": {
-          "type": "string"
-        },
-        "package_storage_uri": {
-          "type": "string"
-        }
-      }
-    }
-    """
-
-    config = validate_json_dictionary(cosmos_config)
-    expects = ['staged_package_storage_uri', 'package_storage_uri']
-    found = list(filter(lambda value: value in config, expects))
-
-    if len(found) == 0:
-        # User didn't specify any configuration; nothing to do
-        pass
-    elif len(found) == 1:
-        # User specified one parameter but not the other; fail
-        raise AssertionError(
-            'cosmos_config must be a dictionary containing both {}, or must '
-            'be left empty. Found only {}'.format(' '.join(expects), found)
-        )
-    else:
-        # User specified both parameters; make sure they are URLs
-        for value in found:
-            validate_url(config[value])
-
-
-def calculate_cosmos_staged_package_storage_uri_flag(cosmos_config):
-    config = validate_json_dictionary(cosmos_config)
-    if 'staged_package_storage_uri' in config:
-        return (
-            '-com.mesosphere.cosmos.stagedPackageStorageUri={}'.format(
-                config['staged_package_storage_uri']
-            )
-        )
-    else:
-        return ''
-
-
-def calculate_cosmos_package_storage_uri_flag(cosmos_config):
-    config = validate_json_dictionary(cosmos_config)
-    if 'package_storage_uri' in config:
-        return (
-            '-com.mesosphere.cosmos.packageStorageUri={}'.format(
-                config['package_storage_uri']
-            )
-        )
-    else:
-        return ''
 
 
 def calculate_profile_symlink_target_dir(profile_symlink_target):
@@ -613,6 +553,20 @@ def validate_mesos_max_completed_tasks_per_framework(
         except ValueError as ex:
             raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
                                  "parameter as an integer: {}".format(ex)) from ex
+
+
+def validate_mesos_recovery_timeout(mesos_recovery_timeout):
+    units = ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks']
+
+    match = re.match("([\d\.]+)(\w+)", mesos_recovery_timeout)
+    assert match is not None, "Error parsing 'mesos_recovery_timeout' value: {}.".format(mesos_recovery_timeout)
+
+    value = match.group(1)
+    unit = match.group(2)
+
+    assert value.count('.') <= 1, "Invalid decimal format."
+    assert float(value) <= 2**64, "Value {} not in supported range.".format(value)
+    assert unit in units, "Unit '{}' not in {}.".format(unit, units)
 
 
 def calculate_check_config_contents(check_config, custom_checks, check_search_path, check_ld_library_path):
@@ -835,6 +789,12 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
+    if os.path.exists(fault_domain_detect_filename):
+        return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
+    return ''
+
+
 __dcos_overlay_network_default_name = 'dcos'
 
 
@@ -862,6 +822,8 @@ entry = {
         validate_os_type,
         validate_dcos_overlay_network,
         validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
+        lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
             validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network),
         lambda dcos_overlay_enable: validate_true_false(dcos_overlay_enable),
@@ -871,8 +833,8 @@ entry = {
         lambda rexray_config: validate_json_dictionary(rexray_config),
         lambda check_time: validate_true_false(check_time),
         lambda enable_gpu_isolation: validate_true_false(enable_gpu_isolation),
-        validate_minuteman_min_named_ip,
-        validate_minuteman_max_named_ip,
+        validate_dcos_l4lb_min_named_ip,
+        validate_dcos_l4lb_max_named_ip,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -880,14 +842,17 @@ entry = {
         lambda aws_masters_have_public_ip: validate_true_false(aws_masters_have_public_ip),
         validate_exhibitor_storage_master_discovery,
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
-        validate_cosmos_config,
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
+        validate_mesos_recovery_timeout,
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
-        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config)
+        lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
+        lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
+        lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
+        lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -919,6 +884,7 @@ entry = {
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'logrotate',
         'mesos_max_completed_tasks_per_framework': '',
+        'mesos_recovery_timeout': '24hrs',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -933,6 +899,8 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_net_rest_enable': "true",
+        'dcos_net_watchdog': "true",
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
@@ -948,8 +916,8 @@ entry = {
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
-        'minuteman_min_named_ip': '11.0.0.0',
-        'minuteman_max_named_ip': '11.255.255.255',
+        'dcos_l4lb_min_named_ip': '11.0.0.0',
+        'dcos_l4lb_max_named_ip': '11.255.255.255',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -970,12 +938,17 @@ entry = {
         'cluster_docker_credentials_write_to_etc': 'false',
         'cluster_docker_credentials_enabled': 'false',
         'cluster_docker_credentials': "{}",
-        'cosmos_config': '{}',
         'gpus_are_scarce': 'true',
         'check_config': calculate_check_config,
-        'custom_checks': '{}'
+        'custom_checks': '{}',
+        'check_search_path': CHECK_SEARCH_PATH,
+        'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
+        'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
     },
     'must': {
+        'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'resolvers_str': calculate_resolvers_str,
@@ -996,9 +969,9 @@ entry = {
         'ui_networking': 'false',
         'ui_organization': 'false',
         'ui_telemetry_metadata': '{"openBuild": true}',
-        'minuteman_forward_metrics': 'false',
-        'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
-        'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
+        'dcos_l4lb_forward_metrics': 'false',
+        'dcos_l4lb_min_named_ip_erltuple': calculate_dcos_l4lb_min_named_ip_erltuple,
+        'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'config_yaml': calculate_config_yaml,
@@ -1010,16 +983,11 @@ entry = {
         'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
         'has_master_external_loadbalancer':
             lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer),
-        'cosmos_staged_package_storage_uri_flag':
-            calculate_cosmos_staged_package_storage_uri_flag,
-        'cosmos_package_storage_uri_flag':
-            calculate_cosmos_package_storage_uri_flag,
         'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
         'profile_symlink_target': '/etc/profile.d/dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'conditional': {

@@ -3,9 +3,9 @@
   "sources": {
     "erlang": {
       "kind": "git",
-      "git": "https://github.com/dcos/otp.git",
-      "ref": "53c0dddd12e90cea408a503245e796ae08258c21",
-      "ref_origin": "maint-19"
+      "git": "https://github.com/erlang/otp.git",
+      "ref": "a230f26086b3db9097f06d4bb91fb3b2e9379c77",
+      "ref_origin": "maint-20"
     }
   },
   "username": "dcos_epmd"

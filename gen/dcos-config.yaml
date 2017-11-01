@@ -38,13 +38,7 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
-  - path: /etc/spartan-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
-  - path: /etc/navstar-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62502 -kernel inet_dist_listen_max 62502
-  - path: /etc_slave/spartan.json
+  - path: /etc_slave/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -54,7 +48,7 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_slave_public/spartan.json
+  - path: /etc_slave_public/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -64,7 +58,7 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_master/spartan.json
+  - path: /etc_master/dcos-dns.json
     content: |
       {
 {% switch master_dns_bindall %}
@@ -96,33 +90,49 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc_master/navstar.config.d/master.config
+  - path: /etc/dcos-net-watchdog
+    content: |
+      DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+  - path: /etc/dcos-net-erl.env
+    content: |
+      ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
+  - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
-        {navstar,
+        {dcos_net,
           [
             {is_master, true}
           ]
         },
-        {navstar_l4lb,
+        {dcos_l4lb,
           [
             {agent_polling_enabled, false}
           ]
         }
       ].
-  - path: /etc/navstar.config.d/common.config
+  - path: /etc/dcos-net.config.d/common.config
     content: |
       [
-        {navstar_l4lb,
+        {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
-            {min_named_ip, {{ minuteman_min_named_ip_erltuple }}},
-            {max_named_ip, {{ minuteman_max_named_ip_erltuple }}}
+            {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
+            {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}}
           ]
         },
-        {navstar_overlay,
+        {dcos_overlay,
           [
             {enable_overlay, {{ dcos_overlay_enable }}}
+          ]
+        },
+        {dcos_rest,
+          [
+            {enable_rest, {{ dcos_net_rest_enable }}}
+          ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
@@ -393,7 +403,7 @@ package:
       MESOS_REGISTRY_STRICT=false
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
       MESOS_OFFER_TIMEOUT=2mins
-      MESOS_WORK_DIR=/var/lib/dcos/mesos/master
+      MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_WEIGHTS={{ weights }}
       MESOS_QUORUM={{ master_quorum }}
@@ -423,11 +433,12 @@ package:
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
-      MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_WORK_DIR={{ mesos_agent_work_dir }}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
@@ -473,8 +484,6 @@ package:
       {
         "PATH": "/usr/bin:/bin",
         "SHELL": "/usr/bin/bash",
-        "LD_LIBRARY_PATH": "/opt/mesosphere/lib",
-        "SASL_PATH": "/opt/mesosphere/lib/sasl2",
         "LIBPROCESS_NUM_WORKER_THREADS": "8"
       }
   - path: /etc/dcos-log.env
@@ -498,11 +507,6 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/navstar/overrides.json
-    content: |
-      {
-        "forward_metrics": {{ minuteman_forward_metrics }}
-      }
   - path: /etc/dcos-signal-config.json
     content: |
       {
@@ -758,6 +762,9 @@ package:
                   "Location": "/opt/mesosphere/etc/user.config.yaml"
               },
               {
+                  "Location": "/var/lib/dcos/cluster-id"
+              },
+              {
                   "Location": "/var/lib/dcos/exhibitor/zookeeper/snapshot/myid",
                   "Role": ["master"]
               },
@@ -772,10 +779,6 @@ package:
               }
           ]
         }
-  - path: /etc/cosmos.env
-    content: |
-      COSMOS_STAGED_PACKAGE_STORAGE_URI_FLAG={{ cosmos_staged_package_storage_uri_flag }}
-      COSMOS_PACKAGE_STORAGE_URI_FLAG={{ cosmos_package_storage_uri_flag }}
   - path: /etc/adminrouter.env
     content: |
       ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
@@ -1005,3 +1008,10 @@ package:
 {% endswitch %}
   - path: /etc/rexray.conf
     content: {{ rexray_config_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: /bin/detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}

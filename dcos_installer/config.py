@@ -7,6 +7,7 @@ import yaml
 import gen
 import ssh.validate
 from gen.build_deploy.bash import onprem_source
+from gen.exceptions import ValidationError
 from pkgpanda.util import load_yaml, write_string, YamlParseError
 
 log = logging.getLogger(__name__)
@@ -43,6 +44,20 @@ def normalize_config_validation(messages):
             validation[key] = 'Must set {}, no way to calculate value.'.format(key)
 
     return validation
+
+
+def normalize_config_validation_exception(error: ValidationError) -> dict:
+    """
+    A ValidationError is transformed to dict and processed by
+    `normalize_config_validation` function.
+
+    Args:
+        exception: An exception raised during the config validation
+    """
+    messages = {}
+    messages['errors'] = error.errors
+    messages['unset'] = error.unset
+    return normalize_config_validation(messages)
 
 
 def make_default_config_if_needed(config_path):
