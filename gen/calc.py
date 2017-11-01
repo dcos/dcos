@@ -1014,6 +1014,10 @@ entry = {
         'check_search_path': '/opt/mesosphere/bin:/usr/bin:/bin:/sbin',
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
+    'secret': [
+        'cluster_docker_credentials',
+        'exhibitor_admin_password',
+    ],
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},
