@@ -462,18 +462,22 @@ def get_dcosconfig_source_target_and_templates(
 
     sources = [base_source, user_arguments_to_source(user_arguments)] + extra_sources
 
+    # Add builtin variables.
     # TODO(cmaloney): Hash the contents of all the templates rather than using the list of filenames
     # since the filenames might not live in this git repo, or may be locally modified.
     add_builtin('template_filenames', template_filenames)
     add_builtin('config_package_names', list(config_package_names))
-    # TODO(cmaloney): user_arguments needs to be a temporary_str since we need to only include used
-    # arguments inside of it.
-    add_builtin('user_arguments', user_arguments)
 
-    # Add a builtin for expanded_config, so that we won't get unset argument errors. The temporary
-    # value will get replaced with the set of all arguments once calculation is complete
+    # Add placeholders for builtin variables whose values will be calculated after all others, so that we won't get
+    # unset argument errors. The placeholder value with be replaced with the actual value after all other variables are
+    # calculated.
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
+    add_builtin('user_arguments_full', temporary_str)
+    add_builtin('user_arguments', temporary_str)
+    add_builtin('config_yaml_full', temporary_str)
+    add_builtin('config_yaml', temporary_str)
     add_builtin('expanded_config', temporary_str)
+    add_builtin('expanded_config_full', temporary_str)
 
     # Note: must come last so the hash of the "base_source" this is beign added to contains all the
     # variables but this.
@@ -540,8 +544,23 @@ def get_late_variables(resolver, sources):
     return late_variables
 
 
+def get_secret_variables(sources):
+    return list(set(var_name for source in sources for var_name in source.secret))
+
+
 def get_final_arguments(resolver):
     return {k: v.value for k, v in resolver.arguments.items() if v.is_finalized}
+
+
+def format_expanded_config(config):
+    return textwrap.indent(json_prettyprint(config), prefix=('  ' * 3))
+
+
+def user_arguments_to_yaml(user_arguments: dict):
+    return textwrap.indent(
+        yaml.dump(user_arguments, default_style='|', default_flow_style=False, indent=2),
+        prefix=('  ' * 3),
+    )
 
 
 def generate(
@@ -559,20 +578,36 @@ def generate(
     resolver = validate_and_raise(sources, targets + extra_targets)
     argument_dict = get_final_arguments(resolver)
     late_variables = get_late_variables(resolver, sources)
+    secret_builtins = ['expanded_config_full', 'user_arguments_full', 'config_yaml_full']
+    secret_variables = set(get_secret_variables(sources) + secret_builtins)
+    masked_value = '**HIDDEN**'
 
-    # expanded_config is a special result which contains all other arguments. It has to come after
-    # the calculation of all the other arguments so it can be filled with everything which was
-    # calculated. Can't be calculated because that would have an infinite recursion problem (the set
-    # of all arguments would want to include itself).
-    # Explicitly / manaully setup so that it'll fit where we want it.
+    # Calculate values for builtin variables.
+    user_arguments_masked = {k: (masked_value if k in secret_variables else v) for k, v in user_arguments.items()}
+    argument_dict['user_arguments_full'] = json_prettyprint(user_arguments)
+    argument_dict['user_arguments'] = json_prettyprint(user_arguments_masked)
+    argument_dict['config_yaml_full'] = user_arguments_to_yaml(user_arguments)
+    argument_dict['config_yaml'] = user_arguments_to_yaml(user_arguments_masked)
+
+    # The expanded_config and expanded_config_full variables contain all other variables and their values.
+    # expanded_config is a copy of expanded_config_full with secret values removed. Calculating these variables' values
+    # must come after the calculation of all other variables to prevent infinite recursion.
     # TODO(cmaloney): Make this late-bound by gen.internals
-    argument_dict['expanded_config'] = textwrap.indent(
-        json_prettyprint(
-            {k: v for k, v in argument_dict.items() if not v.startswith(gen.internals.LATE_BIND_PLACEHOLDER_START)}
-        ),
-        prefix='  ' * 3,
+    expanded_config_full = {
+        k: v for k, v in argument_dict.items()
+        # Omit late-bound variables whose values have not yet been calculated.
+        if not v.startswith(gen.internals.LATE_BIND_PLACEHOLDER_START)
+    }
+    expanded_config_scrubbed = {k: v for k, v in expanded_config_full.items() if k not in secret_variables}
+    argument_dict['expanded_config_full'] = format_expanded_config(expanded_config_full)
+    argument_dict['expanded_config'] = format_expanded_config(expanded_config_scrubbed)
+
+    log.debug(
+        "Final arguments:" + json_prettyprint({
+            # Mask secret config values.
+            k: (masked_value if k in secret_variables else v) for k, v in argument_dict.items()
+        })
     )
-    log.debug("Final arguments:" + json_prettyprint(argument_dict))
 
     # Fill in the template parameters
     # TODO(cmaloney): render_templates should ideally take the template targets.
