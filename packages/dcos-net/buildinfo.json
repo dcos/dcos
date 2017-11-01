@@ -4,7 +4,7 @@
     "dcos-net": {
       "kind": "git",
       "git": "git@github.com:dcos/dcos-net.git",
-      "ref": "ea280a7977264836fb580565050b40a6b476575b",
+      "ref": "2f35caa5b94217b52f4100b03e8817ed5720ea65",
       "ref_origin": "urbanserj/ip6_support"
     }
   },
