@@ -65,7 +65,7 @@ def swap_active_package(install, repository, package_id, systemd, block_systemd)
     activate_packages(install, repository, new_active, systemd, block_systemd)
 
 
-def fetch_package(repository, repository_url, package_id, work_dir):
+def fetch_package(repository, repository_url, package_id, work_dir, force_reinstall=False):
     """Fetch package_id from repository_url into repository.
 
     repository: pkgpanda.Repository
@@ -82,11 +82,12 @@ def fetch_package(repository, repository_url, package_id, work_dir):
     sys.stdout.write("\rFetching: {0}".format(package_id))
     sys.stdout.flush()
     try:
-        repository.add(fetcher, package_id)
+        if repository.add(fetcher, package_id, warn_added=False, force_reinstall=force_reinstall):
+            sys.stdout.write("\rFetched: {0}".format(package_id))
+        else:
+            sys.stdout.write("\rDid not fetch, already there: {0}".format(package_id))
     except FetchError as ex:
         raise Exception("Unable to fetch package {0}: {1}".format(package_id, ex)) from ex
-    else:
-        sys.stdout.write("\rFetched: {0}".format(package_id))
     finally:
         sys.stdout.write("\n")
         sys.stdout.flush()

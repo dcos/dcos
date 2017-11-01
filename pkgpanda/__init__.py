@@ -382,13 +382,13 @@ class Repository:
     # Add the given package to the repository.
     # If the package is already in the repository does a no-op and returns false.
     # Returns true otherwise.
-    def add(self, fetcher, id, warn_added=True):
+    def add(self, fetcher, id, warn_added=True, force_reinstall=False):
         # Validate the package id.
         PackageId(id)
 
         # If the package already exists, return true
         package_path = self.package_path(id)
-        if os.path.exists(package_path):
+        if os.path.exists(package_path) and not force_reinstall:
             if warn_added:
                 print("Package already added.")
             return False
@@ -403,13 +403,24 @@ class Repository:
         # number however so other code doing directory scans will be fine with
         # the temp folders.
         tmp_path = pkg_path + '_tmp'
+        old_path = pkg_path + '_old'
 
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
         check_call(['rm', '-rf', tmp_path])
 
         fetcher(id, tmp_path)
-        os.rename(tmp_path, pkg_path)
+        try:
+            if os.path.exists(pkg_path):
+                if warn_added:
+                    print("Package already added, moving old installation to {}".format(old_path))
+                os.rename(pkg_path, old_path)
+            os.rename(tmp_path, pkg_path)
+        finally:
+            try:
+                shutil.rmtree(old_path)
+            except OSError:
+                pass
         return True
 
     def remove(self, id):

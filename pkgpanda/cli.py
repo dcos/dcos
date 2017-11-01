@@ -24,6 +24,8 @@ Options:
                                 repository directory [default: {default_repository}]
     --rooted-systemd            Use $ROOT/dcos.target.wants for systemd management
                                 rather than /etc/systemd/system/dcos.target.wants
+    --force-reinstall           Forces a package to be fetched again, instead of ignoring
+                                it when the same package was previously installed.
 """
 
 import os
@@ -173,7 +175,8 @@ def main():
                     repository,
                     arguments['--repository-url'],
                     package_id,
-                    os.getcwd())
+                    os.getcwd(),
+                    arguments['--force-reinstall'])
             sys.exit(0)
 
         if arguments['activate']:
