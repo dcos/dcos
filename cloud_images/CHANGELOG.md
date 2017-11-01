@@ -153,6 +153,8 @@ DC/OS AMIs (with prereqs)
 
 Update to CentOS 7.4.1708 (no DC/OS prereqs)
 
+Note: these do not work with the CloudFormation zen templates
+
 * ap-northeast-1: ami-965345f8
 * ap-southeast-1: ami-8af586e9
 * ap-southeast-2: ami-427d9c20
