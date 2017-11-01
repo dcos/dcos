@@ -982,6 +982,9 @@ entry = {
         'check_config_contents': calculate_check_config_contents,
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
+    'secret': [
+        'exhibitor_admin_password',
+    ],
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},
