@@ -1,27 +1,45 @@
-# CentOS 7
+# Building base and DC/OS-ready AMIs
 
-## Create CentOS 7 base AMI
+This example references `centos7`; other platforms (eg. `rhel7`) can be substituted.
 
-Steps to create a base CentOS 7 AMI which does not have any marketplace codes attached. This is necessary because any images derived from a Marketplace image cannot be shared publicly.
+## Create base AMI
 
-1. In the dcos.io AWS account, launch latest [CentOS 7 Marketplace AMI](https://wiki.centos.org/Cloud/AWS) with secondary 8GB EBS volume attached
-2. Copy `centos7/create_base_ami.sh` to the launched instance and run the script with DEVICE set to secondary EBS volume (e.g. /dev/xvdf)
-3. Detach secondary EBS volume
-4. Create snapshot of EBS volume with name: centos7-YYYYMMDDhhmm
-5. Create AMI from snapshot
-   Name: centos7-YYYYMMDDhhmm (use same value as snapshot)
-   Virtualization type: Hardware-assisted virtualization
-   Volume Type: GP2
-   Everything else: defaults
-6. Update AMI Permissions to 'Public'
-6. Record in CHANGELOG new AMI details
+Steps to create a base AMI:
 
-## Create DC/OS ready CentOS 7 AMI
+1. Create an AMI from the latest marketplace image with a secondary 8gb EBS volume attached. Export the public hostname of your launched AMI to `${HOST}`:
+```
+$ export HOST=ec2-34-208-126-68.us-west-2.compute.amazonaws.com
+```
 
-Steps to create a new AMI with the DC/OS pre-requisites installed using a base CentOS 7 AMI (Marketplace or otherwise) and [Packer](https://www.packer.io/).
+2. Copy the `centos7` folder to `${HOST}`, then connect via SSH:
+```
+$ scp -r centos7 centos@${HOST}:.
+$ ssh centos@${HOST}
+```
+
+The following steps are performed on the launched AMI:
+
+3. `cd` into the `centos7` folder and run `create_base_ami.sh` specifying the secondary EBS volume's raw device:
+```
+[centos@ip-172-31-45-48 ]$ cd centos7/
+[centos@ip-172-31-45-48 centos7]$ sudo DEVICE=/dev/xvdb sh create_base_ami.sh
+```
+
+4. Detach secondary EBS volume
+5. Create snapshot of EBS volume with name: `centos7-YYYYMMDDhhmm`
+6. Create AMI from snapshot
+
+   Name: `centos7-YYYYMMDDhhmm` (use same value as snapshot),
+   Virtualization type: `Hardware-assisted virtualization`
+7. Update AMI Permissions to 'Public'
+8. Record in `CHANGELOG.md` new AMI details
+
+## Create DC/OS-ready AMI
+
+The following steps will create a new AMI with the DC/OS pre-requisites installed via [Packer](https://www.packer.io/):
 
 1. Change the working directory to the `centos7` subdirectory
-2. Run the helper script `create_dcos_ami.sh` to build and deploy new DC/OS AMI's. Default values can be overridden by setting the appropriate environment variables.
+2. Run the helper script `create_dcos_ami.sh` to build and deploy new DC/OS AMI's. Default values can be overridden by setting the appropriate environment variables
 
 # Reference Material
 

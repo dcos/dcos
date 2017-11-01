@@ -1,5 +1,15 @@
 ## Changelog
 
+### 2017-10-20
+
+#### cloud_images
+
+Support for building on Red Hat Linux
+* new `rhel7/` folder/image and build scripts
+* added `lib` folder with shared provisioning scripts
+* reworked `centos7/` scripts to use shared provisioning scripts
+* updated `README.md` to be more platform-agnostic
+
 ### 2017-05-29
 
 #### dcos-centos7-201705292021
