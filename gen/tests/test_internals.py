@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 
 import gen.internals
@@ -119,3 +121,28 @@ def test_resolve_late():
     assert resolver.late == {'c'}
 
     # TODO(cmaloney): Test resolved from late variables
+
+
+def test_source_secrets():
+    entry = {
+        'default': {
+            'b': lambda c: c,
+        },
+        'must': {
+            'a': 'a_str',
+        },
+        'secret': [
+            'a',
+            'b',
+            'c',
+        ],
+    }
+
+    # A source may declare secret variables as long as those variables are defined or referenced within that source.
+    Source(entry)
+
+    # A source with an unreferenced secret variable raises an exception.
+    extra_secret_entry = deepcopy(entry)
+    extra_secret_entry['secret'].append('d')
+    with pytest.raises(Exception):
+        Source(extra_secret_entry)

@@ -28,7 +28,6 @@ import os
 import re
 import socket
 import string
-import textwrap
 from math import floor
 from subprocess import check_output
 
@@ -404,12 +403,6 @@ def calculate_exhibitor_admin_password_enabled(exhibitor_admin_password):
 
 def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
-
-
-def calculate_config_yaml(user_arguments):
-    return textwrap.indent(
-        yaml.dump(json.loads(user_arguments), default_style='|', default_flow_style=False, indent=2),
-        prefix='  ' * 3)
 
 
 def calculate_mesos_isolation(enable_gpu_isolation):
@@ -974,7 +967,6 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
-        'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,
