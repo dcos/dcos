@@ -166,6 +166,22 @@ def calculate_cloudformation_s3_url_full(cloudformation_s3_url):
     return '{}/cloudformation'.format(cloudformation_s3_url)
 
 
+def calculate_aws_availability_zones(
+        aws_template_storage_region_name,
+        aws_template_storage_access_key_id,
+        aws_template_storage_secret_access_key):
+
+    session = boto3.session.Session(
+        aws_access_key_id=aws_template_storage_access_key_id,
+        aws_secret_access_key=aws_template_storage_secret_access_key,
+        region_name=aws_template_storage_region_name)
+    try:
+        zones = [zone['ZoneNames'] for zone in session.client('ec2').describe_availability_zones()['AvailabilityZones']]
+        return zones
+    except botocore.exceptions.ClientError as ex:
+        raise ex
+
+
 def calculate_aws_template_storage_region_name(
         aws_template_storage_access_key_id,
         aws_template_storage_secret_access_key,
@@ -226,7 +242,8 @@ aws_advanced_source = gen.internals.Source({
         'aws_template_upload': {
             'true': {
                 'default': {
-                    'aws_template_storage_region_name': calculate_aws_template_storage_region_name
+                    'aws_template_storage_region_name': calculate_aws_template_storage_region_name,
+                    'aws_availability_zones': calculate_aws_availability_zones
                 }
             },
             'false': {}
