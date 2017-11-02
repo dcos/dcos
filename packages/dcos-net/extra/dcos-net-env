@@ -1,16 +1,17 @@
 #!/bin/bash
 
+set -e
+
 APP_NAME=dcos-net
 NODE_NAME=navstar
 
 # Export
 for ENV_FILE in \
-        "/opt/mesosphere/etc/epmd.env" \
         "/opt/mesosphere/environment" \
         "/opt/mesosphere/etc/dns_config" \
         "/opt/mesosphere/etc/dns_search_config"; \
     do
-    source "${ENV_FILE}" || exit 1
+    source "${ENV_FILE}"
 done
 
 for ENV_FILE in \
@@ -24,20 +25,15 @@ for ENV_FILE in \
 done
 
 ### Usage
-for cmd in 'console' 'foreground' 'console_clean' 'console_boot'; do
-    # TODO Move it to dcos-net config
-    if [ "$1" == "${cmd}" ]; then
-        KNOWNCMD=true
-        source "/opt/mesosphere/etc/${APP_NAME}-erl.env" || exit 1
-    fi
+USAGE=""
+KNOWNCMD=false
+for cmd in 'console' 'foreground' 'console_clean' 'console_boot' \
+           'pid' 'ping' 'remote_console' 'rpc' 'rpcterms' 'eval' 'status'; do
+    USAGE="${USAGE}|${cmd}"
+    [ "$1" == "${cmd}" ] && KNOWNCMD=true || true
 done
-for cmd in 'pid' 'ping' 'remote_console' 'rpc' 'rpcterms' 'eval' 'status'; do
-    [ "$1" == "${cmd}" ] && KNOWNCMD=true
-done
-if [ -z "${KNOWNCMD}" ]; then
-    printf "Usage: %s %s%s\n" $0 \
-        "{console|foreground|console_clean|console_boot" \
-        "|pid|ping|remote_console|rpc|rpcterms|eval|status}" >&2
+if [ "${KNOWNCMD}" == "false" ]; then
+    printf "Usage: %s {%s}\n" "$0" "${USAGE:1}" >&2
     exit 1
 fi
 
@@ -68,44 +64,35 @@ EOM
     echo "${IP}"
 }
 
-function check_epmd() {
-    if ! /opt/mesosphere/bin/epmd -port ${ERL_EPMD_PORT} -names > /dev/null; then
-        echo "EPMD is not reachable at port \"${ERL_EPMD_PORT}\"" >&2
-        exit 1;
-    fi
-    APP_PORT=$(/opt/mesosphere/bin/epmd -port ${ERL_EPMD_PORT} -names | \
-             awk "{if (\$2 == \"${NODE_NAME}\") print \$5}")
-    if [ "${APP_PORT}" ]; then
-        read -r -d '' EVALCODE <<- EOM
-            case gen_tcp:connect({127, 0, 0, 1}, ${APP_PORT}, [], 1000) of
-                {ok, S} -> gen_tcp:close(S), halt(1);
-                {error, Error} -> halt(0)
-            end.
-EOM
-        if /opt/mesosphere/bin/erl -noinput -eval "${EVALCODE}"; then
-            /opt/mesosphere/bin/epmd -port ${ERL_EPMD_PORT} -stop ${NODE_NAME}
-        fi
-    fi
-}
+APP_DIR="/opt/mesosphere/active/${APP_NAME}/${APP_NAME}"
+
+### dcos-net ebin directory
+if [ -z "${DCOS_NET_EBIN}" ]; then
+    DCOS_NET_APP="dcos_net.app"
+    DCOS_NET_EBIN=$(find "${APP_DIR}/lib" -name "${DCOS_NET_APP}" -printf "%h")
+fi
+if [ -z "${DCOS_NET_EBIN}" ]; then
+    echo "ebin directory was not found" >&2
+    exit 1
+fi
+ERL_FLAGS="${ERL_FLAGS} -pa ${DCOS_NET_EBIN}"
+
+### EPMD
+EPMD_MODULE="dcos_net_epmd"
+ERL_FLAGS="${ERL_FLAGS} -epmd_module ${EPMD_MODULE}"
+ERL_FLAGS="${ERL_FLAGS} -start_epmd false -no_epmd"
 
 ### SSL / Distributed Erlang config
+ERL_FLAGS="${ERL_FLAGS} -proto_dist dcos_net"
 if [ "${ERLANG_DISTRIBUTION}" == "inet_tls" ]; then
-    for FILE in ${CLIENT_CACERTFILE} ${CLIENT_KEYFILE} ${CLIENT_CERTFILE} \
-                ${SERVER_CACERTFILE} ${SERVER_KEYFILE} ${SERVER_CERTFILE}; do
-        if [ ! -r ${FILE} ]; then
-            echo "${FILE}: doesn't exists or is not readable" >&2
-            exit 1
-        fi
-    done
-    ERL_FLAGS="${ERL_FLAGS} -proto_dist ${ERLANG_DISTRIBUTION}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_cacertfile ${CLIENT_CACERTFILE}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_keyfile ${CLIENT_KEYFILE}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_certfile ${CLIENT_CERTFILE}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_cacertfile ${CLIENT_CACERTFILE:-nofile}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_keyfile ${CLIENT_KEYFILE:-nofile}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_certfile ${CLIENT_CERTFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_verify ${CLIENT_VERIFY:-true}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_depth ${CLIENT_DEPTH:-10}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_cacertfile ${SERVER_CACERTFILE}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_keyfile ${SERVER_KEYFILE}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_certfile ${SERVER_CERTFILE}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_cacertfile ${SERVER_CACERTFILE:-nofile}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_keyfile ${SERVER_KEYFILE:-nofile}"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_certfile ${SERVER_CERTFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_verify ${SERVER_VERIFY:-true}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_fail_if_no_peer_cert"
     ERL_FLAGS="${ERL_FLAGS} ${SERVER_FAIL_IF_NO_PEER_CERT:-verify_peer}"
@@ -118,17 +105,12 @@ if [ "${MESOS_STATE_SSL_ENABLED}" == "true" ]; then
     ERL_FLAGS="${ERL_FLAGS} -mesos_state ssl ${MESOS_STATE_SSL_ENABLED}"
 fi
 
-### EPMD
-ERL_FLAGS="${ERL_FLAGS} -start_epmd false"
-check_epmd
-
 ### Export Erlang configuration
 export ERL_FLAGS
-export ERL_EPMD_PORT
 
 ### Export relx configuration
 export RELX_REPLACE_OS_VARS=true
-export RELX_OUT_FILE_PATH=${HOME}
+export RELX_OUT_FILE_PATH="${HOME}"
 
 ### Export dns configuration
 export MASTER_SOURCE
@@ -137,14 +119,14 @@ export EXHIBITOR_ADDRESS
 
 ### Node configuration
 IP=$(detect_ip)
-export NAME=${NODE_NAME}@${IP}
+export NAME="${NODE_NAME}@${IP}"
 
 ### Set application name
-export ESCRIPT_NAME=/opt/mesosphere/active/${APP_NAME}
+export ESCRIPT_NAME="${APP_DIR}"
 
 ### Set script
 if [ -z "${DCOS_NET_ENV_CMD}" ]; then
-    DCOS_NET_ENV_CMD="/opt/mesosphere/active/${APP_NAME}/${APP_NAME}/bin/${APP_NAME}"
+    DCOS_NET_ENV_CMD="${APP_DIR}/bin/${APP_NAME}"
 fi
 
 exec "${DCOS_NET_ENV_CMD}" "$@" || exit 1
