@@ -188,7 +188,7 @@ class Package:
     def __repr__(self):
         return str(self.__id)
 
-    def __lt__(self,other):
+    def __lt__(self, other):
         return (self.name < other.name)
 
 
@@ -779,10 +779,11 @@ class Install:
                                           "to try activating multiple versions of the same file. "
                                           "One of the package files is {2}. "
                                           "This might also be caused by modified content of an installed "
-                                          "package. You can try to fix it by using `pkgpanda fetch --force-reinstall ...` "
+                                          "package. You can try to fix it by using "
+                                          "`pkgpanda fetch --force-reinstall ...` "
                                           "on the packge(s) stated in this message.".format(ex.dest,
-                                                                                    self.__roles,
-                                                                                    ex.src))
+                                                                                            self.__roles,
+                                                                                            ex.src))
 
             # Add to the active folder
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
