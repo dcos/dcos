@@ -10,7 +10,3 @@ pushd /pkg/src/erlang
 make -j$NUM_CORES
 make install
 popd
-
-dcos_epmd_service=${PKG_PATH}/dcos.target.wants/dcos-epmd.service
-mkdir -p $(dirname $dcos_epmd_service)
-envsubst '${PKG_PATH}' < "/pkg/extra/$(basename $dcos_epmd_service)" > "${dcos_epmd_service}"

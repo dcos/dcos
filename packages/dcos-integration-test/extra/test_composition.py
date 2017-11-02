@@ -165,7 +165,6 @@ def test_signal_service(dcos_api_session):
         'diagnostics-service',
         'diagnostics-socket',
         'dns-watchdog-service',
-        'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
         'l4lb-watchdog-service',

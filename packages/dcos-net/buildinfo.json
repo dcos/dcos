@@ -3,9 +3,9 @@
   "sources": {
     "dcos-net": {
       "kind": "git",
-      "git": "git@github.com:dcos/dcos-net.git",
-      "ref": "cfc9816557f859c4d35c6844c352098b59433939",
-      "ref_origin": "urbanserj/dcos-net-env"
+      "git": "https://github.com/dcos/dcos-net.git",
+      "ref": "6ff942e82967d6b729ed08881a2114dbbaf451fd",
+      "ref_origin": "master"
     }
   },
   "sysctl": {

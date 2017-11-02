@@ -93,12 +93,6 @@ package:
   - path: /etc/dcos-net-watchdog
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
-  - path: /etc/epmd.env
-    content: |
-      ERL_EPMD_PORT=61420
-  - path: /etc/dcos-net-erl.env
-    content: |
-      ERL_FLAGS="-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501"
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -116,6 +110,12 @@ package:
   - path: /etc/dcos-net.config.d/common.config
     content: |
       [
+        {dcos_net,
+          [
+            {dist_port, 62501},
+            {epmd_port, 61420}
+          ]
+        },
         {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
