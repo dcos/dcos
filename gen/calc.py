@@ -306,6 +306,16 @@ def validate_dcos_overlay_network(dcos_overlay_network):
             "Incorrect value for vtep_subnet: {}."
             " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
 
+    assert 'vtep_subnet6' in overlay_network.keys(), (
+        'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
+
+    try:
+        ipaddress.ip_network(overlay_network['vtep_subnet6'])
+    except ValueError as ex:
+        raise AssertionError(
+            "Incorrect value for vtep_subnet6: {}."
+            " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
+
     assert 'vtep_mac_oui' in overlay_network.keys(), (
         'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
 
@@ -317,12 +327,21 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     for overlay in overlay_network['overlays']:
         assert (len(overlay['name']) <= 13), (
             "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
-        try:
-            ipaddress.ip_network(overlay['subnet'])
-        except ValueError as ex:
-            raise AssertionError(
-                "Incorrect value for vtep_subnet {}."
-                " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
+
+        if overlay['name'] == 'dcos':
+            try:
+                ipaddress.ip_network(overlay['subnet'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for overlay subnet {}."
+                    " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
+        elif overlay['name'] == 'dcos6':
+            try:
+                ipaddress.ip_network(overlay['subnet6'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for overlay subnet6 {}."
+                    " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
 
 
 def validate_num_masters(num_masters):
