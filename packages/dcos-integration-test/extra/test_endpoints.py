@@ -170,8 +170,6 @@ def test_if_overlay_master_is_up(dcos_api_session):
             'prefix': 24
         }, {
             'name': 'dcos6',
-            'subnet': '12.0.0.0/8',
-            'prefix': 24,
             'subnet6': 'fd01:b::/64',
             'prefix6': 96
         }]
@@ -216,10 +214,10 @@ def test_if_overlay_master_agent_is_up(dcos_api_session):
 
 
 def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
-    assert 'subnet' in agent_overlay
-    subnet = agent_overlay.pop('subnet')
 
     if overlay_name == 'dcos':
+        assert 'subnet' in agent_overlay
+        subnet = agent_overlay.pop('subnet')
         _validate_overlay_subnet(subnet, '9.0.0.0/8', 24)
     elif overlay_name == 'dcos6':
         assert 'subnet6' in agent_overlay
@@ -266,8 +264,6 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
         expected = {
             'info': {
                 'name': 'dcos6',
-                'subnet': '12.0.0.0/8',
-                'prefix': 24,
                 'subnet6': 'fd01:b::/64',
                 'prefix6': 96
             },

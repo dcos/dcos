@@ -955,8 +955,6 @@ entry = {
                 'prefix': 24
             }, {
                 'name': 'dcos6',
-                'subnet': '12.0.0.0/8',
-                'prefix': 24,
                 'subnet6': 'fd01:b::/64',
                 'prefix6': 96
             }]
