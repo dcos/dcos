@@ -203,6 +203,7 @@ def reduce_logging():
     logging.getLogger('test_util.marathon').setLevel(start_log_level)
 
 
+@pytest.mark.xfail(reason="DCOS-19366 - xfail test_vip on DCOS 1.9 due to high flakiness")
 @pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 def test_vip(dcos_api_session, reduce_logging):
     '''Test VIPs between the following source and destination configurations:
