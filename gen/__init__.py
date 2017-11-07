@@ -531,7 +531,7 @@ def get_late_variables(resolver, sources):
 
 
 def get_secret_variables(sources):
-    return list(set().union(*(source.secret for source in sources)))
+    return list(set(var_name for source in sources for var_name in source.secret))
 
 
 def get_final_arguments(resolver):
