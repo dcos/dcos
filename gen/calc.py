@@ -983,6 +983,7 @@ entry = {
         'check_ld_library_path': '/opt/mesosphere/lib'
     },
     'secret': [
+        'cluster_docker_credentials',
         'exhibitor_admin_password',
     ],
     'conditional': {
