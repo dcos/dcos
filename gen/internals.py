@@ -312,12 +312,11 @@ class Source:
             if name in self.setters:
                 del self.setters[name]
 
+        # Remove setters and secrets from self that are defined by scope.
         for name in scope.get('must', dict()).keys():
             del_setter(name)
-
         for name in scope.get('default', dict()).keys():
             del_setter(name)
-
         self.secret = list(set(self.secret) - set(scope.get('secret', list())))
 
         for name, cond_options in scope.get('conditional', dict()).items():
