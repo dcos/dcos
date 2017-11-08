@@ -24,10 +24,7 @@ class Container(enum.Enum):
 
 
 class MarathonApp():
-    def __init__(self, container, network, host, vip):
-        if container == Container.POD:
-            self.__class__ = MarathonPod
-            return MarathonPod.__init__(self, network, host, vip)
+    def __init__(self, container, network, host, vip=None):
         self._network = network
         self._container = container
         if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
@@ -93,13 +90,13 @@ class MarathonApp():
 
 
 class MarathonPod():
-    def __init__(self, network, host, vip):
+    def __init__(self, network, host, vip=None):
         self._network = network
         container_port = 0
         if network is not marathon.Network.HOST:
             container_port = unused_port()
         # ENDPOINT_TEST will be computed from the `endpoints` definition. See [1], [2]
-        # [1] https://dcos.io/docs/1.9/deploying-services/pods/technical-overview/#environment-variables
+        # [1] https://dcos.io/docs/1.10/deploying-services/pods/technical-overview/#environment-variables
         # [2] https://github.com/mesosphere/marathon/blob/v1.5.0/
         #     src/main/scala/mesosphere/mesos/TaskGroupBuilder.scala#L420-L443
         port = '$ENDPOINT_TEST' if network == marathon.Network.HOST else container_port
@@ -291,8 +288,12 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
     cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
-    origin_app = MarathonApp(container, vip_net, origin_host, vip)
-    proxy_app = MarathonApp(container, proxy_net, proxy_host, None)
+    if container == Container.POD:
+        origin_app = MarathonPod(vip_net, origin_host, vip)
+        proxy_app = MarathonPod(proxy_net, proxy_host)
+    else:
+        origin_app = MarathonApp(container, vip_net, origin_host, vip)
+        proxy_app = MarathonApp(container, proxy_net, proxy_host)
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
 
