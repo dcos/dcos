@@ -975,7 +975,7 @@ entry = {
             }, {
                 'name': 'dcos6',
                 'subnet6': 'fd01:b::/64',
-                'prefix6': 96
+                'prefix6': 80
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,

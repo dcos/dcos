@@ -171,7 +171,7 @@ def test_if_overlay_master_is_up(dcos_api_session):
         }, {
             'name': 'dcos6',
             'subnet6': 'fd01:b::/64',
-            'prefix6': 96
+            'prefix6': 80
         }]
     }
 
@@ -222,7 +222,7 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
     elif overlay_name == 'dcos6':
         assert 'subnet6' in agent_overlay
         subnet6 = agent_overlay.pop('subnet6')
-        _validate_overlay_subnet(subnet6, 'fd01:b::/64', 96)
+        _validate_overlay_subnet(subnet6, 'fd01:b::/64', 80)
 
     if 'mesos_bridge' in master_agent_overlay:
         try:
@@ -265,7 +265,7 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
             'info': {
                 'name': 'dcos6',
                 'subnet6': 'fd01:b::/64',
-                'prefix6': 96
+                'prefix6': 80
             },
             'state': {
                 'status': 'STATUS_OK'
