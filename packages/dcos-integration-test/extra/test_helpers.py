@@ -6,10 +6,28 @@ from dcos_test_utils import marathon
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
 
+
+def get_exhibitor_admin_password():
+    try:
+        with open('/opt/mesosphere/etc/exhibitor_realm', 'r') as f:
+            exhibitor_realm = f.read().strip()
+    except FileNotFoundError:
+        # Unset. Return the default value.
+        return ''
+
+    creds = exhibitor_realm.split(':')[1].strip()
+    password = creds.split(',')[0].strip()
+    return password
+
+
 # make the expanded config available at import time to allow determining
 # which tests should run before the test suite kicks off
 with open('/opt/mesosphere/etc/expanded.config.json', 'r') as f:
     expanded_config = json.load(f)
+    # expanded.config.json doesn't contain secret values, so we need to read the Exhibitor admin password from
+    # Exhibitor's config.
+    # TODO: Remove this hack. https://jira.mesosphere.com/browse/QUALITY-1611
+    expanded_config['exhibitor_admin_password'] = get_exhibitor_admin_password()
 
 
 def marathon_test_app(
