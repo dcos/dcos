@@ -1001,7 +1001,7 @@ entry = {
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
-        'fault_domain_detect_filename': 'genconf/fault_domain_detect',
+        'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents
     },
     'must': {
