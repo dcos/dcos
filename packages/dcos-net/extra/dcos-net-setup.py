@@ -15,7 +15,7 @@ import sys
 
 
 def main():
-    if sys.argv[1:4] in [['ip', 'link', 'add'], ['ip', 'addr', 'add']]:
+    if sys.argv[1:4] in [['ip', 'link', 'add'], ['ip', 'addr', 'add'], ['ip', '-6', 'addr']]:
         result = subprocess.run(sys.argv[1:], stderr=subprocess.PIPE)
         sys.stderr.buffer.write(result.stderr)
         if result.stderr.strip().endswith(b'File exists'):

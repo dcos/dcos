@@ -236,6 +236,7 @@ def test_validate_default_overlay_network_name():
     validate_error_multikey(
         {'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
+            'vtep_subnet6': 'fd01:a::/64',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
                 'name': 'bar',
