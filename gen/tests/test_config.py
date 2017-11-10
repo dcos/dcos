@@ -1,6 +1,7 @@
 import json
 
 import pkg_resources
+import yaml
 
 import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
@@ -777,3 +778,18 @@ def test_fault_domain_disabled():
 
     assert generated.arguments['fault_domain_enabled'] == 'false'
     assert 'fault_domain_detect_contents' not in generated.arguments
+
+
+def test_exhibitor_admin_password_obscured():
+    var_name = 'exhibitor_admin_password'
+    var_value = 'secret'
+    generated = gen.generate(make_arguments(new_arguments={var_name: var_value}))
+
+    assert var_name not in json.loads(generated.arguments['expanded_config'])
+    assert json.loads(generated.arguments['expanded_config_full'])[var_name] == var_value
+
+    assert json.loads(generated.arguments['user_arguments'])[var_name] == '**HIDDEN**'
+    assert json.loads(generated.arguments['user_arguments_full'])[var_name] == var_value
+
+    assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
+    assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
