@@ -103,7 +103,7 @@ test: clean-devkit-container devkit
 		$(DEVKIT_DOCKER_OPTS) \
 		--privileged \
 		mesosphere/$(DEVKIT_NAME):full /bin/bash -x -c " \
- 			py.test \
+ 			pytest \
  		"
 
 .PHONY: api-docs

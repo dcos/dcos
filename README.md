@@ -138,7 +138,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 
     ```
     cd /opt/mesosphere/active/dcos-integration-test
-    py.test
+    pytest
     ```
 
 ## Using DC/OS Docker
