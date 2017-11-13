@@ -3,6 +3,7 @@ import json
 
 import pkg_resources
 import pytest
+import yaml
 
 import gen
 
@@ -251,6 +252,21 @@ def test_validate_default_overlay_network_name():
         }), 'dcos_overlay_network_default_name': 'foo'},
         ['dcos_overlay_network_default_name', 'dcos_overlay_network'],
         msg)
+
+
+def test_exhibitor_admin_password_obscured():
+    var_name = 'exhibitor_admin_password'
+    var_value = 'secret'
+    generated = gen.generate(make_arguments(new_arguments={var_name: var_value}))
+
+    assert var_name not in json.loads(generated.arguments['expanded_config'])
+    assert json.loads(generated.arguments['expanded_config_full'])[var_name] == var_value
+
+    assert json.loads(generated.arguments['user_arguments'])[var_name] == '**HIDDEN**'
+    assert json.loads(generated.arguments['user_arguments_full'])[var_name] == var_value
+
+    assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
+    assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
 
 
 # TODO(cmaloney): Add tests that specific config leads to specific files in specific places at install time.

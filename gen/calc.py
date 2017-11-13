@@ -26,7 +26,6 @@ import ipaddress
 import json
 import os
 import socket
-import textwrap
 from math import floor
 from subprocess import check_output
 from urllib.parse import urlparse
@@ -396,12 +395,6 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
-def calculate_config_yaml(user_arguments):
-    return textwrap.indent(
-        yaml.dump(json.loads(user_arguments), default_style='|', default_flow_style=False, indent=2),
-        prefix='  ' * 3)
-
-
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/cpu,cgroups/mem,disk/du,network/cni,filesystem/linux,'
                  'docker/runtime,docker/volume,volume/sandbox_path,posix/rlimits,'
@@ -743,7 +736,6 @@ entry = {
         'minuteman_min_named_ip_erltuple': calculate_minuteman_min_named_ip_erltuple,
         'minuteman_max_named_ip_erltuple': calculate_minuteman_max_named_ip_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
-        'config_yaml': calculate_config_yaml,
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,
@@ -762,6 +754,10 @@ entry = {
         'profile_symlink_cmd': calculate_profile_symlink_cmd,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names
     },
+    'secret': [
+        'cluster_docker_credentials',
+        'exhibitor_admin_password',
+    ],
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {},

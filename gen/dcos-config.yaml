@@ -900,9 +900,17 @@ package:
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
+  - path: /etc/user.config.full.yaml
+    permissions: "0600"
+    content: |
+{{ config_yaml_full }}
   - path: /etc/expanded.config.json
     content: |
 {{ expanded_config }}
+  - path: /etc/expanded.config.full.json
+    permissions: "0600"
+    content: |
+{{ expanded_config_full }}
   - path: /etc_master/dcos-history.env
     content: |
       STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
