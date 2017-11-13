@@ -17,6 +17,7 @@ LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
   --with-boost=/opt/mesosphere/active/boost-libs \
+  --disable-werror \
   --sbindir="$PKG_PATH/bin"
 make -j$NUM_CORES
 
