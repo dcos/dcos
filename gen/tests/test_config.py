@@ -1,5 +1,8 @@
 import json
 
+import pkg_resources
+import yaml
+
 import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
 
@@ -233,6 +236,7 @@ def test_validate_default_overlay_network_name():
     validate_error_multikey(
         {'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
+            'vtep_subnet6': 'fd01:a::/64',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
                 'name': 'bar',
@@ -733,3 +737,60 @@ def test_validate_custom_checks():
             'node check names: node-check-1, node-check-2.'
         ),
     )
+
+
+def test_validate_mesos_work_dir():
+    validate_success({
+        'mesos_master_work_dir': '/var/foo',
+        'mesos_agent_work_dir': '/var/foo',
+    })
+
+    # Relative path.
+    validate_error(
+        {'mesos_master_work_dir': 'foo'},
+        'mesos_master_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+    validate_error(
+        {'mesos_agent_work_dir': 'foo'},
+        'mesos_agent_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+
+    # Empty work dir.
+    validate_error(
+        {'mesos_master_work_dir': ''},
+        'mesos_master_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+    validate_error(
+        {'mesos_agent_work_dir': ''},
+        'mesos_agent_work_dir',
+        'Must be an absolute filesystem path starting with /',
+    )
+
+
+def test_fault_domain_disabled():
+    arguments = make_arguments(new_arguments={
+        'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
+    })
+
+    generated = gen.generate(arguments=arguments)
+
+    assert generated.arguments['fault_domain_enabled'] == 'false'
+    assert 'fault_domain_detect_contents' not in generated.arguments
+
+
+def test_exhibitor_admin_password_obscured():
+    var_name = 'exhibitor_admin_password'
+    var_value = 'secret'
+    generated = gen.generate(make_arguments(new_arguments={var_name: var_value}))
+
+    assert var_name not in json.loads(generated.arguments['expanded_config'])
+    assert json.loads(generated.arguments['expanded_config_full'])[var_name] == var_value
+
+    assert json.loads(generated.arguments['user_arguments'])[var_name] == '**HIDDEN**'
+    assert json.loads(generated.arguments['user_arguments_full'])[var_name] == var_value
+
+    assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
+    assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value

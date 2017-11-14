@@ -1,12 +1,12 @@
 #!/bin/bash
 set -x
 
-export CFLAGS="-I/opt/mesosphere/include -I/opt/mesosphere/active/ncurses/include -I/opt/mesosphere/active/openssl/include"
+export CFLAGS="-g -O2 -Wa,-mrelax-relocations=no -I/opt/mesosphere/include -I/opt/mesosphere/active/ncurses/include -I/opt/mesosphere/active/openssl/include"
 export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/active/ncurses/lib -Wl,-rpath=/opt/mesosphere/active/openssl/lib -Wl,-rpath=/opt/mesosphere/lib"
 export CPPFLAGS=${CFLAGS}
 
 pushd /pkg/src/erlang
-./otp_build setup -a --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --enable-dirty-schedulers --disable-hipe --enable-kernel-poll
+./otp_build setup -a --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe --enable-kernel-poll --enable-builtin-zlib
 make -j$NUM_CORES
 make install
 popd

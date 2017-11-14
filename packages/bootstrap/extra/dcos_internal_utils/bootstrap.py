@@ -23,13 +23,20 @@ class Bootstrapper(object):
     def __init__(self, zk_hosts):
         conn_retry_policy = KazooRetry(max_tries=-1, delay=0.1, max_delay=0.1)
         cmd_retry_policy = KazooRetry(max_tries=3, delay=0.3, backoff=1, max_delay=1, ignore_expire=False)
-        zk = KazooClient(hosts=zk_hosts, connection_retry=conn_retry_policy, command_retry=cmd_retry_policy)
-        zk.start()
-        self.zk = zk
+        self._zk = KazooClient(hosts=zk_hosts, connection_retry=conn_retry_policy, command_retry=cmd_retry_policy)
+
+    @property
+    def zk(self):
+        """Lazy initialize zk client"""
+        if self._zk.connected:
+            return self._zk
+        self._zk.start()
+        return self._zk
 
     def close(self):
-        self.zk.stop()
-        self.zk.close()
+        if self._zk.connected:
+            self._zk.stop()
+            self._zk.close()
 
     def __enter__(self):
         return self

@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos-dns.git",
-    "ref": "af6ebc7a70f722b219f79f433b242e22667cfd4c",
+    "ref": "be539256550ae317c5f3ba440256f04c44d68320",
     "ref_origin": "master"
   },
   "username": "dcos_mesos_dns"

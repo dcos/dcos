@@ -246,16 +246,14 @@ class Target:
 
 
 class Source:
-    """ Object to define how arguments can be specified, including argument
-    calculation, default values, validation, and any conditional variations
-    of those three
-    """
+    """Defines config arguments, including calculation, defaults, validation, and whether arguments are secrets."""
     def __init__(self, entry=None, is_user=False):
         """ Entry is a dict of the following form:
         {
           'validate': [validate_my_arg_fn],
           'default': {arg: value},  # may be overridden by user args
-          'must': {arg: value}  # may NOT be overridden by user args
+          'must': {arg: value},  # may NOT be overridden by user args
+          'secret': [arg],
           'conditional': {arg: {val_1: add_entry_1, val_2: add_entry_2}}
         }
         validate_my_arg_fn: a function that will be called against the argument names it uses
@@ -263,27 +261,47 @@ class Source:
         """
         self.setters = dict()
         self.validate = list()
+        self.secret = list()
         self.is_user = is_user
         if entry:
             self.add_entry(entry, False)
 
     def add_setter(self, name, value, is_optional, conditions):
-        self.setters.setdefault(name, list()).append(Setter(name, value, is_optional, conditions, self.is_user))
+        self.setters.setdefault(name, list()).append(
+            Setter(name, value, is_optional, conditions, self.is_user)
+        )
 
     def add_conditional_scope(self, scope, conditions):
         # TODO(cmaloney): 'defaults' are the same as 'can' and 'must' is identical to 'arguments' except
         # that one takes functions and one takes strings. Simplify to just 'can', 'must'.
-        assert scope.keys() <= {'validate', 'default', 'must', 'conditional'}
+        assert scope.keys() <= {'validate', 'default', 'must', 'secret', 'conditional'}
 
         self.validate += scope.get('validate', list())
+        self.secret += scope.get('secret', list())
 
-        for name, fn in scope.get('must', dict()).items():
+        must = scope.get('must', dict())
+        default = scope.get('default', dict())
+        conditional = scope.get('conditional', dict())
+
+        for name, fn in must.items():
             self.add_setter(name, fn, False, conditions)
 
-        for name, fn in scope.get('default', dict()).items():
+        for name, fn in default.items():
             self.add_setter(name, fn, True, conditions)
 
-        for name, cond_options in scope.get('conditional', dict()).items():
+        # Assert that all secret params are referenced somewhere in this scope.
+        setter_params = set()
+        for setter_list in self.setters.values():
+            for setter in setter_list:
+                for param in setter.parameters:
+                    setter_params.add(param)
+        all_variables = set(self.setters.keys()).union(setter_params)
+        for name in self.secret:
+            assert name in all_variables, (
+                "Secret variable '{}' must be defined or referenced as a parameter in this scope".format(name)
+            )
+
+        for name, cond_options in conditional.items():
             for value, sub_scope in cond_options.items():
                 self.add_conditional_scope(sub_scope, conditions + [(name, value)])
 
@@ -294,11 +312,12 @@ class Source:
             if name in self.setters:
                 del self.setters[name]
 
+        # Remove setters and secrets from self that are defined by scope.
         for name in scope.get('must', dict()).keys():
             del_setter(name)
-
         for name in scope.get('default', dict()).keys():
             del_setter(name)
+        self.secret = list(set(self.secret) - set(scope.get('secret', list())))
 
         for name, cond_options in scope.get('conditional', dict()).items():
             if name in self.setters:
