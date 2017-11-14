@@ -115,30 +115,26 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 1. Add the test user
 
     ```
-    source /opt/mesosphere/environment.export
-    python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
+    dcos-shell python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
     ```
-
-    This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION!
-
+    
+    Running the above mentioned command will result in an output
+    
+    ```
+    User albert@bekstil.net successfully added
+    ```
+    
+    This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
+    
     For more information, see [User Management](https://dcos.io/docs/latest/administration/user-management/).
 
-1. Configure the tests
 
-    ```
-    source /opt/mesosphere/active/dcos-integration-test/util/test_env.export
-    export SLAVE_HOSTS=<PRIVATE-AGENT-IP-1>,<PRIVATE-AGENT-IP-2>
-    export PUBLIC_SLAVE_HOSTS=<PUBLIC-AGENT-IP-1>,<PUBLIC-AGENT-IP-2>
-    ```
-
-    The `test_env.export` script tries to look up cluster metadata, but can't distinguish between public and private nodes yet. So those have to be manually specified.
-
-1. Run the tests with Pytest
+2. Run the tests using pytest in the cluster.
 
     ```
     cd /opt/mesosphere/active/dcos-integration-test
-    pytest
+    dcos-shell pytest
     ```
 
 ## Using DC/OS Docker
