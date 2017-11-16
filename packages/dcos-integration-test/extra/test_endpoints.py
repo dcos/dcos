@@ -87,7 +87,7 @@ def test_if_dcos_history_service_is_up(dcos_api_session):
 
 
 def test_if_marathon_ui_is_up(dcos_api_session):
-    r = dcos_api_session.get('/marathon/ui/')
+    r = dcos_api_session.get('/marathon/v2/info')
 
     assert r.status_code == 200
     assert len(r.text) > 100
@@ -102,7 +102,7 @@ def test_if_marathon_ui_redir_works(dcos_api_session):
 
 
 def test_if_srouter_service_endpoint_works(dcos_api_session):
-    r = dcos_api_session.get('/service/marathon/ui/')
+    r = dcos_api_session.get('/service/marathon/v2/info')
 
     assert r.status_code == 200
     assert len(r.text) > 100
