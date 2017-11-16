@@ -12,5 +12,5 @@ while true; do
     sleep 1
 done
 pushd ${DCOS_PYTEST_DIR:='/opt/mesosphere/active/dcos-integration-test'}
-eval ${DCOS_PYTEST_CMD:='py.test -vv'}
+eval ${DCOS_PYTEST_CMD:='pytest -vv'}
 popd

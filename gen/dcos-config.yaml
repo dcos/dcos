@@ -117,7 +117,9 @@ package:
           [
             {enable_lb, {{ enable_lb }}},
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
-            {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}}
+            {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
+            {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},
+            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}}
           ]
         },
         {dcos_overlay,
@@ -362,6 +364,22 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/mesos-slave-dns.json 
+    content: |
+      {
+        "docker":
+        [
+            {
+              "network_mode": "USER",
+              "dns": {
+                "nameservers": [ 
+                                "198.51.100.1",
+                                "fd01:d::c633:6401"
+                ]
+              }
+            }
+        ]
+      }
   - path: /etc/logrotate_master.config
     content: |
       compress
@@ -447,6 +465,7 @@ package:
       MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
+      MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
@@ -803,9 +822,8 @@ package:
 {% case "static" %}
   - path: /etc_master/dns_config_master
     content: |
-      MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
-      EXHIBITOR_ADDRESS=127.0.0.1
+      MASTER_SOURCE=master_list
+      RESOLVERS={{ resolvers_str }}
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=master_list
@@ -925,9 +943,17 @@ package:
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
+  - path: /etc/user.config.full.yaml
+    permissions: "0600"
+    content: |
+{{ config_yaml_full }}
   - path: /etc/expanded.config.json
     content: |
 {{ expanded_config }}
+  - path: /etc/expanded.config.full.json
+    permissions: "0600"
+    content: |
+{{ expanded_config_full }}
   - path: /etc_master/dcos-history.env
     content: |
       STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary

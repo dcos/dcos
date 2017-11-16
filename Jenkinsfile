@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-@Library('sec_ci_libs') _
+@Library('sec_ci_libs@v2-latest') _
 
 def master_branches = ["master", ] as String[]
 
@@ -11,9 +11,9 @@ if (master_branches.contains(env.BRANCH_NAME)) {
     ])
 }
 
-task_wrapper('mesos-sec', master_branches){
+task_wrapper('mesos-sec', master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci') {
     stage("Verify author") {
-        user_is_authorized(master_branches)
+        user_is_authorized(master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci')
     }
 
     stage('Cleanup workspace') {

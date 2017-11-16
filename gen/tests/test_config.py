@@ -1,24 +1,10 @@
 import json
 
 import pkg_resources
+import yaml
 
 import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
-
-
-dns_forward_zones_str = """\
-[["a.contoso.com", [["1.1.1.1", 53], \
-                    ["2.2.2.2", 53]]], \
- ["b.contoso.com", [["3.3.3.3", 53], \
-                    ["4.4.4.4", 53]]]] \
-"""
-
-bad_dns_forward_zones_str = """\
-[["a.contoso.com", [[1, 53], \
-                    ["2.2.2.2", 53]]], \
- ["b.contoso.com", [["3.3.3.3", 53], \
-                    ["4.4.4.4", 53]]]] \
-"""
 
 
 def validate_error_multikey(new_arguments, keys, message, unset=None):
@@ -58,6 +44,17 @@ def test_dns_bind_ip_blacklist():
     test_ips = '["52.37.192.49", "52.37.181.230", "52.37.163.105"]'
 
     validate_success({'dns_bind_ip_blacklist': test_ips})
+
+
+dns_forward_zones_str = """
+{"a.contoso.com": ["1.1.1.1:53", "2.2.2.2"],
+ "b.contoso.com": ["3.3.3.3", "4.4.4.4:53"]}
+"""
+
+bad_dns_forward_zones_str = """
+{"a.contoso.com": ["1", "2.2.2.2"],
+ "b.contoso.com": ["3.3.3.3", "4.4.4.4:53"]}
+"""
 
 
 def test_dns_forward_zones():
@@ -235,6 +232,7 @@ def test_validate_default_overlay_network_name():
     validate_error_multikey(
         {'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
+            'vtep_subnet6': 'fd01:a::/64',
             'vtep_mac_oui': '70:B3:D5:00:00:00',
             'overlays': [{
                 'name': 'bar',
@@ -777,3 +775,18 @@ def test_fault_domain_disabled():
 
     assert generated.arguments['fault_domain_enabled'] == 'false'
     assert 'fault_domain_detect_contents' not in generated.arguments
+
+
+def test_exhibitor_admin_password_obscured():
+    var_name = 'exhibitor_admin_password'
+    var_value = 'secret'
+    generated = gen.generate(make_arguments(new_arguments={var_name: var_value}))
+
+    assert var_name not in json.loads(generated.arguments['expanded_config'])
+    assert json.loads(generated.arguments['expanded_config_full'])[var_name] == var_value
+
+    assert json.loads(generated.arguments['user_arguments'])[var_name] == '**HIDDEN**'
+    assert json.loads(generated.arguments['user_arguments_full'])[var_name] == var_value
+
+    assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
+    assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
