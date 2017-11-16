@@ -10,6 +10,7 @@
     "python-docopt",
     "python-isodate",
     "python-jinja2",
+    "python-jwt",
     "python-markupsafe",
     "python-passlib",
     "python-pyyaml",
