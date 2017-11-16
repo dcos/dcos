@@ -6,6 +6,7 @@
     "pytest",
     "python",
     "python-cryptography",
+    "python-dateutil",
     "python-docopt",
     "python-isodate",
     "python-jinja2",
