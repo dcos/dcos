@@ -826,7 +826,6 @@ package:
   - path: /etc_master/dns_config_master
     content: |
       MASTER_SOURCE=master_list
-      RESOLVERS={{ resolvers_str }}
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=master_list
