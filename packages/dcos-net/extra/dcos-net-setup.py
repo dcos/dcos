@@ -21,6 +21,13 @@ def main():
         if result.stderr.strip().endswith(b'File exists'):
             result.returncode = 0
         sys.exit(result.returncode)
+    if sys.argv[1] == 'iptables':
+        argv = ['-C' if arg in ['-A', '-I'] else arg for arg in sys.argv[1:]]
+        result = subprocess.run(argv)
+        if result.returncode == 0:
+            sys.exit(result.returncode)
+        else:
+            os.execvp(sys.argv[1], sys.argv[1:])
     else:
         os.execvp(sys.argv[1], sys.argv[1:])
 
