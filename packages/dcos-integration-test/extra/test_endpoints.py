@@ -86,25 +86,19 @@ def test_if_dcos_history_service_is_up(dcos_api_session):
     assert 'pong' == r.text
 
 
-def test_if_marathon_ui_is_up(dcos_api_session):
+def test_if_marathon_is_up(dcos_api_session):
     r = dcos_api_session.get('/marathon/v2/info')
 
     assert r.status_code == 200
     response_json = r.json()
     assert "name" in response_json
     assert "marathon" == response_json["name"]
-    assert "version" in response_json
-    assert response_json["version"].startswith("1.6.0")
 
 
 def test_if_marathon_ui_redir_works(dcos_api_session):
     r = dcos_api_session.get('/marathon')
     assert r.status_code == 200
-    response_json = r.json()
-    assert "name" in response_json
-    assert "marathon" == response_json["name"]
-    assert "version" in response_json
-    assert response_json["version"].startswith("1.6.0")
+    assert '<title>Marathon</title>' in r.text
 
 
 def test_if_srouter_service_endpoint_works(dcos_api_session):
