@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/2.7/P/PyJWT/PyJWT-1.4.0-py2.py3-none-any.whl",
+    "sha1": "5e9ad9706fe8157cf0d183ddd21b7f0c5ea481fe"
+  }
+}
