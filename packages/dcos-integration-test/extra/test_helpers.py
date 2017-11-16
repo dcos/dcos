@@ -61,8 +61,6 @@ def marathon_test_app(
         (dict, str): 2-Tuple of app definition (dict) and app ID (string)
     """
     if network == marathon.Network.BRIDGE:
-        assert container_type == marathon.Container.DOCKER, \
-            'BRIDGE network mode only supported for DOCKER container type'
         if container_port is None:
             # provide a dummy value for the bridged container port if user is indifferent
             container_port = 8080
@@ -148,6 +146,16 @@ def marathon_test_app(
             }
             if vip is not None:
                 app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
+    elif network == marathon.Network.BRIDGE:
+        if container_type == marathon.Container.MESOS:
+            app['networks'] = [{'mode': 'container/bridge'}]
+            app['container']['portMappings'] = [{
+                'hostPort': host_port,
+                'containerPort': container_port,
+                'protocol': 'tcp',
+                'name': 'test'}]
+            if vip is not None:
+                app['container']['portMappings'][0]['labels'] = {'VIP_0': vip}
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     return app, test_uuid
