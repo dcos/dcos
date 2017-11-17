@@ -1,4 +1,5 @@
 <H2>Patches to cherry-pick on top of open source Apache Mesos before building in DC/OS</h2>
+
 These commits can be found in the repository at <a href="https://github.com/mesosphere/mesos/">https://github.com/mesosphere/mesos/</a>:
 <li>[19a72cba1e90a1a3faa78a186882d83f9382c21a] Set LIBPROCESS_IP into docker container.
 <li>[2965bce33b58bd24c280116cb0e8970879b7c35a] Mesos UI: Change paths, pailer, and logs to work with a reverse proxy.
