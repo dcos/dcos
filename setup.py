@@ -38,6 +38,7 @@ setup(
         'coloredlogs',
         'Flask',
         'flask-compress',
+        'urllib3',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.17',
         'msrestazure==0.4.15',
