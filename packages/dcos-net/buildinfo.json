@@ -3,8 +3,8 @@
   "sources": {
     "dcos-net": {
       "kind": "git",
-      "git": "git@github.com:dcos/dcos-net.git",
-      "ref": "0690f4d2232614eaf003e1b7cd1b621a492a9138",
+      "git": "https://github.com/dcos/dcos-net.git",
+      "ref": "6ff942e82967d6b729ed08881a2114dbbaf451fd",
       "ref_origin": "master"
     }
   },
