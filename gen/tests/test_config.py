@@ -7,21 +7,6 @@ import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
 
 
-dns_forward_zones_str = """\
-[["a.contoso.com", [["1.1.1.1", 53], \
-                    ["2.2.2.2", 53]]], \
- ["b.contoso.com", [["3.3.3.3", 53], \
-                    ["4.4.4.4", 53]]]] \
-"""
-
-bad_dns_forward_zones_str = """\
-[["a.contoso.com", [[1, 53], \
-                    ["2.2.2.2", 53]]], \
- ["b.contoso.com", [["3.3.3.3", 53], \
-                    ["4.4.4.4", 53]]]] \
-"""
-
-
 def validate_error_multikey(new_arguments, keys, message, unset=None):
     assert gen.validate(arguments=make_arguments(new_arguments)) == {
         'status': 'errors',
@@ -59,6 +44,17 @@ def test_dns_bind_ip_blacklist():
     test_ips = '["52.37.192.49", "52.37.181.230", "52.37.163.105"]'
 
     validate_success({'dns_bind_ip_blacklist': test_ips})
+
+
+dns_forward_zones_str = """
+{"a.contoso.com": ["1.1.1.1:53", "2.2.2.2"],
+ "b.contoso.com": ["3.3.3.3", "4.4.4.4:53"]}
+"""
+
+bad_dns_forward_zones_str = """
+{"a.contoso.com": ["1", "2.2.2.2"],
+ "b.contoso.com": ["3.3.3.3", "4.4.4.4:53"]}
+"""
 
 
 def test_dns_forward_zones():

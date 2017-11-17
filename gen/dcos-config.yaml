@@ -822,9 +822,8 @@ package:
 {% case "static" %}
   - path: /etc_master/dns_config_master
     content: |
-      MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
-      EXHIBITOR_ADDRESS=127.0.0.1
+      MASTER_SOURCE=master_list
+      RESOLVERS={{ resolvers_str }}
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=master_list
