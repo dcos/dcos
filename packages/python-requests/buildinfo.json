@@ -1,8 +1,15 @@
 {
   "requires": ["python"],
-  "single_source": {
-    "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/b0/e1/eab4fc3752e3d240468a8c0b284607899d2fbfb236a56b7377a329aa8d09/requests-2.18.4.tar.gz",
-    "sha1": "f5e1dbba5a12ff2df063333fd2bf071e24659b63"
+  "sources": {
+    "requests": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/49/df/50aa1999ab9bde74656c2919d9c0c085fd2b3775fd3eca826012bef76d8c/requests-2.18.4-py2.py3-none-any.whl",
+      "sha1": "52ccdd6ee808bddd0c6eabc6eda79e79381266df"
+    },
+    "urllib3": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/63/cb/6965947c13a94236f6d4b8223e21beb4d576dc72e8130bd7880f600839b8/urllib3-1.22-py2.py3-none-any.whl",
+      "sha1": "ae6715ae61c34b72d5e0c3241abfb20c2c4d1313"
+    }
   }
 }
