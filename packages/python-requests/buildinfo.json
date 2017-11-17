@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/49/6f/183063f01aae1e025cf0130772b55848750a2f3a89bfa11b385b35d7329d/requests-2.10.0.tar.gz",
-    "sha1": "1b9a2395402692262fc61fa15bedbc3e112b1029"
+    "url": "https://pypi.python.org/packages/b0/e1/eab4fc3752e3d240468a8c0b284607899d2fbfb236a56b7377a329aa8d09/requests-2.18.4.tar.gz",
+    "sha1": "f5e1dbba5a12ff2df063333fd2bf071e24659b63"
   }
 }
