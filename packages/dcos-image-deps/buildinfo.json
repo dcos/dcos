@@ -80,11 +80,6 @@
       "url": "https://pypi.python.org/packages/40/66/06130724e8205fc8c105db7edb92871c7fff7d31324d7f4405c762624a43/certifi-2017.7.27.1-py2.py3-none-any.whl",
       "sha1": "aeb9761eb1231d8309a0b593747d0c95303467b5"
     },
-    "chardet": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/c/chardet/chardet-2.3.0.tar.gz",
-      "sha1": "50af8f8771ecbeb7a22567129c6c281b8bec3b1c"
-    },
     "checksumdir": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/84/8b/0e800a118ed64091245feddef0159d7979bb42915f65db5d2dafd6b12864/checksumdir-1.1.4.tar.gz",
