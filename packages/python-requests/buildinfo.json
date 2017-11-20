@@ -10,6 +10,11 @@
       "kind": "url",
       "url": "https://pypi.python.org/packages/63/cb/6965947c13a94236f6d4b8223e21beb4d576dc72e8130bd7880f600839b8/urllib3-1.22-py2.py3-none-any.whl",
       "sha1": "ae6715ae61c34b72d5e0c3241abfb20c2c4d1313"
+    },
+    "chardet": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+      "sha1": "96faab7de7e9a71b37f22adb64daf2898e967e3e"
     }
   }
 }
