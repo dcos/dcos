@@ -22,6 +22,7 @@ def test_dcos_cluster_is_up(dcos_api_session):
     cluster_environment = {
         "docker_client_version": _docker_info('{{.Client.Version}}'),
         "docker_server_version": _docker_info('{{.Server.Version}}'),
+        "system_os_release": subprocess.check_output(['cat', '/etc/os-release']).decode('utf-8').rstrip(),
         "system_platform": platform.platform(),
         "system_platform_system": platform.system(),
         "system_platform_release": platform.release(),

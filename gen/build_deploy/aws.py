@@ -130,6 +130,7 @@ aws_region_names = [
 region_to_ami_map = {
     'ap-northeast-1': {
         'coreos': 'ami-93f2baf4',
+        'coreosprereq': 'ami-93f2baf4',
         'stable': 'ami-93f2baf4',
         'el7': 'ami-965345f8',
         'el7prereq': 'ami-72f93314',
@@ -137,6 +138,7 @@ region_to_ami_map = {
     },
     'ap-southeast-1': {
         'coreos': 'ami-aacc7dc9',
+        'coreosprereq': 'ami-aacc7dc9',
         'stable': 'ami-aacc7dc9',
         'el7': 'ami-8af586e9',
         'el7prereq': 'ami-cac2b2a9',
@@ -144,6 +146,7 @@ region_to_ami_map = {
     },
     'ap-southeast-2': {
         'coreos': 'ami-9db0b0fe',
+        'coreosprereq': 'ami-9db0b0fe',
         'stable': 'ami-9db0b0fe',
         'el7': 'ami-427d9c20',
         'el7prereq': 'ami-a0d736c2',
@@ -151,6 +154,7 @@ region_to_ami_map = {
     },
     'eu-central-1': {
         'coreos': 'ami-903df7ff',
+        'coreosprereq': 'ami-903df7ff',
         'stable': 'ami-903df7ff',
         'el7': 'ami-2d0cbc42',
         'el7prereq': 'ami-b371c1dc',
@@ -158,6 +162,7 @@ region_to_ami_map = {
     },
     'eu-west-1': {
         'coreos': 'ami-abcde0cd',
+        'coreosprereq': 'ami-abcde0cd',
         'stable': 'ami-abcde0cd',
         'el7': 'ami-e46ea69d',
         'el7prereq': 'ami-4d4f8634',
@@ -165,6 +170,7 @@ region_to_ami_map = {
     },
     'sa-east-1': {
         'coreos': 'ami-c11573ad',
+        'coreosprereq': 'ami-c11573ad',
         'stable': 'ami-c11573ad',
         'el7': 'ami-a5acd0c9',
         'el7prereq': 'ami-1264187e',
@@ -172,6 +178,7 @@ region_to_ami_map = {
     },
     'us-east-1': {
         'coreos': 'ami-1ad0000c',
+        'coreosprereq': 'ami-1ad0000c',
         'stable': 'ami-1ad0000c',
         'el7': 'ami-771beb0d',
         'el7prereq': 'ami-b05aadca',
@@ -179,6 +186,7 @@ region_to_ami_map = {
     },
     'us-gov-west-1': {
         'coreos': 'ami-e441fb85',
+        'coreosprereq': 'ami-e441fb85',
         'stable': 'ami-e441fb85',
         'el7': 'ami-9923a1f8',
         'el7prereq': 'ami-9923a1f8',
@@ -186,6 +194,7 @@ region_to_ami_map = {
     },
     'us-west-1': {
         'coreos': 'ami-b31d43d3',
+        'coreosprereq': 'ami-b31d43d3',
         'stable': 'ami-b31d43d3',
         'el7': 'ami-866151e6',
         'el7prereq': 'ami-63cafb03',
@@ -193,6 +202,7 @@ region_to_ami_map = {
     },
     'us-west-2': {
         'coreos': 'ami-444dcd24',
+        'coreosprereq': 'ami-444dcd24',
         'stable': 'ami-444dcd24',
         'el7': 'ami-a9b24bd1',
         'el7prereq': 'ami-1de01e65',
@@ -440,7 +450,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
         node_template_id, node_source = groups[node_type]
         local_source = Source()
         local_source.add_must('os_type', os_type)
-        local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7", "el7prereq"}))
+        local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "coreosprereq", "el7", "el7prereq"}))
         params = deepcopy(cf_instance_groups[node_template_id])
         params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
