@@ -1,5 +1,5 @@
 {
-  "requires": ["python"],
+  "requires": ["python", "python-idna"],
   "sources": {
     "requests": {
       "kind": "url",
