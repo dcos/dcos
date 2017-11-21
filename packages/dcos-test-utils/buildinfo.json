@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "d983e3c1e7a65576e8828dccd7429e844560202f",
-    "ref_origin": "master"
+    "ref": "0b4936a1d6051628b36ecdc7a430e80ece463032",
+    "ref_origin": "mh/slaves-error"
   }
 }
