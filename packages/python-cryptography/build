@@ -9,6 +9,6 @@ for package in cryptography cffi; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
 done
 
-for package in idna pyasn1; do
+for package in pyasn1; do
   pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
 done
