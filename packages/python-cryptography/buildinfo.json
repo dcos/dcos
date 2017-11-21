@@ -1,5 +1,5 @@
 {
-  "requires": ["python", "libffi"],
+  "requires": ["python", "libffi", "python-idna"],
   "sources": {
     "cryptography": {
       "kind": "url_extract",
@@ -15,11 +15,6 @@
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz",
       "sha1": "16265a4b305d433fb9089b19278502e904b0cb43"
-    },
-    "idna": {
-      "kind": "url",
-      "url": "https://pypi.python.org/packages/71/02/dee75fc3e6f7455bf69221164f94586ee13552c5f33c8002335667a3d122/idna-2.1-py2.py3-none-any.whl",
-      "sha1": "ef95a0f1627b85fbfb74eaba4fbb82f0c1b9d6d6"
     }
   }
 }
