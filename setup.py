@@ -40,7 +40,7 @@ setup(
         'flask-compress',
         'urllib3',
         'chardet',
-        'pyjwt',
+        'PyJWT',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.17',
         'msrestazure==0.4.15',
