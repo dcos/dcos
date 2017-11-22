@@ -3,13 +3,13 @@
   "sources": {
     "cryptography": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/99/df/71c7260003f5c469cec3db4c547115df39e9ce6c719a99e067ba0e78fd8a/cryptography-1.7.2.tar.gz",
-      "sha1": "2b5bc62fda71992633f83164b1a74c16a784acdf"
+      "url": "https://pypi.python.org/packages/f3/7c/ec4f94489719803cb14d35e9625d1f5a613b9c4b8d01ee52a4c77485e681/cryptography-2.1.3.tar.gz",
+      "sha1": "066acf8315cab631eb735188e20bef37c5848582"
     },
-    "pyasn1": {
+    "asn1crypto": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/07/4c/9a0927b81958997c1a4b2f88f70a48e622471b61fcd00d5039054fe881df/pyasn1-0.2.2-py2.py3-none-any.whl",
-      "sha1": "bdf5ef86a3a102fe9feece461b93b7e1717080e9"
+      "url": "https://pypi.python.org/packages/5e/85/d9b46c307ff2b5504432425cd99e2d9f13ab7a9835ba45c93da299cb1ec8/asn1crypto-0.23.0-py2.py3-none-any.whl",
+      "sha1": "664233097c6bee3d9ae1802a411ba4f629116406"
     },
     "cffi": {
       "kind": "url_extract",

@@ -5,7 +5,7 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 export PKG_CONFIG_PATH=/opt/mesosphere/lib/pkgconfig
 
-for package in pyasn1; do
+for package in asn1crypto; do
   pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
 done
 
