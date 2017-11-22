@@ -15,6 +15,12 @@
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz",
       "sha1": "16265a4b305d433fb9089b19278502e904b0cb43"
+    },
+    "pycparser": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz",
+      "sha1": "1c75af69ae6273b1f1f531744f87d060965ed85d"
     }
+
   }
 }
