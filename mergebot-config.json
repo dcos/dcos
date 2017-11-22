@@ -4,6 +4,7 @@
    "test": false,
    "bump-ee": true,
    "merge-it": true,
+   "override-status": true,
     "label": {
         "enabled": true,
         "default": "Work In Progress",
