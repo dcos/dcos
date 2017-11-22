@@ -5,6 +5,7 @@
     "flask",
     "pytest",
     "python",
+    "python-certifi",
     "python-cryptography",
     "python-dateutil",
     "python-docopt",
@@ -74,11 +75,6 @@
       "kind": "url",
       "url": "https://pypi.python.org/packages/3.4/b/beautifulsoup4/beautifulsoup4-4.4.1-py3-none-any.whl",
       "sha1": "774554b2c16c334f2220800950026384cae713ac"
-    },
-    "certifi": {
-      "kind": "url",
-      "url": "https://pypi.python.org/packages/40/66/06130724e8205fc8c105db7edb92871c7fff7d31324d7f4405c762624a43/certifi-2017.7.27.1-py2.py3-none-any.whl",
-      "sha1": "aeb9761eb1231d8309a0b593747d0c95303467b5"
     },
     "checksumdir": {
       "kind": "url_extract",
