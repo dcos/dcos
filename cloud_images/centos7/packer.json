@@ -1,7 +1,6 @@
 {
   "min_packer_version": "0.10.1",
   "variables": {
-    "centos_version": "{{env `CENTOS_VERSION`}}",
     "cloud_builder_version": "0.1",
     "deploy_regions": "{{env `DEPLOY_REGIONS`}}",
     "source_ami": "{{env `SOURCE_AMI`}}",
@@ -81,21 +80,32 @@
   "provisioners": [
     {
       "type": "file",
-      "source": "dcos_vol_setup.sh",
+      "source": "../lib/el7/dcos_vol_setup.sh",
       "destination": "/tmp/dcos_vol_setup.sh"
     },
     {
       "type": "file",
-      "source": "install_prereqs.sh",
-      "destination": "/tmp/install_prereqs.sh"
+      "source": "../lib/el7/install_dcos_required_packages.sh",
+      "destination": "/tmp/install_dcos_required_packages.sh"
     },
+    {
+      "type": "file",
+      "source": "../lib/el7/configure_dcos_system.sh",
+      "destination": "/tmp/configure_dcos_system.sh"
+    },
+    {
+      "type": "file",
+      "source": "../lib/el7/install_docker.sh",
+      "destination": "/tmp/install_docker.sh"
+	},
     {
       "type": "shell",
       "inline_shebang": "/bin/bash -e",
       "inline": [
         "sudo mv /tmp/dcos_vol_setup.sh /usr/local/sbin/",
-        "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_prereqs.sh",
-        "sudo CENTOS_VERSION={{user `centos_version`}} /tmp/install_prereqs.sh"
+        "sudo chmod 0755 /usr/local/sbin/dcos_vol_setup.sh /tmp/install_dcos_required_packages.sh /tmp/configure_dcos_system.sh /tmp/install_docker.sh",
+		"sudo ROOTFS=/ /tmp/install_dcos_required_packages.sh",
+        "sudo /tmp/configure_dcos_system.sh"
       ]
     }
   ]
