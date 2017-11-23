@@ -3,8 +3,8 @@
   "sources": {
     "boto3": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/18/8c/ea1a772e28584f790d4833bdfff6db93e05522fea3348af1c2c4221b8c01/boto3-1.4.1-py2.py3-none-any.whl",
-      "sha1": "adaac3153c9fe0310f2a66dd54326db8d01189fd"
+      "url": "https://pypi.python.org/packages/7d/09/66fef826fb13a2cee74a1df56c269d2794a90ece49c3b77113b733e4b91d/boto3-1.4.8-py2.py3-none-any.whl",
+      "sha1": "1e5ca3a1a91ec124615362806452aac6b547ccf2"
     },
     "jmespath": {
       "kind": "url",
@@ -18,8 +18,8 @@
     },
     "botocore": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/28/b1/a246f8a8115d064427ef7c822051acd25059e0c5d5fad4cdc6916b1ca605/botocore-1.4.78-py2.py3-none-any.whl",
-      "sha1": "14ec9018643c295428e443329e7bddaa8a869a55"
+      "url": "https://pypi.python.org/packages/4c/5a/8bca1ef99a82ffaa5b7f0debeab2b86cba2a6f38c5f4cf0e984f95b89f01/botocore-1.8.1-py2.py3-none-any.whl",
+      "sha1": "3ed7a866a3ec928f54a033f50db930c076e41713"
     },
     "s3transfer": {
       "kind": "url",
