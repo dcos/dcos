@@ -23,8 +23,8 @@
     },
     "s3transfer": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/4b/4c/42ea1dba46deea23fbcb7a51c794f9a02f87b8df7a28a9a8dc5ef57baa21/s3transfer-0.1.9-py2.py3-none-any.whl",
-      "sha1": "94bf6b560939dd8fdd9cc5b9d3d192a121df3b75"
+      "url": "https://pypi.python.org/packages/53/a8/dbee2c13508a4f1060ec44a0889d6766508912905a16edb593f628e92db1/s3transfer-0.1.11-py2.py3-none-any.whl",
+      "sha1": "3569560d886f48b0e0e9286fc1c733902f6bd91e"
     }
   }
 }
