@@ -379,7 +379,24 @@ echo "Validating distro..."
 distro="$(source /etc/os-release && echo "${ID}")"
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
-  echo "CoreOS includes all prerequisites by default." >&2
+  sudo systemctl is-enabled systemd-networkd > /dev/null 2>&1
+  networkd=$(echo $?)
+
+  if [ "x$networkd" == "x0" ]; then
+    echo "Setting up DC/OS network config for systemd-networkd."
+    network_config="/etc/systemd/network/dcos.network"
+
+    echo "[Match]" | sudo tee $network_config
+    echo "Type=bridge" | sudo tee --append $network_config
+    echo "Name=docker* m-* d-* vtep*" | sudo tee --append $network_config
+    echo "" | sudo tee --append $network_config
+    echo "[Link]" | sudo tee --append $network_config
+    echo "Unmanaged=yes" | sudo tee --append $network_config
+
+    sudo systemctl restart systemd-networkd
+    echo "Installed DC/OS network config for systemd-networkd and restarted systemd-network"
+  fi
+  echo "Detected CoreOS. All prerequisites already installed"
   exit 0
 elif [[ "${distro}" == 'rhel' ]]; then
   echo "Distro: RHEL"
