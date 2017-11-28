@@ -20,7 +20,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     packages=[
         'dcos_installer',
@@ -38,9 +38,12 @@ setup(
         'coloredlogs',
         'Flask',
         'flask-compress',
+        'urllib3',
+        'chardet',
+        'PyJWT',
         # Pins taken from 'azure==2.0.0rc4'
-        'msrest==0.4.0',
-        'msrestazure==0.4.1',
+        'msrest==0.4.17',
+        'msrestazure==0.4.15',
         'azure-common==1.1.4',
         'azure-storage==0.32.0',
         'azure-mgmt-network==0.30.0rc4',
@@ -54,7 +57,7 @@ setup(
         'py',
         'pytest',
         'pyyaml',
-        'requests==2.10.0',
+        'requests==2.18.4',
         'retrying',
         'schema',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep

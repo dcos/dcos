@@ -315,7 +315,7 @@ def build_app(loop):
 
     # Disable all caching for everything, disable once the Web UI gets cache
     # breaking urls for it's assets (still need to not cache the REST responses, index.html though)
-    # TODO(cmaloney): Python 3.5 switch this to `async def` per:
+    # TODO(cmaloney): Python 3.6 switch this to `async def` per:
     #                 http://aiohttp.readthedocs.io/en/stable/web.html#signals
     def no_caching(request, response):
         response.headers['Cache-Control'] = 'no-store, must-revalidate'
