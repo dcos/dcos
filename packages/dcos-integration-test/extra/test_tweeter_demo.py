@@ -53,7 +53,7 @@ def _wait_for_tweet_count(url):
 
 
 @pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') not in ('disabled', 'permissive', 'strict'),
+    test_helpers.expanded_config.get('security') in ('disabled', 'permissive', 'strict'),
     reason='Enterprise tweeter tests in test_tweeter_demo_enterprise.py')
 def test_tweeter_demo(dcos_api_session):
     """Step through setup and run the Tweeter demo application. See https://github.com/mesosphere/tweeter
