@@ -45,7 +45,7 @@ def _get_tweet_count(address):
 
 
 @retrying.retry(
-    wait_fixed=(10 * 1000),
+    wait_fixed=(20 * 1000),
     stop_max_delay=(10 * 60 * 1000))
 def _wait_for_tweet_count(url):
     # This is 25 tweets because of how paging in tweeter is defined
