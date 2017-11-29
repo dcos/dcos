@@ -33,12 +33,6 @@ dcos_net_service=${PKG_PATH}/dcos.target.wants/dcos-net.service
 mkdir -p $(dirname $dcos_net_service)
 envsubst '${PKG_PATH}' < "/pkg/extra/$(basename $dcos_net_service)" > "${dcos_net_service}"
 
-# Setup iptables
-
-setup_iptables="$PKG_PATH/bin/setup_iptables.sh"
-cp "/pkg/extra/$(basename $setup_iptables)" "$setup_iptables"
-chmod +x "$setup_iptables"
-
 ## Gen resolv
 resolvconf_service="$PKG_PATH/dcos.target.wants/dcos-gen-resolvconf.service"
 mkdir -p "$(dirname "$resolvconf_service")"

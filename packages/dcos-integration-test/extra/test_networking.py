@@ -23,7 +23,7 @@ class Container(enum.Enum):
     POD = 'POD'
 
 
-class MarathonApp():
+class MarathonApp:
     def __init__(self, container, network, host, vip=None):
         self._network = network
         self._container = container
@@ -89,7 +89,7 @@ class MarathonApp():
         return dcos_api_session.marathon.delete('v2/apps/{}'.format(self.id))
 
 
-class MarathonPod():
+class MarathonPod:
     def __init__(self, network, host, vip=None):
         self._network = network
         container_port = 0
@@ -198,18 +198,11 @@ def ensure_routable(cmd, host, port):
 def generate_vip_app_permutations():
     """ Generate all possible network interface permutations for applying vips
     """
-    containers = \
-        [marathon.Container.NONE, marathon.Container.MESOS,
-         marathon.Container.DOCKER, Container.POD]
-    networks = \
-        [marathon.Network.USER, marathon.Network.BRIDGE, marathon.Network.HOST]
+    containers = list(marathon.Container) + [Container.POD]
     return [(container, vip_net, proxy_net)
             for container in containers
-            for vip_net in networks
-            for proxy_net in networks
-            # only DOCKER containers support BRIDGE network
-            if marathon.Network.BRIDGE not in (vip_net, proxy_net) \
-            or container == marathon.Container.DOCKER]
+            for vip_net in list(marathon.Network)
+            for proxy_net in list(marathon.Network)]
 
 
 @pytest.mark.slow
@@ -225,7 +218,7 @@ def test_vip(dcos_api_session,
              proxy_net: marathon.Network):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
-        * networks: USER, BRIDGE (docker only), HOST
+        * networks: USER, BRIDGE, HOST
         * agents: source and destnations on same agent or different agents
         * vips: named and unnamed vip
 
@@ -256,6 +249,13 @@ def test_vip(dcos_api_session,
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
+    if marathon.Network.BRIDGE in [vip_net, proxy_net]:
+        if container == marathon.Container.DOCKER:
+            pass
+        elif container == marathon.Container.NONE:
+            same_hosts = []
+        else:
+            same_hosts.remove(True)
     tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]
