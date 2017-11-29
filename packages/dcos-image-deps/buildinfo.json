@@ -5,10 +5,13 @@
     "flask",
     "pytest",
     "python",
+    "python-certifi",
     "python-cryptography",
+    "python-dateutil",
     "python-docopt",
     "python-isodate",
     "python-jinja2",
+    "python-jwt",
     "python-markupsafe",
     "python-passlib",
     "python-pyyaml",
@@ -18,6 +21,11 @@
     "teamcity-messages"
   ],
   "sources": {
+    "adal": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/24/e9/35e48db18de35310ea3ba17c7f401e7c2099ad7ce31a0dbc881411ea7c16/adal-0.4.7-py2.py3-none-any.whl",
+      "sha1": "bb158afaf52a2cc7f6c25b86fefe1e5344d7b21d"
+    },
     "aiohttp": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/55/9d/38fb3cb174f4723b50a3f0593e18a51418c9a73a7857fdcaee46b83ff1c4/aiohttp-0.22.5.tar.gz",
@@ -53,35 +61,20 @@
       "url": "https://pypi.python.org/packages/cf/23/ef729d6ef3a9d19732d480eaaf94a72799a99a38ed25eda10f8e68ffd408/azure_storage-0.32.0-py3-none-any.whl",
       "sha1": "3cc425a291fe6359f6d786aa040059004082795d"
     },
-    "enum34": {
-        "kind": "url",
-        "url": "https://pypi.python.org/packages/af/42/cb9355df32c69b553e72a2e28daee25d1611d2c0d9c272aa1d34204205b2/enum34-1.1.6-py3-none-any.whl",
-        "sha1": "d8746baffb8d5f6af9aacc4d563d202f0bb9c334"
-    },
     "msrest": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/f5/b6/176a2109be5354bbcb31bf52e32ed91b1fc398f1a30ed12db0b429c64928/msrest-0.4.0-py3-none-any.whl",
-      "sha1": "fdd0ae8546202f817f1bbddf2828bc0af1720514"
+      "url": "https://pypi.python.org/packages/a4/79/956d2475af557ccc7de76ef67087fc8e7b591162748ab7783d88e9b685d7/msrest-0.4.17-py2.py3-none-any.whl",
+      "sha1": "f979991d34fdb8389abfddb4a73f6eef753abc47"
     },
     "msrestazure": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/d3/37/6bf15f4e322bd2aa84ed98630a6e265f04784e40124aac5dae2e000553b0/msrestazure-0.4.1-py3-none-any.whl",
-      "sha1": "dfa52c208f423a1614a1a5dd2910e0a2295f1cb7"
+      "url": "https://pypi.python.org/packages/34/3d/4ed39efc7e833a84fa07561903750e64dcbd0cbea59b5be19ebd608f15fe/msrestazure-0.4.15-py2.py3-none-any.whl",
+      "sha1": "eb9bbdadbc1897950b95bb2e653dcc8cce2e50f6"
     },
     "beautifulsoup4": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/3.4/b/beautifulsoup4/beautifulsoup4-4.4.1-py3-none-any.whl",
       "sha1": "774554b2c16c334f2220800950026384cae713ac"
-    },
-    "certifi": {
-      "kind": "url",
-      "url": "https://pypi.python.org/packages/db/60/1ed0106bde7b14b363b15b17cc308aad93ba57d3582570f3ad7180ae0fae/certifi-2016.2.28-py2.py3-none-any.whl",
-      "sha1": "23b05f0c710004493ef65f9aa25aa44829f02aae"
-    },
-    "chardet": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/c/chardet/chardet-2.3.0.tar.gz",
-      "sha1": "50af8f8771ecbeb7a22567129c6c281b8bec3b1c"
     },
     "checksumdir": {
       "kind": "url_extract",
