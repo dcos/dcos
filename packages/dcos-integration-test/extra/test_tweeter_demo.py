@@ -84,6 +84,8 @@ def test_tweeter_demo(dcos_api_session):
     dcos_api_session.marathon.wait_for_deployments_complete()
 
     tweeter_app_definition = _get_tweeter_app_definition()
+    # use version before the changes from tweeter PR 53
+    tweeter_app_definition['container']['docker']['image'] = "mesosphere/tweeter:service-discovery"
     log.info("Deploying tweeter")
     log.debug("Using tweeter app definition: " + str(tweeter_app_definition))
     # app instances have an 'unhealthy' stage before transitioning to healthy, which would cause this to fail every time
