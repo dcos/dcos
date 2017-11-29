@@ -54,14 +54,14 @@ To find the git SHA of any given release, check the latest commit in the version
 1. git 1.8.5+
 1. Docker 1.11+
     - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
-1. Python 3.5
+1. Python 3.6
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
     - Ubuntu 16.04 LTS:
         - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
         - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev python3-venv`
-        - Install Python 3.5.2: `pyenv install 3.5.2`
-        - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
+        - Install Python 3.6.3: `pyenv install 3.6.3`
+        - Create DC/OS virtualenv: `pyenv virtualenv 3.6.3 dcos`
         - Activate environment: `pyenv activate dcos`
 1. Over 10GB of free disk space and 8GB of RAM
     - The build makes use of hard links, so if you're using VirtualBox the disk space cannot be a synced folder.

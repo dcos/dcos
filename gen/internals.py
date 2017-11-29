@@ -30,7 +30,7 @@ def validate_arguments_strings(arguments: dict):
         raise ValidationError(errors, set())
 
 
-# TODO (cmaloney): Python 3.5, add checking valid_values is Iterable[str]
+# TODO (cmaloney): Python 3.6, add checking valid_values is Iterable[str]
 def validate_one_of(val: str, valid_values) -> None:
     """Test if object `val` is a member of container `valid_values`.
     Raise a AssertionError if it is not a member. The exception message contains
