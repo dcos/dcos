@@ -8,8 +8,7 @@ NODE_NAME=navstar
 # Export
 for ENV_FILE in \
         "/opt/mesosphere/environment" \
-        "/opt/mesosphere/etc/dns_config" \
-        "/opt/mesosphere/etc/dns_search_config"; \
+        "/opt/mesosphere/etc/dns_config" ; \
     do
     source "${ENV_FILE}"
 done
