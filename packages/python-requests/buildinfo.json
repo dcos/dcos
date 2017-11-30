@@ -1,8 +1,20 @@
 {
-  "requires": ["python"],
-  "single_source": {
-    "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/49/6f/183063f01aae1e025cf0130772b55848750a2f3a89bfa11b385b35d7329d/requests-2.10.0.tar.gz",
-    "sha1": "1b9a2395402692262fc61fa15bedbc3e112b1029"
+  "requires": ["python", "python-idna"],
+  "sources": {
+    "requests": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/49/df/50aa1999ab9bde74656c2919d9c0c085fd2b3775fd3eca826012bef76d8c/requests-2.18.4-py2.py3-none-any.whl",
+      "sha1": "52ccdd6ee808bddd0c6eabc6eda79e79381266df"
+    },
+    "urllib3": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/63/cb/6965947c13a94236f6d4b8223e21beb4d576dc72e8130bd7880f600839b8/urllib3-1.22-py2.py3-none-any.whl",
+      "sha1": "ae6715ae61c34b72d5e0c3241abfb20c2c4d1313"
+    },
+    "chardet": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+      "sha1": "96faab7de7e9a71b37f22adb64daf2898e967e3e"
+    }
   }
 }

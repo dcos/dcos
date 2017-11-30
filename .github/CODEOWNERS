@@ -1,0 +1,15 @@
+# Defining a Concept of CODEOWNERS in dcos/dcos repo
+# Refer to: https://jira.mesosphere.com/browse/DCOS_OSS-1793
+#           https://help.github.com/articles/about-codeowners/
+
+# NOTE: This is work-in-progress as of Nov 28, 2017.
+# tools-infra team will be responsible for assiging the owners.
+# or interested engineers can request addition to this file.
+
+# global owner (test)
+
+* @orsenthil
+
+# tests owner
+
+/packages/dcos-integration-test/ @orsenthil, skumaran@mesosphere.io, @mellenburg
