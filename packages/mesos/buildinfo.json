@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "7b265880c0e091561bde4d386c821a2d7c326b2f",
+    "ref": "3a0504045c3eda1bd3e3a1b841e73aa2121994ca",
     "ref_origin" : "kapil/cops-2004"
   },
   "environment": {
