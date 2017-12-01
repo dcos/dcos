@@ -574,6 +574,10 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             # get a list of all files in a zip archive.
             archived_items = z.namelist()
 
+            # validate all files in zip archive are not empty
+            for item in archived_items:
+                assert z.getinfo(item).file_size, 'item {} is empty'.format(item)
+
             # make sure all required log files for master node are in place.
             for master_ip in dcos_api_session.masters:
                 master_folder = master_ip + '_master/'
