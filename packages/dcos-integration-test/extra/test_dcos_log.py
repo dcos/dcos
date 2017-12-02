@@ -306,10 +306,18 @@ def test_log_v2_task_logs(dcos_api_session):
         "cpus": 0.1,
         "instances": 1,
         "mem": 128,
+        "healthChecks": [
+            {
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "grep -q STDOUT_LOG stdout;grep -q STDERR_LOG stderr"
+                }
+            }
+        ],
         "cmd": "echo STDOUT_LOG; echo STDERR_LOG >&2;sleep 999"
     }
 
-    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=False):
+    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
         response = dcos_api_session.logs.get('v2/task/{}/file/stdout'.format(task_id))
         check_response_ok(response, {})
         assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
@@ -359,10 +367,18 @@ def test_log_v2_api(dcos_api_session):
         "cpus": 0.1,
         "instances": 1,
         "mem": 128,
+        "healthChecks": [
+            {
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "test -f test"
+                }
+            }
+        ],
         "cmd": "echo \"one\ntwo\nthree\nfour\nfive\n\">test;sleep 9999"
     }
 
-    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=False):
+    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
         # skip 2 entries from the beggining
         response = dcos_api_session.logs.get('v2/task/{}/file/test?skip=2'.format(task_id))
         check_response_ok(response, {})
