@@ -837,10 +837,16 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
-def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
-    if os.path.exists(fault_domain_detect_filename):
-        return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
-    return ''
+def calculate_fault_domain_detect_contents(fault_domain_enabled, fault_domain_detect_filename):
+    if fault_domain_enabled == 'false':
+        return ''
+
+    assert os.path.exists(fault_domain_detect_filename), (
+        'Fault domain detect script not found at {}. Please see our documentation on fault domain awareness: '
+        'https://docs.mesosphere.com/1.11/deploying-services/fault-domain-awareness/. '
+        'To disable fault domain awareness in DC/OS, set `fault_domain_enabled: false` in '
+        'genconf/config.yaml.'.format(fault_domain_detect_filename))
+    return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
 
 
 __dcos_overlay_network_default_name = 'dcos'
