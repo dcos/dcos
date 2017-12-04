@@ -1,13 +1,12 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
-import os
 import time
 
 import pytest
 import requests
 
 from generic_test_code.common import assert_endpoint_response, verify_header
-from util import GuardedSubprocess, SearchCriteria, auth_type_str, jwt_type_str
+from util import GuardedSubprocess, SearchCriteria, jwt_type_str
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
@@ -211,22 +210,6 @@ class TestAuthnJWTValidator:
             assert_stderr=log_messages,
             headers=auth_header,
             )
-
-
-class TestAuthCustomErrorPages:
-    def test_correct_401_page_content(self, master_ar_process_pertest, repo_is_ee):
-        url = master_ar_process_pertest.make_url_from_path(EXHIBITOR_PATH)
-        resp = requests.get(url)
-
-        assert resp.status_code == 401
-        assert resp.headers["Content-Type"] == "text/html; charset=UTF-8"
-        assert resp.headers["WWW-Authenticate"] == auth_type_str(repo_is_ee)
-
-        path_401 = os.environ.get('AUTH_ERROR_PAGE_DIR_PATH') + "/401.html"
-        with open(path_401, 'rb') as f:
-            resp_content = resp.content.decode('utf-8').strip()
-            file_content = f.read().decode('utf-8').strip()
-            assert resp_content == file_content
 
 
 class TestAuthPrecedence:

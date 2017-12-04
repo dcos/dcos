@@ -2,9 +2,7 @@ local function resolve()
     local state = cache.get_cache_entry("mesosstate")
 
     if state == nil then
-        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
-        ngx.say("503 Service Unavailable: cache state is invalid")
-        return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+        return util.exit_by_code(503, nil, "cache state is invalid")
     end
 
     agent_pid = state['agent_pids'][ngx.var.agentid]
@@ -21,9 +19,7 @@ local function resolve()
         return
     end
 
-    ngx.status = ngx.HTTP_NOT_FOUND
-    ngx.say("404 Not Found: agent `" .. ngx.var.agentid .. "` unknown.")
-    return ngx.exit(ngx.HTTP_NOT_FOUND)
+    return util.exit_by_code(404, nil, "agent `" .. ngx.var.agentid .. "` unknown.")
 end
 
 -- Initialise and return the module:

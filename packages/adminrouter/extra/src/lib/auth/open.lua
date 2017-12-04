@@ -22,7 +22,7 @@ local function validate_jwt_or_exit()
     uid, err = authcommon.validate_jwt(SECRET_KEY)
     if err ~= nil then
         if err == 401 then
-            return authcommon.exit_401("oauthjwt")
+            return util.exit_by_code(401, "oauthjwt")
         end
 
         -- Other error statuses go here...
@@ -44,7 +44,7 @@ local function do_authn_and_authz_or_exit()
 
     if res.status == ngx.HTTP_NOT_FOUND then
         ngx.log(ngx.ERR, "User not found: `" .. uid .. "`")
-        return authcommon.exit_401()
+        return util.exit_by_code(401, "oauthjwt")
     end
 
     if res.status == ngx.HTTP_OK then

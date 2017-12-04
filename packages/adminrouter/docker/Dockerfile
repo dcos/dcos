@@ -121,6 +121,8 @@ COPY plain-metadata-testfile.json \
      dcos-version.json \
         /opt/mesosphere/active/dcos-metadata/etc/
 COPY nested-metadata-testfile.json /opt/mesosphere/active/dcos-metadata/etc/nest1/
+RUN mkdir -pv /opt/mesosphere/active/adminrouter/extra/src/ && \
+    ln -sv /usr/local/adminrouter/nginx/conf/errorpages /opt/mesosphere/active/adminrouter/extra/src/
 
 # The contents of adminrouter-listen* files differ from the ones that are
 # shipped with DC/OS - the IP addresses Nginx binds to are limited to only

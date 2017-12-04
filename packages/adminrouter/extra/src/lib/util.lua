@@ -306,5 +306,49 @@ function string:strip()
     return self:match "^%s*(.-)%s*$"
 end
 
+local error_response_bodies = {}
+local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
+if errorpages_dir_path == nil then
+    ngx.log(ngx.WARN, "AUTH_ERROR_PAGE_DIR_PATH not set.")
+else
+    error_codes = {"401", "403", "generic"}
+    for _, code in ipairs(error_codes) do
+        local p = errorpages_dir_path .. "/" .. code .. ".html"
+        ngx.log(ngx.NOTICE, "Reading " .. code .. " response from `" .. p .. "`.")
+        error_response_bodies[code] = util.get_file_content(p)
+        if (error_response_bodies[code] == nil or error_response_bodies[code] == '') then
+            -- Normalize to '', for sending empty response bodies.
+            error_response_bodies[code] = ''
+            ngx.log(ngx.WARN, code .. " error response is empty.")
+        end
+    end
+end
+
+function util.exit_by_code(error_code, authtype, error_msg)
+    error_code_int = tonumber(error_code)
+    ngx.status = error_code_int
+    ngx.header["Content-Type"] = "text/html; charset=UTF-8"
+    if error_code_int == 401 and authtype ~= nil then
+        ngx.header["WWW-Authenticate"] = authtype
+    end
+    if error_msg ~= nil then
+        fmt = error_response_bodies["generic"]
+        -- This is a bit of a trade off - we are generating the error page
+        -- every time we hit an error condition. The string.format() function
+        -- does not come for free, esp. if the generic error page is big. On
+        -- the other hand pre-generating static document for each and every
+        -- possible error condition in AR Lua code will increase complexity and
+        -- is error prone (i.e. missing error pages for a newly generated
+        -- code). For now we opt for a simple solution which we may
+        -- improve/make faster in the future. The alternative is to not to
+        -- serve custom error pages for Lua error conditions or to give up the
+        -- error messages while emitting error pages for Lua error conditions.
+        ngx.say(string.format(fmt, error_msg, error_msg))
+    else
+        ngx.say(error_response_bodies[tostring(error_code)])
+    end
+    return ngx.exit(error_code_int)
+end
+
 
 return util
