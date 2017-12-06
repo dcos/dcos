@@ -383,6 +383,15 @@ package:
             }
         ]
       }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
+      }
   - path: /etc/logrotate_master.config
     content: |
       compress
@@ -469,6 +478,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
+      MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
