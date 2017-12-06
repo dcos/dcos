@@ -367,7 +367,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json 
+  - path: /etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -375,7 +375,7 @@ package:
             {
               "network_mode": "USER",
               "dns": {
-                "nameservers": [ 
+                "nameservers": [
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
                 ]
