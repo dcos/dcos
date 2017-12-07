@@ -302,8 +302,11 @@ function empty_dir() {
 function check_preexisting_dcos() {
     echo -e -n 'Checking if DC/OS is already installed: '
     if (
+        # dcos.target exists and is a directory, OR
         [[ -d /etc/systemd/system/dcos.target ]] ||
+        # dcos.target.wants exists and is a directory, OR
         [[ -d /etc/systemd/system/dcos.target.wants ]] ||
+        # /opt/mesosphere exists and is not an empty directory
         ( [[ -a /opt/mesosphere ]] && ( ! empty_dir /opt/mesosphere ) )
     ); then
         # this will print: Checking if DC/OS is already installed: FAIL (Currently installed)
