@@ -29,7 +29,15 @@ import gen.template
 import gen.util
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, json_prettyprint, load_string, split_by_token, write_json, write_yaml
+from pkgpanda.util import (
+    hash_checkout,
+    json_prettyprint,
+    load_string,
+    split_by_token,
+    write_json,
+    write_string,
+    write_yaml,
+)
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
@@ -619,6 +627,14 @@ def generate(
     # put the regular files right back
     rendered_templates['dcos-config.yaml'] = {'package': regular_files}
 
+    # Render cluster package list artifact.
+    cluster_package_list_filename = 'package_lists/{}.package_list.json'.format(
+        argument_dict['cluster_package_list_id']
+    )
+    os.makedirs(os.path.dirname(cluster_package_list_filename), mode=0o755, exist_ok=True)
+    write_string(cluster_package_list_filename, argument_dict['cluster_packages'])
+    log.info('Cluster package list: {}'.format(cluster_package_list_filename))
+
     def make_package_filename(package_id, extension):
         return 'packages/{0}/{1}{2}'.format(
             package_id.name,
@@ -698,6 +714,7 @@ def generate(
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
+        'cluster_package_list_filename': cluster_package_list_filename,
         'config_package_ids': config_package_ids,
         'late_package_id': late_package['name'] if late_package else None,
         'templates': rendered_templates,

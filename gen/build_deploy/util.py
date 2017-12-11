@@ -41,6 +41,9 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
     for filename in extra_files:
         copy_makedirs(filename, output_dir + filename)
 
+    # Copy the package list
+    copy_makedirs(gen_out.cluster_package_list_filename, output_dir + gen_out.cluster_package_list_filename)
+
     # Copy the config packages
     for package_name in json.loads(gen_out.arguments['config_package_names']):
         filename = gen_out.cluster_packages[package_name]['filename']
@@ -51,6 +54,9 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
 
     # Write the bootstrap id
     write_string(output_dir + 'bootstrap.latest', gen_out.arguments['bootstrap_id'])
+
+    # Write cluster package list ID
+    write_string(output_dir + 'cluster-package-list.latest', gen_out.arguments['cluster_package_list_id'])
 
 
 def variant_str(variant):

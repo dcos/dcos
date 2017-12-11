@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout
+from pkgpanda.util import hash_checkout, hash_str
 
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
@@ -401,6 +401,10 @@ def calculate_config_package_ids(config_package_names, config_id):
 
 def calculate_cluster_packages(config_package_ids, package_ids):
     return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
+
+
+def calculate_cluster_package_list_id(cluster_packages):
+    return hash_str(cluster_packages)
 
 
 def validate_cluster_packages(cluster_packages):
@@ -917,7 +921,6 @@ entry = {
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
-        'cluster_packages_json': lambda cluster_packages: cluster_packages,
         'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
@@ -1018,6 +1021,7 @@ entry = {
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
+        'cluster_package_list_id': calculate_cluster_package_list_id,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,

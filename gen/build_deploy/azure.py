@@ -247,6 +247,10 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     else:
         raise ValueError("Unknown Azure varietal specified")
 
+    yield {
+        'reproducible_path': results.cluster_package_list_filename,
+        'local_path': results.cluster_package_list_filename,
+    }
     yield {'packages': results.config_package_ids}
     if results.late_package_id:
         yield {'packages': [results.late_package_id]}
