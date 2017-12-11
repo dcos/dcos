@@ -23,6 +23,10 @@ class Container(enum.Enum):
     POD = 'POD'
 
 
+class Network(enum.Enum):
+    IPv6 = 'IPv6'
+
+
 class MarathonApp:
     def __init__(self, container, network, host, vip=None):
         self._network = network
@@ -35,14 +39,16 @@ class MarathonApp:
                 vip=vip,
                 container_type=container,
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
-        elif network == marathon.Network.USER:
+        elif network in [marathon.Network.USER, Network.IPv6]:
             self.app, self.uuid = test_helpers.marathon_test_app(
-                network=network,
+                network=marathon.Network.USER,
                 host_port=unused_port(),
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+            if network == Network.IPv6:
+                self.app['ipAddress']['networkName'] = 'dcos6'
             if vip is not None and container == marathon.Container.DOCKER:
                 del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
@@ -76,11 +82,12 @@ class MarathonApp:
     def hostport(self, dcos_api_session):
         info = self.info(dcos_api_session)
         task = info['app']['tasks'][0]
-        if self._network == marathon.Network.USER:
-            host = task['ipAddresses'][0]['ipAddress']
+        if self._network in [marathon.Network.USER, Network.IPv6]:
             if self._container == marathon.Container.DOCKER:
+                host = task['host']
                 port = task['ports'][0]
             else:
+                host = task['ipAddresses'][0]['ipAddress']
                 port = self.app['ipAddress']['discovery']['ports'][0]['number']
         else:
             host = task['host']
@@ -211,6 +218,14 @@ def generate_vip_app_permutations():
 @pytest.mark.skipif(
     not lb_enabled(),
     reason='Load Balancer disabled')
+def test_vip_ipv6(dcos_api_session):
+    return test_vip(dcos_api_session, marathon.Container.DOCKER, Network.IPv6, Network.IPv6)
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not lb_enabled(),
+    reason='Load Balancer disabled')
 @pytest.mark.parametrize(
     'container,vip_net,proxy_net',
     generate_vip_app_permutations())
@@ -286,10 +301,16 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
     if named_vip:
         vip = '/namedvip:{}'.format(vip_port)
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
+    elif vip_net == Network.IPv6:
+        vip = 'fd01:c::1:{}'.format(vip_port)
+        vipaddr = vip
     else:
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
-    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
+    cmd = '{} {} http://{}/test_uuid'.format(
+        '/opt/mesosphere/bin/curl -s -f -m 5',
+        '--ipv6' if vip_net == Network.IPv6 else '--ipv4',
+        vipaddr)
     if container == Container.POD:
         origin_app = MarathonPod(vip_net, origin_host, vip)
         proxy_app = MarathonPod(proxy_net, proxy_host)
