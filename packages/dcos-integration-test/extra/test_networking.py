@@ -43,6 +43,8 @@ class MarathonApp:
                 vip=vip,
                 container_type=container,
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+            if vip is not None and container == marathon.Container.DOCKER:
+                del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
         self.app['acceptedResourceRoles'] = ['*', 'slave_public']
         self.id = self.app['id']
