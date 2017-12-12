@@ -1,4 +1,3 @@
-import json
 import os
 import os.path
 import shutil
@@ -37,16 +36,8 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
     assert output_dir[-1] != '/'
     output_dir = output_dir + '/'
 
-    # Copy the extra_files
-    for filename in extra_files:
-        copy_makedirs(filename, output_dir + filename)
-
-    # Copy the package list
-    copy_makedirs(gen_out.cluster_package_list_filename, output_dir + gen_out.cluster_package_list_filename)
-
-    # Copy the config packages
-    for package_name in json.loads(gen_out.arguments['config_package_names']):
-        filename = gen_out.cluster_packages[package_name]['filename']
+    # Copy generated artifacts
+    for filename in extra_files + gen_out.stable_artifacts:
         copy_makedirs(filename, output_dir + filename)
 
     # Write an index of the cluster packages

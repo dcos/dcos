@@ -356,13 +356,11 @@ def _as_cf_artifact(filename, cloudformation):
 def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
     cloudformation, results = bundle
     yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
-    yield {
-        'reproducible_path': results.cluster_package_list_filename,
-        'local_path': results.cluster_package_list_filename,
-    }
-    yield {'packages': results.config_package_ids}
-    if results.late_package_id:
-        yield {'packages': [results.late_package_id]}
+    for filename in results.stable_artifacts:
+        yield {
+            'reproducible_path': filename,
+            'local_path': filename,
+        }
 
 
 def gen_supporting_template():

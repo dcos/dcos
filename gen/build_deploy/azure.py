@@ -248,17 +248,15 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
         raise ValueError("Unknown Azure varietal specified")
 
     yield {
-        'reproducible_path': results.cluster_package_list_filename,
-        'local_path': results.cluster_package_list_filename,
-    }
-    yield {'packages': results.config_package_ids}
-    if results.late_package_id:
-        yield {'packages': [results.late_package_id]}
-    yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
         'local_content': arm,
         'content_type': 'application/json; charset=utf-8'
     }
+    for filename in results.stable_artifacts:
+        yield {
+            'reproducible_path': filename,
+            'local_path': filename,
+        }
 
 
 def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):

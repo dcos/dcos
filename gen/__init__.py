@@ -620,6 +620,8 @@ def generate(
             log.debug("validating template file %s", name)
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
+    stable_artifacts = []
+
     # Find all files which contain late bind variables and turn them into a "late bind package"
     # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
     late_files, regular_files = extract_files_containing_late_variables(
@@ -634,6 +636,7 @@ def generate(
     os.makedirs(os.path.dirname(cluster_package_list_filename), mode=0o755, exist_ok=True)
     write_string(cluster_package_list_filename, argument_dict['cluster_packages'])
     log.info('Cluster package list: {}'.format(cluster_package_list_filename))
+    stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
         return 'packages/{0}/{1}{2}'.format(
@@ -655,6 +658,7 @@ def generate(
         os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
         write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
         log.info('Package filename: {}'.format(late_package_filename))
+        stable_artifacts.append(late_package_filename)
 
         # Add the late config file to cloud config. The expressions in
         # late_variables will be resolved by the service handling the cloud
@@ -686,7 +690,9 @@ def generate(
     config_package_ids = json.loads(argument_dict['config_package_ids'])
     for package_id_str in config_package_ids:
         package_id = PackageId(package_id_str)
+        package_filename = cluster_package_info[package_id.name]['filename']
         do_gen_package(rendered_templates[package_id.name + '.yaml'], cluster_package_info[package_id.name]['filename'])
+        stable_artifacts.append(package_filename)
 
     # Convert cloud-config to just contain write_files rather than root
     cc = rendered_templates['cloud-config.yaml']
@@ -714,9 +720,7 @@ def generate(
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
-        'cluster_package_list_filename': cluster_package_list_filename,
-        'config_package_ids': config_package_ids,
-        'late_package_id': late_package['name'] if late_package else None,
+        'stable_artifacts': stable_artifacts,
         'templates': rendered_templates,
         'utils': utils
     })
