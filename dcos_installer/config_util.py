@@ -19,8 +19,20 @@ def make_serve_dir(gen_out):
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
-    # Get bootstrap from artifacts
-    fetch_artifacts(gen_out.arguments['bootstrap_id'], gen_out.cluster_packages, gen_out.config_package_ids)
+    # Copy cached artifacts.
+    cached_packages = sorted(
+        i['filename'] for i in gen_out.cluster_packages.values() if i['filename'] not in gen_out.stable_artifacts
+    )
+    bootstrap_files = [
+        "bootstrap/{}.bootstrap.tar.xz".format(gen_out.arguments['bootstrap_id']),
+        "bootstrap/{}.active.json".format(gen_out.arguments['bootstrap_id'])
+    ]
+    fetch_artifacts(
+        bootstrap_files + cached_packages,
+        ARTIFACT_DIR,
+        SERVE_DIR,
+    )
+
     # Write some package metadata
     pkgpanda.util.write_json(CLUSTER_PACKAGES_PATH, gen_out.cluster_packages)
 
