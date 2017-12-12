@@ -392,7 +392,7 @@ package:
         },
         "excluded_images": []
       }
-  - path: /etc_slave/mesos-resource-providers/dcos_csi_devices.json
+  - path: /etc/mesos-resource-providers/dcos_csi_devices.json
     content: |
       {
         "type": "org.apache.mesos.rp.local.storage",
@@ -425,7 +425,7 @@ package:
           }
         }
       }
-  - path: /etc_slave/mesos-agent-features.json
+  - path: /etc/mesos-agent-features.json
     content: |
       {
         "capabilities": [
