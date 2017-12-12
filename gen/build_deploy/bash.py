@@ -55,7 +55,7 @@ bash_template = """#!/bin/bash
 #   dcos image commit: {{ dcos_image_commit }}
 #   generation date: {{ generation_date }}
 #
-# Copyright 2016 Mesosphere, Inc.
+# Copyright 2017 Mesosphere, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
