@@ -367,7 +367,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json 
+  - path: /etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -375,13 +375,22 @@ package:
             {
               "network_mode": "USER",
               "dns": {
-                "nameservers": [ 
+                "nameservers": [
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
                 ]
               }
             }
         ]
+      }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
       }
   - path: /etc/logrotate_master.config
     content: |
@@ -469,6 +478,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
+      MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
