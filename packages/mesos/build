@@ -9,10 +9,12 @@ mkdir -p build
 pushd build
 # TODO(cmaloney): --with-glog=/usr --with-protobuf=/usr --with-boost=/usr
 # TODO(cmaloney): DESTDIR builds so we don't have to build as root?
+# TODO(nfnt): --with-grpc=/usr
 LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
+  --enable-grpc \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
