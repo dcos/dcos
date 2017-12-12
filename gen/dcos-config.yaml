@@ -392,6 +392,49 @@ package:
         },
         "excluded_images": []
       }
+  - path: /etc_slave/mesos-resource-providers/dcos_csi_devices.json
+    content: |
+      {
+        "type": "org.apache.mesos.rp.local.storage",
+        "name": "dcos_csi_devices",
+        "default_reservations": [
+          {
+            "type": "DYNAMIC",
+            "role": "dcos-storage"
+          }
+        ],
+        "storage": {
+          "plugin": {
+            "type": "com.mesosphere.storage.csi.devices",
+            "name": "default",
+            "containers": [
+              {
+                "services": [
+                  "CONTROLLER_SERVICE",
+                  "NODE_SERVICE"
+                ],
+                "command": {
+                  "shell": false,
+                  "value": "/opt/mesosphere/packages/active/bin/devices-plugin",
+                  "arguments": [
+                    "devices-plugin"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+  - path: /etc_slave/mesos-agent-features.json
+    content: |
+      {
+        "capabilities": [
+          {"type": "MULTI_ROLE"},
+          {"type": "HIERARCHICAL_ROLE"},
+          {"type": "RESERVATION_REFINEMENT"},
+          {"type": "RESOURCE_PROVIDER"}
+        ]
+      }
   - path: /etc/logrotate_master.config
     content: |
       compress
@@ -480,6 +523,8 @@ package:
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
+      MESOS_RESOURCE_PROVIDER_CONFIG_DIR=/opt/mesosphere/etc/mesos-resource-providers
+      MESOS_AGENT_FEATURES=file:///opt/mesosphere/etc/mesos-agent-features.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
