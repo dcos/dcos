@@ -9,11 +9,27 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-import grp
+
+try:   # Not available on windows
+    import grp
+except ImportError:
+    pass
+
 import json
+
+try:   # Only available on windows
+    import nt
+except ImportError:
+    pass
+
 import os
 import os.path
-import pwd
+
+try:   # Not available on windows
+    import pwd
+except ImportError:
+    pass
+
 import re
 import shutil
 import tempfile
@@ -27,7 +43,8 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, is_windows, load_json, write_json, write_string)
+
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -506,6 +523,10 @@ class UserManagement:
         if not group_name:
             return
 
+        # We return here because grp is not supported in windows, so nothing to validate
+        if is_windows:
+            return
+
         group = grp.getgrnam(group_name)
         if user.pw_gid != group.gr_gid:
 
@@ -652,6 +673,13 @@ class Install:
         ids = set()
         for name in os.listdir(active_dir):
             package_path = os.path.realpath(os.path.join(active_dir, name))
+
+            # Work around a long standing bug in realpath which has been open since 2010.
+            # A fix has been proposed since 2013. https://bugs.python.org/issue9949
+            # in windows realpath doesn't resolve symlinks
+            if (is_windows):
+                package_path = nt._getfinalpathname(package_path)
+
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
             ids.add(os.path.basename(package_path))

@@ -36,6 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
+from pkgpanda.util import rm_r
 
 
 def print_repo_list(packages):
@@ -56,7 +57,7 @@ def uninstall(install, repository):
     # TODO(cmaloney): Make this not quite so magical
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
-    check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
+    rm_r(os.path.dirname(install.systemd_dir) + "/dcos.target")
 
     # Cleanup all systemd units
     # TODO(cmaloney): This is much more work than we need to do the job
@@ -80,10 +81,11 @@ def uninstall(install, repository):
         print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
-    check_call(['rm', '-rf'] + all_names)
+    for this_name in all_names:
+        rm_r(this_name)
 
     # Removing /opt/mesosphere
-    check_call(['rm', '-rf', install.root])
+    rm_r(install.root)
 
 
 def find_checks(install, repository):
@@ -96,6 +98,7 @@ def find_checks(install, repository):
             continue
         for check_file in sorted(os.listdir(package_check_dir)):
             if not os.access(os.path.join(package_check_dir, check_file), os.X_OK):
+                # In windows, we will never get here because X_OK is always true
                 print('WARNING: `{}` is not executable'.format(check_file), file=sys.stderr)
                 continue
             tmp_checks[active_package].append(check_file)
