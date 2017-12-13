@@ -2,9 +2,9 @@
   "requires": ["openssl", "libevent", "curl", "boost-libs"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/mesosphere/mesos",
-    "ref": "1fec7d0654e596975b6f674622b02e62fbf40069",
-    "ref_origin" : "dcos-mesos-master-99171a4"
+    "git": "https://github.com/bbannier/mesos",
+    "ref": "553a177515817a6623d8c4128cb4f583284f3e85",
+    "ref_origin" : "t/dss_dummy"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
