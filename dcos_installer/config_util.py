@@ -19,10 +19,9 @@ def make_serve_dir(gen_out):
     subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
-    # Copy artifacts out of the cache.
-    generated_packages = gen_out.config_package_ids + [gen_out.arguments['custom_check_bins_package_id']]
+    # Copy cached artifacts.
     cached_packages = sorted(
-        info['filename'] for info in gen_out.cluster_packages.values() if info['id'] not in generated_packages
+        i['filename'] for i in gen_out.cluster_packages.values() if i['filename'] not in gen_out.stable_artifacts
     )
     bootstrap_files = [
         "bootstrap/{}.bootstrap.tar.xz".format(gen_out.arguments['bootstrap_id']),
