@@ -415,7 +415,7 @@ package:
                 ],
                 "command": {
                   "shell": false,
-                  "value": "/opt/mesosphere/packages/active/bin/devices-plugin",
+                  "value": "/opt/mesosphere/dcos-csidevices/bin/devices-plugin",
                   "arguments": [
                     "devices-plugin"
                   ]
