@@ -285,6 +285,7 @@ def test_action_deploy_post(client, monkeypatch):
 
     write_string('genconf/config.yaml', ssh_config_yaml)
     monkeypatch.setattr(dcos_installer.action_lib, '_get_bootstrap_tarball', lambda: '123')
+    monkeypatch.setattr(dcos_installer.action_lib, '_get_cluster_package_list', lambda: '123')
     monkeypatch.setattr(dcos_installer.action_lib, '_add_copy_packages', lambda _: None)
 
     # Deploy should be already executed for action 'deploy'
@@ -314,6 +315,7 @@ def test_action_deploy_retry(client, monkeypatch):
 
     write_string('genconf/config.yaml', ssh_config_yaml)
     monkeypatch.setattr(dcos_installer.action_lib, '_get_bootstrap_tarball', lambda: '123')
+    monkeypatch.setattr(dcos_installer.action_lib, '_get_cluster_package_list', lambda: '123')
     monkeypatch.setattr(dcos_installer.action_lib, '_add_copy_packages', lambda _: None)
     monkeypatch.setattr(dcos_installer.action_lib, '_read_state_file', lambda state_file: {'total_hosts': 2})
 
