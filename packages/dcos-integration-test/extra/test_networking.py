@@ -327,13 +327,14 @@ def test_ip_per_container(dcos_api_session):
     '''Test if we are able to connect to a task with ip-per-container mode
     '''
     # Launch the test_server in ip-per-container mode (user network)
+    if len(dcos_api_session.slaves) < 2:
+        pytest.skip("IP Per Container tests require 2 private agents to work")
+
     app_definition, test_uuid = test_helpers.marathon_test_app(
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.USER,
         host_port=9080)
-
-    assert len(dcos_api_session.slaves) >= 2, 'IP Per Container tests require 2 private agents to work'
 
     app_definition['instances'] = 2
     app_definition['constraints'] = [['hostname', 'UNIQUE']]
