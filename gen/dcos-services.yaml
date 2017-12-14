@@ -20,7 +20,7 @@
     Description=Pkgpanda: Download DC/OS to this host.
     After=network-online.target
     Wants=network-online.target
-    ConditionPathExists=!/opt/mesosphere/
+    ConditionPathExists=!/opt/mesosphere/active/
     [Service]
     Type=oneshot
     StandardOutput=journal+console
