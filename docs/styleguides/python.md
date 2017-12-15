@@ -19,7 +19,7 @@ main stake holders of this style guide.
 
 ##### Python Version Requirement
 
-This style guide is written for Python3.5 and above. As new features of the language get standardized, this style guide
+This style guide is written for Python3.6 and above. As new features of the language get standardized, this style guide
 can be revised to adopt new features.
 
 #### Base Style Guide
@@ -152,7 +152,7 @@ from test_util.helpers import (CI_CREDENTIALS,
     ```
 
 
-* Adding Types. Since our code-base is Python3.5+ compatible, we have the choice of introducing types, validating
+* Adding Types. Since our code-base is Python3.6+ compatible, we have the choice of introducing types, validating
   with mypy.
 
 ```

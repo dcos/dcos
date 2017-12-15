@@ -93,9 +93,6 @@ package:
   - path: /etc/dcos-net-watchdog
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
-  - path: /etc/dcos-net-erl.env
-    content: |
-      ERL_FLAGS=-kernel inet_dist_listen_min 62501 -kernel inet_dist_listen_max 62501
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -113,6 +110,12 @@ package:
   - path: /etc/dcos-net.config.d/common.config
     content: |
       [
+        {dcos_net,
+          [
+            {dist_port, 62501},
+            {epmd_port, 61420}
+          ]
+        },
         {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
@@ -364,7 +367,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json 
+  - path: /etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -372,13 +375,22 @@ package:
             {
               "network_mode": "USER",
               "dns": {
-                "nameservers": [ 
+                "nameservers": [
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
                 ]
               }
             }
         ]
+      }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
       }
   - path: /etc/logrotate_master.config
     content: |
@@ -435,6 +447,7 @@ package:
 {% case "false" %}
 {% endswitch %}
       GLOG_drop_log_memory=false
+      LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
   - path: /etc/mesos-master-provider
     content: |
@@ -456,6 +469,7 @@ package:
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
@@ -466,6 +480,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
+      MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
@@ -823,7 +838,6 @@ package:
   - path: /etc_master/dns_config_master
     content: |
       MASTER_SOURCE=master_list
-      RESOLVERS={{ resolvers_str }}
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=master_list

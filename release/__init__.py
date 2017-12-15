@@ -551,7 +551,7 @@ def _build_builders(package_store):
         msg_fmt = "Package-defined builders overlap with global: `{}`"
         raise pkgpanda.build.BuildError(msg_fmt.format(overlap))
 
-    # FIXME: with python3.5 it is going to be: union_d12 = {**d1, **d2}
+    # FIXME: with python3.6 it is going to be: union_d12 = {**d1, **d2}
     all_builders = global_builders.copy()
     all_builders.update(pkg_builders)
     for name, path in all_builders.items():

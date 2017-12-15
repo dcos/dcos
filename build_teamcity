@@ -42,7 +42,9 @@ rm -rf wheelhouse/
 _scope_closed "cleanup"
 
 _scope_opened "setup"
-# Force Python stdout/err to be unbuffered.
+
+# Force Python stdout/err to be unbuffered to
+# have immediate feedback in TeamCity build logs.
 export PYTHONUNBUFFERED="notemtpy"
 
 # enable pkgpanda virtualenv *ALWAYS COPY* otherwise the TC cleanup will traverse and corrupt system python

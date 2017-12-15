@@ -4,11 +4,11 @@ root:
     owner: root
     content: |
       {{ bootstrap_url }}
-  - path: /etc/mesosphere/setup-flags/cluster-packages.json
+  - path: /etc/mesosphere/setup-flags/cluster-package-list
     permissions: "0644"
     owner: root
     content: |
-      {{ cluster_packages_json }}
+      {{ cluster_package_list_id }}
   - path: /etc/systemd/journald.conf.d/dcos.conf
     permissions: "0644"
     owner: root

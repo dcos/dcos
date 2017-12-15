@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import uuid
 
 import pytest
@@ -236,3 +237,169 @@ def get_task_url(dcos_api_session, task_name, stream=False):
     return '/system/v1/agent/{}/logs/v1/{}/framework/{}/executor/{}/container/{}'.format(slave_id, endpoint_type,
                                                                                          framework_id, executor_id,
                                                                                          container_id)
+
+
+def validate_journald_cursor(c: str, cursor_regexp=None):
+    if not cursor_regexp:
+        cursor_regexp = b'^id: s=[a-f0-9]+;i=[a-f0-9]+;b=[a-f0-9]+;'
+        cursor_regexp += b'm=[a-f0-9]+;t=[a-f0-9]+;x=[a-f0-9]+$'
+
+    p = re.compile(cursor_regexp)
+    assert p.match(c), "Cursor {} does not match regexp {}".format(c, cursor_regexp)
+
+
+def test_log_v2_text(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v2/component?limit=10', node=node)
+        check_response_ok(response, {'Content-Type': 'text/plain'})
+
+        # expect 10 lines
+        lines = list(filter(lambda x: x != '', response.content.decode().split('\n')))
+        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+
+
+def test_log_v2_server_sent_events(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v2/component?limit=1', node=node, headers={'Accept': 'text/event-stream'},
+                                             stream=True)
+        check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
+        lines = response.iter_lines()
+        sse_id = next(lines)
+        validate_journald_cursor(sse_id)
+        data = next(lines).decode('utf-8', 'ignore')
+        validate_sse_entry(data)
+
+
+def test_log_v2_stream(dcos_api_session):
+    for node in dcos_api_session.masters + dcos_api_session.all_slaves:
+        response = dcos_api_session.logs.get('v2/component?skip=-1', node=node, stream=True,
+                                             headers={'Accept': 'text/event-stream'})
+        check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
+        lines = response.iter_lines()
+        sse_id = next(lines)
+        validate_journald_cursor(sse_id)
+        data = next(lines).decode('utf-8', 'ignore')
+        validate_sse_entry(data)
+
+
+def test_log_v2_proxy(dcos_api_session):
+    r = dcos_api_session.get('/mesos/master/slaves')
+    check_response_ok(r, {})
+
+    data = r.json()
+    slaves_ids = sorted(x['id'] for x in data['slaves'] if x['hostname'] in dcos_api_session.all_slaves)
+
+    for slave_id in slaves_ids:
+        response = dcos_api_session.get('/system/v1/agent/{}/logs/v2/component?skip=-10&limit=10'.format(slave_id))
+        check_response_ok(response, {'Content-Type': 'text/plain'})
+        lines = list(filter(lambda x: x != '', response.text.split('\n')))
+        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+
+
+def test_log_v2_task_logs(dcos_api_session):
+    test_uuid = uuid.uuid4().hex
+
+    task_id = "integration-test-task-logs-{}".format(test_uuid)
+
+    task_definition = {
+        "id": "/{}".format(task_id),
+        "cpus": 0.1,
+        "instances": 1,
+        "mem": 128,
+        "healthChecks": [
+            {
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "grep -q STDOUT_LOG stdout;grep -q STDERR_LOG stderr"
+                }
+            }
+        ],
+        "cmd": "echo STDOUT_LOG; echo STDERR_LOG >&2;sleep 999"
+    }
+
+    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
+        response = dcos_api_session.logs.get('v2/task/{}/file/stdout'.format(task_id))
+        check_response_ok(response, {})
+        assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
+
+        response = dcos_api_session.logs.get('v2/task/{}/file/stderr'.format(task_id))
+        check_response_ok(response, {})
+        assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
+
+
+def test_log_v2_pod_logs(dcos_api_session):
+    test_uuid = uuid.uuid4().hex
+
+    pod_id = 'integration-test-pod-logs-{}'.format(test_uuid)
+
+    pod_definition = {
+        'id': '/{}'.format(pod_id),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'sleep1',
+                'exec': {'command': {'shell': 'echo $PING > foo;echo STDOUT_LOG;echo STDERR_LOG >&2;sleep 10000'}},
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}]
+    }
+
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
+        response = dcos_api_session.logs.get('v2/task/sleep1')
+        check_response_ok(response, {})
+        assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
+
+        response = dcos_api_session.logs.get('v2/task/sleep1/file/stderr')
+        check_response_ok(response, {})
+        assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
+
+
+def test_log_v2_api(dcos_api_session):
+    test_uuid = uuid.uuid4().hex
+
+    task_id = "integration-test-task-logs-{}".format(test_uuid)
+
+    task_definition = {
+        "id": "/{}".format(task_id),
+        "cpus": 0.1,
+        "instances": 1,
+        "mem": 128,
+        "healthChecks": [
+            {
+                "protocol": "COMMAND",
+                "command": {
+                    "value": "test -f test"
+                }
+            }
+        ],
+        "cmd": "echo \"one\ntwo\nthree\nfour\nfive\n\">test;sleep 9999"
+    }
+
+    with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
+        # skip 2 entries from the beggining
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?skip=2'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "three\nfour\nfive\n"
+
+        # move to the end of file and read 2 last LINE_SIZE
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=END&skip=-2'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "four\nfive\n"
+
+        # move three lines from the top and limit to one entry
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?skip=3&limit=1'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "four\n"
+
+        # set cursor to 7 (bytes) which the second word and skip 1 lines
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=7&skip=1'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "four\nfive\n"
+
+        # set cursor to 7 (bytes) which the second word and skip -1 lines and limit 1
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=7&skip=-1&limit=1'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "two\n"
