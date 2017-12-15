@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/bbannier/mesos",
-    "ref": "553a177515817a6623d8c4128cb4f583284f3e85",
+    "ref": "0ba23e2217755c621607e59e2c429d0bc67ab0f7",
     "ref_origin" : "t/dss_dummy"
   },
   "environment": {
