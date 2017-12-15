@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 import pkgpanda.exceptions
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout
+from pkgpanda.util import hash_checkout, hash_str
 
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
@@ -403,6 +403,10 @@ def calculate_cluster_packages(config_package_ids, package_ids):
     return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
 
 
+def calculate_cluster_package_list_id(cluster_packages):
+    return hash_str(cluster_packages)
+
+
 def validate_cluster_packages(cluster_packages):
     pkg_id_list = json.loads(cluster_packages)
     for pkg_id in pkg_id_list:
@@ -541,6 +545,27 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "are discovered by agents using the master_discovery method but also having a fixed " \
             "known at install time static list of master ips doesn't " \
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
+
+
+def calculate_adminrouter_external_tls_version_override(adminrouter_tls_1_0_enabled):
+    if adminrouter_tls_1_0_enabled == 'true':
+        return 'TLSv1 TLSv1.1 TLSv1.2'
+    else:
+        return 'TLSv1.1 TLSv1.2'
+
+
+def validate_adminrouter_tls_1_0_enabled(adminrouter_tls_1_0_enabled, adminrouter_tls_version_override):
+    if adminrouter_tls_1_0_enabled != 'false':
+        assert adminrouter_tls_version_override != ['TLSv1 TLSv1.1 TLSv1.2', 'TLSv1.1 TLSv1.2'], \
+            "adminrouter_tls_1_0_enabled cannot be used " \
+            "in combination with adminrouter_tls_version_override."
+
+
+def calculate_adminrouter_external_cipher_override(adminrouter_external_cipher_string):
+    if adminrouter_external_cipher_string != '':
+        return 'true'
+    else:
+        return 'false'
 
 
 def validate_s3_prefix(s3_prefix):
@@ -894,6 +919,7 @@ entry = {
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
+            validate_adminrouter_tls_1_0_enabled,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -913,11 +939,13 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
+        'adminrouter_external_tls_version_override': calculate_adminrouter_external_tls_version_override,
+        'adminrouter_external_cipher_override': calculate_adminrouter_external_cipher_override,
+        'adminrouter_external_cipher_string': '',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
-        'cluster_packages_json': lambda cluster_packages: cluster_packages,
         'enable_lb': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
@@ -1018,6 +1046,7 @@ entry = {
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
         'cluster_packages': calculate_cluster_packages,
+        'cluster_package_list_id': calculate_cluster_package_list_id,
         'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,

@@ -367,7 +367,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json 
+  - path: /etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -375,13 +375,22 @@ package:
             {
               "network_mode": "USER",
               "dns": {
-                "nameservers": [ 
+                "nameservers": [
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
                 ]
               }
             }
         ]
+      }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
       }
   - path: /etc/logrotate_master.config
     content: |
@@ -438,6 +447,7 @@ package:
 {% case "false" %}
 {% endswitch %}
       GLOG_drop_log_memory=false
+      LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
   - path: /etc/mesos-master-provider
     content: |
@@ -459,6 +469,7 @@ package:
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
@@ -469,6 +480,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
+      MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
@@ -972,23 +984,30 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
-  - path: /etc/adminrouter-tls.conf
+  - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
       # Modulo ChaCha20 cipher.
-      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+{% switch adminrouter_external_cipher_override %}
+{% case "false" %}
+      ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+{% case "true" %}
+      ssl_ciphers {{ adminrouter_external_cipher_string }};
+{% endswitch %}
       ssl_prefer_server_ciphers on;
       # To manually test which TLS versions are enabled on a node, use
       # `openssl` commands.
       #
       # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
       # details.
-{% switch adminrouter_tls_1_0_enabled %}
-{% case "true" %}
-      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-{% case "false" %}
-      ssl_protocols TLSv1.1 TLSv1.2;
-{% endswitch %}
+      ssl_protocols {{ adminrouter_external_tls_version_override }};
+  - path: /etc/adminrouter-tls-agent.conf
+    content: |
+      # Note that Agent Admin Router only servers cluster-internal clients. Hence,
+      # browser compatibility is not a criterion for the TLS cipher suite selection.
+      ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5;
+      ssl_prefer_server_ciphers on;
+      ssl_protocols TLSv1.2;
   - path: /etc_slave/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
