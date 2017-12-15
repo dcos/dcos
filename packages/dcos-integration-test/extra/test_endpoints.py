@@ -110,7 +110,6 @@ def test_if_srouter_service_endpoint_works(dcos_api_session):
     assert "name" in response_json
     assert "marathon" == response_json["name"]
     assert "version" in response_json
-    assert response_json["version"].startswith("1.6.0")
 
 
 def test_if_mesos_api_is_up(dcos_api_session):
