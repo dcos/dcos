@@ -17,7 +17,11 @@ stash_zk_pid_stat_mtime_path = "/var/lib/dcos/bootstrap/exhibitor_pid_stat"
 
 
 def get_zk_pid_mtime():
-    return os.stat(zk_pid_path).st_mtime_ns
+    try:
+        return os.stat(zk_pid_path).st_mtime_ns
+    except FileNotFoundError:
+        log.error("ZK pid file `%s` does not exist.", zk_pid_path)
+        return None
 
 
 def get_zk_pid():
@@ -34,6 +38,9 @@ def try_shortcut():
 
     # Make sure that the pid hasn't been written anew
     cur_pid_stat = get_zk_pid_mtime()
+
+    if cur_pid_stat is None:
+        return False
 
     if stashed_pid_stat != cur_pid_stat:
         return False
@@ -90,20 +97,24 @@ def wait(master_count_filename):
 
     data = response.json()
 
-    serving = 0
-    leaders = 0
+    serving = []
+    leaders = []
     for node in data:
         if node['isLeader']:
-            leaders += 1
+            leaders.append(node['hostname'])
         if node['description'] == 'serving':
-            serving += 1
+            serving.append(node['hostname'])
 
-    if serving != cluster_size or leaders != 1:
+    log.info(
+        "Serving hosts: `%s`, leader: `%s`", ','.join(serving), ','.join(leaders))
+
+    if len(serving) != cluster_size or len(leaders) != 1:
         msg = 'Expected {} servers and 1 leader, got {} servers and {} leaders'.format(cluster_size, serving, leaders)
         raise Exception(msg)
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.
-    zk_pid_mtime = str(get_zk_pid_mtime())
-    log.info('Stashing zk.pid mtime %s to %s', zk_pid_mtime, stash_zk_pid_stat_mtime_path)
-    write_string(stash_zk_pid_stat_mtime_path, zk_pid_mtime)
+    zk_pid_mtime = get_zk_pid_mtime()
+    if zk_pid_mtime is not None:
+        log.info('Stashing zk.pid mtime %s to %s', zk_pid_mtime, stash_zk_pid_stat_mtime_path)
+        write_string(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime))
