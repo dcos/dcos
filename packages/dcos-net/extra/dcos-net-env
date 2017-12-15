@@ -22,6 +22,15 @@ for ENV_FILE in \
     fi
 done
 
+### Mount namespace
+if [ $(lsns -p $$ -t mnt -n -o NPROCS) -gt 2 ]; then
+    exec unshare -m $0 "$@"
+fi
+mount --bind /opt/mesosphere/etc/resolv.conf /etc/resolv.conf
+
+### PID file
+echo $$ > /run/dcos/dcos-net.pid
+
 ### Usage
 USAGE=""
 KNOWNCMD=false

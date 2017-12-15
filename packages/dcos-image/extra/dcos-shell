@@ -1,10 +1,56 @@
-#!/bin/bash
-set -o errexit -o nounset -o pipefail
+#!/opt/mesosphere/bin/python
 
-source /opt/mesosphere/environment.export
+import os
+import pwd
+import subprocess
+import sys
 
-if [ $# -eq 0 ]; then
-  exec "$SHELL"
-fi
 
-exec "$@"
+def resolvconf():
+    with open("/etc/resolv.conf") as f:
+        data = f.read().splitlines()
+    return 'nameserver 198.51.100.1' in data or \
+           'nameserver 198.51.100.2' in data or \
+           'nameserver 198.51.100.3' in data
+
+
+def dcos_net_pid():
+    with open("/run/dcos/dcos-net.pid") as f:
+        pid = f.readline().strip()
+        return pid
+
+
+def source(env):
+    command = ['bash', '-c', 'source {} && env'.format(env)]
+    result = subprocess.run(command, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+    for line in result.stdout.decode().splitlines():
+        (key, _, value) = line.partition("=")
+        os.environ[key] = value
+
+
+def setuid(argv):
+    if len(argv) >= 2 and argv[0] == '-u':
+        uid = pwd.getpwnam(argv[1]).pw_uid
+        os.setuid(uid)
+        return argv[2:]
+    if not argv:
+        return [os.environ.get('SHELL', 'bash')]
+    return argv
+
+
+def main():
+    if not resolvconf():
+        os.execvp('nsenter', ['nsenter', '-t', dcos_net_pid(), '-m'] + sys.argv)
+        sys.exit(1)
+
+    source('/opt/mesosphere/environment.export')
+    argv = setuid(sys.argv[1:])
+
+    os.execvp(argv[0], argv[0:])
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

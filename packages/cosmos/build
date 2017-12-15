@@ -18,13 +18,12 @@ Restart=always
 StartLimitInterval=0
 RestartSec=15
 LimitNOFILE=16384
-PermissionsStartOnly=True
-User=dcos_cosmos
+SyslogIdentifier=dcos-cosmos
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/proxy.env
-ExecStartPre=/bin/ping -c1 leader.mesos
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cosmos
-ExecStart=/opt/mesosphere/bin/java \\
+ExecStartPre=/opt/mesosphere/bin/dcos-shell /bin/ping -c1 leader.mesos
+ExecStartPre=/opt/mesosphere/bin/dcos-shell /opt/mesosphere/bin/bootstrap dcos-cosmos
+ExecStart=/opt/mesosphere/bin/dcos-shell -u dcos_cosmos /opt/mesosphere/bin/java \\
     -Xmx2G \\
     -Djdk.http.auth.tunneling.disabledSchemes="NTLM" \\
     -classpath ${PKG_PATH}/usr/cosmos.jar \\

@@ -998,6 +998,14 @@ package:
       EXHIBITOR_ADDRESS={{ exhibitor_address }}
       RESOLVERS={{ resolvers_str }}
 {% case "static" %}
+  - path: /etc/resolv.conf
+    content: |
+      options timeout:1
+      options attempts:3
+
+      nameserver 198.51.100.1
+      nameserver 198.51.100.2
+      nameserver 198.51.100.3
   - path: /etc_master/dns_config_master
     content: |
       MASTER_SOURCE=master_list
