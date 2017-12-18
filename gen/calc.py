@@ -707,13 +707,15 @@ def calculate_check_config(check_time):
             'checks': {
                 'components_master': {
                     'description': 'All DC/OS components are healthy.',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components'],
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
+                            '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
                     'timeout': '3s',
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001'],
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
+                            '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
                     'timeout': '3s',
                     'roles': ['agent']
                 },

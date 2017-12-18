@@ -326,6 +326,9 @@ def test_log_v2_task_logs(dcos_api_session):
         check_response_ok(response, {})
         assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
 
+        _assert_files_in_browse_response(dcos_api_session, task_id, ['stdout', 'stderr'])
+        _assert_can_download_files(dcos_api_session, task_id, ['stdout', 'stderr'])
+
 
 def test_log_v2_pod_logs(dcos_api_session):
     test_uuid = uuid.uuid4().hex
@@ -355,6 +358,9 @@ def test_log_v2_pod_logs(dcos_api_session):
         response = dcos_api_session.logs.get('v2/task/sleep1/file/stderr')
         check_response_ok(response, {})
         assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
+
+        _assert_files_in_browse_response(dcos_api_session, pod_id, ['stdout', 'stderr', 'foo'])
+        _assert_can_download_files(dcos_api_session, pod_id, ['stdout', 'stderr', 'foo'])
 
 
 def test_log_v2_api(dcos_api_session):
@@ -403,3 +409,29 @@ def test_log_v2_api(dcos_api_session):
         response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=7&skip=-1&limit=1'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "two\n"
+
+
+def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
+    response = dcos_api_session.logs.get('v2/task/{}/browse'.format(task))
+    check_response_ok(response, {})
+
+    expected_fields = ['gid', 'mode', 'mtime', 'nlink', 'path', 'size', 'uid']
+    data = response.json()
+    files = []
+    for item in data:
+        for field in expected_fields:
+            assert field in item, 'Field {} must be in response. Item {}'.format(field, item)
+        _file = item['path'].split('/')[-1]
+        files += [_file]
+
+    for expected_file in expected_files:
+        assert expected_file in files, 'Expecting file {} in {}'.format(expected_file, files)
+
+
+def _assert_can_download_files(dcos_api_session, task, expected_files):
+    for expected_file in expected_files:
+        response = dcos_api_session.logs.get('v2/task/{}/file/{}/download'.format(task, expected_file))
+        check_response_ok(response, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename={}'.format(expected_file)})
+        assert response.text

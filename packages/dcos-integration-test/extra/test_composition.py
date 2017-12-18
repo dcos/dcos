@@ -172,7 +172,9 @@ def test_signal_service(dcos_api_session):
         'net-watchdog-service',
         'overlay-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer']
+        'signal-timer',
+        'checks-poststart-service',
+        'checks-poststart-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [
