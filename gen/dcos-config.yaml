@@ -988,11 +988,11 @@ package:
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
       # Modulo ChaCha20 cipher.
-{% switch adminrouter_external_cipher_override %}
+{% switch adminrouter_tls_cipher_override %}
 {% case "false" %}
       ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
 {% case "true" %}
-      ssl_ciphers {{ adminrouter_external_cipher_string }};
+      ssl_ciphers {{ adminrouter_tls_cipher_suite }};
 {% endswitch %}
       ssl_prefer_server_ciphers on;
       # To manually test which TLS versions are enabled on a node, use
@@ -1000,7 +1000,7 @@ package:
       #
       # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
       # details.
-      ssl_protocols {{ adminrouter_external_tls_version_override }};
+      ssl_protocols {{ adminrouter_tls_version_override }};
   - path: /etc/adminrouter-tls-agent.conf
     content: |
       # Note that Agent Admin Router only servers cluster-internal clients. Hence,

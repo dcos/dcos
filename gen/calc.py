@@ -547,25 +547,35 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
-def calculate_adminrouter_external_tls_version_override(adminrouter_tls_1_0_enabled):
+def calculate_adminrouter_tls_version_override(adminrouter_tls_1_0_enabled, adminrouter_tls_1_1_enabled,
+                                               adminrouter_tls_1_2_enabled):
+    tls_versions = list()
     if adminrouter_tls_1_0_enabled == 'true':
-        return 'TLSv1 TLSv1.1 TLSv1.2'
-    else:
-        return 'TLSv1.1 TLSv1.2'
+        tls_versions.append('TLSv1')
+
+    if adminrouter_tls_1_1_enabled == 'true':
+        tls_versions.append('TLSv1.1')
+
+    if adminrouter_tls_1_2_enabled == 'true':
+        tls_versions.append('TLSv1.2')
+
+    tls_version_string = " ".join(tls_versions)
+    return tls_version_string
 
 
-def validate_adminrouter_tls_1_0_enabled(adminrouter_tls_1_0_enabled, adminrouter_tls_version_override):
-    if adminrouter_tls_1_0_enabled != 'false':
-        assert adminrouter_tls_version_override != ['TLSv1 TLSv1.1 TLSv1.2', 'TLSv1.1 TLSv1.2'], \
-            "adminrouter_tls_1_0_enabled cannot be used " \
-            "in combination with adminrouter_tls_version_override."
-
-
-def calculate_adminrouter_external_cipher_override(adminrouter_external_cipher_string):
-    if adminrouter_external_cipher_string != '':
+def calculate_adminrouter_tls_cipher_override(adminrouter_tls_cipher_suite):
+    if adminrouter_tls_cipher_suite != '':
         return 'true'
     else:
         return 'false'
+
+
+def validate_adminrouter_tls_version_override(adminrouter_tls_version_override, adminrouter_tls_1_0_enabled,
+                                              adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled):
+    if adminrouter_tls_version_override == '':
+        assert any([adminrouter_tls_1_0_enabled, adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled]) == 'false',\
+            "When not explicitly setting a tls_version_override, " \
+            "at least one tls boolean (tls_1_0, tls_1_1, tls_1_2) must be set."
 
 
 def validate_s3_prefix(s3_prefix):
@@ -919,7 +929,9 @@ entry = {
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         lambda enable_lb: validate_true_false(enable_lb),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
-            validate_adminrouter_tls_1_0_enabled,
+        lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
+        lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
+        validate_adminrouter_tls_version_override,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -939,9 +951,11 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
-        'adminrouter_external_tls_version_override': calculate_adminrouter_external_tls_version_override,
-        'adminrouter_external_cipher_override': calculate_adminrouter_external_cipher_override,
-        'adminrouter_external_cipher_string': '',
+        'adminrouter_tls_1_1_enabled': 'true',
+        'adminrouter_tls_1_2_enabled': 'true',
+        'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
+        'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
+        'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',

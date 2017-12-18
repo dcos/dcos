@@ -148,8 +148,7 @@ class TestSetCipherOverride:
         """
         The config variable adminrouter_external_cipher_string must be set
         """
-        new_arguments = {'adminrouter_min_cipher_override': 'true',
-                         'adminrouter_external_cipher_string': 'EECDH+AES256:RSA+AES256'}
+        new_arguments = {'adminrouter_tls_cipher_suite': 'EECDH+AES256:RSA+AES256'}
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
@@ -196,7 +195,7 @@ class TestToggleTLSVersions:
         protocols = ssl_protocols_line.split()[1:]
         return protocols
 
-    def test_validation(self):
+    def test_validation_1_0(self):
         """
         The config variable `tls_1_0_enabled` must be 'true' or 'false'.
         """
@@ -206,11 +205,33 @@ class TestToggleTLSVersions:
             message=true_false_msg,
         )
 
-    def test_enable_v1_legacy(self):
+    def test_validation_1_1(self):
+        """
+        The config variable `tls_1_1_enabled` must be 'true' or 'false'.
+        """
+        validate_error(
+            new_arguments={'adminrouter_tls_1_1_enabled': 'foo'},
+            key='adminrouter_tls_1_1_enabled',
+            message=true_false_msg,
+        )
+
+    def test_validation_1_2(self):
+        """
+        The config variable `tls_1_2_enabled` must be 'true' or 'false'.
+        """
+        validate_error(
+            new_arguments={'adminrouter_tls_1_2_enabled': 'foo'},
+            key='adminrouter_tls_1_2_enabled',
+            message=true_false_msg,
+        )
+
+    def test_enable_v1_bool(self):
         """
         Setting the config variable to 'true' enables TLS 1.0/1.1.
         """
-        new_arguments = {'adminrouter_tls_1_0_enabled': 'true'}
+        new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
+                         'adminrouter_tls_1_1_enabled': 'true',
+                         'adminrouter_tls_1_2_enabled': 'true'}
         protocols = self.supported_ssl_protocols(
             new_config_arguments=new_arguments,
         )
@@ -232,21 +253,45 @@ class TestToggleTLSVersions:
         )
         assert protocols == ['TLSv1.1', 'TLSv1.2']
 
-    def test_enable_custom(self):
+    def test_enable_custom_bool_single(self):
         """
-        Setting the config variable to override actually works.
+        Setting the config variable to 'true' enables TLS 1.0/1.1.
         """
-        new_arguments = {'adminrouter_external_tls_version_override': 'TLSv1.2'}
+        new_arguments = {'adminrouter_tls_1_0_enabled': 'false',
+                         'adminrouter_tls_1_1_enabled': 'false',
+                         'adminrouter_tls_1_2_enabled': 'true'}
         protocols = self.supported_ssl_protocols(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1.2']
 
-    def test_enable_custom_multi(self):
+    def test_enable_custom_bool_multi(self):
+        """
+        Setting the config variable to 'true' enables TLS 1.0/1.1.
+        """
+        new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
+                         'adminrouter_tls_1_1_enabled': 'false',
+                         'adminrouter_tls_1_2_enabled': 'true'}
+        protocols = self.supported_ssl_protocols(
+            new_config_arguments=new_arguments,
+        )
+        assert protocols == ['TLSv1', 'TLSv1.2']
+
+    def test_enable_custom_string(self):
         """
         Setting the config variable to override actually works.
         """
-        new_arguments = {'adminrouter_external_tls_version_override': 'TLSv1.2 TLSv1.1'}
+        new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2'}
+        protocols = self.supported_ssl_protocols(
+            new_config_arguments=new_arguments,
+        )
+        assert protocols == ['TLSv1.2']
+
+    def test_enable_custom_multi_string(self):
+        """
+        Setting the config variable to override actually works.
+        """
+        new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2 TLSv1.1'}
         protocols = self.supported_ssl_protocols(
             new_config_arguments=new_arguments,
         )
