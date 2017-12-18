@@ -139,7 +139,8 @@ def test_metrics_containers(dcos_api_session):
                 cid_registry = []
                 for dp in container_response.json()['datapoints']:
                     assert 'tags' in dp, 'got {}'.format(dp)
-                    assert len(dp['tags']) == 5, 'got {}'.format(
+                    # blkio stats have 'device' tags as well
+                    assert len(dp['tags']) >= 5, 'got {}'.format(
                         len(dp['tags']))
 
                     # Ensure all container ID's in the container/<id> endpoint are
