@@ -294,7 +294,7 @@ class TestAuthPrecedence:
             allow_redirects=False,
             headers=valid_user_header)
 
-        assert resp.status_code == 404
+        assert resp.status_code == 503
 
     def test_if_historyservice_endpoint_auth_precedence_is_enforced(
             self, valid_user_header, mocker, nginx_class):
