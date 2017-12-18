@@ -36,6 +36,7 @@ def test_error_during_validate(monkeypatch):
         'bootstrap_url': '',
         'bootstrap_variant': '',
         'ip_detect_contents': '',  # so that ip_detect_filename doesn't get used from onprem_source
+        'ip6_detect_contents': '',
         'exhibitor_storage_backend': 'static',
         'master_discovery': 'static',
         'cluster_name': 'foobar',

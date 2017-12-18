@@ -18,6 +18,9 @@ package:
   - path: /bin/detect_ip_public
     permissions: "0755"
     content: {{ ip_detect_public_contents }}
+  - path: /bin/detect_ip6
+    permissions: "0755"
+    content: {{ ip6_detect_contents }}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}

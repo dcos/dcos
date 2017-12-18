@@ -73,10 +73,14 @@ setup(
     package_data={
         'gen': [
             'ip-detect/aws.sh',
+            'ip-detect/aws6.sh',
             'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
+            'ip-detect/azure6.sh',
             'ip-detect/vagrant.sh',
-            'fault-domain-detect/cloud.sh',
+            'ip-detect/vagrant6.sh',
+            'fault-domain-detect/aws.sh',
+            'fault-domain-detect/azure.sh',
             'cloud-config.yaml',
             'dcos-config.yaml',
             'dcos-metadata.yaml',

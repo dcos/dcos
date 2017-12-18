@@ -49,6 +49,7 @@ aws_base_source = Source(entry={
         'aws_stack_name': Late('{ "Ref" : "AWS::StackName" }'),
         'ip_detect_contents': get_ip_detect('aws'),
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': get_ip_detect('aws6'),
         'exhibitor_explicit_keys': 'false',
         'cluster_name': Late('{ "Ref" : "AWS::StackName" }'),
         'master_discovery': 'master_http_loadbalancer',
