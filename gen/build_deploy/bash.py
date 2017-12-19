@@ -468,11 +468,9 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
-            "61420 epmd" \
-            "62053 dcos-net" \
+            "61420 dcos-net" \
             "62080 dcos-net" \
-            "62501 dcos-net" \
-            "63053 dcos-net"
+            "62501 dcos-net"
         do
             check_service $service
         done
@@ -482,11 +480,9 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
-            "61420 epmd" \
-            "62053 dcos-net" \
+            "61420 dcos-net" \
             "62080 dcos-net" \
-            "62501 dcos-net" \
-            "63053 dcos-net"
+            "62501 dcos-net"
         do
             check_service $service
         done

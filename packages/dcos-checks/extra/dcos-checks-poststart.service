@@ -1,0 +1,9 @@
+[Unit]
+Description=DC/OS Poststart Checks: Run node-poststart checks
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-diagnostics.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-diagnostics-extra.env
+StandardOutput=journal
+User=dcos_diagnostics
+ExecStart=/opt/mesosphere/bin/dcos-diagnostics check node-poststart
