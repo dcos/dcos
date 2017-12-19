@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Tuple
 
 import botocore.exceptions
+import pkg_resources
 import yaml
 from pkg_resources import resource_string
 from retrying import retry
@@ -21,10 +22,6 @@ from pkgpanda.util import logger, split_by_token
 
 def get_ip_detect(name):
     return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
-
-
-def calculate_fault_domain_detect_contents(name):
-    return yaml.dump(resource_string('gen', 'fault-domain-detect/{}.sh'.format(name)).decode())
 
 
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
@@ -64,7 +61,8 @@ aws_base_source = Source(entry={
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents('aws')
+        'fault_domain_detect_contents': yaml.dump(
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
     },
     'conditional': {
         'oauth_available': {
