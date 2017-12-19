@@ -91,7 +91,7 @@ onprem_source = Source(entry={
         'custom_check_bins_hash': calculate_custom_check_bins_hash,
         'custom_check_bins_package_id': calculate_custom_check_bins_package_id,
         'check_search_path': calculate_check_search_path,
-    }
+    },
 })
 
 

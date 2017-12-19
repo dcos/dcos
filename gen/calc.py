@@ -910,6 +910,7 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda licensing_enabled: validate_true_false(licensing_enabled),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1009,7 +1010,8 @@ entry = {
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'license_key_contents': '',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1054,7 +1056,8 @@ entry = {
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_ld_library_path': '/opt/mesosphere/lib'
+        'check_ld_library_path': '/opt/mesosphere/lib',
+        'licensing_enabled': 'false',
     },
     'secret': [
         'cluster_docker_credentials',

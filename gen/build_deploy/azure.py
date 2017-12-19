@@ -71,6 +71,17 @@ azure_base_source = Source(entry={
                 }
             },
             'false': {},
+        },
+        'licensing_enabled': {
+            'true': {
+                'must': {
+                    'license_key_contents': Late("[[[variables('licenseKey')]]]"),
+                },
+                'secret': [
+                    'license_key_contents',
+                ],
+            },
+            'false': {},
         }
     }
 })
