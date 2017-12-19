@@ -413,11 +413,39 @@ set -o errexit -o nounset -o pipefail
 # For setenforce & xfs_info
 PATH=$PATH:/usr/sbin:/sbin
 
+# Helper to configure `networkd` on CoreOS to ignore all DC/OS overlay interfaces.
+function coreos_networkd_config() {
+
+network_config="/etc/systemd/network/dcos.network"
+sudo tee $network_config > /dev/null<<'EOF'
+[Match]
+Type=bridge
+Name=docker* m-* d-* vtep*
+
+[Link]
+Unmanaged=yes
+EOF
+
+}
+
 echo "Validating distro..."
 distro="$(source /etc/os-release && echo "${ID}")"
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
-  echo "CoreOS includes all prerequisites by default." >&2
+
+  if systemctl list-unit-files | grep systemd-networkd.service > /dev/null; then
+    echo "Configuring systemd-networkd to ignore docker bridge and DC/OS overlay interfaces..."
+    coreos_networkd_config
+
+    if systemctl is-enabled systemd-networkd > /dev/null; then
+        echo "Restarting systemd-networkd...."
+        sudo systemctl restart systemd-networkd
+    fi
+
+    echo "CoreOS network setup complete."
+  else
+    echo "All prerequisites already installed"
+  fi
   exit 0
 elif [[ "${distro}" == 'rhel' ]]; then
   echo "Distro: RHEL"
