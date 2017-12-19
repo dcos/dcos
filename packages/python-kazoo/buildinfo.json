@@ -2,7 +2,7 @@
   "requires": ["python", "six"],
   "single_source": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/k/kazoo/kazoo-2.2.1.tar.gz",
-      "sha1": "c7c2c9753d6e50e410784615883a6fa4af2d5847"
+      "url": "https://pypi.python.org/packages/9c/85/952b9e8e2415d4fb76e0be9e66469d7139f5c4d15d6eab263746b7aa37af/kazoo-2.4.0.tar.gz",
+      "sha1": "c6366c20e2fa4208e3d11b563178ea2c6198c371"
   }
 }
