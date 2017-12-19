@@ -18,7 +18,6 @@ add_headers_cb = None
 try:
     import dcos_auth_python
     log.info('dcos_auth_python module detected; applying settings')
-    global add_headers_cb
     add_headers_cb = dcos_auth_python.get_auth_headers
 except ImportError:
     log.info('no dcos_auth_python module detected; using defaults')

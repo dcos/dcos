@@ -20,7 +20,7 @@ To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
 - Get Started - <https://dcos.io/get-started/>
 - Get Help - <http://chat.dcos.io/>
 - Join the Discussion - <https://groups.google.com/a/dcos.io/d/forum/users>
-- Report an Issue - <https://jira.mesosphere.com/>
+- Report an Issue - <https://jira.dcos.io>
 - Contribute - <https://dcos.io/contribute/>
 
 
@@ -54,14 +54,14 @@ To find the git SHA of any given release, check the latest commit in the version
 1. git 1.8.5+
 1. Docker 1.11+
     - [Install Instructions for various distributions](https://docs.docker.com/engine/installation/). Docker needs to be configured so your user can run docker containers. The command `docker run alpine  /bin/echo 'Hello, World!'` when run at a new terminal as your user should just print `"Hello, World!"`. If it says something like "Unable to find image 'alpine:latest' locally" then re-run and the message should go away.
-1. Python 3.5
+1. Python 3.6
     - Arch Linux: `sudo pacman -S python`
     - Fedora 23 Workstation: Already installed by default / no steps
     - Ubuntu 16.04 LTS:
         - [pyenv-installer](https://github.com/yyuu/pyenv-installer)
         - Python dependencies: `sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils liblzma-dev python3-venv`
-        - Install Python 3.5.2: `pyenv install 3.5.2`
-        - Create DC/OS virtualenv: `pyenv virtualenv 3.5.2 dcos`
+        - Install Python 3.6.3: `pyenv install 3.6.3`
+        - Create DC/OS virtualenv: `pyenv virtualenv 3.6.3 dcos`
         - Activate environment: `pyenv activate dcos`
 1. Over 10GB of free disk space and 8GB of RAM
     - The build makes use of hard links, so if you're using VirtualBox the disk space cannot be a synced folder.
@@ -115,30 +115,26 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 1. Add the test user
 
     ```
-    source /opt/mesosphere/environment.export
-    python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
+    dcos-shell python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
     ```
-
-    This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION!
-
+    
+    Running the above mentioned command will result in an output
+    
+    ```
+    User albert@bekstil.net successfully added
+    ```
+    
+    This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
+    
     For more information, see [User Management](https://dcos.io/docs/latest/administration/user-management/).
 
-1. Configure the tests
 
-    ```
-    source /opt/mesosphere/active/dcos-integration-test/util/test_env.export
-    export SLAVE_HOSTS=<PRIVATE-AGENT-IP-1>,<PRIVATE-AGENT-IP-2>
-    export PUBLIC_SLAVE_HOSTS=<PUBLIC-AGENT-IP-1>,<PUBLIC-AGENT-IP-2>
-    ```
-
-    The `test_env.export` script tries to look up cluster metadata, but can't distinguish between public and private nodes yet. So those have to be manually specified.
-
-1. Run the tests with Pytest
+2. Run the tests using pytest in the cluster.
 
     ```
     cd /opt/mesosphere/active/dcos-integration-test
-    py.test
+    dcos-shell pytest
     ```
 
 ## Using DC/OS Docker

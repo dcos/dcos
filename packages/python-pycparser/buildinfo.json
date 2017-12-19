@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz",
+      "sha1": "1c75af69ae6273b1f1f531744f87d060965ed85d"
+  }
+}

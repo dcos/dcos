@@ -64,8 +64,10 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
 
     correct_data = sorted(r.json(), key=lambda k: k['hostname'])
 
-    for zk_ip in dcos_api_session.masters:
-        resp = requests.get('http://{}:8181/exhibitor/v1/cluster/status'.format(zk_ip))
+    for master_node_ip in dcos_api_session.masters:
+        # This relies on the fact that Admin Router always proxies the local
+        # Exhibitor.
+        resp = requests.get('http://{}/exhibitor/exhibitor/v1/cluster/status'.format(master_node_ip), verify=False)
         assert resp.status_code == 200
 
         tested_data = sorted(resp.json(), key=lambda k: k['hostname'])
@@ -163,7 +165,6 @@ def test_signal_service(dcos_api_session):
         'diagnostics-service',
         'diagnostics-socket',
         'dns-watchdog-service',
-        'epmd-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
         'l4lb-watchdog-service',
@@ -171,7 +172,9 @@ def test_signal_service(dcos_api_session):
         'net-watchdog-service',
         'overlay-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer']
+        'signal-timer',
+        'checks-poststart-service',
+        'checks-poststart-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [

@@ -19,4 +19,9 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
 EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
+# Execute ExecStartPre directives as root
+PermissionsStartOnly=true
+# Execute a python script, as root, that sets file permissions to some exact set if those files exist.
+ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
+# Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
