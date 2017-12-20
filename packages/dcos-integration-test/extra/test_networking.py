@@ -257,9 +257,7 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not lb_enabled(),
-    reason='Load Balancer disabled')
+@pytest.mark.skip(reason='DCOS_OSS-1993')
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER, Network.IPv6, Network.IPv6)
 
