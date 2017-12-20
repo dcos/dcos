@@ -166,9 +166,11 @@ local function fetch_and_store_marathon_apps(auth_token)
           end
        end
 
-       -- next() returns nil if table is empty.
-       local i, task = next(tasks)
-       if i == nil then
+       -- Randomly select the task.
+       local i = math.random(1,#tasks)
+       local task = tasks[i]
+
+       if task == nil then
           ngx.log(ngx.NOTICE, "No task in state TASK_RUNNING for app '" .. appId .. "'")
           goto continue
        end
@@ -553,6 +555,9 @@ local function periodically_refresh_cache(auth_token)
     -- This function is invoked from within init_worker_by_lua code.
     -- ngx.timer.at() can be called here, whereas most of the other ngx.*
     -- API is not available.
+
+    -- Seeding the PRNG
+    math.randomseed(os.time())
 
     timerhandler = function(premature)
         -- Handler for recursive timer invocation.
