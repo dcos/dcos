@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "60c15630f82c2b0bffdb6fb2a506669510db3774",
+    "ref": "d6430ff9174df2040c587fec1a81cda24284f702",
     "ref_origin" : "adamtheturtle-patch-1"
   },
   "environment": {
