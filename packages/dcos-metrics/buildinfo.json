@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-metrics.git",
-    "ref": "5bbbb585d8e600073f6dc8946a3c0b4476ab7fff",
+    "ref": "d08d02d048b4a2997b5f2a2836ee08c4197482c4",
     "ref_origin": "master"
   },
   "username": "dcos_metrics"
