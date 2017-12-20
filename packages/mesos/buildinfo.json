@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "5b9c94ee9875fce54386d45aacb976ae1ad17a93",
-    "ref_origin" : "dcos-mesos-master-a4b1134"
+    "ref": "2df97f0e64ff223b48633191f09b64f933bab26c",
+    "ref_origin" : "dcos-mesos-master-5f40f3d"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
