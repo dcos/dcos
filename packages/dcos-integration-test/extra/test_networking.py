@@ -214,6 +214,48 @@ def generate_vip_app_permutations():
             for proxy_net in list(marathon.Network)]
 
 
+def workload_test(dcos_api_session, container, app_net, proxy_net, same_host):
+    (vip, hosts, cmd, origin_app, proxy_app) = \
+        vip_workload_test(dcos_api_session, container,
+                          app_net, proxy_net, True, same_host)
+    return (hosts, origin_app, proxy_app)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('same_host', [True, False])
+def test_ipv6(dcos_api_session, same_host):
+    ''' Testing autoip, containerip and *.mesos FQDN on ipv6 overlay network '''
+    (hosts, origin_app, proxy_app) = \
+        workload_test(dcos_api_session, marathon.Container.DOCKER,
+                      Network.IPv6, Network.IPv6, same_host)
+    log.info('Starting apps :: Hosts: {}'.format(hosts))
+    log.info("Origin app: {}".format(origin_app))
+    origin_app.deploy(dcos_api_session)
+    log.info("Proxy app: {}".format(proxy_app))
+    proxy_app.deploy(dcos_api_session)
+    origin_app.wait(dcos_api_session)
+    proxy_app.wait(dcos_api_session)
+    log.info('Apps are ready')
+    origin_app_info = origin_app.info(dcos_api_session)
+    origin_port = origin_app_info['app']['container']['portMappings'][0]['containerPort']
+    proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
+    try:
+        zones = ["marathon.autoip.dcos.thisdcos.directory",
+                 "marathon.containerip.dcos.thisdcos.directory",
+                 "marathon.mesos"]
+        for zone in zones:
+            cmd = '{} --ipv6 http://{}/test_uuid'.format(
+                '/opt/mesosphere/bin/curl -s -f -m 5',
+                '{}.{}:{}'.format(origin_app.id, zone, origin_port))
+            log.info("Remote command: {}".format(cmd))
+            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+    finally:
+        log.info('Purging application: {}'.format(origin_app.id))
+        origin_app.purge(dcos_api_session)
+        log.info('Purging application: {}'.format(proxy_app.id))
+        origin_app.purge(dcos_api_session)
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(
     not lb_enabled(),
