@@ -296,7 +296,7 @@ def do_gen_package(config, package_filename):
                 pass
 
             with open(path, 'w') as f:
-                f.write(file_info['content'])
+                f.write(file_info['content'] or '')
 
             # the file has special mode defined, handle that.
             if 'permissions' in file_info:
@@ -356,7 +356,7 @@ def extract_files_containing_late_variables(start_files):
             'File info must not contain late config placeholder in fields other than content: {}'.format(file_info)
         )
 
-        if _late_bind_placeholder_in(file_info['content']):
+        if file_info['content'] and _late_bind_placeholder_in(file_info['content']):
             found_files.append(file_info)
         else:
             left_files.append(file_info)
