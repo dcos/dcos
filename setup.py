@@ -79,6 +79,7 @@ setup(
             'ip-detect/azure6.sh',
             'ip-detect/vagrant.sh',
             'ip-detect/vagrant6.sh',
+            'fault-domain-detect/cloud.sh',
             'fault-domain-detect/aws.sh',
             'fault-domain-detect/azure.sh',
             'cloud-config.yaml',
