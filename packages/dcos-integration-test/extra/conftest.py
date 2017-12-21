@@ -36,6 +36,7 @@ def clean_marathon_state(dcos_api_session):
 
 @pytest.fixture(scope='session')
 def dcos_api_session():
+    assert False
     return api_session_fixture.make_session_fixture()
 
 
