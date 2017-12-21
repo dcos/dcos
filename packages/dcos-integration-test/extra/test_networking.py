@@ -42,13 +42,12 @@ class MarathonApp:
         elif network in [marathon.Network.USER, Network.IPv6]:
             self.app, self.uuid = test_helpers.marathon_test_app(
                 network=marathon.Network.USER,
+                network_name='dcos6' if network == Network.IPv6 else 'dcos',
                 host_port=unused_port(),
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
-            if network == Network.IPv6:
-                self.app['ipAddress']['networkName'] = 'dcos6'
             if vip is not None and container == marathon.Container.DOCKER:
                 del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
