@@ -38,7 +38,7 @@ class MarathonApp:
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
         elif network == marathon.Network.USER:
             self.app, self.uuid = test_helpers.marathon_test_app(
-                network=network,
+                network=marathon.Network.USER,
                 host_port=unused_port(),
                 host_constraint=host,
                 vip=vip,
