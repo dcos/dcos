@@ -23,12 +23,8 @@ class Container(enum.Enum):
     POD = 'POD'
 
 
-class Network(enum.Enum):
-    IPv6 = 'IPv6'
-
-
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None):
+    def __init__(self, container, network, host, vip=None, ipv6=False):
         self._network = network
         self._container = container
         if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
@@ -39,10 +35,10 @@ class MarathonApp:
                 vip=vip,
                 container_type=container,
                 healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
-        elif network in [marathon.Network.USER, Network.IPv6]:
+        elif network == marathon.Network.USER:
             self.app, self.uuid = test_helpers.marathon_test_app(
                 network=marathon.Network.USER,
-                network_name='dcos6' if network == Network.IPv6 else 'dcos',
+                network_name='dcos6' if ipv6 else 'dcos',
                 host_port=unused_port(),
                 host_constraint=host,
                 vip=vip,
@@ -81,7 +77,7 @@ class MarathonApp:
     def hostport(self, dcos_api_session):
         info = self.info(dcos_api_session)
         task = info['app']['tasks'][0]
-        if self._network in [marathon.Network.USER, Network.IPv6]:
+        if self._network == marathon.Network.USER:
             if self._container == marathon.Container.DOCKER:
                 host = task['host']
                 port = task['ports'][0]
@@ -213,10 +209,10 @@ def generate_vip_app_permutations():
             for proxy_net in list(marathon.Network)]
 
 
-def workload_test(dcos_api_session, container, app_net, proxy_net, same_host):
+def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_host):
     (vip, hosts, cmd, origin_app, proxy_app) = \
         vip_workload_test(dcos_api_session, container,
-                          app_net, proxy_net, True, same_host)
+                          app_net, proxy_net, ipv6, True, same_host)
     return (hosts, origin_app, proxy_app)
 
 
@@ -226,7 +222,7 @@ def test_ipv6(dcos_api_session, same_host):
     ''' Testing autoip, containerip and *.mesos FQDN on ipv6 overlay network '''
     (hosts, origin_app, proxy_app) = \
         workload_test(dcos_api_session, marathon.Container.DOCKER,
-                      Network.IPv6, Network.IPv6, same_host)
+                      marathon.Network.USER, marathon.Network.USER, True, same_host)
     log.info('Starting apps :: Hosts: {}'.format(hosts))
     log.info("Origin app: {}".format(origin_app))
     origin_app.deploy(dcos_api_session)
@@ -258,7 +254,8 @@ def test_ipv6(dcos_api_session, same_host):
 @pytest.mark.slow
 @pytest.mark.skip(reason='DCOS_OSS-1993')
 def test_vip_ipv6(dcos_api_session):
-    return test_vip(dcos_api_session, marathon.Container.DOCKER, Network.IPv6, Network.IPv6)
+    return test_vip(dcos_api_session, marathon.Container.DOCKER,
+                    marathon.Network.USER, marathon.Network.USER, ipv6=True)
 
 
 @pytest.mark.slow
@@ -271,7 +268,8 @@ def test_vip_ipv6(dcos_api_session):
 def test_vip(dcos_api_session,
              container: marathon.Container,
              vip_net: marathon.Network,
-             proxy_net: marathon.Network):
+             proxy_net: marathon.Network,
+             ipv6: bool=False):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE, HOST
@@ -285,7 +283,7 @@ def test_vip(dcos_api_session,
     that the expected origin app UUID was returned
     '''
     errors = 0
-    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net)
+    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
     for vip, hosts, cmd, origin_app, proxy_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info("Remote command: {}".format(cmd))
@@ -303,7 +301,7 @@ def test_vip(dcos_api_session,
     assert errors == 0
 
 
-def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
+def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
     if marathon.Network.BRIDGE in [vip_net, proxy_net]:
         if container == marathon.Container.DOCKER:
@@ -312,7 +310,7 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
             same_hosts = []
         else:
             same_hosts.remove(True)
-    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip, same_host)
+    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]
     for vip, hosts, cmd, origin_app, proxy_app in tests:
@@ -332,7 +330,7 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net):
     return tests
 
 
-def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip, same_host):
+def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host):
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
@@ -340,7 +338,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
     if named_vip:
         vip = '/namedvip:{}'.format(vip_port)
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
-    elif vip_net == Network.IPv6:
+    elif ipv6:
         vip = 'fd01:c::1:{}'.format(vip_port)
         vipaddr = vip
     else:
@@ -348,14 +346,14 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
         vipaddr = vip
     cmd = '{} {} http://{}/test_uuid'.format(
         '/opt/mesosphere/bin/curl -s -f -m 5',
-        '--ipv6' if vip_net == Network.IPv6 else '--ipv4',
+        '--ipv6' if ipv6 else '--ipv4',
         vipaddr)
     if container == Container.POD:
         origin_app = MarathonPod(vip_net, origin_host, vip)
         proxy_app = MarathonPod(proxy_net, proxy_host)
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip)
-        proxy_app = MarathonApp(container, proxy_net, proxy_host)
+        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6)
+        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6)
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
 
