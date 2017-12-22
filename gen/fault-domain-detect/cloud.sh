@@ -18,7 +18,6 @@ function aws() {
     REGION=$(echo $METADATA | grep -Po "\"region\"\s+:\s+\"(.*?)\"" | cut -f2 -d: | tr -d ' \"')
     ZONE=$(echo $METADATA | grep -Po "\"availabilityZone\"\s+:\s+\"(.*?)\"" | cut -f2 -d: | tr -d ' \"')
     echo "{\"fault_domain\":{\"region\":{\"name\": \"aws/$REGION\"},\"zone\":{\"name\": \"aws/$ZONE\"}}}"
-    return 0
 }
 
 function azure() {
@@ -37,7 +36,6 @@ function azure() {
     fi
 
     echo "{\"fault_domain\":{\"region\":{\"name\": \"azure/$REGION\"},\"zone\":{\"name\": \"azure/$FAULT_DOMAIN\"}}}"
-    return 0
 }
 
 function gcp() {
@@ -52,7 +50,6 @@ function gcp() {
     REGION=$(echo "$ZONE" | sed 's@\(.*-.*\)-.*@\1@')
 
     echo "{\"fault_domain\":{\"region\":{\"name\": \"gcp/$REGION\"},\"zone\":{\"name\": \"gcp/$ZONE\"}}}"
-    return 0
 }
 
 function main() {
@@ -87,12 +84,12 @@ function main() {
         PROVIDERS+=("gcp")
     fi
 
-    if [ "${#PROVIDERS[@]}" -eq 0 ]; then
+    if [ ${#PROVIDERS[@]} -eq 0 ]; then
         "ERROR: unable to detect cloud provider. Use explicit parameter --aws, --azure, or --gcp" >&2
         exit 1
     fi
 
-    if [ "${#PROVIDERS[@]}" -gt 1 ]; then
+    if [ ${#PROVIDERS[@]} -gt 1 ]; then
         echo "ERROR: found multiple cloud providers: ${PROVIDERS[@]}" >&2
         exit 1
     fi
