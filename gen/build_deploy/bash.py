@@ -598,7 +598,7 @@ def make_bash(gen_out) -> List[str]:
             gen_out.arguments['custom_check_bins_package_id'],
         )
         make_custom_check_bins_package(gen_out.arguments['custom_check_bins_dir'], package_filename)
-        artifacts.append(package_filename)
+        gen_out.utils.add_stable_artifact(package_filename)
 
     setup_flags = ""
     cloud_config = gen_out.templates['cloud-config.yaml']
