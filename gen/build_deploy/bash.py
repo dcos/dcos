@@ -6,7 +6,6 @@ import os.path
 import shutil
 import subprocess
 import tempfile
-from typing import List
 
 import checksumdir
 import pkg_resources
@@ -583,14 +582,12 @@ fi
 
 def generate(gen_out, output_dir):
     print("Generating Bash configuration files for DC/OS")
-    extra_files = make_bash(gen_out)
-    util.do_bundle_onprem(extra_files, gen_out, output_dir)
+    make_bash(gen_out)
+    util.do_bundle_onprem(gen_out, output_dir)
 
 
-def make_bash(gen_out) -> List[str]:
+def make_bash(gen_out) -> None:
     """Build bash deployment artifacts and return a list of their filenames."""
-    artifacts = []
-
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
         package_filename = 'packages/{}/{}.tar.xz'.format(
@@ -655,9 +652,7 @@ def make_bash(gen_out) -> List[str]:
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'
     pkgpanda.util.write_string(install_script_filename, bash_script)
-    artifacts.append(install_script_filename)
-
-    return artifacts
+    gen_out.utils.add_channel_artifact(install_script_filename)
 
 
 def make_custom_check_bins_package(source_dir, package_filename):

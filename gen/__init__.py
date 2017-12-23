@@ -154,6 +154,7 @@ utils = Bunch({
     "role_names": role_names,
     "add_services": None,
     "add_stable_artifact": None,
+    "add_channel_artifact": None,
     "add_units": add_units,
     "render_cloudconfig": render_cloudconfig
 })
@@ -622,6 +623,7 @@ def generate(
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
     stable_artifacts = []
+    channel_artifacts = []
 
     # Find all files which contain late bind variables and turn them into a "late bind package"
     # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
@@ -718,15 +720,22 @@ def generate(
     utils.add_services = add_services
 
     def add_stable_artifact(filename):
-        assert filename not in stable_artifacts
+        assert filename not in stable_artifacts + channel_artifacts
         stable_artifacts.append(filename)
 
     utils.add_stable_artifact = add_stable_artifact
+
+    def add_channel_artifact(filename):
+        assert filename not in stable_artifacts + channel_artifacts
+        channel_artifacts.append(filename)
+
+    utils.add_channel_artifact = add_channel_artifact
 
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
         'stable_artifacts': stable_artifacts,
+        'channel_artifacts': channel_artifacts,
         'templates': rendered_templates,
         'utils': utils
     })
