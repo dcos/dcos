@@ -89,12 +89,13 @@ if [ "${ERLANG_DISTRIBUTION}" == "inet_tls" ]; then
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_keyfile ${CLIENT_KEYFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_certfile ${CLIENT_CERTFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_depth ${CLIENT_DEPTH:-10}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_verify verify_none"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_verify verify_peer"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_cacertfile ${SERVER_CACERTFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_keyfile ${SERVER_KEYFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_certfile ${SERVER_CERTFILE:-nofile}"
     ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_depth ${SERVER_DEPTH:-10}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_verify verify_none"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_verify verify_peer"
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_fail_if_no_peer_cert true"
 fi
 
 ### Mesos state SSL config
