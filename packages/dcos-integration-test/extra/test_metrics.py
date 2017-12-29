@@ -26,6 +26,18 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
+def test_metrics_agents_prom(dcos_api_session):
+    for agent in dcos_api_session.slaves:
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':9273/metrics')
+        assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+
+
+def test_metrics_masters_prom(dcos_api_session):
+    for master in dcos_api_session.masters:
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':9273/metrics')
+        assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+
+
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
@@ -139,7 +151,8 @@ def test_metrics_containers(dcos_api_session):
                 cid_registry = []
                 for dp in container_response.json()['datapoints']:
                     assert 'tags' in dp, 'got {}'.format(dp)
-                    assert len(dp['tags']) == 5, 'got {}'.format(
+                    # blkio stats have 'device' tags as well
+                    assert len(dp['tags']) >= 5, 'got {}'.format(
                         len(dp['tags']))
 
                     # Ensure all container ID's in the container/<id> endpoint are
