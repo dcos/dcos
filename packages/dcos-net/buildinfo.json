@@ -4,7 +4,7 @@
     "dcos-net": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-net.git",
-      "ref": "13c73b2cd974c86e037c0469760be267f01c7aaa",
+      "ref": "7dce05324aa0df5a82c2d31758cf9b21bf415e0f",
       "ref_origin": "urbanserj/tls"
     }
   },
