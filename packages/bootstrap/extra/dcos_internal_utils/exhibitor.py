@@ -109,8 +109,8 @@ def wait(master_count_filename):
         "Serving hosts: `%s`, leader: `%s`", ','.join(serving), ','.join(leaders))
 
     if len(serving) != cluster_size or len(leaders) != 1:
-        msg = 'Expected {} servers and 1 leader, got {} servers and {} leaders'.format(cluster_size, serving, leaders)
-        raise Exception(msg)
+        msg_fmt = 'Expected {} servers and 1 leader, got {} servers and {} leaders'
+        raise Exception(msg_fmt.format(cluster_size, len(serving), len(leaders)))
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.
