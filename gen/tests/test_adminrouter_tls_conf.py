@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import List
+from typing import Dict, List
 
 import pytest
 
@@ -76,7 +76,10 @@ class TestSetCipherOverride:
     [https://github.com/rbsec/sslscan]
     """
 
-    def supported_ssl_ciphers_master(self, new_config_arguments) -> List[str]:
+    def supported_ssl_ciphers(
+            self,
+            new_config_arguments: Dict[str, str],
+            config_path: str) -> List[str]:
         """
         Finds the line that looks like:
         ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
@@ -84,11 +87,12 @@ class TestSetCipherOverride:
         Args:
             new_config_arguments: Arguments which are added to the 'standard'
                 set of arguments before generating configuration files.
+            config_path: A path to configuration file which should be examined
+                for ssl_ciphers configuration.
         """
         arguments = make_arguments(new_arguments=new_config_arguments)
         generated = gen.generate(arguments=arguments)
         package = generated.templates['dcos-config.yaml']['package']
-        config_path = '/etc/adminrouter-tls-master.conf'
         [config] = [item for item in package if item['path'] == config_path]
         [ssl_ciphers_line] = [
             line for line in config['content'].split('\n') if
@@ -100,7 +104,23 @@ class TestSetCipherOverride:
         ciphers = ssl_ciphers_line.split()[1:]
         return ciphers
 
-    def supported_ssl_ciphers_agent(self, new_config_arguments) -> List[str]:
+    def supported_ssl_ciphers_master(
+            self,
+            new_config_arguments: Dict[str, str]) -> List[str]:
+        """
+        Finds the line that looks like:
+        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+        and returns the list of ciphers.
+        Args:
+            new_config_arguments: Arguments which are added to the 'standard'
+                set of arguments before generating configuration files.
+        """
+        config_path = '/etc/adminrouter-tls-master.conf'
+        return self.supported_ssl_ciphers(new_config_arguments, config_path)
+
+    def supported_ssl_ciphers_agent(
+            self,
+            new_config_arguments: Dict[str, str]) -> List[str]:
         """
         Finds the line that looks like:
         ssl_ciphers EECDH+AES256:RSA+AES256;
@@ -109,20 +129,8 @@ class TestSetCipherOverride:
             new_config_arguments: Arguments which are added to the 'standard'
                 set of arguments before generating configuration files.
         """
-        arguments = make_arguments(new_arguments=new_config_arguments)
-        generated = gen.generate(arguments=arguments)
-        package = generated.templates['dcos-config.yaml']['package']
         config_path = '/etc/adminrouter-tls-agent.conf'
-        [config] = [item for item in package if item['path'] == config_path]
-        [ssl_ciphers_line] = [
-            line for line in config['content'].split('\n') if
-            # We strip whitespace from the beginning of the line as NGINX
-            # configuration lines can start with whitespace.
-            line.lstrip().startswith('ssl_ciphers ')
-        ]
-        ssl_ciphers_line = ssl_ciphers_line.strip(';')
-        ciphers = ssl_ciphers_line.split()[1:]
-        return ciphers
+        return self.supported_ssl_ciphers(new_config_arguments, config_path)
 
     def test_cipher_agent_default(self):
         """
@@ -166,7 +174,8 @@ class TestToggleTLSVersions:
     details.
     """
 
-    def supported_ssl_protocols(self, new_config_arguments) -> List[str]:
+    def supported_tls_protocols_ar_master(
+            self, new_config_arguments: Dict[str, str]) -> List[str]:
         """
         This finds a line which looks like the following:
             ssl_protocols TLSv1, TLSv1.1;
@@ -178,7 +187,7 @@ class TestToggleTLSVersions:
                 set of arguments before generating configuration files.
 
         Returns:
-            A ``list`` of supported SSL protocols.
+            A list of supported SSL protocols.
         """
         arguments = make_arguments(new_arguments=new_config_arguments)
         generated = gen.generate(arguments=arguments)
@@ -232,7 +241,7 @@ class TestToggleTLSVersions:
         new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
                          'adminrouter_tls_1_1_enabled': 'true',
                          'adminrouter_tls_1_2_enabled': 'true'}
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1', 'TLSv1.1', 'TLSv1.2']
@@ -248,7 +257,7 @@ class TestToggleTLSVersions:
         This test is parametrized to demonstrate that having no configuration
         produces the same results as setting the config variable to `'false'`.
         """
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1.1', 'TLSv1.2']
@@ -260,7 +269,7 @@ class TestToggleTLSVersions:
         new_arguments = {'adminrouter_tls_1_0_enabled': 'false',
                          'adminrouter_tls_1_1_enabled': 'false',
                          'adminrouter_tls_1_2_enabled': 'true'}
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1.2']
@@ -272,7 +281,7 @@ class TestToggleTLSVersions:
         new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
                          'adminrouter_tls_1_1_enabled': 'false',
                          'adminrouter_tls_1_2_enabled': 'true'}
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1', 'TLSv1.2']
@@ -282,7 +291,7 @@ class TestToggleTLSVersions:
         Setting the config variable to override actually works.
         """
         new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2'}
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1.2']
@@ -292,7 +301,27 @@ class TestToggleTLSVersions:
         Setting the config variable to override actually works.
         """
         new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2 TLSv1.1'}
-        protocols = self.supported_ssl_protocols(
+        protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
         assert protocols == ['TLSv1.2', 'TLSv1.1']
+
+    def test_no_tls_version_enabled(self):
+        """
+        Not setting the `adminrouter_tls_version_override` or any of the
+        TLS version configuration options results in error.
+        """
+        new_arguments = {'adminrouter_tls_1_0_enabled': 'false',
+                         'adminrouter_tls_1_1_enabled': 'false',
+                         'adminrouter_tls_1_2_enabled': 'false'}
+        expected_error_msg = (
+            'When not explicitly setting a adminrouter_tls_version_override, '
+            'at least one tls boolean (adminrouter_tls_1_0_enabled, '
+            'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
+            'be set.'
+        )
+        result = gen.validate(arguments=make_arguments(new_arguments))
+        assert result['status'] == 'errors'
+
+        key = 'adminrouter_tls_version_override'
+        assert result['errors'][key]['message'] == expected_error_msg

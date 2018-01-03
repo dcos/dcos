@@ -547,8 +547,10 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
-def calculate_adminrouter_tls_version_override(adminrouter_tls_1_0_enabled, adminrouter_tls_1_1_enabled,
-                                               adminrouter_tls_1_2_enabled):
+def calculate_adminrouter_tls_version_override(
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled):
     tls_versions = list()
     if adminrouter_tls_1_0_enabled == 'true':
         tls_versions.append('TLSv1')
@@ -570,12 +572,28 @@ def calculate_adminrouter_tls_cipher_override(adminrouter_tls_cipher_suite):
         return 'false'
 
 
-def validate_adminrouter_tls_version_override(adminrouter_tls_version_override, adminrouter_tls_1_0_enabled,
-                                              adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled):
+def validate_adminrouter_tls_version_override(
+        adminrouter_tls_version_override,
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled):
+
+    tls_version_flags = [
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled,
+    ]
+
     if adminrouter_tls_version_override == '':
-        assert any([adminrouter_tls_1_0_enabled, adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled]) == 'false',\
-            "When not explicitly setting a tls_version_override, " \
-            "at least one tls boolean (tls_1_0, tls_1_1, tls_1_2) must be set."
+        enabled_tls_flags_count = len(
+            list(filter(lambda x: x == 'true', tls_version_flags)))
+        msg = (
+            'When not explicitly setting a adminrouter_tls_version_override, '
+            'at least one tls boolean (adminrouter_tls_1_0_enabled, '
+            'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
+            'be set.'
+        )
+        assert enabled_tls_flags_count > 0, msg
 
 
 def validate_s3_prefix(s3_prefix):
