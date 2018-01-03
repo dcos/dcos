@@ -119,6 +119,7 @@ package:
         {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
+            {enable_ipv6, {{ dcos_l4lb_enable_ipv6 }}},
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
             {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
             {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},

@@ -50,12 +50,19 @@ if [ -t 1 ]; then
 fi
 
 SKIP_CHECKS=false
+VERBOSE=false
 
 if [[ $# -ne 0 ]]; then
-  if [[ "$1" = "--skip-checks" ]]; then
-     echo "Skipping checks"
-     SKIP_CHECKS=true
-  fi
+    for var in "$@"; do
+        if [[ "$var" = "--skip-checks" ]]; then
+            echo "Skipping checks"
+            SKIP_CHECKS=true
+        fi
+        if [[ "$var" = "--verbose" ]]; then
+            echo "Verbose mode on"
+            VERBOSE=true
+        fi
+    done
 fi
 
 if [[ $EUID -ne 0 ]]; then
@@ -110,9 +117,16 @@ elif [ -f $ROLE_DIR/slave_public ]; then
     role_name="public agent"
 fi
 
+
+if [[ "$VERBOSE" = "true" ]]; then
+    exec 3>&1
+else
+    exec 3>/dev/null
+fi
+
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
-pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
-pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
+pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} >&3
+pkgpanda activate --no-block {{ cluster_packages }} >&3
 
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300

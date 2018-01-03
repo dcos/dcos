@@ -410,6 +410,11 @@ def test_log_v2_api(dcos_api_session):
         check_response_ok(response, {})
         assert response.text == "two\n"
 
+        # validate the bug is fixed https://jira.mesosphere.com/browse/DCOS_OSS-1995
+        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=END&skip=-5'.format(task_id))
+        check_response_ok(response, {})
+        assert response.text == "one\ntwo\nthree\nfour\nfive\n"
+
 
 def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
     response = dcos_api_session.logs.get('v2/task/{}/browse'.format(task))
