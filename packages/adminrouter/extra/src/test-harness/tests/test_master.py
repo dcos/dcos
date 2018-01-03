@@ -96,7 +96,7 @@ class TestHistoryServiceRouting:
                                 headers=valid_user_header)
 
         assert resp.status_code == 503
-        assert 'Mesos leader is unknown' in resp.text
+        assert 'mesos leader is unknown' in resp.text
 
     def test_if_leader_is_local_state_is_handled(
             self, nginx_class, valid_user_header):
@@ -160,7 +160,7 @@ class TestHistoryServiceRouting:
                                 headers=h)
 
         assert resp.status_code == 503
-        assert 'Mesos leader is unknown' in resp.text
+        assert 'mesos leader is unknown' in resp.text
 
 
 class TestMetadata:

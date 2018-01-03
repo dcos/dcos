@@ -93,6 +93,69 @@ function util.get_file_content(path)
 end
 
 
+function util.set_leader_host(leader_name, local_upstream, skip_prefix_iflocal)
+    -- This function is used in location blocks which require proxying requests
+    -- to the AR instance or backend which is collocated with the leader named
+    -- in `leader_name` argument.
+    --
+    -- It sets the ngx.var.leader_host to the value
+    -- determined by looking at the `<leader_name>_leader` cache entry and the
+    -- `local_upstream` parameter. If this instance of AR is collocated with
+    -- the given leader, the ngx.var.leader_host is set to the value passed in
+    -- `local_upstream`. If not - it is forwarded to the AR instance collocated
+    -- with the leader.
+    --
+    -- In order to prevent loops, `DCOS-Forwarded` header is set while proxying
+    -- for the first time. Any request which is to be proxied AND has this
+    -- header set will be terminated.
+    --
+    -- Arguments:
+    -- leader_name: name of the leader (i.e. "mesos/marathon/etc..") to fetch
+    --     from cache
+    -- local_upstream: to what value should the ngx.var.leader_host be set to
+    --     in case when this instance is the local instance.
+    -- skip_localprefix_iflocal: some of the location blocks require that
+    --     a certain URL prefix needs to be stripped before proxying to the
+    --     leading AR instance. This argument defines this prefix.
+    local mleader = cache.get_cache_entry(leader_name .. "_leader")
+    if mleader == nil then
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
+        ngx.say("503 Service Unavailable: cache is invalid")
+        return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+    end
+
+    if mleader['is_local'] == "unknown" then
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
+        ngx.say("503 Service Unavailable: " .. leader_name .. " leader is unknown.")
+        return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+    end
+
+    if mleader['is_local'] == 'yes' then
+        -- Let's adjust the URI we send to the upstream service/remove the
+        -- `/dcos-history-service` prefix:
+        if skip_prefix_iflocal ~= nil then
+            next_char = string.len(skip_prefix_iflocal) + 1
+            ngx.req.set_uri(string.sub(ngx.var.uri, next_char))
+        end
+        ngx.var.leader_host = local_upstream
+    else
+        -- Let's prevent infinite proxy loops during failovers. Prefixing
+        -- custom headers with `X-` is no longer recommended:
+        -- http://stackoverflow.com/questions/3561381/custom-http-headers-naming-conventions
+        if ngx.req.get_headers()["DCOS-Forwarded"] == "true" then
+            ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
+            ngx.say("503 Service Unavailable: " .. leader_name .. " leader is unknown")
+            return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+        else
+            ngx.req.set_header("DCOS-Forwarded", "true")
+        end
+        ngx.var.leader_host = DEFAULT_SCHEME .. mleader["leader_ip"]
+    end
+
+    ngx.log(ngx.DEBUG, leader_name .. " leader addr from cache: " .. ngx.var.leader_host)
+end
+
+
 function util.verify_ip(ip)
   -- Based on http://stackoverflow.com/a/16643628
   -- Return True if ip is a valid IPv4 IP, False otherwise.
