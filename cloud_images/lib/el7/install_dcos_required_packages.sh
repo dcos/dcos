@@ -1,6 +1,8 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+echo ">>> In install_dcos_required_packages.sh:"
+
 # Install packages required by DC/OS
 
 : ${ROOTFS:?"ERROR: ROOTFS must be set"}
