@@ -153,6 +153,8 @@ utils = Bunch({
     "add_roles": add_roles,
     "role_names": role_names,
     "add_services": None,
+    "add_stable_artifact": None,
+    "add_channel_artifact": None,
     "add_units": add_units,
     "render_cloudconfig": render_cloudconfig
 })
@@ -621,6 +623,7 @@ def generate(
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
     stable_artifacts = []
+    channel_artifacts = []
 
     # Find all files which contain late bind variables and turn them into a "late bind package"
     # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
@@ -710,17 +713,29 @@ def generate(
         cc['write_files'].append(item)
     rendered_templates['cloud-config.yaml'] = cc
 
-    # Add in the add_services util. Done here instead of the initial
-    # map since we need to bind in parameters
+    # Add utils that need to be defined here so they can be bound to locals.
     def add_services(cloudconfig, cloud_init_implementation):
         return add_units(cloudconfig, rendered_templates['dcos-services.yaml'], cloud_init_implementation)
 
     utils.add_services = add_services
 
+    def add_stable_artifact(filename):
+        assert filename not in stable_artifacts + channel_artifacts
+        stable_artifacts.append(filename)
+
+    utils.add_stable_artifact = add_stable_artifact
+
+    def add_channel_artifact(filename):
+        assert filename not in stable_artifacts + channel_artifacts
+        channel_artifacts.append(filename)
+
+    utils.add_channel_artifact = add_channel_artifact
+
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
         'stable_artifacts': stable_artifacts,
+        'channel_artifacts': channel_artifacts,
         'templates': rendered_templates,
         'utils': utils
     })

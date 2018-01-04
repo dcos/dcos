@@ -26,7 +26,7 @@ class TestCache:
             'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -67,7 +67,7 @@ class TestCache:
             'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
             'Mesos state cache has been successfully updated': SearchCriteria(3, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(3, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(3, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(3, True),
             }
         cache_poll_period = 4
 
@@ -113,7 +113,7 @@ class TestCache:
             'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -492,7 +492,7 @@ class TestCache:
             resp = requests.get(url,
                                 allow_redirects=False,
                                 headers=valid_user_header)
-            assert resp.status_code == 404
+            assert resp.status_code == 503
 
     def test_if_absence_of_agent_is_handled_by_cache(
             self, nginx_class, mocker, valid_user_header):
@@ -585,7 +585,7 @@ class TestCache:
     def test_if_broken_response_from_marathon_is_handled(
             self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
-            'Cannot decode Marathon leader JSON': SearchCriteria(1, True),
+            'Cannot decode marathon leader JSON': SearchCriteria(1, True),
         }
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -684,18 +684,18 @@ class TestCache:
     def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
             self, nginx_class, dns_server_mock, valid_user_header):
         filter_regexp_pre = {
-            'Marathon leader cache has been successfully updated':
+            'marathon leader cache has been successfully updated':
                 SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated':
                 SearchCriteria(1, True),
             'Mesos state cache has been successfully updated':
                 SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
 
         filter_regexp_post = {
-            'Marathon leader cache has been successfully updated':
+            'marathon leader cache has been successfully updated':
                 SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated':
                 SearchCriteria(1, True),
@@ -760,9 +760,10 @@ class TestCache:
 class TestCacheMesosLeader:
     def test_if_unset_hostip_var_is_handled(self, nginx_class, valid_user_header):
         filter_regexp = {
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         ar = nginx_class(host_ip=None)
@@ -782,7 +783,7 @@ class TestCacheMesosLeader:
         filter_regexp = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'DNS server returned error code': SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(0, True),
         }
 
@@ -812,19 +813,21 @@ class TestCacheMesosLeader:
         local_leader_ip = "127.0.0.2"
         filter_regexp_pre = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
-            'Mesos Leader is non-local: `{}`'.format(nonlocal_leader_ip):
+            'mesos leader is non-local: `{}`'.format(nonlocal_leader_ip):
                 SearchCriteria(1, True),
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(0, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         filter_regexp_post = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
-            'Mesos Leader is local': SearchCriteria(1, True),
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'mesos leader is local': SearchCriteria(1, True),
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(0, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
 

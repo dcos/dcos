@@ -29,7 +29,7 @@ def copy_makedirs(src, dest):
     shutil.copy(src, dest)
 
 
-def do_bundle_onprem(extra_files, gen_out, output_dir):
+def do_bundle_onprem(gen_out, output_dir):
     # We are only being called via dcos_generate_config.sh with an output_dir
     assert output_dir is not None
     assert output_dir
@@ -37,7 +37,7 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
     output_dir = output_dir + '/'
 
     # Copy generated artifacts
-    for filename in extra_files + gen_out.stable_artifacts:
+    for filename in gen_out.channel_artifacts + gen_out.stable_artifacts:
         copy_makedirs(filename, output_dir + filename)
 
     # Write an index of the cluster packages
