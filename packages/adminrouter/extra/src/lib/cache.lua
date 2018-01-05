@@ -249,57 +249,74 @@ local function fetch_and_store_marathon_apps(auth_token)
     return
 end
 
-local function fetch_and_store_marathon_leader(auth_token)
-    -- Fetch Marathon leader address. If successful, store to SHM cache.
-    -- Expected to run within lock context.
-    local mleaderRes, err = request(UPSTREAM_MARATHON .. "/v2/leader",
-                                    true,
-                                    auth_token)
+function store_leader_data(leader_name, leader_ip)
+    if HOST_IP == 'unknown' or leader_ip == 'unknown' then
+        ngx.log(ngx.ERR,
+        "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
+        mleader = '{"is_local": "unknown", "leader_ip": null}'
+    elseif leader_ip == HOST_IP then
+        mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+        ngx.log(ngx.INFO, leader_name .. " leader is local")
+    else
+        mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
+        ngx.log(ngx.INFO, leader_name .. " leader is non-local: `" .. leader_ip .. "`")
+    end
 
-    if err then
-        ngx.log(ngx.WARN, "Marathon leader request failed: " .. err)
+    ngx.log(ngx.DEBUG, "Storing " .. leader_name .. " leader to SHM")
+    if not cache_data(leader_name .. "_leader", mleader) then
+        ngx.log(ngx.ERR, "Storing " .. leader_name .. " leader cache failed")
         return
     end
 
+    ngx.update_time()
+    local time_now = ngx.now()
+    if cache_data(leader_name .. "_leader_last_refresh", time_now) then
+        ngx.log(ngx.INFO, leader_name .. " leader cache has been successfully updated")
+    end
+
+    return
+end
+
+
+local function fetch_generic_leader(leaderAPI_url, leader_name, auth_token)
+    local mleaderRes, err = request(leaderAPI_url, true, auth_token)
+
+    if err then
+        ngx.log(ngx.WARN, leader_name .. " leader request failed: " .. err)
+        return nil
+    end
+
     -- We need to translate 404 reply into a JSON that is easy to process for
-    -- endpoints:
+    -- endpoints. I.E.:
     -- https://mesosphere.github.io/marathon/docs/rest-api.html#get-v2-leader
     local res_body
     if mleaderRes.status == 404 then
         -- Just a hack in order to avoid using gotos - create a substitute JSON
         -- that can be parsed and processed by normal execution path and at the
         -- same time passes the information of a missing Marathon leader.
-        ngx.log(ngx.NOTICE, "Using empty Marathon leader JSON")
-        res_body = '{"leader": "not elected:0"}'
+        ngx.log(ngx.NOTICE, "Using empty " .. leader_name .. " leader JSON")
+        res_body = '{"leader": "unknown:0"}'
     else
         res_body = mleaderRes.body
     end
 
     local mleader, err = cjson_safe.decode(res_body)
     if not mleader then
-        ngx.log(ngx.WARN, "Cannot decode Marathon leader JSON: " .. err)
-        return
+        ngx.log(ngx.WARN, "Cannot decode " .. leader_name .. " leader JSON: " .. err)
+        return nil
     end
 
-    local split_mleader = mleader['leader']:split(":")
-    local parsed_mleader = {}
-    parsed_mleader["address"] = split_mleader[1]
-    parsed_mleader["port"] = split_mleader[2]
-    local mleader = cjson_safe.encode(parsed_mleader)
+    return mleader['leader']:split(":")[1]
+end
 
-    ngx.log(ngx.DEBUG, "Storing Marathon leader to SHM")
-    if not cache_data("marathonleader", mleader) then
-        ngx.log(ngx.ERR, "Storing Marathon leader cache failed")
-        return
+
+local function fetch_and_store_marathon_leader(auth_token)
+    leader_ip = fetch_generic_leader(
+        UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
+
+    if leader_ip ~= nil then
+        store_leader_data("marathon", leader_ip)
     end
-
-    ngx.update_time()
-    local time_now = ngx.now()
-    if cache_data("marathonleader_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "Marathon leader cache has been successfully updated")
-    end
-
-    return
 end
 
 
@@ -360,17 +377,10 @@ local function fetch_and_store_state_mesos(auth_token)
 end
 
 
-local function fetch_and_store_mesos_leader_state()
+local function fetch_mesos_leader_state()
     -- Lua forbids jumping over local variables definition, hence we define all
     -- of them here.
-    local res_body, r, err, answers
-
-    if HOST_IP == 'unknown' then
-        ngx.log(ngx.ERR,
-        "Local Mesos Master IP address is unknown, cache entry is unusable")
-        res_body = '{"is_local": "unknown", "leader_ip": null}'
-        goto store_cache
-    end
+    local r, err, answers
 
     -- We want to use Navstar's dual-dispatch approach and get the response
     -- as fast as possible from any operational MesosDNS. If we set it to local
@@ -393,52 +403,39 @@ local function fetch_and_store_mesos_leader_state()
 
     if not r then
         ngx.log(ngx.ERR, "Failed to instantiate the resolver: " .. err)
-        return
+        return nil
     end
 
     answers, err = r:query("leader.mesos")
     if not answers then
         ngx.log(ngx.ERR, "Failed to query the DNS server: " .. err)
-        return
+        return nil
     end
 
     if answers.errcode then
         ngx.log(ngx.ERR,
             "DNS server returned error code: " .. answers.errcode .. ": " .. answers.errstr)
-        return
+        return nil
     end
 
     if util.table_len(answers) == 0 then
         ngx.log(ngx.ERR,
             "DNS server did not return anything for leader.mesos")
-        return
+        return nil
     end
 
     -- Yes, we are assuming that leader.mesos will always be just one A entry.
     -- AAAA support is a different thing...
+    return answers[1].address
+end
 
-    if answers[1].address == HOST_IP then
-        res_body = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
-        ngx.log(ngx.INFO, "Mesos Leader is local")
-    else
-        res_body = '{"is_local": "no", "leader_ip": "'.. answers[1].address ..'"}'
-        ngx.log(ngx.INFO, "Mesos Leader is non-local: `" .. answers[1].address .. "`")
+
+local function fetch_and_store_mesos_leader()
+    leader_ip = fetch_mesos_leader_state()
+
+    if leader_ip ~= nil then
+        store_leader_data("mesos", leader_ip)
     end
-
-    ::store_cache::
-    if not cache_data("mesos_leader", res_body) then
-        ngx.log(ngx.ERR, "Storing `Mesos Leader` state cache failed")
-        return
-    end
-
-    ngx.update_time()
-    local time_now = ngx.now()
-    if cache_data("mesos_leader_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "`Mesos Leader` state cache has been successfully updated")
-    end
-
-    return
-
 end
 
 
@@ -532,12 +529,12 @@ local function refresh_cache(from_timer, auth_token)
         fetch_and_store_marathon_apps(auth_token)
     end
 
-    if refresh_needed("marathonleader_last_refresh") then
+    if refresh_needed("marathon_leader_last_refresh") then
         fetch_and_store_marathon_leader(auth_token)
     end
 
     if refresh_needed("mesos_leader_last_refresh") then
-        fetch_and_store_mesos_leader_state()
+        fetch_and_store_mesos_leader()
     end
 
     local ok, err = lock:unlock()
