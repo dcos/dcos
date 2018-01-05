@@ -12,7 +12,11 @@ class TestAdminRouterTLSConfig:
     Tests for the Admin Router TLS Config creation.
     """
 
-    def test_master(self):
+    @pytest.mark.parametrize(
+        'adminrouter_tls_1_0_enabled, tls_versions',
+        [('true', 'TLSv1 TLSv1.1 TLSv1.2'), ('false', 'TLSv1.1 TLSv1.2')]
+    )
+    def test_master(self, adminrouter_tls_1_0_enabled, tls_versions):
         """
         By default, the configuration specifies certain TLS settings.
 
@@ -20,7 +24,9 @@ class TestAdminRouterTLSConfig:
         rather than a particularly useful feature test.
         """
         config_path = '/etc/adminrouter-tls-master.conf'
-        arguments = make_arguments(new_arguments={})
+        arguments = make_arguments({
+            'adminrouter_tls_1_0_enabled': adminrouter_tls_1_0_enabled,
+        })
         generated = gen.generate(arguments=arguments)
         package = generated.templates['dcos-config.yaml']['package']
         [config] = [item for item in package if item['path'] == config_path]
@@ -38,12 +44,13 @@ class TestAdminRouterTLSConfig:
             #
             # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
             # details.
-            ssl_protocols TLSv1.1 TLSv1.2;
-            """
+            ssl_protocols {tls_versions};
+            """.format(tls_versions=tls_versions)
         )
         assert config['content'] == expected_configuration
 
-    def test_agent(self):
+    @pytest.mark.parametrize('adminrouter_tls_1_0_enabled', ['true', 'false'])
+    def test_agent(self, adminrouter_tls_1_0_enabled):
         """
         By default, the configuration specifies certain TLS settings.
 
@@ -51,7 +58,9 @@ class TestAdminRouterTLSConfig:
         rather than a particularly useful feature test.
         """
         config_path = '/etc/adminrouter-tls-agent.conf'
-        arguments = make_arguments(new_arguments={})
+        arguments = make_arguments(new_arguments={
+            'adminrouter_tls_1_0_enabled': adminrouter_tls_1_0_enabled,
+        })
         generated = gen.generate(arguments=arguments)
         package = generated.templates['dcos-config.yaml']['package']
         [config] = [item for item in package if item['path'] == config_path]
