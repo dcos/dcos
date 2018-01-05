@@ -587,9 +587,9 @@ def validate_adminrouter_tls_version_present(
         [flag for flag in tls_version_flags if flag == 'true'])
 
     msg = (
-        'At least one tls boolean (adminrouter_tls_1_0_enabled, '
-        'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
-        'be set.'
+        'At least one of adminrouter_tls_1_0_enabled, '
+        'adminrouter_tls_1_1_enabled and adminrouter_tls_1_2_enabled must be '
+        "set to 'true'."
     )
     assert enabled_tls_flags_count > 0, msg
 

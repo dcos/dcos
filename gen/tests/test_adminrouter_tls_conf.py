@@ -18,10 +18,7 @@ class TestAdminRouterTLSConfig:
     )
     def test_master(self, adminrouter_tls_1_0_enabled, tls_versions):
         """
-        By default, the configuration specifies certain TLS settings.
-
-        This test is a sanity check for the configuration template logic
-        rather than a particularly useful feature test.
+        Test that Master Admin Router config file has the correct content.
         """
         config_path = '/etc/adminrouter-tls-master.conf'
         arguments = make_arguments({
@@ -52,10 +49,7 @@ class TestAdminRouterTLSConfig:
     @pytest.mark.parametrize('adminrouter_tls_1_0_enabled', ['true', 'false'])
     def test_agent(self, adminrouter_tls_1_0_enabled):
         """
-        By default, the configuration specifies certain TLS settings.
-
-        This test is a sanity check for the configuration template logic
-        rather than a particularly useful feature test.
+        Test that Agent Admin Router config file has the correct content.
         """
         config_path = '/etc/adminrouter-tls-agent.conf'
         arguments = make_arguments(new_arguments={
@@ -287,9 +281,9 @@ class TestToggleTLSVersions:
                          'adminrouter_tls_1_1_enabled': 'false',
                          'adminrouter_tls_1_2_enabled': 'false'}
         expected_error_msg = (
-            'At least one tls boolean (adminrouter_tls_1_0_enabled, '
-            'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
-            'be set.'
+            'At least one of adminrouter_tls_1_0_enabled, '
+            'adminrouter_tls_1_1_enabled and adminrouter_tls_1_2_enabled must '
+            "be set to 'true'."
         )
         result = gen.validate(arguments=make_arguments(new_arguments))
         assert result['status'] == 'errors'
