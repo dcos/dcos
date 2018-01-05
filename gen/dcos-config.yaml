@@ -444,6 +444,15 @@ package:
         "docker":
         [
             {
+              "network_mode": "BRIDGE",
+              "dns": {
+                "nameservers": [
+                                "198.51.100.1",
+                                "fd01:d::c633:6401"
+                ]
+              }
+            },
+            {
               "network_mode": "USER",
               "dns": {
                 "nameservers": [
