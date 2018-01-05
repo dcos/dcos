@@ -584,7 +584,7 @@ def validate_adminrouter_tls_version_present(
     ]
 
     enabled_tls_flags_count = len(
-        list(filter(lambda x: x == 'true', tls_version_flags)))
+        [flag for flag in tls_version_flags if flag == 'true'])
 
     msg = (
         'At least one tls boolean (adminrouter_tls_1_0_enabled, '

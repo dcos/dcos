@@ -36,7 +36,7 @@ class TestAdminRouterTLSConfig:
             # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
             # Modulo ChaCha20 cipher.
 
-            ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
 
             ssl_prefer_server_ciphers on;
             # To manually test which TLS versions are enabled on a node, use
@@ -67,9 +67,9 @@ class TestAdminRouterTLSConfig:
 
         expected_configuration = dedent(
             """\
-            # Note that Agent Admin Router only servers cluster-internal clients. Hence,
+            # Note that Agent Admin Router only serves cluster-internal clients. Hence,
             # browser compatibility is not a criterion for the TLS cipher suite selection.
-            ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5;
+            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
             ssl_prefer_server_ciphers on;
             ssl_protocols TLSv1.2;
             """
@@ -149,7 +149,7 @@ class TestSetCipherOverride:
         ciphers = self.supported_ssl_ciphers_agent(
             new_config_arguments=new_arguments,
         )
-        assert ciphers == ['EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5']
+        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5']
 
     def test_cipher_master_default(self):
         """
@@ -159,17 +159,17 @@ class TestSetCipherOverride:
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
-        assert ciphers == ['EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5']
+        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5']
 
     def test_cipher_master_custom(self):
         """
         The config variable adminrouter_external_cipher_string must be set
         """
-        new_arguments = {'adminrouter_tls_cipher_suite': 'EECDH+AES256:RSA+AES256'}
+        new_arguments = {'adminrouter_tls_cipher_suite': 'EECDH+AES128:RSA+AES128'}
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
-        assert ciphers == ['EECDH+AES256:RSA+AES256']
+        assert ciphers == ['EECDH+AES128:RSA+AES128']
 
 
 class TestToggleTLSVersions:
@@ -266,6 +266,7 @@ class TestToggleTLSVersions:
             (('true', 'true', 'true'), ['TLSv1', 'TLSv1.1', 'TLSv1.2']),
             (('true', 'false', 'true'), ['TLSv1', 'TLSv1.2']),
             (('true', 'false', 'false'), ['TLSv1']),
+            (('false', 'true', 'false'), ['TLSv1.1']),
         ]
     )
     def test_enable_custom_tls_versions(self, enabled, expected_protocols):

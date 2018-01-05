@@ -991,7 +991,7 @@ package:
       # Modulo ChaCha20 cipher.
 {% switch adminrouter_tls_cipher_override %}
 {% case "false" %}
-      ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
 {% case "true" %}
       ssl_ciphers {{ adminrouter_tls_cipher_suite }};
 {% endswitch %}
@@ -1004,9 +1004,9 @@ package:
       ssl_protocols {{ adminrouter_tls_version_override }};
   - path: /etc/adminrouter-tls-agent.conf
     content: |
-      # Note that Agent Admin Router only servers cluster-internal clients. Hence,
+      # Note that Agent Admin Router only serves cluster-internal clients. Hence,
       # browser compatibility is not a criterion for the TLS cipher suite selection.
-      ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5;
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
       ssl_prefer_server_ciphers on;
       ssl_protocols TLSv1.2;
   - path: /etc_slave/adminrouter-listen-open.conf
