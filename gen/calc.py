@@ -572,8 +572,7 @@ def calculate_adminrouter_tls_cipher_override(adminrouter_tls_cipher_suite):
         return 'false'
 
 
-def validate_adminrouter_tls_version_override(
-        adminrouter_tls_version_override,
+def validate_adminrouter_tls_version_present(
         adminrouter_tls_1_0_enabled,
         adminrouter_tls_1_1_enabled,
         adminrouter_tls_1_2_enabled):
@@ -584,16 +583,15 @@ def validate_adminrouter_tls_version_override(
         adminrouter_tls_1_2_enabled,
     ]
 
-    if adminrouter_tls_version_override == '':
-        enabled_tls_flags_count = len(
-            list(filter(lambda x: x == 'true', tls_version_flags)))
-        msg = (
-            'When not explicitly setting a adminrouter_tls_version_override, '
-            'at least one tls boolean (adminrouter_tls_1_0_enabled, '
-            'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
-            'be set.'
-        )
-        assert enabled_tls_flags_count > 0, msg
+    enabled_tls_flags_count = len(
+        list(filter(lambda x: x == 'true', tls_version_flags)))
+
+    msg = (
+        'At least one tls boolean (adminrouter_tls_1_0_enabled, '
+        'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
+        'be set.'
+    )
+    assert enabled_tls_flags_count > 0, msg
 
 
 def validate_s3_prefix(s3_prefix):
@@ -952,7 +950,7 @@ entry = {
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
         lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
-        validate_adminrouter_tls_version_override,
+        validate_adminrouter_tls_version_present,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -974,8 +972,6 @@ entry = {
         'adminrouter_tls_1_0_enabled': 'false',
         'adminrouter_tls_1_1_enabled': 'true',
         'adminrouter_tls_1_2_enabled': 'true',
-        'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
-        'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
         'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
@@ -1111,7 +1107,9 @@ entry = {
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_ld_library_path': '/opt/mesosphere/lib'
+        'check_ld_library_path': '/opt/mesosphere/lib',
+        'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
+        'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
     },
     'secret': [
         'cluster_docker_credentials',

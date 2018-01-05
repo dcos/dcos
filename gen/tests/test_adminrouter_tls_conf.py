@@ -243,18 +243,6 @@ class TestToggleTLSVersions:
             message=true_false_msg,
         )
 
-    def test_enable_v1_bool(self):
-        """
-        Setting the config variable to 'true' enables TLS 1.0/1.1.
-        """
-        new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
-                         'adminrouter_tls_1_1_enabled': 'true',
-                         'adminrouter_tls_1_2_enabled': 'true'}
-        protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments=new_arguments,
-        )
-        assert protocols == ['TLSv1', 'TLSv1.1', 'TLSv1.2']
-
     @pytest.mark.parametrize(
         'new_arguments', [{}, {'adminrouter_tls_1_0_enabled': 'false'}]
     )
@@ -271,49 +259,23 @@ class TestToggleTLSVersions:
         )
         assert protocols == ['TLSv1.1', 'TLSv1.2']
 
-    def test_enable_custom_bool_single(self):
-        """
-        Setting the config variable to 'true' enables TLS 1.0/1.1.
-        """
-        new_arguments = {'adminrouter_tls_1_0_enabled': 'false',
-                         'adminrouter_tls_1_1_enabled': 'false',
-                         'adminrouter_tls_1_2_enabled': 'true'}
+    @pytest.mark.parametrize(
+        'enabled,expected_protocols', [
+            (('false', 'false', 'true'), ['TLSv1.2']),
+            (('false', 'true', 'true'), ['TLSv1.1', 'TLSv1.2']),
+            (('true', 'true', 'true'), ['TLSv1', 'TLSv1.1', 'TLSv1.2']),
+            (('true', 'false', 'true'), ['TLSv1', 'TLSv1.2']),
+            (('true', 'false', 'false'), ['TLSv1']),
+        ]
+    )
+    def test_enable_custom_tls_versions(self, enabled, expected_protocols):
+        new_arguments = {'adminrouter_tls_1_0_enabled': enabled[0],
+                         'adminrouter_tls_1_1_enabled': enabled[1],
+                         'adminrouter_tls_1_2_enabled': enabled[2]}
         protocols = self.supported_tls_protocols_ar_master(
             new_config_arguments=new_arguments,
         )
-        assert protocols == ['TLSv1.2']
-
-    def test_enable_custom_bool_multi(self):
-        """
-        Setting the config variable to 'true' enables TLS 1.0/1.1.
-        """
-        new_arguments = {'adminrouter_tls_1_0_enabled': 'true',
-                         'adminrouter_tls_1_1_enabled': 'false',
-                         'adminrouter_tls_1_2_enabled': 'true'}
-        protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments=new_arguments,
-        )
-        assert protocols == ['TLSv1', 'TLSv1.2']
-
-    def test_enable_custom_string(self):
-        """
-        Setting the config variable to override actually works.
-        """
-        new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2'}
-        protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments=new_arguments,
-        )
-        assert protocols == ['TLSv1.2']
-
-    def test_enable_custom_multi_string(self):
-        """
-        Setting the config variable to override actually works.
-        """
-        new_arguments = {'adminrouter_tls_version_override': 'TLSv1.2 TLSv1.1'}
-        protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments=new_arguments,
-        )
-        assert protocols == ['TLSv1.2', 'TLSv1.1']
+        assert protocols == expected_protocols
 
     def test_no_tls_version_enabled(self):
         """
@@ -324,13 +286,12 @@ class TestToggleTLSVersions:
                          'adminrouter_tls_1_1_enabled': 'false',
                          'adminrouter_tls_1_2_enabled': 'false'}
         expected_error_msg = (
-            'When not explicitly setting a adminrouter_tls_version_override, '
-            'at least one tls boolean (adminrouter_tls_1_0_enabled, '
+            'At least one tls boolean (adminrouter_tls_1_0_enabled, '
             'adminrouter_tls_1_1_enabled, adminrouter_tls_1_2_enabled) must '
             'be set.'
         )
         result = gen.validate(arguments=make_arguments(new_arguments))
         assert result['status'] == 'errors'
 
-        key = 'adminrouter_tls_version_override'
+        key = 'adminrouter_tls_1_2_enabled'
         assert result['errors'][key]['message'] == expected_error_msg
