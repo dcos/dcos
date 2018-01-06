@@ -7,6 +7,7 @@ def test_metronome(dcos_api_session):
             'docker': {'image': 'busybox:latest'},
             'cpus': 1,
             'mem': 512,
+            'disk' 0,
             'user': 'nobody',
             'restart': {'policy': 'ON_FAILURE'}
         }
