@@ -15,7 +15,6 @@ done
 
 for ENV_FILE in \
         "/opt/mesosphere/etc/dns_config_master" \
-        "/opt/mesosphere/etc/${APP_NAME}.env" \
         "/run/dcos/etc/${APP_NAME}_auth.env"; \
     do
     if [ -f "${ENV_FILE}" ]; then
@@ -84,25 +83,13 @@ ERL_FLAGS="${ERL_FLAGS} -start_epmd false -no_epmd"
 
 ### SSL / Distributed Erlang config
 ERL_FLAGS="${ERL_FLAGS} -proto_dist dcos_net"
-if [ "${ERLANG_DISTRIBUTION}" == "inet_tls" ]; then
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_cacertfile ${CLIENT_CACERTFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_keyfile ${CLIENT_KEYFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_certfile ${CLIENT_CERTFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_depth ${CLIENT_DEPTH:-10}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt client_verify verify_none"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_cacertfile ${SERVER_CACERTFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_keyfile ${SERVER_KEYFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_certfile ${SERVER_CERTFILE:-nofile}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_depth ${SERVER_DEPTH:-10}"
-    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_opt server_verify verify_none"
+TLS_CONFIG="/opt/mesosphere/etc/dcos-net.config.d/tls.config"
+if [ -f "${TLS_CONFIG}" ]; then
+    ERL_FLAGS="${ERL_FLAGS} -ssl_dist_optfile ${TLS_CONFIG}"
 fi
 
-### Mesos state SSL config
+### Export Auth Token
 export SERVICE_AUTH_TOKEN
-export MESOS_STATE_SSL_ENABLED
-if [ "${MESOS_STATE_SSL_ENABLED}" == "true" ]; then
-    ERL_FLAGS="${ERL_FLAGS} -mesos_state ssl ${MESOS_STATE_SSL_ENABLED}"
-fi
 
 ### Export Erlang configuration
 export ERL_FLAGS
