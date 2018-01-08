@@ -9,11 +9,22 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-import grp
+
+try:   # Not available on windows
+    import grp
+except ImportError:
+    pass
+
 import json
 import os
 import os.path
-import pwd
+
+try:   # Not available on windows
+    import pwd
+except ImportError:
+    pass
+
+import platform
 import re
 import shutil
 import tempfile
@@ -28,6 +39,9 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
+
+
+is_windows = platform.system() is "Windows"
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -504,6 +518,9 @@ class UserManagement:
     def validate_user_group(username, group_name):
         user = pwd.getpwnam(username)
         if not group_name:
+            return
+
+        if is_windows:
             return
 
         group = grp.getgrnam(group_name)
