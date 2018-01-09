@@ -766,21 +766,6 @@ package:
                   "Port": 8123,
                   "Uri": "/v1/version",
                   "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/last",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/minute",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/hour",
-                  "Role": ["master"]
               }
           ],
           "LocalFiles": [
