@@ -960,6 +960,7 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda licensing_enabled: validate_true_false(licensing_enabled),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1062,7 +1063,8 @@ entry = {
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'license_key_contents': '',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1110,6 +1112,7 @@ entry = {
         'check_ld_library_path': '/opt/mesosphere/lib',
         'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
         'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
+        'licensing_enabled': 'false',
     },
     'secret': [
         'cluster_docker_credentials',

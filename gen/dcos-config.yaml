@@ -21,6 +21,13 @@ package:
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
+{% switch licensing_enabled %}
+{% case "true" %}
+  - path: /etc/license.txt
+    permissions: "0600"
+    content: {{ license_key_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: /check/check_ip
     permissions: "0755"
     content: |

@@ -199,6 +199,16 @@
     }
 {% case "false" %}
 {% endswitch %}
+{% switch licensing_enabled %}
+{% case "true" %}
+    ,
+    "LicenseKey": {
+      "Description": "\nLicense key",
+      "Type": "String",
+      "Default": ""
+    }
+{% case "false" %}
+{% endswitch %}
   },
   "Conditions": {
     "UseCustomAMI": {

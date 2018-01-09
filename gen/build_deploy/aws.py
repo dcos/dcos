@@ -72,6 +72,17 @@ aws_base_source = Source(entry={
                     'adminrouter_auth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
                 }
             },
+            'false': {}
+        },
+        'licensing_enabled': {
+            'true': {
+                'must': {
+                    'license_key_contents': Late('{ "Ref" : "LicenseKey" }'),
+                },
+                'secret': [
+                    'license_key_contents',
+                ],
+            },
             'false': {},
         }
     }

@@ -48,6 +48,12 @@ CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_s
 PACKAGE_KEYS = {'package', 'root'}
 
 
+# Allow overriding calculators with a `gen_extra/calc.py` if it exists
+gen_extra_calc = None
+if os.path.exists('gen_extra/calc.py'):
+    gen_extra_calc = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+
+
 def stringify_configuration(configuration: dict):
     """Create a stringified version of the complete installer configuration
     to send to gen.generate()"""
@@ -290,7 +296,7 @@ def do_gen_package(config, package_filename):
                 pass
 
             with open(path, 'w') as f:
-                f.write(file_info['content'])
+                f.write(file_info['content'] or '')
 
             # the file has special mode defined, handle that.
             if 'permissions' in file_info:
@@ -350,7 +356,7 @@ def extract_files_containing_late_variables(start_files):
             'File info must not contain late config placeholder in fields other than content: {}'.format(file_info)
         )
 
-        if _late_bind_placeholder_in(file_info['content']):
+        if file_info['content'] and _late_bind_placeholder_in(file_info['content']):
             found_files.append(file_info)
         else:
             left_files.append(file_info)
@@ -448,10 +454,8 @@ def get_dcosconfig_source_target_and_templates(
     base_source = gen.internals.Source(is_user=False)
     base_source.add_entry(gen.calc.entry, replace_existing=False)
 
-    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
-    if os.path.exists('gen_extra/calc.py'):
-        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-        base_source.add_entry(mod.entry, replace_existing=True)
+    if gen_extra_calc:
+        base_source.add_entry(gen_extra_calc.entry, replace_existing=True)
 
     def add_builtin(name, value):
         base_source.add_must(name, json_prettyprint(value))
