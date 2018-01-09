@@ -164,13 +164,10 @@ def test_signal_service(dcos_api_session):
     all_node_units = [
         'diagnostics-service',
         'diagnostics-socket',
-        'dns-watchdog-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'l4lb-watchdog-service',
         'net-service',
         'net-watchdog-service',
-        'overlay-watchdog-service',
         'pkgpanda-api-service',
         'signal-timer',
         'checks-poststart-service',
