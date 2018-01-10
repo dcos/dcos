@@ -5,37 +5,14 @@ import subprocess
 import textwrap
 import uuid
 
+import boto3
 import passlib.hash
 import pytest
 
-import gen
-import gen.build_deploy.aws
-import release
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
 
 os.environ["BOOTSTRAP_ID"] = "12345"
-
-
-@pytest.fixture(scope='module')
-def config():
-    if not os.path.exists('dcos-release.config.yaml'):
-        pytest.skip("Skipping because there is no configuration in dcos-release.config.yaml")
-    return release.load_config('dcos-release.config.yaml')
-
-
-@pytest.fixture(scope='module')
-def config_testing(config):
-    if 'testing' not in config:
-        pytest.skip("Skipped because there is no `testing` configuration in dcos-release.config.yaml")
-    return config['testing']
-
-
-@pytest.fixture(scope='module')
-def config_aws(config_testing):
-    if 'aws' not in config_testing:
-        pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
-    return config_testing['aws']
 
 
 def test_password_hash():
@@ -288,7 +265,7 @@ aws_template_upload: false
 """
 
 
-def test_do_aws_configure(tmpdir, monkeypatch):
+def test_do_aws_configure(tmpdir, monkeypatch, release_config_aws):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
     create_config(aws_base_config, tmpdir)
     create_fake_build_artifacts(tmpdir)
@@ -297,54 +274,50 @@ def test_do_aws_configure(tmpdir, monkeypatch):
         assert backend.do_aws_cf_configure() == 0
 
 
-valid_storage_config = """---
+@pytest.fixture
+def valid_storage_config(release_config_aws):
+    """ Uses the settings from dcos-release.config.yaml ['testing'] to create a
+    new upload and then deletes it when the test is over
+    """
+    s3_bucket_name = release_config_aws['bucket']
+    bucket_path = str(uuid.uuid4())
+    yield """---
 master_list:
  - 127.0.0.1
-aws_template_storage_access_key_id: {key_id}
 aws_template_storage_bucket: {bucket}
-aws_template_storage_bucket_path: mofo-the-gorilla
-aws_template_storage_secret_access_key: {access_key}
+aws_template_storage_bucket_path: {bucket_path}
 aws_template_upload: true
-"""
+""".format(
+        bucket=release_config_aws['bucket'],
+        bucket_path=bucket_path)
+    session = boto3.session.Session()
+    s3 = session.resource('s3')
+    s3_bucket = s3.Bucket(s3_bucket_name)
+    for o in s3_bucket.objects.filter(Prefix=bucket_path):
+        o.delete()
+    # objects = [{'Key': o.key} for o in s3_bucket.objects.filter(Prefix=bucket_path)]
+    # s3_bucket.delete_objects(Delete={'Objects': objects})
 
 
-def test_do_aws_cf_configure_valid_storage_config(config_aws, tmpdir, monkeypatch):
-    bucket = str(uuid.uuid4())
-    config_str = valid_storage_config.format(
-        key_id=config_aws["access_key_id"],
-        bucket=bucket,
-        access_key=config_aws["secret_access_key"])
-    assert aws_cf_configure(bucket, config_str, config_aws, tmpdir, monkeypatch) == 0
+def test_do_aws_cf_configure_valid_storage_config(release_config_aws, tmpdir, monkeypatch, valid_storage_config):
+    assert aws_cf_configure(valid_storage_config, tmpdir, monkeypatch) == 0
     # TODO: add an assertion that the config that was resolved inside do_aws_cf_configure
     # ended up with the correct region where the above testing bucket was created.
 
 
-def test_override_aws_template_storage_region_name(config_aws, tmpdir, monkeypatch):
-    bucket = str(uuid.uuid4())
-    config_str = valid_storage_config.format(
-        key_id=config_aws["access_key_id"],
-        bucket=bucket,
-        access_key=config_aws["secret_access_key"])
-    config_str += '\naws_template_storage_region_name: {}'.format(config_aws['region_name'])
-    assert aws_cf_configure(bucket, config_str, config_aws, tmpdir, monkeypatch) == 0
+def test_override_aws_template_storage_region_name(release_config_aws, tmpdir, monkeypatch, valid_storage_config):
+    config_str = valid_storage_config
+    config_str += '\naws_template_storage_region_name: {}'.format(os.environ['AWS_DEFAULT_REGION'])
+    assert aws_cf_configure(config_str, tmpdir, monkeypatch) == 0
 
 
-def aws_cf_configure(s3_bucket_name, config, config_aws, tmpdir, monkeypatch):
+def aws_cf_configure(config, tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
-    session = gen.build_deploy.aws.get_test_session(config_aws)
-    s3 = session.resource('s3')
-    s3_bucket = s3.Bucket(s3_bucket_name)
-    s3_bucket.create(CreateBucketConfiguration={'LocationConstraint': config_aws['region_name']})
 
     create_config(config, tmpdir)
     create_fake_build_artifacts(tmpdir)
-    try:
-        with tmpdir.as_cwd():
-            return backend.do_aws_cf_configure()
-    finally:
-        objects = [{'Key': o.key} for o in s3_bucket.objects.all()]
-        s3_bucket.delete_objects(Delete={'Objects': objects})
-        s3_bucket.delete()
+    with tmpdir.as_cwd():
+        return backend.do_aws_cf_configure()
 
 
 def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, caplog):
