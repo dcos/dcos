@@ -6,32 +6,38 @@ import botocore
 from release.storage import AbstractStorageProvider
 
 
-def get_session(boto3_profile=None, region_name=None, access_key_id=None, secret_access_key=None):
-        if boto3_profile:
-            if access_key_id or secret_access_key or region_name:
-                raise ValueError("access_key_id, secret_access_key, and region_name cannot be used with boto3_profile")
-            return boto3.session.Session(profile_name=boto3_profile)
-        elif access_key_id or secret_access_key or region_name:
-            if not access_key_id or not secret_access_key or not region_name:
-                raise ValueError("access_key_id, secret_access_key, and region_name must all be set")
-            return boto3.session.Session(
-                aws_access_key_id=access_key_id,
-                aws_secret_access_key=secret_access_key,
-                region_name=region_name)
-        else:
-            raise ValueError("boto_profile or explicit AWS credentials (access_key_id, "
-                             "secret_access_key, region_name) must be provided")
+def get_aws_session(access_key_id, secret_access_key, region_name=None):
+    """ This method will replace access_key_id and secret_access_key
+    with None if one is set to '' This allows falling back to the AWS internal
+    logic so that AWS_SESSION_TOKEN or something else can be used
+
+    This is needed by dcos_installer/backend.py which does AWS actions using
+    explicit credentials. The process is ran from the dcos_generate_config.sh
+    artifact docker container, which can interfere with the usual boto3 credential method
+    """
+    if not access_key_id:
+        access_key_id = None
+    if not secret_access_key:
+        secret_access_key = None
+    return boto3.session.Session(
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
+        region_name=region_name)
 
 
 class S3StorageProvider(AbstractStorageProvider):
     name = 'aws'
 
-    def __init__(self, bucket, object_prefix, download_url, boto3_profile=None, region_name=None,
-                 access_key_id=None, secret_access_key=None):
+    def __init__(self, bucket, object_prefix, download_url,
+                 access_key_id=None, secret_access_key=None, region_name=None):
+        """ If access_key_id and secret_acccess_key are unset, boto3 will
+        try to authenticate by other methods. See here for other credential options:
+        http://boto3.readthedocs.io/en/latest/guide/configuration.html#configuring-credentials
+        """
         if object_prefix is not None:
             assert object_prefix and not object_prefix.startswith('/') and not object_prefix.endswith('/')
 
-        self.__session = get_session(boto3_profile, region_name, access_key_id, secret_access_key)
+        self.__session = get_aws_session(access_key_id, secret_access_key, region_name)
         self.__bucket = self.__session.resource('s3').Bucket(bucket)
         self.__object_prefix = object_prefix
         self.__url = download_url
