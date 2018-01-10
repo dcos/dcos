@@ -40,8 +40,8 @@ DEVKIT_DOCKER_OPTS := $(DEVKIT_BASE_DOCKER_OPTS) \
 
 .PHONY: clean-devkit-container
 clean-devkit-container:
-	@# Let's suppress ALL the output:
-	@docker rm -vf $(DEVKIT_NAME) || true
+	@# `@` char only mutes stdout, here we need to mute stderr as well:
+	@docker rm -vf $(DEVKIT_NAME) &> /dev/null || true
 
 .PHONY: clean-containers
 clean-containers: clean-devkit-container

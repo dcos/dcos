@@ -131,7 +131,8 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-upstreams-open.conf \
      adminrouter-listen-master.conf \
      adminrouter-listen-agent.conf \
-     adminrouter-tls.conf \
+     adminrouter-tls-agent.conf \
+     adminrouter-tls-master.conf \
         /opt/mesosphere/etc/
 
 # The `ca.crt` file is copied into two places due to the fact that
