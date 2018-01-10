@@ -708,6 +708,11 @@ package:
                   "Role": ["master"]
               },
               {
+                  "Port": 8080,
+                  "Uri": "/v2/pods",
+                  "Role": ["master"]
+              },
+              {
                   "Port": 8181,
                   "Uri": "/exhibitor/v1/cluster/list",
                   "Role": ["master"]
