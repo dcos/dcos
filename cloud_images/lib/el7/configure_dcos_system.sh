@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
+echo ">>> In configure_dcos_system.sh:"
+
 echo ">>> Kernel: $(uname -r)"
 
 echo ">>> Disabling SELinux"
@@ -104,5 +106,5 @@ systemctl enable $(basename "${update_hosts_unit}")
 
 
 # Make sure we wait until all the data is written to disk, otherwise
-# Packer might quite too early before the large files are deleted
+# Packer might quit too early before the large files are deleted
 sync
