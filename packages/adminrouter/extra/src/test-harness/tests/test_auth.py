@@ -212,6 +212,21 @@ class TestAuthnJWTValidator:
             headers=auth_header,
             )
 
+    def test_valid_auth_token_with_bearer_header(
+            self,
+            master_ar_process_perclass,
+            jwt_generator,
+            ):
+        # We accept "forever tokens"
+        token = jwt_generator(uid='test')
+        auth_header = {'Authorization': 'Bearer {}'.format(token)}
+        assert_endpoint_response(
+            master_ar_process_perclass,
+            EXHIBITOR_PATH,
+            200,
+            headers=auth_header,
+            )
+
 
 class TestAuthCustomErrorPages:
     def test_correct_401_page_content(self, master_ar_process_pertest, repo_is_ee):
