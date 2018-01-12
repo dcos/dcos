@@ -2,7 +2,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-oauth.git",
-    "ref": "2b7b0a5aa3810b4f517a5b18516a4bbd30e28fee",
+    "ref": "67fe686cbca439a9e872a18e382a0eb51bf737c4",
     "ref_origin": "master"
   },
   "username": "dcos_oauth",
