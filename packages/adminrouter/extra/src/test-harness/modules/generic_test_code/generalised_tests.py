@@ -512,6 +512,8 @@ class GenericTestMasterClass:
         headers_present = {}
         headers_absent = []
 
+        headers_present['Server'] = "openresty"
+
         if caching_headers_test is True:
             headers_present['Cache-Control'] = "no-cache, no-store, must-revalidate"
             headers_present['Pragma'] = "no-cache"
@@ -622,6 +624,8 @@ class GenericTestAgentClass:
 
         headers_present = {}
         headers_absent = []
+
+        headers_present['Server'] = "openresty"
 
         if caching_headers_test is True:
             headers_present['Cache-Control'] = "no-cache, no-store, must-revalidate"
