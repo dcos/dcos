@@ -65,6 +65,10 @@ local function validate_jwt(secret_key)
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
         _, _, token = string.find(auth_header, "token=(.+)")
+        --- Also check for alternative bearer header format used by the likes of kubernetes
+        if token == nil then
+            _, _, token = string.find(auth_header, "Bearer (.+)")
+        end
     else
         ngx.log(ngx.DEBUG, "Authorization header not found.")
         -- Presence of Authorization header overrides cookie method entirely.
