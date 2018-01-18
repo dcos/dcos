@@ -1,9 +1,13 @@
 # Various tests that don't fit into the other categories and don't make their own really.
+
 import os
 
 import yaml
 
 from test_helpers import expanded_config
+
+__maintainer__ = 'branden'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 # Test that user config is loadable

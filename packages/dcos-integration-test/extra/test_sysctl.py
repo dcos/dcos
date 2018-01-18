@@ -1,6 +1,9 @@
 import subprocess
 import uuid
 
+__maintainer__ = 'orsenthil'
+__contact__ = 'tools-infra-team@mesosphere.io'
+
 
 def test_if_default_systctls_are_set(dcos_api_session):
     """This test verifies that default sysctls are set for tasks.
