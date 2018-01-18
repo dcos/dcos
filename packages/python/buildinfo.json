@@ -22,7 +22,7 @@
     },
     "pip": {
       "kind": "git",
-      "git": "git@github.com:pypa/pip.git",
+      "git": "https://github.com/pypa/pip.git",
       "ref": "8ed4ac1fe6e2a05db41585c10a7b46f16bc60666",
       "ref_origin": "master"
     }
