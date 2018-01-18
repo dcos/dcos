@@ -9,21 +9,18 @@ from gen.tests.utils import make_arguments, true_false_msg, validate_error
 
 class TestAdminRouterTLSConfig:
     """
-    Tests for the Admin Router TLS Config creation.
+    Tests for the Admin Router TLS configuration on complete file configuration
+    level.
     """
 
-    @pytest.mark.parametrize(
-        'adminrouter_tls_1_0_enabled, tls_versions',
-        [('true', 'TLSv1 TLSv1.1 TLSv1.2'), ('false', 'TLSv1.1 TLSv1.2')]
-    )
-    def test_master(self, adminrouter_tls_1_0_enabled, tls_versions):
+    def test_master_default(self):
         """
-        Test that Master Admin Router config file has the correct content.
+        Test that Master Admin Router config file has the correct default
+        `ssl_ciphers` and `ssl_protocols` values. Defaults are present in
+        `dcos-config.yaml` file and in `calc.py`.
         """
         config_path = '/etc/adminrouter-tls-master.conf'
-        arguments = make_arguments({
-            'adminrouter_tls_1_0_enabled': adminrouter_tls_1_0_enabled,
-        })
+        arguments = make_arguments(new_arguments={})
         generated = gen.generate(arguments=arguments)
         package = generated.templates['dcos-config.yaml']['package']
         [config] = [item for item in package if item['path'] == config_path]
@@ -41,24 +38,56 @@ class TestAdminRouterTLSConfig:
             #
             # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
             # details.
-            ssl_protocols {tls_versions};
-            """.format(tls_versions=tls_versions)
+            ssl_protocols TLSv1.1 TLSv1.2;
+            """
         )
         assert config['content'] == expected_configuration
 
-    @pytest.mark.parametrize('adminrouter_tls_1_0_enabled', ['true', 'false'])
-    def test_agent(self, adminrouter_tls_1_0_enabled):
+    def test_agent_default(self):
         """
-        Test that Agent Admin Router config file has the correct content.
+        Test that Agent Admin Router config file has the correct `ssl_ciphers`
+        and `ssl_protocols` values. It is not possible to override these with
+        any configuration parameters.
         """
         config_path = '/etc/adminrouter-tls-agent.conf'
-        arguments = make_arguments(new_arguments={
-            'adminrouter_tls_1_0_enabled': adminrouter_tls_1_0_enabled,
-        })
+        arguments = make_arguments(new_arguments={})
         generated = gen.generate(arguments=arguments)
         package = generated.templates['dcos-config.yaml']['package']
         [config] = [item for item in package if item['path'] == config_path]
 
+        expected_configuration = dedent(
+            """\
+            # Note that Agent Admin Router only serves cluster-internal clients. Hence,
+            # browser compatibility is not a criterion for the TLS cipher suite selection.
+            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
+            ssl_prefer_server_ciphers on;
+            ssl_protocols TLSv1.2;
+            """
+        )
+        assert config['content'] == expected_configuration
+
+    @pytest.mark.parametrize('tls_versions,ciphers', [
+        # TLS version is overridden
+        (('true', 'true', 'false'), ''),
+        # TLS cipher suites are overridden
+        (('false', 'true', 'true'), 'EECDH+AES256:RSA+AES256'),
+        # Both TLS version and ciphers are overridden
+        (('false', 'true', 'false'), 'EECDH+AES256:RSA+AES256'),
+    ])
+    def test_agent_cannot_be_configured(self, tls_versions, ciphers):
+        """
+        Agent Admin Router configuration is not affected by changing Master
+        Admin Router TLS version or TLS cipher suites configuration.
+        """
+        config_path = '/etc/adminrouter-tls-agent.conf'
+        new_arguments = {'adminrouter_tls_1_0_enabled': tls_versions[0],
+                         'adminrouter_tls_1_1_enabled': tls_versions[1],
+                         'adminrouter_tls_1_2_enabled': tls_versions[2],
+                         'adminrouter_tls_cipher_suite': ciphers}
+        arguments = make_arguments(new_arguments=new_arguments)
+        generated = gen.generate(arguments=arguments)
+        package = generated.templates['dcos-config.yaml']['package']
+        [config] = [item for item in package if item['path'] == config_path]
         expected_configuration = dedent(
             """\
             # Note that Agent Admin Router only serves cluster-internal clients. Hence,
@@ -75,8 +104,9 @@ class TestSetCipherOverride:
     """
     Tests for setting ssl_ciphers
 
-    To test manually, either use openssl commands or sslscan
-    [https://github.com/rbsec/sslscan]
+    To test manually, either use `openssl s_client` commands or sslscan
+    [https://github.com/rbsec/sslscan] against running cluster Admin Router
+    on master or agent nodes.
     """
 
     def supported_ssl_ciphers(
@@ -137,9 +167,19 @@ class TestSetCipherOverride:
 
     def test_cipher_agent_default(self):
         """
-        The config variable adminrouter_external_cipher_string should not impact internal traffic.
+        Admin Router Agent comes with the default ssl_ciphers configuration.
         """
-        new_arguments = {'adminrouter_external_cipher_override': 'false'}
+        ciphers = self.supported_ssl_ciphers_agent(
+            new_config_arguments={},
+        )
+        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5']
+
+    def test_cipher_agent_cannot_override(self):
+        """
+        The config variable `adminrouter_tls_cipher_suite` does not impact
+        internal traffic.
+        """
+        new_arguments = {'adminrouter_tls_cipher_suite': 'EECDH+AES128:RSA+AES128'}
         ciphers = self.supported_ssl_ciphers_agent(
             new_config_arguments=new_arguments,
         )
@@ -147,9 +187,10 @@ class TestSetCipherOverride:
 
     def test_cipher_master_default(self):
         """
-        The config variable adminrouter_external_cipher_string must not be set.
+        If `adminrouter_tls_cipher_suite` is not overridden the Master Admin
+        Router is configured with default cipher suite.
         """
-        new_arguments = {'adminrouter_external_cipher_string': ''}
+        new_arguments = {'adminrouter_tls_cipher_suite': ''}
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
@@ -157,7 +198,8 @@ class TestSetCipherOverride:
 
     def test_cipher_master_custom(self):
         """
-        The config variable adminrouter_external_cipher_string must be set
+        Setting `adminrouter_tls_cipher_suite` overrides Master Admin Router
+        TLS configuration.
         """
         new_arguments = {'adminrouter_tls_cipher_suite': 'EECDH+AES128:RSA+AES128'}
         ciphers = self.supported_ssl_ciphers_master(
@@ -168,10 +210,7 @@ class TestSetCipherOverride:
 
 class TestToggleTLSVersions:
     """
-    Tests for toggling TLS 1.0/1.1.
-
-    To manually test that this is, in fact, a working toggle for TLS 1.0/1.1, use
-    `openssl` commands.
+    Tests for toggling supported TLS versions.
 
     See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
     details.
@@ -190,7 +229,7 @@ class TestToggleTLSVersions:
                 set of arguments before generating configuration files.
 
         Returns:
-            A list of supported SSL protocols.
+            A list of supported TLS protocols.
         """
         arguments = make_arguments(new_arguments=new_config_arguments)
         generated = gen.generate(arguments=arguments)
@@ -207,51 +246,34 @@ class TestToggleTLSVersions:
         protocols = ssl_protocols_line.split()[1:]
         return protocols
 
-    def test_validation_1_0(self):
+    @pytest.mark.parametrize('config_name', [
+        'adminrouter_tls_1_0_enabled',
+        'adminrouter_tls_1_1_enabled',
+        'adminrouter_tls_1_2_enabled',
+    ])
+    def test_tls_version_flag_true_false(self, config_name):
         """
-        The config variable `tls_1_0_enabled` must be 'true' or 'false'.
+        Provided configuration flag must be 'true' or 'false' value.
         """
         validate_error(
-            new_arguments={'adminrouter_tls_1_0_enabled': 'foo'},
-            key='adminrouter_tls_1_0_enabled',
+            new_arguments={config_name: 'foo'},
+            key=config_name,
             message=true_false_msg,
         )
 
-    def test_validation_1_1(self):
-        """
-        The config variable `tls_1_1_enabled` must be 'true' or 'false'.
-        """
-        validate_error(
-            new_arguments={'adminrouter_tls_1_1_enabled': 'foo'},
-            key='adminrouter_tls_1_1_enabled',
-            message=true_false_msg,
-        )
-
-    def test_validation_1_2(self):
-        """
-        The config variable `tls_1_2_enabled` must be 'true' or 'false'.
-        """
-        validate_error(
-            new_arguments={'adminrouter_tls_1_2_enabled': 'foo'},
-            key='adminrouter_tls_1_2_enabled',
-            message=true_false_msg,
-        )
-
-    @pytest.mark.parametrize(
-        'new_arguments', [{}, {'adminrouter_tls_1_0_enabled': 'false'}]
-    )
-    def test_default(self, new_arguments):
+    def test_default_master(self):
         """
         By default TLS 1.0 is disabled, and therefore by default the config
         variable is set to 'false'.
-
-        This test is parametrized to demonstrate that having no configuration
-        produces the same results as setting the config variable to `'false'`.
         """
-        protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments=new_arguments,
+        default_protocols = self.supported_tls_protocols_ar_master(
+            new_config_arguments={},
         )
-        assert protocols == ['TLSv1.1', 'TLSv1.2']
+        disable_tls1_protocols = self.supported_tls_protocols_ar_master(
+            new_config_arguments={'adminrouter_tls_1_0_enabled': 'false'},
+        )
+        assert default_protocols == ['TLSv1.1', 'TLSv1.2']
+        assert default_protocols == disable_tls1_protocols
 
     @pytest.mark.parametrize(
         'enabled,expected_protocols', [
@@ -288,5 +310,10 @@ class TestToggleTLSVersions:
         result = gen.validate(arguments=make_arguments(new_arguments))
         assert result['status'] == 'errors'
 
-        key = 'adminrouter_tls_1_2_enabled'
-        assert result['errors'][key]['message'] == expected_error_msg
+        error_keys = [
+            'adminrouter_tls_1_0_enabled',
+            'adminrouter_tls_1_1_enabled',
+            'adminrouter_tls_1_2_enabled',
+        ]
+        for key in error_keys:
+            assert result['errors'][key]['message'] == expected_error_msg
