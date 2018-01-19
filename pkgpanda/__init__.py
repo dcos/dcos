@@ -455,6 +455,28 @@ def symlink_tree(src, dest):
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
 
+def copy_tree(src, dest):
+    """Copy the contents of directory src to directory dest.
+
+    The targets of any symlinks in src are copied into dest.
+
+    """
+    for name in os.listdir(src):
+        src_path = os.path.join(src, name)
+        dest_path = os.path.join(dest, name)
+
+        if os.path.exists(dest_path):
+            raise ConflictingFile(src_path, dest_path, 'Destination path {} already exists'.format(dest_path))
+
+        if os.path.isdir(src_path):
+            # Copy the directory recursively. Individual files are copied with shutil.copy() and symlinks' targets are
+            # copied into the destination.
+            shutil.copytree(src_path, dest_path, copy_function=shutil.copy, symlinks=False)
+        else:
+            # Copy the file and its permissions. If src_path is a symlink, copy its target.
+            shutil.copy(src_path, dest_path, follow_symlinks=True)
+
+
 # Manages a systemd-sysusers user set.
 # Can have users
 class UserManagement:
@@ -710,6 +732,12 @@ class Install:
 
             symlink_tree(src, dest)
 
+        def copy_all(src, dest):
+            if not os.path.isdir(src):
+                return
+
+            copy_tree(src, dest)
+
         # Set the new LD_LIBRARY_PATH, PATH.
         env_contents = env_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
         env_export_contents = env_export_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
@@ -745,19 +773,25 @@ class Install:
             # Do the basename since some well known dirs are full paths (dcos.target.wants)
             # while inside the packages they are always top level directories.
             for new, dir_name in zip(new_dirs, self.__well_known_dirs):
-                dir_name = os.path.basename(dir_name)
-                pkg_dir = os.path.join(package.path, dir_name)
+                base_dir_name = os.path.basename(dir_name)
+                pkg_dir = os.path.join(package.path, base_dir_name)
 
                 assert os.path.isabs(new)
                 assert os.path.isabs(pkg_dir)
 
+                add_dir = symlink_all
+                # Copy systemd unit files instead of symlinking them from the original files in package directories.
+                # This allows systemd to start DC/OS after booting when it's installed to a systemd-managed mount.
+                if not self.__skip_systemd_dirs and dir_name == self.__systemd_dir:
+                    add_dir = copy_all
+
                 try:
-                    symlink_all(pkg_dir, new)
+                    add_dir(pkg_dir, new)
 
                     # Symlink all applicable role-based config
                     for role in self.__roles:
-                        role_dir = os.path.join(package.path, "{0}_{1}".format(dir_name, role))
-                        symlink_all(role_dir, new)
+                        role_dir = os.path.join(package.path, "{0}_{1}".format(base_dir_name, role))
+                        add_dir(role_dir, new)
 
                 except ConflictingFile as ex:
                     raise ValidationError("Two packages are trying to install the same file {0} or "
