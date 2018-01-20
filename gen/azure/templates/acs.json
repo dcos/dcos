@@ -269,10 +269,10 @@
 {% case "true" %}
     ,
     "licenseKey": {
-      "type": "string",
+      "type": "securestring",
       "defaultValue": "",
       "metadata": {
-        "description": "License key"
+        "description": "Mesosphere DC/OS Enterprise License key"
       }
     }
 {% case "false" %}
@@ -300,6 +300,7 @@
     "linuxOffer": "[parameters('linuxOffer')]",
     "linuxSku": "[parameters('linuxSku')]",
     "linuxVersion": "[parameters('linuxVersion')]",
+    "licenseKey": "[parameters('licenseKey')]",
     "windowsAdminUsername": "[parameters('windowsAdminUsername')]",
     "windowsAdminPassword": "[parameters('windowsAdminPassword')]",
     "vmsPerStorageAccount": "[parameters('vmsPerStorageAccount')]",
