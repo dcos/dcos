@@ -287,12 +287,13 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
             reproducible_artifact_path,
             tag,
             commit,
+            pkgpanda.util.variant_prefix(variant_arguments.items()[0]),
             next(iter(variant_arguments.values()))['azure_download_url']),
         'content_type': 'text/html; charset=utf-8'
     }
 
 
-def gen_buttons(build_name, reproducible_artifact_path, tag, commit, download_url):
+def gen_buttons(build_name, reproducible_artifact_path, tag, commit, bootstrap_variant_prefix, download_url):
     '''
     Generate the button page, that is, "Deploy a cluster to Azure" page
     '''
@@ -300,13 +301,13 @@ def gen_buttons(build_name, reproducible_artifact_path, tag, commit, download_ur
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
-            arm_template_name='dcos-{}master.azuredeploy.json'.format(x)))
+            arm_template_name='{}dcos-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, x)))
         for x in [1, 3, 5]]
     acs_urls = [
         encode_url_as_param(DOWNLOAD_URL_TEMPLATE.format(
             download_url=download_url,
             reproducible_artifact_path=reproducible_artifact_path,
-            arm_template_name='acs-{}master.azuredeploy.json'.format(x)))
+            arm_template_name='{}acs-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, x)))
         for x in [1, 3, 5]]
 
     return gen.template.parse_resources('azure/templates/azure.html').render({
