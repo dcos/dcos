@@ -460,6 +460,7 @@ function check_all() {
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \
+            "9273 dcos-metrics" \
             "9942 metronome" \
             "9990 cosmos" \
             "15055 dcos-history" \
