@@ -9,11 +9,13 @@ from release.storage import AbstractStorageProvider
 def get_aws_session(access_key_id, secret_access_key, region_name=None):
     """ This method will replace access_key_id and secret_access_key
     with None if one is set to '' This allows falling back to the AWS internal
-    logic so that AWS_SESSION_TOKEN or something else can be used
+    logic so that one of the following options can be used:
+    http://boto3.readthedocs.io/en/latest/guide/configuration.html#configuring-credentials
 
     This is needed by dcos_installer/backend.py which does AWS actions using
     explicit credentials. The process is ran from the dcos_generate_config.sh
-    artifact docker container, which can interfere with the usual boto3 credential method
+    artifact docker container, which can interfere with the usual boto3 credential method.
+    The gen library only uses empty strings to denote unset, which does not work for boto3
     """
     if not access_key_id:
         access_key_id = None

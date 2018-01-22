@@ -20,7 +20,7 @@ def release_config_testing(release_config):
 
 
 @pytest.fixture
-def release_config_aws(release_config_testing, monkeypatch):
+def release_config_aws(release_config_testing):
     if 'aws' not in release_config_testing:
         pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
     return release_config_testing['aws']
