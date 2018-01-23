@@ -295,8 +295,6 @@ aws_template_upload: true
     s3_bucket = s3.Bucket(s3_bucket_name)
     for o in s3_bucket.objects.filter(Prefix=bucket_path):
         o.delete()
-    # objects = [{'Key': o.key} for o in s3_bucket.objects.filter(Prefix=bucket_path)]
-    # s3_bucket.delete_objects(Delete={'Objects': objects})
 
 
 def test_do_aws_cf_configure_valid_storage_config(release_config_aws, valid_storage_config, tmpdir, monkeypatch):
