@@ -300,7 +300,11 @@
     "linuxOffer": "[parameters('linuxOffer')]",
     "linuxSku": "[parameters('linuxSku')]",
     "linuxVersion": "[parameters('linuxVersion')]",
+{% switch licensing_enabled %}
+{% case "true" %}
     "licenseKey": "[parameters('licenseKey')]",
+{% case "false" %}
+{% endswitch %}
     "windowsAdminUsername": "[parameters('windowsAdminUsername')]",
     "windowsAdminPassword": "[parameters('windowsAdminPassword')]",
     "vmsPerStorageAccount": "[parameters('vmsPerStorageAccount')]",
