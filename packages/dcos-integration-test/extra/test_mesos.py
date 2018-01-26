@@ -283,6 +283,7 @@ def get_region_zone(domain):
     return region, zone
 
 
+@pytest.mark.supportedwindows
 @pytest.mark.skipif(
     test_helpers.expanded_config['fault_domain_enabled'] == 'false',
     reason='fault domain is not set')

@@ -14,6 +14,7 @@ from test_helpers import expanded_config
 
 
 @pytest.mark.first
+@pytest.mark.supportedwindows
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
@@ -30,6 +31,7 @@ def test_dcos_cluster_is_up(dcos_api_session):
     logging.info(json.dumps(cluster_environment, sort_keys=True, indent=4))
 
 
+@pytest.mark.supportedwindows
 def test_leader_election(dcos_api_session):
     mesos_resolver = dns.resolver.Resolver()
     mesos_resolver.nameservers = dcos_api_session.masters
@@ -40,6 +42,7 @@ def test_leader_election(dcos_api_session):
         assert False, "Cannot resolve leader.mesos"
 
 
+@pytest.mark.supportedwindows
 def test_if_all_mesos_masters_have_registered(dcos_api_session):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
@@ -58,6 +61,7 @@ def test_if_all_mesos_masters_have_registered(dcos_api_session):
     assert sorted(master_ips) == dcos_api_session.masters
 
 
+@pytest.mark.supportedwindows
 def test_if_all_exhibitors_are_in_sync(dcos_api_session):
     r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
@@ -84,6 +88,7 @@ def test_mesos_agent_role_assignment(dcos_api_session):
         assert r.json()['flags']['default_role'] == '*'
 
 
+@pytest.mark.supportedwindows
 def test_signal_service(dcos_api_session):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off

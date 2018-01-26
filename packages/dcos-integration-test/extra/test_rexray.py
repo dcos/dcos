@@ -7,6 +7,7 @@ import pytest
 from test_helpers import expanded_config
 
 
+@pytest.mark.supportedwindows
 @pytest.mark.skipif(
     not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'),
     reason='Must be run in an AWS environment!')

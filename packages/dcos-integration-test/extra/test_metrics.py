@@ -1,3 +1,5 @@
+import pytest
+
 import retrying
 
 
@@ -19,6 +21,7 @@ def test_metrics_agents_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
+@pytest.mark.supportedwindows
 def test_metrics_masters_ping(dcos_api_session):
     for master in dcos_api_session.masters:
         response = dcos_api_session.metrics.get('ping', node=master)

@@ -7,6 +7,19 @@ from dcos_test_utils import logger
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 
 
+def pytest_addoption(parser):
+    parser.addoption("--windows-only", action="store_true",
+        help="run only Windows tests")
+
+
+def pytest_runtest_setup(item):
+    if pytest.config.getoption('--windows-only'):
+        if item.get_marker('supportedwindows') is None:
+            pytest.skip("skipping not supported windows test")
+    elif item.get_marker('supportedwindowsonly') is not None:
+        pytest.skip("skipping windows only test")
+
+
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')

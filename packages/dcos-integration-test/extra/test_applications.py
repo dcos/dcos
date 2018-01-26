@@ -54,6 +54,20 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
             assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
 
 
+def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: str):
+    """This method deploys the IIS container and then checks
+    if the container is up and can accept connections on port 80.
+    """
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
+        # Note: Windows will run an IIS which exposes port 80
+        r = requests.get('http://{}:{}'.format(service_points[0].host, 80))
+        if r.status_code != 200:
+            msg = "Test server replied with non-200 reply: '{0} {1}. "
+            msg += "Detailed explanation of the problem: {2}"
+            raise Exception(msg.format(r.status_code, r.reason, r.text))
+
+
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
     """Marathon app deployment integration test
 
@@ -83,6 +97,17 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
             network=marathon.Network.BRIDGE,
             container_type=marathon.Container.DOCKER,
             container_port=9080))
+
+
+@pytest.mark.supportedwindows
+@pytest.mark.supportedwindowsonly
+def test_if_docker_app_can_be_deployed_windows(dcos_api_session):
+    """Marathon app inside docker deployment integration test.
+
+    Verifies that a marathon app inside of a docker daemon container can be
+    deployed and accessed as expected on Windows.
+    """
+    deploy_test_app_and_check_windows(dcos_api_session, *test_helpers.marathon_test_app_windows())
 
 
 @pytest.mark.parametrize('healthcheck', [

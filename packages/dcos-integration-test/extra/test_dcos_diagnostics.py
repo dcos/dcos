@@ -239,6 +239,7 @@ def test_dcos_diagnostics_units(dcos_api_session):
                                                 'puller, missing: {}'.format(diff))
 
 
+@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(dcos_api_session):
     """
@@ -270,6 +271,7 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -342,6 +344,7 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
@@ -372,6 +375,7 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_selftest(dcos_api_session):
     """
     test invokes dcos-diagnostics `self test` functionality
@@ -384,6 +388,7 @@ def test_dcos_diagnostics_selftest(dcos_api_session):
             assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -407,6 +412,7 @@ def _get_bundle_list(dcos_api_session):
     return bundles
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
@@ -484,6 +490,7 @@ def test_dcos_diagnostics_bundle_download_and_extract(dcos_api_session):
     _download_bundle_from_master(dcos_api_session, 0)
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_bundle_download_and_extract_from_another_master(dcos_api_session):
     """
     test bundle download and validate zip file
@@ -630,6 +637,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                     assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
 
 
+@pytest.mark.supportedwindows
 def test_bundle_delete(dcos_api_session):
     bundles = _get_bundle_list(dcos_api_session)
     assert bundles, 'no bundles found'
@@ -640,6 +648,7 @@ def test_bundle_delete(dcos_api_session):
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 
+@pytest.mark.supportedwindows
 def test_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
     diagnostics_bundle_status = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))

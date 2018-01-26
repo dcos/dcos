@@ -40,6 +40,7 @@ def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_ses
     assert r.status_code == 200
 
 
+@pytest.mark.supportedwindows
 def test_logout(dcos_api_session):
     """Test logout endpoint. It's a soft logout, instructing
     the user agent to delete the authentication cookie, i.e. this test
