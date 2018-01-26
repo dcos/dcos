@@ -1,9 +1,7 @@
 {
-  "docker": "node:4.4.4",
-  "single_source" : {
-    "kind": "git",
-    "git": "https://github.com/dcos/dcos-ui.git",
-    "ref": "7756d5cdc3277103b159c3318823fba268eccdb0",
-    "ref_origin": "v1.11.0-rc.10"
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://downloads.mesosphere.io/dcos-ui/oss-1.1.14-3eee8cf3a7c5416d87dd678320ce23cc7b8c3862.tar.gz",
+    "sha1": "a32c1e6aaaaa474336fab384b96da6b9952381c4"
   }
 }
