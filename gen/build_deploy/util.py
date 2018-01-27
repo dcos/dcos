@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 from datetime import datetime
@@ -36,13 +35,8 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
     assert output_dir[-1] != '/'
     output_dir = output_dir + '/'
 
-    # Copy the extra_files
-    for filename in extra_files:
-        shutil.copy(filename, output_dir + filename)
-
-    # Copy the config packages
-    for package_name in json.loads(gen_out.arguments['config_package_names']):
-        filename = gen_out.cluster_packages[package_name]['filename']
+    # Copy generated artifacts
+    for filename in extra_files + gen_out.stable_artifacts:
         copy_makedirs(filename, output_dir + filename)
 
     # Write an index of the cluster packages
@@ -50,6 +44,9 @@ def do_bundle_onprem(extra_files, gen_out, output_dir):
 
     # Write the bootstrap id
     write_string(output_dir + 'bootstrap.latest', gen_out.arguments['bootstrap_id'])
+
+    # Write cluster package list ID
+    write_string(output_dir + 'cluster-package-list.latest', gen_out.arguments['cluster_package_list_id'])
 
 
 def variant_str(variant):

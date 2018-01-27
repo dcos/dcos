@@ -51,15 +51,6 @@ aws_base_source = Source(entry={
         'exhibitor_explicit_keys': 'false',
         'cluster_name': Late('{ "Ref" : "AWS::StackName" }'),
         'master_discovery': 'master_http_loadbalancer',
-        # DRY the cluster packages list in CF templates.
-        # This late expression isn't a Late because cluster-packages.json must go into cloud config, not the late
-        # package. The variable referenced here is stored behind two unnecessary keys because of CF template syntax
-        # requirements. See
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html.
-        # TODO(branden): Make this unnecessary by turning cluster-packages.json into a build artifact. See
-        # https://mesosphere.atlassian.net/browse/DCOS-13824.
-        'cluster_packages_json': '{ "Fn::FindInMap" : [ "ClusterPackagesJson", "default", "default" ] }',
-        'cluster_packages_json_var': lambda cluster_packages: json.dumps(cluster_packages),
         # The cloud_config template variables pertaining to "cloudformation.json"
         'master_cloud_config': '{{ master_cloud_config }}',
         'agent_private_cloud_config': '{{ slave_cloud_config }}',
@@ -325,9 +316,11 @@ def _as_cf_artifact(filename, cloudformation):
 def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
     cloudformation, results = bundle
     yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
-    yield {'packages': results.config_package_ids}
-    if results.late_package_id:
-        yield {'packages': [results.late_package_id]}
+    for filename in results.stable_artifacts:
+        yield {
+            'reproducible_path': filename,
+            'local_path': filename,
+        }
 
 
 def gen_supporting_template():
