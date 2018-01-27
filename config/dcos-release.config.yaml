@@ -4,9 +4,6 @@ storage:
     bucket: downloads.dcos.io
     object_prefix: dcos
     download_url: https://downloads.dcos.io/dcos/
-    access_key_id: $AWS_PROD_ACCESS_KEY_ID
-    secret_access_key: $AWS_PROD_SECRET_ACCESS_KEY
-    region_name: us-west-2
   azure:
     kind: azure_block_blob
     account_name: $AZURE_PROD_STORAGE_ACCOUNT
@@ -19,9 +16,6 @@ testing:
     bucket: testing.dcos.io
     object_prefix: dcos
     download_url: https://s3-us-west-2.amazonaws.com/testing.dcos.io/dcos/
-    access_key_id: $AWS_TESTING_ACCESS_KEY_ID
-    secret_access_key: $AWS_TESTING_SECRET_ACCESS_KEY
-    region_name: us-west-2
 options:
   preferred: aws
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos
