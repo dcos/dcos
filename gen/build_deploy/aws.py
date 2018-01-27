@@ -1,10 +1,10 @@
 """AWS Image Creation, Management, Testing"""
 
 import json
-import logging
 from copy import deepcopy
 from typing import Tuple
 
+import boto3
 import botocore.exceptions
 import yaml
 from pkg_resources import resource_string
@@ -13,8 +13,6 @@ from retrying import retry
 import gen
 import gen.build_deploy.util as util
 import pkgpanda.util
-import release
-import release.storage
 from gen.internals import Late, Source
 from pkgpanda.util import logger, split_by_token
 
@@ -257,24 +255,6 @@ groups = {
 }
 
 
-def get_test_session(config=None):
-    if config is None:
-        assert release._config is not None
-        # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-        # is definitely not the right way to do this.
-
-        if 'testing' not in release._config:
-            raise RuntimeError("No testing section in configuration")
-
-        if 'aws' not in release._config['testing']:
-            raise RuntimeError("No testing.aws section in configuration")
-
-        config = release._config['testing']['aws']
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release.call_matching_arguments(release.storage.aws.get_session, config, True)
-
-
 def gen_ami_mapping(mappings):
     # create new dict with required mappings
     # all will have region by default
@@ -326,12 +306,7 @@ def render_cloudformation(cf_template, **kwds):
 
 @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000)
 def validate_cf(template_body):
-    try:
-        session = get_test_session()
-    except Exception as ex:
-        logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
-        return
-    client = session.client('cloudformation')
+    client = boto3.session.Session().client('cloudformation')
     try:
         client.validate_template(TemplateBody=template_body)
     except botocore.exceptions.ClientError as ex:
