@@ -220,16 +220,47 @@ storage:
 
 # Pull Requests
 
-Pull requests automatically trigger a new build and several tests.
+Pull requests automatically trigger a new build and several runs of the tests.
 
-Most of the triggered tests are required for merge, but some are optional (usually ones on flaky infrastructure).
+In order for a pull request to be eligible to merge all required status checks must be in a successful state.
 
-- teamcity/create-release-pr: in [the CI system](https://teamcity.mesosphere.io/project.html?projectId=DcosIo_Dcos&tab=projectOverview), [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity) is triggered and developers should use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above)
-- teamcity/code-quality: simply run `tox` in the top-level dir to run all syntax checks as well as pytest (unit-tests). See [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini) for more details
-- integration-test/*: runs [integration_test.py](https://github.com/dcos/dcos/blob/master/test_util/integration_test.py) in the network of a DC/OS cluster
-    - /vagrant-bash: Tests the on-prem bash provider by using [dcos-vagrant](https://github.com/dcos/dcos-vagrant). Invoke this test through [run-all](https://github.com/dcos/dcos/blob/master/test_util/run-all)
-    - /deploy-vpc-cli: runs [ccm-deploy-test](https://github.com/dcos/dcos/blob/master/test_util/test_installer_ccm.py) with USE_INSTALLER_API=false. A Virtual Private Cloud of CentOS nodes is spun up by CCM (Mesosphere's Cloud Cluster Manager) and the installer (dcos_generate_config.sh) is used via the CLI options to deploy DC/OS. Finally, the same integration_test.py is run
-    - /deploy-vpc-api: the same as /deploy-vpc-cli (see above) except uses USE_INSTALLER_API=true, which causes the installer to be started with the `--web` option and then controlled entirely by the HTTP API
+#### `teamcity/dcos/build/dcos`
+Builds `dcos_generate_config.sh` and accompanying AWS CloudFormation and Azure ARM templates.  Triggered builds ran in [TeamCity](https://teamcity.mesosphere.io/project.html?projectId=DcOs_Open_Build_BuildDcOs&tab=projectOverview), run [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity). To run the same operations in a local development environment use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above).
+
+#### `teamcity/dcos/build/tox`
+Runs `tox` in the top-level dir to run all syntax checks as well as pytest (unit-tests). See [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini) for more details
+
+#### `teamcity/dcos/test/aws/cloudformation/simple`
+Deploys a DC/OS Cluster using the AWS Simple CloudFormation template generated in `teamcity/dcos/build/dcos` and run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+#### `teamcity/dcos/test/aws/cloudformation/zen/coreos`
+Deploys a DC/OS Cluster using the AWS Zen CloudFormation (CoreOS) template generated in `teamcity/dcos/build/dcos` and run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+#### `teamcity/dcos/test/aws/cloudformation/zen/centos`
+Deploys a DC/OS Cluster using the AWS Zen CloudFormation (CentOS) template generated in `teamcity/dcos/build/dcos` and run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+#### `teamcity/dcos/test/aws/onprem/static`
+Use [dcos-launch](https://github.com/dcos/dcos-launch) to create an AWS VPC Cluster of CentOS 7 servers and then run the installer bundled in the `dcos_generate_config.sh` generated in `teamcity/dcos/build/dcos` to install DC/OS. Following successful installation run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+This cluster will be configured to use a static exhibitor backend.
+
+#### `teamcity/dcos/test/aws/onprem/zk`
+Use [dcos-launch](https://github.com/dcos/dcos-launch) to create an AWS VPC Cluster of CentOS 7 servers and then run the installer bundled in the `dcos_generate_config.sh` generated in `teamcity/dcos/build/dcos` to install DC/OS. Following successful installation run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+This cluster will be configured to use a ZooKeeper exhibitor backend.
+
+#### `teamcity/dcos/test/azure/arm`
+Deploys a DC/OS Cluster using the Azure ARM template generated in `teamcity/dcos/build/dcos` and run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+#### `teamcity/dcos/test/install/cli`
+Use [dcos-launch](https://github.com/dcos/dcos-launch) to create an AWS VPC Cluster of CentOS 7 servers and then run the installer bundled in the `dcos_generate_config.sh` generated in `teamcity/dcos/build/dcos` to install DC/OS. Following successful installation run tests in [`dcos-integration-test`](packages/dcos-integration-test).
+
+Installation will use the CLI Version of the Installer.
+
+#### `teamcity/dcos/test/upgrade`
+Use [dcos-launch](https://github.com/dcos/dcos-launch) to create an AWS VPC Cluster of CentOS 7 servers and the current stable release of DC/OS will be installed. While running the upgrade tests, the cluster will be upgraded using the `dcos_generate_config.sh` generated in `teamcity/dcos/build/dcos`. Following successful installation run the upgrade tests in [`test_upgrade.py`](https://github.com/mesosphere/advanced-tests/blob/master/test_upgrade.py).
+
+
 
 
 # Repo Structure
