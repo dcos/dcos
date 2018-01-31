@@ -117,16 +117,16 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     ```
     dcos-shell python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
     ```
-    
+
     Running the above mentioned command will result in an output
-    
+
     ```
     User albert@bekstil.net successfully added
     ```
-    
+
     This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
-    
+
     For more information, see [User Management](https://dcos.io/docs/latest/administration/user-management/).
 
 
@@ -204,7 +204,7 @@ storage:
     path: /home/cmaloney/dcos-artifacts
 ```
 
-Sample config that will store to a local archive path as well as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
+Sample config that will store to a local archive path as well as AWS S3. To authenticate with AWS S3, reference the [boto3 docs](http://boto3.readthedocs.io/en/latest/guide/configuration.html#configuring-credentials) to learn how to configure access.
 ```yaml
 storage:
   aws:
@@ -212,9 +212,6 @@ storage:
     bucket: downloads.dcos.io
     object_prefix: dcos
     download_url: https://downloads.dcos.io/dcos/
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    region_name: us-west-2
   local:
     kind: local_path
     path: /mnt/big_artifact_store/dcos/
