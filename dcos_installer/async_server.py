@@ -358,6 +358,8 @@ def start(cli_options):
     global options
     options = cli_options
 
+    log.warning('WARNING: The DC/OS web installer (--web) is deprecated and will be removed in 1.12.')
+
     log.debug('DC/OS Installer')
     make_default_config_if_needed(CONFIG_PATH)
     loop = asyncio.get_event_loop()
