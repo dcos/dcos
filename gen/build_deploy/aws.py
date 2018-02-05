@@ -190,8 +190,8 @@ region_to_ami_map = {
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
-        'coreos': 'ami-dc4ce6a4',
-        'stable': 'ami-dc4ce6a4',
+        'coreos': 'ami-65269d1d',
+        'stable': 'ami-65269d1d',
         'el7': 'ami-a9b24bd1',
         'el7prereq': 'ami-1de01e65',
         'natami': 'ami-bb69128b'
