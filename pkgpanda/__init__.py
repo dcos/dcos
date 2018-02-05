@@ -78,27 +78,31 @@ class Systemd:
                 if ex.returncode != 5:
                     raise
 
+    def remove_unit_files(self):
+        if not os.path.exists(self.__unit_directory):
+            return
+
+        for unit_name in self.unit_names(self.__unit_directory):
+            try:
+                os.remove(os.path.join(self.__base_systemd, unit_name))
+            except FileNotFoundError:
+                pass
+
     # TODO(pyronicide): systemd requires units to be both in the
     # root directory (/etc/systemd/system) *and* (for starting) in a
     # specific wants directory (dcos.target.wants). If they're not in both
     # places, units randomly move into a `not-loaded` state (which makes
     # for sad pandas). This treats dcos.target.wants as the single source
     # of truth and just sets things up locally.
-    def manage_systemd_linking(self, method):
+    def activate_new_unit_files(self):
         if not os.path.exists(self.__unit_directory):
             return
 
+        self.remove_unit_files()
+
         for unit_name in self.unit_names(self.__unit_directory):
             real_path = os.path.realpath(os.path.join(self.__unit_directory, unit_name))
-
-            try:
-                os.remove(os.path.join(self.__base_systemd, unit_name))
-            except FileNotFoundError:
-                # This is going from an old to new version of DC/OS.
-                pass
-
-            if method == "setup":
-                os.symlink(real_path, os.path.join(self.__base_systemd, unit_name))
+            os.symlink(real_path, os.path.join(self.__base_systemd, unit_name))
 
     @staticmethod
     def unit_names(unit_dir):
@@ -912,11 +916,10 @@ class Install:
             # TODO(cmaloney): stop all systemd services in dcos.target.wants
             record_state({"stage": "archive"})
 
-            # Stop all systemd services
+            # Stop all systemd services and clean up existing unit files.
             if not self.__skip_systemd_dirs:
                 self.systemd.stop_all()
-
-                self.systemd.manage_systemd_linking("cleanup")
+                self.systemd.remove_unit_files()
 
             # Archive the current config.
             for active in active_names:
@@ -934,7 +937,7 @@ class Install:
             os.rename(new_path, active)
 
         if not self.__skip_systemd_dirs:
-            self.systemd.manage_systemd_linking("setup")
+            self.systemd.activate_new_unit_files()
 
         # All done with what we need to redo if host restarts.
         os.remove(state_filename)
