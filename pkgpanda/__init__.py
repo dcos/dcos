@@ -49,7 +49,17 @@ linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/sha
 
 
 class Systemd:
-    """Manages systemd units and unit files during installation."""
+    """Manages systemd units and unit files during installation.
+
+    This class uses a unit.wants directory as the list of all units it needs to manage. Unit files are copied to the
+    base systemd dir to make sure they're available on the root volume, and thus readable when systemd starts. Symlinks
+    in the unit.wants directory are rewritten to point to the copied unit files.
+
+    """
+
+    # Use "unit.new" to prevent removing unrelated ".new" directories if the install root is being used as the systemd
+    # base dir.
+    new_unit_suffix = ".unit.new"
 
     def __init__(self, unit_directory, active, block):
         self.__unit_directory = unit_directory
@@ -78,6 +88,36 @@ class Systemd:
                 if ex.returncode != 5:
                     raise
 
+    def remove_staged_unit_files(self):
+        """Remove staged unit files created by Systemd.stage_new_units()."""
+        for filename in os.listdir(self.__base_systemd):
+            if filename.endswith(self.new_unit_suffix):
+                os.remove(os.path.join(self.__base_systemd, filename))
+
+    def stage_new_units(self, new_wants_dir):
+        """Prepare new systemd units for activation.
+
+        Unit files targeted by the symlinks in new_wants_dir are copied to a temporary location in the base systemd
+        directory, and the symlinks are rewritten to target the intended final destination of the copied unit files.
+
+        """
+        for unit_name in self.unit_names(new_wants_dir):
+            wants_symlink_path = os.path.join(new_wants_dir, unit_name)
+            package_file_path = os.path.realpath(wants_symlink_path)
+            systemd_file_path = os.path.join(self.__base_systemd, unit_name)
+            tmp_systemd_file_path = systemd_file_path + self.new_unit_suffix
+
+            # Copy the unit file to the systemd directory with a suffix added to the filename.
+            # This file will be moved to systemd_file_path when the new package set is swapped in.
+            shutil.copyfile(package_file_path, tmp_systemd_file_path)
+            shutil.copymode(package_file_path, tmp_systemd_file_path)
+
+            # Rewrite the symlink to point to the copied unit file's destination.
+            # This symlink won't point to the correct file until the copied unit file is moved to its target location
+            # during activate_new_unit_files().
+            os.remove(wants_symlink_path)
+            os.symlink(systemd_file_path, wants_symlink_path)
+
     def remove_unit_files(self):
         if not os.path.exists(self.__unit_directory):
             return
@@ -88,21 +128,16 @@ class Systemd:
             except FileNotFoundError:
                 pass
 
-    # TODO(pyronicide): systemd requires units to be both in the
-    # root directory (/etc/systemd/system) *and* (for starting) in a
-    # specific wants directory (dcos.target.wants). If they're not in both
-    # places, units randomly move into a `not-loaded` state (which makes
-    # for sad pandas). This treats dcos.target.wants as the single source
-    # of truth and just sets things up locally.
     def activate_new_unit_files(self):
+        """Move new unit files to their final locations."""
         if not os.path.exists(self.__unit_directory):
             return
 
         self.remove_unit_files()
 
         for unit_name in self.unit_names(self.__unit_directory):
-            real_path = os.path.realpath(os.path.join(self.__unit_directory, unit_name))
-            os.symlink(real_path, os.path.join(self.__base_systemd, unit_name))
+            systemd_file_path = os.path.join(self.__base_systemd, unit_name)
+            os.rename(systemd_file_path + self.new_unit_suffix, systemd_file_path)
 
     @staticmethod
     def unit_names(unit_dir):
@@ -736,6 +771,10 @@ class Install:
                 else:
                     os.remove(name)
 
+        # Remove unit files staged for an activation that didn't occur.
+        if not self.__skip_systemd_dirs:
+            self.systemd.remove_staged_unit_files()
+
         # Make the directories for the new config
         for name in new_dirs:
             os.makedirs(name)
@@ -854,6 +893,12 @@ class Install:
                 for service in service_names:
                     if service in package.sysctl:
                         dcos_service_configuration["sysctl"][service] = package.sysctl[service]
+
+        # Prepare new systemd units for activation.
+        if not self.__skip_systemd_dirs:
+            new_wants_dir = self._make_abs(self.__systemd_dir + ".new")
+            if os.path.exists(new_wants_dir):
+                self.systemd.stage_new_units(new_wants_dir)
 
         dcos_service_configuration_file = os.path.join(self._make_abs("etc.new"), DCOS_SERVICE_CONFIGURATION_FILE)
         write_json(dcos_service_configuration_file, dcos_service_configuration)
