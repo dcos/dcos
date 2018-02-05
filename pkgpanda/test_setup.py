@@ -256,3 +256,26 @@ def test_activate(tmpdir):
 
     # TODO(cmaloney): expect_fs
     # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
+
+
+def test_systemd_unit_files(tmpdir):
+    repo_path = tmp_repository(tmpdir)
+    tmpdir.join("root", "bootstrap").write("", ensure=True)
+
+    check_call(["pkgpanda",
+                "setup",
+                "--root={0}/root".format(tmpdir),
+                "--rooted-systemd",
+                "--repository={}".format(repo_path),
+                "--config-dir={}".format(resources_test_dir("etc-active")),
+                "--no-systemd"
+                ])
+
+    unit_file = 'dcos-mesos-master.service'
+    base_path = '{}/root/{}'.format(tmpdir, unit_file)
+    wants_path = '{}/root/dcos.target.wants/{}'.format(tmpdir, unit_file)
+
+    # The unit file is symlinked from both wants_path and base_path.
+    assert os.path.islink(wants_path)
+    assert os.path.islink(base_path)
+    assert os.path.realpath(base_path) == os.path.realpath(wants_path)
