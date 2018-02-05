@@ -48,13 +48,14 @@ username_regex = "^dcos_[a-z0-9_]+$"
 linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
 
 
-# Manage starting/stopping all systemd services inside a folder.
 class Systemd:
+    """Manages systemd units and unit files during installation."""
 
     def __init__(self, unit_directory, active, block):
         self.__unit_directory = unit_directory
         self.__active = active
         self.__block = block
+        self.__base_systemd = os.path.normpath(os.path.join(self.__unit_directory, ".."))
 
     def stop_all(self):
         if not self.__active:
@@ -76,6 +77,36 @@ class Systemd:
                 # yet during first activation.
                 if ex.returncode != 5:
                     raise
+
+    # TODO(pyronicide): systemd requires units to be both in the
+    # root directory (/etc/systemd/system) *and* (for starting) in a
+    # specific wants directory (dcos.target.wants). If they're not in both
+    # places, units randomly move into a `not-loaded` state (which makes
+    # for sad pandas). This treats dcos.target.wants as the single source
+    # of truth and just sets things up locally.
+    def manage_systemd_linking(self, method):
+        if not os.path.exists(self.__unit_directory):
+            return
+
+        for unit_name in self.unit_names(self.__unit_directory):
+            real_path = os.path.realpath(os.path.join(self.__unit_directory, unit_name))
+
+            try:
+                os.remove(os.path.join(self.__base_systemd, unit_name))
+            except FileNotFoundError:
+                # This is going from an old to new version of DC/OS.
+                pass
+
+            if method == "setup":
+                os.symlink(real_path, os.path.join(self.__base_systemd, unit_name))
+
+    @staticmethod
+    def unit_names(unit_dir):
+        units = os.listdir(unit_dir)
+        for unit_name in units:
+            if unit_name in RESERVED_UNIT_NAMES:
+                raise Exception("Reserved name encountered - {}.".format(unit_name))
+        return units
 
     @property
     def unit_directory(self):
@@ -599,11 +630,10 @@ class Install:
         assert type(fake_path) == bool
         self.__root = os.path.abspath(root)
         self.__config_dir = os.path.abspath(config_dir) if config_dir else None
-        if not skip_systemd_dirs:
-            if rooted_systemd:
-                self.__systemd_dir = "{}/dcos.target.wants".format(root)
-            else:
-                self.__systemd_dir = "/etc/systemd/system/dcos.target.wants"
+        if rooted_systemd:
+            self.__systemd_dir = "{}/dcos.target.wants".format(root)
+        else:
+            self.__systemd_dir = "/etc/systemd/system/dcos.target.wants"
 
         self.__manage_systemd = manage_systemd
         self.__block_systemd = block_systemd
@@ -627,6 +657,8 @@ class Install:
 
         assert not state_dir_root.endswith('/')
         self.__state_dir_root = state_dir_root
+
+        self.systemd = Systemd(self._make_abs(self.__systemd_dir), self.__manage_systemd, self.__block_systemd)
 
     def _get_dcos_configuration_template(self):
         return {"sysctl": {}}
@@ -858,9 +890,6 @@ class Install:
     def swap_active(self, extension, archive=True):
         active_names = self.get_active_names()
         state_filename = self._make_abs("install_progress")
-        systemd = None
-        if not self.__skip_systemd_dirs:
-            systemd = Systemd(self._make_abs(self.__systemd_dir), self.__manage_systemd, self.__block_systemd)
 
         # Ensure all the new active files exist
         for active in active_names:
@@ -879,47 +908,15 @@ class Install:
                 os.fsync(f.fileno())
             os.rename(state_filename + ".new", state_filename)
 
-        # TODO(pyronicide): systemd requires units to be both in the
-        # root directory (/etc/systemd/system) *and* (for starting) in a
-        # specific wants directory (dcos.target.wants). If they're not in both
-        # places, units randomly move into a `not-loaded` state (which makes
-        # for sad pandas). This treats dcos.target.wants as the single source
-        # of truth and just sets things up locally.
-        def manage_systemd_linking(method):
-            base_systemd = os.path.normpath(
-                os.path.join(self._make_abs(self.__systemd_dir), ".."))
-            wants_path = self._make_abs(self.__systemd_dir)
-
-            if not os.path.exists(wants_path):
-                return
-
-            for unit_name in os.listdir(wants_path):
-                if unit_name in RESERVED_UNIT_NAMES:
-                    raise Exception(
-                        "Stopping install. " +
-                        "Reserved name encountered - {}.".format(unit_name))
-
-                real_path = os.path.realpath(
-                    os.path.join(wants_path, unit_name))
-
-                try:
-                    os.remove(os.path.join(base_systemd, unit_name))
-                except FileNotFoundError:
-                    # This is going from an old to new version of DC/OS.
-                    pass
-
-                if method == "setup":
-                    os.symlink(real_path, os.path.join(base_systemd, unit_name))
-
         if archive:
             # TODO(cmaloney): stop all systemd services in dcos.target.wants
             record_state({"stage": "archive"})
 
             # Stop all systemd services
             if not self.__skip_systemd_dirs:
-                systemd.stop_all()
+                self.systemd.stop_all()
 
-                manage_systemd_linking("cleanup")
+                self.systemd.manage_systemd_linking("cleanup")
 
             # Archive the current config.
             for active in active_names:
@@ -937,7 +934,7 @@ class Install:
             os.rename(new_path, active)
 
         if not self.__skip_systemd_dirs:
-            manage_systemd_linking("setup")
+            self.systemd.manage_systemd_linking("setup")
 
         # All done with what we need to redo if host restarts.
         os.remove(state_filename)
