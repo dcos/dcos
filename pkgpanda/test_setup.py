@@ -275,7 +275,7 @@ def test_systemd_unit_files(tmpdir):
     base_path = '{}/root/{}'.format(tmpdir, unit_file)
     wants_path = '{}/root/dcos.target.wants/{}'.format(tmpdir, unit_file)
 
-    # The unit file is symlinked from both wants_path and base_path.
+    # The unit file is copied to the base dir and symlinked from dcos.target.wants.
     assert os.path.islink(wants_path)
-    assert os.path.islink(base_path)
-    assert os.path.realpath(base_path) == os.path.realpath(wants_path)
+    assert os.path.isfile(base_path) and not os.path.islink(base_path)
+    assert os.path.realpath(wants_path) == base_path
