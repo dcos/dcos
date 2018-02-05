@@ -19,6 +19,10 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 LATENCY = 120
 
 
+class NotCriticalException(Exception):
+    """Exception should be raised to continue retry loop"""
+
+
 def check_json(response):
     response.raise_for_status()
     try:
@@ -410,6 +414,42 @@ def _get_bundle_list(dcos_api_session):
     return bundles
 
 
+@retrying.retry(wait_fixed=2000, stop_max_delay=120000,
+                retry_on_exception=lambda e: isinstance(e, NotCriticalException))
+def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
+    response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
+    # find if the job is still running
+    job_running = False
+    percent_done = 0
+    for _, attributes in response.items():
+        assert 'is_running' in attributes, '`is_running` field is missing in response'
+        assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
+
+        if attributes['is_running']:
+            percent_done = attributes['job_progress_percentage']
+            logging.info("Job is running. Progress: {}".format(percent_done))
+            job_running = True
+            break
+
+    # if we ran this bit previously compare the current datapoint with the one we saved
+    if last_datapoint['time'] and last_datapoint['value']:
+        if percent_done <= last_datapoint['value']:
+            assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
+                "Job is not progressing"
+            )
+    last_datapoint['value'] = percent_done
+    last_datapoint['time'] = datetime.datetime.now()
+
+    if job_running:
+        raise NotCriticalException('Job is still running')
+
+
+# sometimes it may take extra few seconds to list bundles after the job is finished.
+@retrying.retry(stop_max_delay=5000)
+def wait_for_diagnostics_list(dcos_api_session):
+    assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
+
+
 def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
@@ -419,51 +459,13 @@ def test_dcos_diagnostics_bundle_create(dcos_api_session):
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
 
-    class NotCriticalException(Exception):
-        """Exception should be raised to continue retry loop"""
-
     last_datapoint = {
         'time': None,
         'value': 0
     }
 
-    @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
-                    retry_on_exception=lambda e: isinstance(e, NotCriticalException))
-    def wait_for_job():
-        response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
-
-        # find if the job is still running
-        job_running = False
-        percent_done = 0
-        for _, attributes in response.items():
-            assert 'is_running' in attributes, '`is_running` field is missing in response'
-            assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
-
-            if attributes['is_running']:
-                percent_done = attributes['job_progress_percentage']
-                logging.info("Job is running. Progress: {}".format(percent_done))
-                job_running = True
-                break
-
-        # if we ran this bit previously compare the current datapoint with the one we saved
-        if last_datapoint['time'] and last_datapoint['value']:
-            if percent_done <= last_datapoint['value']:
-                assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
-                    "Job is not progressing"
-                )
-        last_datapoint['value'] = percent_done
-        last_datapoint['time'] = datetime.datetime.now()
-
-        if job_running:
-            raise NotCriticalException('Job is still running')
-
-    # sometimes it may take extra few seconds to list bundles after the job is finished.
-    @retrying.retry(stop_max_delay=5000)
-    def wait_for_list():
-        assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
-
-    wait_for_job()
-    wait_for_list()
+    wait_for_diagnostics_job(dcos_api_session, last_datapoint)
+    wait_for_diagnostics_list(dcos_api_session)
 
     # the job should be complete at this point.
     # check the listing for a zip file
