@@ -1,0 +1,20 @@
+<configuration>
+  <id>dcos-spartan</id>
+  <name>Spartan Windows Agent</name>
+  <description>Windows Service for the DCOS Spartan Windows Agent</description>
+  <executable>C:\DCOS\erl8.3\erts-8.3\bin\erl.exe</executable>
+  <arguments>-noshell -noinput +Bd -mode embedded -rootdir "C:\DCOS\spartan\release\spartan" -boot "C:\DCOS\spartan\release\spartan\releases\0.0.1\spartan" -boot_var ERTS_LIB_DIR "C:\DCOS\spartan\release\lib" -boot_var RELEASE_DIR "C:\DCOS\spartan\release\spartan" -config "C:\DCOS\spartan\sys.spartan.config" -args_file "C:\DCOS\spartan\vm.spartan.args" -pa -- foreground</arguments>
+  <logpath>C:\DCOS\spartan\log</logpath>
+  <priority>Normal</priority>
+  <stoptimeout>20 sec</stoptimeout>
+  <stopparentprocessfirst>false</stopparentprocessfirst>
+  <startmode>Automatic</startmode>
+  <waithint>15 sec</waithint>
+  <sleeptime>1 sec</sleeptime>
+  <log mode="roll">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  <env name="MASTER_SOURCE" value="exhibitor"/>
+  <env name="EXHIBITOR_ADDRESS" value="192.168.255.5"/>
+</configuration>

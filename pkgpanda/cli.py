@@ -36,6 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
+from pkgpanda.util import is_windows
 
 
 def print_repo_list(packages):
@@ -56,7 +57,10 @@ def uninstall(install, repository):
     # TODO(cmaloney): Make this not quite so magical
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
-    check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
+    if is_windows:
+        check_call(['powershell.exe', '-command', '{ remove-item -force -path ' +, os.path.dirname(install.systemd_dir) + "/dcos.target"])
+    else:
+        check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
 
     # Cleanup all systemd units
     # TODO(cmaloney): This is much more work than we need to do the job
@@ -80,10 +84,17 @@ def uninstall(install, repository):
         print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
-    check_call(['rm', '-rf'] + all_names)
+    if is_windows:
+        for name in all_names:
+            check_call(['powershell.exe', '-command', '{ remove-item -recurse -force -path ' +  name + ' }'])
+    else:
+        check_call(['rm', '-rf'] + all_names)
 
     # Removing /opt/mesosphere
-    check_call(['rm', '-rf', install.root])
+    if is_windows:
+        check_call(['powershell.exe', '-command', '{ remove-item -recurse -force -path ' + install.root + ' }'])
+    else:
+        check_call(['rm', '-rf', install.root])
 
 
 def find_checks(install, repository):

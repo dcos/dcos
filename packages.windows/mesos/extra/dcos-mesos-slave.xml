@@ -1,0 +1,18 @@
+<configuration>
+  <id>dcos-mesos-slave</id>
+  <name>DCOS Mesos Windows Slave</name>
+  <description>Windows Service for the DCOS Mesos Slave</description>
+  <executable>C:\DCOS\mesos\bin\mesos-agent.exe</executable>
+  <arguments>--master="zk://192.168.255.5:2181/mesos" --work_dir="C:\DCOS\mesos\work" --runtime_dir="C:\DCOS\mesos\work" --launcher_dir="C:\DCOS\mesos\bin" --external_log_file="C:\DCOS\mesos\log\mesos-service.err.log" --log_dir="C:\DCOS\mesos\log" --ip="10.0.0.4" --isolation="windows/cpu,filesystem/windows" --containerizers="docker,mesos" --attributes="os:Windows;public_ip:yes" --default_role="slave_public"</arguments>
+  <logpath>C:\DCOS\mesos\log</logpath>
+  <priority>Normal</priority>
+  <stoptimeout>20 sec</stoptimeout>
+  <stopparentprocessfirst>false</stopparentprocessfirst>
+  <startmode>Automatic</startmode>
+  <waithint>15 sec</waithint>
+  <sleeptime>1 sec</sleeptime>
+  <log mode="roll">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+</configuration>

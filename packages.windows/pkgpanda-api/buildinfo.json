@@ -1,0 +1,8 @@
+{
+  "requires": [
+      "dcos-image",
+      "python",
+      "adminrouter",
+      "teamcity-messages"
+  ]
+}

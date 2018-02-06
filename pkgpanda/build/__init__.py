@@ -1,13 +1,13 @@
 import copy
 import json
 import multiprocessing
-import os.path
+import os
 import random
 import shutil
 import string
 import tempfile
 from contextlib import contextmanager
-from os import chdir, getcwd, mkdir
+from os import chdir, getcwd, mkdir, makediirs
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -19,7 +19,7 @@ from pkgpanda.actions import add_package_file
 from pkgpanda.constants import RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic,
-                           hash_checkout, load_json, load_string, logger,
+                           hash_checkout, is_windows, load_json, load_string, logger,
                            make_file, make_tar, rewrite_symlinks, write_json,
                            write_string)
 
@@ -47,7 +47,11 @@ class DockerCmd:
                 random.choice(string.ascii_lowercase) for _ in range(10)
             )
         )
-        docker = ["docker", "run", "--name={}".format(container_name)]
+        if is_windows:
+            numprocs = int(os.environ.get('NUMBER_OF_PROCESSORS'))
+            docker = ["docker", "run", "-m", "{0}gb".format(numprocs*4), "--cpu-count", os.environ.get('NUMBER_OF_PROCESSORS'), "--name={}".format(container_name)]
+        else:
+            docker = ["docker", "run", "--name={}".format(container_name)]
         for host_path, container_path in self.volumes.items():
             docker += ["-v", "{0}:{1}".format(host_path, container_path)]
 
@@ -257,7 +261,10 @@ class PackageStore:
         self._upstream = None
         self._upstream_package_dir = self._upstream_dir + "/packages"
         # TODO(cmaloney): Make it so the upstream directory can be kept around
-        check_call(['rm', '-rf', self._upstream_dir])
+        if is_windows:
+            check_call(['powershell.exe', '-command', '{ remove-item -recurse -force -path ' +   self._upstream_dir + ' }'])
+        else:
+            check_call(['rm', '-rf', self._upstream_dir])
         upstream_config = self._packages_dir + '/upstream.json'
         if os.path.exists(upstream_config):
             try:
@@ -343,7 +350,10 @@ class PackageStore:
 
     def get_package_cache_folder(self, name):
         directory = self._package_cache_dir + '/' + name
-        check_call(['mkdir', '-p', directory])
+        if is_windows:
+            check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  directory + ' }' ])
+        else:
+            check_call(['mkdir', '-p', directory])
         return directory
 
     def list_trees(self):
@@ -500,7 +510,10 @@ def load_buildinfo(path, variant):
     buildinfo = load_config_variant(path, variant, 'buildinfo.json')
 
     # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
-    buildinfo.setdefault('build_script', 'build')
+    if is_windows:
+        buildinfo.setdefault('build_script', 'build.ps1')
+    else:
+        buildinfo.setdefault('build_script', 'build')
     buildinfo.setdefault('docker', 'dcos/dcos-builder:dcos-builder_dockerdir-latest')
     buildinfo.setdefault('environment', dict())
     buildinfo.setdefault('requires', list())
@@ -545,7 +558,10 @@ def make_bootstrap_tarball(package_store, packages, variant):
         print("Bootstrap already up to date, not recreating")
         return mark_latest()
 
-    check_call(['mkdir', '-p', bootstrap_cache_dir])
+    if is_windows:
+        check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  bootstrap_cache_dir + ' }' ])
+    else:
+        check_call(['mkdir', '-p', bootstrap_cache_dir])
 
     # Try downloading.
     if package_store.try_fetch_bootstrap_and_active(bootstrap_id):
@@ -727,7 +743,10 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     complete_cache_dir = package_store.get_complete_cache_dir()
-    check_call(['mkdir', '-p', complete_cache_dir])
+    if is_windows:
+        check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  complete_cache_dir + ' }' ])
+    else:
+        check_call(['mkdir', '-p', complete_cache_dir])
     results = {}
     for package_set in package_sets:
         info = {
@@ -862,7 +881,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         for src_name, src_info in sorted(sources.items()):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
             cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
-            check_call(['mkdir', '-p', cache_dir])
+            if is_windows:
+                check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  cache_dir + ' }' ])
+            else:
+                check_call(['mkdir', '-p', cache_dir])
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
             fetchers[src_name] = fetcher
             checkout_ids[src_name] = fetcher.get_id()
@@ -882,7 +904,11 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     builder.update('sources', checkout_ids)
     build_script = src_abs(builder.take('build_script'))
     # TODO(cmaloney): Change dest name to build_script_sha1
-    builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
+    # 2DO - is this correct?
+    if is_windows:
+        builder.replace('build_script', 'build.ps1', pkgpanda.util.sha1(build_script))
+    else:
+        builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
     extra_dir = src_abs("extra")
@@ -1016,7 +1042,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             active_package_ids.add(pkg_id_str)
 
             # Mount the package into the docker container.
-            cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
+            if is_windows:
+                cmd.volumes[pkg_path] = "c:/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
+            else:
+                cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
             os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
 
             # Add the dependencies of the package to the set which will be
@@ -1097,11 +1126,18 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     def clean():
         # Run a docker container to remove src/ and result/
         cmd = DockerCmd()
-        cmd.volumes = {
-            package_store.get_package_cache_folder(name): "/pkg/:rw",
-        }
-        cmd.container = "ubuntu:14.04.4"
-        cmd.run("package-cleaner", ["rm", "-rf", "/pkg/src", "/pkg/result"])
+        if is_windows:
+            cmd.volumes = {
+                    package_store.get_package_cache_folder(name): "c:/pkg/:rw",
+            }
+            cmd.container = "microsoft/windowsservercore:1709"
+            cmd.run("package-cleaner", ["powershell.exe", "-command", "{ remove-item -recurse -force -path c:/pkg/src,c:/pkg/result }"])
+        else:
+            cmd.volumes = {
+                package_store.get_package_cache_folder(name): "/pkg/:rw",
+            }
+            cmd.container = "ubuntu:14.04.4"
+            cmd.run("package-cleaner", ["rm", "-rf", "/pkg/src", "/pkg/result"])
 
     clean()
 
@@ -1128,10 +1164,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
                 "'src' directory already exists, did you have a previous build? " +
                 "Currently all builds must be from scratch. Support should be " +
                 "added for re-using a src directory when possible. src={}".format(src_dir))
-        os.mkdir(src_dir)
+        os.makedirs(src_dir)
         for src_name, fetcher in sorted(fetchers.items()):
             root = cache_abs('src/' + src_name)
-            os.mkdir(root)
+            os.makedirs(root)
 
             fetcher.checkout_to(root)
     except ValidationError as ex:
@@ -1156,14 +1192,17 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # paths to the packages will change.
     # TODO(cmaloney): This isn't very clean, it would be much nicer to
     # just run pkgpanda inside the package.
-    rewrite_symlinks(install_dir, repository.path, "/opt/mesosphere/packages/")
+    if is_windows:
+        rewrite_symlinks(install_dir, repository.path, "c:/opt/mesosphere/packages/")
+    else:
+        rewrite_symlinks(install_dir, repository.path, "/opt/mesosphere/packages/")
 
     print("Building package in docker")
 
     # TODO(cmaloney): Run as a specific non-root user, make it possible
     # for non-root to cleanup afterwards.
     # Run the build, prepping the environment as necessary.
-    mkdir(cache_abs("result"))
+    os.makedirs(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
     write_json(cache_abs("src/buildinfo.full.json"), final_buildinfo)
@@ -1177,44 +1216,78 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # TOOD(cmaloney): Disallow writing to well known files and directories?
     # Source we checked out
-    cmd.volumes.update({
-        # TODO(cmaloney): src should be read only...
-        cache_abs("src"): "/pkg/src:rw",
-        # The build script
-        build_script: "/pkg/build:ro",
-        # Getting the result out
-        cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
-        install_dir: "/opt/mesosphere:ro"
-    })
+    if is_windows:
+        cmd.volumes.update({
+            # TODO(cmaloney): src should be read only...
+            cache_abs("src"): "c:/pkg/src:rw",
+            # The build script
+            build_script: "c:/pkg/build:ro",
+            # Getting the result out
+            cache_abs("result"): "c:/opt/mesosphere/packages/{}:rw".format(pkg_id),
+            install_dir: "c:/opt/mesosphere:ro"
+        })
+    else:
+        cmd.volumes.update({
+            # TODO(cmaloney): src should be read only...
+            cache_abs("src"): "/pkg/src:rw",
+            # The build script
+            build_script: "/pkg/build:ro",
+            # Getting the result out
+            cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
+            install_dir: "/opt/mesosphere:ro"
+        })
 
     if os.path.exists(extra_dir):
-        cmd.volumes[extra_dir] = "/pkg/extra:ro"
-
-    cmd.environment = {
-        "PKG_VERSION": version,
-        "PKG_NAME": name,
-        "PKG_ID": pkg_id,
-        "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
-        "PKG_VARIANT": variant if variant is not None else "<default>",
-        "NUM_CORES": multiprocessing.cpu_count()
-    }
+        if is_windows:
+            cmd.volumes[extra_dir] = "c:/pkg/extra:ro"
+        else:
+            cmd.volumes[extra_dir] = "/pkg/extra:ro"
+    if is_windows:
+        cmd.environment = {
+            "PKG_VERSION": version,
+            "PKG_NAME": name,
+            "PKG_ID": pkg_id,
+            "PKG_PATH": "c:/opt/mesosphere/packages/{}".format(pkg_id),
+            "PKG_VARIANT": variant if variant is not None else "<default>",
+            "NUM_CORES": multiprocessing.cpu_count()
+        }
+    else:
+        cmd.environment = {
+            "PKG_VERSION": version,
+            "PKG_NAME": name,
+            "PKG_ID": pkg_id,
+            "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
+            "PKG_VARIANT": variant if variant is not None else "<default>",
+            "NUM_CORES": multiprocessing.cpu_count()
+        }
 
     try:
         # TODO(cmaloney): Run a wrapper which sources
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
-        cmd.run("package-builder", [
-            "/bin/bash",
-            "-o", "nounset",
-            "-o", "pipefail",
-            "-o", "errexit",
-            "/pkg/build"])
+        if is_windows:
+            cmd.run("package-builder", [
+             "powershell.exe",
+             "-file",
+             "c:/pkg/build/build.ps1",
+             "c:/pkg/src/",
+             "c:/opt/mesosphere/packages/{}".format(pkg_id)])
+        else:
+            cmd.run("package-builder", [
+                "/bin/bash",
+                "-o", "nounset",
+                "-o", "pipefail",
+                "-o", "errexit",
+                "/pkg/build"])
     except CalledProcessError as ex:
         raise BuildError("docker exited non-zero: {}\nCommand: {}".format(ex.returncode, ' '.join(ex.cmd)))
 
     # Clean up the temporary install dir used for dependencies.
     # TODO(cmaloney): Move to an RAII wrapper.
-    check_call(['rm', '-rf', install_dir])
+    if is_windows:
+        check_call(['powershell.exe', '-command', '{ remove-item -recurse -force -path ' + install_dir + ' }'])
+    else:
+        check_call(['rm', '-rf', install_dir])
 
     with logger.scope("Build package tarball"):
         # Check for forbidden services before packaging the tarball:
@@ -1230,7 +1303,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
     make_tar(tmp_name, cache_abs("result"))
-    os.rename(tmp_name, pkg_path)
+    if is_windows:
+        os.replace(tmp_name, pkg_path)
+    else:
+        os.rename(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:
         clean()

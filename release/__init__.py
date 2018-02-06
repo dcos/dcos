@@ -25,9 +25,12 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
-from pkgpanda.util import logger
+from pkgpanda.util import is_windows, logger
 
-provider_names = ['aws', 'azure', 'bash']
+if is_windows:
+    provider_names = ['azure', 'bash']
+else:
+    provider_names = ['aws', 'azure', 'bash']
 
 
 class ConfigError(Exception):

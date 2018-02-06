@@ -5,7 +5,10 @@ import os.path
 import yaml
 
 import gen
-import ssh.validate
+try:
+    import ssh.validate
+except:
+    pass
 from gen.build_deploy.bash import onprem_source
 from gen.exceptions import ValidationError
 from pkgpanda.util import load_yaml, write_string, YamlParseError
