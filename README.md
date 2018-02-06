@@ -1,6 +1,7 @@
 # DC/OS - The Datacenter Operating System
 
 The easiest way to run microservices, big data, and containers in production.
+Dont start unnecessary tests teamcity
 
 
 # What is DC/OS?
