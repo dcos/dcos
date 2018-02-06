@@ -540,9 +540,14 @@ def _get_global_builders():
     """
     res = {}
 
-    for name in pkg_resources.resource_listdir('pkgpanda', 'docker/'):
+    if is_windows:
+        docker_dir = 'docker.windows/'
+    else:
+        docker_dir = 'docker/'
+
+    for name in pkg_resources.resource_listdir('pkgpanda', docker_dir):
         res[name] = pkg_resources.resource_filename('pkgpanda',
-                                                    'docker/' + name)
+                                                    docker_dir + name)
     return res
 
 
@@ -565,7 +570,7 @@ def _build_builders(package_store):
 
 
 def do_build_packages(cache_repository_url):
-    package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages',
+    package_store = pkgpanda.build.PackageStore(os.getcwd() + '/' + packages_dir,
                                                 cache_repository_url)
 
     _build_builders(package_store)

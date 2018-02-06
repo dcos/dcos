@@ -7,7 +7,7 @@ import shutil
 import string
 import tempfile
 from contextlib import contextmanager
-from os import chdir, getcwd, mkdir, makediirs
+from os import chdir, getcwd, mkdir, makedirs
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
