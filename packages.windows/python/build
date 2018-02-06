@@ -1,0 +1,60 @@
+#!/bin/bash
+# Build
+set -ex
+
+mkdir -p build
+pushd build
+
+export CFLAGS=-I/opt/mesosphere/include
+export LDFLAGS="-L/opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+export CPPFLAGS=-I/opt/mesosphere/include
+
+/pkg/src/python/configure --enable-shared --prefix="$PKG_PATH" --enable-ipv6 --with-threads --with-computed-gotos
+make -j$NUM_CORES
+make install
+
+# Remove some big things we don't use at all
+rm -rf "$PKG_PATH/lib/python3.6/test"
+
+# TODO(cmaloney): This sort of stripping static libraries should be a generic
+# mkpanda option to apply to any package.
+find "$PKG_PATH/lib/" ! -type d -name "*.a" -exec rm -f -- '{}' +
+
+# Take control of setuptools and pip version.
+# Note(JP): For making pip upgrade itself reliably, it's best
+# to run pip as a module (python -m pip).
+export LD_LIBRARY_PATH=$PKG_PATH/lib
+export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.6/site-packages"
+$PKG_PATH/bin/python3 -m pip install --upgrade --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/setuptools/*.whl
+
+# Install pip from git checkout, because we need the fix for
+# https://github.com/pypa/pip/issues/373 i.e. we need the patch
+# https://github.com/pypa/pip/pull/4495 for subsequent pip
+# invocations. For _this_ pip invocation here (for upgrading pip...),
+# however, the bug pip/issues/373 is present and needs to be worked
+# around by manually creating the egg directory as a _relative_ path
+# `opt/mesosphere/active.....pip-10.0.0.dev0-py3.6.egg-info`.
+ABSDIR="$PKG_PATH/lib/python3.6/site-packages/pip-10.0.0.dev0-py3.6.egg-info"
+RELDIR="${ABSDIR:1}"
+mkdir -p $RELDIR
+$PKG_PATH/bin/python3 -m pip install --upgrade --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/pip
+echo "pip version: $($PKG_PATH/bin/pip3 --version)"
+
+
+# Setup helper symlinks, force overwrite if link name exists.
+ln -fs "$PKG_PATH/bin/python3" "$PKG_PATH/bin/python"
+ln -fs "$PKG_PATH/bin/easy_install-3.6" "$PKG_PATH/bin/easy_install-3"
+ln -fs "$PKG_PATH/bin/easy_install-3" "$PKG_PATH/bin/easy_install"
+ln -fs "$PKG_PATH/bin/pip3" "$PKG_PATH/bin/pip"
+ln -fs "$PKG_PATH/bin/python3-config" "$PKG_PATH/bin/python-config"
+ln -fs "$PKG_PATH/bin/idle3" "$PKG_PATH/bin/idle"
+ln -fs "$PKG_PATH/bin/pydoc3"  "$PKG_PATH/bin/pydoc"
+
+# Install Cython as part of the pgkpanda python package so that
+# it is available as a build dependency for all other pkgpanda
+# packages that pull in this package here as a dependency.
+# The Cython installation via pip actually suffers from pip/issues/373
+# which is one reason why we install the unreleased pip-10.0.0.dev0
+# above.
+$PKG_PATH/bin/python3 -m pip install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/cython
+

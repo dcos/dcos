@@ -1,0 +1,15 @@
+{
+  "sources": {
+        "URLRewrite": {
+          "kind": "url",
+          "url": "http://download.microsoft.com/download/D/D/E/DDE57C26-C62C-4C59-A1BB-31D58B36ADA2/rewrite_amd64_en-US.msi",
+          "sha1": "d2542e2d398f0e95981ebf4e729f79eaf96e6691"
+        },
+        "Application-Request-Routing": {
+          "kind": "url",
+          "url": "http://download.microsoft.com/download/E/9/8/E9849D6A-020E-47E4-9FD0-A023E99B54EB/requestRouter_amd64.msi",
+          "sha1": "9bbe610e347909afa68230778b9242bb57bbbc55"
+        }
+  },
+  "username": "dcos_epmd"
+}

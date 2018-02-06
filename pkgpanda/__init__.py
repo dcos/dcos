@@ -9,11 +9,21 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-import grp
+try:
+    import grp
+except ImportError:
+    pass
 import json
+try:   # Not available on windows
+    import nt
+except ImportError:
+    pass
 import os
 import os.path
-import pwd
+try:
+    import pwd
+except ImportError:
+    pass
 import re
 import shutil
 import tempfile
@@ -27,7 +37,7 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, is_windows, load_json, write_json, write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -473,7 +483,10 @@ class Repository:
 
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
-        check_call(['rm', '-rf', tmp_path])
+        if is_windows:
+            cmd.run("package-cleaner", ["powershell.exe", "-command", "{ remove-item -recurse -force -path " + tmp_path + " }"])
+        else:
+            check_call(['rm', '-rf', tmp_path])
 
         fetcher(id, tmp_path)
         os.rename(tmp_path, pkg_path)
@@ -572,6 +585,10 @@ class UserManagement:
 
     @staticmethod
     def validate_user_group(username, group_name):
+        # pwd not available on windows
+        if is_windows:
+            return
+
         user = pwd.getpwnam(username)
         if not group_name:
             return
@@ -723,6 +740,13 @@ class Install:
         ids = set()
         for name in os.listdir(active_dir):
             package_path = os.path.realpath(os.path.join(active_dir, name))
+
+            # Work around a long standing bug in realpath which has been open since 2010.
+            # A fix has been proposed since 2013. https://bugs.python.org/issue9949
+            # in windows realpath doesn't resolve symlinks
+            if (is_windows):
+                package_path = nt._getfinalpathname(package_path)
+
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
             ids.add(os.path.basename(package_path))
@@ -877,9 +901,12 @@ class Install:
             if self.__manage_state_dir:
                 state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
-                    check_call(['mkdir', '-p', state_dir_path])
+                    if is_windows:
+                        check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path' +  state_dir_path + ' }'])
+                    else:
+                        check_call(['mkdir', '-p', state_dir_path])
 
-                    if package.username:
+                    if package.username and not is_windows:
                         uid = sysusers.get_uid(package.username)
                         check_call(['chown', '-R', str(uid), state_dir_path])
 

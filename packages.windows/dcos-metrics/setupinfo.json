@@ -1,0 +1,10 @@
+{
+    "package_name": "dcos-metrics",
+    "install_dir": "",
+    "agent_setup": "setup-dcos-metrics.ps1",
+    "master_setup": "setup-dcos-metrics.ps1",
+    "package_file": "",
+    "package_type": "script",
+    "package_uri":  "",
+    "md5": ""
+}

@@ -3,6 +3,7 @@ import http.server
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import socketserver
@@ -21,6 +22,12 @@ from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
+is_windows = platform.system() is "Windows"
+
+if is_windows:
+    REPO_ROOT_DIR = "dcos/"
+else:
+    REPO_ROOT_DIR = ""
 
 json_prettyprint_args = {
     "sort_keys": True,
@@ -130,8 +137,16 @@ def extract_tarball(path, target):
     # prevent partial extraction from ever laying around on the filesystem.
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
-        check_call(['mkdir', '-p', target])
-        check_call(['tar', '-xf', path, '-C', target])
+        if is_windows:
+            check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' + target + ' }'])
+        else:
+            check_call(['mkdir', '-p', target])
+
+        if is_windows:
+            check_call(['bsdtar', '-xf', path, '-C', target])
+        else:
+            check_call(['tar', '-xf', path, '-C', target])
+
     except:
         # If there are errors, we can't really cope since we are already in an error state.
         rmtree(target, ignore_errors=True)
@@ -226,11 +241,17 @@ def expect_fs(folder, contents):
 
 
 def make_tar(result_filename, change_folder):
-    tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
+    if is_windows:
+        tar_cmd = ["bsdtar"]
+    else:
+        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
     if which("pxz"):
         tar_cmd += ["--use-compress-program=pxz", "-cf"]
     else:
-        tar_cmd += ["-cJf"]
+        if is_windows:
+            tar_cmd += ["-cf"]
+        else:
+            tar_cmd += ["-cJf"]
     tar_cmd += [result_filename, "-C", change_folder, "."]
     check_call(tar_cmd)
 
@@ -317,7 +338,7 @@ class TestRepo:
 
 def resources_test_dir(path):
     assert not path.startswith('/')
-    return "pkgpanda/test_resources/{}".format(path)
+    return REPO_ROOT_DIR + "pkgpanda/test_resources/{}".format(path)
 
 
 class MessageLogger:
