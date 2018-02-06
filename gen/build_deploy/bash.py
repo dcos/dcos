@@ -24,6 +24,10 @@ from gen.calc import (
 from gen.internals import Source
 from pkgpanda.util import is_windows, logger
 
+if is_windows:
+    packages_dir = 'packages.windows'
+else:
+    packages_dir = 'packages'
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
     if os.path.isdir(custom_check_bins_dir):
@@ -50,7 +54,7 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/packages/{}'.format(custom_check_bins_package_id)
+        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/' + packages_dirs + '/{}'.format(custom_check_bins_package_id)
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -599,7 +603,7 @@ def make_bash(gen_out) -> None:
 
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
-        package_filename = 'packages/{}/{}.tar.xz'.format(
+        package_filename = packages_dir + '/{}/{}.tar.xz'.format(
             gen_out.arguments['custom_check_bins_package_name'],
             gen_out.arguments['custom_check_bins_package_id'],
         )
@@ -691,13 +695,12 @@ def make_installer_docker(variant, variant_info, installer_info):
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     genconf_tar = "dcos-genconf." + image_version + ".tar"
-    installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
+    installer_filename = packages_dir + "/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_info['bootstrap'] + '.bootstrap.tar.xz'
     bootstrap_latest_filename = pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
     latest_complete_filename = pkgpanda.util.variant_prefix(variant) + 'complete.latest.json'
-    packages_dir = 'packages'
     docker_image_name = 'mesosphere/dcos-genconf:' + image_version
 
     # TODO(cmaloney): All of this should use package_resources
@@ -740,14 +743,14 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync
-        copy_to_build('packages/cache/bootstrap', bootstrap_filename)
-        copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
-        copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
-        copy_to_build('packages/cache/bootstrap', bootstrap_latest_filename)
-        copy_to_build('packages/cache/complete', latest_complete_filename)
+        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_filename)
+        copy_to_build(packages_dir + '/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_active_filename)
+        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_latest_filename)
+        copy_to_build(packages_dir + '/cache/complete', latest_complete_filename)
         for package_id in variant_info['packages']:
             package_name = pkgpanda.PackageId(package_id).name
-            copy_to_build('packages/cache/', packages_dir + '/' + package_name + '/' + package_id + '.tar.xz')
+            copy_to_build(packages_dir + '/cache/', packages_dir + '/' + package_name + '/' + package_id + '.tar.xz')
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):

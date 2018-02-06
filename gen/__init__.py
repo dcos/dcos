@@ -40,6 +40,11 @@ from pkgpanda.util import (
     write_yaml,
 )
 
+if is_windows:
+    packages_dir = 'packages.windows'
+else:
+    packages_dir = 'packages'
+
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
 
@@ -663,7 +668,7 @@ def generate(
     stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
-        return 'packages/{0}/{1}{2}'.format(
+        return packages_dir + '/{0}/{1}{2}'.format(
             package_id.name,
             repr(package_id),
             extension)
