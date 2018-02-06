@@ -13,6 +13,11 @@ from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
                            load_string, load_yaml, write_string)
 
+if is_windows:
+    packages_dir = 'packages.windows'
+else:
+    packages_dir = 'packages'
+
 DCOS_TARGET_CONTENTS = """[Install]
 WantedBy=multi-user.target
 """
@@ -242,7 +247,7 @@ def _do_bootstrap(install, repository):
         with tempfile.NamedTemporaryFile() as f:
             download(
                 f.name,
-                repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
+                repository_url + '/' + packages_dir + '/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
                 rm_on_error=False,
             )

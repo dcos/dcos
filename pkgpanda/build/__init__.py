@@ -23,6 +23,10 @@ from pkgpanda.util import (check_forbidden_services, download_atomic,
                            make_file, make_tar, rewrite_symlinks, write_json,
                            write_string)
 
+if is_windows:
+    packages_dir = 'packages.windows'
+else:
+    packages_dir = 'packages'
 
 class BuildError(Exception):
     """An error while building something."""
@@ -387,7 +391,7 @@ class PackageStore:
 
         # TODO(cmaloney): Use storage providers to download instead of open coding.
         pkg_path = "{}.tar.xz".format(pkg_id)
-        url = self._repository_url + '/packages/{0}/{1}'.format(pkg_id.name, pkg_path)
+        url = self._repository_url + '/' + packages_dir + '/{0}/{1}'.format(pkg_id.name, pkg_path)
         try:
             directory = self.get_package_cache_folder(pkg_id.name)
             # TODO(cmaloney): Move to some sort of logging mechanism?
@@ -1043,10 +1047,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
             # Mount the package into the docker container.
             if is_windows:
-                cmd.volumes[pkg_path] = "c:/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
+                cmd.volumes[pkg_path] = "c:/opt/mesosphere/" + packages_dir + "/{}:ro".format(pkg_id_str)
             else:
-                cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
-            os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
+                cmd.volumes[pkg_path] = "/opt/mesosphere/" + packages_dir + "/{}:ro".format(pkg_id_str)
+            os.makedirs(os.path.join(install_dir, packages_dir + "/{}".format(pkg_id_str)))
 
             # Add the dependencies of the package to the set which will be
             # activated.
@@ -1193,9 +1197,9 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # TODO(cmaloney): This isn't very clean, it would be much nicer to
     # just run pkgpanda inside the package.
     if is_windows:
-        rewrite_symlinks(install_dir, repository.path, "c:/opt/mesosphere/packages/")
+        rewrite_symlinks(install_dir, repository.path, "c:/opt/mesosphere/" + packages_dir + "/")
     else:
-        rewrite_symlinks(install_dir, repository.path, "/opt/mesosphere/packages/")
+        rewrite_symlinks(install_dir, repository.path, "/opt/mesosphere/" + packages_dir + "/")
 
     print("Building package in docker")
 
@@ -1223,7 +1227,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             # The build script
             build_script: "c:/pkg/build:ro",
             # Getting the result out
-            cache_abs("result"): "c:/opt/mesosphere/packages/{}:rw".format(pkg_id),
+            cache_abs("result"): "c:/opt/mesosphere/" + packages_dir + "/{}:rw".format(pkg_id),
             install_dir: "c:/opt/mesosphere:ro"
         })
     else:
@@ -1233,7 +1237,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             # The build script
             build_script: "/pkg/build:ro",
             # Getting the result out
-            cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
+            cache_abs("result"): "/opt/mesosphere/" + packages_dir + "/{}:rw".format(pkg_id),
             install_dir: "/opt/mesosphere:ro"
         })
 
@@ -1247,7 +1251,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             "PKG_VERSION": version,
             "PKG_NAME": name,
             "PKG_ID": pkg_id,
-            "PKG_PATH": "c:/opt/mesosphere/packages/{}".format(pkg_id),
+            "PKG_PATH": "c:/opt/mesosphere/" + packages_dir + "/{}".format(pkg_id),
             "PKG_VARIANT": variant if variant is not None else "<default>",
             "NUM_CORES": multiprocessing.cpu_count()
         }
@@ -1256,7 +1260,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             "PKG_VERSION": version,
             "PKG_NAME": name,
             "PKG_ID": pkg_id,
-            "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
+            "PKG_PATH": "/opt/mesosphere/" + packages_dir + "/{}".format(pkg_id),
             "PKG_VARIANT": variant if variant is not None else "<default>",
             "NUM_CORES": multiprocessing.cpu_count()
         }
@@ -1271,7 +1275,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
              "-file",
              "c:/pkg/build/build.ps1",
              "c:/pkg/src/",
-             "c:/opt/mesosphere/packages/{}".format(pkg_id)])
+             "c:/opt/mesosphere/" + packages_dir + "/{}".format(pkg_id)])
         else:
             cmd.run("package-builder", [
                 "/bin/bash",
