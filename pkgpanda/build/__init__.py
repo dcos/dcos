@@ -1209,14 +1209,15 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Source we checked out
     if is_windows:
         cmd.volumes.update({
-            # TODO(cmaloney): src should be read only...
+            # Source directory
             cache_abs("src"): PKG_DIR + "/src:rw",
             # The build script
             # 2DO: we cannot pass a file to a volume mount on windows, only directory
             package_dir: PKG_DIR + "/build:ro",
             # Getting the result out
             cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
-            install_dir: install_root + ":ro"
+            #2DO: windows docker does not suport overlapping mounts so push into a temporary directory in case needed
+            install_dir: install_root + "/install_dir:ro"
         })
     else:
         cmd.volumes.update({
