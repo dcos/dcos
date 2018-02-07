@@ -1043,7 +1043,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
             # Mount the package into the docker container.
             cmd.volumes[pkg_path] = install_root + "/" + PACKAGES_DIR + "/{}:ro".format(pkg_id_str)
-            os.makedirs(os.path.join(install_dir, packages_dir + "/{}".format(pkg_id_str)))
+            os.makedirs(os.path.join(install_dir, PACKAGES_DIR + "/{}".format(pkg_id_str)))
 
             # Add the dependencies of the package to the set which will be
             # activated.
