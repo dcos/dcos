@@ -5,7 +5,7 @@
   },
   "sources": {
     "python": {
-      "kind": "url_extract",
+      "kind": "url",
       "url": "https://www.python.org/ftp/python/3.6.3/python-3.6.3-embed-win32.zip",
       "sha1": "3769c2129779b43f2dade3b89c783d957bff1461"
     },
