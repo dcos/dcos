@@ -414,7 +414,7 @@ class Repository:
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
         if is_windows:
-            cmd.run("package-cleaner", ["powershell.exe", "-command", "& { remove-item -recurse -force -path " + tmp_path + " }"])
+            check_call(["powershell.exe", "-command", "& { remove-item -recurse -force -path " + tmp_path + " }"])
         else:
             check_call(['rm', '-rf', tmp_path])
 
