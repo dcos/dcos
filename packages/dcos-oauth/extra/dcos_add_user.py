@@ -24,10 +24,12 @@ retry_policy = KazooRetry(
 parser = argparse.ArgumentParser()
 parser.add_argument('email')
 parser.add_argument('--zk', default='zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
+parser.add_argument('--name')
 
 args = parser.parse_args()
 email = args.email
 zk_host = args.zk
+name = args.name
 
 zk = KazooClient(
     hosts=zk_host,
@@ -39,6 +41,8 @@ try:
     zk.start()
     zk.ensure_path("/dcos/users/")
     zk.create("/dcos/users/{}".format(email), email.encode())
+    if name is not None:
+        zk.create("/dcos/users/{}/name".format(email), name.encode())
     print("User {} successfully added".format(email), file=sys.stdout)
     sys.exit(0)
 except zk.handler.timeout_exception:
