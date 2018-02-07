@@ -29,6 +29,7 @@ import gen.template
 import gen.util
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
+from pkgpanda.constants import PACKAGES_DIR, config_dir
 from pkgpanda.util import (
     hash_checkout,
     is_windows,
@@ -40,15 +41,10 @@ from pkgpanda.util import (
     write_yaml,
 )
 
-if is_windows:
-    packages_dir = 'packages.windows'
-else:
-    packages_dir = 'packages'
-
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
 
-role_template = '/etc/mesosphere/roles/{}'
+role_template = config_dir + '/roles/{}'
 
 if is_windows:
     CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
@@ -668,7 +664,7 @@ def generate(
     stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
-        return packages_dir + '/{0}/{1}{2}'.format(
+        return PACKAGES_DIR + '/{0}/{1}{2}'.format(
             package_id.name,
             repr(package_id),
             extension)
@@ -694,7 +690,7 @@ def generate(
         # config (e.g. Amazon CloudFormation). The rendered late config file
         # on a cluster node's filesystem will contain the final values.
         rendered_templates[cloud_config_yaml]['root'].append({
-            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+            'path': config_dir + '/setup-flags/late-config.yaml',
             'permissions': '0644',
             'owner': 'root',
             # TODO(cmaloney): don't prettyprint to save bytes.

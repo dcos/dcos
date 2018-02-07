@@ -414,7 +414,7 @@ class Repository:
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
         if is_windows:
-            cmd.run("package-cleaner", ["powershell.exe", "-command", "{ remove-item -recurse -force -path " + tmp_path + " }"])
+            cmd.run("package-cleaner", ["powershell.exe", "-command", "& { remove-item -recurse -force -path " + tmp_path + " }"])
         else:
             check_call(['rm', '-rf', tmp_path])
 
@@ -827,7 +827,7 @@ class Install:
                 state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
                     if is_windows:
-                        check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path' +  state_dir_path + ' }'])
+                        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  state_dir_path + ' }'])
                     else:
                         check_call(['mkdir', '-p', state_dir_path])
 
@@ -904,7 +904,7 @@ class Install:
                 json.dump(state, f)
                 f.flush()
                 os.fsync(f.fileno())
-            os.rename(state_filename + ".new", state_filename)
+            os.replace(state_filename + ".new", state_filename)
 
         # TODO(pyronicide): systemd requires units to be both in the
         # root directory (/etc/systemd/system) *and* (for starting) in a

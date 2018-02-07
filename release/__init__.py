@@ -25,14 +25,13 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+from pkgpanda.constants import PACKAGES_DIR
 from pkgpanda.util import is_windows, logger
 
 if is_windows:
     provider_names = ['azure', 'bash']
-    packages_dir = 'packages.windows'
 else:
     provider_names = ['aws', 'azure', 'bash']
-    packages_dir = 'packages'
 
 
 class ConfigError(Exception):
@@ -261,14 +260,14 @@ def make_package_filename(package_id_str):
     extension = '.tar.xz'
     if package_id.version == 'setup':
         extension = '.dcos_config'
-    return packages_dir + '/{}/{}{}'.format(package_id.name, package_id_str, extension)
+    return PACKAGES_DIR + '/{}/{}{}'.format(package_id.name, package_id_str, extension)
 
 
 def get_package_artifact(package_id_str):
     package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
-        'local_path': packages_dir + '/cache/' + package_filename}
+        'local_path': PACKAGES_DIR + '/cache/' + package_filename}
 
 
 def get_gen_package_artifact(package_id_str):
@@ -357,7 +356,7 @@ def make_stable_artifacts(cache_repository_url):
     # Add the bootstrap, active.json, packages as reproducible_path artifacts
     # Add the <variant>.bootstrap.latest as a channel_path
     for name, info in sorted(all_completes.items(), key=lambda kv: pkgpanda.util.variant_str(kv[0])):
-        for file in make_bootstrap_artifacts(info['bootstrap'], info['packages'], name, packages_dir + '/cache'):
+        for file in make_bootstrap_artifacts(info['bootstrap'], info['packages'], name, PACKAGES_DIR + '/cache'):
             add_file(file)
 
         # Add all the packages which haven't been added yet
@@ -570,7 +569,7 @@ def _build_builders(package_store):
 
 
 def do_build_packages(cache_repository_url):
-    package_store = pkgpanda.build.PackageStore(os.getcwd() + '/' + packages_dir,
+    package_store = pkgpanda.build.PackageStore(os.getcwd() + '/' + PACKAGES_DIR,
                                                 cache_repository_url)
 
     _build_builders(package_store)
@@ -755,16 +754,16 @@ class ReleaseManager():
                 # paths need to be made identical.
                 dest_path = artifact['channel_path']
                 if artifact['channel_path'].endswith('complete.latest.json'):
-                    dest_path = packages_dir + '/cache/complete/' + dest_path
+                    dest_path = PACKAGES_DIR + '/cache/complete/' + dest_path
                 else:
-                    dest_path = packages_dir + '/cache/bootstrap/' + dest_path
+                    dest_path = PACKAGES_DIR + '/cache/bootstrap/' + dest_path
                 self.__preferred_provider.download(src_path, dest_path)
                 artifact['local_copy_from'] = src_path
                 artifact['local_path'] = artifact['channel_path']
             if 'reproducible_path' in artifact:
                 assert artifact['reproducible_path'][0] != '/'
 
-                local_path = packages_dir + "/cache/" + artifact['reproducible_path']
+                local_path = PACKAGES_DIR + "/cache/" + artifact['reproducible_path']
 
                 src_path = metadata['repository_path'] + '/' + artifact['reproducible_path']
 
@@ -829,7 +828,7 @@ class ReleaseManager():
         # dcos_installer.backend.do_aws_cf_configure()) and move this assertion to make_bootstrap_artifacts().
         for info in metadata['all_completes'].values():
             bootstrap_active_packages = set(
-                pkgpanda.util.load_json(packages_dir + '/cache/bootstrap/{}.active.json'.format(info['bootstrap']))
+                pkgpanda.util.load_json(PACKAGES_DIR + '/cache/bootstrap/{}.active.json'.format(info['bootstrap']))
             )
             assert bootstrap_active_packages <= set(info['packages'])
 
