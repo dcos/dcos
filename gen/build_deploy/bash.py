@@ -22,12 +22,8 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
+from pkgpanda.constants import RESERVED_UNIT_NAMES, PACKAGES_DIR, install_root
 from pkgpanda.util import is_windows, logger
-
-if is_windows:
-    packages_dir = 'packages.windows'
-else:
-    packages_dir = 'packages'
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
     if os.path.isdir(custom_check_bins_dir):
@@ -54,7 +50,7 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/' + packages_dirs + '/{}'.format(custom_check_bins_package_id)
+        return DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' + PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id)
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -604,7 +600,7 @@ def make_bash(gen_out) -> None:
 
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
-        package_filename = packages_dir + '/{}/{}.tar.xz'.format(
+        package_filename = PACKAGES_DIR + '/{}/{}.tar.xz'.format(
             gen_out.arguments['custom_check_bins_package_name'],
             gen_out.arguments['custom_check_bins_package_id'],
         )
@@ -696,7 +692,7 @@ def make_installer_docker(variant, variant_info, installer_info):
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     genconf_tar = "dcos-genconf." + image_version + ".tar"
-    installer_filename = packages_dir + "/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
+    installer_filename = PACKAGES_DIR + "/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_info['bootstrap'] + '.bootstrap.tar.xz'
@@ -717,7 +713,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             dest_filename = dest_path(filename)
             os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '{ copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename + ' -destination ' + dest_filenamae + ' }'])
+                subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename + ' -destination ' + dest_filenamae + ' }'])
             else:
                 subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
 
@@ -732,7 +728,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_active_filename': bootstrap_active_filename,
             'bootstrap_latest_filename': bootstrap_latest_filename,
             'latest_complete_filename': latest_complete_filename,
-            'packages_dir': packages_dir})
+            'packages_dir': PACKAGES_DIR})
 
         fill_template('installer_internal_wrapper', {
             'variant': pkgpanda.util.variant_str(variant),
@@ -744,24 +740,24 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync
-        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_filename)
-        copy_to_build(packages_dir + '/cache/bootstrap', installer_bootstrap_filename)
-        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_active_filename)
-        copy_to_build(packages_dir + '/cache/bootstrap', bootstrap_latest_filename)
-        copy_to_build(packages_dir + '/cache/complete', latest_complete_filename)
+        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_filename)
+        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_active_filename)
+        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_latest_filename)
+        copy_to_build(PACKAGES_DIR + '/cache/complete', latest_complete_filename)
         for package_id in variant_info['packages']:
             package_name = pkgpanda.PackageId(package_id).name
-            copy_to_build(packages_dir + '/cache/', packages_dir + '/' + package_name + '/' + package_id + '.tar.xz')
+            copy_to_build(PACKAGES_DIR + '/cache/', PACKAGES_DIR + '/' + package_name + '/' + package_id + '.tar.xz')
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', 'copy-item -recurse -path gen_extra -destination ' + dest_path('gen_extra') + ' }'])
+                subprocess.check_call(['powershell.exe', '-command', '& {copy-item -recurse -path gen_extra -destination ' + dest_path('gen_extra') + ' }'])
             else:
                 subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
         else:
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', 'new-item -itemtype directory ' + dest_path(gen_extra) + ' }'])
+                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' }'])
             else:
                 subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 

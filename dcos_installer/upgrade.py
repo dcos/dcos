@@ -166,7 +166,7 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
 
     if is_windows:
-        subprocess.check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path' +  serve_dir + upgrade_script_path + ' }'])
+        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  serve_dir + upgrade_script_path + ' }'])
     else:
         subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
 

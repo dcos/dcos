@@ -36,7 +36,7 @@ class AbstractStorageProvider(metaclass=abc.ABCMeta):
         dirname = os.path.dirname(local_path)
         if dirname:
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' + os.path.dirname(local_path) + ' }'])
+                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' + os.path.dirname(local_path) + ' }'])
             else:
                 subprocess.check_call(['mkdir', '-p', os.path.dirname(local_path)])
         self.download_inner(path, local_path)

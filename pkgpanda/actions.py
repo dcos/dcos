@@ -8,15 +8,13 @@ from typing import List
 from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
+                                install_root,
+                                PACKAGES_DIR,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, is_windows, load_json,
                            load_string, load_yaml, write_string)
 
-if is_windows:
-    packages_dir = 'packages.windows'
-else:
-    packages_dir = 'packages'
 
 DCOS_TARGET_CONTENTS = """[Install]
 WantedBy=multi-user.target
@@ -184,7 +182,7 @@ def setup(install, repository):
 
     # Check for /opt/mesosphere/install_progress. If found, recover the partial
     # update.
-    if os.path.exists("/opt/mesosphere/install_progress"):
+    if os.path.exists(install_root + "/install_progress"):
         took_action, msg = install.recover_swap_active()
         if not took_action:
             print("No recovery performed: {}".format(msg))
@@ -247,7 +245,7 @@ def _do_bootstrap(install, repository):
         with tempfile.NamedTemporaryFile() as f:
             download(
                 f.name,
-                repository_url + '/' + packages_dir + '/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
+                repository_url + '/' + PACKAGES_DIR + '/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
                 rm_on_error=False,
             )

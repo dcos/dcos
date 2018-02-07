@@ -26,15 +26,15 @@ class LocalStorageProvider(AbstractStorageProvider):
 
     def download_inner(self, path, local_path):
         if is_windows:
-            subprocess.check_call(['powershell.exe', '-command', '{ copy-item -path ' + self.__full_path(path) + ' -destination ' + local_path + ' }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + self.__full_path(path) + ' -destination ' + local_path + ' }'])
         else:
             subprocess.check_call(['cp', self.__full_path(path), local_path])
 
     # Copy between fully qualified paths
     def __copy(self, full_source_path, full_destination_path):
         if is_windows:
-            subprocess.check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  os.path.dirname(full_destination_path) + ' }'])
-            subprocess.check_call(['powershell.exe', '-command', '{ copy-item -path ' + full_source_path + ' -destination ' + full_destination_path + ' }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  os.path.dirname(full_destination_path) + ' }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + full_source_path + ' -destination ' + full_destination_path + ' }'])
         else:
             subprocess.check_call(['mkdir', '-p', os.path.dirname(full_destination_path)])
             subprocess.check_call(['cp', full_source_path, full_destination_path])
@@ -53,7 +53,7 @@ class LocalStorageProvider(AbstractStorageProvider):
         # able to test those are set.
         destination_full_path = self.__full_path(destination_path)
         if is_windows:
-            subprocess.check_call(['powershell.exe', '-command', '{ new-item -itemtype directory -force -path ' +  os.path.dirname(destination_full_path) + ' }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  os.path.dirname(destination_full_path) + ' }'])
         else:
             subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_full_path)])
 
@@ -78,7 +78,7 @@ class LocalStorageProvider(AbstractStorageProvider):
         assert len(path) > 5
         assert len(full_path) > 5
         if is_windows:
-            subprocess.check_call(['powershell.exe', '-command', '{ remove-item -recurse -force -path ' +  full_path + ' }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { remove-item -recurse -force -path ' +  full_path + ' }'])
         else:
             subprocess.check_call(['rm', '-rf', full_path])
 
