@@ -138,7 +138,7 @@ def extract_tarball(path, target):
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         if is_windows:
-            check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' + target + ' }'])
+            check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' + target + ' > $null }'])
         else:
             check_call(['mkdir', '-p', target])
 
