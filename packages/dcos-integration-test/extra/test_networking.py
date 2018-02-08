@@ -5,6 +5,7 @@ import logging
 import threading
 import uuid
 from collections import deque
+from responses import Ok
 from subprocess import check_output
 
 import pytest
@@ -58,13 +59,13 @@ class MarathonApp:
 
     @retrying.retry(
         wait_fixed=5000,
-        stop_max_delay=20 * 60 * 1000,
-        retry_on_result=lambda res: res is False)
+        stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        r.raise_for_status()
+        assert r == Ok()
+
         self._info = r.json()
-        return self._info['app']['tasksHealthy'] == self.app['instances']
+        assert self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
         try:
@@ -151,9 +152,10 @@ class MarathonPod:
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        r.raise_for_status()
+        assert r == Ok()
+
         self._info = r.json()
-        return self._info['status'] == 'STABLE'
+        assert self._info['status'] == 'STABLE'
 
     def info(self, dcos_api_session):
         try:
