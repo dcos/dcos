@@ -64,6 +64,8 @@ class MarathonApp:
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
         r.raise_for_status()
         self._info = r.json()
+        log.info("Response for /v2/apps/{id}".format(id=self.id))
+        log.info(json.dumps(self._info, indent=4, separators=(',', ': ')))
         return self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
