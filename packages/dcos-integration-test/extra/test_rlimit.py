@@ -1,6 +1,9 @@
 import subprocess
 import uuid
 
+__maintainer__ = 'bbannier'
+__contact__ = 'core-team@mesosphere.io'
+
 
 def test_if_rlimits_can_be_used(dcos_api_session):
     """This test verifies that rlimits can be used.

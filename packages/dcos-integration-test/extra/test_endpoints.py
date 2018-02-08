@@ -6,6 +6,9 @@ import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
+__maintainer__ = 'vespian'
+__contact__ = 'dcos-security@mesosphere.io'
+
 
 def test_if_dcos_ui_is_up(dcos_api_session):
     r = dcos_api_session.get('/')

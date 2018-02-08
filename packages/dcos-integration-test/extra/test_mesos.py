@@ -9,6 +9,9 @@ import retrying
 import test_helpers
 from dcos_test_utils import marathon, recordio
 
+__maintainer__ = 'Gilbert88'
+__contact__ = 'core-team@mesosphere.io'
+
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
 # then an empty data chunk to indicate end-of-stream.
