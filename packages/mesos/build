@@ -62,3 +62,7 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_sl
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
+
+mesos_start_wrapper="$PKG_PATH/bin/start_mesos.sh"
+cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
+chmod +x "$mesos_start_wrapper"
