@@ -47,6 +47,7 @@ def test_validate_username():
     bad('dcos3_foobar')
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not have a root group")
 def test_validate_group():
     # assuming linux distributions have `root` group.
     UserManagement.validate_group('root')
