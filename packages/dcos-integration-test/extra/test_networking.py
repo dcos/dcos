@@ -5,15 +5,15 @@ import logging
 import threading
 import uuid
 from collections import deque
-from responses import Ok
 from subprocess import check_output
 
 import pytest
 import requests
 import retrying
-
 import test_helpers
+
 from dcos_test_utils import marathon
+from responses import Ok
 
 log = logging.getLogger(__name__)
 

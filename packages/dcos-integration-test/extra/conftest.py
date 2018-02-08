@@ -2,9 +2,9 @@ import os
 
 import api_session_fixture
 import pytest
+from dcos_test_utils import logger
 from requests import Response
 from responses import Ok
-from dcos_test_utils import logger
 
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 
