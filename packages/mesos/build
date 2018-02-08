@@ -70,3 +70,7 @@ chmod +x "$tee_stderr_script"
 # Install slave modules.
 mkdir -p "$PKG_PATH/etc/mesos-slave-modules"
 cp /pkg/extra/slave_logrotate_module.json "$PKG_PATH/etc/mesos-slave-modules/"
+
+mesos_start_wrapper="$PKG_PATH/bin/start_mesos.sh"
+cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
+chmod +x "$mesos_start_wrapper"
