@@ -61,9 +61,12 @@ class MarathonApp:
         stop_max_delay=20 * 60 * 1000,
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
+        _endpoint = 'v2/apps/{}'.format(self.id)
+        r = dcos_api_session.marathon.get(_endpoint)
         r.raise_for_status()
         self._info = r.json()
+        log.info("Response for GET {endpoint}".format(endpoint=_endpoint))
+        log.info(json.dumps(self._info, indent=4, separators=(',', ': ')))
         return self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
@@ -150,9 +153,12 @@ class MarathonPod:
         stop_max_delay=20 * 60 * 1000,
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
+        _endpoint = "/v2/pods/{id}::status".format(id=self.id)
+        r = dcos_api_session.marathon.get(_endpoint)
         r.raise_for_status()
         self._info = r.json()
+        log.info("Response for GET {endpoint}".format(endpoint=_endpoint))
+        log.info(json.dumps(self._info, indent=4, separators=(',', ': ')))
         return self._info['status'] == 'STABLE'
 
     def info(self, dcos_api_session):
