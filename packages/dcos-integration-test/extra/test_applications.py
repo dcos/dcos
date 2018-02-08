@@ -7,6 +7,9 @@ import requests
 import test_helpers
 from dcos_test_utils import marathon
 
+__maintainer__ = 'kensipe'
+__contact__ = 'marathon-team@mesosphere.io'
+
 log = logging.getLogger(__name__)
 
 
