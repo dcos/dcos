@@ -18,7 +18,7 @@ def onprem_generate(config):
 
 def make_serve_dir(gen_out):
     if is_windows:
-        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  SERVE_DIR + ' }'])
+        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  SERVE_DIR + ' > $null }'])
     else:
         subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
@@ -111,7 +111,7 @@ def fetch_artifacts(filenames, src_dir, dest_dir):
             raise FileNotFoundError(filename)
 
     if is_windows:
-        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  dest_dir + ' }'])
+        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  dest_dir + ' > $null }'])
     else:
         subprocess.check_call(['mkdir', '-p', dest_dir])
     do_move_atomic(src_dir, dest_dir, filenames)

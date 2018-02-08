@@ -261,7 +261,7 @@ class PackageStore:
         self._upstream_package_dir = self._upstream_dir + "/" + PACKAGES_DIR
         # TODO(cmaloney): Make it so the upstream directory can be kept around
         if is_windows:
-            check_call(['powershell.exe', '-command', '& { remove-item -recurse -force -path ' +   self._upstream_dir + ' }'])
+            check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' + self._upstream_dir + ' | remove-item -recurse -force  }'])
         else:
             check_call(['rm', '-rf', self._upstream_dir])
         upstream_config = self._packages_dir + '/upstream.json'
@@ -351,7 +351,7 @@ class PackageStore:
         directory = self._package_cache_dir + '/' + name
         if is_windows:
             directory = directory.replace('\\', '/')
-            check_call(["powershell.exe", "-command", "& { new-item -ItemType Directory -Force -Path " +  directory + " }"])
+            check_call(["powershell.exe", "-command", "& { new-item -ItemType Directory -Force -Path " +  directory + " > $null }"])
         else:
             check_call(['mkdir', '-p', directory])
         return directory
@@ -559,7 +559,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
         return mark_latest()
 
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  bootstrap_cache_dir + ' }' ])
+        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  bootstrap_cache_dir + ' > $null }' ])
     else:
         check_call(['mkdir', '-p', bootstrap_cache_dir])
 
@@ -744,7 +744,7 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     complete_cache_dir = package_store.get_complete_cache_dir()
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  complete_cache_dir + ' }' ])
+        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  complete_cache_dir + ' > $null }' ])
     else:
         check_call(['mkdir', '-p', complete_cache_dir])
     results = {}
@@ -882,7 +882,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
             cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
             if is_windows:
-                check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  cache_dir + ' }' ])
+                check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  cache_dir + ' > $null }' ])
             else:
                 check_call(['mkdir', '-p', cache_dir])
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
@@ -1128,7 +1128,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         }
         if is_windows:
             cmd.container = "microsoft/windowsservercore:1709"
-            cmd.run("package-cleaner", ["powershell.exe", "-command", "& { remove-item -recurse -force -erroraction silentlycontinue -path " + PKG_DIR + "/src," + PKG_DIR + "/result }"])
+            cmd.run("package-cleaner", ["powershell.exe", "-command", "& { get-childitem -erroraction silentlycontinue -path " + PKG_DIR + "/src," + PKG_DIR + "/result | remove-item -recurse -force }"])
         else:
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
@@ -1264,7 +1264,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Clean up the temporary install dir used for dependencies.
     # TODO(cmaloney): Move to an RAII wrapper.
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { remove-item -recurse -force -path ' + install_dir + ' }'])
+        check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' + install_dir + ' | remove-item -recurse -force }'])
     else:
         check_call(['rm', '-rf', install_dir])
 

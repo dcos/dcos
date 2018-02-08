@@ -757,7 +757,7 @@ def make_installer_docker(variant, variant_info, installer_info):
                 subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
         else:
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' }'])
+                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' > $null }'])
             else:
                 subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 

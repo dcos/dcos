@@ -484,7 +484,7 @@ class Repository:
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
         if is_windows:
-            check_call(["powershell.exe", "-command", "& { remove-item -recurse -force -path " + tmp_path + " }"])
+            check_call(["powershell.exe", "-command", "& { get-childitem -erroraction silentlycontinue -path " + tmp_path + " | remove-item -recurse -force }"])
         else:
             check_call(['rm', '-rf', tmp_path])
 
@@ -902,7 +902,7 @@ class Install:
                 state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
                     if is_windows:
-                        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  state_dir_path + ' }'])
+                        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  state_dir_path + ' > $null }'])
                     else:
                         check_call(['mkdir', '-p', state_dir_path])
 
