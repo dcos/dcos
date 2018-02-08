@@ -742,7 +742,11 @@ def generate(
     cc['write_files'] = []
     # Do the transform
     for item in cc_root:
-        assert item['path'].startswith('/')
+        if is_windows:
+            tmpPath = item['path'].replace('\\', '/')
+            assert tmpPath.startswith('c:/') or tmpPath.startswith('/')
+        else:
+            assert item['path'].startswith('/')
         cc['write_files'].append(item)
     rendered_templates[cloud_config_yaml] = cc
 
