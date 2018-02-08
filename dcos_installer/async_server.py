@@ -4,6 +4,7 @@ import importlib
 import json
 import logging
 import os
+import sys
 
 import pkg_resources
 from aiohttp import web
@@ -357,6 +358,10 @@ def build_app(loop):
 def start(cli_options):
     global options
     options = cli_options
+
+    log.error('The DC/OS web installer (--web) is retired and will be removed in 1.12\n'
+              'Please refer to DC/OS Installation guide https://docs.mesosphere.com/1.11/installing/')
+    sys.exit(1)
 
     log.debug('DC/OS Installer')
     make_default_config_if_needed(CONFIG_PATH)
