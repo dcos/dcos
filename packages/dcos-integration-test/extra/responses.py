@@ -1,8 +1,10 @@
 """Module that holds expected repsonses."""
+import requests
+
 
 class Ok():
 
-    def __init__(self, expected_body = None):
+    def __init__(self, expected_body=None):
         self.expected_body = expected_body
         self.expected_code = 200
 
