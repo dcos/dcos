@@ -13,7 +13,7 @@ import retrying
 import test_helpers
 
 from dcos_test_utils import marathon
-from responses import Ok
+from dcos_test_utils.helpers import assert_response_ok
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class MarathonApp:
         stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        assert r == Ok()
+        assert_response_ok(r)
 
         self._info = r.json()
         assert self._info['app']['tasksHealthy'] == self.app['instances']
@@ -152,7 +152,7 @@ class MarathonPod:
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        assert r == Ok()
+        assert_response_ok(r)
 
         self._info = r.json()
         error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
