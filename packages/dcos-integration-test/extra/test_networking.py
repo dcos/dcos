@@ -155,7 +155,8 @@ class MarathonPod:
         assert r == Ok()
 
         self._info = r.json()
-        assert self._info['status'] == 'STABLE'
+        error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
+        assert self._info['status'] == 'STABLE', error_msg
 
     def info(self, dcos_api_session):
         try:
