@@ -12,7 +12,7 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 PACKAGES_DIR,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
-from pkgpanda.util import (download, extract_tarball, if_exists, is_windows, load_json,
+from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
                            load_string, load_yaml, write_string)
 
 

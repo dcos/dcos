@@ -1,7 +1,8 @@
 import os
-import pytest
 from shutil import copytree
 from subprocess import check_call, check_output
+
+import pytest
 
 from pkgpanda.util import expect_fs, is_windows, load_json, resources_test_dir, run
 

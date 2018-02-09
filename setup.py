@@ -1,5 +1,7 @@
-from setuptools import setup
 import platform
+
+from setuptools import setup
+
 is_windows = (platform.system() == "Windows")
 
 
@@ -8,6 +10,7 @@ def get_advanced_templates():
     template_names = ['advanced-master', 'advanced-priv-agent', 'advanced-pub-agent', 'infra', 'zen']
 
     return [template_base + name + '.json' for name in template_names]
+
 
 if is_windows:
     setup(

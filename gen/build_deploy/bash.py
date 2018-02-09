@@ -22,8 +22,9 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
-from pkgpanda.constants import RESERVED_UNIT_NAMES, PACKAGES_DIR, install_root
+from pkgpanda.constants import install_root, PACKAGES_DIR, RESERVED_UNIT_NAMES
 from pkgpanda.util import is_windows, logger
+
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
     if os.path.isdir(custom_check_bins_dir):
@@ -50,7 +51,8 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' + PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id)
+        return DEFAULT_CHECK_SEARCH_PATH + ':' + install_root +
+                '/' + PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id)
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -713,7 +715,9 @@ def make_installer_docker(variant, variant_info, installer_info):
             dest_filename = dest_path(filename)
             os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename + ' -destination ' + dest_filenamae + ' }'])
+                subprocess.check_call(['powershell.exe', '-command',
+                                       '& { copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename +
+                                       ' -destination ' + dest_filenamae + ' }'])
             else:
                 subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
 
@@ -752,7 +756,9 @@ def make_installer_docker(variant, variant_info, installer_info):
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '& {copy-item -recurse -path gen_extra -destination ' + dest_path('gen_extra') + ' }'])
+                subprocess.check_call(['powershell.exe', '-command',
+                                       '& {copy-item -recurse -path gen_extra -destination ' +
+                                       dest_path('gen_extra') + ' }'])
             else:
                 subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
         else:

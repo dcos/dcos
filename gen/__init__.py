@@ -29,7 +29,7 @@ import gen.template
 import gen.util
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.constants import PACKAGES_DIR, config_dir
+from pkgpanda.constants import config_dir, PACKAGES_DIR
 from pkgpanda.util import (
     hash_checkout,
     is_windows,
@@ -447,8 +447,9 @@ def get_dcosconfig_source_target_and_templates(
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
     if is_windows:
-        config_package_names = ['dcos-windows-config', 'dcos-metadata'] # 2Do: We expect to change these
-        template_filenames = ['dcos-windows-config.yaml', 'cloud-config-windows.yaml', 'dcos-metadata.yaml', 'dcos-windows-services.yaml']
+        config_package_names = ['dcos-windows-config', 'dcos-metadata']  # 2Do: We expect to change these
+        template_filenames = ['dcos-windows-config.yaml', 'cloud-config-windows.yaml',
+                              'dcos-metadata.yaml', 'dcos-windows-services.yaml']
     else:
         config_package_names = ['dcos-config', 'dcos-metadata']
         template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
@@ -743,8 +744,8 @@ def generate(
     # Do the transform
     for item in cc_root:
         if is_windows:
-            tmpPath = item['path'].replace('\\', '/')
-            assert tmpPath.startswith('c:/') or tmpPath.startswith('/')
+            tmppath = item['path'].replace('\\', '/')
+            assert tmppath.startswith('c:/') or tmppath.startswith('/')
         else:
             assert item['path'].startswith('/')
         cc['write_files'].append(item)

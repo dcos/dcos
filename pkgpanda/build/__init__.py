@@ -7,7 +7,7 @@ import shutil
 import string
 import tempfile
 from contextlib import contextmanager
-from os import chdir, getcwd, mkdir, makedirs
+from os import chdir, getcwd
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -22,6 +22,7 @@ from pkgpanda.util import (check_forbidden_services, download_atomic,
                            hash_checkout, is_windows, load_json, load_string, logger,
                            make_file, make_tar, rewrite_symlinks, write_json,
                            write_string)
+
 
 class BuildError(Exception):
     """An error while building something."""
@@ -48,7 +49,8 @@ class DockerCmd:
         )
         if is_windows:
             numprocs = int(os.environ.get('NUMBER_OF_PROCESSORS'))
-            docker = ["docker", "run", "-m", "{0}gb".format(numprocs*4), "--cpu-count", os.environ.get('NUMBER_OF_PROCESSORS'), "--name={}".format(container_name)]
+            docker = ["docker", "run", "-m", "{0}gb".format(numprocs * 4), "--cpu-count",
+                      os.environ.get('NUMBER_OF_PROCESSORS'), "--name={}".format(container_name)]
         else:
             docker = ["docker", "run", "--name={}".format(container_name)]
         for host_path, container_path in self.volumes.items():
@@ -261,7 +263,9 @@ class PackageStore:
         self._upstream_package_dir = self._upstream_dir + "/" + PACKAGES_DIR
         # TODO(cmaloney): Make it so the upstream directory can be kept around
         if is_windows:
-            check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' + self._upstream_dir + ' | remove-item -recurse -force  }'])
+            check_call(['powershell.exe', '-command',
+                        '& { get-childitem -erroraction silentlycontinue -path ' +
+                        self._upstream_dir + ' | remove-item -recurse -force  }'])
         else:
             check_call(['rm', '-rf', self._upstream_dir])
         upstream_config = self._packages_dir + '/upstream.json'
@@ -351,7 +355,8 @@ class PackageStore:
         directory = self._package_cache_dir + '/' + name
         if is_windows:
             directory = directory.replace('\\', '/')
-            check_call(["powershell.exe", "-command", "& { new-item -ItemType Directory -Force -Path " +  directory + " > $null }"])
+            check_call(["powershell.exe", "-command",
+                        "& { new-item -ItemType Directory -Force -Path " + directory + " > $null }"])
         else:
             check_call(['mkdir', '-p', directory])
         return directory
@@ -559,7 +564,8 @@ def make_bootstrap_tarball(package_store, packages, variant):
         return mark_latest()
 
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  bootstrap_cache_dir + ' > $null }' ])
+        check_call(['powershell.exe', '-command',
+                    '& { new-item -itemtype directory -force -path ' + bootstrap_cache_dir + ' > $null }'])
     else:
         check_call(['mkdir', '-p', bootstrap_cache_dir])
 
@@ -744,7 +750,8 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     complete_cache_dir = package_store.get_complete_cache_dir()
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  complete_cache_dir + ' > $null }' ])
+        check_call(['powershell.exe', '-command',
+                    '& { new-item -itemtype directory -force -path ' + complete_cache_dir + ' > $null }'])
     else:
         check_call(['mkdir', '-p', complete_cache_dir])
     results = {}
@@ -882,7 +889,8 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
             cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
             if is_windows:
-                check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  cache_dir + ' > $null }' ])
+                check_call(['powershell.exe', '-command',
+                            '& { new-item -itemtype directory -force -path ' + cache_dir + ' > $null }'])
             else:
                 check_call(['mkdir', '-p', cache_dir])
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
@@ -1124,11 +1132,14 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # Run a docker container to remove src/ and result/
         cmd = DockerCmd()
         cmd.volumes = {
-                package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
+            package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
         }
         if is_windows:
             cmd.container = "microsoft/windowsservercore:1709"
-            cmd.run("package-cleaner", ["powershell.exe", "-command", "& { get-childitem -erroraction silentlycontinue -path " + PKG_DIR + "/src," + PKG_DIR + "/result | remove-item -recurse -force }"])
+            cmd.run("package-cleaner",
+                    ["powershell.exe", "-command",
+                     "& { get-childitem -erroraction silentlycontinue -path " + PKG_DIR + "/src," + PKG_DIR +
+                     "/result | remove-item -recurse -force }"])
         else:
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
@@ -1216,19 +1227,19 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             package_dir: PKG_DIR + "/build:ro",
             # Getting the result out
             cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
-            #2DO: windows docker does not suport overlapping mounts so push into a temporary directory in case needed
+            # 2DO: windows docker does not suport overlapping mounts so push into a temporary directory in case needed
             install_dir: install_root + "/install_dir:ro"
         })
     else:
         cmd.volumes.update({
-                # TODO(cmaloney): src should be read only...
-                cache_abs("src"): PKG_DIR + "/src:rw",
-                # The build script
-                build_script: PKG_DIR + "/build:ro",
-                # Getting the result out
-                cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
-                install_dir: install_root + ":ro"
-            })
+            # TODO(cmaloney): src should be read only...
+            cache_abs("src"): PKG_DIR + "/src:rw",
+            # The build script
+            build_script: PKG_DIR + "/build:ro",
+            # Getting the result out
+            cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
+            install_dir: install_root + ":ro"
+        })
     if os.path.exists(extra_dir):
         cmd.volumes[extra_dir] = PKG_DIR + "/extra:ro"
     cmd.environment = {
@@ -1245,12 +1256,11 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
         if is_windows:
-            cmd.run("package-builder", [
-             "powershell.exe",
-             "-file",
-             PKG_DIR + "/build/build.ps1",
-             PKG_DIR + "/src/",
-             install_root + "/" + PACKAGES_DIR + "/{}".format(pkg_id)])
+            cmd.run("package-builder", ["powershell.exe",
+                                        "-file",
+                                        PKG_DIR + "/build/build.ps1",
+                                        PKG_DIR + "/src/",
+                                        install_root + "/" + PACKAGES_DIR + "/{}".format(pkg_id)])
         else:
             cmd.run("package-builder", [
                 "/bin/bash",
@@ -1264,7 +1274,9 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Clean up the temporary install dir used for dependencies.
     # TODO(cmaloney): Move to an RAII wrapper.
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' + install_dir + ' | remove-item -recurse -force }'])
+        check_call(['powershell.exe', '-command',
+                    '& { get-childitem -erroraction silentlycontinue -path ' +
+                    install_dir + ' | remove-item -recurse -force }'])
     else:
         check_call(['rm', '-rf', install_dir])
 

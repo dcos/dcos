@@ -96,6 +96,7 @@ def loop():
     yield loop
     loop.close()
 
+
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_ssh_async(sshd_manager, loop):
     class DummyAsyncDelegate(AbstractSSHLibDelegate):

@@ -3,8 +3,8 @@ import os
 import tempfile
 
 import pytest
-import pkgpanda.util
 
+import pkgpanda.util
 import ssh.validate
 
 

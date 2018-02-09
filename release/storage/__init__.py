@@ -1,6 +1,7 @@
 import abc
 import os.path
 import subprocess
+
 from pkgpanda.util import is_windows
 
 
@@ -36,7 +37,9 @@ class AbstractStorageProvider(metaclass=abc.ABCMeta):
         dirname = os.path.dirname(local_path)
         if dirname:
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' + os.path.dirname(local_path) + ' > $null }'])
+                subprocess.check_call(['powershell.exe', '-command',
+                                       '& { new-item -itemtype directory -force -path ' +
+                                       os.path.dirname(local_path) + ' > $null }'])
             else:
                 subprocess.check_call(['mkdir', '-p', os.path.dirname(local_path)])
         self.download_inner(path, local_path)

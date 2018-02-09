@@ -3,9 +3,10 @@ import operator
 import os
 from shutil import copytree
 
+import pytest
+
 from pkgpanda.http import app
 from pkgpanda.util import is_windows, resources_test_dir
-import pytest
 
 
 def assert_response(response, status_code, body, headers=None, body_cmp=operator.eq):

@@ -58,7 +58,9 @@ def uninstall(install, repository):
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' + os.path.dirname(install.systemd_dir) + '/dcos.target | remove-item -force'])
+        check_call(['powershell.exe', '-command',
+                    '& { get-childitem -erroraction silentlycontinue -path ' + os.path.dirname(install.systemd_dir) +
+                    '/dcos.target | remove-item -force'])
     else:
         check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
 
@@ -86,13 +88,17 @@ def uninstall(install, repository):
 
     if is_windows:
         for name in all_names:
-            check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' +  name + ' | remove-item -recurse -force }'])
+            check_call(['powershell.exe', '-command',
+                        '& { get-childitem -erroraction silentlycontinue -path ' +
+                        name + ' | remove-item -recurse -force }'])
     else:
         check_call(['rm', '-rf'] + all_names)
 
     # Removing /opt/mesosphere
     if is_windows:
-        check_call(['powershell.exe', '-command', '& { get-chileitem -erroraction silentlycontinue -path ' + install.root + ' | remove-item -recurse -force }'])
+        check_call(['powershell.exe', '-command',
+                    '& { get-chileitem -erroraction silentlycontinue -path ' +
+                    install.root + ' | remove-item -recurse -force }'])
     else:
         check_call(['rm', '-rf', install.root])
 

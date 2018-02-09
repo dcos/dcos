@@ -1,5 +1,6 @@
-from pkgpanda.util import expect_fs, is_windows, resources_test_dir, run
 import pytest
+
+from pkgpanda.util import expect_fs, is_windows, resources_test_dir, run
 
 fetch_output = """\rFetching: mesos--0.22.0\rFetched: mesos--0.22.0\n"""
 

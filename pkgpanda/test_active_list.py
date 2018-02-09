@@ -1,7 +1,8 @@
 from shutil import copytree
 
-from pkgpanda.util import is_windows, resources_test_dir, run
 import pytest
+
+from pkgpanda.util import is_windows, resources_test_dir, run
 
 
 list_output = """mesos:
