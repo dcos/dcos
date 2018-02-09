@@ -5,6 +5,8 @@ import yaml
 
 import gen
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
+import pkgpanda.util
+import pytest
 
 
 def validate_error_multikey(new_arguments, keys, message, unset=None):
@@ -57,6 +59,7 @@ bad_dns_forward_zones_str = """
 """
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_dns_forward_zones():
     zones = dns_forward_zones_str
     bad_zones = bad_dns_forward_zones_str

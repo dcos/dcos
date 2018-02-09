@@ -1,0 +1,25 @@
+[Unit]
+Description=DC/OS Component Package Manager (Pkgpanda): installs and manages DC/OS components
+
+[Service]
+Type=simple
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=5
+LimitNOFILE=16384
+User=root
+Group=root
+# Explicitly allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
+Environment=PKGPANDA_HTTP_CONFIG=${PKG_PATH}/etc/pkgpanda-api.conf.py
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=${PKG_PATH}/pkgpanda-api/bin/pkgpanda-api.sh
+
+# Allow pkgpanda-api to upgrade itself gracefully.
+# When a pkgpanda-api worker stops pkgpanda-api, the master process receives
+# SIGTERM and waits for the worker to finish processing the upgrade request
+# before exiting.
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30

@@ -7,6 +7,7 @@ import gen
 import gen.build_deploy.bash
 import pkgpanda
 from dcos_installer.constants import ARTIFACT_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR
+from pkgpanda.util import is_windows
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,11 @@ def onprem_generate(config):
 
 
 def make_serve_dir(gen_out):
-    subprocess.check_call(['mkdir', '-p', SERVE_DIR])
+    if is_windows:
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { new-item -itemtype directory -force -path ' + SERVE_DIR + ' > $null }'])
+    else:
+        subprocess.check_call(['mkdir', '-p', SERVE_DIR])
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
     # Copy cached artifacts.
@@ -106,7 +111,11 @@ def fetch_artifacts(filenames, src_dir, dest_dir):
             log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
             raise FileNotFoundError(filename)
 
-    subprocess.check_call(['mkdir', '-p', dest_dir])
+    if is_windows:
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { new-item -itemtype directory -force -path ' + dest_dir + ' > $null }'])
+    else:
+        subprocess.check_call(['mkdir', '-p', dest_dir])
     do_move_atomic(src_dir, dest_dir, filenames)
 
 

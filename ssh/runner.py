@@ -2,7 +2,11 @@ import asyncio
 import copy
 import logging
 import os
-import pty
+try:
+    import pty
+except:
+    pass
+
 from contextlib import contextmanager
 
 import ssh.validate

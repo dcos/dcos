@@ -1,0 +1,48 @@
+- name: systemd-journald.service
+  command: restart
+# Restart docker to make it recover from a SIGPIPE it recieves when systemd-journald dies.
+- name: docker.service
+  command: restart
+- name: dcos-link-env.service
+  command: start
+  content: |
+    [Unit]
+    Before=dcos.target
+    [Service]
+    Type=oneshot
+    StandardOutput=journal+console
+    StandardError=journal+console
+    ExecStartPre=/usr/bin/mkdir -p {{ profile_symlink_target_dir }}
+    ExecStart=/usr/bin/ln -sf {{ profile_symlink_source }} {{ profile_symlink_target }}
+- name: dcos-download.service
+  content: |
+    [Unit]
+    Description=Pkgpanda: Download DC/OS to this host.
+    After=network-online.target
+    Wants=network-online.target
+    ConditionPathExists=!/opt/mesosphere/active/
+    [Service]
+    Type=oneshot
+    StandardOutput=journal+console
+    StandardError=journal+console
+    ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/{{ bootstrap_id }}.bootstrap.tar.xz
+    ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
+    ExecStart=/usr/bin/tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
+    ExecStartPost=-/usr/bin/rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
+- name: dcos-setup.service
+  command: start
+  no_block: true
+  enable: true
+  content: |
+    [Unit]
+    Description=Pkgpanda: Specialize DC/OS for this host.
+    Requires=dcos-download.service
+    After=dcos-download.service
+    [Service]
+    Type=oneshot
+    StandardOutput=journal+console
+    StandardError=journal+console
+    EnvironmentFile=/opt/mesosphere/environment
+    ExecStart=/opt/mesosphere/bin/pkgpanda setup --no-block-systemd
+    [Install]
+    WantedBy=multi-user.target

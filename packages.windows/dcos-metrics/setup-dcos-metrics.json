@@ -1,0 +1,57 @@
+#
+#
+#
+#[void]$global:script_path # A declaration
+
+
+class AdminRouter:Installable
+{
+    static [string] $ClassName = "AdminRouter"
+    Setup([string] $script_path) { 
+
+        Write-Host "Setup AdminRouter : $script_path"; 
+        
+        Write-Host "install Web-Server"
+        $rslt = (get-windowsfeature | where { $_.Name -like "Web-Server" })
+        if (! $rslt -match "Installed") 
+        {
+            $rslt = (add-weindowsfeature "Web-Server" )
+            if (!$rslt.Success) 
+            {
+                Write-Host "Could not install Web-Server"
+            }
+        }
+
+        $rslt = (get-windowsfeature | where { $_.Name -like "Web-Request-Monitor" })
+        if (! $rslt -match "Installed")
+        {
+            $rslt = (add-weindowsfeature "Web-Request-Monitor" )
+            if (!$rslt.Success)
+            {
+                Write-Host "Could not install Web-Request-Monitor"
+            }
+        }
+
+        import-module WebAdministration
+
+        Invoke-WebRequest 'http://download.microsoft.com/download/D/D/E/DDE57C26-C62C-4C59-A1BB-31D58B36ADA2/rewrite_amd64_en-US.msi' -OutFile "c:/dcos-download/rewrite_amd64_en-US.msi"
+        Start-Process "c:/dcos-download/rewrite_amd64_en-US.msi"  '/qn /l c:/tmp/rewrite.log' | Wait-Process
+
+        if ($? -neq True)
+        {
+            Write-Host "Could not install URL rewrite"
+        } 
+
+        Invoke-WebRequest '36ADA2/rewrite_amd64_en-US.msi' -OutFile "c:/dcos-download/rewrite_amd64_en-US.msi"
+        Start-Process "c:/dcos-download/rewrite_amd64_en-US.msi"  '/qn /l c:/tmp/rewrite.log' | Wait-Process
+
+        if ($? -neq True)
+        {
+            Write-Host "Could not install URL rewrite"
+        } 
+
+    }
+}
+
+
+

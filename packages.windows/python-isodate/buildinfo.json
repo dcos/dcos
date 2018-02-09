@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/f4/5b/fe03d46ced80639b7be9285492dc8ce069b841c0cebe5baacdd9b090b164/isodate-0.5.4.tar.gz",
+      "sha1": "40ccf07a8e46284a79cfc4d41e151f71ae63f535"
+  }
+}
