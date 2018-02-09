@@ -51,8 +51,8 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':' + install_root +
-                '/' + PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id)
+        return (DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' +
+                PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id))
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -763,7 +763,8 @@ def make_installer_docker(variant, variant_info, installer_info):
                 subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
         else:
             if is_windows:
-                subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' > $null }'])
+                subprocess.check_call(['powershell.exe', '-command',
+                                       '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' > $null }'])
             else:
                 subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 

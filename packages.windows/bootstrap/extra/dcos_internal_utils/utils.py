@@ -1,5 +1,6 @@
 import logging
 import os
+
 import portalocker
 
 log = logging.getLogger(__name__)

@@ -10,6 +10,8 @@ import pytest
 
 import history.server_util
 import history.statebuffer
+import pkgpanda.util
+
 from history.statebuffer import FETCH_PERIOD, FILE_EXT
 
 import pkgpanda.util

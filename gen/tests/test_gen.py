@@ -8,6 +8,7 @@ import pytest
 import gen
 import pkgpanda.util
 
+
 def file_mode(filename: str) -> str:
     """Return a string containing the octal mode for filename."""
     return '{0:04o}'.format(stat.S_IMODE(os.stat(filename).st_mode))
