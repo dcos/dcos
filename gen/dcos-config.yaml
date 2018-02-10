@@ -9,11 +9,6 @@ package:
       {
         "environment": {
           "MESOS_IP_DISCOVERY_COMMAND": "/opt/mesosphere/bin/detect_ip",
-{% switch enable_mesos_ipv6_discovery %}
-{% case "false" %}
-{% case "true" %}
-          "MESOS_IP6_DISCOVERY_COMMAND": "/opt/mesosphere/bin/detect_ip6",
-{% endswitch %}
           "PROVIDER": "{{ provider }}"
         }
       }
@@ -512,6 +507,11 @@ package:
 {% case "true" %}
       MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
 {% case "false" %}
+{% endswitch %}
+{% switch enable_mesos_ipv6_discovery %}
+{% case "false" %}
+{% case "true" %}
+      MESOS_IP6_DISCOVERY_COMMAND=/opt/mesosphere/bin/detect_ip6
 {% endswitch %}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
