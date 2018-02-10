@@ -1,5 +1,8 @@
 import uuid
 
+__maintainer__ = 'Gilbert88'
+__contact__ = 'core-team@mesosphere.io'
+
 
 def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer.

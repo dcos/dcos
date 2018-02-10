@@ -11,6 +11,9 @@ import pytest
 
 import retrying
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 # Expected latency for all dcos-diagnostics units to refresh after postflight plus
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
 LATENCY = 120
