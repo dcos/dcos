@@ -293,48 +293,54 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     except ValueError as ex:
         raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
 
-    # Check the VTEP IP, VTEP MAC keys are present in the overlay
-    # configuration
-    assert 'vtep_subnet' in overlay_network.keys(), (
-        'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet: {}."
-            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-
-    assert 'vtep_subnet6' in overlay_network.keys(), (
-        'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet6'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet6: {}."
-            " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-
-    assert 'vtep_mac_oui' in overlay_network.keys(), (
-        'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-    assert 'overlays' in overlay_network.keys(), (
+    assert 'overlays' in overlay_network, (
         'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+
     assert len(overlay_network['overlays']) > 0, (
-        'We need at least one overlay network configuration {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
+        assert 'name' in overlay, (
+            'Missing "name" in overlay configuration: {}'.format(overlay))
+
         assert (len(overlay['name']) <= 13), (
             "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
 
-        if overlay['name'] == 'dcos':
+        assert ('subnet' in overlay or 'subnet6' in overlay), (
+            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
+
+        assert 'vtep_mac_oui' in overlay_network.keys(), (
+            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
+
+        if 'subnet' in overlay:
+            # Check the VTEP IP is present in the overlay configuration
+            assert 'vtep_subnet' in overlay_network, (
+                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet: {}."
+                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet'])
             except ValueError as ex:
                 raise AssertionError(
                     "Incorrect value for overlay subnet {}."
                     " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
-        elif overlay['name'] == 'dcos6':
+
+        if 'subnet6' in overlay:
+            # Check the VTEP IP6 is present in the overlay configuration
+            assert 'vtep_subnet6' in overlay_network, (
+                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet6'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet6: {}."
+                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet6'])
             except ValueError as ex:
