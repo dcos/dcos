@@ -64,7 +64,8 @@ def _dump_diagnostics(request, dcos_api_session):
     """
     yield
 
-    if os.environ.get('DIAGNOSTICS_DIRECTORY'):
+    make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
+    if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
         check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
 
