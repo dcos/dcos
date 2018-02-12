@@ -16,10 +16,6 @@ import retrying
 LATENCY = 120
 
 
-class NotCriticalException(Exception):
-    """Exception should be raised to continue retry loop"""
-
-
 def check_json(response):
     response.raise_for_status()
     try:
@@ -412,7 +408,7 @@ def _get_bundle_list(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
-                retry_on_exception=lambda e: isinstance(e, NotCriticalException))
+                retry_on_result=lambda x: x is False)
 def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
     response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
     # find if the job is still running
@@ -437,8 +433,7 @@ def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
     last_datapoint['value'] = percent_done
     last_datapoint['time'] = datetime.datetime.now()
 
-    if job_running:
-        raise NotCriticalException('Job is still running')
+    return not job_running
 
 
 # sometimes it may take extra few seconds to list bundles after the job is finished.
