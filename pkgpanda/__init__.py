@@ -37,7 +37,8 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, is_windows, load_json, write_json, write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
+                           load_json, make_directory, remove_directory_tree, write_json, write_string)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -483,12 +484,7 @@ class Repository:
 
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
-        if is_windows:
-            check_call(["powershell.exe", "-command",
-                        "& { get-childitem -erroraction silentlycontinue -path " + tmp_path +
-                        " | remove-item -recurse -force }"])
-        else:
-            check_call(['rm', '-rf', tmp_path])
+        remove_directory_tree(tmp_path)
 
         fetcher(id, tmp_path)
         os.rename(tmp_path, pkg_path)
@@ -903,12 +899,7 @@ class Install:
             if self.__manage_state_dir:
                 state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
-                    if is_windows:
-                        check_call(['powershell.exe', '-command',
-                                    '& { new-item -itemtype directory -force -path ' + state_dir_path + ' > $null }'])
-                    else:
-                        check_call(['mkdir', '-p', state_dir_path])
-
+                    make_directory(state_dir_path)
                     if package.username and not is_windows:
                         uid = sysusers.get_uid(package.username)
                         check_call(['chown', '-R', str(uid), state_dir_path])

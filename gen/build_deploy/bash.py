@@ -23,7 +23,7 @@ from gen.calc import (
 )
 from gen.internals import Source
 from pkgpanda.constants import install_root, PACKAGES_DIR
-from pkgpanda.util import is_windows, logger
+from pkgpanda.util import copy_directory_item, copy_directory_tree, is_windows, logger, make_directory
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
@@ -714,12 +714,7 @@ def make_installer_docker(variant, variant_info, installer_info):
         def copy_to_build(src_prefix, filename):
             dest_filename = dest_path(filename)
             os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
-            if is_windows:
-                subprocess.check_call(['powershell.exe', '-command',
-                                       '& { copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename +
-                                       ' -destination ' + dest_filename + ' }'])
-            else:
-                subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
+            copy_directory_item(os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename)
 
         def fill_template(base_name, format_args):
             pkgpanda.util.write_string(
@@ -755,18 +750,9 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
-            if is_windows:
-                subprocess.check_call(['powershell.exe', '-command',
-                                       '& {copy-item -recurse -path gen_extra -destination ' +
-                                       dest_path('gen_extra') + ' }'])
-            else:
-                subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+            copy_directory_tree('gen_extra', dest_path('gen_extra'))
         else:
-            if is_windows:
-                subprocess.check_call(['powershell.exe', '-command',
-                                       '& { new-item -itemtype directory ' + dest_path('gen_extra') + ' > $null }'])
-            else:
-                subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
+            make_directory(dest_path('gen_extra'))
 
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])

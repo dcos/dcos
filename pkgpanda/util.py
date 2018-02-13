@@ -24,16 +24,72 @@ from pkgpanda.exceptions import FetchError, ValidationError
 
 is_windows = platform.system() is "Windows"
 
-if is_windows:
-    REPO_ROOT_DIR = "dcos/"
-else:
-    REPO_ROOT_DIR = ""
-
 json_prettyprint_args = {
     "sort_keys": True,
     "indent": 2,
     "separators": (',', ':')
 }
+
+
+def is_absolute_path(path):
+    if is_windows:
+        # We assume one char drive letter. Sometimes its two but not often
+        path[1] == ':'  # pattern is <driveletter>:/string....
+    else:
+        path[0] == '/'
+
+
+if is_windows:
+    def remove_directory(path):
+        """removes a directory. fails silently if the tree does not exist"""
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { get-childitem -erroraction silentlycontinue -path ' +
+                               path + ' | remove-item -force }'])
+
+    def remove_directory_tree(path):
+        """recursively removes a directory tree. fails silently if the tree does not exist"""
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { get-childitem -erroraction silentlycontinue -path ' +
+                               path + ' | remove-item -recurse -force }'])
+
+    def make_directory(path):
+        """Create a single directory"""
+        path = path.replace('\\', '/')
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { new-item -itemtype directory -force -path ' +
+                               path + ' > $null }'])
+
+    def copy_directory_item(src_path, dst_path):
+        """copy a single directory item from one location to another"""
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { copy-item -path ' + src_path +
+                               ' -destination ' + dst_path + ' }'])
+
+    def copy_directory_tree(src_path, dst_path):
+        """copy recursively a directory tree from one location to another"""
+        subprocess.check_call(['powershell.exe', '-command',
+                               '& { copy-item -recurse -path ' + src_path +
+                               ' -destination ' + dst_path + ' }'])
+else:
+    def remove_directory(path):
+        """removes a directory. fails silently if the tree does not exist"""
+        subprocess.check_call(['rm', '-f', path])
+
+    def remove_directory_tree(path):
+        """recursively removes a directory tree. fails silently if the tree does not exist"""
+        subprocess.check_call(['rm', '-rf', path])
+
+    def make_directory(path):
+        """Create a single directory"""
+        subprocess.check_call(['mkdir', '-p', path])
+
+    def copy_directory_item(src_path, dst_path):
+        """copy a single directory item from one location to another"""
+        subprocess.check_call(['cp', src_path, dst_path])
+
+    def copy_directory_tree(src_path, dst_path):
+        """copy recursively a directory tree from one location to another"""
+        subprocess.check_call(['cp', '-r', src_path, dst_path])
 
 
 def variant_str(variant):
@@ -339,7 +395,7 @@ class TestRepo:
 
 def resources_test_dir(path):
     assert not path.startswith('/')
-    return REPO_ROOT_DIR + "pkgpanda/test_resources/{}".format(path)
+    return "pkgpanda/test_resources/{}".format(path)
 
 
 class MessageLogger:

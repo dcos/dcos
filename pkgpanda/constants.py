@@ -10,6 +10,7 @@ if is_windows:
     STATE_DIR_ROOT = 'c:/var/lib/dcos'
     PACKAGES_DIR = "packages"
     PKG_DIR = "c:/pkg"
+    DOCKERFILE_DIR = 'docker.windows/'
     config_dir = 'c:/etc/mesosphere'
     install_root = 'c:/opt/mesosphere'
     repository_base = 'c:/opt/mesosphere/' + PACKAGES_DIR
@@ -17,6 +18,7 @@ else:
     STATE_DIR_ROOT = '/var/lib/dcos'
     PACKAGES_DIR = "packages"
     PKG_DIR = "/pkg"
+    DOCKERFILE_DIR = 'docker/'
     config_dir = '/etc/mesosphere'
     install_root = '/opt/mesosphere'
     repository_base = '/opt/mesosphere/' + PACKAGES_DIR

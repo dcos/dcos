@@ -36,7 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
-from pkgpanda.util import is_windows
+from pkgpanda.util import remove_directory, remove_directory_tree
 
 
 def print_repo_list(packages):
@@ -57,12 +57,7 @@ def uninstall(install, repository):
     # TODO(cmaloney): Make this not quite so magical
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
-    if is_windows:
-        check_call(['powershell.exe', '-command',
-                    '& { get-childitem -erroraction silentlycontinue -path ' + os.path.dirname(install.systemd_dir) +
-                    '/dcos.target | remove-item -force'])
-    else:
-        check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
+    remove_directory(os.path.dirname(install.systemd_dir) + "/dcos.target")
 
     # Cleanup all systemd units
     # TODO(cmaloney): This is much more work than we need to do the job
@@ -86,21 +81,12 @@ def uninstall(install, repository):
         print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
-    if is_windows:
-        for name in all_names:
-            check_call(['powershell.exe', '-command',
-                        '& { get-childitem -erroraction silentlycontinue -path ' +
-                        name + ' | remove-item -recurse -force }'])
     else:
-        check_call(['rm', '-rf'] + all_names)
+        for name in all_names:
+            remove_directory_tree(name)
 
     # Removing /opt/mesosphere
-    if is_windows:
-        check_call(['powershell.exe', '-command',
-                    '& { get-chileitem -erroraction silentlycontinue -path ' +
-                    install.root + ' | remove-item -recurse -force }'])
-    else:
-        check_call(['rm', '-rf', install.root])
+    remove_directory_tree(install.root)
 
 
 def find_checks(install, repository):

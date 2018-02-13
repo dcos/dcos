@@ -20,7 +20,7 @@ from pkgpanda.constants import install_root, PACKAGES_DIR, PKG_DIR, RESERVED_UNI
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic,
                            hash_checkout, is_windows, load_json, load_string, logger,
-                           make_file, make_tar, rewrite_symlinks, write_json,
+                           make_directory, make_file, make_tar, remove_directory_tree, rewrite_symlinks, write_json,
                            write_string)
 
 
@@ -262,12 +262,7 @@ class PackageStore:
         self._upstream = None
         self._upstream_package_dir = self._upstream_dir + "/" + PACKAGES_DIR
         # TODO(cmaloney): Make it so the upstream directory can be kept around
-        if is_windows:
-            check_call(['powershell.exe', '-command',
-                        '& { get-childitem -erroraction silentlycontinue -path ' +
-                        self._upstream_dir + ' | remove-item -recurse -force  }'])
-        else:
-            check_call(['rm', '-rf', self._upstream_dir])
+        remove_directory_tree(self._upstream_dir)
         upstream_config = self._packages_dir + '/upstream.json'
         if os.path.exists(upstream_config):
             try:
@@ -360,12 +355,7 @@ class PackageStore:
 
     def get_package_cache_folder(self, name):
         directory = self._package_cache_dir + '/' + name
-        if is_windows:
-            directory = directory.replace('\\', '/')
-            check_call(["powershell.exe", "-command",
-                        "& { new-item -ItemType Directory -Force -Path " + directory + " > $null }"])
-        else:
-            check_call(['mkdir', '-p', directory])
+        make_directory(directory)
         return directory
 
     def list_trees(self):
@@ -570,11 +560,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
         print("Bootstrap already up to date, not recreating")
         return mark_latest()
 
-    if is_windows:
-        check_call(['powershell.exe', '-command',
-                    '& { new-item -itemtype directory -force -path ' + bootstrap_cache_dir + ' > $null }'])
-    else:
-        check_call(['mkdir', '-p', bootstrap_cache_dir])
+    make_directory(bootstrap_cache_dir)
 
     # Try downloading.
     if package_store.try_fetch_bootstrap_and_active(bootstrap_id):
@@ -755,11 +741,7 @@ def build_tree(package_store, mkbootstrap, tree_variants):
     # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     complete_cache_dir = package_store.get_complete_cache_dir()
-    if is_windows:
-        check_call(['powershell.exe', '-command',
-                    '& { new-item -itemtype directory -force -path ' + complete_cache_dir + ' > $null }'])
-    else:
-        check_call(['mkdir', '-p', complete_cache_dir])
+    make_directory(complete_cache_dir)
     results = {}
     for package_set in package_sets:
         info = {
@@ -894,11 +876,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         for src_name, src_info in sorted(sources.items()):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
             cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
-            if is_windows:
-                check_call(['powershell.exe', '-command',
-                            '& { new-item -itemtype directory -force -path ' + cache_dir + ' > $null }'])
-            else:
-                check_call(['mkdir', '-p', cache_dir])
+            make_directory(cache_dir)
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
             fetchers[src_name] = fetcher
             checkout_ids[src_name] = fetcher.get_id()
@@ -1277,12 +1255,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Clean up the temporary install dir used for dependencies.
     # TODO(cmaloney): Move to an RAII wrapper.
-    if is_windows:
-        check_call(['powershell.exe', '-command',
-                    '& { get-childitem -erroraction silentlycontinue -path ' +
-                    install_dir + ' | remove-item -recurse -force }'])
-    else:
-        check_call(['rm', '-rf', install_dir])
+    remove_directory_tree(install_dir)
 
     with logger.scope("Build package tarball"):
         # Check for forbidden services before packaging the tarball:
