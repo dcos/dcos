@@ -8,8 +8,6 @@ import gen
 import pkgpanda.util
 
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
-import pkgpanda.util
-import pytest
 
 
 def validate_error_multikey(new_arguments, keys, message, unset=None):

@@ -22,7 +22,7 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
-from pkgpanda.constants import install_root, PACKAGES_DIR, RESERVED_UNIT_NAMES
+from pkgpanda.constants import install_root, PACKAGES_DIR
 from pkgpanda.util import is_windows, logger
 
 
@@ -717,7 +717,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             if is_windows:
                 subprocess.check_call(['powershell.exe', '-command',
                                        '& { copy-item -path ' + os.getcwd() + '/' + src_prefix + '/' + filename +
-                                       ' -destination ' + dest_filenamae + ' }'])
+                                       ' -destination ' + dest_filename + ' }'])
             else:
                 subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
 
@@ -764,7 +764,7 @@ def make_installer_docker(variant, variant_info, installer_info):
         else:
             if is_windows:
                 subprocess.check_call(['powershell.exe', '-command',
-                                       '& { new-item -itemtype directory ' + dest_path(gen_extra) + ' > $null }'])
+                                       '& { new-item -itemtype directory ' + dest_path('gen_extra') + ' > $null }'])
             else:
                 subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
 
