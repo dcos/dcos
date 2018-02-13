@@ -641,7 +641,7 @@ def make_bash(gen_out) -> None:
     setup_services += "\n"
 
     # Start, enable services which request it.
-    for service in gen_out.templates['dcos_services_yaml']:
+    for service in gen_out.templates[dcos_services_yaml]:
         assert service['name'].endswith('.service')
         name = service['name'][:-8]
         if service.get('enable'):
