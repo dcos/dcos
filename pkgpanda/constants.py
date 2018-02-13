@@ -8,7 +8,7 @@ RESERVED_UNIT_NAMES = [
 
 if is_windows:
     STATE_DIR_ROOT = 'c:/var/lib/dcos'
-    PACKAGES_DIR = "packages.windows"
+    PACKAGES_DIR = "packages"
     PKG_DIR = "c:/pkg"
     config_dir = 'c:/etc/mesosphere'
     install_root = 'c:/opt/mesosphere'

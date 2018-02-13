@@ -1,7 +1,0 @@
-{
-    "package_name": "erts",
-    "agent_setup": "setup-erts.ps1",
-    "master_setup": "setup-erts.ps1",
-    "package_type": "script",
-    "md5": ""
-}

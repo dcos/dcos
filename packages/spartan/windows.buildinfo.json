@@ -1,0 +1,11 @@
+{
+  "requires": [{"name":"erlang", "variant":"windows"}],
+  "sources": {
+    "spartan": {
+      "kind": "git",
+      "git": "https://github.com/dcos/spartan.git",
+      "ref": "2b409fef43db650afd4d9fd2c860208931b91879",
+      "ref_origin": "master"
+    }
+  }
+}

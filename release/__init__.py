@@ -579,7 +579,10 @@ def do_build_packages(cache_repository_url):
 
     _build_builders(package_store)
 
-    result = pkgpanda.build.build_tree(package_store, True, None)
+    if is_windows:
+        result = pkgpanda.build.build_tree(package_store, True, "windows")
+    else:
+        result = pkgpanda.build.build_tree(package_store, True, None)
 
     last_set = package_store.get_last_complete_set()
     assert last_set == result, \

@@ -1,5 +1,11 @@
 {
   "exclude": [
+    "erts",
+    "openservicestack",
+    "spartan",
+    "windows-install"
+  ],
+  "exclude": [
     "dcos-installer-ui",
     "dcos-launch"
   ],

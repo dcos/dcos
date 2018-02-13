@@ -240,7 +240,7 @@ class PackageSet:
                 )
             if package_name in treeinfo.excludes:
                 raise BuildError("package {} is needed (explicitly requested or as a requires) "
-                                 "but is excluded according to the treeinfo.json.".format(package_name))
+                                 "but is excluded according to the treeinfo.json".format(package_name))
 
 
 class PackageStore:
@@ -300,7 +300,10 @@ class PackageStore:
                 if name in self._packages_by_name:
                     continue
 
-                builder_folder = os.path.join(directory, name, 'docker')
+                if is_windows:
+                    builder_folder = os.path.join(directory, name, 'docker.windows')
+                else:
+                    builder_folder = os.path.join(directory, name, 'docker')
                 if os.path.exists(builder_folder):
                     self._builders[name] = builder_folder
 
@@ -337,7 +340,7 @@ class PackageStore:
             if not os.path.exists(complete_latest):
                 raise BuildError("No last complete found for variant {}. Expected to find {} to match "
                                  "{}".format(pkgpanda.util.variant_name(variant), complete_latest,
-                                             pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
+                                             pkgpanda.util.variant_prefix(variant) + "treeinfo.json"))
             return load_json(complete_latest)
 
         result = {}
@@ -362,10 +365,10 @@ class PackageStore:
         return directory
 
     def list_trees(self):
-        return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
+        return get_variants_from_filesystem(self._packages_dir, "treeinfo.json")
 
     def get_package_set(self, variant):
-        return PackageSet(variant, TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json')), self)
+        return PackageSet(variant, TreeInfo(load_config_variant(self._packages_dir, variant, "treeinfo.json")), self)
 
     def get_all_package_sets(self):
         return [self.get_package_set(variant) for variant in sorted(self.list_trees(), key=pkgpanda.util.variant_str)]
@@ -516,7 +519,7 @@ def load_buildinfo(path, variant):
 
     # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
     if is_windows:
-        buildinfo.setdefault('build_script', 'build.ps1')
+        buildinfo.setdefault('build_script', 'windows.build.ps1')
     else:
         buildinfo.setdefault('build_script', 'build')
     buildinfo.setdefault('docker', 'dcos/dcos-builder:dcos-builder_dockerdir-latest')
@@ -635,7 +638,7 @@ def build_tree_variants(package_store, mkbootstrap):
     """ Builds all possible tree variants in a given package store
     """
     result = dict()
-    tree_variants = get_variants_from_filesystem(package_store.packages_dir, 'treeinfo.json')
+    tree_variants = get_variants_from_filesystem(package_store.packages_dir, "treeinfo.json")
     if len(tree_variants) == 0:
         raise Exception('No treeinfo.json can be found in {}'.format(package_store.packages_dir))
     for variant in tree_variants:
@@ -914,7 +917,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # TODO(cmaloney): Change dest name to build_script_sha1
     # 2DO - is this correct?
     if is_windows:
-        builder.replace('build_script', 'build.ps1', pkgpanda.util.sha1(build_script))
+        builder.replace('build_script', 'windows.build.ps1', pkgpanda.util.sha1(build_script))
     else:
         builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
@@ -1258,9 +1261,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         if is_windows:
             cmd.run("package-builder", ["powershell.exe",
                                         "-file",
-                                        PKG_DIR + "/build/build.ps1",
-                                        PKG_DIR + "/src/",
-                                        install_root + "/" + PACKAGES_DIR + "/{}".format(pkg_id)])
+                                        PKG_DIR + "/build/windows.build.ps1"])
         else:
             cmd.run("package-builder", [
                 "/bin/bash",
