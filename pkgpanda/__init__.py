@@ -247,7 +247,7 @@ class Package:
 
     @property
     def requires(self):
-        return frozenset(self.__pkginfo.get('requires', list()))
+        return list(self.__pkginfo.get('requires', list()))
 
     @property
     def version(self):
