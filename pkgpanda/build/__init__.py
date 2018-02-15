@@ -344,7 +344,7 @@ class PackageStore:
             return load_json(complete_latest)
 
         result = {}
-        if variant_param != None:
+        if variant_param is not None:
             result[variant_param] = get_last_complete(variant_param)
         else:
             for variant in self.list_trees():
