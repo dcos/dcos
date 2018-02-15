@@ -9,6 +9,9 @@ import retrying
 import test_helpers
 from dcos_test_utils import marathon
 
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
+
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 

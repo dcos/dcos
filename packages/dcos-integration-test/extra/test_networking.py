@@ -1,3 +1,4 @@
+
 import contextlib
 import enum
 import json
@@ -14,6 +15,9 @@ import test_helpers
 
 from dcos_test_utils import marathon
 from dcos_test_utils.helpers import assert_response_ok
+
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
 
 log = logging.getLogger(__name__)
 

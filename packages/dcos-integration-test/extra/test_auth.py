@@ -2,6 +2,9 @@ import subprocess
 
 import pytest
 
+__maintainer__ = 'vespian'
+__contact__ = 'dcos-security@mesosphere.io'
+
 
 def auth_enabled():
     out = subprocess.check_output([

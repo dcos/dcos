@@ -1,5 +1,8 @@
 import retrying
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 
 LATENCY = 60
 
