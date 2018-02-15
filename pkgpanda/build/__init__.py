@@ -1140,8 +1140,8 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             cmd.container = "microsoft/windowsservercore:1709"
             cmd.run("package-cleaner",
                     ["powershell.exe", "-command",
-                     "& { get-childitem -erroraction silentlycontinue -path " + PKG_DIR + "/src," + PKG_DIR +
-                     "/result | remove-item -recurse -force }"])
+                     "& { get-childitem -erroraction silentlycontinue -path \"" + PKG_DIR + "/src," + PKG_DIR +
+                     "/result\" | remove-item -recurse -force }"])
         else:
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
