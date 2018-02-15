@@ -1,5 +1,4 @@
 $ErrorActionPreference = "stop"
-New-Item -itemtype directory "c:\spartan"
 copy-item -recurse "c:\pkg\src\spartan\" "c:\"
 push-location "c:\spartan"
 & "${env:ProgramFiles}\erlang\bin\escript" "c:\spartan\rebar3" "update"
