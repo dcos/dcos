@@ -51,7 +51,7 @@
     "dcos-installer-ui",
     "dcos-integration-test",
     "dcos-launch",
-    "dcos-logs",
+    "dcos-log",
     "dcos-net",
     "dcos-oauth",
     "dcos-signal",

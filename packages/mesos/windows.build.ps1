@@ -5,30 +5,6 @@ $MESOS_BUILD_DIR = Join-Path $MESOS_DIR "build"
 $MESOS_GIT_REPO_DIR = Join-Path $MESOS_DIR "mesos"
 $MESOS_BUILD_OUT_DIR = Join-Path $MESOS_DIR "build-output"
 
-function Set-VCVariables {
-    Param(
-        [string]$Version="15.0",
-        [string]$Platform="amd64"
-    )
-    if($Version -eq "15.0") {
-        $vcPath = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\"
-    } else {
-        $vcPath = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio $Version\VC\"
-    }
-    Push-Location $vcPath
-    try {
-        $vcVars = Start-ExternalCommand { cmd.exe /c "vcvarsall.bat $Platform & set" } -ErrorMessage "Failed to get all VC variables"
-        $vcVars | Foreach-Object {
-            if ($_ -match "=") {
-                $v = $_.split("=")
-                Set-Item -Force -Path "ENV:\$($v[0])" -Value "$($v[1])"
-            }
-        }
-    } catch {
-        Pop-Location
-    }
-}
-
 function New-Directory {
     Param(
         [Parameter(Mandatory=$true)]
@@ -51,8 +27,6 @@ function New-Environment {
     Write-Output "Creating new tests environment"
     New-Directory $MESOS_BUILD_DIR
     New-Directory $MESOS_BUILD_OUT_DIR -RemoveExisting
-    # Set Visual Studio variables based on tested branch
-    Set-VCVariables "15.0"
     Write-Output "New tests environment was successfully created"
 }
 
@@ -204,5 +178,5 @@ Start-MesosBuild
 #Copy build directory to destination directory. 
 #For now we grab the whole lot
 New-Item -itemtype directory "$env:PKG_PATH\bin"
-Copy-Item -Path "$MESOS_BUILD_DIR\src\*" -Destination "$PKG_PATH\bin\" -Filter "*.exe"
-Copy-Item -Path "c:\pkg\build\extra\*" -destination "$PKG_PATH"
+Copy-Item -Path "$MESOS_BUILD_DIR\src\*" -Destination "$env:PKG_PATH\bin\" -Filter "*.exe"
+Copy-Item -Path "c:\pkg\build\extra\*" -destination "$env:PKG_PATH"
