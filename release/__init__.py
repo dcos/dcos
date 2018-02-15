@@ -580,11 +580,12 @@ def do_build_packages(cache_repository_url):
     _build_builders(package_store)
 
     if is_windows:
-        result = pkgpanda.build.build_tree(package_store, True, "windows")
+        variant = "windows"
     else:
-        result = pkgpanda.build.build_tree(package_store, True, None)
+        variant = None
 
-    last_set = package_store.get_last_complete_set()
+    result = pkgpanda.build.build_tree(package_store, True, variant)
+    last_set = package_store.get_last_complete_set(variant)
     assert last_set == result, \
         "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
             last_set,

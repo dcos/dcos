@@ -333,7 +333,7 @@ class PackageStore:
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
-    def get_last_complete_set(self):
+    def get_last_complete_set(self, variant_param):
         def get_last_complete(variant):
             complete_latest = (
                 self.get_complete_cache_dir() + '/' + pkgpanda.util.variant_prefix(variant) + 'complete.latest.json')
@@ -344,8 +344,11 @@ class PackageStore:
             return load_json(complete_latest)
 
         result = {}
-        for variant in self.list_trees():
-            result[variant] = get_last_complete(variant)
+        if variant_param != None:
+            result[variant_param] = get_last_complete(variant_param)
+        else:
+            for variant in self.list_trees():
+                result[variant] = get_last_complete(variant)
         return result
 
     def get_last_build_filename(self, name, variant):
