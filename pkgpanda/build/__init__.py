@@ -677,10 +677,9 @@ def build_tree(package_store, mkbootstrap, tree_variant):
         assert pkg_tuple not in visited
         visited.add(pkg_tuple)
 
-        # Ensure all dependencies are built. Sorted for stability
-        for require in sorted(package_store.packages[pkg_tuple]['requires']):
-            require_tuple = expand_require(require)
-
+        # Ensure all dependencies are built. Sorted for stability.
+        # Requirements may be either strings or dicts, so we convert them all to (name, variant) tuples before sorting.
+        for require_tuple in sorted(expand_require(r) for r in package_store.packages[pkg_tuple]['requires']):
             # If the dependency has already been built, we can move on.
             if require_tuple in built:
                 continue
