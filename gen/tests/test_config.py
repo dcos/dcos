@@ -770,6 +770,7 @@ def test_validate_mesos_work_dir():
     )
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_fault_domain_disabled():
     arguments = make_arguments(new_arguments={
         'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
@@ -781,6 +782,7 @@ def test_fault_domain_disabled():
     assert 'fault_domain_detect_contents' not in generated.arguments
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_exhibitor_admin_password_obscured():
     var_name = 'exhibitor_admin_password'
     var_value = 'secret'
