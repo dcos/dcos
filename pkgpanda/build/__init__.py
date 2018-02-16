@@ -333,7 +333,7 @@ class PackageStore:
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
-    def get_last_complete_set(self, variant_param):
+    def get_last_complete_set(self, variants):
         def get_last_complete(variant):
             complete_latest = (
                 self.get_complete_cache_dir() + '/' + pkgpanda.util.variant_prefix(variant) + 'complete.latest.json')
@@ -344,8 +344,9 @@ class PackageStore:
             return load_json(complete_latest)
 
         result = {}
-        if variant_param is not None:
-            result[variant_param] = get_last_complete(variant_param)
+        if variants is not None:
+            for variant in variants:
+                result[variant] = get_last_complete(variant)
         else:
             for variant in self.list_trees():
                 result[variant] = get_last_complete(variant)
@@ -649,7 +650,7 @@ def build_tree_variants(package_store, mkbootstrap):
     return result
 
 
-def build_tree(package_store, mkbootstrap, tree_variant):
+def build_tree(package_store, mkbootstrap, tree_variants):
     """Build packages and bootstrap tarballs for one or all tree variants.
 
     Returns a dict mapping tree variants to bootstrap IDs.
@@ -716,8 +717,8 @@ def build_tree(package_store, mkbootstrap, tree_variant):
                 continue
             visit(pkg_tuple)
 
-    if tree_variant:
-        package_sets = [package_store.get_package_set(tree_variant)]
+    if tree_variants:
+        package_sets = [package_store.get_package_set(v) for v in tree_variants]
     else:
         package_sets = package_store.get_all_package_sets()
 
