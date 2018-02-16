@@ -3,7 +3,7 @@
     "dcos-installer-ui",
     "dcos-launch",
     "erts",
-    "openservicestack",
+    "openstackservice",
     "spartan",
     "windows-install"
   ],
