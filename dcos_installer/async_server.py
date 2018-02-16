@@ -227,7 +227,7 @@ def action_action_name(request):
             try:
                 log.warning("GENERATING CONFIGURATION")
                 backend.do_configure()
-            except:
+            except Exception:
                 genconf_failure = {
                     "errors": "Configuration generation failed, please see command line for details"
                 }
