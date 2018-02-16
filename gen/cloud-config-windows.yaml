@@ -1,0 +1,34 @@
+root:
+  - path: /etc/mesosphere/setup-flags/repository-url
+    permissions: "0644"
+    owner: root
+    content: |
+      {{ bootstrap_url }}
+  - path: /etc/mesosphere/setup-flags/cluster-package-list
+    permissions: "0644"
+    owner: root
+    content: |
+      {{ cluster_package_list_id }}
+  - path: /etc/systemd/journald.conf.d/dcos.conf
+    permissions: "0644"
+    owner: root
+    content: |
+      [Journal]
+      MaxLevelConsole=warning
+      RateLimitInterval=1s
+      RateLimitBurst=20000
+  - path: /etc/rexray/config.yml
+    permissions: "0644"
+    content: {{ rexray_config_contents }}
+{% switch cluster_docker_credentials_dcos_owned %}
+{% case "true" %}
+{% case "false" %}
+{% switch cluster_docker_credentials_write_to_etc %}
+{% case "true" %}
+  - path: /etc/mesosphere/docker_credentials
+    permissions: "0600"
+    content: |
+        {{ cluster_docker_credentials }}
+{% case "false" %}
+{% endswitch %}
+{% endswitch %}

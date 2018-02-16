@@ -29,8 +29,10 @@ import gen.template
 import gen.util
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
+from pkgpanda.constants import PACKAGES_DIR, config_dir
 from pkgpanda.util import (
     hash_checkout,
+    is_windows,
     json_prettyprint,
     load_string,
     split_by_token,
@@ -42,9 +44,12 @@ from pkgpanda.util import (
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
 
-role_template = '/etc/mesosphere/roles/{}'
+role_template = config_dir + '/roles/{}'
 
-CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+if is_windows:
+    CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+else:
+    CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
 PACKAGE_KEYS = {'package', 'root'}
 
 
@@ -431,8 +436,12 @@ def get_dcosconfig_source_target_and_templates(
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
-    config_package_names = ['dcos-config', 'dcos-metadata']
-    template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
+    if is_windows:
+        config_package_names = ['dcos-windows-config', 'dcos-metadata'] # 2Do: We expect to change these
+        template_filenames = ['dcos-windows-config.yaml', 'cloud-config-windows.yaml', 'dcos-metadata.yaml', 'dcos-windows-services.yaml']
+    else:
+        config_package_names = ['dcos-config', 'dcos-metadata']
+        template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
@@ -575,6 +584,15 @@ def generate(
     sources, targets, templates = get_dcosconfig_source_target_and_templates(
         user_arguments, extra_templates, extra_sources)
 
+    if is_windows:
+        dcos_config_yaml = 'dcos-windows-config.yaml'
+        dcos_services_yaml = 'dcos-windows-services.yaml'
+        cloud_config_yaml = 'cloud-config-windows.yaml'
+    else:
+        dcos_config_yaml = 'dcos-config.yaml'
+        dcos_services_yaml = 'dcos-services.yaml'
+        cloud_config_yaml = 'cloud-config.yaml'
+
     resolver = validate_and_raise(sources, targets + extra_targets)
     argument_dict = get_final_arguments(resolver)
     late_variables = get_late_variables(resolver, sources)
@@ -616,9 +634,9 @@ def generate(
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
     for name, template in rendered_templates.items():
-        if name == 'dcos-services.yaml':  # yaml list of the service files
+        if name == dcos_services_yaml:  # yaml list of the service files
             assert isinstance(template, list)
-        elif name == 'cloud-config.yaml':
+        elif name == cloud_config_yaml:
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template
             pass
@@ -632,9 +650,9 @@ def generate(
     # Find all files which contain late bind variables and turn them into a "late bind package"
     # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
     late_files, regular_files = extract_files_containing_late_variables(
-        rendered_templates['dcos-config.yaml']['package'])
+        rendered_templates[dcos_config_yaml]['package'])
     # put the regular files right back
-    rendered_templates['dcos-config.yaml'] = {'package': regular_files}
+    rendered_templates[dcos_config_yaml] = {'package': regular_files}
 
     # Render cluster package list artifact.
     cluster_package_list_filename = 'package_lists/{}.package_list.json'.format(
@@ -646,7 +664,7 @@ def generate(
     stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
-        return 'packages/{0}/{1}{2}'.format(
+        return PACKAGES_DIR + '/{0}/{1}{2}'.format(
             package_id.name,
             repr(package_id),
             extension)
@@ -671,8 +689,8 @@ def generate(
         # late_variables will be resolved by the service handling the cloud
         # config (e.g. Amazon CloudFormation). The rendered late config file
         # on a cluster node's filesystem will contain the final values.
-        rendered_templates['cloud-config.yaml']['root'].append({
-            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+        rendered_templates[cloud_config_yaml]['root'].append({
+            'path': config_dir + '/setup-flags/late-config.yaml',
             'permissions': '0644',
             'owner': 'root',
             # TODO(cmaloney): don't prettyprint to save bytes.
@@ -702,7 +720,7 @@ def generate(
         stable_artifacts.append(package_filename)
 
     # Convert cloud-config to just contain write_files rather than root
-    cc = rendered_templates['cloud-config.yaml']
+    cc = rendered_templates[cloud_config_yaml]
 
     # Shouldn't contain any packages. Providers should pull what they need to
     # late bind out of other packages via cc_package_file.
@@ -713,13 +731,17 @@ def generate(
     cc['write_files'] = []
     # Do the transform
     for item in cc_root:
-        assert item['path'].startswith('/')
+        if is_windows:
+            tmpPath = item['path'].replace('\\', '/')
+            assert tmpPath.startswith('c:/') or tmpPath.startswith('/')
+        else:
+            assert item['path'].startswith('/')
         cc['write_files'].append(item)
-    rendered_templates['cloud-config.yaml'] = cc
+    rendered_templates[cloud_config_yaml] = cc
 
     # Add utils that need to be defined here so they can be bound to locals.
     def add_services(cloudconfig, cloud_init_implementation):
-        return add_units(cloudconfig, rendered_templates['dcos-services.yaml'], cloud_init_implementation)
+        return add_units(cloudconfig, rendered_templates[dcos_services_yaml], cloud_init_implementation)
 
     utils.add_services = add_services
 

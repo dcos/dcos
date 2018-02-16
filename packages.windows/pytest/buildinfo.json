@@ -1,0 +1,8 @@
+{
+  "requires": ["python", "teamcity-messages"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://pypi.python.org/packages/a0/2f/076c816e2402c4911ccee4b93ba0475145b7cffd0320ca8efa0add7c469c/pytest-3.0.3.tar.gz",
+    "sha1": "e7fb899ecac031a84e66f991289203d3c1f7c6cb"
+  }
+}

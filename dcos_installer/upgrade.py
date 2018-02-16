@@ -9,7 +9,7 @@ import gen.build_deploy.util as util
 import gen.calc
 import gen.template
 from dcos_installer.constants import SERVE_DIR
-from pkgpanda.util import write_string
+from pkgpanda.util import is_windows, write_string
 
 
 node_upgrade_template = """#!/bin/bash
@@ -165,7 +165,10 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
 
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
 
-    subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
+    if is_windows:
+        subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  serve_dir + upgrade_script_path + ' > $null }'])
+    else:
+        subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
 
     write_string(serve_dir + upgrade_script_path + '/dcos_node_upgrade.sh', bash_script)
 

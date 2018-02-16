@@ -1,0 +1,10 @@
+{
+    "package_name": "adminrouter",
+    "install_dir": "/dcos/adminrouter",
+    "agent_setup": "setup-adminrouter.ps1",
+    "master_setup": "setup-adminrouter.ps1",
+    "package_file": "",
+    "package_type": "script",
+    "package_uri":  "",
+    "md5": ""
+}

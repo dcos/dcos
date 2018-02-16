@@ -1,0 +1,8 @@
+{
+  "requires": ["python", "dcos-image-deps"],
+  "single_source": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/3b/4d/af3f20257c73a08b4d2bb41d7873c6f5ca806bbc561d3ff335b613ab507c/azure_mgmt_resource-0.30.0rc4-py2.py3-none-any.whl",
+      "sha1": "56067fa602537bef926b7db3740e0df7e7229f24"
+  }
+}

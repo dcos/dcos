@@ -1,0 +1,10 @@
+-name spartan@{{ agent_private_ip }}
+-setcookie minuteman
+-env ERL_MAX_PORTS 100000
++A 100
++K true
++P 256000
++C multi_time_warp
++c true
+-epmd_port {{ epmd_port }}
+-connect_all false

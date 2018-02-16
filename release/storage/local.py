@@ -2,6 +2,7 @@ import os.path
 import subprocess
 from typing import Optional
 
+from pkgpanda.util import is_windows
 from release.storage import AbstractStorageProvider
 
 
@@ -24,12 +25,19 @@ class LocalStorageProvider(AbstractStorageProvider):
             return f.read()
 
     def download_inner(self, path, local_path):
-        subprocess.check_call(['cp', self.__full_path(path), local_path])
+        if is_windows:
+            subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + self.__full_path(path) + ' -destination ' + local_path + ' }'])
+        else:
+            subprocess.check_call(['cp', self.__full_path(path), local_path])
 
     # Copy between fully qualified paths
     def __copy(self, full_source_path, full_destination_path):
-        subprocess.check_call(['mkdir', '-p', os.path.dirname(full_destination_path)])
-        subprocess.check_call(['cp', full_source_path, full_destination_path])
+        if is_windows:
+            subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  os.path.dirname(full_destination_path) + ' > $null }'])
+            subprocess.check_call(['powershell.exe', '-command', '& { copy-item -path ' + full_source_path + ' -destination ' + full_destination_path + ' }'])
+        else:
+            subprocess.check_call(['mkdir', '-p', os.path.dirname(full_destination_path)])
+            subprocess.check_call(['cp', full_source_path, full_destination_path])
 
     def copy(self, source_path, destination_path):
         self.__copy(self.__full_path(source_path), self.__full_path(destination_path))
@@ -44,7 +52,10 @@ class LocalStorageProvider(AbstractStorageProvider):
         # TODO(cmaloney): Don't discard the extra no_cache / content_type. We ideally want to be
         # able to test those are set.
         destination_full_path = self.__full_path(destination_path)
-        subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_full_path)])
+        if is_windows:
+            subprocess.check_call(['powershell.exe', '-command', '& { new-item -itemtype directory -force -path ' +  os.path.dirname(destination_full_path) + ' > $null }'])
+        else:
+            subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_full_path)])
 
         assert local_path is None or blob is None
         if local_path:
@@ -55,7 +66,8 @@ class LocalStorageProvider(AbstractStorageProvider):
                 f.write(blob)
 
     def exists(self, path):
-        assert path[0] != '/'
+        if not is_windows:
+            assert path[0] != '/'
         return os.path.exists(self.__full_path(path))
 
     def remove_recursive(self, path):
@@ -65,7 +77,10 @@ class LocalStorageProvider(AbstractStorageProvider):
         # base system. Adjust as needed.
         assert len(path) > 5
         assert len(full_path) > 5
-        subprocess.check_call(['rm', '-rf', full_path])
+        if is_windows:
+            subprocess.check_call(['powershell.exe', '-command', '& { get-childitem -erroraction silentlycontinue -path ' +  full_path + ' | remove-item -recurse -force }'])
+        else:
+            subprocess.check_call(['rm', '-rf', full_path])
 
     def list_recursive(self, path):
         final_filenames = set()

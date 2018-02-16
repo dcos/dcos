@@ -14,7 +14,7 @@ import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
-from pkgpanda.util import split_by_token
+from pkgpanda.util import is_windows, split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
@@ -154,12 +154,18 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     @param arm_template: string, path to the source arm template for rendering
                          by the gen library (e.g. 'azure/templates/azuredeploy.json')
     '''
+
+    if is_windows:
+        cloud_config_yaml = 'cloud-config-windows.yaml'
+    else:
+        cloud_config_yaml = 'cloud-config.yaml'
+
     results = gen.generate(
         arguments=gen_arguments,
-        extra_templates=['azure/cloud-config.yaml', 'azure/templates/' + arm_template + '.json'],
+        extra_templates=['azure/' + cloud_config_yaml, 'azure/templates/' + arm_template + '.json'],
         extra_sources=[azure_base_source] + extra_sources)
 
-    cloud_config = results.templates['cloud-config.yaml']
+    cloud_config = results.templates[cloud_config_yaml]
 
     # Add general services
     cloud_config = results.utils.add_services(cloud_config, 'canonical')

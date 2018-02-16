@@ -1,0 +1,10 @@
+{
+  "requires": ["python"],
+  "sources": {
+    "six": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/s/six/six-1.10.0-py2.py3-none-any.whl",
+      "sha1": "19df5f56abce3db94d5e0e079e54bf430fddbb02"
+     }
+  }
+}
