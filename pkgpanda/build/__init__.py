@@ -1271,10 +1271,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
     make_tar(tmp_name, cache_abs("result"))
-    if is_windows:
-        os.replace(tmp_name, pkg_path)
-    else:
-        os.rename(tmp_name, pkg_path)
+    os.replace(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:
         clean()

@@ -30,6 +30,8 @@ from pkgpanda.constants import DOCKERFILE_DIR, PACKAGES_DIR
 from pkgpanda.util import is_windows, logger
 
 if is_windows:
+    # 2DO: we will add aws back in a future check-in. Currently
+    # aws breaks our Windows build.
     provider_names = ['azure', 'bash']
 else:
     provider_names = ['aws', 'azure', 'bash']

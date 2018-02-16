@@ -113,6 +113,8 @@ class GitSrcFetcher(SourceFetcher):
 
         # Clone into `src/`.
         if is_windows:
+            # Note: Mesos requires autocrlf to be set on Windows otherwise it does not build.
+            # 2DO: Can we add this to mesos specific buildinfo.json?
             check_call(["git", "clone", "-q", "--config", "core.autocrlf=true", self.bare_folder, directory])
         else:
             check_call(["git", "clone", "-q", self.bare_folder, directory])
@@ -319,10 +321,7 @@ class UrlSrcFetcher(SourceFetcher):
 
         if self.sha != file_sha:
             corrupt_filename = self.cache_filename + '.corrupt'
-            if is_windows:
-                os.replace(self.cache_filename, corrupt_filename)
-            else:
-                check_call(['mv', self.cache_filename, corrupt_filename])
+            os.replace(self.cache_filename, corrupt_filename)
             raise ValidationError(
                 "Provided sha1 didn't match sha1 of downloaded file, corrupt download saved as {}. "
                 "Provided: {}, Download file's sha1: {}, Url: {}".format(

@@ -12,22 +12,9 @@ def get_advanced_templates():
     return [template_base + name + '.json' for name in template_names]
 
 
-if is_windows:
-    setup(
-        name='dcos_image',
-        version='0.1',
-        description='DC/OS cluster configuration, assembly, and maintenance code',
-        url='https://dcos.io',
-        author='Mesosphere, Inc.',
-        author_email='help@dcos.io',
-        license='apache2',
-        classifiers=[
-            'Development Status :: 3 - Alpha',
-            'License :: OSI Approved :: Apache Software License',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-        ],
-        packages=[
+def get_packages():
+    if is_windows:
+        return [
             'dcos_installer',
             'gen',
             'gen.build_deploy',
@@ -35,46 +22,23 @@ if is_windows:
             'pkgpanda.build',
             'pkgpanda.http',
             'release',
-            'release.storage'],
-        install_requires=[
-            'aiohttp==0.22.5',
-            'analytics-python',
-            'coloredlogs',
-            'Flask',
-            'flask-compress',
-            'urllib3',
-            'chardet',
-            'PyJWT',
-            # Pins taken from 'azure==2.0.0rc4'
-            'msrest==0.4.17',
-            'msrestazure==0.4.15',
-            'azure-common==1.1.4',
-            'azure-storage==0.32.0',
-            'azure-mgmt-network==0.30.0rc4',
-            'azure-mgmt-resource==0.30.0rc4',
-            'boto3',
-            'botocore',
-            'checksumdir',
-            'coloredlogs',
-            'docopt',
-            'passlib',
-            'py',
-            'pytest',
-            'pyyaml',
-            'requests==2.18.4',
-            'retrying',
-            'schema',
-            'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
-            'teamcity-messages'],
-        entry_points={
-            'console_scripts': [
-                'release=release:main',
-                'pkgpanda=pkgpanda.cli:main',
-                'mkpanda=pkgpanda.build.cli:main',
-                'dcos_installer=dcos_installer.cli:main',
-            ],
-        },
-        package_data={
+            'release.storage']
+    else:
+        return [
+            'dcos_installer',
+            'gen',
+            'gen.build_deploy',
+            'pkgpanda',
+            'pkgpanda.build',
+            'pkgpanda.http',
+            'release',
+            'release.storage',
+            'ssh']
+
+
+def get_package_data():
+    if is_windows:
+        return {
             'gen': [
                 'ip-detect/aws.sh',
                 'ip-detect/aws_public.sh',
@@ -99,75 +63,11 @@ if is_windows:
                 'build_deploy/bash/dcos-launch.spec'
             ] + get_advanced_templates(),
             'pkgpanda': [
-                'docker/dcos-builder-windows/Dockerfile'
+                'docker.windows/dcos-builder/Dockerfile'
             ]
-        },
-        zip_safe=False
-    )
-else:
-    setup(
-        name='dcos_image',
-        version='0.1',
-        description='DC/OS cluster configuration, assembly, and maintenance code',
-        url='https://dcos.io',
-        author='Mesosphere, Inc.',
-        author_email='help@dcos.io',
-        license='apache2',
-        classifiers=[
-            'Development Status :: 3 - Alpha',
-            'License :: OSI Approved :: Apache Software License',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-        ],
-        packages=[
-            'dcos_installer',
-            'gen',
-            'gen.build_deploy',
-            'pkgpanda',
-            'pkgpanda.build',
-            'pkgpanda.http',
-            'release',
-            'release.storage',
-            'ssh'],
-        install_requires=[
-            'aiohttp==0.22.5',
-            'analytics-python',
-            'coloredlogs',
-            'Flask',
-            'flask-compress',
-            'urllib3',
-            'chardet',
-            'PyJWT',
-            # Pins taken from 'azure==2.0.0rc4'
-            'msrest==0.4.17',
-            'msrestazure==0.4.15',
-            'azure-common==1.1.4',
-            'azure-storage==0.32.0',
-            'azure-mgmt-network==0.30.0rc4',
-            'azure-mgmt-resource==0.30.0rc4',
-            'boto3',
-            'botocore',
-            'checksumdir',
-            'coloredlogs',
-            'docopt',
-            'passlib',
-            'py',
-            'pytest',
-            'pyyaml',
-            'requests==2.18.4',
-            'retrying',
-            'schema',
-            'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
-            'teamcity-messages'],
-        entry_points={
-            'console_scripts': [
-                'release=release:main',
-                'pkgpanda=pkgpanda.cli:main',
-                'mkpanda=pkgpanda.build.cli:main',
-                'dcos_installer=dcos_installer.cli:main',
-            ],
-        },
-        package_data={
+        }
+    else:
+        return {
             'gen': [
                 'ip-detect/aws.sh',
                 'ip-detect/aws_public.sh',
@@ -196,6 +96,62 @@ else:
             'pkgpanda': [
                 'docker/dcos-builder/Dockerfile'
             ]
-        },
-        zip_safe=False
-    )
+        }
+
+
+setup(
+    name='dcos_image',
+    version='0.1',
+    description='DC/OS cluster configuration, assembly, and maintenance code',
+    url='https://dcos.io',
+    author='Mesosphere, Inc.',
+    author_email='help@dcos.io',
+    license='apache2',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+    ],
+    packages=get_packages(),
+    install_requires=[
+        'aiohttp==0.22.5',
+        'analytics-python',
+        'coloredlogs',
+        'Flask',
+        'flask-compress',
+        'urllib3',
+        'chardet',
+        'PyJWT',
+        # Pins taken from 'azure==2.0.0rc4'
+        'msrest==0.4.17',
+        'msrestazure==0.4.15',
+        'azure-common==1.1.4',
+        'azure-storage==0.32.0',
+        'azure-mgmt-network==0.30.0rc4',
+        'azure-mgmt-resource==0.30.0rc4',
+        'boto3',
+        'botocore',
+        'checksumdir',
+        'coloredlogs',
+        'docopt',
+        'passlib',
+        'py',
+        'pytest',
+        'pyyaml',
+        'requests==2.18.4',
+        'retrying',
+        'schema',
+        'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
+        'teamcity-messages'],
+    entry_points={
+        'console_scripts': [
+            'release=release:main',
+            'pkgpanda=pkgpanda.cli:main',
+            'mkpanda=pkgpanda.build.cli:main',
+            'dcos_installer=dcos_installer.cli:main',
+        ],
+    },
+    package_data=get_package_data(),
+    zip_safe=False
+)
