@@ -4,6 +4,9 @@ import uuid
 
 from dcos_test_utils import marathon
 
+__maintainer__ = 'mellenburg'
+__contact__ = 'tools-infra-team@mesosphere.io'
+
 TEST_APP_NAME_FMT = 'integration-test-{}'
 
 

@@ -7,6 +7,9 @@ import subprocess
 
 import pytest
 
+__maintainer__ = 'gpaul'
+__contact__ = 'dcos-security@mesosphere.io'
+
 
 def test_verify_units():
     """Test that all systemd units are valid."""
