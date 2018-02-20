@@ -1,4 +1,3 @@
-import datetime
 import gzip
 import json
 import logging
@@ -11,24 +10,14 @@ import pytest
 
 import retrying
 
+from dcos_test_utils.helpers import check_json
+
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 # Expected latency for all dcos-diagnostics units to refresh after postflight plus
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
 LATENCY = 120
-
-
-def check_json(response):
-    response.raise_for_status()
-    try:
-        json_response = response.json()
-        logging.debug('Response: {}'.format(json_response))
-    except ValueError:
-        logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
-        raise
-    assert len(json_response) > 0, 'Empty JSON returned from dcos-diagnostics request'
-    return json_response
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
@@ -400,57 +389,12 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-def _get_bundle_list(dcos_api_session):
-    response = check_json(dcos_api_session.health.get('report/diagnostics/list/all'))
-    bundles = []
-    for _, bundle_list in response.items():
-        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
-            # append bundles and get just the filename.
-            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
-    return bundles
-
-
-@retrying.retry(wait_fixed=2000, stop_max_delay=120000,
-                retry_on_result=lambda x: x is False)
-def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
-    response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
-    # find if the job is still running
-    job_running = False
-    percent_done = 0
-    for _, attributes in response.items():
-        assert 'is_running' in attributes, '`is_running` field is missing in response'
-        assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
-
-        if attributes['is_running']:
-            percent_done = attributes['job_progress_percentage']
-            logging.info("Job is running. Progress: {}".format(percent_done))
-            job_running = True
-            break
-
-    # if we ran this bit previously compare the current datapoint with the one we saved
-    if last_datapoint['time'] and last_datapoint['value']:
-        if percent_done <= last_datapoint['value']:
-            assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
-                "Job is not progressing"
-            )
-    last_datapoint['value'] = percent_done
-    last_datapoint['time'] = datetime.datetime.now()
-
-    return not job_running
-
-
-# sometimes it may take extra few seconds to list bundles after the job is finished.
-@retrying.retry(stop_max_delay=5000)
-def wait_for_diagnostics_list(dcos_api_session):
-    assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
-
-
 def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
     """
     # start the diagnostics bundle job
-    create_response = check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+    create_response = check_json(dcos_api_session.health.start_diagnostics_job())
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
 
@@ -459,12 +403,12 @@ def test_dcos_diagnostics_bundle_create(dcos_api_session):
         'value': 0
     }
 
-    wait_for_diagnostics_job(dcos_api_session, last_datapoint)
-    wait_for_diagnostics_list(dcos_api_session)
+    dcos_api_session.health.wait_for_diagnostics_job(last_datapoint)
+    dcos_api_session.health.wait_for_diagnostics_reports()
 
     # the job should be complete at this point.
     # check the listing for a zip file
-    bundles = _get_bundle_list(dcos_api_session)
+    bundles = dcos_api_session.health.get_diagnostics_reports()
     assert len(bundles) == 1, 'bundle file not found'
     assert bundles[0] == create_response['extra']['bundle_name']
 
@@ -503,7 +447,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
     assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
         master_index + 1, len(dcos_api_session.masters))
 
-    bundles = _get_bundle_list(dcos_api_session)
+    bundles = dcos_api_session.health.get_diagnostics_reports()
     assert bundles
 
     expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
@@ -631,18 +575,20 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
 
 def test_bundle_delete(dcos_api_session):
-    bundles = _get_bundle_list(dcos_api_session)
+    bundles = dcos_api_session.health.get_diagnostics_reports()
     assert bundles, 'no bundles found'
     for bundle in bundles:
         dcos_api_session.health.post(os.path.join('report/diagnostics/delete', bundle))
 
-    bundles = _get_bundle_list(dcos_api_session)
+    bundles = dcos_api_session.health.get_diagnostics_reports()
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 
 def test_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
-    diagnostics_bundle_status = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
+    response = dcos_api_session.health.get('report/diagnostics/status/all')
+    print(response.json())
+    diagnostics_bundle_status = check_json(response)
     required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
                               'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
                               'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',

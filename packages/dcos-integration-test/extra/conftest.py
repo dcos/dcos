@@ -4,12 +4,7 @@ import os
 import api_session_fixture
 import pytest
 from dcos_test_utils import logger
-from test_dcos_diagnostics import (
-    _get_bundle_list,
-    check_json,
-    wait_for_diagnostics_job,
-    wait_for_diagnostics_list
-)
+
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 log = logging.getLogger(__name__)
 
@@ -67,7 +62,7 @@ def _dump_diagnostics(request, dcos_api_session):
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+        dcos_api_session.health.start_diagnostics_job()
 
         last_datapoint = {
             'time': None,
@@ -75,20 +70,13 @@ def _dump_diagnostics(request, dcos_api_session):
         }
 
         log.info('\nWait for diagnostics job to complete')
-        wait_for_diagnostics_job(dcos_api_session, last_datapoint)
+        dcos_api_session.health.wait_for_diagnostics_job(last_datapoint)
 
         log.info('\nWait for diagnostics report to become available')
-        wait_for_diagnostics_list(dcos_api_session)
+        dcos_api_session.health.wait_for_diagnostics_reports()
 
         log.info('\nDownload zipped diagnostics reports')
-        bundles = _get_bundle_list(dcos_api_session)
-        for bundle in bundles:
-            for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
-                                                node=master_node)
-                bundle_path = os.path.join(os.path.expanduser('~'), bundle)
-                with open(bundle_path, 'wb') as f:
-                    for chunk in r.iter_content(1024):
-                        f.write(chunk)
+        bundles = dcos_api_session.health.get_diagnostics_reports()
+        dcos_api_session.health.download_diagnostics_reports(bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')
