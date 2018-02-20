@@ -42,34 +42,33 @@ def is_absolute_path(path):
 if is_windows:
     def remove_directory(path):
         """removes a directory. fails silently if the tree does not exist"""
-        subprocess.check_call(['powershell.exe', '-command',
-                               '& { get-childitem -erroraction silentlycontinue -path ' +
-                               path + ' | remove-item -force }'])
+        path = path.replace('/', '\\')
+        if not os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
 
     def remove_directory_tree(path):
         """recursively removes a directory tree. fails silently if the tree does not exist"""
-        subprocess.check_call(['powershell.exe', '-command',
-                               '& { get-childitem -erroraction silentlycontinue -path ' +
-                               path + ' | remove-item -recurse -force }'])
+        path = path.replace('/', '\\')
+        if not os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
 
     def make_directory(path):
         """Create a single directory"""
-        path = path.replace('\\', '/')
-        subprocess.check_call(['powershell.exe', '-command',
-                               '& { new-item -itemtype directory -force -path ' +
-                               path + ' > $null }'])
+        path = path.replace('/', '\\')
+        if not os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'mkdir', path])
 
     def copy_directory_item(src_path, dst_path):
         """copy a single directory item from one location to another"""
-        subprocess.check_call(['powershell.exe', '-command',
-                               '& { copy-item -path ' + src_path +
-                               ' -destination ' + dst_path + ' }'])
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
 
     def copy_directory_tree(src_path, dst_path):
         """copy recursively a directory tree from one location to another"""
-        subprocess.check_call(['powershell.exe', '-command',
-                               '& { copy-item -recurse -path ' + src_path +
-                               ' -destination ' + dst_path + ' }'])
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
 else:
     def remove_directory(path):
         """removes a directory. fails silently if the tree does not exist"""

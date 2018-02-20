@@ -47,12 +47,16 @@ class DockerCmd:
                 random.choice(string.ascii_lowercase) for _ in range(10)
             )
         )
+
+        docker = ["docker", "run", "--name={}".format(container_name)]
+
         if is_windows:
-            numprocs = int(os.environ.get('NUMBER_OF_PROCESSORS'))
-            docker = ["docker", "run", "-m", "{0}gb".format(numprocs * 4), "--cpu-count",
-                      os.environ.get('NUMBER_OF_PROCESSORS'), "--name={}".format(container_name)]
-        else:
-            docker = ["docker", "run", "--name={}".format(container_name)]
+            # Default number of processes on Windows is 1, so bumping up to use all of them.
+            # The default memory allowed on Windows is 1GB. Some packages (mesos is an example)
+            # needs about 3.5gb to compile a single file. Therefore we need about 4gb per CPU.
+            numprocs = os.environ.get('NUMBER_OF_PROCESSORS')
+            docker += ["-m", "{0}gb".format(int(numprocs) * 4), "--cpu-count", numprocs]
+
         for host_path, container_path in self.volumes.items():
             docker += ["-v", "{0}:{1}".format(host_path, container_path)]
 
@@ -240,7 +244,7 @@ class PackageSet:
                 )
             if package_name in treeinfo.excludes:
                 raise BuildError("package {} is needed (explicitly requested or as a requires) "
-                                 "but is excluded according to the treeinfo.json".format(package_name))
+                                 "but is excluded according to the treeinfo.json.".format(package_name))
 
 
 class PackageStore:
@@ -335,16 +339,17 @@ class PackageStore:
             if not os.path.exists(complete_latest):
                 raise BuildError("No last complete found for variant {}. Expected to find {} to match "
                                  "{}".format(pkgpanda.util.variant_name(variant), complete_latest,
-                                             pkgpanda.util.variant_prefix(variant) + "treeinfo.json"))
+                                             pkgpanda.util.variant_prefix(variant) + 'treeinfo.json'))
             return load_json(complete_latest)
 
         result = {}
-        if variants is not None:
-            for variant in variants:
-                result[variant] = get_last_complete(variant)
+        if variants is None:
+            # Get all defined variants.
+            requested_variants = self.list_trees()
         else:
-            for variant in self.list_trees():
-                result[variant] = get_last_complete(variant)
+            requested_variants = variants
+        for variant in requested_variants:
+            result[variant] = get_last_complete(variant)
         return result
 
     def get_last_build_filename(self, name, variant):
@@ -359,10 +364,10 @@ class PackageStore:
         return directory
 
     def list_trees(self):
-        return get_variants_from_filesystem(self._packages_dir, "treeinfo.json")
+        return get_variants_from_filesystem(self._packages_dir, 'treeinfo.json')
 
     def get_package_set(self, variant):
-        return PackageSet(variant, TreeInfo(load_config_variant(self._packages_dir, variant, "treeinfo.json")), self)
+        return PackageSet(variant, TreeInfo(load_config_variant(self._packages_dir, variant, 'treeinfo.json')), self)
 
     def get_all_package_sets(self):
         return [self.get_package_set(variant) for variant in sorted(self.list_trees(), key=pkgpanda.util.variant_str)]
@@ -512,10 +517,10 @@ def load_buildinfo(path, variant):
     buildinfo = load_config_variant(path, variant, 'buildinfo.json')
 
     # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
+    default_build_script = 'build'
     if is_windows:
-        buildinfo.setdefault('build_script', 'windows.build.ps1')
-    else:
-        buildinfo.setdefault('build_script', 'build')
+        default_build_script = 'build.ps1'
+    buildinfo.setdefault('build_script', pkgpanda.util.variant_prefix(variant) + default_build_script)
     buildinfo.setdefault('docker', 'dcos/dcos-builder:dcos-builder_dockerdir-latest')
     buildinfo.setdefault('environment', dict())
     buildinfo.setdefault('requires', list())
@@ -628,7 +633,7 @@ def build_tree_variants(package_store, mkbootstrap):
     """ Builds all possible tree variants in a given package store
     """
     result = dict()
-    tree_variants = get_variants_from_filesystem(package_store.packages_dir, "treeinfo.json")
+    tree_variants = get_variants_from_filesystem(package_store.packages_dir, 'treeinfo.json')
     if len(tree_variants) == 0:
         raise Exception('No treeinfo.json can be found in {}'.format(package_store.packages_dir))
     for variant in tree_variants:
@@ -894,13 +899,9 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Add the sha1 of the buildinfo.json + build file to the build ids
     builder.update('sources', checkout_ids)
-    build_script = src_abs(builder.take('build_script'))
+    build_script_file = builder.take('build_script')
+    build_script = src_abs(build_script_file)
     # TODO(cmaloney): Change dest name to build_script_sha1
-    # 2DO - is this correct?
-    if is_windows:
-        builder.replace('build_script', 'windows.build.ps1', pkgpanda.util.sha1(build_script))
-    else:
-        builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
     extra_dir = src_abs("extra")
@@ -1153,7 +1154,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
                 "'src' directory already exists, did you have a previous build? " +
                 "Currently all builds must be from scratch. Support should be " +
                 "added for re-using a src directory when possible. src={}".format(src_dir))
-        os.makedirs(src_dir)
+        os.mkdir(src_dir)
         for src_name, fetcher in sorted(fetchers.items()):
             root = cache_abs('src/' + src_name)
             os.makedirs(root)
@@ -1188,7 +1189,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # TODO(cmaloney): Run as a specific non-root user, make it possible
     # for non-root to cleanup afterwards.
     # Run the build, prepping the environment as necessary.
-    os.makedirs(cache_abs("result"))
+    os.mkdir(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
     write_json(cache_abs("src/buildinfo.full.json"), final_buildinfo)
@@ -1202,28 +1203,30 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # TOOD(cmaloney): Disallow writing to well known files and directories?
     # Source we checked out
+    cmd.volumes.update({
+        # TODO(cmaloney): src should be read only...
+        # Source directory
+        cache_abs("src"): PKG_DIR + "/src:rw",
+        cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id)
+    })
+
     if is_windows:
         cmd.volumes.update({
-            # Source directory
-            cache_abs("src"): PKG_DIR + "/src:rw",
             # The build script
             # 2DO: we cannot pass a file to a volume mount on windows, only directory
             package_dir: PKG_DIR + "/build:ro",
             # Getting the result out
-            cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
             # 2DO: windows docker does not suport overlapping mounts so push into a temporary directory in case needed
             install_dir: install_root + "/install_dir:ro"
         })
     else:
         cmd.volumes.update({
-            # TODO(cmaloney): src should be read only...
-            cache_abs("src"): PKG_DIR + "/src:rw",
             # The build script
             build_script: PKG_DIR + "/build:ro",
             # Getting the result out
-            cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id),
             install_dir: install_root + ":ro"
         })
+
     if os.path.exists(extra_dir):
         cmd.volumes[extra_dir] = PKG_DIR + "/extra:ro"
     cmd.environment = {
@@ -1240,9 +1243,11 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
         if is_windows:
+            # Note that the build directory is mounted in Windows due to a docker limitation that does not allow
+            # a file to be mounted.
             cmd.run("package-builder", ["powershell.exe",
                                         "-file",
-                                        PKG_DIR + "/build/windows.build.ps1"])
+                                        PKG_DIR + "/build/" + build_script_file])
         else:
             cmd.run("package-builder", [
                 "/bin/bash",

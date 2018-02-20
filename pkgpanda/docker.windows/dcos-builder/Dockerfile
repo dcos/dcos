@@ -21,10 +21,6 @@ RUN  powershell.exe -file /tmp/setup-patch.ps1
 COPY ./setup-make.ps1 /tmp/
 RUN  powershell.exe -file /tmp/setup-make.ps1
 
-COPY ./setup-python27.ps1 /tmp/
-RUN  powershell.exe -file /tmp/setup-python27.ps1
-#ENV PYTHON_PATH 'C:\Python27;C:\Python27\scripts'
-
 COPY ./setup-erlang.ps1 /tmp/
 RUN  powershell.exe -file /tmp/setup-erlang.ps1
 
@@ -38,7 +34,7 @@ ENV CMAKE_PATH 'C:\Program Files\CMake\bin'
 ENV GNUWIN32_PATH 'C:\Program Files (x86)\GnuWin32\bin'
 ENV ERLANG_PATH 'C:\Program Files\erlang\bin'
 
-RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%GNUWIN32_PATH%;%PYTHON_PATH%;%ZIP_PATH%;%ERLANG_PATH%;%GOLANG_PATH%"
+RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%GNUWIN32_PATH%;%ZIP_PATH%;%ERLANG_PATH%;%GOLANG_PATH%"
 
 # Download useful tools to C:\Bin.
 ADD https://dist.nuget.org/win-x86-commandline/v4.1.0/nuget.exe C:\\Bin\\nuget.exe

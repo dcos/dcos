@@ -22,7 +22,9 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
-from pkgpanda.constants import install_root, PACKAGES_DIR
+from pkgpanda.constants import (
+    cloud_config_yaml, dcos_services_yaml, install_root, PACKAGES_DIR
+)
 from pkgpanda.util import copy_directory_item, copy_directory_tree, is_windows, logger, make_directory
 
 
@@ -592,13 +594,6 @@ def generate(gen_out, output_dir):
 
 def make_bash(gen_out) -> None:
     """Build bash deployment artifacts and return a list of their filenames."""
-
-    if is_windows:
-        dcos_services_yaml = 'dcos-windows-services.yaml'
-        cloud_config_yaml = 'cloud-config-windows.yaml'
-    else:
-        dcos_services_yaml = 'dcos-services.yaml'
-        cloud_config_yaml = 'cloud-config.yaml'
 
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':

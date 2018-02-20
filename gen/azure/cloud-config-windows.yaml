@@ -1,5 +1,5 @@
 root:
-  - path: /etc/systemd/system/dcos-docker-install.service
+  - path: c:/etc/systemd/system/dcos-docker-install.service
     permissions: "0644"
     content: |
       [Unit]
@@ -12,7 +12,7 @@ root:
       StandardError=journal+console
       ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/d.deb https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_17.09.0~ce-0~ubuntu_amd64.deb
       ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /var/tmp/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
-  - path: /etc/systemd/system/docker.service.d/execstart.conf
+  - path: c:/etc/systemd/system/docker.service.d/execstart.conf
     permissions: "0644"
     content: |
       [Service]
@@ -22,7 +22,7 @@ root:
       ExecStartPre=-/sbin/ip link del docker0
       ExecStart=
       ExecStart=/usr/bin/dockerd --storage-driver=overlay
-  - path: /etc/systemd/system/docker.socket
+  - path: c:/etc/systemd/system/docker.socket
     permissions: "0644"
     content: |
       [Unit]
@@ -36,7 +36,7 @@ root:
       BindIPv6Only=both
       [Install]
       WantedBy=sockets.target
-  - path: /etc/systemd/system/dcos-config-writer.service
+  - path: c:/etc/systemd/system/dcos-config-writer.service
     permissions: "0644"
     content: |
       [Unit]

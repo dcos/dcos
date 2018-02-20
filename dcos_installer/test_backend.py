@@ -10,8 +10,6 @@ import passlib.hash
 import pytest
 
 import pkgpanda.util
-
-
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
 

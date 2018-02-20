@@ -1,8 +1,4 @@
-import platform
-
 from setuptools import setup
-
-is_windows = (platform.system() == "Windows")
 
 
 def get_advanced_templates():
@@ -10,93 +6,6 @@ def get_advanced_templates():
     template_names = ['advanced-master', 'advanced-priv-agent', 'advanced-pub-agent', 'infra', 'zen']
 
     return [template_base + name + '.json' for name in template_names]
-
-
-def get_packages():
-    if is_windows:
-        return [
-            'dcos_installer',
-            'gen',
-            'gen.build_deploy',
-            'pkgpanda',
-            'pkgpanda.build',
-            'pkgpanda.http',
-            'release',
-            'release.storage']
-    else:
-        return [
-            'dcos_installer',
-            'gen',
-            'gen.build_deploy',
-            'pkgpanda',
-            'pkgpanda.build',
-            'pkgpanda.http',
-            'release',
-            'release.storage',
-            'ssh']
-
-
-def get_package_data():
-    if is_windows:
-        return {
-            'gen': [
-                'ip-detect/aws.sh',
-                'ip-detect/aws_public.sh',
-                'ip-detect/azure.sh',
-                'ip-detect/vagrant.sh',
-                'fault-domain-detect/cloud.sh',
-                'cloud-config-winodws.yaml',
-                'dcos-windows-config.yaml',
-                'dcos-metadata.yaml',
-                'dcos-windows-services.yaml',
-                'aws/dcos-windows-config.yaml',
-                'aws/templates/aws.html',
-                'aws/templates/cloudformation.json',
-                'azure/cloud-config-windows.yaml',
-                'azure/azuredeploy-parameters.json',
-                'azure/templates/acs.json',
-                'azure/templates/azure.html',
-                'azure/templates/azuredeploy.json',
-                'build_deploy/bash/dcos_generate_config.sh.in',
-                'build_deploy/bash/Dockerfile.in',
-                'build_deploy/bash/installer_internal_wrapper.in',
-                'build_deploy/bash/dcos-launch.spec'
-            ] + get_advanced_templates(),
-            'pkgpanda': [
-                'docker.windows/dcos-builder/Dockerfile'
-            ]
-        }
-    else:
-        return {
-            'gen': [
-                'ip-detect/aws.sh',
-                'ip-detect/aws_public.sh',
-                'ip-detect/azure.sh',
-                'ip-detect/vagrant.sh',
-                'fault-domain-detect/cloud.sh',
-                'cloud-config.yaml',
-                'dcos-config.yaml',
-                'dcos-metadata.yaml',
-                'dcos-services.yaml',
-                'aws/dcos-config.yaml',
-                'aws/templates/aws.html',
-                'aws/templates/cloudformation.json',
-                'azure/cloud-config.yaml',
-                'azure/azuredeploy-parameters.json',
-                'azure/templates/acs.json',
-                'azure/templates/azure.html',
-                'azure/templates/azuredeploy.json',
-                'build_deploy/bash/dcos_generate_config.sh.in',
-                'build_deploy/bash/Dockerfile.in',
-                'build_deploy/bash/installer_internal_wrapper.in',
-                'build_deploy/bash/dcos-launch.spec',
-                'coreos-aws/cloud-config.yaml',
-                'coreos/cloud-config.yaml'
-            ] + get_advanced_templates(),
-            'pkgpanda': [
-                'docker/dcos-builder/Dockerfile'
-            ]
-        }
 
 
 setup(
@@ -113,7 +22,16 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
     ],
-    packages=get_packages(),
+    packages=[
+        'dcos_installer',
+        'gen',
+        'gen.build_deploy',
+        'pkgpanda',
+        'pkgpanda.build',
+        'pkgpanda.http',
+        'release',
+        'release.storage',
+        'ssh'],
     install_requires=[
         'aiohttp==0.22.5',
         'analytics-python',
@@ -152,6 +70,35 @@ setup(
             'dcos_installer=dcos_installer.cli:main',
         ],
     },
-    package_data=get_package_data(),
+    package_data={
+        'gen': [
+            'ip-detect/aws.sh',
+            'ip-detect/aws_public.sh',
+            'ip-detect/azure.sh',
+            'ip-detect/vagrant.sh',
+            'fault-domain-detect/cloud.sh',
+            'cloud-config.yaml',
+            'dcos-config.yaml',
+            'dcos-metadata.yaml',
+            'dcos-services.yaml',
+            'aws/dcos-config.yaml',
+            'aws/templates/aws.html',
+            'aws/templates/cloudformation.json',
+            'azure/cloud-config.yaml',
+            'azure/azuredeploy-parameters.json',
+            'azure/templates/acs.json',
+            'azure/templates/azure.html',
+            'azure/templates/azuredeploy.json',
+            'build_deploy/bash/dcos_generate_config.sh.in',
+            'build_deploy/bash/Dockerfile.in',
+            'build_deploy/bash/installer_internal_wrapper.in',
+            'build_deploy/bash/dcos-launch.spec',
+            'coreos-aws/cloud-config.yaml',
+            'coreos/cloud-config.yaml'
+        ] + get_advanced_templates(),
+        'pkgpanda': [
+            'docker/dcos-builder/Dockerfile'
+        ]
+    },
     zip_safe=False
 )

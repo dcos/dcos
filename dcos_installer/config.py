@@ -1,6 +1,7 @@
 import copy
 import logging
 import os.path
+import sys
 
 import yaml
 
@@ -11,7 +12,10 @@ except:
     pass
 from gen.build_deploy.bash import onprem_source
 from gen.exceptions import ValidationError
-from pkgpanda.util import load_yaml, write_string, YamlParseError
+from pkgpanda.util import is_windows, load_yaml, write_string, YamlParseError
+
+if not is_windows:
+    assert 'ssh.runner' in sys.modules and 'Node' in globals()
 
 log = logging.getLogger(__name__)
 

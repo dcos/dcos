@@ -12,7 +12,7 @@
     "flask": "windows",
     "libffi": "windows",
     "mesos": "windows",
-    "openservicestack": "windows",
+    "openstackservice": "windows",
     "pkgpanda-api": "windows",
     "pytest": "windows",
     "python": "windows",

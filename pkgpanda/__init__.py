@@ -742,7 +742,7 @@ class Install:
             # Work around a long standing bug in realpath which has been open since 2010.
             # A fix has been proposed since 2013. https://bugs.python.org/issue9949
             # in windows realpath doesn't resolve symlinks
-            if (is_windows):
+            if is_windows:
                 package_path = nt._getfinalpathname(package_path)
 
             # NOTE: We don't validate the id here because we want to be able to
