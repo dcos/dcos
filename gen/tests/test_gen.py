@@ -162,3 +162,45 @@ def test_extract_files_containing_late_variables():
                 'permissions': gen.internals.LATE_BIND_PLACEHOLDER_START,
             }
         ])
+
+
+def test_validate_downstream_entry():
+    # Valid entries.
+    gen.validate_downstream_entry({
+        'default': {
+            'foo': 'foo',
+        },
+        'must': {
+            'bar': 'bar',
+        },
+    })
+    gen.validate_downstream_entry({
+        'default': {
+            'foo': 'foo',
+        },
+    })
+    gen.validate_downstream_entry({
+        'must': {
+            'bar': 'bar',
+        },
+    })
+
+    # dcos_version may not be redefined downstream.
+    with pytest.raises(Exception):
+        gen.validate_downstream_entry({
+            'default': {
+                'foo': 'foo',
+            },
+            'must': {
+                'dcos_version': 'new_version',
+            },
+        })
+    with pytest.raises(Exception):
+        gen.validate_downstream_entry({
+            'default': {
+                'dcos_version': 'new_version',
+            },
+            'must': {
+                'bar': 'bar',
+            },
+        })
