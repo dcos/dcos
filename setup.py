@@ -1,5 +1,7 @@
 from setuptools import setup
 
+import pkgpanda.constants
+
 
 def get_advanced_templates():
     template_base = 'aws/templates/advanced/'
@@ -77,10 +79,10 @@ setup(
             'ip-detect/azure.sh',
             'ip-detect/vagrant.sh',
             'fault-domain-detect/cloud.sh',
-            'cloud-config.yaml',
-            'dcos-config.yaml',
+            pkgpanda.constants.cloud_config_yaml,
+            pkgpanda.constants.dcos_config_yaml,
+            pkgpanda.constants.dcos_services_yaml,
             'dcos-metadata.yaml',
-            'dcos-services.yaml',
             'aws/dcos-config.yaml',
             'aws/templates/aws.html',
             'aws/templates/cloudformation.json',
