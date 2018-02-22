@@ -15,7 +15,7 @@ from gen.exceptions import ValidationError
 from pkgpanda.util import is_windows, load_yaml, write_string, YamlParseError
 
 if not is_windows:
-    assert 'ssh.runner' in sys.modules and 'Node' in globals()
+    assert 'ssh.validate' in sys.modules
 
 log = logging.getLogger(__name__)
 

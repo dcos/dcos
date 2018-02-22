@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 import json
-try:   # Not available on windows
+try:   # only available on windows
     import nt
 except ImportError:
     pass
@@ -26,6 +26,7 @@ except ImportError:
     pass
 import re
 import shutil
+import sys
 import tempfile
 from collections import Iterable
 from itertools import chain
@@ -39,6 +40,12 @@ from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
 from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory_tree, write_json, write_string)
+
+if is_windows:
+    assert 'nt' in sys.modules
+else:
+    assert 'grp' in sys.modules
+    assert 'pwd' in sys.modules
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?

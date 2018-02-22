@@ -695,6 +695,7 @@ def make_installer_docker(variant, variant_info, installer_info):
     installer_bootstrap_filename = installer_info['bootstrap'] + '.bootstrap.tar.xz'
     bootstrap_latest_filename = pkgpanda.util.variant_prefix(variant) + 'bootstrap.latest'
     latest_complete_filename = pkgpanda.util.variant_prefix(variant) + 'complete.latest.json'
+    packages_dir = 'packages'
     docker_image_name = 'mesosphere/dcos-genconf:' + image_version
 
     # TODO(cmaloney): All of this should use package_resources
@@ -722,7 +723,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_active_filename': bootstrap_active_filename,
             'bootstrap_latest_filename': bootstrap_latest_filename,
             'latest_complete_filename': latest_complete_filename,
-            'packages_dir': 'packages'})
+            'packages_dir': packages_dir})
 
         fill_template('installer_internal_wrapper', {
             'variant': pkgpanda.util.variant_str(variant),
@@ -741,7 +742,7 @@ def make_installer_docker(variant, variant_info, installer_info):
         copy_to_build('packages/cache/complete', latest_complete_filename)
         for package_id in variant_info['packages']:
             package_name = pkgpanda.PackageId(package_id).name
-            copy_to_build('packages/cache/', 'packages/' + package_name + '/' + package_id + '.tar.xz')
+            copy_to_build('packages/cache/', packages_dir + '/' + package_name + '/' + package_id + '.tar.xz')
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):

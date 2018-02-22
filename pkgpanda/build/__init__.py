@@ -1157,7 +1157,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         os.mkdir(src_dir)
         for src_name, fetcher in sorted(fetchers.items()):
             root = cache_abs('src/' + src_name)
-            os.makedirs(root)
+            os.mkdir(root)
 
             fetcher.checkout_to(root)
     except ValidationError as ex:
