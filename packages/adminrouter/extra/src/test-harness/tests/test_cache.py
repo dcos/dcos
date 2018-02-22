@@ -899,13 +899,16 @@ class TestCacheMesosLeader:
 
 class TestCacheMarathon:
 
-    def test_ip_per_task_app_with_user_networking_and_portmappings(
+    def test_app_with_container_networking_and_portmappings(
             self, nginx_class, mocker, valid_user_header):
+
         app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {'networkName': 'samplenet'}
+
+        app['networks'][0]['mode'] = 'container'
+        app['networks'][0]['name'] = 'samplenet'
+
+        app['container']['portMappings'][0]['containerPort'] = '80'
         app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
-        app['container']['docker']['network'] = "USER"
-        app['container']['docker']['portMappings'][0]['containerPort'] = '80'
 
         ar = nginx_class()
 
@@ -924,12 +927,16 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
-    def test_ip_per_task_app_with_user_networking_and_portdefinitions(
+    def test_app_with_container_networking_and_portdefinitions(
             self, nginx_class, mocker, valid_user_header):
+
         app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {'networkName': 'samplenet'}
+
+        app['networks'][0]['mode'] = 'container'
+        app['networks'][0]['name'] = 'samplenet'
+
         app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
-        app['container']['docker']['network'] = "USER"
+
         app['portDefinitions'] = [
             {
                 "port": 80,
@@ -937,36 +944,6 @@ class TestCacheMarathon:
                 "labels": {}
             },
         ]
-
-        ar = nginx_class()
-
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='set_apps_response',
-                            aux_data={"apps": [app]})
-
-        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
-        with GuardedSubprocess(ar):
-            # Trigger cache update by issuing request:
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-            assert resp.status_code == 200
-            req_data = resp.json()
-            assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
-
-    def test_ip_per_task_app_without_user_networking(
-            self, nginx_class, mocker, valid_user_header):
-        app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {
-            'networkName': 'samplenet',
-            'discovery': {
-                "ports": [
-                    {"number": 80, "name": "http", "protocol": "tcp"}
-                ]
-            }
-        }
-        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
 
         ar = nginx_class()
 
