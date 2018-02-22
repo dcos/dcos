@@ -23,7 +23,7 @@ from gen.calc import (
 )
 from gen.internals import Source
 from pkgpanda.constants import (
-    cloud_config_yaml, dcos_services_yaml, install_root, PACKAGES_DIR
+    cloud_config_yaml, dcos_services_yaml, install_root
 )
 from pkgpanda.util import copy_directory_item, copy_directory_tree, is_windows, logger, make_directory
 
@@ -54,7 +54,7 @@ def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_pa
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
         return (DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' +
-                PACKAGES_DIR + '/{}'.format(custom_check_bins_package_id))
+                'packages/{}'.format(custom_check_bins_package_id))
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -597,7 +597,7 @@ def make_bash(gen_out) -> None:
 
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
-        package_filename = PACKAGES_DIR + '/{}/{}.tar.xz'.format(
+        package_filename = 'packages/{}/{}.tar.xz'.format(
             gen_out.arguments['custom_check_bins_package_name'],
             gen_out.arguments['custom_check_bins_package_id'],
         )
@@ -689,7 +689,7 @@ def make_installer_docker(variant, variant_info, installer_info):
 
     image_version = util.dcos_image_commit[:18] + '-' + bootstrap_id[:18]
     genconf_tar = "dcos-genconf." + image_version + ".tar"
-    installer_filename = PACKAGES_DIR + "/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
+    installer_filename = "packages/cache/dcos_generate_config." + pkgpanda.util.variant_prefix(variant) + "sh"
     bootstrap_filename = bootstrap_id + ".bootstrap.tar.xz"
     bootstrap_active_filename = bootstrap_id + ".active.json"
     installer_bootstrap_filename = installer_info['bootstrap'] + '.bootstrap.tar.xz'
@@ -722,7 +722,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_active_filename': bootstrap_active_filename,
             'bootstrap_latest_filename': bootstrap_latest_filename,
             'latest_complete_filename': latest_complete_filename,
-            'packages_dir': PACKAGES_DIR})
+            'packages_dir': 'packages'})
 
         fill_template('installer_internal_wrapper', {
             'variant': pkgpanda.util.variant_str(variant),
@@ -734,14 +734,14 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync
-        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_filename)
-        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', installer_bootstrap_filename)
-        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_active_filename)
-        copy_to_build(PACKAGES_DIR + '/cache/bootstrap', bootstrap_latest_filename)
-        copy_to_build(PACKAGES_DIR + '/cache/complete', latest_complete_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', installer_bootstrap_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_active_filename)
+        copy_to_build('packages/cache/bootstrap', bootstrap_latest_filename)
+        copy_to_build('packages/cache/complete', latest_complete_filename)
         for package_id in variant_info['packages']:
             package_name = pkgpanda.PackageId(package_id).name
-            copy_to_build(PACKAGES_DIR + '/cache/', PACKAGES_DIR + '/' + package_name + '/' + package_id + '.tar.xz')
+            copy_to_build('packages/cache/', 'packages/' + package_name + '/' + package_id + '.tar.xz')
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):

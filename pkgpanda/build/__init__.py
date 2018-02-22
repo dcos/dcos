@@ -16,7 +16,7 @@ import pkgpanda.build.src_fetchers
 from pkgpanda import expand_require as expand_require_exceptions
 from pkgpanda import Install, PackageId, Repository
 from pkgpanda.actions import add_package_file
-from pkgpanda.constants import install_root, PACKAGES_DIR, PKG_DIR, RESERVED_UNIT_NAMES
+from pkgpanda.constants import install_root, PKG_DIR, RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic,
                            hash_checkout, is_windows, load_json, load_string, logger,
@@ -261,10 +261,10 @@ class PackageStore:
 
         # Load an upstream if one exists
         # TODO(cmaloney): Allow upstreams to have upstreams
-        self._package_cache_dir = self._packages_dir + "/cache/" + PACKAGES_DIR
+        self._package_cache_dir = self._packages_dir + "/cache/packages"
         self._upstream_dir = self._packages_dir + "/cache/upstream/checkout"
         self._upstream = None
-        self._upstream_package_dir = self._upstream_dir + "/" + PACKAGES_DIR
+        self._upstream_package_dir = self._upstream_dir + "/packages"
         # TODO(cmaloney): Make it so the upstream directory can be kept around
         remove_directory_tree(self._upstream_dir)
         upstream_config = self._packages_dir + '/upstream.json'
@@ -394,7 +394,7 @@ class PackageStore:
 
         # TODO(cmaloney): Use storage providers to download instead of open coding.
         pkg_path = "{}.tar.xz".format(pkg_id)
-        url = self._repository_url + '/' + PACKAGES_DIR + '/{0}/{1}'.format(pkg_id.name, pkg_path)
+        url = self._repository_url + '/packages/{0}/{1}'.format(pkg_id.name, pkg_path)
         try:
             directory = self.get_package_cache_folder(pkg_id.name)
             # TODO(cmaloney): Move to some sort of logging mechanism?
@@ -1035,8 +1035,8 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             active_package_ids.add(pkg_id_str)
 
             # Mount the package into the docker container.
-            cmd.volumes[pkg_path] = install_root + "/" + PACKAGES_DIR + "/{}:ro".format(pkg_id_str)
-            os.makedirs(os.path.join(install_dir, PACKAGES_DIR + "/{}".format(pkg_id_str)))
+            cmd.volumes[pkg_path] = install_root + "/packages/{}:ro".format(pkg_id_str)
+            os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
 
             # Add the dependencies of the package to the set which will be
             # activated.
@@ -1182,7 +1182,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # paths to the packages will change.
     # TODO(cmaloney): This isn't very clean, it would be much nicer to
     # just run pkgpanda inside the package.
-    rewrite_symlinks(install_dir, repository.path, install_root + "/" + PACKAGES_DIR + "/")
+    rewrite_symlinks(install_dir, repository.path, install_root + "/packages/")
 
     print("Building package in docker")
 
@@ -1207,7 +1207,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # TODO(cmaloney): src should be read only...
         # Source directory
         cache_abs("src"): PKG_DIR + "/src:rw",
-        cache_abs("result"): install_root + "/" + PACKAGES_DIR + "/{}:rw".format(pkg_id)
+        cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id)
     })
 
     if is_windows:
@@ -1233,7 +1233,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         "PKG_VERSION": version,
         "PKG_NAME": name,
         "PKG_ID": pkg_id,
-        "PKG_PATH": install_root + "/" + PACKAGES_DIR + "/{}".format(pkg_id),
+        "PKG_PATH": install_root + "/packages/{}".format(pkg_id),
         "PKG_VARIANT": variant if variant is not None else "<default>",
         "NUM_CORES": multiprocessing.cpu_count()
     }

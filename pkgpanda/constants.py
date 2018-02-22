@@ -14,7 +14,6 @@ if is_windows:
     config_dir = 'c:/etc/mesosphere'
     install_root = 'c:/opt/mesosphere'
 
-    PACKAGES_DIR = "packages"
     DOCKERFILE_DIR = 'docker.windows/'
 
     # Windows specific configuration files
@@ -26,7 +25,6 @@ if is_windows:
 
 else:
     STATE_DIR_ROOT = '/var/lib/dcos'
-    PACKAGES_DIR = "packages"
     PKG_DIR = "/pkg"
     DOCKERFILE_DIR = 'docker/'
     config_dir = '/etc/mesosphere'
@@ -37,7 +35,7 @@ else:
     dcos_services_yaml = 'dcos-services.yaml'
     cloud_config_yaml = 'cloud-config.yaml'
 
-repository_base = install_root + '/' + PACKAGES_DIR
+repository_base = install_root + '/packages'
 
 DCOS_SERVICE_CONFIGURATION_FILE = "dcos-service-configuration.json"
 DCOS_SERVICE_CONFIGURATION_PATH = install_root + "/etc/" + DCOS_SERVICE_CONFIGURATION_FILE

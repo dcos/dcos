@@ -9,7 +9,6 @@ from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 install_root,
-                                PACKAGES_DIR,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
@@ -245,7 +244,7 @@ def _do_bootstrap(install, repository):
         with tempfile.NamedTemporaryFile() as f:
             download(
                 f.name,
-                repository_url + '/' + PACKAGES_DIR + '/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
+                repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
                 rm_on_error=False,
             )

@@ -34,7 +34,6 @@ from pkgpanda.constants import (
     config_dir,
     dcos_config_yaml,
     dcos_services_yaml,
-    PACKAGES_DIR,
 )
 from pkgpanda.util import (
     hash_checkout,
@@ -674,7 +673,7 @@ def generate(
     stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
-        return PACKAGES_DIR + '/{0}/{1}{2}'.format(
+        return 'packages/{0}/{1}{2}'.format(
             package_id.name,
             repr(package_id),
             extension)
