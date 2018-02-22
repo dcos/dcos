@@ -307,13 +307,8 @@ def test_vip(dcos_api_session,
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
-    if marathon.Network.BRIDGE in [vip_net, proxy_net]:
-        if container == marathon.Container.DOCKER:
-            pass
-        elif container == marathon.Container.NONE:
-            same_hosts = []
-        else:
-            same_hosts.remove(True)
+    if marathon.Network.BRIDGE in [vip_net, proxy_net] and container == marathon.Container.NONE:
+        same_hosts = []
     tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]
