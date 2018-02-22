@@ -43,13 +43,13 @@ if is_windows:
     def remove_directory(path):
         """removes a directory. fails silently if the tree does not exist"""
         path = path.replace('/', '\\')
-        if not os.path.exists(path):
+        if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
 
     def remove_directory_tree(path):
         """recursively removes a directory tree. fails silently if the tree does not exist"""
         path = path.replace('/', '\\')
-        if not os.path.exists(path):
+        if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
 
     def make_directory(path):
