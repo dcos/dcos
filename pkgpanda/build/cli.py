@@ -26,7 +26,7 @@ def main():
         variant_arg = arguments['--variant']
         # map the keyword 'default' to None to build default as this is how default is internally
         # represented, but use the None argument (i.e. the lack of variant arguments) to trigger all variants
-        target_variant = variant_arg if variant_arg != 'default' else None
+        target_variant = [variant_arg if variant_arg != 'default' else None]
         # Make a local repository for build dependencies
         if arguments['tree']:
             package_store = pkgpanda.build.PackageStore(getcwd(), arguments['--repository-url'])

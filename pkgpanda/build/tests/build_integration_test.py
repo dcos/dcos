@@ -100,7 +100,7 @@ def test_single_source_corrupt(tmpdir):
     expect_fs(str(tmpdir.join("cache/packages/single_source/single_source")), ["foo.corrupt"])
 
 
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
+@pytest.mark.skipif(is_windows, reason="Fails on windows, don't have necessary windows build scripts for this test")
 def test_bootstrap(tmpdir):
     pkg_dir = tmpdir.join("bootstrap_test")
     copytree("resources/", str(pkg_dir))
