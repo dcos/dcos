@@ -241,7 +241,7 @@
                 {
                   "Ref": "AWS::Region"
                 },
-                "{{ os_type }}prereq"
+                "{{ os_type }}"
               ]
             }
           ]

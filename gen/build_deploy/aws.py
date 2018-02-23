@@ -367,13 +367,15 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
     ]
-    if cc_params['os_type'] == 'coreos':
+    supported_os = ('coreos', 'el7')
+    if cc_params['os_type'] not in supported_os:
+        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+    elif cc_params['os_type'] == 'coreos':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
     elif cc_params['os_type'] == 'el7':
         cloud_init_implementation = 'canonical'
-    else:
-        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+        cc_params['os_type'] = 'el7prereq'
 
     results = gen.generate(
         arguments=variant_args,
@@ -414,12 +416,13 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
+
         # without noticing (such as exhibitor_storage_backend)
         node_template_id, node_source = groups[node_type]
         local_source = Source()
         local_source.add_must('os_type', os_type)
         local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7", "el7prereq"}))
-        params = deepcopy(cf_instance_groups[node_template_id])
+        params = cf_instance_groups[node_template_id]
         params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
         params['node_type'] = node_type
@@ -438,7 +441,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 bundle = make_advanced_bundle(arguments,
                                               [node_source, local_source, num_masters_source],
                                               template_name,
-                                              params)
+                                              deepcopy(params))
                 yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
@@ -455,7 +458,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
             bundle = make_advanced_bundle(arguments,
                                           [node_source, local_source],
                                           template_name,
-                                          params)
+                                          deepcopy(params))
             yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
@@ -498,7 +501,7 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
         # Specialize the dcos-cfn-signal service
         cc_variant = results.utils.add_units(
             cc_variant,
-            yaml.safe_load(gen.template.parse_str(late_services).render(params)))
+            yaml.safe_load(gen.template.parse_str(late_services).render(deepcopy(params))))
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])
