@@ -199,7 +199,7 @@ local function fetch_and_store_marathon_apps(auth_token)
             -- override with ports from the container's portMappings
             ports = {}
 
-            local port_mappings = app["container"]["portMappings"] or app["portDefinitions"] or {}
+            local port_mappings = app["container"]["portMappings"] or {}
             local port_attr = app["container"]["portMappings"] and "containerPort" or "port"
 
             for _, port_mapping in ipairs(port_mappings) do
