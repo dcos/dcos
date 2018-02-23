@@ -9,17 +9,6 @@ root:
     owner: root
     content: |
       {{ cluster_package_list_id }}
-  - path: c:/etc/systemd/journald.conf.d/dcos.conf
-    permissions: "0644"
-    owner: root
-    content: |
-      [Journal]
-      MaxLevelConsole=warning
-      RateLimitInterval=1s
-      RateLimitBurst=20000
-  - path: c:/etc/rexray/config.yml
-    permissions: "0644"
-    content: {{ rexray_config_contents }}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
 {% case "false" %}

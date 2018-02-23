@@ -1,34 +1,34 @@
 package:
-  - path: /etc/dcos-metrics-config.yaml
+  - path: c:/etc/dcos-metrics-config.yaml
     content: |
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
-  - path: /pkginfo.json
+  - path: c:/pkginfo.json
     content: |
       {
         "environment": {
-          "MESOS_IP_DISCOVERY_COMMAND": "/opt/mesosphere/bin/detect_ip",
+          "MESOS_IP_DISCOVERY_COMMAND": "/opt/mesosphere/bin/detect_ip.ps1",
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: /bin/detect_ip
+  - path: c:/bin/detect_ip.ps1
     permissions: "0755"
     content: {{ ip_detect_contents }}
-  - path: /bin/detect_ip_public
+  - path: c:/bin/detect_ip_public.ps1
     permissions: "0755"
     content: {{ ip_detect_public_contents }}
-  - path: /etc/check_time.env
+  - path: c:/etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
 {% switch licensing_enabled %}
 {% case "true" %}
-  - path: /etc/license.txt
+  - path: c:/etc/license.txt
     permissions: "0600"
     content: {{ license_key_contents }}
 {% case "false" %}
 {% endswitch %}
-  - path: /check/check_ip
+  - path: c:/check/check_ip.ps1
     permissions: "0755"
     content: |
       #!/bin/bash
@@ -42,10 +42,7 @@ package:
         echo "Not a valid ip: $ip" >&2
         exit 1;
       fi
-  - path: /etc_master/master_count
-    content: |
-      {{ num_masters }}
-  - path: /etc_slave/dcos-dns.json
+  - path: c:/etc_slave/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -55,7 +52,7 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_slave_public/dcos-dns.json
+  - path: c:/etc_slave_public/dcos-dns.json
     content: |
       {
         "upstream_resolvers": {{ resolvers }},
@@ -65,24 +62,10 @@ package:
         "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
         "forward_zones": {{ dns_forward_zones }}
       }
-  - path: /etc_master/dcos-dns.json
-    content: |
-      {
-{% switch master_dns_bindall %}
-{% case "true" %}
-{% case "false" %}
-        "bind_interface": "spartan",
-{% endswitch %}
-        "upstream_resolvers": {{ resolvers }},
-        "udp_port": 53,
-        "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
-        "forward_zones": {{ dns_forward_zones }}
-      }
-  - path: /etc/mesos-dns.env
+  - path: c:/etc/mesos-dns.env
     content: |
       MESOS_DNS_CONFIG=/opt/mesosphere/etc/mesos-dns.json
-  - path: /etc/mesos-dns.json
+  - path: c:/etc/mesos-dns.json
     content: |
       {
         "zk": "zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos",
@@ -97,24 +80,10 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: c:/etc/dcos-net-watchdog
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
-  - path: /etc_master/dcos-net.config.d/master.config
-    content: |
-      [
-        {dcos_net,
-          [
-            {is_master, true}
-          ]
-        },
-        {dcos_l4lb,
-          [
-            {agent_polling_enabled, false}
-          ]
-        }
-      ].
-  - path: /etc/dcos-net.config.d/common.config
+  - path: c:/etc/dcos-net.config.d/common.config
     content: |
       [
         {dcos_net,
@@ -149,13 +118,7 @@ package:
           ]
         }
       ].
-  - path: /etc/overlay/config/master.json
-    content: |
-      {
-        "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
-       }
-  - path: /etc/dcos/network/cni/ucr-default-bridge.conf
+  - path: c:/etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
       {
         "name": "mesos-bridge",
@@ -179,7 +142,7 @@ package:
           }
         }
       }
-  - path: /etc/overlay/config/agent.json
+  - path: c:/etc/overlay/config/agent.json
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
@@ -192,7 +155,7 @@ package:
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
        }
-  - path: /etc/overlay/config/agent-master.json
+  - path: c:/etc/overlay/config/agent-master.json
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
@@ -205,36 +168,10 @@ package:
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
-  - path: /etc/mesos-master-modules/dummy.json
+  - path: c:/etc/mesos-slave-modules/dummy.json
     content: |
       {}
-  - path: /etc/mesos-slave-modules/dummy.json
-    content: |
-      {}
-  - path: /etc/mesos-master-modules/logsink.json
-    content: |
-      {
-        "libraries":
-        [
-          {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
-            "modules":
-              [
-                {
-                  "name": "com_mesosphere_mesos_LogSink",
-                  "parameters" :
-                    [
-                      {
-                        "key": "output_file",
-                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
-                      }
-                    ]
-                }
-              ]
-           }
-        ]
-      }
-  - path: /etc/mesos-slave-modules/logsink.json
+  - path: c:/etc/mesos-slave-modules/logsink.json
     content: |
       {
         "libraries":
@@ -259,40 +196,7 @@ package:
       }
 {% switch dcos_overlay_enable %}
 {% case "true" %}
-  - path: /etc/mesos-master-modules/overlay_master_modules.json
-    content: |
-      {
-        "libraries":
-        [
-          {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
-            "modules":
-              [
-                {
-                  "name": "com_mesosphere_mesos_OverlayMasterManager",
-                  "parameters" :
-                    [
-                      {
-                        "key": "master_config",
-                        "value" : "/opt/mesosphere/etc/overlay/config/master.json"
-                      }
-                    ]
-                },
-                {
-                  "name": "com_mesosphere_mesos_OverlayAgentManager",
-                  "parameters" :
-                    [
-                      {
-                        "key": "agent_config",
-                        "value" : "/opt/mesosphere/etc/overlay/config/agent-master.json"
-                      }
-                    ]
-                }
-              ]
-           }
-        ]
-      }
-  - path: /etc/mesos-slave-modules/overlay_slave_modules.json
+  - path: c:/etc/mesos-slave-modules/overlay_slave_modules.json
     content: |
       {
         "libraries":
@@ -317,7 +221,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-modules/journal_logger_modules.json
+  - path: c:/etc/mesos-slave-modules/journal_logger_modules.json
     content: |
       {
         "libraries": [
@@ -357,7 +261,7 @@ package:
       }
 {% switch dcos_remove_dockercfg_enable %}
 {% case "true" %}
-  - path: /etc/mesos-slave-modules/remove_dockercfg_slave_modules.json
+  - path: c:/etc/mesos-slave-modules/remove_dockercfg_slave_modules.json
     content: |
       {
         "libraries":
@@ -375,7 +279,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json
+  - path: c:/etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -391,7 +295,7 @@ package:
             }
         ]
       }
-  - path: /etc/mesos-slave-image-gc-config.json
+  - path: c:/etc/mesos-slave-image-gc-config.json
     content: |
       {
         "image_disk_headroom": 0.1,
@@ -400,23 +304,7 @@ package:
         },
         "excluded_images": []
       }
-  - path: /etc/logrotate_master.config
-    content: |
-      compress
-      delaycompress
-      notifempty
-      missingok
-      nomail
-      /var/lib/dcos/mesos/log/mesos-master.log {
-          olddir /var/lib/dcos/mesos/log/archive
-          size 256M
-          rotate {{ mesos_log_retention_count }}
-          copytruncate
-          postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
-          endscript
-      }
-  - path: /etc/logrotate_agent.config
+  - path: c:/etc/logrotate_agent.config
     content: |
       compress
       delaycompress
@@ -432,35 +320,7 @@ package:
               /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
           endscript
       }
-  - path: /etc/mesos-master
-    content: |
-      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
-      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
-      MESOS_REGISTRY_STORE_TIMEOUT=60secs
-      MESOS_REGISTRY_FETCH_TIMEOUT=60secs
-      MESOS_REGISTRY_STRICT=false
-      MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
-      MESOS_OFFER_TIMEOUT=2mins
-      MESOS_WORK_DIR={{ mesos_master_work_dir }}
-      MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
-      MESOS_WEIGHTS={{ weights }}
-      MESOS_QUORUM={{ master_quorum }}
-      MESOS_HOSTNAME_LOOKUP=false
-      MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
-      MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
-{% switch has_mesos_max_completed_tasks_per_framework %}
-{% case "true" %}
-      MESOS_MAX_COMPLETED_TASKS_PER_FRAMEWORK={{ mesos_max_completed_tasks_per_framework }}
-{% case "false" %}
-{% endswitch %}
-      GLOG_drop_log_memory=false
-      LIBPROCESS_NUM_WORKER_THREADS=16
-      SASL_PATH=/opt/mesosphere/lib/sasl2
-  - path: /etc/mesos-master-provider
-    content: |
-      MESOS_CLUSTER={{ cluster_name }}
-  - path: /etc/mesos-slave-common
+  - path: c:/etc/mesos-slave-common
     content: |
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_CONTAINERIZERS=docker,mesos
@@ -507,49 +367,44 @@ package:
 {% endswitch %}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
-  - path: /etc/docker_credentials
+  - path: c:/etc/docker_credentials
     permissions: "0600"
     content: |
         {{ cluster_docker_credentials }}
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave
+  - path: c:/etc/mesos-slave
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 9272},{"begin": 9274, "end": 32000}]}}]
-  - path: /etc/mesos-slave-public
+  - path: c:/etc/mesos-slave-public
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
       MESOS_DEFAULT_ROLE=slave_public
       MESOS_ATTRIBUTES=public_ip:true
-  - path: /etc/mesos-executor-environment.json
+  - path: c:/etc/mesos-executor-environment.json
     content: |
       {
         "PATH": "/usr/bin:/bin",
         "SHELL": "/usr/bin/bash",
         "LIBPROCESS_NUM_WORKER_THREADS": "8"
       }
-  - path: /etc/dcos-log.env
+  - path: c:/etc/dcos-log.env
     content: |
       DCOS_LOG_CONFIG_PATH=/opt/mesosphere/etc/dcos-log-config.json
-  - path: /etc_master/dcos-log-config.json
-    content: |
-      {
-        "role": "master"
-      }
-  - path: /etc_slave/dcos-log-config.json
+  - path: c:/etc_slave/dcos-log-config.json
     content: |
       {
         "role": "agent"
       }
-  - path: /etc_slave_public/dcos-log-config.json
+  - path: c:/etc_slave_public/dcos-log-config.json
     content: |
       {
         "role": "agent_public"
       }
-  - path: /etc/dns_search_config
+  - path: c:/etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/dcos-signal-config.json
+  - path: c:/etc/dcos-signal-config.json
     content: |
       {
         "gen_platform": "{{ platform }}",
@@ -566,36 +421,26 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-diagnostics-runner-config.json
+  - path: c:/etc/dcos-diagnostics-runner-config.json
     content: {{ check_config_contents }}
-  - path: /etc/dcos-diagnostics.env
+  - path: c:/etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
-  - path: /etc_master/dcos-diagnostics-config.json
-    content: |
-      {
-        "role": "master",
-        "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
-        "no-unix-socket": true,
-        "agent-port": 61001
-      }
-  - path: /etc_slave/dcos-diagnostics-config.json
+  - path: c:/etc_slave/dcos-diagnostics-config.json
     content: |
       {
         "role": "agent",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc_slave_public/dcos-diagnostics-config.json
+  - path: c:/etc_slave_public/dcos-diagnostics-config.json
     content: |
       {
         "role": "agent_public",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001
       }
-  - path: /etc/dcos-diagnostics-endpoint-config.json
+  - path: c:/etc/dcos-diagnostics-endpoint-config.json
     content: |
         {
           "HTTPEndpoints": [
@@ -806,46 +651,18 @@ package:
               }
           ]
         }
-  - path: /etc/adminrouter.env
-    content: |
-      ADMINROUTER_ACTIVATE_AUTH_MODULE={{ adminrouter_auth_enabled }}
-  - path: /etc/dcos-oauth.env
+  - path: c:/etc/dcos-oauth.env
     content: |
       OAUTH_ISSUER_URL={{ oauth_issuer_url }}
       OAUTH_CLIENT_ID={{ oauth_client_id }}
       OAUTH_AUTH_REDIRECTOR={{ oauth_auth_redirector }}
-{% switch master_discovery %}
-{% case "master_http_loadbalancer" %}
-  - path: /etc_master/dns_config_master
-    content: |
-      MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
-      EXHIBITOR_ADDRESS=127.0.0.1
-  - path: /etc/dns_config
-    content: |
-      MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://{{ exhibitor_address }}:8181/exhibitor/v1/cluster/status
-      EXHIBITOR_ADDRESS={{ exhibitor_address }}
-      RESOLVERS={{ resolvers_str }}
-{% case "static" %}
-  - path: /etc_master/dns_config_master
-    content: |
-      MASTER_SOURCE=master_list
-  - path: /etc/dns_config
-    content: |
-      MASTER_SOURCE=master_list
-      RESOLVERS={{ resolvers_str }}
-  - path: /etc/master_list
-    content: |
-      {{ master_list }}
-{% endswitch %}
 {% switch exhibitor_storage_backend %}
 {% case "agent_only_group_no_exhibitor" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       # File intentionally has no settings - Exhibitor is not used on DC/OS Agents
 {% case "aws_s3" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       EXHIBITOR_BACKEND=AWS_S3
       AWS_REGION={{ aws_region }}
@@ -853,47 +670,47 @@ package:
       AWS_S3_PREFIX={{ s3_prefix }}
 {% switch exhibitor_explicit_keys %}
 {% case "true" %}
-  - path: /etc/exhibitor.properties
+  - path: c:/etc/exhibitor.properties
     content: |
       com.netflix.exhibitor.s3.access-key-id={{ aws_access_key_id }}
       com.netflix.exhibitor.s3.access-secret-key={{ aws_secret_access_key }}
 {% case "false" %}
 {% endswitch %}
 {% case "shared_filesystem" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       EXHIBITOR_BACKEND=SHARED_FS
       EXHIBITOR_FSCONFIGDIR={{ exhibitor_fs_config_dir }}
 {% case "static" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       EXHIBITOR_BACKEND=STATIC
       EXHIBITOR_STATICENSEMBLE={{ exhibitor_static_ensemble }}
 {% case "zookeeper" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       EXHIBITOR_BACKEND=ZK
       ZK_CONFIG_CONNECT={{ exhibitor_zk_hosts }}
       ZK_CONFIG_ZPATH={{ exhibitor_zk_path }}
 {% case "azure" %}
-  - path: /etc/exhibitor
+  - path: c:/etc/exhibitor
     content: |
       EXHIBITOR_BACKEND=AZURE
       AZURE_CONTAINER=dcos-exhibitor
       AZURE_PREFIX={{ exhibitor_azure_prefix }}
-  - path: /etc/exhibitor.properties
+  - path: c:/etc/exhibitor.properties
     content: |
       com.netflix.exhibitor.azure.account-name={{ exhibitor_azure_account_name }}
       com.netflix.exhibitor.azure.account-key={{ exhibitor_azure_account_key }}
 {% endswitch %}
 {% switch enable_docker_gc %}
 {% case "true" %}
-  - path: /etc/docker_gc_enabled
+  - path: c:/etc/docker_gc_enabled
     content: ""
 {% case "false" %}
 {% endswitch %}
 # /etc/ui-config.json is minified due to late-binding and to preserve available cloud-config space
-  - path: /etc/ui-config.json
+  - path: c:/etc/ui-config.json
     content: |
       {"uiConfiguration":{"plugins":{"banner":{"enabled":{{ ui_banner }},"backgroundColor":"{{ ui_banner_background_color }}","foregroundColor":"{{ ui_banner_foreground_color }}","headerTitle":{{ ui_banner_header_title }},"headerContent":{{ ui_banner_header_content }},"footerContent":{{ ui_banner_footer_content }},"imagePath":{{ ui_banner_image_path }},"dismissible":{{ ui_banner_dismissible }}},"branding":{"enabled":{{ ui_branding }}},"external-links": {"enabled": {{ ui_external_links }}},
 {% switch custom_auth %}
@@ -909,16 +726,7 @@ package:
 {% endswitch %}
 {% endswitch %}
       "tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
-  - path: /etc_master/marathon
-    content: |
-      MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
-      LIBPROCESS_PORT=15101
-{% switch dcos_overlay_enable %}
-{% case "true" %}
-      MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
-{% case "false" %}
-{% endswitch %}
-  - path: /etc/proxy.env
+  - path: c:/etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
     content: |
@@ -928,129 +736,23 @@ package:
 {% case "false" %}
     content: ""
 {% endswitch %}
-  - path: /etc_master/metronome
-    content: |
-      METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
-      METRONOME_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
-      METRONOME_PLAY_SERVER_HTTP_PORT=9000
-      METRONOME_MESOS_USER=root
-      LIBPROCESS_PORT=15201
-  - path: /etc/extra_master_addresses
-    content: |
-{% switch master_discovery %}
-{% case "master_http_loadbalancer" %}
-      INTERNAL_MASTER_LB_DNSNAME={{ exhibitor_address }}
-{% case "static" %}
-{% endswitch %}
-{% switch has_master_external_loadbalancer %}
-{% case "true" %}
-      MASTER_LB_DNSNAME={{ master_external_loadbalancer }}
-{% case "false" %}
-{% endswitch %}
-  - path: /etc/user.config.yaml
+  - path: c:/etc/user.config.yaml
     content: |
 {{ config_yaml }}
-  - path: /etc/user.config.full.yaml
+  - path: c:/etc/user.config.full.yaml
     permissions: "0600"
     content: |
 {{ config_yaml_full }}
-  - path: /etc/expanded.config.json
+  - path: c:/etc/expanded.config.json
     content: |
 {{ expanded_config }}
-  - path: /etc/expanded.config.full.json
+  - path: c:/etc/expanded.config.full.json
     permissions: "0600"
     content: |
 {{ expanded_config_full }}
-  - path: /etc_master/dcos-history.env
-    content: |
-      STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
-  - path: /etc_master/adminrouter-upstreams-open.conf
-    content: |
-      # Just for compatibility/uniformity with EE:
-      set $adminrouter_agent_port 61001;
-      set $upstream_cosmos http://127.0.0.1:7070;
-      set $upstream_mesos http://leader.mesos:5050;
-  - path: /etc_master/adminrouter-listen-open.conf
-    content: |
-      listen 80 default_server;
-      listen 443 ssl default_server;
-
-      ssl_certificate includes/snakeoil.crt;
-      ssl_certificate_key includes/snakeoil.key;
-  - path: /etc/adminrouter-tls-master.conf
-    content: |
-      # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
-      # Modulo ChaCha20 cipher.
-{% switch adminrouter_tls_cipher_override %}
-{% case "false" %}
-      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
-{% case "true" %}
-      ssl_ciphers {{ adminrouter_tls_cipher_suite }};
-{% endswitch %}
-      ssl_prefer_server_ciphers on;
-      # To manually test which TLS versions are enabled on a node, use
-      # `openssl` commands.
-      #
-      # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
-      # details.
-      ssl_protocols {{ adminrouter_tls_version_override }};
-  - path: /etc/adminrouter-tls-agent.conf
-    content: |
-      # Note that Agent Admin Router only serves cluster-internal clients. Hence,
-      # browser compatibility is not a criterion for the TLS cipher suite selection.
-      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
-      ssl_prefer_server_ciphers on;
-      ssl_protocols TLSv1.2;
-  - path: /etc_slave/adminrouter-listen-open.conf
-    content: |
-        listen 61001 default_server;
-  - path: /etc_slave_public/adminrouter-listen-open.conf
-    content: |
-        listen 61001 default_server;
-{% switch exhibitor_admin_password_enabled %}
-{% case "true" %}
-  - path: /etc_master/exhibitor_web.xml
-    permissions: "0644"
-    content: |
-      <?xml version="1.0" encoding="UTF-8"?>
-      <web-app xmlns="http://java.sun.com/xml/ns/javaee"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-        version="2.5">
-        <security-constraint>
-          <web-resource-collection>
-            <web-resource-name>Protected</web-resource-name>
-            <url-pattern>/*</url-pattern>
-          </web-resource-collection>
-          <auth-constraint>
-            <role-name>admin</role-name>
-          </auth-constraint>
-        </security-constraint>
-        <security-constraint>
-          <web-resource-collection>
-            <web-resource-name>Public</web-resource-name>
-            <url-pattern>/exhibitor/v1/cluster/status</url-pattern>
-          </web-resource-collection>
-        </security-constraint>
-        <security-role>
-          <role-name>admin</role-name>
-        </security-role>
-        <login-config>
-          <auth-method>BASIC</auth-method>
-          <realm-name>DCOS</realm-name>
-        </login-config>
-      </web-app>
-  - path: /etc_master/exhibitor_realm
-    permissions: "0644"
-    content: |
-      admin: {{ exhibitor_admin_password }},admin
-{% case "false" %}
-{% endswitch %}
-  - path: /etc/rexray.conf
-    content: {{ rexray_config_contents }}
 {% switch fault_domain_enabled %}
 {% case "true" %}
-  - path: /bin/detect_fault_domain
+  - path: c:/bin/detect_fault_domain
     permissions: "0755"
     content: {{ fault_domain_detect_contents }}
 {% case "false" %}

@@ -37,6 +37,7 @@ from pkgpanda.constants import (
 )
 from pkgpanda.util import (
     hash_checkout,
+    is_absolute_path,
     is_windows,
     json_prettyprint,
     load_string,
@@ -156,6 +157,12 @@ def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
     elif cloud_init_implementation == 'coreos':
         cloudconfig.setdefault('coreos', {}).setdefault('units', [])
         cloudconfig['coreos']['units'] += services
+    elif cloud_init_implementation == 'windows':
+        cloudconfig.setdefault('windows', {}).setdefault('units', [])
+        if services:
+            cloudconfig['windows']['units'] += services
+        else:
+            cloudconfig['windows']['units'] = None
     else:
         raise Exception("Parameter value '{}' is invalid for cloud_init_implementation".format(
             cloud_init_implementation))
@@ -257,7 +264,8 @@ def render_templates(template_dict, arguments):
             template_data = yaml.safe_load(rendered_template)
 
             if full_template:
-                full_template = merge_dictionaries(full_template, template_data)
+                if template_data:
+                    full_template = merge_dictionaries(full_template, template_data)
             else:
                 full_template = template_data
 
@@ -305,8 +313,12 @@ def do_gen_package(config, package_filename):
         # Write out the individual files
         for file_info in config["package"]:
             assert file_info.keys() <= {"path", "content", "permissions"}
-            if file_info['path'].startswith('/'):
-                path = tmpdir + file_info['path']
+            if is_absolute_path(file_info['path']):
+                if is_windows:
+                    # need to remove the 'c:' from the filename
+                    path = tmpdir + file_info['path'][2:]
+                else:
+                    path = tmpdir + file_info['path']
             else:
                 path = tmpdir + '/' + file_info['path']
             try:
@@ -521,7 +533,7 @@ def build_late_package(late_files, config_id, provider):
     # isn't already one.
     for file_info in late_files:
         assert file_info['path'] != '/pkginfo.json'
-        assert file_info['path'].startswith('/')
+        assert is_absolute_path(file_info['path'])
 
     late_files.append({
         "path": "/pkginfo.json",
@@ -644,7 +656,8 @@ def generate(
     # (likely indicates a misspelling)
     for name, template in rendered_templates.items():
         if name == dcos_services_yaml:  # yaml list of the service files
-            assert isinstance(template, list)
+            if template:
+                assert isinstance(template, list)
         elif name == cloud_config_yaml:
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template
@@ -740,11 +753,7 @@ def generate(
     cc['write_files'] = []
     # Do the transform
     for item in cc_root:
-        if is_windows:
-            tmppath = item['path'].replace('\\', '/')
-            assert tmppath.startswith('c:/')
-        else:
-            assert item['path'].startswith('/')
+        assert is_absolute_path(item['path'])
         cc['write_files'].append(item)
     rendered_templates[cloud_config_yaml] = cc
 

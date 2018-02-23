@@ -34,9 +34,13 @@ json_prettyprint_args = {
 def is_absolute_path(path):
     if is_windows:
         # We assume one char drive letter. Sometimes its two but not often
-        path[1] == ':'  # pattern is <driveletter>:/string....
+        # pattern is <driveletter>:/string....
+        if path[1] == ':':
+            return True
     else:
-        path[0] == '/'
+        if path[0] == '/':
+            return True
+    return False
 
 
 if is_windows:
