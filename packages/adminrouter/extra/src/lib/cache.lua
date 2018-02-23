@@ -200,10 +200,9 @@ local function fetch_and_store_marathon_apps(auth_token)
             ports = {}
 
             local port_mappings = app["container"]["portMappings"] or {}
-            local port_attr = app["container"]["portMappings"] and "containerPort" or "port"
 
             for _, port_mapping in ipairs(port_mappings) do
-               table.insert(ports, port_mapping[port_attr])
+               table.insert(ports, port_mapping["containerPort"])
             end
        end
 
