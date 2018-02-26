@@ -4,6 +4,7 @@ import copy
 import logging
 import time
 
+import pytest
 import requests
 
 from generic_test_code.common import ping_mesos_agent, verify_header
@@ -755,6 +756,54 @@ class TestCache:
                 assert resp.status_code == 200
 
             assert lbf.extra_matches == {}
+
+    # This test can succed 40-50% number of times if we remove the fix. Hence
+    # we re-run it here 5 times.
+    @pytest.mark.parametrize('execution_number', range(5))
+    def test_if_mesos_leader_failover_is_followed_by_cache_http(
+            self,
+            nginx_class,
+            valid_user_header,
+            mocker,
+            dns_server_mock,
+            execution_number):
+        # Nginx resolver enforces 5s (grep for `resolver ... valid=Xs`), so it
+        # is VERY important to use cache pool period of >5s.
+        cache_poll_period = 6
+        ar = nginx_class(
+            cache_poll_period=cache_poll_period,
+            cache_expiration=cache_poll_period - 1,
+            upstream_mesos="http://leader.mesos:5050",
+            )
+
+        # Enable recording for Mesos mocks:
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='record_requests')
+        mocker.send_command(endpoint_id='http://127.0.0.3:5050',
+                            func_name='record_requests')
+        dns_server_mock.set_dns_entry('leader.mesos.', ip="127.0.0.2", ttl=2)
+        with GuardedSubprocess(ar):
+            # Force cache refresh early, so that we do not have to wait too
+            # long
+            ping_mesos_agent(ar,
+                             valid_user_header,
+                             agent_id=EXTRA_AGENT_DICT['id'],
+                             expect_status=404)
+
+            dns_server_mock.set_dns_entry('leader.mesos.', ip="127.0.0.3", ttl=2)
+
+            # First poll (2s) + normal poll interval(4s) < 2 * normal poll
+            # interval(4s)
+            time.sleep(cache_poll_period * 2)
+
+        mesosmock_pre_reqs = mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='get_recorded_requests')
+        mesosmock_post_reqs = mocker.send_command(
+            endpoint_id='http://127.0.0.3:5050',
+            func_name='get_recorded_requests')
+        assert len(mesosmock_pre_reqs) == 1
+        assert len(mesosmock_post_reqs) == 1
 
 
 class TestCacheMesosLeader:
