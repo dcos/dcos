@@ -686,11 +686,6 @@ package:
               },
               {
                   "Port": 8080,
-                  "Uri": "/v2/eventSubscriptions",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 8080,
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
@@ -751,12 +746,12 @@ package:
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/flags",
+                  "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/state",
+                  "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {
