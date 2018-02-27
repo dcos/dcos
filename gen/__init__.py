@@ -314,11 +314,8 @@ def do_gen_package(config, package_filename):
         for file_info in config["package"]:
             assert file_info.keys() <= {"path", "content", "permissions"}
             if is_absolute_path(file_info['path']):
-                if is_windows:
-                    # need to remove the 'c:' from the filename
-                    path = tmpdir + file_info['path'][2:]
-                else:
-                    path = tmpdir + file_info['path']
+                fileinfo_drive, fileinfo_path = os.path.splitdrive(file_info['path'])
+                path = tmpdir + fileinfo_path
             else:
                 path = tmpdir + '/' + file_info['path']
             try:

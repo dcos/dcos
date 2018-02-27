@@ -8,7 +8,7 @@ import yaml
 import gen
 try:
     import ssh.validate
-except:
+except ImportError:
     pass
 from gen.build_deploy.bash import onprem_source
 from gen.exceptions import ValidationError

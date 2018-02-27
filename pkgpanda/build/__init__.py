@@ -7,7 +7,7 @@ import shutil
 import string
 import tempfile
 from contextlib import contextmanager
-from os import chdir, getcwd
+from os import chdir, getcwd, mkdir
 from os.path import exists
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -1189,7 +1189,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # TODO(cmaloney): Run as a specific non-root user, make it possible
     # for non-root to cleanup afterwards.
     # Run the build, prepping the environment as necessary.
-    os.mkdir(cache_abs("result"))
+    mkdir(cache_abs("result"))
 
     # Copy the build info to the resulting tarball
     write_json(cache_abs("src/buildinfo.full.json"), final_buildinfo)

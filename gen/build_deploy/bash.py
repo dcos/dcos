@@ -594,7 +594,6 @@ def generate(gen_out, output_dir):
 
 def make_bash(gen_out) -> None:
     """Build bash deployment artifacts and return a list of their filenames."""
-
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
         package_filename = 'packages/{}/{}.tar.xz'.format(

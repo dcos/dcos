@@ -1,7 +1,7 @@
 package:
   - path: c:/etc/dcos-metrics-config.yaml
     content: |
-  - path: /etc/dcos-metrics.env
+      - path: c:/etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
   - path: c:/pkginfo.json

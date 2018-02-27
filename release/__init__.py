@@ -546,11 +546,9 @@ def _get_global_builders():
     """
     res = {}
 
-    docker_dir = DOCKERFILE_DIR
-
-    for name in pkg_resources.resource_listdir('pkgpanda', docker_dir):
+    for name in pkg_resources.resource_listdir('pkgpanda', DOCKERFILE_DIR):
         res[name] = pkg_resources.resource_filename('pkgpanda',
-                                                    docker_dir + name)
+                                                    DOCKERFILE_DIR + name)
     return res
 
 

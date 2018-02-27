@@ -590,10 +590,6 @@ class UserManagement:
 
     @staticmethod
     def validate_user_group(username, group_name):
-        # pwd not available on windows
-        if is_windows:
-            return
-
         user = pwd.getpwnam(username)
         if not group_name:
             return
@@ -617,7 +613,8 @@ class UserManagement:
 
         # Check if the user already exists and exit.
         try:
-            UserManagement.validate_user_group(username, groupname)
+            if not is_windows:
+                UserManagement.validate_user_group(username, groupname)
             self._users.add(username)
             return
         except KeyError as ex:

@@ -4,7 +4,7 @@ import logging
 import os
 try:
     import pty
-except:
+except ImportError:
     pass
 import sys
 

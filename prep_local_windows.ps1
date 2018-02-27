@@ -1,4 +1,3 @@
-#!/usr/bin/pwsh
 #
 # Simple helper script to get a localhost dcos-image development environment up
 # and running with clone of pkgpanda.
@@ -7,7 +6,7 @@
 #
 
 if (!$env:VIRTUAL_ENV) {
-   $env:VIRTUAL_ENV = "Must be run in a python virtual environment"
+   throw "Must be run in a python virtual environment"
 }
 
 # Install the latest version of pip
