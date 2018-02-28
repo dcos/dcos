@@ -929,41 +929,6 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
-    def test_app_with_container_networking_and_portdefinitions(
-            self, nginx_class, mocker, valid_user_header):
-
-        app = self._scheduler_alwaysthere_app()
-
-        app['networks'][0]['mode'] = 'container'
-        app['networks'][0]['name'] = 'samplenet'
-
-        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
-
-        app['portDefinitions'] = [
-            {
-                "port": 80,
-                "protocol": "tcp",
-                "labels": {}
-            },
-        ]
-
-        ar = nginx_class()
-
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='set_apps_response',
-                            aux_data={"apps": [app]})
-
-        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
-        with GuardedSubprocess(ar):
-            # Trigger cache update by issuing request:
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-            assert resp.status_code == 200
-            req_data = resp.json()
-            assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
-
     def test_ip_per_task_app_with_unspecified_ip_address_DCOS_OSS_1366(
             self, nginx_class, mocker, valid_user_header):
         """
