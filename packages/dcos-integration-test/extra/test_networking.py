@@ -74,7 +74,7 @@ class MarathonApp:
     def info(self, dcos_api_session):
         try:
             if self._info['app']['tasksHealthy'] != self.app['instances']:
-                raise
+                raise Exception("Number of Healthy Tasks not equal to number of instances.")
         except:
             self.wait(dcos_api_session)
         return self._info
@@ -165,7 +165,7 @@ class MarathonPod:
     def info(self, dcos_api_session):
         try:
             if self._info['status'] != 'STABLE':
-                raise
+                raise Exception("The status information is not Stable!")
         except:
             self.wait(dcos_api_session)
         return self._info
