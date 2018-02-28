@@ -52,7 +52,7 @@ Package directory    | Files are symlinked from:
 `etc/`               | `/opt/mesosphere/etc/`
 `lib/`               | `/opt/mesosphere/lib/`
 `include/`           | `/opt/mesosphere/include/`
-`dcos.target.wants/` | `/etc/systemd/system/dcos.target.wants/`
+`dcos.target.wants/` | `/etc/systemd/system/dcos.target.wants/` (See **dcos.target.wants** below.)
 
 If the config package writes its Mesos config file to `etc/mesos`, it'll be symlinked from `/opt/mesosphere/etc/mesos`,
 where the Mesos package can find it. Because the Mesos package is looking for its config at this fixed location, a new
@@ -61,6 +61,17 @@ config package can be built and distributed without rebuilding the Mesos package
 Each of these special package directories can be appended with an underscore and a role name, which will cause the
 files to only be linked on nodes of that role. E.g. files under the package directory `etc_master/` will only be linked
 from `/opt/mesosphere/etc/` on a master node.
+
+### dcos.target.wants
+
+The package directory `dcos.target.wants/` is a well-known directory that's intended for systemd unit files, and the
+files within are made available at `/etc/systemd/system/dcos.target.wants/`. However this well-known directory is
+handled differently from the others due to requirements imposed by systemd: each symlink under
+`/etc/systemd/system/dcos.target.wants/` must have a corresponding unit file at `/etc/systemd/system/`, and unit files
+and their symlinks must be readable when systemd starts, potentially before it mounts the volume that contains the
+package files. So when a package containing a `dcos.target.wants/` is activated on a cluster node, the files within are
+copied to `/etc/systemd/system/`, and the symlinks under `/etc/systemd/system/dcos.target.wants/` point to those
+copies. This allows systemd to start DC/OS units before it mounts the DC/OS installation.
 
 ## Special install files and directories
 
