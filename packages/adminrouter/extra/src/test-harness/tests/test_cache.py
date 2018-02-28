@@ -904,10 +904,12 @@ class TestCacheMarathon:
 
         app = self._scheduler_alwaysthere_app()
 
-        app['networks'][0]['mode'] = 'container'
-        app['networks'][0]['name'] = 'samplenet'
+        app['networks'] = [{
+            'mode': 'container',
+            'name': 'samplenet'
+        }]
 
-        app['container']['portMappings'][0]['containerPort'] = '80'
+        app['container']['portMappings'] = [{ 'containerPort': 80 }]
         app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
 
         ar = nginx_class()
