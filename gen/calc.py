@@ -229,6 +229,12 @@ def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_fil
     return ip_detect_contents
 
 
+def calculate_ip6_detect_contents(ip6_detect_filename):
+    if ip6_detect_filename != '':
+        return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
+    return yaml.dump("")
+
+
 def calculate_rexray_config_contents(rexray_config):
     return yaml.dump(
         # Assume block style YAML (not flow) for REX-Ray config.
@@ -969,6 +975,7 @@ entry = {
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
+        lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -993,6 +1000,7 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
@@ -1073,6 +1081,7 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
+        'enable_mesos_ipv6_discovery': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
