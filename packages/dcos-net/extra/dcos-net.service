@@ -10,6 +10,7 @@ LimitNOFILE=16384
 WorkingDirectory=${PKG_PATH}/dcos-net
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos_net
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
 Environment=HOME=/opt/mesosphere
@@ -24,10 +25,10 @@ ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip l
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link set minuteman up
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link add spartan type dummy
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link set spartan up
-ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py sysctl -w net.ipv6.conf.spartan.disable_ipv6=0
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.1/32 dev spartan
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.2/32 dev spartan
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.3/32 dev spartan
-ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip -6 addr add fd01:d::c633:6401/128 dev spartan
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ipv6 sysctl -w net.ipv6.conf.spartan.disable_ipv6=0
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ipv6 ip -6 addr add fd01:d::c633:6401/128 dev spartan
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-net
 ExecStart=/opt/mesosphere/bin/dcos-net-env foreground
