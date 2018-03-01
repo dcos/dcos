@@ -97,9 +97,10 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+      DCOS_NET_IPV6={{ enable_ipv6 }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
