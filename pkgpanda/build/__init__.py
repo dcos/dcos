@@ -620,7 +620,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
 
     make_tar(bootstrap_name, pkgpanda_root)
 
-    shutil.rmtree(work_dir)
+    remove_directory_tree(work_dir)
 
     # Update latest last so that we don't ever use partially-built things.
     write_string(latest_name, bootstrap_id)
@@ -1121,10 +1121,12 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         }
         if is_windows:
             cmd.container = "microsoft/windowsservercore:1709"
+            filename = PKG_DIR + "\\src"
             cmd.run("package-cleaner",
-                    ["powershell.exe", "-command",
-                     "& { get-childitem -erroraction silentlycontinue -path \"" + PKG_DIR + "/src," + PKG_DIR +
-                     "/result\" | remove-item -recurse -force }"])
+                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
+            filename = PKG_DIR + "\\result"
+            cmd.run("package-cleaner",
+                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
         else:
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])

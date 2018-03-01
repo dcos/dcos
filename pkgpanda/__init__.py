@@ -25,7 +25,6 @@ try:
 except ImportError:
     pass
 import re
-import shutil
 import sys
 import tempfile
 from collections import Iterable
@@ -501,7 +500,7 @@ class Repository:
         path = self.package_path(id)
         if not os.path.exists(path):
             raise PackageNotFound(id)
-        shutil.rmtree(path)
+        remove_directory_tree(path)
 
 
 class ConflictingFile(ValidationError):
@@ -793,7 +792,7 @@ class Install:
         for name in chain(new_names, old_names):
             if os.path.exists(name):
                 if os.path.isdir(name):
-                    shutil.rmtree(name)
+                    remove_directory_tree(name)
                 else:
                     os.remove(name)
 
