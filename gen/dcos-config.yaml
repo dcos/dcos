@@ -385,8 +385,13 @@ package:
               "network_mode": "USER",
               "dns": {
                 "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
                 ]
               }
             }
