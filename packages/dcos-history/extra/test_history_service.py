@@ -157,4 +157,3 @@ def test_file_timestamp(monkeypatch, tmpdir):
     fname = qname.split('/')[-1]
     parsed_time = datetime.strptime(fname, '%Y-%m-%dT%H:%M:%S.%f.state-summary.json')
     assert parsed_time == round_ts
-
