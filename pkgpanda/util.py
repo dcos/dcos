@@ -203,11 +203,7 @@ def extract_tarball(path, target):
     # prevent partial extraction from ever laying around on the filesystem.
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
-        if is_windows:
-            check_call(['powershell.exe', '-command',
-                        '& { new-item -itemtype directory -force -path ' + target + ' > $null }'])
-        else:
-            check_call(['mkdir', '-p', target])
+        make_directory(target)
 
         if is_windows:
             check_call(['bsdtar', '-xf', path, '-C', target])
