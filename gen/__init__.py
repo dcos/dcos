@@ -54,6 +54,16 @@ if os.path.exists('gen_extra/calc.py'):
     gen_extra_calc = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
 
 
+def validate_downstream_entry(entry: dict) -> None:
+    """Raise an exception if entry is an invalid downstream gen.internals.Source entry."""
+    version_key = 'dcos_version'
+    entry_keys = set(entry.get('must', {}).keys()) | set(entry.get('default', {}).keys())
+    if version_key in entry_keys:
+        raise Exception(
+            'The downstream entry redefines config param {}, which must be inherited from upstream'.format(version_key)
+        )
+
+
 def stringify_configuration(configuration: dict):
     """Create a stringified version of the complete installer configuration
     to send to gen.generate()"""
@@ -455,6 +465,7 @@ def get_dcosconfig_source_target_and_templates(
     base_source.add_entry(gen.calc.entry, replace_existing=False)
 
     if gen_extra_calc:
+        validate_downstream_entry(gen_extra_calc.entry)
         base_source.add_entry(gen_extra_calc.entry, replace_existing=True)
 
     def add_builtin(name, value):
