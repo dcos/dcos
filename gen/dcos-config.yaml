@@ -52,7 +52,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_slave_public/dcos-dns.json
@@ -62,7 +62,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_master/dcos-dns.json
@@ -76,7 +76,7 @@ package:
         "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc/mesos-dns.env
