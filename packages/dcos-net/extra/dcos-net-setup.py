@@ -13,6 +13,7 @@ Also the script prevents from duplicating iptables rules [3]
 [3] ExecStartPre=/path/dcos-net-setup.py iptables --wait -A FORWARD -j ACCEPT
 """
 
+import os
 import subprocess
 import sys
 
@@ -30,6 +31,12 @@ def main():
         if result.returncode != 0:
             # if it doesn't exist append or insert that rules
             result = subprocess.run(sys.argv[1:])
+    elif sys.argv[1] == '--ipv6-only':
+        if os.getenv('DCOS_NET_IPV6', 'true') == 'false':
+            sys.exit(0)
+        else:
+            del sys.argv[1]
+            result = subprocess.run(sys.argv)
     else:
         result = subprocess.run(sys.argv[1:])
     sys.exit(result.returncode)
