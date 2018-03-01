@@ -59,7 +59,14 @@ end
 
 
 local function request(url, accept_404_reply, auth_token)
-    local headers = {}
+    -- We need to make sure that Nginx does not reuse the TCP connection here,
+    -- as i.e. during failover it could result in fetching data from e.g. Mesos
+    -- master which already abdicated. On top of that we also need to force
+    -- re-resolving leader.mesos address which happens during the setup of the
+    -- new connection.
+    local headers = {
+        ["Connection"] = "close",
+    }
     if auth_token ~= nil then
         headers = {["Authorization"] = "token=" .. auth_token}
     end
