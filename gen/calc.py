@@ -349,6 +349,23 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
 
 
+def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
+    if enable_ipv6 == 'true':
+        return dcos_overlay_network
+    if dcos_overlay_network == entry['default']['dcos_overlay_network']:
+        # Remove ipv6 overlays from default overlay networks
+        overlay_network = json.loads(dcos_overlay_network)
+        del overlay_network['vtep_subnet6']
+        overlay_network['overlays'] = \
+            [o for o in overlay_network['overlays'] if 'subnet' in o]
+        return json.dumps(overlay_network)
+    else:
+        overlay_network = json.loads(dcos_overlay_network)
+        overlays = overlay_network['overlays']
+        assert [o['name'] for o in overlays if 'subnet6' in o] == [], \
+            "ipv6 is disabled, only ipv4 networks are allowed"
+
+
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
 
@@ -515,6 +532,13 @@ def validate_dcos_l4lb_max_named_ip6(dcos_l4lb_max_named_ip6):
     validate_ipv6_addresses([dcos_l4lb_max_named_ip6])
 
 
+def validate_dcos_l4lb_enable_ipv6(dcos_l4lb_enable_ipv6, enable_ipv6):
+    validate_true_false(dcos_l4lb_enable_ipv6)
+    if enable_ipv6 == 'false':
+        assert dcos_l4lb_enable_ipv6 == 'false', "When enable_ipv6 is false, " \
+            "dcos_l4lb_enable_ipv6 mush be false as well"
+
+
 def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
     if cluster_docker_credentials == "{}":
         return "false"
@@ -607,6 +631,12 @@ def validate_s3_prefix(s3_prefix):
 
 def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
+
+
+def calculate_dns_bind_ip_blacklist_json(dns_bind_ip_blacklist, dns_bind_ip_reserved):
+    ips = validate_json_list(dns_bind_ip_blacklist)
+    reserved_ips = validate_json_list(dns_bind_ip_reserved)
+    return json.dumps(reserved_ips + ips)
 
 
 def validate_dns_forward_zones(dns_forward_zones):
@@ -944,7 +974,7 @@ entry = {
         validate_dcos_l4lb_max_named_ip,
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
-        lambda dcos_l4lb_enable_ipv6: validate_true_false(dcos_l4lb_enable_ipv6),
+        validate_dcos_l4lb_enable_ipv6,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -953,6 +983,7 @@ entry = {
         validate_exhibitor_storage_master_discovery,
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         lambda enable_lb: validate_true_false(enable_lb),
+        lambda enable_ipv6: validate_true_false(enable_ipv6),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
         lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
         lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
@@ -971,6 +1002,7 @@ entry = {
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_reserved': '["198.51.100.4"]',
         'dns_bind_ip_blacklist': '[]',
         'dns_forward_zones': '{}',
         'use_proxy': 'false',
@@ -985,6 +1017,7 @@ entry = {
         'telemetry_enabled': 'true',
         'check_time': 'true',
         'enable_lb': 'true',
+        'enable_ipv6': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
@@ -1076,6 +1109,7 @@ entry = {
         'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
+        'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
@@ -1100,6 +1134,7 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
+        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'mesos_hooks': calculate_mesos_hooks,
