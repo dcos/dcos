@@ -147,3 +147,14 @@ def test_add_headers(history_service):
     assert resp.headers['Authorization'] == 'test'
     # check that original headers are still there
     assert resp.headers['Access-Control-Max-Age'] == '86400'
+
+
+# Tests for malformed filenames, ref DCOS_OSS-2210
+def test_file_timestamp(monkeypatch, tmpdir):
+    round_ts = datetime(2018, 2, 28, 20, 17, 14, 0)
+    b = history.statebuffer.HistoryBuffer(60, 2, path=tmpdir.strpath)
+    qname = b._get_datafile_name(round_ts)
+    fname = qname.split('/')[-1]
+    parsed_time = datetime.strptime(fname, '%Y-%m-%dT%H:%M:%S.%f.state-summary.json')
+    assert parsed_time == round_ts
+
