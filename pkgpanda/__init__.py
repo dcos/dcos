@@ -742,12 +742,6 @@ class Install:
         for name in os.listdir(active_dir):
             package_path = os.path.realpath(os.path.join(active_dir, name))
 
-            # Work around a long standing bug in realpath which has been open since 2010.
-            # A fix has been proposed since 2013. https://bugs.python.org/issue9949
-            # in windows realpath doesn't resolve symlinks
-            if is_windows:
-                package_path = nt._getfinalpathname(package_path)
-
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
             ids.add(os.path.basename(package_path))
