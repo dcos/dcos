@@ -122,7 +122,7 @@ def run():
         print("Waiting for template to deploy ...")
         try:
             poll_deploy()
-        except:
+        except Exception:
             print("Current deploy status:\n{}".format(deploy_poller.result(0)))
             raise
         print("Template deployed successfully")
