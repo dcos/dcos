@@ -79,9 +79,9 @@ def _verify_endpoint_tests_conf(endpoint_tests):
         if 'are_upstream_req_headers_ok' in t['tests']:
             _verify_are_upstream_req_headers_ok(
                 t['tests']['are_upstream_req_headers_ok'])
-        if 'are_response_headers_ok' in t['tests']:
-            _verify_are_response_headers_ok(
-                t['tests']['are_response_headers_ok'])
+        if 'is_response_correct' in t['tests']:
+            _verify_is_response_correct(
+                t['tests']['is_response_correct'])
         if 'is_unauthed_access_permitted' in t['tests']:
             _verify_is_unauthed_access_permitted(
                 t['tests']['is_unauthed_access_permitted'])
@@ -153,7 +153,7 @@ def _verify_are_upstream_req_headers_ok(t_config):
         assert p.startswith('/')
 
 
-def _verify_are_response_headers_ok(t_config):
+def _verify_is_response_correct(t_config):
     assert 'nocaching_headers_are_sent' in t_config
     assert t_config['nocaching_headers_are_sent'] in [True, False, 'skip']
 
@@ -276,17 +276,17 @@ def _testdata_to_is_unauthed_access_permitted(tests_config, node_type):
     return res
 
 
-def _testdata_to_are_response_headers_ok(tests_config, node_type):
+def _testdata_to_is_response_correct(tests_config, node_type):
     res = []
 
     for x in tests_config['endpoint_tests']:
         if node_type not in x['type']:
             continue
 
-        if 'are_response_headers_ok' not in x['tests']:
+        if 'is_response_correct' not in x['tests']:
             continue
 
-        h = x['tests']['are_response_headers_ok']
+        h = x['tests']['is_response_correct']
 
         res.extend([(x, h['nocaching_headers_are_sent']) for x in h['test_paths']])
 
@@ -416,7 +416,7 @@ def create_tests(metafunc, path):
         return
 
     if 'caching_headers_test' in metafunc.fixturenames:
-        args = _testdata_to_are_response_headers_ok(tests_config, ar_type)
+        args = _testdata_to_is_response_correct(tests_config, ar_type)
         metafunc.parametrize("path,caching_headers_test", args)
         return
 

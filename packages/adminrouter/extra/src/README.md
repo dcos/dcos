@@ -842,7 +842,7 @@ Let's analyse a very simplified YAML configuration that covers only
 ```
 endpoint_tests:
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /exhibitor/foo/bar
@@ -900,7 +900,7 @@ The syntax is as follows:
 * Each subtest entry is a dictionary itself. There has to be at least one
   subtest entry.
 * At the time of writing this text, the following subtests are supported:
-  * `are_response_headers_ok`
+  * `is_response_correct`
     * Calls `generic_verify_response_test` generic test underneath.
     * Tests if:
       * Response code is 200.
@@ -1368,7 +1368,7 @@ Steps are as follows:
   are not cached. Test:
   ```
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1517,7 +1517,7 @@ To sum up, our test configuration should look as follows:
     type:
       - master
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1575,7 +1575,7 @@ which can be simplified into:
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar

@@ -1,7 +1,7 @@
 endpoint_tests:
 ######### /exhibitor endpoint
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /exhibitor/foo/bar
@@ -41,7 +41,7 @@ endpoint_tests:
 
 ######### /service endpoint
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /service/scheduler-alwaysthere/foo/bar
@@ -201,7 +201,7 @@ endpoint_tests:
 
 ######### /agent endpoint
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
@@ -257,7 +257,7 @@ endpoint_tests:
     type:
       - master
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /system/health/v1/foo/bar
@@ -278,7 +278,7 @@ endpoint_tests:
 ######### /system/v1/agent/ endpoint
 # Agent A
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
@@ -356,7 +356,7 @@ endpoint_tests:
 
 ######### /system/v1/leader endpoint
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /system/v1/leader/mesos/foo/bar?key=value&var=num
@@ -412,7 +412,7 @@ endpoint_tests:
     type:
       - master
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /system/v1/logs/foo/bar
@@ -438,7 +438,7 @@ endpoint_tests:
 
 ######### /cosmos/service
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /cosmos/service/foo/bar
@@ -464,7 +464,7 @@ endpoint_tests:
 
 ######### /capabilities
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /capabilities
@@ -487,7 +487,7 @@ endpoint_tests:
 
 ######### /acs/api/v1/
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /acs/api/v1/reflect/me
@@ -510,7 +510,7 @@ endpoint_tests:
 
 ######### /package
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /package/foo/bar
@@ -535,7 +535,7 @@ endpoint_tests:
 
 ######### /navstar/lashup/key
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /navstar/lashup/key
@@ -558,7 +558,7 @@ endpoint_tests:
 
 ######### /dcos-history-service/foo/bar
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /dcos-history-service/foo/bar
@@ -581,7 +581,7 @@ endpoint_tests:
 
 ######### /mesos_dns
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /mesos_dns/v1/reflect/me
@@ -608,7 +608,7 @@ endpoint_tests:
 
 ######### /mesos
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /mesos/reflect/me
@@ -635,7 +635,7 @@ endpoint_tests:
 
 ######### /pkgpanda
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /pkgpanda/foo/bar
@@ -682,14 +682,14 @@ endpoint_tests:
 
 ######### /pkgpanda/active.buildinfo.full.json
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /pkgpanda/active.buildinfo.full.json
     type:
       - master
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /dcos-metadata/dcos-version.json
@@ -702,7 +702,7 @@ endpoint_tests:
 
 ######### /system/v1/metrics endpoint
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /system/v1/metrics/foo/bar
@@ -748,7 +748,7 @@ endpoint_tests:
       - master
 ######### /marathon
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /marathon/v2/reflect/me
@@ -779,7 +779,7 @@ endpoint_tests:
 ######### This is a special case of a service behind /service endpoint:
 ######### /service/metronome
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /service/metronome/v2/reflect/me

@@ -42,7 +42,7 @@ endpoint_tests:
       - master
 ######### /dcos-metadata/ui-config.json
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: skip
         test_paths:
           - /dcos-metadata/ui-config.json
