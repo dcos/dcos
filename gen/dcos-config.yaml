@@ -18,6 +18,9 @@ package:
   - path: /bin/detect_ip_public
     permissions: "0755"
     content: {{ ip_detect_public_contents }}
+  - path: /bin/detect_ip6
+    permissions: "0755"
+    content: {{ ip6_detect_contents }}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
@@ -505,6 +508,11 @@ package:
       MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
 {% case "false" %}
 {% endswitch %}
+{% switch enable_mesos_ipv6_discovery %}
+{% case "false" %}
+{% case "true" %}
+      MESOS_IP6_DISCOVERY_COMMAND=/opt/mesosphere/bin/detect_ip6
+{% endswitch %}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
   - path: /etc/docker_credentials
@@ -686,11 +694,6 @@ package:
               },
               {
                   "Port": 8080,
-                  "Uri": "/v2/eventSubscriptions",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 8080,
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
@@ -751,12 +754,12 @@ package:
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/flags",
+                  "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/state",
+                  "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {

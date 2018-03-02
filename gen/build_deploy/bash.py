@@ -79,6 +79,7 @@ onprem_source = Source(entry={
         'platform': 'onprem',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
+        'ip6_detect_filename': '',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
         'enable_docker_gc': 'false'
     },
