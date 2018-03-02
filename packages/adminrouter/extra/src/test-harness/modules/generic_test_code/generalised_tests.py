@@ -12,7 +12,7 @@ from generic_test_code.common import (
     generic_correct_upstream_request_test,
     generic_location_header_during_redirect_is_adjusted_test,
     generic_no_slash_redirect_test,
-    generic_response_headers_verify_test,
+    generic_verify_response_test,
     generic_upstream_cookies_verify_test,
     generic_upstream_headers_verify_test,
 )
@@ -525,7 +525,7 @@ class GenericTestMasterClass:
             headers_absent.append("Expires")
         # caching_headers_test == "skip", do nothing
 
-        generic_response_headers_verify_test(
+        generic_verify_response_test(
             master_ar_process_perclass,
             valid_user_header,
             path,
@@ -638,7 +638,7 @@ class GenericTestAgentClass:
             headers_absent.append("Expires")
         # caching_headers_test == "skip", do nothing
 
-        generic_response_headers_verify_test(
+        generic_verify_response_test(
             agent_ar_process_perclass,
             valid_user_header,
             path,

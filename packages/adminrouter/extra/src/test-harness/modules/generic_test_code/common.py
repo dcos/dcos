@@ -66,7 +66,7 @@ def generic_no_slash_redirect_test(ar, path, code=301):
     assert r.headers['Location'] == url + '/'
 
 
-def generic_response_headers_verify_test(
+def generic_verify_response_test(
         ar, auth_header, path, assert_headers=None, assert_headers_absent=None):
     """Test if response sent by AR is correct
 

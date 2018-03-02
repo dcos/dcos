@@ -779,8 +779,9 @@ was developed.
 Tests shared by most of the endpoints are as follows:
 * `generic_no_slash_redirect_test` - test that a location without a trailing
   slash is redirected to one that ends with `/`.
-* `generic_response_headers_verify_test` - test that the response sent by AR is
-  correct, this mostly involves checking response headers.
+* `generic_verify_response_test` - test that the response sent by AR is
+  correct, this mostly involves checking response headers and the response
+  status code.
 * `generic_upstream_headers_verify_test` - test that the headers of the request
   sent by NGINX to the upstream is correct.
 * `generic_upstream_cookies_verify_test` - check if the cookies set in the
@@ -900,7 +901,7 @@ The syntax is as follows:
   subtest entry.
 * At the time of writing this text, the following subtests are supported:
   * `are_response_headers_ok`
-    * Calls `generic_response_headers_verify_test` generic test underneath.
+    * Calls `generic_verify_response_test` generic test underneath.
     * Tests if:
       * Response code is 200.
       * Depending on the value of `nocaching_headers_are_sent` parameter:

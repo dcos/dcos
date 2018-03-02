@@ -3,7 +3,7 @@
 import pytest
 import requests
 
-from generic_test_code.common import generic_response_headers_verify_test
+from generic_test_code.common import generic_verify_response_test
 
 
 class TestLogsEndpoint:
@@ -21,7 +21,7 @@ class TestLogsEndpoint:
             aux_data=accel_buff_header,
         )
 
-        generic_response_headers_verify_test(
+        generic_verify_response_test(
             agent_ar_process,
             valid_user_header,
             '/system/v1/logs/foo/bar',
