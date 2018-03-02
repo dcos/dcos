@@ -25,6 +25,7 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+from gen.calc import DCOS_VERSION
 from pkgpanda.util import logger
 
 provider_names = ['aws', 'azure', 'bash']
@@ -388,7 +389,11 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content_file': '',
 #       }]}}
 def make_channel_artifacts(metadata):
-    artifacts = []
+    artifacts = [{
+        'channel_path': 'version',
+        'local_content': DCOS_VERSION,
+        'content_type': 'text/plain; charset=utf-8',
+    }]
 
     # Set logging to debug so we get gen error messages, since those are
     # logging.DEBUG currently to not show up when people are using `--genconf`
