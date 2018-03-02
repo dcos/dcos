@@ -113,62 +113,62 @@ aws_region_names = [
 
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-93f2baf4',
-        'stable': 'ami-93f2baf4',
+        'coreos': 'ami-44a03c22',
+        'stable': 'ami-44a03c22',
         'el7': 'ami-e21fd884',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-aacc7dc9',
-        'stable': 'ami-aacc7dc9',
+        'coreos': 'ami-d085f3ac',
+        'stable': 'ami-d085f3ac',
         'el7': 'ami-3b8ee058',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-9db0b0fe',
-        'stable': 'ami-9db0b0fe',
+        'coreos': 'ami-21ce3c43',
+        'stable': 'ami-21ce3c43',
         'el7': 'ami-c2e501a0',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
-        'coreos': 'ami-903df7ff',
-        'stable': 'ami-903df7ff',
+        'coreos': 'ami-90c152ff',
+        'stable': 'ami-90c152ff',
         'el7': 'ami-868531e9',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
-        'coreos': 'ami-abcde0cd',
-        'stable': 'ami-abcde0cd',
+        'coreos': 'ami-32d1474b',
+        'stable': 'ami-32d1474b',
         'el7': 'ami-5f03c426',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
-        'coreos': 'ami-c11573ad',
-        'stable': 'ami-c11573ad',
+        'coreos': 'ami-78befd14',
+        'stable': 'ami-78befd14',
         'el7': 'ami-5d2f5d31',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
-        'coreos': 'ami-1ad0000c',
-        'stable': 'ami-1ad0000c',
+        'coreos': 'ami-e582d29f',
+        'stable': 'ami-e582d29f',
         'el7': 'ami-abb1a2d0',
         'natami': 'ami-4c9e4b24'
     },
     'us-gov-west-1': {
-        'coreos': 'ami-e441fb85',
-        'stable': 'ami-e441fb85',
+        'coreos': 'ami-9579f7f4',
+        'stable': 'ami-9579f7f4',
         'el7': 'ami-e58c0f84',
         'natami': ''
     },
     'us-west-1': {
-        'coreos': 'ami-b31d43d3',
-        'stable': 'ami-b31d43d3',
+        'coreos': 'ami-e0696980',
+        'stable': 'ami-e0696980',
         'el7': 'ami-f6427596',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
-        'coreos': 'ami-444dcd24',
-        'stable': 'ami-444dcd24',
+        'coreos': 'ami-65269d1d',
+        'stable': 'ami-65269d',
         'el7': 'ami-6eed1a16',
         'natami': 'ami-bb69128b'
     }
