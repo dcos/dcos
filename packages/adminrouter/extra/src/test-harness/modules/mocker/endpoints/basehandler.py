@@ -110,7 +110,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
             postvars = {}
         return postvars
 
-    def _process_commands(self, blob):
+    def _process_commands(self, content_type, blob):
         """Process all the endpoint configuration and execute things that
            user requested.
 
@@ -141,7 +141,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
             msg_fmt = "Endpoint `%s` adding headers `%s` as requested"
             log.debug(msg_fmt, ctx.data['endpoint_id'], response_headers)
             self._finalize_request(200,
-                                   'text/plain; charset=utf-8',
+                                   content_type,
                                    blob,
                                    extra_headers=response_headers)
             return True
@@ -207,6 +207,10 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
         try:
             self.send_response(code)
             self.send_header('Content-type', content_type)
+            # From RFC 2616:
+            # The Content-Length entity-header field indicates the size of the
+            # entity-body, in decimal number of OCTETs
+            self.send_header('Content-length', len(blob))
             if extra_headers is not None:
                 for name, val in extra_headers.items():
                     self.send_header(name, val)
@@ -282,7 +286,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler,
             blob = traceback.format_exc().encode('utf-8')
             self._finalize_request(500, 'text/plain; charset=utf-8', blob)
         else:
-            request_handled = self._process_commands(blob)
+            request_handled = self._process_commands(content_type, blob)
 
             # No need to specify character encoding if type is json:
             # http://stackoverflow.com/a/9254967
