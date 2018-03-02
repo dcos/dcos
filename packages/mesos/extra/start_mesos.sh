@@ -12,12 +12,12 @@ fi
 function coreos_networkd_config() {
  network_config="/etc/systemd/network/dcos.network"
  sudo tee $network_config > /dev/null<<'EOF'
- [Match]
-  Type=bridge
-  Name=docker* m-* d-* vtep*
+[Match]
+Type=bridge
+Name=docker* m-* d-* vtep*
 
- [Link]
-  Unmanaged=yes
+[Link]
+Unmanaged=yes
 EOF
 }
 
@@ -27,7 +27,7 @@ if [[ "${distro}" == 'coreos' ]]; then
        coreos_networkd_config
        echo "Configuring systemd-networkd to ignore docker bridge and DC/OS overlay interfaces..."
 
-       if systemctl is-enabled systemd-networkd > /dev/null; then
+       if systemctl is-active systemd-networkd > /dev/null; then
           sudo systemctl restart systemd-networkd
        fi
     fi
