@@ -168,7 +168,7 @@ region_to_ami_map = {
     },
     'us-west-2': {
         'coreos': 'ami-65269d1d',
-        'stable': 'ami-65269d',
+        'stable': 'ami-65269d1d',
         'el7': 'ami-6eed1a16',
         'natami': 'ami-bb69128b'
     }
