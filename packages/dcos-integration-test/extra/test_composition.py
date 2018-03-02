@@ -12,6 +12,9 @@ import requests
 
 from test_helpers import expanded_config
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 
 @pytest.mark.first
 def test_dcos_cluster_is_up(dcos_api_session):

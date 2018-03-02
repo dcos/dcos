@@ -1,10 +1,10 @@
 """AWS Image Creation, Management, Testing"""
 
 import json
-import logging
 from copy import deepcopy
 from typing import Tuple
 
+import boto3
 import botocore.exceptions
 import pkg_resources
 import yaml
@@ -14,8 +14,6 @@ from retrying import retry
 import gen
 import gen.build_deploy.util as util
 import pkgpanda.util
-import release
-import release.storage
 from gen.internals import Late, Source
 from pkgpanda.util import logger, split_by_token
 
@@ -51,6 +49,7 @@ aws_base_source = Source(entry={
         'aws_stack_name': Late('{ "Ref" : "AWS::StackName" }'),
         'ip_detect_contents': get_ip_detect('aws'),
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': get_ip_detect('aws6'),
         'exhibitor_explicit_keys': 'false',
         'cluster_name': Late('{ "Ref" : "AWS::StackName" }'),
         'master_discovery': 'master_http_loadbalancer',
@@ -273,24 +272,6 @@ groups = {
 }
 
 
-def get_test_session(config=None):
-    if config is None:
-        assert release._config is not None
-        # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-        # is definitely not the right way to do this.
-
-        if 'testing' not in release._config:
-            raise RuntimeError("No testing section in configuration")
-
-        if 'aws' not in release._config['testing']:
-            raise RuntimeError("No testing.aws section in configuration")
-
-        config = release._config['testing']['aws']
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release.call_matching_arguments(release.storage.aws.get_session, config, True)
-
-
 def gen_ami_mapping(mappings):
     # create new dict with required mappings
     # all will have region by default
@@ -342,12 +323,7 @@ def render_cloudformation(cf_template, **kwds):
 
 @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000)
 def validate_cf(template_body):
-    try:
-        session = get_test_session()
-    except Exception as ex:
-        logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
-        return
-    client = session.client('cloudformation')
+    client = boto3.session.Session().client('cloudformation')
     try:
         client.validate_template(TemplateBody=template_body)
     except botocore.exceptions.ClientError as ex:
@@ -392,13 +368,15 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
     ]
-    if cc_params['os_type'] == 'coreos':
+    supported_os = ('coreos', 'el7')
+    if cc_params['os_type'] not in supported_os:
+        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+    elif cc_params['os_type'] == 'coreos':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
     elif cc_params['os_type'] == 'el7':
         cloud_init_implementation = 'canonical'
-    else:
-        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+        cc_params['os_type'] = 'el7prereq'
 
     results = gen.generate(
         arguments=variant_args,
@@ -439,12 +417,13 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
+
         # without noticing (such as exhibitor_storage_backend)
         node_template_id, node_source = groups[node_type]
         local_source = Source()
         local_source.add_must('os_type', os_type)
         local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7", "el7prereq"}))
-        params = deepcopy(cf_instance_groups[node_template_id])
+        params = cf_instance_groups[node_template_id]
         params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
         params['node_type'] = node_type
@@ -463,7 +442,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 bundle = make_advanced_bundle(arguments,
                                               [node_source, local_source, num_masters_source],
                                               template_name,
-                                              params)
+                                              deepcopy(params))
                 yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
@@ -480,7 +459,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
             bundle = make_advanced_bundle(arguments,
                                           [node_source, local_source],
                                           template_name,
-                                          params)
+                                          deepcopy(params))
             yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
@@ -523,7 +502,7 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
         # Specialize the dcos-cfn-signal service
         cc_variant = results.utils.add_units(
             cc_variant,
-            yaml.safe_load(gen.template.parse_str(late_services).render(params)))
+            yaml.safe_load(gen.template.parse_str(late_services).render(deepcopy(params))))
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])

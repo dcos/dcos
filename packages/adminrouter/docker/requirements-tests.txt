@@ -11,6 +11,7 @@ pylint==1.6.5
 pyroute2==0.4.21
 pytest-mccabe==0.1
 pytest-pythonpath==0.7.1
+pytest-repeat==0.4.1
 pytest-timeout==1.2.0
 pytest==3.2.1
 requests==2.18.4

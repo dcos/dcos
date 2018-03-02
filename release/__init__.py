@@ -25,6 +25,7 @@ import pkgpanda
 import pkgpanda.build
 import pkgpanda.util
 import release.storage
+from gen.calc import DCOS_VERSION
 from pkgpanda.util import logger
 
 provider_names = ['aws', 'azure', 'bash']
@@ -51,8 +52,9 @@ def expand_env_vars(config):
         elif config.startswith('$'):
             key = config[1:]
             if key not in os.environ:
-                raise ConfigError("Requested environment variable {} in config isn't set in the "
-                                  "environment".format(key))
+                logging.error("Requested environment variable {} in config isn't set in the "
+                              "environment".format(key))
+                return ''
             return os.environ[key]
 
         # No processing to do
@@ -387,7 +389,11 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content_file': '',
 #       }]}}
 def make_channel_artifacts(metadata):
-    artifacts = []
+    artifacts = [{
+        'channel_path': 'version',
+        'local_content': DCOS_VERSION,
+        'content_type': 'text/plain; charset=utf-8',
+    }]
 
     # Set logging to debug so we get gen error messages, since those are
     # logging.DEBUG currently to not show up when people are using `--genconf`
@@ -615,7 +621,6 @@ def set_repository_metadata(repository, metadata, storage_providers, preferred_p
     if 'cloudformation_s3_url' not in config['options']:
         raise RuntimeError("No options.cloudformation_s3_url section in configuration")
 
-    # TODO(cmaloney): get_session shouldn't live in release.storage
     metadata['cloudformation_s3_url_full'] = config['options']['cloudformation_s3_url'] + \
         '/{}/cloudformation'.format(metadata['reproducible_artifact_path'])
 

@@ -6,6 +6,9 @@ import pytest
 
 from test_helpers import expanded_config
 
+__maintainer__ = 'gpaul'
+__contact__ = 'dcos-security@mesosphere.io'
+
 
 @pytest.mark.skipif(
     not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'),

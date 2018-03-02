@@ -1,3 +1,4 @@
+
 import contextlib
 import enum
 import json
@@ -10,9 +11,13 @@ from subprocess import check_output
 import pytest
 import requests
 import retrying
-
 import test_helpers
+
 from dcos_test_utils import marathon
+from dcos_test_utils.helpers import assert_response_ok
+
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
 
 log = logging.getLogger(__name__)
 
@@ -58,18 +63,18 @@ class MarathonApp:
 
     @retrying.retry(
         wait_fixed=5000,
-        stop_max_delay=20 * 60 * 1000,
-        retry_on_result=lambda res: res is False)
+        stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        r.raise_for_status()
+        assert_response_ok(r)
+
         self._info = r.json()
-        return self._info['app']['tasksHealthy'] == self.app['instances']
+        assert self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
         try:
             if self._info['app']['tasksHealthy'] != self.app['instances']:
-                raise
+                raise Exception("Number of Healthy Tasks not equal to number of instances.")
         except:
             self.wait(dcos_api_session)
         return self._info
@@ -151,14 +156,16 @@ class MarathonPod:
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        r.raise_for_status()
+        assert_response_ok(r)
+
         self._info = r.json()
-        return self._info['status'] == 'STABLE'
+        error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
+        assert self._info['status'] == 'STABLE', error_msg
 
     def info(self, dcos_api_session):
         try:
             if self._info['status'] != 'STABLE':
-                raise
+                raise Exception("The status information is not Stable!")
         except:
             self.wait(dcos_api_session)
         return self._info
@@ -303,13 +310,8 @@ def test_vip(dcos_api_session,
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
-    if marathon.Network.BRIDGE in [vip_net, proxy_net]:
-        if container == marathon.Container.DOCKER:
-            pass
-        elif container == marathon.Container.NONE:
-            same_hosts = []
-        else:
-            same_hosts.remove(True)
+    if marathon.Network.BRIDGE in [vip_net, proxy_net] and container == marathon.Container.NONE:
+        same_hosts = []
     tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]

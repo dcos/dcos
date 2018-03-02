@@ -35,9 +35,6 @@ To find the git SHA of any given release, check the latest commit in the version
 | Release Type | URL Pattern |
 |--------------|--------------------|
 | Latest Stable| `https://downloads.dcos.io/dcos/stable/dcos_generate_config.sh` |
-| Specific Stable Release | `https://downloads.dcos.io/dcos/stable/commit/<git-sha>/dcos_generate_config.sh` |
-| Latest Early Access | `https://downloads.dcos.io/dcos/EarlyAccess/dcos_generate_config.sh` |
-| Specific Early Access Release | `https://downloads.dcos.io/dcos/EarlyAccess/commit/<git-sha>/dcos_generate_config.sh` |
 | Latest Master | `https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh` |
 | Specific PR, Latest Build	| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/dcos_generate_config.sh` |
 
@@ -117,16 +114,16 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     ```
     dcos-shell python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
     ```
-    
+
     Running the above mentioned command will result in an output
-    
+
     ```
     User albert@bekstil.net successfully added
     ```
-    
+
     This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
-    
+
     For more information, see [User Management](https://dcos.io/docs/latest/administration/user-management/).
 
 
@@ -204,7 +201,7 @@ storage:
     path: /home/cmaloney/dcos-artifacts
 ```
 
-Sample config that will store to a local archive path as well as AWS S3. Environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY would need to be set to use the config (And something like a CI system could provide them so they don't have to be committed to a code repository).
+Sample config that will store to a local archive path as well as AWS S3. To authenticate with AWS S3, reference the [boto3 docs](http://boto3.readthedocs.io/en/latest/guide/configuration.html#configuring-credentials) to learn how to configure access.
 ```yaml
 storage:
   aws:
@@ -212,28 +209,10 @@ storage:
     bucket: downloads.dcos.io
     object_prefix: dcos
     download_url: https://downloads.dcos.io/dcos/
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    region_name: us-west-2
   local:
     kind: local_path
     path: /mnt/big_artifact_store/dcos/
 ```
-
-
-# Pull Requests
-
-Pull requests automatically trigger a new build and several tests.
-
-Most of the triggered tests are required for merge, but some are optional (usually ones on flaky infrastructure).
-
-- teamcity/create-release-pr: in [the CI system](https://teamcity.mesosphere.io/project.html?projectId=DcosIo_Dcos&tab=projectOverview), [build_teamcity](https://github.com/dcos/dcos/blob/master/build_teamcity) is triggered and developers should use [build_local.sh](https://github.com/dcos/dcos/blob/master/build_local.sh) (see above)
-- teamcity/code-quality: simply run `tox` in the top-level dir to run all syntax checks as well as pytest (unit-tests). See [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini) for more details
-- integration-test/*: runs [integration_test.py](https://github.com/dcos/dcos/blob/master/test_util/integration_test.py) in the network of a DC/OS cluster
-    - /vagrant-bash: Tests the on-prem bash provider by using [dcos-vagrant](https://github.com/dcos/dcos-vagrant). Invoke this test through [run-all](https://github.com/dcos/dcos/blob/master/test_util/run-all)
-    - /deploy-vpc-cli: runs [ccm-deploy-test](https://github.com/dcos/dcos/blob/master/test_util/test_installer_ccm.py) with USE_INSTALLER_API=false. A Virtual Private Cloud of CentOS nodes is spun up by CCM (Mesosphere's Cloud Cluster Manager) and the installer (dcos_generate_config.sh) is used via the CLI options to deploy DC/OS. Finally, the same integration_test.py is run
-    - /deploy-vpc-api: the same as /deploy-vpc-cli (see above) except uses USE_INSTALLER_API=true, which causes the installer to be started with the `--web` option and then controlled entirely by the HTTP API
-
 
 # Repo Structure
 
@@ -254,3 +233,27 @@ This repo contains the release and package building tools necessary to produce i
 | *release*            | Release tools for DC/OS. (Building releases, building installers for releases, promoting between channels)
 | *ssh*                | AsyncIO based parallel ssh library used by the installer
 | *test_util*          | various scripts, utilities to help with integration testing
+
+
+# Pull Requests Statuses
+
+Pull requests automatically trigger a new DC/OS build and run several tests. These are the details on the various status checks against a DC/OS Pull Request.
+
+| Status Check                                   | Purpose                                                                                                                 | Source and Dependencies                                                                                |
+|------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| continuous-integration/jenkins/pr-head         | Admin Router Endpoint tests                                                                                             | [dcos/dcos/packages/adminrouter/extra/src/test-harness](https://github.com/dcos/dcos/tree/master/packages/adminrouter/extra/src/test-harness) Docker Dependency: [dcos/dcos/packages/adminrouter](https://github.com/dcos/dcos/blob/master/packages/adminrouter/buildinfo.json) |
+| mergebot/enterprise/build-status/aggregate     | EE Test Enforcement                                                                                                     | Private [mesosphere/dcos-enterprise](https://github.com/mesosphere/dcos-enterprise) repo is tested against the SHA.                                             |
+| mergebot/enterprise/has_ship-it                | Code Review Enforcement                                                                                                 | Private [Mergebot](https://github.com/mesosphere/mergebot) service in prod cluster                                                                       |
+| mergebot/enterprise/review/approved/min_2      | Code Review Enforcement                                                                                                 | Mergebot service in prod cluster                                                                       |
+| mergebot/has_ship-it                           | Code Review Enforcement                                                                                                 | Mergebot service in prod cluster                                                                       |
+| mergebot/review/approved/min_2                 | Code Review Enforcement                                                                                                 | Mergebot service in prod cluster                                                                       |
+| teamcity/dcos/build/dcos                       | Builds DCOS Image (dcos_generate_config.sh)                                                                             | [gen/build_deploy/bash.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/bash.py)                                                                            |
+| teamcity/dcos/build/tox                        | Runs check-style, unit-tests                                                                                            | [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini)                                                                                                |
+| teamcity/dcos/test/aws/cloudformation/simple   | Deployment using single-master-cloudformation.json and runs integration tests                                           | [gen/build_deploy/aws.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/aws.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                                 |
+| teamcity/dcos/test/aws/onprem/static           | Installation via dcos_generation_config.sh and runs Integration Tests                                                   | [gen/build_deploy/bash.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/bash.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                                |
+| teamcity/dcos/test/azure/arm                   | Deployment using acs-1master.azuredeploy.json and runs integration tests.                                               | [gen/build_deploy/azure.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/azure.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                               |
+| teamcity/dcos/test/docker                      | Exercises dcos-docker by launching dcos-docker against this PR and running integration tests within the docker cluster. | [dcos-docker](https://github.com/dcos/dcos-docker) repo                                                                                       |
+| teamcity/dcos/test/docker/smoke                | Exercises dcos-docker by launching dcos-docker against this PR and running *smoke* tests within the docker cluster.     | dcos-docker repo                                                                                       |
+| teamcity/dcos/test/upgrade                     | Upgrade from stable minor version                                                                                       | [mesosphere/advanced-tests](https://github.com/mesosphere/advanced-tests/) repo (transitively, [dcos/dcos-test-utils](https://github.com/dcos/dcos-test-utils) , dcos/dcos-launch)                  |
+| teamcity/dcos/test/upgrade-from-previous-major | Upgrade from previous major version                                                                                     | mesosphere/advanced-tests repo (transitively, dcos/dcos-test-utils, dcos/dcos-launch)                  |
+| teamcity/dcos/test/upgrade-to-next-major       | Upgrade to Next Major version                                                                                           | mesosphere/advanced-tests repo (transitively, dcos/dcos-test-utils, dcos/dcos-launch)                  |

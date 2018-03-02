@@ -1,7 +1,11 @@
+
 import logging
 
 import pytest
 from test_helpers import expanded_config
+
+__maintainer__ = 'branden'
+__contact__ = 'marathon-team@mesosphere.io'
 
 log = logging.getLogger(__name__)
 

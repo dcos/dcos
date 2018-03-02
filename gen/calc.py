@@ -40,6 +40,8 @@ from pkgpanda import PackageId
 from pkgpanda.util import hash_checkout, hash_str
 
 
+DCOS_VERSION = '1.11-dev'
+
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
 
@@ -227,6 +229,12 @@ def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_fil
     return ip_detect_contents
 
 
+def calculate_ip6_detect_contents(ip6_detect_filename):
+    if ip6_detect_filename != '':
+        return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
+    return yaml.dump("")
+
+
 def calculate_rexray_config_contents(rexray_config):
     return yaml.dump(
         # Assume block style YAML (not flow) for REX-Ray config.
@@ -293,48 +301,54 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     except ValueError as ex:
         raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
 
-    # Check the VTEP IP, VTEP MAC keys are present in the overlay
-    # configuration
-    assert 'vtep_subnet' in overlay_network.keys(), (
-        'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet: {}."
-            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-
-    assert 'vtep_subnet6' in overlay_network.keys(), (
-        'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet6'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet6: {}."
-            " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-
-    assert 'vtep_mac_oui' in overlay_network.keys(), (
-        'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-    assert 'overlays' in overlay_network.keys(), (
+    assert 'overlays' in overlay_network, (
         'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+
     assert len(overlay_network['overlays']) > 0, (
-        'We need at least one overlay network configuration {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
+        assert 'name' in overlay, (
+            'Missing "name" in overlay configuration: {}'.format(overlay))
+
         assert (len(overlay['name']) <= 13), (
             "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
 
-        if overlay['name'] == 'dcos':
+        assert ('subnet' in overlay or 'subnet6' in overlay), (
+            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
+
+        assert 'vtep_mac_oui' in overlay_network.keys(), (
+            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
+
+        if 'subnet' in overlay:
+            # Check the VTEP IP is present in the overlay configuration
+            assert 'vtep_subnet' in overlay_network, (
+                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet: {}."
+                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet'])
             except ValueError as ex:
                 raise AssertionError(
                     "Incorrect value for overlay subnet {}."
                     " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
-        elif overlay['name'] == 'dcos6':
+
+        if 'subnet6' in overlay:
+            # Check the VTEP IP6 is present in the overlay configuration
+            assert 'vtep_subnet6' in overlay_network, (
+                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet6'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet6: {}."
+                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet6'])
             except ValueError as ex:
@@ -601,6 +615,12 @@ def validate_s3_prefix(s3_prefix):
 
 def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
+
+
+def calculate_dns_bind_ip_blacklist_json(dns_bind_ip_blacklist, dns_bind_ip_reserved):
+    ips = validate_json_list(dns_bind_ip_blacklist)
+    reserved_ips = validate_json_list(dns_bind_ip_reserved)
+    return json.dumps(reserved_ips + ips)
 
 
 def validate_dns_forward_zones(dns_forward_zones):
@@ -961,10 +981,12 @@ entry = {
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
+        lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_reserved': '["198.51.100.4"]',
         'dns_bind_ip_blacklist': '[]',
         'dns_forward_zones': '{}',
         'use_proxy': 'false',
@@ -985,6 +1007,7 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
@@ -1065,17 +1088,19 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
+        'enable_mesos_ipv6_discovery': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
+        'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.11-dev',
+        'dcos_version': DCOS_VERSION,
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
