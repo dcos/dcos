@@ -14,10 +14,6 @@ try:
 except ImportError:
     pass
 import json
-try:   # only available on windows
-    import nt
-except ImportError:
-    pass
 import os
 import os.path
 try:
@@ -40,9 +36,7 @@ from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
 from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory_tree, write_json, write_string)
 
-if is_windows:
-    assert 'nt' in sys.modules
-else:
+if not is_windows:
     assert 'grp' in sys.modules
     assert 'pwd' in sys.modules
 
