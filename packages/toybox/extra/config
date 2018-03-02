@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # ToyBox version: KCONFIG_VERSION
-# Fri Apr  8 18:07:52 2016
+# Fri Mar  2 15:32:32 2018
 #
 CONFIG_TOYBOX_CONTAINER=y
 CONFIG_TOYBOX_FIFREEZE=y
@@ -11,6 +11,7 @@ CONFIG_TOYBOX_UTMPX=y
 CONFIG_TOYBOX_SHADOW=y
 # CONFIG_TOYBOX_ON_ANDROID is not set
 CONFIG_TOYBOX_FORK=y
+CONFIG_TOYBOX_PRLIMIT=y
 
 #
 # Posix commands
@@ -27,10 +28,8 @@ CONFIG_CKSUM=y
 CONFIG_CMP=y
 CONFIG_COMM=y
 CONFIG_CP=y
-CONFIG_CP_MORE=y
 CONFIG_CP_PRESERVE=y
 CONFIG_MV=y
-CONFIG_MV_MORE=y
 CONFIG_INSTALL=y
 CONFIG_CPIO=y
 CONFIG_CUT=y
@@ -74,8 +73,8 @@ CONFIG_TOP=y
 CONFIG_IOTOP=y
 CONFIG_TOP_COMMON=y
 CONFIG_PGREP=y
-CONFIG_PGKILL_COMMON=y
 CONFIG_PKILL=y
+CONFIG_PGKILL_COMMON=y
 CONFIG_PWD=y
 CONFIG_RENICE=y
 CONFIG_RM=y
@@ -95,6 +94,7 @@ CONFIG_TIME=y
 CONFIG_TOUCH=y
 CONFIG_TRUE=y
 CONFIG_TTY=y
+CONFIG_ULIMIT=y
 CONFIG_UNAME=y
 CONFIG_UNIQ=y
 CONFIG_UNLINK=y
@@ -121,21 +121,22 @@ CONFIG_XARGS=y
 # CONFIG_CROND is not set
 # CONFIG_CRONTAB is not set
 # CONFIG_DD is not set
-# CONFIG_DHCP6 is not set
 # CONFIG_DHCP is not set
+# CONFIG_DHCP6 is not set
 # CONFIG_DHCPD is not set
 # CONFIG_DEBUG_DHCP is not set
 # CONFIG_DIFF is not set
 # CONFIG_DUMPLEASES is not set
 # CONFIG_EXPR is not set
 # CONFIG_FDISK is not set
+# CONFIG_FILE is not set
 # CONFIG_FOLD is not set
 # CONFIG_FSCK is not set
 # CONFIG_FTPGET is not set
 # CONFIG_GETTY is not set
 # CONFIG_GROUPADD is not set
 # CONFIG_GROUPDEL is not set
-CONFIG_HOST=y
+# CONFIG_HOST is not set
 # CONFIG_ICONV is not set
 # CONFIG_INIT is not set
 # CONFIG_IP is not set
@@ -161,8 +162,8 @@ CONFIG_HOST=y
 # CONFIG_PING is not set
 # CONFIG_ROUTE is not set
 # CONFIG_SH is not set
-# CONFIG_EXIT is not set
 # CONFIG_CD is not set
+# CONFIG_EXIT is not set
 # CONFIG_SULOGIN is not set
 # CONFIG_SYSLOGD is not set
 # CONFIG_TAR is not set
@@ -172,12 +173,13 @@ CONFIG_HOST=y
 # CONFIG_TEST is not set
 # CONFIG_TFTP is not set
 # CONFIG_TFTPD is not set
-# CONFIG_TRACEROUTE is not set
 # CONFIG_TR is not set
+# CONFIG_TRACEROUTE is not set
 # CONFIG_USERADD is not set
 # CONFIG_USERDEL is not set
 # CONFIG_VI is not set
 # CONFIG_WATCH is not set
+# CONFIG_WGET is not set
 # CONFIG_XZCAT is not set
 
 #
@@ -283,6 +285,7 @@ CONFIG_MKNOD=y
 CONFIG_MKTEMP=y
 CONFIG_MOUNT=y
 CONFIG_PASSWD=y
+# CONFIG_PASSWD_SAD is not set
 CONFIG_PIDOF=y
 CONFIG_SEQ=y
 CONFIG_SU=y

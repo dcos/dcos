@@ -8,7 +8,10 @@ export CPPFLAGS=${CFLAGS}
 mkdir -p $PKG_PATH/bin
 
 pushd /pkg/src/toybox
-cp /pkg/extra/config .config
+make defconfig
+# TODO: do we need to modify generated config?
+# with previous version make fails on: Error in USE_CHRT(chrt (see generated/flags.raw)
+# cp /pkg/extra/config .config
 make
-cp toybox_unstripped $PKG_PATH/bin
+cp generated/unstripped/toybox $PKG_PATH/bin/toybox_unstripped
 cp toybox $PKG_PATH/bin
