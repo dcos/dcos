@@ -312,7 +312,7 @@ def make_tar(result_filename, change_folder):
         tar_cmd += ["--use-compress-program=pxz", "-cf"]
     else:
         if is_windows:
-            tar_cmd += ["-cf"]
+            tar_cmd += ["-cjf"]
         else:
             tar_cmd += ["-cJf"]
     tar_cmd += [result_filename, "-C", change_folder, "."]
