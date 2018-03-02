@@ -157,6 +157,9 @@ def _verify_is_response_correct(t_config):
     assert 'nocaching_headers_are_sent' in t_config
     assert t_config['nocaching_headers_are_sent'] in [True, False, 'skip']
 
+    assert 'expect_http_status' in t_config
+    assert 99 < t_config['expect_http_status'] < 600
+
     assert 'test_paths' in t_config
     for p in t_config['test_paths']:
         assert p.startswith('/')
@@ -288,7 +291,11 @@ def _testdata_to_is_response_correct(tests_config, node_type):
 
         h = x['tests']['is_response_correct']
 
-        res.extend([(x, h['nocaching_headers_are_sent']) for x in h['test_paths']])
+        res.extend([
+            (x,
+             h['nocaching_headers_are_sent'],
+             h['expect_http_status'],
+             ) for x in h['test_paths']])
 
     return res
 
@@ -417,7 +424,7 @@ def create_tests(metafunc, path):
 
     if 'caching_headers_test' in metafunc.fixturenames:
         args = _testdata_to_is_response_correct(tests_config, ar_type)
-        metafunc.parametrize("path,caching_headers_test", args)
+        metafunc.parametrize("path,caching_headers_test,expect_http_status", args)
         return
 
 
@@ -508,6 +515,7 @@ class GenericTestMasterClass:
             valid_user_header,
             path,
             caching_headers_test,
+            expect_http_status,
             ):
 
         headers_present = {}
@@ -531,6 +539,7 @@ class GenericTestMasterClass:
             path,
             assert_headers=headers_present,
             assert_headers_absent=headers_absent,
+            assert_status=expect_http_status,
             )
 
 
@@ -621,6 +630,7 @@ class GenericTestAgentClass:
             valid_user_header,
             path,
             caching_headers_test,
+            expect_http_status,
             ):
 
         headers_present = {}
@@ -644,4 +654,5 @@ class GenericTestAgentClass:
             path,
             assert_headers=headers_present,
             assert_headers_absent=headers_absent,
+            assert_status=expect_http_status,
             )

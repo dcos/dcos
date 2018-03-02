@@ -903,7 +903,7 @@ The syntax is as follows:
   * `is_response_correct`
     * Calls `generic_verify_response_test` generic test underneath.
     * Tests if:
-      * Response code is 200.
+      * HTTP response code is equal to `expect_http_status`.
       * Depending on the value of `nocaching_headers_are_sent` parameter:
         * `true` - caching headers are present (`Cache-Control`, `Pragma`,
           `Expires`) and set to disable all caching.

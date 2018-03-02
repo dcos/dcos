@@ -67,7 +67,12 @@ def generic_no_slash_redirect_test(ar, path, code=301):
 
 
 def generic_verify_response_test(
-        ar, auth_header, path, assert_headers=None, assert_headers_absent=None):
+        ar,
+        auth_header,
+        path,
+        assert_headers=None,
+        assert_headers_absent=None,
+        assert_status=200):
     """Test if response sent by AR is correct
 
     Helper function meant to simplify writing multiple tests testing the
@@ -83,13 +88,14 @@ def generic_verify_response_test(
             asserted header name and value is expected value
         assert_headers_absent (dict): headers that *MUST NOT* be present in the
             upstream request
+        assert_status (int): http status of the response that is expected
     """
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
                         allow_redirects=False,
                         headers=auth_header)
 
-    assert resp.status_code == 200
+    assert resp.status_code == assert_status
 
     if assert_headers is not None:
         for name, value in assert_headers.items():
