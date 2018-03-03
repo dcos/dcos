@@ -179,4 +179,3 @@ Start-MesosBuild
 #For now we grab the whole lot
 New-Item -itemtype directory "$env:PKG_PATH\bin"
 Copy-Item -Path "$MESOS_BUILD_DIR\src\*" -Destination "$env:PKG_PATH\bin\" -Filter "*.exe"
-Copy-Item -Path "c:\pkg\build\extra\windows\*" -destination "$env:PKG_PATH"
