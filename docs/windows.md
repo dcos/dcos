@@ -1,72 +1,65 @@
----
-post_title: >
-    Design: Installation (Windows)
-nav_title: Installation (Windows)
-menu_order: 5
----
-- *Note: This is a description of a feature in progress. In order to see the status of specific changes, please refer to* [Way Forward](#way-forward)
+# DC/OS on windows
 
-The installation design of DC/OS on Linux and Linux-like systems is covered in [docs](https://dcos.io/docs/overview/design/installation/). 
-Build, installation and update The windows environment necessitates a number of changes to that design.
-- Windows has no native support tar files, but does for zip file, so a tar utility and
-  associated filters must be included in the packages directory.
-- Windows has no make utility, so it must be brought in.
-- Windows does not have native support for bash, but does for PowerShell.
-- Windows does not have native support for utilities like curl, wget, grep, awk, sed and the such, but does for near-equivalent PowerShell cmdlets which can fulfill the same function. 
-- Windows does not support some os specific python modules, but has support for most others. 
-- There are differences between windows and Linux/unix handle semantics and ioctls.
-- There are differences in file system semantics and file system conventions (i.e, "/opt/mesosphere" vs "c:/Mesosphere")
-- Windows does not support systemd or journald.
-- Windows docker operation is very different from Linux
-- Many of the packages used in the Linux deployment are different in the windows environment.
-- Windows machines usually prefer pre-built packages rather than in-situ builds from source.
+DC/OS on Windows is a **work in progress**. As such there is **no guarantee it works**.  It is not currently complete. This document covers where the project is and what is planned for the near future.
 
-## Design Goals
+## The high-level goal of DC/OS on Windows
 
-The design goals of goals of the Windows deployment are:
-- Make differences as consistent and predictable as possible. In principle a Linux DC/OS system administrator should be able to learn a few transformation rules between the two environments and predict how to install, modify and operate a Windows host using the same skills they have already developed in Linux.
-- Make the deployment also Windows native. A Windows sysadmin should be able to apply their knowledge hand habits as much as possible.
-- Make the deployment functionally equivalent (so far as possible) to the Linux deployment.  A DC/OS UI user should not be able to obviously tell the difference between a Linux and windows host without looking at the host attributes.
+Allow a full DC/OS installation as it is on Linux today, but with the addition of public and private Windows agents.
+Once installed, jobs can be pushed to either Linux or Windows agent, using necessary constraints as generally things that work on one of these platforms is unlikely to work on the other. Constraints today include things like the node being public or private, but with windows additions that will need to be a part of the constraints also.
+There are currently no plans to make the masters run on Windows.
 
-The installation adds to those goals:
-- The deployment should be feasible on a Windows host without additional preparation. As a result, the deployment must use only tools available on a freshly installed windows machine.
+## How to install
 
-## changes to the dcos/dcos repository
+As of the writing of this document, the only way of installing DC/OS is using [acs-engine](https://github.com/Azure/acs-engine/blob/master/docs/dcos.md). This document only talks about Linux, although [this acs-engine .json configuration file](https://github.com/Azure/acs-engine/blob/master/examples/windows/dcos-winagent.json) does show an example of configuration for 1 master and 2 windows agents. Once installed, specifying a service constraint of `os=windows` would allow a service to be sent to a windows agent.
 
-The package tree, top level scripts, and configuration files are, as much as possible, organised in a parallel manner to the
-Linux build process, but they are not the same, so shell scripts are shadowed by PowerShell scripts of the same name, ie build_local becomes build_local.ps1, prep_local becomes prep_local.ps1 and so on.  
+This installation approach allows you to deploy a specific version of DC/OS in an Azure environment with a set of masters, and a set of public and private Linux/Windows agents. The Windows agents are installed from a *last known good* version of the windows binaries.
 
-- For the package tree. 
-  - In each directory we have a windows.buildinfo.json parallel to the Linux buildinfo.json, but usually different as windows requires different dependencies, packages, git repositories or branches, and commit shas from the Linux equivalent. 
-  - The build script located in each of the package directories is paralleled by a windows.build.ps1 script which is functionally similar.
-    
-- Changes to the python code in pkgpanda, release, gen, dcos_installer, ssh and related directories are
-  - is_windows variable so that all os-specific branches don't have to go through a string compare
-  - replacement of shell check_calls to if is_windows: check_call <windows> else: check_call <Linux>
-  - added constants for paths so that the windows and Linux paths need not require inline "if is_windows" sections.
+The goal is to extend the advanced DC/OS install methods of deployment, such that there would be a Windows and Linux bootstrap node which allows Linux masters to be deployed, along with both Linux and Windows agents.
 
-- A parallel set of yaml templates.  These files are specialised by gen in the same manner as the windows version. The yaml
-  templates are used to create processed configuration files for a particular build and deployment. The windows versions will
-  be pretty much line by line different owing to the difference in the two OS environments. For example, all paths will be
-  different, the syntax of environment setting is different, and windows has its own service manager making systemd units not
-  applicable to the windows build.  In place of systemd unit files, we will have a number of PowerShell scripts to implement
-  the same functionality so far as practical.
+An extended goal is to extend our current acs-engine model to allow the deployment of these bootstrap nodes and to deploy the masters and agents automatically from these bootstrap nodes.
 
-## Packaging
+## Building DC/OS packages for Windows
 
-All of the components in DC/OS Windows are built into a single tar.xz file that eventually gets extracted to the Linux equivalent path on Windows. Currently that path is %SystemDrive%:/DCOS rather than /opt/mesosphere, but that will be revised shortly. The built artifact is deployed from a separate bootstrap URL from the Linux artifact. 
+Currently Windows packages for the acs-engine deployment are done on a Jenkins server. Build scripts are located [here](https://github.com/dcos/dcos-windows/tree/master/scripts), although these are likely to go away soon in preference of using pkgpanda for building.
 
+With the work in this git repo, however, our goal is to port pkgpanda functionality to Windows such that all the packages needed for a Windows agent and Windows bootstrap node are built in the same way all the Linux packages are. With this in mind, we can discuss the work being done for pkgpanda next.
 
-## Building
+## pkgpanda for Windows
 
-Like Linux, the master artifact must be assembled somehow. Because the DC/OS build is made up of a changing list of components, the build tooling ends up looking like its own little package manager. Each component must be built from source, configured in a repeatable fashion and then added into the master artifact. The use of docker in building the windows artifact is similar to docker use in the Linux build, however the docker container is setup very differently and must match the build of the Windows OS being used. 
+### Software requirements for building
 
-A DC/OS package is defined by two files. In windows, these are PowerShell rather than bash scripts, but their function is identical: [`windows.build.ps1`][1] and [`windows.buildinfo.json`][2]. These state what must be downloaded and how to build it. At build time, the tool chain takes care of building, packaging and including all the artifacts required into the master zip file.
+* Windows Server RS3 or later. Client SKUs are not sufficient because Docker does not support the necessary isolation mode that allows the builds to succeed. This may become possible going forwards, but as of now they do not work. Older versions of Windows Server will not work either as features needed are not present. As of the writing of this document, I am using Windows Server Version 10.0.16299.15.
+* [git for Windows](https://git-scm.com/download/win) for getting this git repo.
+* [bsdtar.exe](https://github.com/libarchive/libarchive) is used for creating and extracting tar files during the builds. It will soon handle the zip files. You will need to build this per the instructions on the github web site and need to make sure bsdtar.exe is in your path. There are versions that are distributed via install packages on the web, but these are generally really old and do not support everything that is required from pkgpanda.
+* [Docker for Windows](https://docs.docker.com/docker-for-windows/install/) is required for building as individual packages are built within a docker container. As of the writing of this document you will need the Edge version as the Stable version does not work as well.
+* [Python version 3.6 for Windows](https://www.python.org/downloads/release/python-364/) for running pkgpanda builds. 32 bit or 64-bit should work fine.
 
-Because the dependent tools, packages, configuration, even formats are different between Windows and Linux, it is necessary to separately build the Linux and windows packages on the respective systems.
+### Building
 
+After you pull down the source using the git client change into your source directory and run `powershell.exe -file .\build_local_windows.ps1`. If you have everything installed the build will progress. Initially it builds a docker container necessary for building the packages. This is likely to take a while as it needs to download Windows Server Core RS3 builds, along with all the build tools necessary for all the packages.
 
+Then it goes through each package in turn pulling down the necessary sources and components that package needs.
 
+Finally the build goes through all the configuration templates and generates the necessary configuration for the packages. Note that as of this writing configuration is temporary placeholders, but by completion the necessary configuration will be in place.
 
-[1]: https://github.com/dcos/dcos/blob/master/packages/mesos/windows.build.ps1
-[2]: https://github.com/dcos/dcos/blob/master/packages/mesos/windows.buildinfo.json
+### Design considerations
+
+pkgpanda was written with Linux in mind and so the following high level concepts need to be ported to Windows equivalent concepts:
+
+* We added a constance called `is_windows` that is used throughout the code to differentate Windows and Linux specific code.
+* On Windows, file paths start with a drive letter (for instance `c:\`). On Linux a file path starts with just `/`. File and directory separators go in different directions. On Windows, some components support back-slash and forward-slash in a file path, but other components and libraries do not. We generally try to use the correct type on both platforms, but sometimes underlying APIs or code may use the Linux version and when calling to something that requires back-slash we do a quick search through the string and convert it.
+* Linux Bash scripts and commands versus Windows scripts and commands are different. Sometimes they behave a little different so we need extra pre-conditions to make sure they do not fail. These changes are wrapped in the `is_windows` conditions. As a general rule, Linux bash scripts end with .sh. On Windows we have converted these scripts to PowerShell scripts which end with .ps1. Where possible we have modelled these scripts on the linux equivalents.
+* Docker works differently on Windows to Linux. Generally they are features that just have not been implenented yet. Examples include mounting files on a docker container, and having overlapping directory mounts. These are being worked around specifically on Windows, and generally Linux is left to work the way they currently do.
+* Windows packages are build as a package variant. [See the documentation](https://github.com/dcos/dcos/blob/master/pkgpanda/docs/tree_concepts.md#package-variants) for more details on that.
+* Configuration .yaml files are duplicated for Windows. Currently these files hold placeholder data, but going forwards these will be updated to have more complete windows based configuration.
+* Linux uses systemd for starting and stopping services. This is not available on Windows. A package is present that does some of the service management that the systemd service does on Linux, although it is not a complete substitute.
+* Logging on Linux is done through systemd journaling. This is not present on Windows and so log files are used.
+* AWS is not supported at this time for deployment of Windows agent and no effort has been put in to make this work.
+* Where possible on Windows we have tried to install packages rather than building them from source.
+
+### Things that are not complete
+
+* The list of packages we build are those services we currently deploy today and are not more packages will be needed. Some packages are not deal with yet, such as the mkpanda python package which is used to build and deploy DC/OS.
+* Installation of packages is done out-of-band using a set of custom scripts that do not reside in this repository. For example Mesos install script is located [here](https://github.com/dcos/dcos-windows/blob/master/scripts/mesos-agent-setup.ps1). This will be transitioned over to pkgpanda once all packages are fully built and configured properly.
+* Configuration for the packages are placeholders and will be updated soon with real configuration.
+* Although packages are built, no packages that depend on other packages have been built on Windows.  pkgpanda still needs some changes to support this as there are still linux only dependency information generated which cannot be consumed by the powershell scripts. An example of this would be the many python libraries which are needed to have mkpanda work on Windows. These libraries require python to be installed in a specified directory, and then that python package install would be mounted into the docker container while dealing with the python library package. As the dependencies do not work, these python libraries would not be buildable and installable.
