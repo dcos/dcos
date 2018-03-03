@@ -32,6 +32,7 @@ def test_error_during_calc(monkeypatch):
     }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_error_during_validate(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()

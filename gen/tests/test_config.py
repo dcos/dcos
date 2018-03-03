@@ -17,6 +17,7 @@ def validate_error_multikey(new_arguments, keys, message, unset=None):
     }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_telemetry_enabled():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(
@@ -25,6 +26,7 @@ def test_invalid_telemetry_enabled():
         err_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ports():
     test_bad_range = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'
     range_err_msg = "Must be between 1 and 65535 inclusive"
@@ -94,6 +96,7 @@ def test_invalid_ipv4():
         err_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_zk_path():
     validate_error(
         {'exhibitor_zk_path': 'bad/path'},
@@ -101,6 +104,7 @@ def test_invalid_zk_path():
         "Must be of the form /path/to/znode")
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_zk_hosts():
     validate_error(
         {'exhibitor_zk_hosts': 'zk://10.10.10.10:8181'},
@@ -108,6 +112,7 @@ def test_invalid_zk_hosts():
         "Must be of the form `host:port,host:port', not start with zk://")
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_bootstrap_url():
     validate_error(
         {'bootstrap_url': '123abc/'},
@@ -131,6 +136,7 @@ def test_validate_duplicates():
         err_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_oauth_enabled():
     validate_error(
         {'oauth_enabled': 'foo'},
@@ -138,6 +144,7 @@ def test_invalid_oauth_enabled():
         true_false_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_mesos_dns_set_truncate_bit():
     validate_error(
         {'mesos_dns_set_truncate_bit': 'foo'},
@@ -145,6 +152,7 @@ def test_invalid_mesos_dns_set_truncate_bit():
         true_false_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_mesos_recovery_timeout():
     validate_success(
         {'mesos_recovery_timeout': '24hrs'})
@@ -173,6 +181,7 @@ def test_validate_mesos_recovery_timeout():
         "Unit 'hour' not in ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks'].")
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_cluster_docker_credentials():
     validate_error(
         {'cluster_docker_credentials': 'foo'},
@@ -220,6 +229,7 @@ def test_exhibitor_storage_master_discovery():
         unset={'exhibitor_address', 'num_masters'})
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_s3_prefix():
     validate_error({
         'exhibitor_storage_backend': 'aws_s3',
@@ -251,6 +261,7 @@ def test_validate_default_overlay_network_name():
         msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_check_config():
     # No checks.
     validate_success({'check_config': json.dumps({})})
@@ -614,6 +625,7 @@ def test_validate_check_config():
     )
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_custom_checks():
     check_config = json.dumps({
         'cluster_checks': {

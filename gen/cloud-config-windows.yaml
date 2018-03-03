@@ -1,23 +1,6 @@
 root:
-  - path: c:/etc/mesosphere/setup-flags/repository-url
+  - path: c:\placeholder\placeholder
     permissions: "0644"
     owner: root
     content: |
-      {{ bootstrap_url }}
-  - path: c:/etc/mesosphere/setup-flags/cluster-package-list
-    permissions: "0644"
-    owner: root
-    content: |
-      {{ cluster_package_list_id }}
-{% switch cluster_docker_credentials_dcos_owned %}
-{% case "true" %}
-{% case "false" %}
-{% switch cluster_docker_credentials_write_to_etc %}
-{% case "true" %}
-  - path: c:/etc/mesosphere/docker_credentials
-    permissions: "0600"
-    content: |
-        {{ cluster_docker_credentials }}
-{% case "false" %}
-{% endswitch %}
-{% endswitch %}
+      placeholder
