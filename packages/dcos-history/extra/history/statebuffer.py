@@ -12,6 +12,7 @@ logging.getLogger('requests.packages.urllib3').setLevel(logging.WARN)
 
 FETCH_PERIOD = 2
 FILE_EXT = '.state-summary.json'
+FILENAME_TS_FMT = '%Y-%m-%dT%H:%M:%S.%f{}'.format(FILE_EXT)
 
 STATE_SUMMARY_URI = os.getenv('STATE_SUMMARY_URI', 'http://leader.mesos:5050/state-summary')
 
@@ -28,7 +29,7 @@ if 'TLS_VERIFY' in os.environ:
 
 
 def parse_log_time(fname):
-    return datetime.strptime(fname, '%Y-%m-%dT%H:%M:%S.%f{}'.format(FILE_EXT))
+    return datetime.strptime(fname, FILENAME_TS_FMT)
 
 
 def fetch_state(headers_cb):
@@ -107,7 +108,7 @@ class HistoryBuffer():
 
     def _get_datafile_name(self, timestamp: datetime):
         assert timestamp.tzinfo is None
-        return '{}/{}{}'.format(self.path, timestamp.isoformat(), FILE_EXT)
+        return '{}/{}'.format(self.path, timestamp.strftime(FILENAME_TS_FMT))
 
     def _clean_excess_disk_files(self):
         while len(self.disk_files) > self.disk_count:
