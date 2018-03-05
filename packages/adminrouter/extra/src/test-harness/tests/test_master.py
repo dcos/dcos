@@ -11,8 +11,8 @@ import requests
 from generic_test_code.common import (
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
-    generic_verify_response_test,
     generic_upstream_headers_verify_test,
+    generic_verify_response_test,
     overridden_file_content,
     verify_header,
 )
@@ -360,8 +360,8 @@ class TestMisc:
             aux_data=accel_buff_header,
         )
 
-        generic_verify_response_test(master_ar_process_perclass,
-                                             valid_user_header,
-                                             '/system/v1/logs/foo/bar',
-                                             assert_headers=accel_buff_header,
-                                             )
+        generic_verify_response_test(
+            master_ar_process_perclass,
+            valid_user_header,
+            '/system/v1/logs/foo/bar',
+            assert_headers=accel_buff_header)

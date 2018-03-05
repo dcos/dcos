@@ -48,7 +48,7 @@ def ping_mesos_agent(ar,
         assert req_data['endpoint_id'] == endpoint_id
 
 
-def generic_no_slash_redirect_test(ar, path, code=301):
+def generic_no_slash_redirect_test(ar, path, code=301, headers=None):
     """Test if request for location without trailing slash is redirected
 
     Helper function meant to simplify writing multiple tests testing the
@@ -58,9 +58,11 @@ def generic_no_slash_redirect_test(ar, path, code=301):
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
         path (str): path for which request should be made
         code (int): expected http redirect code
+        headers (dict): dictionary containing the headers to send
+            to the tested AR instance.
     """
     url = ar.make_url_from_path(path)
-    r = requests.get(url, allow_redirects=False)
+    r = requests.get(url, allow_redirects=False, headers=headers)
 
     assert r.status_code == code
     assert r.headers['Location'] == url + '/'
@@ -68,7 +70,7 @@ def generic_no_slash_redirect_test(ar, path, code=301):
 
 def generic_verify_response_test(
         ar,
-        auth_header,
+        headers,
         path,
         assert_headers=None,
         assert_headers_absent=None,
@@ -80,20 +82,19 @@ def generic_verify_response_test(
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains DC/OS authentication
-            token. The auth data it contains is valid and the request should be
-            accepted.
+        headers (dict): dictionary containing the headers to send
+            to the tested AR instance.
         path (str): path for which request should be made
         assert_headers (dict): additional headers to test where key is the
             asserted header name and value is expected value
         assert_headers_absent (dict): headers that *MUST NOT* be present in the
             upstream request
-        assert_status (int): http status of the response that is expected
+        assert_status (int): expected http status of the reponse
     """
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
                         allow_redirects=False,
-                        headers=auth_header)
+                        headers=headers)
 
     assert resp.status_code == assert_status
 
@@ -205,7 +206,7 @@ def generic_upstream_headers_verify_test(
             header_is_absent(req_data['headers'], name)
 
 
-def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
+def generic_correct_upstream_dest_test(ar, headers, path, endpoint_id):
     """Test if upstream request has been sent to correct upstream
 
     Helper function meant to simplify writing multiple tests testing the
@@ -213,9 +214,8 @@ def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains DC/OS authentication
-            token. The auth data it contains is valid and the request should be
-            accepted.
+        headers (dict): dictionary containing the headers to send
+            to the tested AR instance.
         path (str): path for which request should be made
         endpoint_id (str): id of the endpoint where the upstream request should
             have been sent
@@ -223,7 +223,7 @@ def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
     url = ar.make_url_from_path(path)
     resp = requests.get(url,
                         allow_redirects=False,
-                        headers=auth_header)
+                        headers=headers)
 
     assert resp.status_code == 200
     req_data = resp.json()
@@ -231,7 +231,7 @@ def generic_correct_upstream_dest_test(ar, auth_header, path, endpoint_id):
 
 
 def generic_correct_upstream_request_test(
-        ar, auth_header, given_path, expected_path, http_ver='HTTP/1.0'):
+        ar, headers, given_path, expected_path, http_ver='HTTP/1.0'):
     """Test if path component of the request sent upstream is correct.
 
     Helper function meant to simplify writing multiple tests testing the
@@ -239,15 +239,14 @@ def generic_correct_upstream_request_test(
 
     Arguments:
         ar: Admin Router object, an instance of runner.(ee|open).Nginx
-        auth_header (dict): headers dict that contains DC/OS authentication
-            token. The auth data it contains is valid and the request should be
-            accepted.
+        headers (dict): dictionary containing the headers to send
+            to the tested AR instance.
         given_path (str): path for which request should be made
         expected_path (str): path that is expected to be sent to upstream
         http_ver (str): http version string that the upstream request should be
             made with
     """
-    h = copy.deepcopy(auth_header)
+    h = copy.deepcopy(headers)
     if http_ver == 'HTTP/1.1':
         # In case of HTTP/1.1 connections, we also need to test if Connection
         # header is cleared.
@@ -279,7 +278,7 @@ def generic_correct_upstream_request_test(
 def generic_location_header_during_redirect_is_adjusted_test(
         ar,
         mocker,
-        auth_header,
+        headers,
         endpoint_id,
         basepath,
         location_set,
@@ -295,7 +294,8 @@ def generic_location_header_during_redirect_is_adjusted_test(
         mocker (Mocker): instance of the Mocker class, used for controlling
             upstream HTTP endpoint/mock
         ar: Admin Router object, an instance of `runner.(ee|open).Nginx`.
-        auth_header (dict): headers dict that contains DC/OS authentication token.
+        headers (dict): dictionary containing the headers to send
+            to the tested AR instance.
         endpoint_id (str): id of the endpoint where the upstream request should
             have been sent.
         basepath (str): the URI used by the test harness to issue the request
@@ -311,7 +311,7 @@ def generic_location_header_during_redirect_is_adjusted_test(
                         aux_data=location_set)
 
     url = ar.make_url_from_path(basepath)
-    r = requests.get(url, allow_redirects=False, headers=auth_header)
+    r = requests.get(url, allow_redirects=False, headers=headers)
 
     assert r.status_code == 307
     assert r.headers['Location'] == location_expected
