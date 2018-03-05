@@ -1253,7 +1253,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
                 "-o", "pipefail",
                 "-o", "errexit"]
 
-        command += [ PKG_DIR + "/build/" + build_script_file ]
+        command += [PKG_DIR + "/build/" + build_script_file]
         cmd.run("package-builder", command)
     except CalledProcessError as ex:
         raise BuildError("docker exited non-zero: {}\nCommand: {}".format(ex.returncode, ' '.join(ex.cmd)))
