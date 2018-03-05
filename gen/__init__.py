@@ -693,7 +693,7 @@ def generate(
 
     # Prepare late binding config, if any.
     late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
-    if late_variables:
+    if late_variables and late_package:
         # Render the late binding package. This package will be downloaded onto
         # each cluster node during bootstrap and rendered into the final config
         # using the values from the late config file.
