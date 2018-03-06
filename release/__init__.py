@@ -934,7 +934,8 @@ def main():
     if options.action == 'promote':
         release_manager.promote(options.source_channel, options.destination_repository, options.destination_channel)
     elif options.action == 'create':
-        release_manager.create('testing', options.channel, options.tag, options.tree_variant)
+        variants = [None if variant == "default" else variant for variant in options.tree_variant]
+        release_manager.create('testing', options.channel, options.tag, variants)
     elif options.action == 'create-installer':
         release_manager.create_installer(options.src_channel)
     else:
