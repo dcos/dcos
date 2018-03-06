@@ -41,7 +41,7 @@ options: `
 
 # Create a python virtual environment to install the DC/OS tools to
 python -m venv "$tmpdir/dcos_build_venv"
-python -m venv "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
+. "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
 
 # Install the DC/OS tools
 ./prep_local_windows.ps1
