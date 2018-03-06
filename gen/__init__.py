@@ -157,12 +157,6 @@ def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
     elif cloud_init_implementation == 'coreos':
         cloudconfig.setdefault('coreos', {}).setdefault('units', [])
         cloudconfig['coreos']['units'] += services
-    elif cloud_init_implementation == 'windows':
-        cloudconfig.setdefault('windows', {}).setdefault('units', [])
-        if services:
-            cloudconfig['windows']['units'] += services
-        else:
-            cloudconfig['windows']['units'] = None
     else:
         raise Exception("Parameter value '{}' is invalid for cloud_init_implementation".format(
             cloud_init_implementation))
@@ -264,8 +258,7 @@ def render_templates(template_dict, arguments):
             template_data = yaml.safe_load(rendered_template)
 
             if full_template:
-                if template_data:
-                    full_template = merge_dictionaries(full_template, template_data)
+                full_template = merge_dictionaries(full_template, template_data)
             else:
                 full_template = template_data
 
@@ -653,8 +646,7 @@ def generate(
     # (likely indicates a misspelling)
     for name, template in rendered_templates.items():
         if name == dcos_services_yaml:  # yaml list of the service files
-            if template:
-                assert isinstance(template, list)
+            assert isinstance(template, list)
         elif name == cloud_config_yaml:
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template

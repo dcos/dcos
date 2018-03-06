@@ -15,7 +15,7 @@ import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
 from pkgpanda.constants import cloud_config_yaml
-from pkgpanda.util import is_windows, split_by_token
+from pkgpanda.util import split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
@@ -165,10 +165,7 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     cloud_config = results.templates[cloud_config_yaml]
 
     # Add general services
-    if is_windows:
-        cloud_config = results.utils.add_services(cloud_config, 'windows')
-    else:
-        cloud_config = results.utils.add_services(cloud_config, 'canonical')
+    cloud_config = results.utils.add_services(cloud_config, 'canonical')
 
     # Specialize for master, slave, slave_public
     variant_cloudconfig = {}
