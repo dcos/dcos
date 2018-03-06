@@ -634,6 +634,12 @@ def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
 
 
+def calculate_dns_bind_ip_blacklist_json(dns_bind_ip_blacklist, dns_bind_ip_reserved):
+    ips = validate_json_list(dns_bind_ip_blacklist)
+    reserved_ips = validate_json_list(dns_bind_ip_reserved)
+    return json.dumps(reserved_ips + ips)
+
+
 def validate_dns_forward_zones(dns_forward_zones):
     """
      "forward_zones": {"a.contoso.com": ["1.1.1.1:53", "2.2.2.2"],
@@ -997,6 +1003,7 @@ entry = {
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_reserved': '["198.51.100.4"]',
         'dns_bind_ip_blacklist': '[]',
         'dns_forward_zones': '{}',
         'use_proxy': 'false',
@@ -1103,6 +1110,7 @@ entry = {
         'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
+        'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
