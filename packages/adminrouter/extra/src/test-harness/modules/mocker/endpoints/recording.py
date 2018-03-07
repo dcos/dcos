@@ -44,7 +44,7 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
         msg_fmt = "[Endpoint `%s`] Request recorded: `%s`"
         log.debug(msg_fmt, ctx.data['endpoint_id'], res)
 
-    def _process_commands(self, blob):
+    def _process_commands(self, content_type, blob):
         """Process all the endpoint configuration and execute things that
            user requested.
 
@@ -66,7 +66,7 @@ class RecordingHTTPRequestHandler(BaseHTTPRequestHandler):
                 200, 'text/plain; charset=utf-8', ctx.data["encoded_response"])
             return True
 
-        return super()._process_commands(blob)
+        return super()._process_commands(content_type, blob)
 
 
 # pylint: disable=C0103
