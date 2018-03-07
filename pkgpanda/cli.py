@@ -36,7 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
-from pkgpanda.util import remove_directory, remove_directory_tree
+from pkgpanda.util import remove_directory_item, remove_directory_tree
 
 
 def print_repo_list(packages):
@@ -57,7 +57,7 @@ def uninstall(install, repository):
     # TODO(cmaloney): Make this not quite so magical
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
-    remove_directory(os.path.dirname(install.systemd_dir) + "/dcos.target")
+    remove_directory_item(os.path.dirname(install.systemd_dir) + "/dcos.target")
 
     # Cleanup all systemd units
     # TODO(cmaloney): This is much more work than we need to do the job

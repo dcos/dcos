@@ -43,14 +43,14 @@ def is_absolute_path(path):
     return False
 
 
-def remove_directory(path):
+def remove_directory_item(path):
     """removes a directory. fails silently if the tree does not exist"""
     if is_windows:
         # python library on Windows does not like symbolic links in directories
         # so calling out to the cmd prompt to do this fixes that.
         path = path.replace('/', '\\')
         if os.path.exists(path):
-            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
+            subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
     else:
         subprocess.check_call(['rm', '-f', path])
 

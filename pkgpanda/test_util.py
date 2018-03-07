@@ -11,37 +11,50 @@ from pkgpanda.exceptions import ValidationError
 PathSeparator = '/'  # Currently same for both windows and linux. Constant may vary in near future by platform
 
 
-def test_remove_directory_pass():
+def test_remove_directory_item_pass():
     """
      Remove a known directory. Should succeed silently.
     """
-    test_dir = tempfile.gettempdir() + PathSeparator + 'remove_directory_pass'
+    test_dir = tempfile.gettempdir() + PathSeparator + 'test'
 
     # Here we really don't care if there is a left over dir since we will be removing it
     # but we need to make sure there is one
     pkgpanda.util.make_directory(test_dir)
     assert os.path.isdir(test_dir)
 
+    # Build the temporary test file with a random name
+    fno, test_path = tempfile.mkstemp(dir=test_dir)
+    os.close(fno)  # Close the reference so we don't have dangling file handles
+
+    test_data = "Test Data\n"
+    with open(test_path, "w") as f:
+        f.write(test_data)
+
+    pkgpanda.util.remove_directory_item(test_path)
+    assert not os.path.exists(test_path), 'Directory item not removed'
+
     pkgpanda.util.remove_directory_tree(test_dir)
-    assert not os.path.isdir(test_dir), 'Directory not removed'
 
 
-def test_remove_directory_fail():
+def test_remove_directory_item_fail():
     """
-     Remove a non existant directory. Should fail silently without exceptions.
+     Remove a non existant directory item. Should fail silently without exceptions.
     """
     test_dir = tempfile.gettempdir() + PathSeparator + 'remove_directory_fail'
+    test_path = test_dir + PathSeparator + "A"
 
     # Make sure there is no left over directory
     pkgpanda.util.remove_directory_tree(test_dir)
     assert not os.path.isdir(test_dir)
 
-    try:
-        pkgpanda.util.remove_directory_tree(test_dir)
-    except:
-        assert False, "Unexpected exception when trying to delete non existant directory. Should fail silently"
+    # We will try to remove a non-existant file
 
-    assert not os.path.isdir(test_dir)
+    try:
+        pkgpanda.util.remove_directory_item(test_path)
+    except:
+        assert False, "Unexpected exception when trying to delete non existant directory item. Should fail silently"
+
+    assert not os.path.exists(test_path)
 
 
 def test_make_directory_pass():
@@ -240,7 +253,7 @@ def test_remove_directory_tree():
     with open(file_path, "r+") as f:
         f.write(test_data)
 
-    pkgpanda.util.remove_directory(test_dir)
+    pkgpanda.util.remove_directory_tree(test_dir)
     assert not os.path.exists(file_path)
     assert not os.path.isdir(test_dir + PathSeparator + 'A')
     assert not os.path.isdir(test_dir)
