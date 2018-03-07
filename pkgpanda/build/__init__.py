@@ -900,7 +900,6 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Add the sha1 of the buildinfo.json + build file to the build ids
     builder.update('sources', checkout_ids)
     build_script_file = builder.take('build_script')
-    build_script = src_abs(build_script_file)
     # TODO(cmaloney): Change dest name to build_script_sha1
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
@@ -1209,22 +1208,19 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # TODO(cmaloney): src should be read only...
         # Source directory
         cache_abs("src"): PKG_DIR + "/src:rw",
-        cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id)
+        cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id),
+        # The build script directory
+        package_dir: PKG_DIR + "/build:ro"
     })
 
     if is_windows:
         cmd.volumes.update({
-            # The build script
-            # 2DO: we cannot pass a file to a volume mount on windows, only directory
-            package_dir: PKG_DIR + "/build:ro",
             # Getting the result out
-            # 2DO: windows docker does not suport overlapping mounts so push into a temporary directory in case needed
+            # todo: windows docker does not suport overlapping mounts so push into a different directory
             install_dir: install_root + "/install_dir:ro"
         })
     else:
         cmd.volumes.update({
-            # The build script
-            build_script: PKG_DIR + "/build:ro",
             # Getting the result out
             install_dir: install_root + ":ro"
         })
