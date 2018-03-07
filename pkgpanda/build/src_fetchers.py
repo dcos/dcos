@@ -114,7 +114,6 @@ class GitSrcFetcher(SourceFetcher):
         # Clone into `src/`.
         if is_windows:
             # Note: Mesos requires autocrlf to be set on Windows otherwise it does not build.
-            # 2DO: Can we add this to mesos specific buildinfo.json?
             check_call(["git", "clone", "-q", "--config", "core.autocrlf=true", self.bare_folder, directory])
         else:
             check_call(["git", "clone", "-q", self.bare_folder, directory])
