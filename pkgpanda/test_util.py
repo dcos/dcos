@@ -15,14 +15,14 @@ def test_remove_directory_pass():
     """
      Remove a known directory. Should succeed silently.
     """
-    test_dir = tempfile.gettempdir() + PathSeparator + 'test'
+    test_dir = tempfile.gettempdir() + PathSeparator + 'remove_directory_pass'
 
     # Here we really don't care if there is a left over dir since we will be removing it
     # but we need to make sure there is one
     pkgpanda.util.make_directory(test_dir)
     assert os.path.isdir(test_dir)
 
-    pkgpanda.util.remove_directory(test_dir)
+    pkgpanda.util.remove_directory_tree(test_dir)
     assert not os.path.isdir(test_dir), 'Directory not removed'
 
 
@@ -30,13 +30,14 @@ def test_remove_directory_fail():
     """
      Remove a non existant directory. Should fail silently without exceptions.
     """
-    test_dir = tempfile.gettempdir() + PathSeparator + 'test'
+    test_dir = tempfile.gettempdir() + PathSeparator + 'remove_directory_fail'
 
-    # Ensire there is no such directory
+    # Make sure there is no left over directory
+    pkgpanda.util.remove_directory_tree(test_dir)
     assert not os.path.isdir(test_dir)
 
     try:
-        pkgpanda.util.remove_directory(test_dir)
+        pkgpanda.util.remove_directory_tree(test_dir)
     except:
         assert False, "Unexpected exception when trying to delete non existant directory. Should fail silently"
 
@@ -47,7 +48,7 @@ def test_make_directory_pass():
     """
        Create a known directory and verify. Postcondition: the directory should exist
     """
-    test_dir = tempfile.gettempdir() + PathSeparator + 'test'
+    test_dir = tempfile.gettempdir() + PathSeparator + 'make_directory_pass'
 
     # Make sure there is no left over directory
     pkgpanda.util.remove_directory_tree(test_dir)
@@ -58,7 +59,7 @@ def test_make_directory_pass():
     assert os.path.isdir(test_dir)
 
     # Cleanup
-    os.rmdir(test_dir.replace('\\', PathSeparator))
+    pkgpanda.util.remove_directory_tree(test_dir)
 
 
 def test_make_directory_fail():
