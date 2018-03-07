@@ -156,7 +156,6 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     @param arm_template: string, path to the source arm template for rendering
                          by the gen library (e.g. 'azure/templates/azuredeploy.json')
     '''
-
     results = gen.generate(
         arguments=gen_arguments,
         extra_templates=['azure/' + cloud_config_yaml, 'azure/templates/' + arm_template + '.json'],
