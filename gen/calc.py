@@ -40,7 +40,7 @@ from pkgpanda import PackageId
 from pkgpanda.util import hash_checkout, hash_str
 
 
-DCOS_VERSION = '1.11-dev'
+DCOS_VERSION = '1.12-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
