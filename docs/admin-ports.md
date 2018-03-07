@@ -7,7 +7,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 ### TCP
 
  - 53: dcos-net (dns)
- - 9273: dcos-metrics
+ - 61091: dcos-metrics
  - 61420: dcos-net (epmd)
  - 62080: dcos-net (rest)
  - 62501: dcos-net (disterl)

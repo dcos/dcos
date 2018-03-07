@@ -461,7 +461,6 @@ function check_all() {
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \
-            "9273 dcos-metrics" \
             "9942 metronome" \
             "9990 cosmos" \
             "15055 dcos-history" \
@@ -469,6 +468,7 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
+            "61091 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
@@ -481,6 +481,7 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
+            "61091 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
