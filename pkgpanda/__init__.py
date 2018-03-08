@@ -21,6 +21,7 @@ try:
 except ImportError:
     pass
 import re
+import shutil
 import sys
 import tempfile
 from collections import Iterable

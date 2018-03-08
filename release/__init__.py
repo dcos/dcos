@@ -26,7 +26,7 @@ import pkgpanda.build
 import pkgpanda.util
 import release.storage
 from gen.calc import DCOS_VERSION
-from pkgpanda.constants import DOCKERFILE_DIR, PACKAGES_DIR
+from pkgpanda.constants import DOCKERFILE_DIR
 from pkgpanda.util import is_windows, logger
 
 if is_windows:
