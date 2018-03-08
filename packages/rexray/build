@@ -9,7 +9,7 @@ systemd_slave_public=$PKG_PATH/dcos.target.wants_slave_public/dcos-rexray.servic
 mkdir -p $(dirname $systemd_slave_public)
 cp "$systemd_slave" "$systemd_slave_public"
 
-srcdir=$GOPATH/src/github.com/codedellemc/rexray
+srcdir=$GOPATH/src/github.com/rexray/rexray
 mkdir -p $(dirname $srcdir)
 ln -s /pkg/src/rexray $srcdir
 cd $srcdir
