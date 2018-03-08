@@ -17,4 +17,4 @@ cd $srcdir
 DGOOS=linux make
 
 mkdir -p $PKG_PATH/bin
-mv $GOPATH/bin/rexray $PKG_PATH/bin
+mv rexray $PKG_PATH/bin

@@ -1,9 +1,9 @@
 {
-  "docker": "golang:1.7",
+  "docker": "golang:1.9",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/rexray/rexray.git",
-    "ref": "2a7458dd90a79c673463e14094377baf9fc8695e",
-    "ref_origin": "v0.9.0"
+    "ref": "fc8bfbd2d02c2690fc3a755a9560dd12c88e0852",
+    "ref_origin": "v0.11.2"
   }
 }
