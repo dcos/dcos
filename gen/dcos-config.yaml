@@ -100,9 +100,10 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+      DCOS_NET_IPV6={{ enable_ipv6 }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -156,7 +157,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
+        "network": {{ dcos_overlay_network_json }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -387,8 +388,13 @@ package:
               "network_mode": "USER",
               "dns": {
                 "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
                 ]
               }
             }
