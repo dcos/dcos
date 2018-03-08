@@ -46,19 +46,8 @@ def noauth_api_session(dcos_api_session):
     return dcos_api_session.get_user_session(None)
 
 
-@pytest.fixture(scope='session', autouse=True)
-def _dump_diagnostics(request, dcos_api_session):
-    """Download the zipped diagnostics bundle report from each master in the cluster to the home directory. This should
-    be run last. The _ prefix makes sure that pytest calls this first out of the autouse session scope fixtures, which
-    means that its post-yield code will be executed last.
-
-    * There is no official way to ensure fixtures are called in a certain order
-    https://github.com/pytest-dev/pytest/issues/1216
-    * However it seems that fixtures at the same scope are called alphabetically
-    https://stackoverflow.com/a/28593102/1436300
-    """
-    yield
-
+def pytest_unconfigure(config):
+    dcos_api_session = api_session_fixture.make_session_fixture()
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
