@@ -734,57 +734,57 @@ def calculate_check_config(check_time):
                     'description': 'All DC/OS components are healthy.',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
                             '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
-                    'timeout': '3s',
+                    'timeout': '5s',
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
                             '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
-                    'timeout': '3s',
+                    'timeout': '5s',
                     'roles': ['agent']
                 },
                 'xz': {
                     'description': 'The xz utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
-                    'timeout': '1s'
+                    'timeout': '2s'
                 },
                 'tar': {
                     'description': 'The tar utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
-                    'timeout': '1s'
+                    'timeout': '2s'
                 },
                 'curl': {
                     'description': 'The curl utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
-                    'timeout': '1s'
+                    'timeout': '2s'
                 },
                 'unzip': {
                     'description': 'The unzip utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
-                    'timeout': '1s'
+                    'timeout': '2s'
                 },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': '1s'
+                    'timeout': '5s'
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': '5s',
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': '5s',
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
                     'description': 'Journald directory has the right owners and permissions',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
-                    'timeout': '1s',
+                    'timeout': '3s',
                 },
             },
             'prestart': [],
