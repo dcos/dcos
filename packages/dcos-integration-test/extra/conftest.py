@@ -46,9 +46,17 @@ def noauth_api_session(dcos_api_session):
     return dcos_api_session.get_user_session(None)
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--diagnostics",
+        action="store_true",
+        default=False,
+        help="If set, download a diagnostics bundle .zip file from the cluster at the end of the test run")
+
+
 def pytest_unconfigure(config):
     dcos_api_session = api_session_fixture.make_session_fixture()
-    make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
+    make_diagnostics_report = config.getoption('--diagnostics')
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
         dcos_api_session.health.start_diagnostics_job()
