@@ -3,6 +3,7 @@ import http.server
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import socketserver
@@ -21,12 +22,84 @@ from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
+is_windows = platform.system() == "Windows"
 
 json_prettyprint_args = {
     "sort_keys": True,
     "indent": 2,
     "separators": (',', ':')
 }
+
+
+def is_absolute_path(path):
+    if is_windows:
+        # We assume one char drive letter. Sometimes its two but not often
+        # pattern is <driveletter>:/string....
+        if path[1] == ':':
+            return True
+    else:
+        if path[0] == '/':
+            return True
+    return False
+
+
+def remove_file(path):
+    """removes a file. fails silently if the file does not exist"""
+    if is_windows:
+        # python library on Windows does not like symbolic links in directories
+        # so calling out to the cmd prompt to do this fixes that.
+        path = path.replace('/', '\\')
+        if os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
+    else:
+        subprocess.check_call(['rm', '-f', path])
+
+
+def remove_directory(path):
+    """recursively removes a directory tree. fails silently if the tree does not exist"""
+    if is_windows:
+        # python library on Windows does not like symbolic links in directories
+        # so calling out to the cmd prompt to do this fixes that.
+        path = path.replace('/', '\\')
+        if os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
+    else:
+        subprocess.check_call(['rm', '-rf', path])
+
+
+def make_directory(path):
+    """Create a directory, creating intermediate directories if necessary"""
+    if is_windows:
+        path = path.replace('/', '\\')
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def copy_file(src_path, dst_path):
+    """copy a single directory item from one location to another"""
+    if is_windows:
+        # To make sure the copy works we are using cmd version as python
+        # libraries may not handle symbolic links and other things that are
+        # thrown at it.
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
+    else:
+        subprocess.check_call(['cp', src_path, dst_path])
+
+
+def copy_directory(src_path, dst_path):
+    """copy recursively a directory tree from one location to another"""
+    if is_windows:
+        # To make sure the copy works we are using cmd version as python
+        # libraries may not handle symbolic links and other things that are
+        # thrown at it.
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+    else:
+        subprocess.check_call(['cp', '-r', src_path, dst_path])
 
 
 def variant_str(variant):
@@ -130,8 +203,13 @@ def extract_tarball(path, target):
     # prevent partial extraction from ever laying around on the filesystem.
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
-        check_call(['mkdir', '-p', target])
-        check_call(['tar', '-xf', path, '-C', target])
+        make_directory(target)
+
+        if is_windows:
+            check_call(['bsdtar', '-xf', path, '-C', target])
+        else:
+            check_call(['tar', '-xf', path, '-C', target])
+
     except:
         # If there are errors, we can't really cope since we are already in an error state.
         rmtree(target, ignore_errors=True)
@@ -226,11 +304,17 @@ def expect_fs(folder, contents):
 
 
 def make_tar(result_filename, change_folder):
-    tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
+    if is_windows:
+        tar_cmd = ["bsdtar"]
+    else:
+        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
     if which("pxz"):
         tar_cmd += ["--use-compress-program=pxz", "-cf"]
     else:
-        tar_cmd += ["-cJf"]
+        if is_windows:
+            tar_cmd += ["-cjf"]
+        else:
+            tar_cmd += ["-cJf"]
     tar_cmd += [result_filename, "-C", change_folder, "."]
     check_call(tar_cmd)
 

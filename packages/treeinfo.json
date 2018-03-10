@@ -1,7 +1,10 @@
 {
   "exclude": [
     "dcos-installer-ui",
-    "dcos-launch"
+    "dcos-launch",
+    "erts",
+    "openstackservice",
+    "spartan"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }

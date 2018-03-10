@@ -26,9 +26,14 @@ import pkgpanda.build
 import pkgpanda.util
 import release.storage
 from gen.calc import DCOS_VERSION
-from pkgpanda.util import logger
+from pkgpanda.constants import DOCKERFILE_DIR
+from pkgpanda.util import is_windows, logger
 
-provider_names = ['aws', 'azure', 'bash']
+if is_windows:
+    # DC/OS is not supported on AWS at this time.
+    provider_names = ['azure', 'bash']
+else:
+    provider_names = ['aws', 'azure', 'bash']
 
 
 class ConfigError(Exception):
@@ -309,7 +314,7 @@ def make_bootstrap_artifacts(bootstrap_id, package_ids, variant_name, artifact_p
     }
 
 
-def make_stable_artifacts(cache_repository_url):
+def make_stable_artifacts(cache_repository_url, tree_variants):
     metadata = {
         "commit": util.dcos_image_commit,
         "core_artifacts": [],
@@ -320,7 +325,7 @@ def make_stable_artifacts(cache_repository_url):
     # have do_build_packages get them directly from pkgpanda
     with logger.scope("Building packages"):
         try:
-            all_completes = do_build_packages(cache_repository_url)
+            all_completes = do_build_packages(cache_repository_url, tree_variants)
         except pkgpanda.build.BuildError as ex:
             logger.error("Failure building package(s): {}".format(ex))
             raise
@@ -540,9 +545,9 @@ def _get_global_builders():
     """
     res = {}
 
-    for name in pkg_resources.resource_listdir('pkgpanda', 'docker/'):
+    for name in pkg_resources.resource_listdir('pkgpanda', DOCKERFILE_DIR):
         res[name] = pkg_resources.resource_filename('pkgpanda',
-                                                    'docker/' + name)
+                                                    DOCKERFILE_DIR + name)
     return res
 
 
@@ -564,15 +569,14 @@ def _build_builders(package_store):
         do_build_docker(name, path)
 
 
-def do_build_packages(cache_repository_url):
+def do_build_packages(cache_repository_url, tree_variants):
     package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages',
                                                 cache_repository_url)
 
     _build_builders(package_store)
 
-    result = pkgpanda.build.build_tree(package_store, True, None)
-
-    last_set = package_store.get_last_complete_set()
+    result = pkgpanda.build.build_tree(package_store, True, tree_variants)
+    last_set = package_store.get_last_complete_set(tree_variants)
     assert last_set == result, \
         "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
             last_set,
@@ -802,7 +806,7 @@ class ReleaseManager():
 
         return metadata
 
-    def create(self, repository_path, channel, tag):
+    def create(self, repository_path, channel, tag, tree_variants):
         assert len(channel) > 0  # channel must be a non-empty string.
 
         assert ('options' in self.__config) and \
@@ -812,7 +816,8 @@ class ReleaseManager():
 
         # TOOD(cmaloney): Figure out why the cached version hasn't been working right
         # here from the TeamCity agents. For now hardcoding the non-cached s3 download locatoin.
-        metadata = make_stable_artifacts(self.__config['options']['cloudformation_s3_url'] + '/' + repository_path)
+        metadata = make_stable_artifacts(
+            self.__config['options']['cloudformation_s3_url'] + '/' + repository_path, tree_variants)
 
         # Metadata should already have things like bootstrap_id in it.
         assert 'bootstrap_dict' in metadata
@@ -891,6 +896,14 @@ def main():
     # `testing/{channel}`
     create.add_argument('channel')
     create.add_argument('tag')
+    create.add_argument(
+        "--tree-variant",
+        action='append',
+        help="Create a tree using the specified tree variant. Multiple --tree-variant parameters "
+        "can be specified. Use 'default' for the default variant on Linux and 'windows' for the default "
+        "variant on Windows.",
+        required=True
+    )
 
     # Utility for building just the installers, useful for installer dev work where you don't want
     # to build all of dcos-image locally, and don't care about uploading. Defaults noop to true.
@@ -920,7 +933,8 @@ def main():
     if options.action == 'promote':
         release_manager.promote(options.source_channel, options.destination_repository, options.destination_channel)
     elif options.action == 'create':
-        release_manager.create('testing', options.channel, options.tag)
+        variants = [None if variant == "default" else variant for variant in options.tree_variant]
+        release_manager.create('testing', options.channel, options.tag, variants)
     elif options.action == 'create-installer':
         release_manager.create_installer(options.src_channel)
     else:

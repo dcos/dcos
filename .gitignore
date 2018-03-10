@@ -3,6 +3,7 @@ test_util/dcos-vagrant/
 this
 .idea/
 dcos-config--setup*.tar.xz
+dcos-config-windows--setup*.tar.xz
 tmp/
 runner.env
 artifacts/

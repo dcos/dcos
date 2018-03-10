@@ -1,7 +1,7 @@
 import copy
 import json
 import multiprocessing
-import os.path
+import os
 import random
 import shutil
 import string
@@ -16,11 +16,11 @@ import pkgpanda.build.src_fetchers
 from pkgpanda import expand_require as expand_require_exceptions
 from pkgpanda import Install, PackageId, Repository
 from pkgpanda.actions import add_package_file
-from pkgpanda.constants import RESERVED_UNIT_NAMES
+from pkgpanda.constants import install_root, PKG_DIR, RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic,
-                           hash_checkout, load_json, load_string, logger,
-                           make_file, make_tar, rewrite_symlinks, write_json,
+                           hash_checkout, is_windows, load_json, load_string, logger,
+                           make_directory, make_file, make_tar, remove_directory, rewrite_symlinks, write_json,
                            write_string)
 
 
@@ -47,7 +47,16 @@ class DockerCmd:
                 random.choice(string.ascii_lowercase) for _ in range(10)
             )
         )
+
         docker = ["docker", "run", "--name={}".format(container_name)]
+
+        if is_windows:
+            # Default number of processes on Windows is 1, so bumping up to use all of them.
+            # The default memory allowed on Windows is 1GB. Some packages (mesos is an example)
+            # needs about 3.5gb to compile a single file. Therefore we need about 4gb per CPU.
+            numprocs = os.environ.get('NUMBER_OF_PROCESSORS')
+            docker += ["-m", "{0}gb".format(int(numprocs) * 4), "--cpu-count", numprocs]
+
         for host_path, container_path in self.volumes.items():
             docker += ["-v", "{0}:{1}".format(host_path, container_path)]
 
@@ -257,7 +266,7 @@ class PackageStore:
         self._upstream = None
         self._upstream_package_dir = self._upstream_dir + "/packages"
         # TODO(cmaloney): Make it so the upstream directory can be kept around
-        check_call(['rm', '-rf', self._upstream_dir])
+        remove_directory(self._upstream_dir)
         upstream_config = self._packages_dir + '/upstream.json'
         if os.path.exists(upstream_config):
             try:
@@ -290,7 +299,10 @@ class PackageStore:
                 if name in self._packages_by_name:
                     continue
 
-                builder_folder = os.path.join(directory, name, 'docker')
+                if is_windows:
+                    builder_folder = os.path.join(directory, name, 'docker.windows')
+                else:
+                    builder_folder = os.path.join(directory, name, 'docker')
                 if os.path.exists(builder_folder):
                     self._builders[name] = builder_folder
 
@@ -320,7 +332,7 @@ class PackageStore:
     def get_buildinfo(self, name, variant):
         return self._packages[(name, variant)]
 
-    def get_last_complete_set(self):
+    def get_last_complete_set(self, variants):
         def get_last_complete(variant):
             complete_latest = (
                 self.get_complete_cache_dir() + '/' + pkgpanda.util.variant_prefix(variant) + 'complete.latest.json')
@@ -331,7 +343,12 @@ class PackageStore:
             return load_json(complete_latest)
 
         result = {}
-        for variant in self.list_trees():
+        if variants is None:
+            # Get all defined variants.
+            requested_variants = self.list_trees()
+        else:
+            requested_variants = variants
+        for variant in requested_variants:
             result[variant] = get_last_complete(variant)
         return result
 
@@ -343,7 +360,7 @@ class PackageStore:
 
     def get_package_cache_folder(self, name):
         directory = self._package_cache_dir + '/' + name
-        check_call(['mkdir', '-p', directory])
+        make_directory(directory)
         return directory
 
     def list_trees(self):
@@ -500,7 +517,10 @@ def load_buildinfo(path, variant):
     buildinfo = load_config_variant(path, variant, 'buildinfo.json')
 
     # Fill in default / guaranteed members so code everywhere doesn't have to guard around it.
-    buildinfo.setdefault('build_script', 'build')
+    default_build_script = 'build'
+    if is_windows:
+        default_build_script = 'build.ps1'
+    buildinfo.setdefault('build_script', pkgpanda.util.variant_prefix(variant) + default_build_script)
     buildinfo.setdefault('docker', 'dcos/dcos-builder:dcos-builder_dockerdir-latest')
     buildinfo.setdefault('environment', dict())
     buildinfo.setdefault('requires', list())
@@ -545,7 +565,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
         print("Bootstrap already up to date, not recreating")
         return mark_latest()
 
-    check_call(['mkdir', '-p', bootstrap_cache_dir])
+    make_directory(bootstrap_cache_dir)
 
     # Try downloading.
     if package_store.try_fetch_bootstrap_and_active(bootstrap_id):
@@ -600,7 +620,7 @@ def make_bootstrap_tarball(package_store, packages, variant):
 
     make_tar(bootstrap_name, pkgpanda_root)
 
-    shutil.rmtree(work_dir)
+    remove_directory(work_dir)
 
     # Update latest last so that we don't ever use partially-built things.
     write_string(latest_name, bootstrap_id)
@@ -621,7 +641,7 @@ def build_tree_variants(package_store, mkbootstrap):
     return result
 
 
-def build_tree(package_store, mkbootstrap, tree_variant):
+def build_tree(package_store, mkbootstrap, tree_variants):
     """Build packages and bootstrap tarballs for one or all tree variants.
 
     Returns a dict mapping tree variants to bootstrap IDs.
@@ -652,10 +672,9 @@ def build_tree(package_store, mkbootstrap, tree_variant):
         assert pkg_tuple not in visited
         visited.add(pkg_tuple)
 
-        # Ensure all dependencies are built. Sorted for stability
-        for require in sorted(package_store.packages[pkg_tuple]['requires']):
-            require_tuple = expand_require(require)
-
+        # Ensure all dependencies are built. Sorted for stability.
+        # Requirements may be either strings or dicts, so we convert them all to (name, variant) tuples before sorting.
+        for require_tuple in sorted(expand_require(r) for r in package_store.packages[pkg_tuple]['requires']):
             # If the dependency has already been built, we can move on.
             if require_tuple in built:
                 continue
@@ -689,8 +708,8 @@ def build_tree(package_store, mkbootstrap, tree_variant):
                 continue
             visit(pkg_tuple)
 
-    if tree_variant:
-        package_sets = [package_store.get_package_set(tree_variant)]
+    if tree_variants:
+        package_sets = [package_store.get_package_set(v) for v in tree_variants]
     else:
         package_sets = package_store.get_all_package_sets()
 
@@ -727,7 +746,7 @@ def build_tree(package_store, mkbootstrap, tree_variant):
     # Build bootstraps and and package lists for all variants.
     # TODO(cmaloney): Allow distinguishing between "build all" and "build the default one".
     complete_cache_dir = package_store.get_complete_cache_dir()
-    check_call(['mkdir', '-p', complete_cache_dir])
+    make_directory(complete_cache_dir)
     results = {}
     for package_set in package_sets:
         info = {
@@ -862,7 +881,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         for src_name, src_info in sorted(sources.items()):
             # TODO(cmaloney): Switch to a unified top level cache directory shared by all packages
             cache_dir = package_store.get_package_cache_folder(name) + '/' + src_name
-            check_call(['mkdir', '-p', cache_dir])
+            make_directory(cache_dir)
             fetcher = get_src_fetcher(src_info, cache_dir, package_dir)
             fetchers[src_name] = fetcher
             checkout_ids[src_name] = fetcher.get_id()
@@ -880,9 +899,8 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Add the sha1 of the buildinfo.json + build file to the build ids
     builder.update('sources', checkout_ids)
-    build_script = src_abs(builder.take('build_script'))
+    build_script_file = builder.take('build_script')
     # TODO(cmaloney): Change dest name to build_script_sha1
-    builder.replace('build_script', 'build', pkgpanda.util.sha1(build_script))
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
     extra_dir = src_abs("extra")
@@ -1016,7 +1034,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
             active_package_ids.add(pkg_id_str)
 
             # Mount the package into the docker container.
-            cmd.volumes[pkg_path] = "/opt/mesosphere/packages/{}:ro".format(pkg_id_str)
+            cmd.volumes[pkg_path] = install_root + "/packages/{}:ro".format(pkg_id_str)
             os.makedirs(os.path.join(install_dir, "packages/{}".format(pkg_id_str)))
 
             # Add the dependencies of the package to the set which will be
@@ -1098,10 +1116,19 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # Run a docker container to remove src/ and result/
         cmd = DockerCmd()
         cmd.volumes = {
-            package_store.get_package_cache_folder(name): "/pkg/:rw",
+            package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
         }
-        cmd.container = "ubuntu:14.04.4"
-        cmd.run("package-cleaner", ["rm", "-rf", "/pkg/src", "/pkg/result"])
+        if is_windows:
+            cmd.container = "microsoft/windowsservercore:1709"
+            filename = PKG_DIR + "\\src"
+            cmd.run("package-cleaner",
+                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
+            filename = PKG_DIR + "\\result"
+            cmd.run("package-cleaner",
+                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
+        else:
+            cmd.container = "ubuntu:14.04.4"
+            cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
 
     clean()
 
@@ -1156,7 +1183,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # paths to the packages will change.
     # TODO(cmaloney): This isn't very clean, it would be much nicer to
     # just run pkgpanda inside the package.
-    rewrite_symlinks(install_dir, repository.path, "/opt/mesosphere/packages/")
+    rewrite_symlinks(install_dir, repository.path, install_root + "/packages/")
 
     print("Building package in docker")
 
@@ -1179,22 +1206,34 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Source we checked out
     cmd.volumes.update({
         # TODO(cmaloney): src should be read only...
-        cache_abs("src"): "/pkg/src:rw",
-        # The build script
-        build_script: "/pkg/build:ro",
+        # Source directory
+        cache_abs("src"): PKG_DIR + "/src:rw",
         # Getting the result out
-        cache_abs("result"): "/opt/mesosphere/packages/{}:rw".format(pkg_id),
-        install_dir: "/opt/mesosphere:ro"
+        cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id),
+        # The build script directory
+        package_dir: PKG_DIR + "/build:ro"
     })
 
-    if os.path.exists(extra_dir):
-        cmd.volumes[extra_dir] = "/pkg/extra:ro"
+    if is_windows:
+        cmd.volumes.update({
+            # todo: This is a temporary work around until Windows RS4 comes out that has a fix
+            # that allows overlapping mount directories. We should not make this also happen
+            # on Linux as it will probably break a bunch of stuff unnecessarily that will only
+            # need to be undone in the future.
+            install_dir: install_root + "/install_dir:ro"
+        })
+    else:
+        cmd.volumes.update({
+            install_dir: install_root + ":ro"
+        })
 
+    if os.path.exists(extra_dir):
+        cmd.volumes[extra_dir] = PKG_DIR + "/extra:ro"
     cmd.environment = {
         "PKG_VERSION": version,
         "PKG_NAME": name,
         "PKG_ID": pkg_id,
-        "PKG_PATH": "/opt/mesosphere/packages/{}".format(pkg_id),
+        "PKG_PATH": install_root + "/packages/{}".format(pkg_id),
         "PKG_VARIANT": variant if variant is not None else "<default>",
         "NUM_CORES": multiprocessing.cpu_count()
     }
@@ -1203,18 +1242,14 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # TODO(cmaloney): Run a wrapper which sources
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
-        cmd.run("package-builder", [
-            "/bin/bash",
-            "-o", "nounset",
-            "-o", "pipefail",
-            "-o", "errexit",
-            "/pkg/build"])
+        command = [PKG_DIR + "/build/" + build_script_file]
+        cmd.run("package-builder", command)
     except CalledProcessError as ex:
         raise BuildError("docker exited non-zero: {}\nCommand: {}".format(ex.returncode, ' '.join(ex.cmd)))
 
     # Clean up the temporary install dir used for dependencies.
     # TODO(cmaloney): Move to an RAII wrapper.
-    check_call(['rm', '-rf', install_dir])
+    remove_directory(install_dir)
 
     with logger.scope("Build package tarball"):
         # Check for forbidden services before packaging the tarball:
@@ -1230,7 +1265,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
     make_tar(tmp_name, cache_abs("result"))
-    os.rename(tmp_name, pkg_path)
+    os.replace(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:
         clean()

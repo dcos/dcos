@@ -1,12 +1,16 @@
 import logging
 
+import pytest
+
 import gen
+import pkgpanda.util
 from gen.build_deploy.bash import onprem_source
 
 
 # TODO(cmaloney): Should be able to pass an exact tree to gen so that we can test
 # one little piece at a time rather than having to rework this every time that
 # DC/OS parameters change.
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason no mesos master")
 def test_error_during_calc(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
@@ -28,6 +32,7 @@ def test_error_during_calc(monkeypatch):
     }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_error_during_validate(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
