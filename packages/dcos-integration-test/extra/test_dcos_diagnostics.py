@@ -587,7 +587,6 @@ def test_bundle_delete(dcos_api_session):
 def test_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
     response = dcos_api_session.health.get('report/diagnostics/status/all')
-    print(response.json())
     diagnostics_bundle_status = check_json(response)
     required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
                               'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
