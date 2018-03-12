@@ -8,7 +8,6 @@ import sys
 import coloredlogs
 from passlib.hash import sha512_crypt
 
-import dcos_installer.async_server
 import dcos_installer.config
 import dcos_installer.constants
 import gen.calc
@@ -127,10 +126,16 @@ def do_validate_config(args):
     return 0
 
 
+def web_installer(options):
+    log.error('The DC/OS web installer (--web) has been removed.\n'
+              'Please refer to the DC/OS Installation guide at https://docs.mesosphere.com/1.12/installing/')
+    sys.exit(1)
+
+
 dispatch_dict_simple = {
     'version': (do_version, None, 'Print the DC/OS version'),
     'web': (
-        dcos_installer.async_server.start,
+        web_installer,
         'Starting DC/OS installer in web mode',
         'Run the web interface'),
     'genconf': (
