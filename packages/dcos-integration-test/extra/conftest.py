@@ -8,6 +8,8 @@ from dcos_test_utils import logger
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 log = logging.getLogger(__name__)
 
+USER_HOME_DIR = os.path.join(os.path.expanduser('~'))
+
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
@@ -47,11 +49,10 @@ def noauth_api_session(dcos_api_session):
 
 
 def pytest_addoption(parser):
-    home_dir = os.path.join(os.path.expanduser('~'))
     parser.addoption(
         "--diagnostics",
         nargs='?',
-        const=home_dir,
+        const=USER_HOME_DIR,
         default=None,
         help="Download a diagnostics bundle .zip file from the cluster at the end of the test run." +
              "Value is directory to put the file in. If no value is set, then it defaults to home directory.")
@@ -85,7 +86,7 @@ def _isdir(maybe_dir):
         valid_dir = False
     return valid_dir
 
-dcos_api_session
+
 def pytest_unconfigure(config):
     dcos_api_session = api_session_fixture.make_session_fixture()
 
@@ -94,11 +95,10 @@ def pytest_unconfigure(config):
     if diagnostics_dir is None:
         log.info('\nNot downloading diagnostics bundle for this session.')
     else:
-        user_home = os.path.join(os.path.expanduser('~'))
         warning = '{} is not a directory. Writing diagnostics report to home directory {} instead.'.format(
-            diagnostics_dir, user_home)
+            diagnostics_dir, USER_HOME_DIR)
         if not _isdir(diagnostics_dir):
             log.warn(warning)
-            diagnostics_dir = user_home
+            diagnostics_dir = USER_HOME_DIR
 
         make_diagnostics_report(dcos_api_session, diagnostics_dir)
