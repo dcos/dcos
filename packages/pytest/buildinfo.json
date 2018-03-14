@@ -2,7 +2,7 @@
   "requires": ["python", "teamcity-messages"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/a0/2f/076c816e2402c4911ccee4b93ba0475145b7cffd0320ca8efa0add7c469c/pytest-3.0.3.tar.gz",
-    "sha1": "e7fb899ecac031a84e66f991289203d3c1f7c6cb"
+    "url": "https://pypi.python.org/packages/50/e2/a28d4c5e4520a0427bc5141703f3296184742e7cb2722ce71fd61020c417/pytest-3.1.0.tar.gz",
+    "sha1": "194bb203353cd907563cce280e946cb3c441d48b"
   }
 }
