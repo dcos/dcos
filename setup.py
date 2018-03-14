@@ -33,6 +33,9 @@ setup(
         'release.storage',
         'ssh'],
     install_requires=[
+        # DCOS-21656 - `botocore`` requires less than 2.7.0 while
+        # `analytics-python` package installs 2.7.0 version
+        'python-dateutil>=2.1,<2.7.0',
         'aiohttp==0.22.5',
         'analytics-python',
         'coloredlogs',
@@ -45,8 +48,8 @@ setup(
         'azure-storage==0.32.0',
         'azure-mgmt-network==0.30.0rc4',
         'azure-mgmt-resource==0.30.0rc4',
-        'boto3',
         'botocore',
+        'boto3',
         'coloredlogs',
         'docopt',
         'passlib',
