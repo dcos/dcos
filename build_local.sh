@@ -38,4 +38,4 @@ python3.5 -m venv /tmp/dcos_build_venv
 ./prep_local
 
 # Build a release of DC/OS
-release create `whoami` local_build --tree-variant default --tree-variant installer
+release create `whoami` local_build default installer

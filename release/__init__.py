@@ -897,12 +897,12 @@ def main():
     create.add_argument('channel')
     create.add_argument('tag')
     create.add_argument(
-        "--tree-variant",
-        action='append',
-        help="Create a tree using the specified tree variant. Multiple --tree-variant parameters "
-        "can be specified. Use 'default' for the default variant on Linux and 'windows' for the default "
-        "variant on Windows.",
-        required=True
+        'tree_variant',
+        nargs='+',
+        help=(
+            'Name of a tree variant to build, corresponding to packages/<tree_variant>.treeinfo.json. Use "default" '
+            'for the default tree variant (packages/treeinfo.json).'
+        ),
     )
 
     # Utility for building just the installers, useful for installer dev work where you don't want
