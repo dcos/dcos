@@ -2,8 +2,15 @@
 #
 # Simple helper script to do a full local  build
 
+# Usage: build_local.sh [tree_variant ...]
+# tree_variant: Name of a tree variant to build. If no tree variants are passed,
+#               the "default" and "installer" tree variants are built.
+
 set -x
 set -o errexit -o pipefail
+
+# If no tree variants are specified, build the default and installer variants.
+tree_variants=${@:-default installer}
 
 # Fail quickly if docker isn't working / up
 docker ps
@@ -38,4 +45,4 @@ python3.5 -m venv /tmp/dcos_build_venv
 ./prep_local
 
 # Build a release of DC/OS
-release create `whoami` local_build default installer
+release create `whoami` local_build $tree_variants
