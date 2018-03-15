@@ -4,5 +4,5 @@
       "dcos-test-utils",
       "pytest",
       "python",
-      "python-pytest-testrail"]
+      "pytest-testrail"]
 }
