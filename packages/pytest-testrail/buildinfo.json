@@ -1,8 +1,9 @@
 {
   "requires": ["python"],
   "single_source": {
-    "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/ab/7d/9782075263b68b5a7933790b84a05a414af7b752bd5b8502f0c2a8527c53/pytest-testrail-1.1.3.tar.gz",
-    "sha1": "43e050a40e0f7053f600c8fb1d3e973e70384495"
+    "kind": "git",
+    "git": "https://github.com/allankp/pytest-testrail",
+    "ref": "43e050a40e0f7053f600c8fb1d3e973e70384495",
+    "ref_origin": "master"
   }
 }
