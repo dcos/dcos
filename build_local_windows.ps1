@@ -2,8 +2,6 @@
 #
 # Simple helper script to do a full local  build
 
-Set-PSDebug -Trace 1
-
 # Fail quickly if docker isn't working / up
 docker ps
 if ( $LASTEXITCODE -ne 0 ) {
@@ -47,6 +45,5 @@ python -m venv "$tmpdir/dcos_build_venv"
 ./prep_local_windows.ps1
 
 # Build a release of DC/OS
-release create $env:USERNAME local_build --tree-variant windows
+release create $env:USERNAME local_build windows
 
-Set-PSDebug -Off
