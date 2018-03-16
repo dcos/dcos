@@ -31,13 +31,13 @@ def test_metrics_masters_ping(dcos_api_session):
 
 def test_metrics_agents_prom(dcos_api_session):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':9273/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
 def test_metrics_masters_prom(dcos_api_session):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':9273/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 

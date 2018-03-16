@@ -1,6 +1,9 @@
 package:
   - path: /etc/dcos-metrics-config.yaml
     content: |
+      producers:
+        prometheus:
+          port: 61091
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -100,9 +103,10 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+      DCOS_NET_IPV6={{ enable_ipv6 }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -156,7 +160,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
+        "network": {{ dcos_overlay_network_json }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -387,8 +391,13 @@ package:
               "network_mode": "USER",
               "dns": {
                 "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
                 ]
               }
             }
@@ -523,7 +532,7 @@ package:
 {% endswitch %}
   - path: /etc/mesos-slave
     content: |
-      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 9272},{"begin": 9274, "end": 32000}]}}]
+      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
   - path: /etc/mesos-slave-public
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
