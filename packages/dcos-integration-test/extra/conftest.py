@@ -1,17 +1,17 @@
 import logging
 import os
 
-import api_session_fixture
 import pytest
-from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
     check_json,
     wait_for_diagnostics_job,
     wait_for_diagnostics_list
 )
-logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
+
 log = logging.getLogger(__name__)
+
+pytest_plugins = ['pytest-dcos']
 
 
 def pytest_configure(config):
@@ -39,11 +39,6 @@ def clean_marathon_state(dcos_api_session):
     dcos_api_session.marathon.purge()
     yield
     dcos_api_session.marathon.purge()
-
-
-@pytest.fixture(scope='session')
-def dcos_api_session():
-    return api_session_fixture.make_session_fixture()
 
 
 @pytest.fixture(scope='session')
