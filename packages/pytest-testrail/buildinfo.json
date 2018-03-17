@@ -1,9 +1,0 @@
-{
-  "requires": ["python"],
-  "single_source": {
-    "kind": "git",
-    "git": "https://github.com/allankp/pytest-testrail",
-    "ref": "43e050a40e0f7053f600c8fb1d3e973e70384495",
-    "ref_origin": "master"
-  }
-}

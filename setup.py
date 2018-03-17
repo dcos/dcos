@@ -59,7 +59,6 @@ setup(
         'passlib',
         'py',
         'pytest',
-        'pytest-testrail',
         'pyyaml',
         'requests==2.18.4',
         'retrying',
