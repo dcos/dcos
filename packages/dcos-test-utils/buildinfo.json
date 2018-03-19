@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "9fd9124e7d27b058758029184816381dda01323a",
-    "ref_origin": "mellenburg/add_pytest_plugin"
+    "ref": "cbb3ef4d2c02f4a7ffbcaae18399fb2f6ace7ac5",
+    "ref_origin": "mellenburg/ssl_option"
   }
 }
