@@ -927,6 +927,12 @@ package:
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
 {% case "false" %}
 {% endswitch %}
+{% switch gpus_are_scarce %}
+{% case "true" %}
+      MARATHON_GPU_SCHEDULING_BEHAVIOR=restricted
+{% case "false" %}
+      MARATHON_GPU_SCHEDULING_BEHAVIOR=unrestricted
+{% endswitch %}
   - path: /etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
