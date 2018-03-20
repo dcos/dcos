@@ -130,6 +130,7 @@ pkgpanda activate --no-block {{ cluster_packages }} >&3
 
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300
+    set +o errexit
     until OUT="$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster 2>&1)" || [[ $T -eq 0 ]]; do
       sleep 1
       let T=T-1
@@ -140,6 +141,7 @@ if [[ "$SKIP_CHECKS" = "false" ]]; then
        echo >&2 "$OUT"
     fi
     exit $RETCODE
+    set -o errexit
 fi
 """
 
