@@ -10,9 +10,13 @@
         "default": "Work In Progress",
         "pr-creator-can-apply": ["Ready For Review", "Work In Progress"]
     },
-    "pr-status-checks": true,
+    "pr-status-checks": {
+        "enabled": true,
+        "interactive": false
+    },
     "ship_it_label_status_check": {
         "enabled": true,
+        "interactive": false,
         "acceptable_labels": ["Ship It"],
         "labels_to_remove_when_applying_ship_it": ["Work In Progress", "Ready For Review", "Request For Comment"]
     }
