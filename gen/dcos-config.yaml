@@ -995,7 +995,7 @@ package:
       # Modulo ChaCha20 cipher.
 {% switch adminrouter_tls_cipher_override %}
 {% case "false" %}
-      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:!DES-CBC3-SHA:!ECDHE-RSA-DES-CBC3-SHA;
 {% case "true" %}
       ssl_ciphers {{ adminrouter_tls_cipher_suite }};
 {% endswitch %}

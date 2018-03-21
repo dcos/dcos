@@ -30,7 +30,7 @@ class TestAdminRouterTLSConfig:
             # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
             # Modulo ChaCha20 cipher.
 
-            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:!DES-CBC3-SHA:!ECDHE-RSA-DES-CBC3-SHA;
 
             ssl_prefer_server_ciphers on;
             # To manually test which TLS versions are enabled on a node, use
@@ -115,7 +115,7 @@ class TestSetCipherOverride:
             config_path: str) -> List[str]:
         """
         Finds the line that looks like:
-        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+        ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:!DES-CBC3-SHA:!ECDHE-RSA-DES-CBC3-SHA;
         and returns the list of ciphers.
         Args:
             new_config_arguments: Arguments which are added to the 'standard'
@@ -142,7 +142,7 @@ class TestSetCipherOverride:
             new_config_arguments: Dict[str, str]) -> List[str]:
         """
         Finds the line that looks like:
-        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+        ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:!DES-CBC3-SHA:!ECDHE-RSA-DES-CBC3-SHA;
         and returns the list of ciphers.
         Args:
             new_config_arguments: Arguments which are added to the 'standard'
@@ -194,7 +194,7 @@ class TestSetCipherOverride:
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
-        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5']
+        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:!DES-CBC3-SHA:!ECDHE-RSA-DES-CBC3-SHA']
 
     def test_cipher_master_custom(self):
         """
