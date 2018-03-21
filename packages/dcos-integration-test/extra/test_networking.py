@@ -13,7 +13,6 @@ import retrying
 import test_helpers
 
 from dcos_test_utils import marathon
-from dcos_test_utils.helpers import assert_response_ok
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ class MarathonApp:
         stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        assert_response_ok(r)
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
 
         self._info = r.json()
         assert self._info['app']['tasksHealthy'] == self.app['instances']
