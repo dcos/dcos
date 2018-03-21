@@ -151,7 +151,7 @@ class MarathonPod:
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        assert_response_ok(r)
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
 
         self._info = r.json()
         error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
