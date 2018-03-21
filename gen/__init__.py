@@ -399,7 +399,7 @@ class DFSArgumentCalculator():
         except CalculatorError as ex:
             self._arguments[name] = None
             raise CalculatorError(ex.message, ex.chain + ['while calculating {}'.format(name)]) from ex
-        except:
+        except Exception:
             self._arguments[name] = None
             raise
         finally:

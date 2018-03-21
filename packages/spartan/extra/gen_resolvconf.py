@@ -37,7 +37,7 @@ def check_server(addr):
     except dns.exception.Timeout:
         print('Skipping DNS server {}: no response'.format(
             addr), file=sys.stderr)
-    except:
+    except Exception:
         print("Unexpected error querying DNS for server \"{}\" exception: {}".format(
             addr, sys.exc_info()[1]))
 
