@@ -1,13 +1,7 @@
 import logging
-import os
 
 import pytest
-from test_dcos_diagnostics import (
-    _get_bundle_list,
-    check_json,
-    wait_for_diagnostics_job,
-    wait_for_diagnostics_list
-)
+
 from test_helpers import expanded_config
 
 log = logging.getLogger(__name__)
