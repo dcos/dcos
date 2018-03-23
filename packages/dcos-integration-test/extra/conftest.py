@@ -1,17 +1,36 @@
 import logging
 import os
 
-import api_session_fixture
 import pytest
-from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
     check_json,
     wait_for_diagnostics_job,
     wait_for_diagnostics_list
 )
-logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
+from test_helpers import expanded_config
+
 log = logging.getLogger(__name__)
+
+pytest_plugins = ['pytest-dcos']
+
+
+@pytest.fixture(scope='session')
+def dcos_api_session(dcos_api_session_factory):
+    """ Overrides the dcos_api_session fixture to use
+    exhibitor settings currently used in the cluster
+    """
+    args = dcos_api_session_factory.get_args_from_env()
+
+    exhibitor_admin_password = None
+    if expanded_config['exhibitor_admin_password_enabled'] == 'true':
+        exhibitor_admin_password = expanded_config['exhibitor_admin_password']
+
+    api = dcos_api_session_factory(
+        exhibitor_admin_password=exhibitor_admin_password,
+        **args)
+    api.wait_for_dcos()
+    return api
 
 
 def pytest_configure(config):
@@ -39,11 +58,6 @@ def clean_marathon_state(dcos_api_session):
     dcos_api_session.marathon.purge()
     yield
     dcos_api_session.marathon.purge()
-
-
-@pytest.fixture(scope='session')
-def dcos_api_session():
-    return api_session_fixture.make_session_fixture()
 
 
 @pytest.fixture(scope='session')
