@@ -1,0 +1,10 @@
+{
+  "requires": [{ "name":"mesos", "variant":"windows"}],
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-metrics.git",
+    "ref": "d9f7341c9d68a243c4f4c2c288651ad9a6462728",
+    "ref_origin": "master"
+  },
+  "username": "dcos_metrics"
+}

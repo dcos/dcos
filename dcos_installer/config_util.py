@@ -7,6 +7,7 @@ import gen
 import gen.build_deploy.bash
 import pkgpanda
 from dcos_installer.constants import ARTIFACT_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR
+from pkgpanda.util import make_directory
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def onprem_generate(config):
 
 
 def make_serve_dir(gen_out):
-    subprocess.check_call(['mkdir', '-p', SERVE_DIR])
+    make_directory(SERVE_DIR)
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
 
     # Copy cached artifacts.
@@ -106,7 +107,7 @@ def fetch_artifacts(filenames, src_dir, dest_dir):
             log.error("Internal Error: %s not found. Should have been in the installer container.", filename)
             raise FileNotFoundError(filename)
 
-    subprocess.check_call(['mkdir', '-p', dest_dir])
+    make_directory(dest_dir)
     do_move_atomic(src_dir, dest_dir, filenames)
 
 

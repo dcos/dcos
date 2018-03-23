@@ -1,14 +1,21 @@
 import copy
 import logging
 import os.path
+import sys
 
 import yaml
 
 import gen
-import ssh.validate
+try:
+    import ssh.validate
+except ImportError:
+    pass
 from gen.build_deploy.bash import onprem_source
 from gen.exceptions import ValidationError
-from pkgpanda.util import load_yaml, write_string, YamlParseError
+from pkgpanda.util import is_windows, load_yaml, write_string, YamlParseError
+
+if not is_windows:
+    assert 'ssh.validate' in sys.modules
 
 log = logging.getLogger(__name__)
 

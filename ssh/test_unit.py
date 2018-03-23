@@ -4,6 +4,7 @@ import tempfile
 
 import pytest
 
+import pkgpanda.util
 import ssh.validate
 
 
@@ -17,12 +18,14 @@ def default_config():
     })
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_validate_config(default_config):
     with tempfile.NamedTemporaryFile(mode='+r') as tmp:
         default_config['ssh_key_path'] = tmp.name
         assert ssh.validate.validate_config(default_config) == {}
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_validate_config_not_encrypted(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -35,6 +38,7 @@ def test_validate_config_not_encrypted(default_config):
         }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_config_permissions(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -45,6 +49,7 @@ def test_config_permissions(default_config):
         }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_agent_list_ipv4(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -54,6 +59,7 @@ def test_agent_list_ipv4(default_config):
         }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_agent_list_dups(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -62,6 +68,7 @@ def test_agent_list_dups(default_config):
             'agent_list': 'List cannot contain duplicates: 127.0.0.1 appears 2 times'}
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_master_agent_list_dups(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -72,6 +79,7 @@ def test_master_agent_list_dups(default_config):
         }
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_ssh_port(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -80,6 +88,7 @@ def test_ssh_port(default_config):
             {'ssh_port': 'Must be between 1 and 32000 inclusive'}
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_public_agent_list(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
@@ -91,6 +100,7 @@ def test_public_agent_list(default_config):
             'master_list': 'master_list and agent_list cannot contain duplicates 10.10.0.1'}
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_ssh_parallelism(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
