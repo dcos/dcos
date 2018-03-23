@@ -4,7 +4,8 @@ package:
       {
         "environment": {
           "DCOS_VERSION": "{{ dcos_version }}",
-          "DCOS_IMAGE_COMMIT": "{{ dcos_image_commit }}"
+          "DCOS_IMAGE_COMMIT": "{{ dcos_image_commit }}",
+          "DCOS_VARIANT": "{{ dcos_variant }}"
         }
       }
   - path: /etc/dcos-version.json
@@ -12,5 +13,6 @@ package:
       {
         "version": "{{ dcos_version }}",
         "dcos-image-commit": "{{ dcos_image_commit }}",
-        "bootstrap-id": "{{ bootstrap_id }}"
+        "bootstrap-id": "{{ bootstrap_id }}",
+        "dcos-variant": "{{ dcos_variant }}"
       }
