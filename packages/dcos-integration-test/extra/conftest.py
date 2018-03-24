@@ -81,7 +81,7 @@ def _dump_diagnostics(request, dcos_api_session):
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
 
         last_datapoint = {
             'time': None,
@@ -98,7 +98,7 @@ def _dump_diagnostics(request, dcos_api_session):
         bundles = _get_bundle_list(dcos_api_session)
         for bundle in bundles:
             for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
+                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
                                                 node=master_node)
                 bundle_path = os.path.join(os.path.expanduser('~'), bundle)
                 with open(bundle_path, 'wb') as f:

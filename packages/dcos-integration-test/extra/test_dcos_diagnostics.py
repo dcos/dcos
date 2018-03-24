@@ -119,7 +119,7 @@ def test_dcos_diagnostics_nodes(dcos_api_session):
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
     for master in dcos_api_session.masters:
-        response = check_json(dcos_api_session.health.get('nodes', node=master))
+        response = check_json(dcos_api_session.health.get('/nodes', node=master))
         assert len(response) == 1, 'nodes response must have only one field: nodes'
         assert 'nodes' in response
         assert isinstance(response['nodes'], list)
@@ -250,7 +250,7 @@ def test_systemd_units_health(dcos_api_session):
     """
     unhealthy_output = []
     assert dcos_api_session.masters, "Must have at least 1 master node"
-    report_response = check_json(dcos_api_session.health.get('report', node=dcos_api_session.masters[0]))
+    report_response = check_json(dcos_api_session.health.get('/report', node=dcos_api_session.masters[0]))
     assert 'Units' in report_response, "Missing `Units` field in response"
     for unit_name, unit_props in report_response['Units'].items():
         assert 'Health' in unit_props, "Unit {} missing `Health` field".format(unit_name)
@@ -392,7 +392,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
     test dcos-diagnostics report endpoint /system/health/v1/report
     """
     for master in dcos_api_session.masters:
-        report_response = check_json(dcos_api_session.health.get('report', node=master))
+        report_response = check_json(dcos_api_session.health.get('/report', node=master))
         assert 'Units' in report_response
         assert len(report_response['Units']) > 0
 
@@ -401,7 +401,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 
 
 def _get_bundle_list(dcos_api_session):
-    response = check_json(dcos_api_session.health.get('report/diagnostics/list/all'))
+    response = check_json(dcos_api_session.health.get('/report/diagnostics/list/all'))
     bundles = []
     for _, bundle_list in response.items():
         if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
@@ -413,7 +413,7 @@ def _get_bundle_list(dcos_api_session):
 @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
                 retry_on_result=lambda x: x is False)
 def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
-    response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
+    response = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
     # find if the job is still running
     job_running = False
     percent_done = 0
@@ -450,7 +450,7 @@ def test_dcos_diagnostics_bundle_create(dcos_api_session):
     test bundle create functionality
     """
     # start the diagnostics bundle job
-    create_response = check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+    create_response = check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
 
     # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
 
@@ -561,7 +561,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
         for bundle in bundles:
             bundle_full_location = os.path.join(tmp_dir, bundle)
             with open(bundle_full_location, 'wb') as f:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
+                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
                                                 node=dcos_api_session.masters[master_index])
 
                 for chunk in r.iter_content(1024):
@@ -634,7 +634,7 @@ def test_bundle_delete(dcos_api_session):
     bundles = _get_bundle_list(dcos_api_session)
     assert bundles, 'no bundles found'
     for bundle in bundles:
-        dcos_api_session.health.post(os.path.join('report/diagnostics/delete', bundle))
+        dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
 
     bundles = _get_bundle_list(dcos_api_session)
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
@@ -642,7 +642,7 @@ def test_bundle_delete(dcos_api_session):
 
 def test_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
-    diagnostics_bundle_status = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
+    diagnostics_bundle_status = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
     required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
                               'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
                               'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',
