@@ -47,7 +47,7 @@ def check_response_ok(response: requests.models.Response, headers: dict):
 
 def test_log_text(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=10', node=node)
+        response = dcos_api_session.logs.get('/v1/range/?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 entries
@@ -58,21 +58,21 @@ def test_log_text(dcos_api_session):
 
 def test_log_json(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
+        response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
         check_response_ok(response, {'Content-Type': 'application/json'})
         validate_json_entry(response.json())
 
 
 def test_log_server_sent_events(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
+        response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         validate_sse_entry(response.text)
 
 
 def test_stream(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/stream/?skip_prev=1', node=node, stream=True,
+        response = dcos_api_session.logs.get('/v1/stream/?skip_prev=1', node=node, stream=True,
                                              headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         lines = response.iter_lines()
