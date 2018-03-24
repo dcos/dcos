@@ -179,7 +179,7 @@ def wait_for_tasks_healthy(dcos_api_session, app_definition):
                 retry_on_exception=lambda x: True)
 def test_if_overlay_ok(dcos_api_session):
     def _check_overlay(hostname, port):
-        overlays = dcos_api_session.get('overlay-agent/overlay', host=hostname, port=port).json()['overlays']
+        overlays = dcos_api_session.get('/overlay-agent/overlay', host=hostname, port=port).json()['overlays']
         assert len(overlays) > 0
         for overlay in overlays:
             assert overlay['state']['status'] == 'STATUS_OK'
