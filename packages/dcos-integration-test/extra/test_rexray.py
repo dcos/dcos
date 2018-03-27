@@ -106,6 +106,8 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         try:
             # We use a metronome job to work around the `aws-deploy` integration tests where the master doesn't have
             # volume permissions so all volume actions need to be performed from the agents.
-            dcos_api_session.metronome_one_off(delete_job, timeout=timeout)
+            j = dcos_api_session.jobs.create(delete_job)
+            success, _r, _j = dcos_api_session.jobs.run(j['id'], timeout=timeout)
+            assert success
         except Exception as ex:
             raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex

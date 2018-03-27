@@ -16,4 +16,7 @@ def test_metronome(dcos_api_session):
             'restart': {'policy': 'ON_FAILURE'}
         }
     }
-    dcos_api_session.metronome_one_off(job)
+    j = dcos_api_session.jobs.create(job)
+    job_id = j['id']
+    success, _run, _job = dcos_api_session.jobs.run(job_id)
+    assert success

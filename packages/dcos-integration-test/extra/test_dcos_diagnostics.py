@@ -676,7 +676,9 @@ def test_dcos_diagnostics_runner_poststart(dcos_api_session):
         }
     }
 
-    dcos_api_session.metronome_one_off(poststart_job)
+    j = dcos_api_session.jobs.create(poststart_job)
+    success, _run, _job = dcos_api_session.jobs.run(j['id'])
+    assert success
 
 
 def test_dcos_diagnostics_runner_cluster(dcos_api_session):
@@ -702,4 +704,6 @@ def test_dcos_diagnostics_runner_cluster(dcos_api_session):
         }
     }
 
-    dcos_api_session.metronome_one_off(job)
+    j = dcos_api_session.jobs.create(job)
+    success, _run, _job = dcos_api_session.jobs.run(j['id'])
+    assert success
