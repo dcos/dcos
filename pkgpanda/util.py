@@ -3,6 +3,7 @@ import http.server
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import socketserver
@@ -21,12 +22,23 @@ from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
+is_windows = platform.system() == "Windows"
 
 json_prettyprint_args = {
     "sort_keys": True,
     "indent": 2,
     "separators": (',', ':')
 }
+
+
+def rm_r(path):
+    """ Remove the file or directory at <path>. <path> must be a single string, not a collection type. Same semantics as check_call(["rm","-rf",path])"""
+    if not os.path.exists(path):
+        return
+    if os.path.isfile(path) or os.path.islink(path):
+        os.unlink(path)
+    else:
+        shutil.rmtree(path)
 
 
 def variant_str(variant):
