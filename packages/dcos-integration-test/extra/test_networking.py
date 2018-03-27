@@ -168,7 +168,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
-@retrying.retry(stop_max_delay=20 * 60 * 1000)
+@retrying.retry(wait_fixed=5000, stop_max_delay=20 * 60 * 1000)
 def wait_for_tasks_healthy(dcos_api_session, app_definition):
     info = dcos_api_session.marathon.get('v2/apps/{}'.format(app_definition['id'])).json()
     assert info['app']['tasksHealthy'] == app_definition['instances']
