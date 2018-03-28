@@ -979,7 +979,7 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.10.5-hotfix1',
+        'dcos_version': '1.10.6',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'config_package_ids': calculate_config_package_ids,
