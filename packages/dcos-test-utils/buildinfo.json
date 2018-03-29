@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "f275b3eb8a65714d37e2a13320ed8c2d72409c28",
-    "ref_origin": "add-metronome"
+    "ref": "03cb2f1f2a60dd87d64c9ad39cce0c39714b3334",
+    "ref_origin": "master"
   }
 }
