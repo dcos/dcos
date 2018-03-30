@@ -17,6 +17,8 @@ from typing import List
 import requests
 import teamcity
 import yaml
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
@@ -63,6 +65,21 @@ def variant_suffix(variant, delim='.'):
     return delim + variant
 
 
+def get_requests_retry_session(max_retries=4, backoff_factor=1, status_forcelist=None):
+    status_forcelist = status_forcelist or [500, 502, 504]
+    # Default max retries 4 with sleeping between retries 1s, 2s, 4s, 8s
+    session = requests.Session()
+    custom_retry = Retry(total=max_retries,
+                         backoff_factor=backoff_factor,
+                         status_forcelist=status_forcelist)
+    custom_adapter = HTTPAdapter(max_retries=custom_retry)
+    # Any request through this session that starts with 'http://' or 'https://'
+    # will use the custom Transport Adapter created which include retries
+    session.mount('http://', custom_adapter)
+    session.mount('https://', custom_adapter)
+    return session
+
+
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
@@ -82,7 +99,7 @@ def download(out_filename, url, work_dir, rm_on_error=True):
         else:
             # Download the file.
             with open(out_filename, "w+b") as f:
-                r = requests.get(url, stream=True)
+                r = get_requests_retry_session().get(url, stream=True)
                 if r.status_code == 301:
                     raise Exception("got a 301")
                 r.raise_for_status()
