@@ -45,8 +45,8 @@ def test_pkgpanda_api(dcos_api_session):
                 assert package == buildinfo_package
 
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        package_ids = get_and_validate_package_ids('pkgpanda/repository/', node)
-        active_package_ids = get_and_validate_package_ids('pkgpanda/active/', node)
+        package_ids = get_and_validate_package_ids('/pkgpanda/repository/', node)
+        active_package_ids = get_and_validate_package_ids('/pkgpanda/active/', node)
 
         assert set(active_package_ids) <= set(package_ids)
         assert_packages_match_active_buildinfo(active_package_ids)
@@ -74,7 +74,7 @@ KAFKA_PACKAGE_REQUIREMENTS = {
 def _get_cluster_resources(dcos_api_session):
     """Return the mesos state summary
     """
-    r = dcos_api_session.get('mesos/state-summary')
+    r = dcos_api_session.get('/mesos/state-summary')
     return r.json()
 
 
