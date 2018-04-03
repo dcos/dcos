@@ -4,6 +4,7 @@ import importlib
 import json
 import logging
 import os
+import sys
 
 import pkg_resources
 from aiohttp import web
@@ -14,8 +15,14 @@ import pkgpanda.util
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed
 from dcos_installer.constants import CONFIG_PATH, IP_DETECT_PATH, SSH_KEY_PATH, STATE_DIR
-from ssh.runner import Node
+from pkgpanda.util import is_windows
+try:
+    from ssh.runner import Node
+except ImportError:
+    pass
 
+if not is_windows:
+    assert 'ssh.runner' in sys.modules and 'Node' in globals()
 
 log = logging.getLogger()
 

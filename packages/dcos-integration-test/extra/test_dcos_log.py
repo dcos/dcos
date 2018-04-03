@@ -7,6 +7,9 @@ import pytest
 import requests
 import retrying
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 log = logging.getLogger(__name__)
 
 
@@ -45,7 +48,7 @@ def check_response_ok(response: requests.models.Response, headers: dict):
 
 def test_log_text(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=10', node=node)
+        response = dcos_api_session.logs.get('/v1/range/?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 lines
@@ -55,21 +58,21 @@ def test_log_text(dcos_api_session):
 
 def test_log_json(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
+        response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
         check_response_ok(response, {'Content-Type': 'application/json'})
         validate_json_entry(response.json())
 
 
 def test_log_server_sent_events(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
+        response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         validate_sse_entry(response.text)
 
 
 def test_stream(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v1/stream/?skip_prev=1', node=node, stream=True,
+        response = dcos_api_session.logs.get('/v1/stream/?skip_prev=1', node=node, stream=True,
                                              headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         lines = response.iter_lines()
@@ -250,7 +253,7 @@ def validate_journald_cursor(c: str, cursor_regexp=None):
 
 def test_log_v2_text(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v2/component?limit=10', node=node)
+        response = dcos_api_session.logs.get('/v2/component?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
         # expect 10 lines
@@ -260,8 +263,8 @@ def test_log_v2_text(dcos_api_session):
 
 def test_log_v2_server_sent_events(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v2/component?limit=1', node=node, headers={'Accept': 'text/event-stream'},
-                                             stream=True)
+        response = dcos_api_session.logs.get(
+            '/v2/component?limit=1', node=node, headers={'Accept': 'text/event-stream'}, stream=True)
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         lines = response.iter_lines()
         sse_id = next(lines)
@@ -272,7 +275,7 @@ def test_log_v2_server_sent_events(dcos_api_session):
 
 def test_log_v2_stream(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
-        response = dcos_api_session.logs.get('v2/component?skip=-1', node=node, stream=True,
+        response = dcos_api_session.logs.get('/v2/component?skip=-1', node=node, stream=True,
                                              headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         lines = response.iter_lines()
@@ -318,11 +321,11 @@ def test_log_v2_task_logs(dcos_api_session):
     }
 
     with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
-        response = dcos_api_session.logs.get('v2/task/{}/file/stdout'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/stdout'.format(task_id))
         check_response_ok(response, {})
         assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
 
-        response = dcos_api_session.logs.get('v2/task/{}/file/stderr'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/stderr'.format(task_id))
         check_response_ok(response, {})
         assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
 
@@ -351,11 +354,11 @@ def test_log_v2_pod_logs(dcos_api_session):
     }
 
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
-        response = dcos_api_session.logs.get('v2/task/sleep1')
+        response = dcos_api_session.logs.get('/v2/task/sleep1')
         check_response_ok(response, {})
         assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
 
-        response = dcos_api_session.logs.get('v2/task/sleep1/file/stderr')
+        response = dcos_api_session.logs.get('/v2/task/sleep1/file/stderr')
         check_response_ok(response, {})
         assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
 
@@ -386,38 +389,38 @@ def test_log_v2_api(dcos_api_session):
 
     with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
         # skip 2 entries from the beggining
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?skip=2'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?skip=2'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "three\nfour\nfive\n"
 
         # move to the end of file and read 2 last LINE_SIZE
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=END&skip=-2'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?cursor=END&skip=-2'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "four\nfive\n"
 
         # move three lines from the top and limit to one entry
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?skip=3&limit=1'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?skip=3&limit=1'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "four\n"
 
         # set cursor to 7 (bytes) which the second word and skip 1 lines
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=7&skip=1'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?cursor=7&skip=1'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "four\nfive\n"
 
         # set cursor to 7 (bytes) which the second word and skip -1 lines and limit 1
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=7&skip=-1&limit=1'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?cursor=7&skip=-1&limit=1'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "two\n"
 
         # validate the bug is fixed https://jira.mesosphere.com/browse/DCOS_OSS-1995
-        response = dcos_api_session.logs.get('v2/task/{}/file/test?cursor=END&skip=-5'.format(task_id))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/test?cursor=END&skip=-5'.format(task_id))
         check_response_ok(response, {})
         assert response.text == "one\ntwo\nthree\nfour\nfive\n"
 
 
 def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
-    response = dcos_api_session.logs.get('v2/task/{}/browse'.format(task))
+    response = dcos_api_session.logs.get('/v2/task/{}/browse'.format(task))
     check_response_ok(response, {})
 
     expected_fields = ['gid', 'mode', 'mtime', 'nlink', 'path', 'size', 'uid']
@@ -435,7 +438,7 @@ def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
 
 def _assert_can_download_files(dcos_api_session, task, expected_files):
     for expected_file in expected_files:
-        response = dcos_api_session.logs.get('v2/task/{}/file/{}/download'.format(task, expected_file))
+        response = dcos_api_session.logs.get('/v2/task/{}/file/{}/download'.format(task, expected_file))
         check_response_ok(response, {
             'Content-Type': 'application/octet-stream',
             'Content-Disposition': 'attachment; filename={}'.format(expected_file)})

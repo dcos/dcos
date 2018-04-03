@@ -1,0 +1,17 @@
+package:
+  - path: c:\pkginfo.json
+    content: |
+      {
+        "environment": {
+          "MESOS_IP_DISCOVERY_COMMAND": "c:\\opt\mesosphere\\bin\\detect_ip.ps1",
+          "PROVIDER": "{{ provider }}"
+        }
+      }
+  - path: c:\etc\mesosphere\setup-flags\repository-url
+    permissions: "0644"
+    content: |
+      {{ bootstrap_url }}
+  - path: c:\etc\mesosphere\setup-flags\cluster-package-list
+    permissions: "0644"
+    content: |
+      {{ cluster_package_list_id }}

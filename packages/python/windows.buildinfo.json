@@ -1,0 +1,29 @@
+{
+  "environment": {
+    "PYTHONPATH": "/opt/mesosphere/lib/python3.6/site-packages",
+    "PYTHONUNBUFFERED": "true"
+  },
+  "sources": {
+    "python": {
+      "kind": "url",
+      "url": "https://www.python.org/ftp/python/3.6.3/python-3.6.3.exe",
+      "sha1": "17c5c45518bf204da4e0e1592a3f6462fcc2a88a"
+    },
+    "cython": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/ee/2a/c4d2cdd19c84c32d978d18e9355d1ba9982a383de87d0fcb5928553d37f4/Cython-0.27.3.tar.gz",
+      "sha1": "688aa815301dd9e710cd847528de31099f3b52c4"
+    },
+    "setuptools": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/0f/40/b3c98aa32bc91d3d8c573443a29aa482d77268d77132b63f09d8385b21ff/setuptools-37.0.0-py2.py3-none-any.whl",
+      "sha1": "da26335ea77a8680a983a3cfb57f304447c26df5"
+    },
+    "pip": {
+      "kind": "git",
+      "git": "git@github.com:pypa/pip.git",
+      "ref": "8ed4ac1fe6e2a05db41585c10a7b46f16bc60666",
+      "ref_origin": "master"
+    }
+  }
+}

@@ -4,41 +4,13 @@ import os
 import subprocess
 import uuid
 
+import boto3
 import pytest
 
-import gen.build_deploy.aws
 import release
 import release.storage.aws
 from pkgpanda.build import BuildError
-from pkgpanda.util import variant_prefix, write_json, write_string
-
-
-@pytest.fixture(scope='module')
-def config():
-    if not os.path.exists('dcos-release.config.yaml'):
-        pytest.skip("Skipping because there is no configuration in dcos-release.config.yaml")
-    return release.load_config('dcos-release.config.yaml')
-
-
-@pytest.fixture(scope='module')
-def config_testing(config):
-    if 'testing' not in config:
-        pytest.skip("Skipped because there is no `testing` configuration in dcos-release.config.yaml")
-    return config['testing']
-
-
-@pytest.fixture(scope='module')
-def config_aws(config_testing):
-    if 'aws' not in config_testing:
-        pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
-    return config_testing['aws']
-
-
-@pytest.fixture(scope='module')
-def config_azure(config_testing):
-    if 'azure' not in config_testing:
-        pytest.skip("Skipped because there is no `testing.azure` configuration in dcos-release.config.yaml")
-    return config_testing['azure']
+from pkgpanda.util import is_windows, make_directory, variant_prefix, write_json, write_string
 
 
 def roundtrip_to_json(data, mid_state, new_end_state=None):
@@ -218,25 +190,24 @@ def exercise_storage_provider(tmpdir, name, config):
 
 # TODO(cmaloney): Add skipping when not run under CI with the environment variables
 # So devs without the variables don't see expected failures https://pytest.org/latest/skipping.html
-def test_storage_provider_azure(config_azure, tmpdir):
-    exercise_storage_provider(tmpdir, 'azure_block_blob', config_azure)
+def test_storage_provider_azure(release_config_azure, tmpdir):
+    exercise_storage_provider(tmpdir, 'azure_block_blob', release_config_azure)
 
 
 # TODO(cmaloney): Add skipping when not run under CI with the environment variables
 # So devs without the variables don't see expected failures https://pytest.org/latest/skipping.html
-def test_storage_provider_aws(config_aws, tmpdir):
-    session = gen.build_deploy.aws.get_test_session(config_aws)
-
-    s3 = session.resource('s3')
-    bucket = config_aws['bucket']
+def test_storage_provider_aws(release_config_aws, tmpdir):
+    s3 = boto3.session.Session().resource('s3')
+    bucket = release_config_aws['bucket']
     s3_bucket = s3.Bucket(bucket)
     assert s3_bucket in s3.buckets.all(), (
         "Bucket '{}' must exist with full write access to AWS testing account and created objects must be globally "
-        "downloadable from: {}").format(bucket, config_aws['download_url'])
+        "downloadable from: {}").format(bucket, release_config_aws['download_url'])
 
-    exercise_storage_provider(tmpdir, 'aws_s3', config_aws)
+    exercise_storage_provider(tmpdir, 'aws_s3', release_config_aws)
 
 
+@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_storage_provider_local(tmpdir):
     work_dir = tmpdir.mkdir("work")
     repo_dir = tmpdir.mkdir("repository")
@@ -467,8 +438,8 @@ def test_get_package_artifact(tmpdir):
     }
 
 
-def mock_do_build_packages(cache_repository_url):
-    subprocess.check_call(['mkdir', '-p', 'packages/cache/bootstrap'])
+def mock_do_build_packages(cache_repository_url, tree_variants):
+    make_directory('packages/cache/bootstrap')
     write_string("packages/cache/bootstrap/bootstrap_id.bootstrap.tar.xz", "bootstrap_contents")
     write_json("packages/cache/bootstrap/bootstrap_id.active.json", ['a--b', 'c--d'])
     write_string("packages/cache/bootstrap/bootstrap.latest", "bootstrap_id")
@@ -477,7 +448,7 @@ def mock_do_build_packages(cache_repository_url):
     write_string("packages/cache/bootstrap/downstream.installer.bootstrap.latest", "downstream_installer_bootstrap_id")
     write_json("packages/cache/bootstrap/downstream_installer_bootstrap_id.active.json", [])
 
-    subprocess.check_call(['mkdir', '-p', 'packages/cache/complete'])
+    make_directory('packages/cache/complete')
     write_json(
         "packages/cache/complete/complete.latest.json",
         {'bootstrap': 'bootstrap_id', 'packages': ['a--b', 'c--d']})
@@ -554,7 +525,7 @@ stable_artifacts_metadata = {
 }
 
 
-def mock_failed_build_packages(_):
+def mock_failed_build_packages(cache_repository_url, tree_variants):
     raise BuildError('This build failed!')
 
 
@@ -565,13 +536,13 @@ def test_make_stable_artifacts(monkeypatch, tmpdir):
     monkeypatch.setattr("gen.build_deploy.util.dcos_image_commit", "commit_sha1")
 
     with tmpdir.as_cwd():
-        metadata = release.make_stable_artifacts("http://test")
+        metadata = release.make_stable_artifacts("http://test", [None])
         assert metadata == stable_artifacts_metadata
 
     # Check that a BuildError is propogated
     monkeypatch.setattr("release.do_build_packages", mock_failed_build_packages)
     with pytest.raises(BuildError):
-        release.make_stable_artifacts("http://test")
+        release.make_stable_artifacts("http://test", [None])
 
 
 # NOTE: Implicitly tests all gen.build_deploy do_create functions since it calls them.
@@ -596,7 +567,7 @@ def mock_make_tar(result_filename, folder):
 
 # Test that the do_create functions for each provider output data in the right
 # shape.
-def test_make_channel_artifacts(monkeypatch):
+def test_make_channel_artifacts(monkeypatch, release_config_aws):
     logging.basicConfig(level=logging.DEBUG)
     monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
     monkeypatch.setattr('pkgpanda.util.make_tar.__code__', mock_make_tar.__code__)

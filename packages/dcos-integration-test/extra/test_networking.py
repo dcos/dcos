@@ -1,3 +1,4 @@
+
 import contextlib
 import enum
 import json
@@ -10,9 +11,13 @@ from subprocess import check_output
 import pytest
 import requests
 import retrying
-
 import test_helpers
+
 from dcos_test_utils import marathon
+from dcos_test_utils.helpers import assert_response_ok
+
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
 
 log = logging.getLogger(__name__)
 
@@ -54,23 +59,23 @@ class MarathonApp:
         return str(self.app)
 
     def deploy(self, dcos_api_session):
-        return dcos_api_session.marathon.post('v2/apps', json=self.app).raise_for_status()
+        return dcos_api_session.marathon.post('/v2/apps', json=self.app).raise_for_status()
 
     @retrying.retry(
         wait_fixed=5000,
-        stop_max_delay=20 * 60 * 1000,
-        retry_on_result=lambda res: res is False)
+        stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        r.raise_for_status()
+        r = dcos_api_session.marathon.get('/v2/apps/{}'.format(self.id))
+        assert_response_ok(r)
+
         self._info = r.json()
-        return self._info['app']['tasksHealthy'] == self.app['instances']
+        assert self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
         try:
             if self._info['app']['tasksHealthy'] != self.app['instances']:
-                raise
-        except:
+                raise Exception("Number of Healthy Tasks not equal to number of instances.")
+        except Exception:
             self.wait(dcos_api_session)
         return self._info
 
@@ -90,7 +95,7 @@ class MarathonApp:
         return host, port
 
     def purge(self, dcos_api_session):
-        return dcos_api_session.marathon.delete('v2/apps/{}'.format(self.id))
+        return dcos_api_session.marathon.delete('/v2/apps/{}'.format(self.id))
 
 
 class MarathonPod:
@@ -143,23 +148,25 @@ class MarathonPod:
         return str(self.app)
 
     def deploy(self, dcos_api_session):
-        return dcos_api_session.marathon.post('v2/pods', json=self.app).raise_for_status()
+        return dcos_api_session.marathon.post('/v2/pods', json=self.app).raise_for_status()
 
     @retrying.retry(
         wait_fixed=5000,
         stop_max_delay=20 * 60 * 1000,
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        r.raise_for_status()
+        r = dcos_api_session.marathon.get('/v2/pods/{}::status'.format(self.id))
+        assert_response_ok(r)
+
         self._info = r.json()
-        return self._info['status'] == 'STABLE'
+        error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
+        assert self._info['status'] == 'STABLE', error_msg
 
     def info(self, dcos_api_session):
         try:
             if self._info['status'] != 'STABLE':
-                raise
-        except:
+                raise Exception("The status information is not Stable!")
+        except Exception:
             self.wait(dcos_api_session)
         return self._info
 
@@ -174,7 +181,7 @@ class MarathonPod:
         return host, port
 
     def purge(self, dcos_api_session):
-        return dcos_api_session.marathon.delete('v2/pods/{}'.format(self.id))
+        return dcos_api_session.marathon.delete('/v2/pods/{}'.format(self.id))
 
 
 def unused_port():
@@ -303,13 +310,8 @@ def test_vip(dcos_api_session,
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
-    if marathon.Network.BRIDGE in [vip_net, proxy_net]:
-        if container == marathon.Container.DOCKER:
-            pass
-        elif container == marathon.Container.NONE:
-            same_hosts = []
-        else:
-            same_hosts.remove(True)
+    if marathon.Network.BRIDGE in [vip_net, proxy_net] and container == marathon.Container.NONE:
+        same_hosts = []
     tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
              for named_vip in [True, False]
              for same_host in same_hosts]
@@ -363,7 +365,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
                 retry_on_exception=lambda x: True)
 def test_if_overlay_ok(dcos_api_session):
     def _check_overlay(hostname, port):
-        overlays = dcos_api_session.get('overlay-agent/overlay', host=hostname, port=port).json()['overlays']
+        overlays = dcos_api_session.get('/overlay-agent/overlay', host=hostname, port=port).json()['overlays']
         assert len(overlays) > 0
         for overlay in overlays:
             assert overlay['state']['status'] == 'STATUS_OK'

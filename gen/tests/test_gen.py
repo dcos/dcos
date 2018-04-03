@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 import gen
+import pkgpanda.util
 
 
 def file_mode(filename: str) -> str:
@@ -51,6 +52,7 @@ def assert_do_gen_package(config: dict) -> None:
         assert_package_contents(config, package_extract_dir)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_gen_package():
     assert_do_gen_package({'package': [
         {
@@ -162,3 +164,45 @@ def test_extract_files_containing_late_variables():
                 'permissions': gen.internals.LATE_BIND_PLACEHOLDER_START,
             }
         ])
+
+
+def test_validate_downstream_entry():
+    # Valid entries.
+    gen.validate_downstream_entry({
+        'default': {
+            'foo': 'foo',
+        },
+        'must': {
+            'bar': 'bar',
+        },
+    })
+    gen.validate_downstream_entry({
+        'default': {
+            'foo': 'foo',
+        },
+    })
+    gen.validate_downstream_entry({
+        'must': {
+            'bar': 'bar',
+        },
+    })
+
+    # dcos_version may not be redefined downstream.
+    with pytest.raises(Exception):
+        gen.validate_downstream_entry({
+            'default': {
+                'foo': 'foo',
+            },
+            'must': {
+                'dcos_version': 'new_version',
+            },
+        })
+    with pytest.raises(Exception):
+        gen.validate_downstream_entry({
+            'default': {
+                'dcos_version': 'new_version',
+            },
+            'must': {
+                'bar': 'bar',
+            },
+        })

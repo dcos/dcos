@@ -13,6 +13,9 @@ export CPPFLAGS=-I/opt/mesosphere/include
 make -j$NUM_CORES
 make install
 
+# Install the build specific gdb helper artefact
+cp python-gdb.py "$PKG_PATH/share/"
+
 # Remove some big things we don't use at all
 rm -rf "$PKG_PATH/lib/python3.6/test"
 

@@ -9,6 +9,9 @@ import retrying
 import test_helpers
 from dcos_test_utils import marathon
 
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
+
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
@@ -69,7 +72,8 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
 
     app_definition['instances'] = 2
 
-    assert len(dcos_api_session.slaves) >= 2, "Test requires a minimum of two agents"
+    if len(dcos_api_session.slaves) < 2:
+        pytest.skip("Service Discovery Tests require a minimum of two agents.")
 
     app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 

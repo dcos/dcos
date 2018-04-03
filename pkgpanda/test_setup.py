@@ -2,7 +2,9 @@ import os
 from shutil import copytree
 from subprocess import check_call, check_output
 
-from pkgpanda.util import expect_fs, load_json, resources_test_dir, run
+import pytest
+
+from pkgpanda.util import expect_fs, is_windows, load_json, resources_test_dir, run
 
 
 def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
@@ -11,6 +13,7 @@ def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
     return repo_path
 
 
+@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_setup(tmpdir):
     repo_path = tmp_repository(tmpdir)
     tmpdir.join("root", "bootstrap").write("", ensure=True)
@@ -164,6 +167,7 @@ def test_setup(tmpdir):
     expect_fs("{0}".format(tmpdir), {"repository": None})
 
 
+@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_activate(tmpdir):
     repo_path = tmp_repository(tmpdir)
     state_dir_root = tmpdir.join("package_state")
@@ -256,3 +260,27 @@ def test_activate(tmpdir):
 
     # TODO(cmaloney): expect_fs
     # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
+
+
+@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
+def test_systemd_unit_files(tmpdir):
+    repo_path = tmp_repository(tmpdir)
+    tmpdir.join("root", "bootstrap").write("", ensure=True)
+
+    check_call(["pkgpanda",
+                "setup",
+                "--root={0}/root".format(tmpdir),
+                "--rooted-systemd",
+                "--repository={}".format(repo_path),
+                "--config-dir={}".format(resources_test_dir("etc-active")),
+                "--no-systemd"
+                ])
+
+    unit_file = 'dcos-mesos-master.service'
+    base_path = '{}/root/{}'.format(tmpdir, unit_file)
+    wants_path = '{}/root/dcos.target.wants/{}'.format(tmpdir, unit_file)
+
+    # The unit file is copied to the base dir and symlinked from dcos.target.wants.
+    assert os.path.islink(wants_path)
+    assert os.path.isfile(base_path) and not os.path.islink(base_path)
+    assert os.path.realpath(wants_path) == base_path

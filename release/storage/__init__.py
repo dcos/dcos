@@ -1,6 +1,7 @@
 import abc
 import os.path
-import subprocess
+
+from pkgpanda.util import make_directory
 
 
 class UnsupportedOperation(RuntimeError):
@@ -34,7 +35,7 @@ class AbstractStorageProvider(metaclass=abc.ABCMeta):
     def download(self, path, local_path):
         dirname = os.path.dirname(local_path)
         if dirname:
-            subprocess.check_call(['mkdir', '-p', os.path.dirname(local_path)])
+            make_directory(dirname)
         self.download_inner(path, local_path)
 
     def download_if_not_exist(self, path, local_path):

@@ -37,43 +37,43 @@ These configuration settings are accumulated for all packages in a file
 `/opt/mesosphere/etc/dcos-service-configuration.json`, and the dcos bootstrap process will apply these settings before
 starting the service.
 
-*Well-known directories*
+## Well-known directories
 
-Every pkgpanda package may put items in several well-known directories within the package to have them available to other packages globally via symlinks.
+Packages may depend on files from other packages at runtime; e.g. Mesos reads config at startup that is provided by a
+separate config package. But if the Mesos package is built to look for config inside the config package's directory,
+that config package would need to exist before the Mesos package can be built, and generating a new config package
+would require building a new Mesos package that looks for config at the new location. To eliminate this coupling,
+Pkgpanda makes use of *well-known directories*. These are special directories in a package whose files are symlinked
+from well-known locations accessible to other packages.
 
-```bash
-lib/  # Will be linked to /opt/mesosphere/lib
-bin/  # Will be linked to /opt/mesosphere/bin
-etc/  # Will be linked to /opt/mesosphere/etc
-dcos.target.wants/  # Will be linked into /etc/systemd/system/dcos.target.wants
-```
+Package directory    | Files are symlinked from:
+-------------------- | -------------------------
+`bin/`               | `/opt/mesosphere/bin/`
+`etc/`               | `/opt/mesosphere/etc/`
+`lib/`               | `/opt/mesosphere/lib/`
+`include/`           | `/opt/mesosphere/include/`
+`dcos.target.wants/` | `/etc/systemd/system/dcos.target.wants/` (See **dcos.target.wants** below.)
 
-Each of these directories can be appended with an underscore and a role name, which will cause the files to only be linked on nodes of those role type. E.G. `$PKG_PATH/etc_master/` will only be linked on a master node.
+If the config package writes its Mesos config file to `etc/mesos`, it'll be symlinked from `/opt/mesosphere/etc/mesos`,
+where the Mesos package can find it. Because the Mesos package is looking for its config at this fixed location, a new
+config package can be built and distributed without rebuilding the Mesos package.
 
-## Install directories
+Each of these special package directories can be appended with an underscore and a role name, which will cause the
+files to only be linked on nodes of that role. E.g. files under the package directory `etc_master/` will only be linked
+from `/opt/mesosphere/etc/` on a master node.
 
-The packaging system makes use of some *well-known directories*. Well-known directories are used so that packages can
-find information from other packages without having to know the exact package version some piece is coming from.
+### dcos.target.wants
 
-## Package
+The package directory `dcos.target.wants/` is a well-known directory that's intended for systemd unit files, and the
+files within are made available at `/etc/systemd/system/dcos.target.wants/`. However this well-known directory is
+handled differently from the others due to requirements imposed by systemd: each symlink under
+`/etc/systemd/system/dcos.target.wants/` must have a corresponding unit file at `/etc/systemd/system/`, and unit files
+and their symlinks must be readable when systemd starts, potentially before it mounts the volume that contains the
+package files. So when a package containing a `dcos.target.wants/` is activated on a cluster node, the files within are
+copied to `/etc/systemd/system/`, and the symlinks under `/etc/systemd/system/dcos.target.wants/` point to those
+copies. This allows systemd to start DC/OS units before it mounts the DC/OS installation.
 
-Different things want to rely on finding individual packages at certain locations. When we unbundle packages, there are
-often multiple components which are shipped independently (So, we can update Java without having to re-ship
-everything).
-
-In order, for all the java packages to find the "current Java" we need to make Java at a well-known location. There are
-well-known directories which packages can depend on upon. All other filesystem directories should be assumed not to
-exist.
-
-### Why /opt/mesosphere/etc, etc.
-
-Not all packages know what is going to provide bits of environment. Mesos shouldn't need to know for instance what is
-the name of the package which provides `HDFS`, it just cares if `HDFS` is available.
-
-This goes for config as well, we may want a specific monolithic `mesos-config` package name, or a bunch of small
-`mesos-slave-config`, `mesos-master-config` packages. Either way Mesos needs to find the config.
-
-### Special install files and directories
+## Special install files and directories
 
 All the environment variables to be used when running Mesos are available at `/opt/mesosphere/environment`. Compiled
 from a `environment` section in `pkginfo.json` of every active package, as well as a generated `PATH` and
@@ -89,11 +89,11 @@ from a `environment` section in `pkginfo.json` of every active package, as well 
 /etc/systemd/system/dcos.target.wants/
 ```
 
-### Assumed system files
+## Assumed system files
 
 `/etc/systemd/system/multi-user.target/dcos.target`
 
-### Reasoning
+## Reasoning
 
 **Why don't we do /{name}/current ?**
 

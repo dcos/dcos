@@ -1,0 +1,5 @@
+root:
+  - path: c:\placeholder-azure\placeholder-azure.txt
+    permissions: "0644"
+    content: |
+      placeholder for azure

@@ -1,5 +1,8 @@
 import retrying
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 
 LATENCY = 60
 
@@ -8,33 +11,33 @@ def test_metrics_agents_ping(dcos_api_session):
     """ Test that the metrics service is up on masters.
     """
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('ping', node=agent)
+        response = dcos_api_session.metrics.get('/ping', node=agent)
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
         'agent.'
 
     for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('ping', node=agent)
+        response = dcos_api_session.metrics.get('/ping', node=agent)
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
 def test_metrics_masters_ping(dcos_api_session):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('ping', node=master)
+        response = dcos_api_session.metrics.get('/ping', node=master)
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
 def test_metrics_agents_prom(dcos_api_session):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':9273/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
 def test_metrics_masters_prom(dcos_api_session):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':9273/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -77,7 +80,7 @@ def test_metrics_node(dcos_api_session):
 
     # private agents
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('node', node=agent)
+        response = dcos_api_session.metrics.get('/node', node=agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -86,7 +89,7 @@ def test_metrics_node(dcos_api_session):
 
     # public agents
     for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('node', node=agent)
+        response = dcos_api_session.metrics.get('/node', node=agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -95,7 +98,7 @@ def test_metrics_node(dcos_api_session):
 
     # masters
     for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('node', node=master)
+        response = dcos_api_session.metrics.get('/node', node=master)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -131,16 +134,16 @@ def test_metrics_containers(dcos_api_session):
             # state every 2 minutes to propogate containers to the API
             @retrying.retry(wait_fixed=2000, stop_max_delay=150000)
             def wait_for_container_propogation():
-                response = dcos_api_session.metrics.get('containers', node=agent.host)
+                response = dcos_api_session.metrics.get('/containers', node=agent.host)
                 assert response.status_code == 200
                 assert len(response.json()) > 0, 'must have at least 1 container'
 
             wait_for_container_propogation()
 
-            response = dcos_api_session.metrics.get('containers', node=agent.host)
+            response = dcos_api_session.metrics.get('/containers', node=agent.host)
             for c in response.json():
                 # Test that /containers/<id> responds with expected data
-                container_id_path = 'containers/{}'.format(c)
+                container_id_path = '/containers/{}'.format(c)
                 container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
 
                 # /containers/<container_id> should always respond succesfully
@@ -173,7 +176,7 @@ def test_metrics_containers(dcos_api_session):
                 # looking for "statsd-emitter.<some_uuid>"
                 if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
                     # Test that /app response is responding with expected data
-                    app_response = dcos_api_session.metrics.get('containers/{}/app'.format(c), node=agent.host)
+                    app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(c), node=agent.host)
                     assert app_response.status_code == 200
                     'got {}'.format(app_response.status_code)
 

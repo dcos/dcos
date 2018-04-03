@@ -1,0 +1,5 @@
+[Unit]
+Description=DNS Forwarder (Spartan) Watchdog Timer: timer to periodically trigger Spartan Watchdog
+[Timer]
+OnBootSec=5sec
+OnUnitActiveSec=2min

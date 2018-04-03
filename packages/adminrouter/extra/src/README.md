@@ -779,8 +779,9 @@ was developed.
 Tests shared by most of the endpoints are as follows:
 * `generic_no_slash_redirect_test` - test that a location without a trailing
   slash is redirected to one that ends with `/`.
-* `generic_response_headers_verify_test` - test that the response sent by AR is
-  correct, this mostly involves checking response headers.
+* `generic_verify_response_test` - test that the response sent by AR is
+  correct, this mostly involves checking response headers and the response
+  status code.
 * `generic_upstream_headers_verify_test` - test that the headers of the request
   sent by NGINX to the upstream is correct.
 * `generic_upstream_cookies_verify_test` - check if the cookies set in the
@@ -841,7 +842,7 @@ Let's analyse a very simplified YAML configuration that covers only
 ```
 endpoint_tests:
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /exhibitor/foo/bar
@@ -899,10 +900,10 @@ The syntax is as follows:
 * Each subtest entry is a dictionary itself. There has to be at least one
   subtest entry.
 * At the time of writing this text, the following subtests are supported:
-  * `are_response_headers_ok`
-    * Calls `generic_response_headers_verify_test` generic test underneath.
+  * `is_response_correct`
+    * Calls `generic_verify_response_test` generic test underneath.
     * Tests if:
-      * Response code is 200.
+      * HTTP response code is equal to `expect_http_status`.
       * Depending on the value of `nocaching_headers_are_sent` parameter:
         * `true` - caching headers are present (`Cache-Control`, `Pragma`,
           `Expires`) and set to disable all caching.
@@ -1367,7 +1368,7 @@ Steps are as follows:
   are not cached. Test:
   ```
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1516,7 +1517,7 @@ To sum up, our test configuration should look as follows:
     type:
       - master
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
@@ -1574,7 +1575,7 @@ which can be simplified into:
         test_paths:
           - /schmetterlingdb/stats/foo/bar
           - /schmetterlingdb/foo/bar
-      are_response_headers_ok:
+      is_response_correct:
         nocaching_headers_are_sent: true
         test_paths:
           - /schmetterlingdb/stats/foo/bar
