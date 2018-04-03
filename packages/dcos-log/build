@@ -2,9 +2,9 @@
 mkdir -p /pkg/src/github.com/dcos
 # Create the GOPATH for the go tool to work properly
 mv /pkg/src/dcos-log /pkg/src/github.com/dcos/
-cd /pkg/src/github.com/dcos/dcos-log
+cd /pkg/src/github.com/dcos/dcos-log/dcos-log
 
-make install
+go install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
 
