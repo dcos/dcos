@@ -8,6 +8,7 @@ from typing import List
 from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
+                                install_root,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
@@ -179,7 +180,7 @@ def setup(install, repository):
 
     # Check for /opt/mesosphere/install_progress. If found, recover the partial
     # update.
-    if os.path.exists("/opt/mesosphere/install_progress"):
+    if os.path.exists(install_root + "/install_progress"):
         took_action, msg = install.recover_swap_active()
         if not took_action:
             print("No recovery performed: {}".format(msg))

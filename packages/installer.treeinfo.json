@@ -1,4 +1,9 @@
 {
+  "exclude": [
+    "erts",
+    "openstackservice",
+    "spartan"
+  ],
   "core_package_list": [
     "dcos-image",
     "dcos-installer-ui"
