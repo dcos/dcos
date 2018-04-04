@@ -1186,7 +1186,7 @@ entry = {
                     'rexray_config': json.dumps({
                         # Use IAM Instance Profile for auth.
                         'rexray': {
-                            'loglevel': 'info',
+                            'loglevel': 'debug',
                             'service': 'ebs'
                         },
                         'libstorage': {
