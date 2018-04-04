@@ -82,6 +82,13 @@ def test_if_uiconfig_is_available(dcos_api_session):
     assert 'uiConfiguration' in r.json()
 
 
+def test_if_version_is_available(dcos_api_session):
+    r = dcos_api_session.get('/dcos-metadata/dcos-version.json')
+
+    assert r.status_code == 200
+    assert 'version' in r.json()
+
+
 def test_if_dcos_history_service_is_up(dcos_api_session):
     r = dcos_api_session.get('/dcos-history-service/ping')
 
