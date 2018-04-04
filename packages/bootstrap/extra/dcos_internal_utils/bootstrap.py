@@ -1,8 +1,12 @@
 import logging
 import os
-import pwd
+try:
+    import pwd
+except ImportError:
+    pass
 import random
 import string
+import sys
 import uuid
 
 import kazoo.exceptions
@@ -11,6 +15,10 @@ from kazoo.retry import KazooRetry
 from kazoo.security import ACL, ANYONE_ID_UNSAFE, Permissions
 
 from dcos_internal_utils import utils
+from pkgpanda.util import is_windows
+
+if not is_windows:
+    assert 'pwd' in sys.modules
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +120,9 @@ def _write_file(path, data, mode, owner='root'):
                 with os.fdopen(os.open(tmppath, flags, mode), 'wb') as f:
                     f.write(data)
                 os.rename(tmppath, path)
-                user = pwd.getpwnam(owner)
-                os.chown(path, user.pw_uid, user.pw_gid)
+                if not is_windows:
+                    user = pwd.getpwnam(owner)
+                    os.chown(path, user.pw_uid, user.pw_gid)
             finally:
-                os.umask(umask_original)
+                if not is_windows:
+                    os.umask(umask_original)

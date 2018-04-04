@@ -1,0 +1,25 @@
+[Unit]
+Description=DNS Forwarder (Spartan): forwards DNS requests to multiple DNS servers
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+LimitNOFILE=32000
+WorkingDirectory=/opt/mesosphere/active/spartan/spartan
+EnvironmentFile=/opt/mesosphere/etc/spartan-erl.env
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dns_config
+EnvironmentFile=/opt/mesosphere/etc/dns_search_config
+EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
+EnvironmentFile=-/opt/mesosphere/etc/spartan.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-spartan
+ExecStartPre=/usr/bin/env modprobe dummy
+ExecStartPre=-/usr/bin/env ip link add spartan type dummy
+ExecStartPre=/usr/bin/env ip link set spartan up
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.1/32 dev spartan
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.2/32 dev spartan
+ExecStartPre=-/usr/bin/env ip addr add 198.51.100.3/32 dev spartan
+ExecStart=/opt/mesosphere/active/spartan/spartan/bin/spartan-env foreground
+Environment=HOME=/opt/mesosphere
+

@@ -14,6 +14,7 @@ import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
+from pkgpanda.constants import cloud_config_yaml
 from pkgpanda.util import split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
@@ -157,10 +158,10 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     '''
     results = gen.generate(
         arguments=gen_arguments,
-        extra_templates=['azure/cloud-config.yaml', 'azure/templates/' + arm_template + '.json'],
+        extra_templates=['azure/' + cloud_config_yaml, 'azure/templates/' + arm_template + '.json'],
         extra_sources=[azure_base_source] + extra_sources)
 
-    cloud_config = results.templates['cloud-config.yaml']
+    cloud_config = results.templates[cloud_config_yaml]
 
     # Add general services
     cloud_config = results.utils.add_services(cloud_config, 'canonical')

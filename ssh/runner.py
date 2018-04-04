@@ -2,11 +2,20 @@ import asyncio
 import copy
 import logging
 import os
-import pty
+try:
+    import pty
+except ImportError:
+    pass
+import sys
+
 from contextlib import contextmanager
 
 import ssh.validate
+from pkgpanda.util import is_windows
 from ssh.utils import CommandChain, JsonDelegate
+
+if not is_windows:
+    assert 'pty' in sys.modules
 
 log = logging.getLogger(__name__)
 

@@ -97,6 +97,7 @@ def loop():
     loop.close()
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_ssh_async(sshd_manager, loop):
     class DummyAsyncDelegate(AbstractSSHLibDelegate):
         def on_update(self, future, callback):
@@ -133,6 +134,7 @@ def test_ssh_async(sshd_manager, loop):
                     assert len(process_result['cmd']) == 13
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_scp_remote_to_local_async(sshd_manager, loop):
 
     with sshd_manager.run(1) as sshd_ports:
@@ -164,6 +166,7 @@ def test_scp_remote_to_local_async(sshd_manager, loop):
                     assert '-tt' not in process_result['cmd']
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_scp_async(sshd_manager, loop):
     with sshd_manager.run(1) as sshd_ports:
         workspace = str(sshd_manager.tmpdir)
@@ -193,6 +196,7 @@ def test_scp_async(sshd_manager, loop):
                     assert workspace + '/pilot.txt' in process_result['cmd']
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_scp_recursive_async(sshd_manager, loop):
     with sshd_manager.run(1) as sshd_ports:
         workspace = str(sshd_manager.tmpdir)
@@ -241,6 +245,7 @@ def test_command_chain():
     ]
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_ssh_command_terminate_async(sshd_manager, loop):
     with sshd_manager.run(1) as sshd_ports:
         workspace = str(sshd_manager.tmpdir)
@@ -275,6 +280,7 @@ def test_ssh_command_terminate_async(sshd_manager, loop):
                     assert process_result['returncode'] is None
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not support ssh native")
 def test_tags_async(sshd_manager, loop):
     with sshd_manager.run(1) as sshd_ports:
         workspace = str(sshd_manager.tmpdir)

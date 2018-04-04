@@ -1,7 +1,7 @@
 import os.path
-import subprocess
 from typing import Optional
 
+from pkgpanda.util import copy_file, is_absolute_path, make_directory, remove_directory
 from release.storage import AbstractStorageProvider
 
 
@@ -24,12 +24,12 @@ class LocalStorageProvider(AbstractStorageProvider):
             return f.read()
 
     def download_inner(self, path, local_path):
-        subprocess.check_call(['cp', self.__full_path(path), local_path])
+        copy_file(self.__full_path(path), local_path)
 
     # Copy between fully qualified paths
     def __copy(self, full_source_path, full_destination_path):
-        subprocess.check_call(['mkdir', '-p', os.path.dirname(full_destination_path)])
-        subprocess.check_call(['cp', full_source_path, full_destination_path])
+        make_directory(os.path.dirname(full_destination_path))
+        copy_file(full_source_path, full_destination_path)
 
     def copy(self, source_path, destination_path):
         self.__copy(self.__full_path(source_path), self.__full_path(destination_path))
@@ -44,7 +44,7 @@ class LocalStorageProvider(AbstractStorageProvider):
         # TODO(cmaloney): Don't discard the extra no_cache / content_type. We ideally want to be
         # able to test those are set.
         destination_full_path = self.__full_path(destination_path)
-        subprocess.check_call(['mkdir', '-p', os.path.dirname(destination_full_path)])
+        make_directory(os.path.dirname(destination_full_path))
 
         assert local_path is None or blob is None
         if local_path:
@@ -55,7 +55,7 @@ class LocalStorageProvider(AbstractStorageProvider):
                 f.write(blob)
 
     def exists(self, path):
-        assert path[0] != '/'
+        assert not is_absolute_path(path)
         return os.path.exists(self.__full_path(path))
 
     def remove_recursive(self, path):
@@ -65,7 +65,7 @@ class LocalStorageProvider(AbstractStorageProvider):
         # base system. Adjust as needed.
         assert len(path) > 5
         assert len(full_path) > 5
-        subprocess.check_call(['rm', '-rf', full_path])
+        remove_directory(full_path)
 
     def list_recursive(self, path):
         final_filenames = set()
