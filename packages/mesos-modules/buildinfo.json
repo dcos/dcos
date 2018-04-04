@@ -1,9 +1,12 @@
 {
-  "requires": ["mesos", "boost-libs"],
-    "single_source" : {
-      "kind": "git",
-      "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "683d3c137ed66d6e9a7e5da622f62a7ce962d4d1",
-      "ref_origin": "master"
-    }
+  "requires": [
+    "mesos",
+    "boost-libs"
+  ],
+  "single_source": {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-mesos-modules.git",
+    "ref": "683d3c137ed66d6e9a7e5da622f62a7ce962d4d1",
+    "ref_origin": "master"
+  }
 }
