@@ -35,9 +35,6 @@ NVIDIA_VERSION=$1
 
 # The nVidia driver files to download and install
 NVIDIA_KERNEL_DRIVER_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/NVIDIA-Linux-x86_64-${NVIDIA_VERSION}.run"
-NVIDIA_CUDA_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cuda_8.0.61_${NVIDIA_VERSION}_linux-run"
-NVIDIA_CUDA_PATCH_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cuda_8.0.61.2_linux-run"
-NVIDIA_CUDNN_URL="https://s3-us-west-2.amazonaws.com/dcos-nvidia-drivers/cudnn-8.0-linux-x64-v6.0.tgz"
 
 #
 # WARNING: Some nVidia's hard-links will require authorization, making
@@ -76,36 +73,6 @@ ${TEMP_DIR}/NVIDIA-kernel.run \
   --kernel-source-path=${SRC_KERNEL_DIR} \
   --kernel-install-path=${DST_KERNEL_DIR} \
   --kernel-name=${KERNEL}
-
-# Crawl latest URL from here: https://developer.nvidia.com/cuda-downloads
-echo ""
-echo ">>> Downloading CUDA..."
-curl -s ${NVIDIA_CUDA_URL} > ${TEMP_DIR}/NVIDIA-cuda.run
-chmod +x ${TEMP_DIR}/NVIDIA-cuda.run
-
-echo ">>> Installing CUDA..."
-${TEMP_DIR}/NVIDIA-cuda.run \
-  --silent \
-  --kernel-source-path=${SRC_KERNEL_DIR} \
-  --toolkit
-
-echo ""
-echo ">>> Downloading CUDA Patch..."
-curl -s ${NVIDIA_CUDA_PATCH_URL} > ${TEMP_DIR}/NVIDIA-cuda-patch.run
-chmod +x ${TEMP_DIR}/NVIDIA-cuda-patch.run
-
-echo ">>> Installing CUDA Patch..."
-${TEMP_DIR}/NVIDIA-cuda-patch.run \
-  --silent \
-  --accept-eula
-
-# Crawl latest URL from here: https://developer.nvidia.com/rdp/cudnn-download
-echo ""
-echo ">>> Downloading cuDNN..."
-curl -s ${NVIDIA_CUDNN_URL} > ${TEMP_DIR}/NVIDIA-cudnn.tgz
-
-echo ">>> Installing cuDNN..."
-tar -C ${DST_USERSPACE_DIR} --strip-components=1 -zxf ${TEMP_DIR}/NVIDIA-cudnn.tgz
 
 echo ">>> Installing nVidia boot scripts..."
 cat <<"EOF" > /usr/local/sbin/start-nvidia-drivers.sh
@@ -170,9 +137,6 @@ systemctl enable nvidia.service
 # Clean-up
 echo ">>> Remove temporary files"
 rm ${TEMP_DIR}/NVIDIA-kernel.run
-rm ${TEMP_DIR}/NVIDIA-cuda.run
-rm ${TEMP_DIR}/NVIDIA-cuda-patch.run
-rm ${TEMP_DIR}/NVIDIA-cudnn.tgz
 rm -rf /tmp/* /var/tmp/*
 rm /usr/local/sbin/install_nvidia.sh
 
