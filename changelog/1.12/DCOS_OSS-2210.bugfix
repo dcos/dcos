@@ -1,0 +1,5 @@
+Ensure that cache timestamps are well-formed in dcos-history service.
+
+When the history service writes data to file, it adds a timestamp. At exactly
+zero microseconds past the second, this timestamp was malformed, and as a
+result the history service could not load it.
