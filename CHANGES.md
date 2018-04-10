@@ -1,5 +1,4 @@
 ## DC/OS 1.12.0
-
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
@@ -49,3 +48,6 @@ Format of the entries must be.
 * Updated REX-Ray to v0.11.2. (DCOS_OSS-2245)
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
+
+* A cluster's IP detect script may be changed with a config upgrade.
+
