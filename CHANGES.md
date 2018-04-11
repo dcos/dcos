@@ -29,8 +29,9 @@ Format of the entries must be.
 
 * DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
 
+=======
 
-### Security Updates
+* Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
 
 * Update cURL to 7.59. (DCOS_OSS-2367)
 
@@ -48,6 +49,21 @@ Format of the entries must be.
 * Updated REX-Ray to v0.11.2. (DCOS_OSS-2245)
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
+=======
+### Security Updates
+
+* Update cURL to 7.59. (DCOS_OSS-2367)
+
+* Updated OpenSSL to 1.0.2n. (DCOS_OSS-1903)
+
+* Mesos does not expose ZooKeeper credentials anymore via its state JSON document. (DCOS_OSS-2162)
+
+
+### Notable changes
+
+* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
+
+* Updated REX-Ray to v0.11.2. (DCOS_OSS-2245)
 
 * A cluster's IP detect script may be changed with a config upgrade.
 
