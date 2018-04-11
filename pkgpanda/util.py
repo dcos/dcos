@@ -8,6 +8,7 @@ import re
 import shutil
 import socketserver
 import subprocess
+import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
@@ -254,8 +255,8 @@ def load_yaml(filename):
 
 
 def write_yaml(filename, data, **kwargs):
-    with open(filename, "w+") as f:
-        return yaml.safe_dump(data, f, **kwargs)
+    dumped_yaml = yaml.safe_dump(data, **kwargs)
+    write_string(filename, dumped_yaml)
 
 
 def make_file(name):
@@ -264,13 +265,35 @@ def make_file(name):
 
 
 def write_json(filename, data):
-    with open(filename, "w+") as f:
-        return json.dump(data, f, **json_prettyprint_args)
+    dumped_json = json.dumps(data, **json_prettyprint_args)
+    write_string(filename, dumped_json)
 
 
 def write_string(filename, data):
-    with open(filename, "w+") as f:
-        return f.write(data)
+    """
+    Write a string to a file.
+    Overwrite any data in that file.
+
+    We use an atomic write practice of creating a temporary file and then
+    moving that temporary file to the given ``filename``. This prevents race
+    conditions such as the file being read by another process after it is
+    opened here but not yet written to.
+
+    It also prevents us from creating or truncating a file before we fail to
+    write data to it because of low disk space.
+    """
+    prefix = os.path.basename(filename)
+    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+    os.close(fd)
+
+    try:
+        with open(temporary_filename, 'w') as f:
+            f.write(data)
+        os.replace(temporary_filename, filename)
+    except Exception:
+        os.remove(temporary_filename)
+        raise
 
 
 def load_string(filename):
