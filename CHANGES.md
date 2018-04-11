@@ -16,26 +16,27 @@ Format of the entries must be.
 
 ### Fixed and improved
 
-* Windows-based pkgpanda builds (DCOS_OSS-1899)
+* Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
 
-* Upgrade REX-Ray to v0.11.2. (DCOS_OSS-2245)
+* DC/OS Metrics: moved the prometheus producer from port 9273 to port 61091. (DCOS_OSS-2368)
 
-* Moves the dcos-metrics Prometheus producer from port 9273 to port 61091. Using a port which is not available to Mesos (any unoccupied port > 61000) avoids the need to update anything. (DCOS-21594)
+* Release cosmos v0.6.0. (DCOS_OSS-2195)
 
-* Update Metronome to 0.5.0 (DCOS_OSS-2338)
+* Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
+
 
 ### Security Updates
 
-* Bump curl from 7.48 to 7.59 (DCOS-21557)
+* Update cURL to 7.59. (DCOS_OSS-2367)
 
-* Update openssl to 1.0.2n (DCOS_OSS-1903)
+* Updated OpenSSL to 1.0.2n. (DCOS_OSS-1903)
 
-### Mesos Changelog
-
-* Bumps mesos modules enabling file based ZK configuration (DCOS_OSS-2162)
-
-### Marathon Changelog
+* Mesos does not expose ZooKeeper credentials anymore via its state JSON document. (DCOS_OSS-2162)
 
 
+### Notable changes
 
+* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
+
+* Updated REX-Ray to v0.11.2. (DCOS_OSS-2245)
 
