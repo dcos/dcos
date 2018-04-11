@@ -1,0 +1,2 @@
+Prevent reusing tcp sockets by AR's cache code. Fixes the bug when Marathon UI
+does not load due to failure in cache refresh.
