@@ -803,7 +803,7 @@ def calculate_check_config(check_time):
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': '5s'
+                    'timeout': '60s'
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
@@ -820,7 +820,7 @@ def calculate_check_config(check_time):
                 'journald_dir_permissions': {
                     'description': 'Journald directory has the right owners and permissions',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
-                    'timeout': '3s',
+                    'timeout': '60s',
                 },
             },
             'prestart': [],
