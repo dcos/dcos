@@ -2,8 +2,8 @@
   "requires": ["exhibitor"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-diagnostics.git",
-    "ref": "6b1ad82827424beeb2e3ba5d4d3b41a7ceb34dfb",
+    "git": "https://github.com/amitaekbote/dcos-diagnostics.git",
+    "ref": "349759e3695d9a2657544f8d65bcbfc4a53a8778",
     "ref_origin": "master"
   },
   "username": "dcos_diagnostics",
