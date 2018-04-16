@@ -1,9 +1,9 @@
 {
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-checks.git",
-    "ref": "498298f4ff133bd6873f1007a92fa19de5053791",
-    "ref_origin": "master"
+    "git": "https://github.com/gpaul/dcos-checks.git",
+    "ref": "35e68e17a7e42fc534f11d7b74db3017e2fc11b8",
+    "ref_origin": "gpaul/DCOS-21728_crdb-underreplicated-ranges"
   },
   "state_directory": true,
   "username": "dcos_diagnostics",
