@@ -5,6 +5,7 @@
 #
 # Expects that it is being run inside of a virtual environment.
 
+set -x
 set -o errexit -o nounset -o pipefail
 
 : ${VIRTUAL_ENV?"Must be run in a python virtual environment"}
