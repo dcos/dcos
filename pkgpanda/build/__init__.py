@@ -66,7 +66,9 @@ class DockerCmd:
 
         docker.append(self.container)
         docker += cmd
-        subprocess.run(docker, check=True, env=os.environ)
+        with logger.scope('DEBUGGING STEP'):
+            print(os.environ)
+            subprocess.run(docker, check=True, env=os.environ)
         DockerCmd.clean(container_name)
 
     @staticmethod
