@@ -5,6 +5,7 @@ import os
 import random
 import shutil
 import string
+import subprocess
 import tempfile
 from contextlib import contextmanager
 from os import chdir, getcwd, mkdir
@@ -65,13 +66,13 @@ class DockerCmd:
 
         docker.append(self.container)
         docker += cmd
-        check_call(docker)
+        subprocess.run(docker, check=True, env=os.environ)
         DockerCmd.clean(container_name)
 
     @staticmethod
     def clean(name):
         """Cleans up the specified container"""
-        check_call(["docker", "rm", "-v", name])
+        subprocess.run(["docker", "rm", "-v", name], check=True, env=os.environ)
 
 
 def get_variants_from_filesystem(directory, extension):
