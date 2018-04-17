@@ -27,6 +27,12 @@ from pkgpanda.exceptions import FetchError, ValidationError
 
 is_windows = platform.system() == "Windows"
 
+json_prettyprint_args = {
+    "sort_keys": True,
+    "indent": 2,
+    "separators": (',', ':')
+}
+
 
 def is_absolute_path(path):
     if is_windows:
@@ -249,8 +255,8 @@ def load_yaml(filename):
 
 
 def write_yaml(filename, data, **kwargs):
-    dumped_yaml = yaml.safe_dump(data, **kwargs)
-    write_string(filename, dumped_yaml)
+    with open(filename, "w+") as f:
+        return yaml.safe_dump(data, f, **kwargs)
 
 
 def make_file(name):
@@ -259,8 +265,8 @@ def make_file(name):
 
 
 def write_json(filename, data):
-    dumped_json = json_prettyprint(data=data)
-    write_string(filename, dumped_json)
+    with open(filename, "w+") as f:
+        return json.dump(data, f, **json_prettyprint_args)
 
 
 def write_string(filename, data):
@@ -296,12 +302,7 @@ def load_string(filename):
 
 
 def json_prettyprint(data):
-    return json.dumps(
-        data,
-        sort_keys=True,
-        indent=2,
-        separators=(',', ':'),
-    )
+    return json.dumps(data, **json_prettyprint_args)
 
 
 def if_exists(fn, *args, **kwargs):
