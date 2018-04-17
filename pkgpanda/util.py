@@ -27,12 +27,6 @@ from pkgpanda.exceptions import FetchError, ValidationError
 
 is_windows = platform.system() == "Windows"
 
-json_prettyprint_args = {
-    "sort_keys": True,
-    "indent": 2,
-    "separators": (',', ':')
-}
-
 
 def is_absolute_path(path):
     if is_windows:
@@ -265,7 +259,7 @@ def make_file(name):
 
 
 def write_json(filename, data):
-    dumped_json = json.dumps(data, **json_prettyprint_args)
+    dumped_json = json_prettyprint(data=data)
     write_string(filename, dumped_json)
 
 
@@ -302,7 +296,12 @@ def load_string(filename):
 
 
 def json_prettyprint(data):
-    return json.dumps(data, **json_prettyprint_args)
+    return json.dumps(
+        data,
+        sort_keys=True,
+        indent=2,
+        separators=(',', ':'),
+    )
 
 
 def if_exists(fn, *args, **kwargs):
