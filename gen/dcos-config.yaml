@@ -385,6 +385,7 @@ package:
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       GLOG_drop_log_memory=false
+      LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
   - path: /etc/mesos-master-provider
     content: |
