@@ -15,3 +15,5 @@ cp -v /pkg/bin/mesos-dns $PKG_PATH/bin
 service="$PKG_PATH/dcos.target.wants_master/dcos-mesos-dns.service"
 mkdir -p "$(dirname "$service")"
 cp /pkg/extra/dcos-mesos-dns.service "$service"
+
+# Tweak build script
