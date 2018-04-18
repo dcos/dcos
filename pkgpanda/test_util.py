@@ -376,7 +376,7 @@ def test_split_by_token():
 def test_write_string(tmpdir):
     """
     """
-    filename = os.path.join(tmpdir, 'foo_filename')
+    filename = os.path.join(str(tmpdir), 'foo_filename')
     pkgpanda.util.write_string(filename, 'foo_contents')
     with open(filename) as f:
         assert f.read() == 'foo_contents'
