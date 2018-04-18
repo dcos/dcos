@@ -288,7 +288,7 @@ def write_string(filename, data):
     os.close(fd)
 
     try:
-        with open(temporary_filename, 'w') as f:
+        with open(temporary_filename, 'w+') as f:
             f.write(data)
         os.replace(temporary_filename, filename)
     except Exception:
