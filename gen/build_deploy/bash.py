@@ -361,6 +361,48 @@ EOM
     fi
 }
 
+function d_type_enabled_if_xfs()
+{
+    # Return 1 if $1 is a directory on XFS volume with ftype ! = 1
+    # otherwise return 0
+    DIRNAME="$1"
+
+    RC=0
+    if [[ ! -d "$DIRNAME" ]]; then
+        return $RC
+    fi
+    read -r filesystem_device filesystem_type <<<"$(df -PT "$DIRNAME" | awk 'END{print $1,$2}')"
+    if [[ "$filesystem_type" == "xfs" ]]; then
+        echo -n -e "Checking if "$DIRNAME" is mounted with \"fytpe=1\": "
+        ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
+        if [[ "$ftype_value" != "ftype=1" ]]; then
+            RC=1
+        fi
+        print_status $RC "${NORMAL}(${ftype_value})"
+    fi
+    return $RC
+}
+
+# check node storage has d_type (ftype=1) support enabled if using XFS
+function check_xfs_ftype() {
+    RC=0
+
+    # If /var/lib/mesos exists check xfs attributes for it
+    (d_type_enabled_if_xfs /var/lib/mesos ) || RC=1
+
+    # If docker root directory exists check xfs attributes for it
+    docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
+    (d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
+
+    # If either /var/lib/mesos or /var/lib/docker do not exist then check /var/lib
+    if [[ (! -d /var/lib/mesos || ! -d /var/lib/docker) ]]; then
+        ( ! d_type_enabled_if_xfs /var/lib/ ) || RC=1
+    fi
+
+    (( OVERALL_RC += $RC ))
+    return $RC
+}
+
 function check_all() {
     # Disable errexit because we want the preflight checks to run all the way
     # through and not bail in the middle, which will happen as it relies on
@@ -492,6 +534,7 @@ function check_all() {
         do
             check_service $service
         done
+        check_xfs_ftype
     fi
 
     # Check we're not in docker on devicemapper loopback as storage driver.
