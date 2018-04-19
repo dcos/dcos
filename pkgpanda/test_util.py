@@ -371,3 +371,16 @@ def test_split_by_token():
     assert list(split_by_token('{', '}', 'some text {token} some more text', strip_token_decoration=True)) == [
         ('some text ', False), ('token', True), (' some more text', False)
     ]
+
+
+def test_write_string(tmpdir):
+    """
+    """
+    filename = os.path.join(str(tmpdir), 'foo_filename')
+    pkgpanda.util.write_string(filename, 'foo_contents')
+    with open(filename) as f:
+        assert f.read() == 'foo_contents'
+
+    pkgpanda.util.write_string(filename, 'foo_contents_2')
+    with open(filename) as f:
+        assert f.read() == 'foo_contents_2'
