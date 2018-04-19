@@ -234,8 +234,24 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
+       local do_rewrite_requrl = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
+       if do_rewrite_requrl == false or do_rewrite_requrl == 'false' then
+          ngx.log(ngx.INFO, "DCOS_SERVICE_REWRITE_REQUEST_URLS for app '" .. appId .. "' set to 'false'")
+          do_rewrite_requrl = false
+       else
+          -- Treat everything else as true, i.e.:
+          -- * label is absent
+          -- * label is set to "true" (string) or true (bool)
+          -- * label is set to some random string
+          do_rewrite_requrl = true
+       end
+
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
-       svcApps[svcId] = {scheme=scheme, url=url}
+       svcApps[svcId] = {
+         scheme=scheme,
+         url=url,
+         do_rewrite_requrl=do_rewrite_requrl,
+         }
 
        ::continue::
     end
