@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/amitaekbote/dcos-diagnostics.git",
-    "ref": "401d9cdff30468a00bd7e9e1b571fc428f4a5b89",
-    "ref_origin": "master"
+    "ref": "8346b5c516198b5f57c969524250f704dc503a6f",
+    "ref_origin": "parallelchecks"
   },
   "username": "dcos_diagnostics",
   "group": "systemd-journal",
