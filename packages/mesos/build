@@ -1,4 +1,5 @@
 #!/bin/bash
+bindir="$PKG_PATH/bin"
 libdir="$PKG_PATH/lib"
 
 # TODO(cmaloney): Check prerequisites installed (glog, protobuf, boost)
@@ -15,22 +16,26 @@ LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
   --enable-grpc \
+  --enable-jemalloc-allocator \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
   --with-boost=/opt/mesosphere/active/boost-libs \
   --disable-werror \
-  --sbindir="$PKG_PATH/bin"
+  --sbindir="$bindir"
 make -j$NUM_CORES
 
 make install
 
 cp src/java/target/mesos-*.jar "$libdir"
 
+# Grab jeprof from the build directory and install it.
+cp 3rdparty/jemalloc-5.0.1/bin/jeprof "$bindir"
+
 # This is copied during `make install` as per the configure flag
 # `--enable-install-module-dependencies`.  Modules that have their
 # own protobufs may wish to use this during their builds.
-ln -s "$PKG_PATH/lib/mesos/3rdparty/bin/protoc" "$PKG_PATH/bin/protoc"
+ln -s "$PKG_PATH/lib/mesos/3rdparty/bin/protoc" "$bindir/protoc"
 
 popd
 popd
