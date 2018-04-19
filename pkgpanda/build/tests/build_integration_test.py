@@ -25,7 +25,7 @@ def package(resource_dir, name, tmpdir):
     pkg_dir_2 = str(tmpdir.join("api-build/" + name))
     copytree(resource_dir, pkg_dir_2)
     package_store = pkgpanda.build.PackageStore(str(tmpdir.join("api-build")), None)
-    pkgpanda.build.build_package_variants(package_store, name, True)
+    return pkgpanda.build.build_package_variants(package_store, name, True)
 
 
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
@@ -37,6 +37,18 @@ def test_build(tmpdir):
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_build_bad_sha1(tmpdir):
     package("resources/base", "base", tmpdir)
+
+
+@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
+def test_hash_build_script(tmpdir):
+    # hashcheck1 is the base package we're comparing against.
+    pkg_path1 = str(package("resources/buildhash/hashcheck1", "hashcheck", tmpdir.join("hashcheck1")))
+    # hashcheck2 is identical to hashcheck1 other that a tweak to the build script.
+    pkg_path2 = str(package("resources/buildhash/hashcheck2", "hashcheck", tmpdir.join("hashcheck2")))
+    # hashcheck3 is identical to hashcheck1 in every way other than the directory name.
+    pkg_path3 = str(package("resources/buildhash/hashcheck3", "hashcheck", tmpdir.join("hashcheck3")))
+    assert os.path.basename(pkg_path1) == os.path.basename(pkg_path3)
+    assert os.path.basename(pkg_path1) != os.path.basename(pkg_path2)
 
 
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
