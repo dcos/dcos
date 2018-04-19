@@ -58,7 +58,7 @@ local function upstream_url_from_srv_query(service_name)
     --  A list with:
     --  - upstream_scheme - for now hardcoded to http
     --  - upstream_url
-    --  - err_code, err_text - if an error occured these will be HTTP status
+    --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     local upstream_url = nil
     local upstream_scheme = 'http' -- Hardcoded in case of MesosDNS
@@ -86,12 +86,13 @@ local function resolve_via_marathon_apps_state(service_name, marathon_cache)
     --
     -- Arguments:
     --   service_name (string): service name that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
     --
     -- Returns:
     --  A list with:
     --  - true/false depending on whether resolving service name was successful
-    --    or not.
-    --  - err_code, err_text - if an error occured these will be HTTP status
+    --    or not, `nil` if there was an error.
+    --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     if marathon_cache == nil then
         return nil, ngx.HTTP_SERVICE_UNAVAILABLE, "503 Service Unavailable: invalid Marathon svcapps cache"
@@ -107,6 +108,36 @@ local function resolve_via_marathon_apps_state(service_name, marathon_cache)
     return true, nil, nil
 end
 
+local function requrl_rewriting_required(service_name, marathon_cache)
+    -- Determine if the upstream request should contain the
+    -- `/service/<service_name>` part of the URL path or not.
+    --
+    -- Arguments:
+    --   service_name (string): service name that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
+    --
+    -- Returns:
+    --  A list with:
+    --  - true/false depending on whether requrl rewriting is enabled or not,
+    --    `nil` if there was an error
+    --  - err_code, err_text - if an error occurred these will be HTTP status
+    --    and error text that should be sent to the client. `nil` otherwise
+    --
+    if service_name == 'marathon' or service_name == 'metronome' then
+      -- These two services should always have the request URL rewriting
+      -- enabled, no matter the marathon_cache, as they are resolved via Mesos
+      -- anyway.
+      return true, nil, nil
+    end
+
+    if marathon_cache[service_name] == nil then
+        -- By default we always rewrite for Mesos Frameworks
+        return true, nil, nil
+    end
+
+    return marathon_cache[service_name]['do_rewrite_requrl'], nil, nil
+end
+
 local function resolve_via_mesos_dns(service_name)
     -- Try to resolve upstream for given service name basing on
     -- MesosDNS SRV entries
@@ -117,8 +148,8 @@ local function resolve_via_mesos_dns(service_name)
     -- Returns:
     --  A list with:
     --  - true/false depending on whether resolving service name was successful
-    --    or not.
-    --  - err_code, err_text - if an error occured these will be HTTP status
+    --    or not, `nil` if there was an error.
+    --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     upstream_scheme, upstream_url, err_code, err_text = upstream_url_from_srv_query(
         service_name)
@@ -146,12 +177,13 @@ local function resolve_via_mesos_state(service_name, mesos_cache)
     --
     -- Arguments:
     --   service_name (string): service name that should be resolved
+    --   mesos_cache (table): cached Mesos's apps state
     --
     -- Returns:
     --  A list with:
     --  - true/false depending on whether resolving service name was successful
-    --    or not.
-    --  - err_code, err_text - if an error occured these will be HTTP status
+    --    or not, `nil` if there was an error.
+    --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     local webui_url = nil
     local service_name_bymesos = nil
@@ -165,7 +197,7 @@ local function resolve_via_mesos_state(service_name, mesos_cache)
     -- services/software relying on that.
     if mesos_cache['f_by_id'][service_name] ~= nil then
         webui_url = mesos_cache['f_by_id'][service_name]['webui_url']
-        -- This effectivelly resolves framework ID into human-friendly service
+        -- This effectively resolves framework ID into human-friendly service
         -- name.
         service_name = mesos_cache['f_by_id'][service_name]['name']
     elseif mesos_cache['f_by_name'][service_name] ~= nil then
@@ -196,16 +228,18 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     --
     -- Arguments:
     --   service_name (string): service name that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
+    --   mesos_cache (table): cached Mesos's apps state
     --
     -- Returns:
     --  A list with:
     --  - true/false depending on whether resolving service name was successful
-    --    or not.
-    --  - err_code, err_text - if an error occured these will be HTTP status
+    --    or not, `nil` if there was an error.
+    --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
     ngx.log(ngx.DEBUG, "Trying to resolve service name `".. service_name .. "`")
 
-	res = false
+    res = false
 
     -- `marathon` and `metronome` service names belong to the Root Marathon and
     -- Root Metronome respectively. They will never be present in Root
@@ -217,9 +251,9 @@ local function resolve(service_name, mesos_cache, marathon_cache)
         res, err_code, err_text = resolve_via_marathon_apps_state(
             service_name, marathon_cache)
 
-		if err_code ~= nil then
-			return nil, err_code, err_text
-		end
+        if err_code ~= nil then
+            return nil, err_code, err_text
+        end
     end
 
     if res == false then
@@ -239,13 +273,16 @@ local function recursive_resolve(auth, path)
     -- Arguments:
     --   auth: auth module, already in an initialised state
     --   path (string): service path that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
+    --   mesos_cache (table): cached Mesos's apps state
     --
     -- Returns:
-    -- Nothing, it sets nginx variables directly.
+    -- Nothing, it sets Nginx variables directly.
 
     local resolved = false
     local more_segments = true
     local service_realpath = ""
+    local do_requrl_rewriting = true
     local err_code = nil
     local err_text = nil
 
@@ -291,15 +328,24 @@ local function recursive_resolve(auth, path)
     -- Authorize the request:
     auth.access_service_endpoint(service_realpath)
 
-    -- Trim the URI prefix:
-    prefix = "/service/" .. service_realpath
-    adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
-    if adjusted_prefix == "" then
-        adjusted_prefix = "/"
+    -- Trim the URI prefix (or not):
+    do_requrl_rewriting, err_code, err_text = requrl_rewriting_required(service_name, marathon_cache)
+    if err_code ~= nil then
+        -- Send the error message to the user:
+        ngx.status = err_code
+        ngx.say(err_text)
+        return ngx.exit(err_code)
     end
-    ngx.req.set_uri(adjusted_prefix)
+    if do_requrl_rewriting then
+      prefix = "/service/" .. service_realpath
+      adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
+      if adjusted_prefix == "" then
+          adjusted_prefix = "/"
+      end
+      ngx.req.set_uri(adjusted_prefix)
+    end
 
-    -- Will be used for HTTP Location header adjustements:
+    -- Will be used for HTTP Redirects' Location header adjustments:
     ngx.var.service_realpath = service_realpath
 end
 
