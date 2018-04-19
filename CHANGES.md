@@ -1,3 +1,15 @@
+## DC/OS 1.11.2
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+
+### Security updates
+
+
 ## DC/OS 1.11.1
 
 
