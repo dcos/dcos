@@ -453,6 +453,7 @@ package:
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
+      MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_OFFER_TIMEOUT=2mins
       MESOS_QUORUM={{ master_quorum }}
@@ -495,6 +496,7 @@ package:
       MESOS_ISOLATION={{ mesos_isolation }}
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
+      MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
