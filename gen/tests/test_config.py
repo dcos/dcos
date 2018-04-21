@@ -1,4 +1,5 @@
 import json
+import tempfile
 
 import pkg_resources
 import pytest
@@ -812,3 +813,25 @@ def test_exhibitor_admin_password_obscured():
 
     assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
     assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
+
+
+def test_edited_ip_detect_script_yields_new_packages():
+    with tempfile.NamedTemporaryFile() as f:
+        arguments = make_arguments(new_arguments={'ip_detect_filename': f.name})
+
+        f.write('initial script contents\n'.encode('utf-8'))
+        f.flush()
+        initial_cluster_packages = gen.generate(arguments).cluster_packages
+
+        # Running genconf with the same config yields the same set of packages.
+        initial_cluster_packages_rerun = gen.generate(arguments).cluster_packages
+        assert initial_cluster_packages == initial_cluster_packages_rerun
+
+        f.seek(0)
+        f.truncate()
+        f.write('edited script contents\n'.encode('utf-8'))
+        f.flush()
+        edited_cluster_packages = gen.generate(arguments).cluster_packages
+
+        # Running genconf with an edited IP detect script yields a new set of packages.
+        assert initial_cluster_packages != edited_cluster_packages

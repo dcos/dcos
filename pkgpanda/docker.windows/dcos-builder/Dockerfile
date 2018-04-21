@@ -16,11 +16,11 @@ ADD https://cmake.org/files/v3.9/cmake-3.9.0-win64-x64.msi c:\temp\cmake-3.9.0-w
 COPY .\setup-cmake.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-cmake.ps1
 
-ADD https://10gbps-io.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-setup.exe c:\temp\patch-2.5.9-7-setup.exe
+ADD https://github.com/mesos/3rdparty/raw/master/patch-2.5.9-7-setup.exe c:\temp\patch-2.5.9-7-setup.exe
 COPY .\setup-patch.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-patch.ps1
 
-ADD http://internode.dl.sourceforge.net/project/gnuwin32/make/3.81/make-3.81.exe c:\temp\make-3.81.exe
+ADD https://github.com/mesos/3rdparty/raw/master/make-3.81.exe c:\temp\make-3.81.exe
 COPY .\setup-make.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-make.ps1
 
