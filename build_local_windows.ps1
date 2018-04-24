@@ -17,7 +17,10 @@ if ( ! $tmpdir ) {
 
 # Cleanup from previous build
 Write-Output "remove existing venv"
-rm -Force -Recurse "$tmpdir/dcos_build_venv"
+
+if (Test-Path "$tmpdir/dcos_build_env") {
+    rm -Recurse "$tmpdir/dcos_build_venv"   
+}
 
 # Force Python stdout/err to be unbuffered.
 Write-Output "set PYTHONUNBUFFERED to notempty"
