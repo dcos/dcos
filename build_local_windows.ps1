@@ -14,7 +14,7 @@ if ( ! $tmpdir ) {
 }
 
 # Cleanup from previous build
-rm -recurse "$tmpdir/dcos_build_venv"
+rm -recurse -Force "$tmpdir/dcos_build_venv"
 
 # Force Python stdout/err to be unbuffered.
 $env:PYTHONUNBUFFERED="notempty"
