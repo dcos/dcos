@@ -333,6 +333,7 @@ def make_tar(result_filename, change_folder):
         else:
             tar_cmd += ["-cJf"]
     tar_cmd += [result_filename, "-C", change_folder, "."]
+    print(tar_cmd)
     check_call(tar_cmd)
 
 
