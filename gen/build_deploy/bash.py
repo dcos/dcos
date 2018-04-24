@@ -373,7 +373,7 @@ function d_type_enabled_if_xfs()
     fi
     read -r filesystem_device filesystem_type <<<"$(df -PT "$DIRNAME" | awk 'END{print $1,$2}')"
     if [[ "$filesystem_type" == "xfs" ]]; then
-        echo -n -e "Checking if "$DIRNAME" is mounted with \"fytpe=1\": "
+        echo -n -e "Checking if $DIRNAME is mounted with \"fytpe=1\": "
         ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
         if [[ "$ftype_value" != "ftype=1" ]]; then
             RC=1
@@ -388,15 +388,15 @@ function check_xfs_ftype() {
     RC=0
 
     # If /var/lib/mesos exists check xfs attributes for it
-    (d_type_enabled_if_xfs /var/lib/mesos ) || RC=1
+    ( d_type_enabled_if_xfs /var/lib/mesos ) || RC=1
 
     # If docker root directory exists check xfs attributes for it
     docker_root_dir="$(docker info -f '{{{{.DockerRootDir}}')"
-    (d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
+    ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
 
     # If /var/lib/mesos doesn't exist then check /var/lib (parent directory) for ftype
     if [[ ! -d /var/lib/mesos  ]]; then
-        ( ! d_type_enabled_if_xfs /var/lib/ ) || RC=1
+        ( d_type_enabled_if_xfs /var/lib ) || RC=1
     fi
 
     (( OVERALL_RC += $RC ))
