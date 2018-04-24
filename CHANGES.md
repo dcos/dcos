@@ -26,6 +26,10 @@ Format of the entries must be.
 
 * A cluster's IP detect script may be changed with a config upgrade (DCOS_OSS-2389)
 
+* DC/OS Net: Support Mesos Windows Agent (DCOS_OSS-2073)
+
+* DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
+
 
 ### Security Updates
 
@@ -35,9 +39,13 @@ Format of the entries must be.
 
 * Mesos does not expose ZooKeeper credentials anymore via its state JSON document. (DCOS_OSS-2162)
 
+* TLS: Admin Router should be configured with both RSA and EC type certificates. (DCOS-22050)
+
 
 ### Notable changes
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
 * Updated REX-Ray to v0.11.2. (DCOS_OSS-2245)
+
+* Updated OTP version to 20.3.2 (DCOS_OSS-2378)
