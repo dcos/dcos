@@ -1269,7 +1269,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     print('listdir: {}'.format(tmp_name_dir))
     print(os.listdir(tmp_name_dir))
     for root, subdirs, files in os.walk(tmp_name_dir):
-    print('--\nroot = ' + root)
+        print('--\nroot = ' + root)
         for subdir in subdirs:
             print('\t- subdirectory ' + subdir)
         for filename in files:
