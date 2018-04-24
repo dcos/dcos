@@ -1265,6 +1265,9 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Bundle the artifacts into the pkgpanda package
     tmp_name = pkg_path + "-tmp.tar.xz"
+    tmp_name_dir = os.path.dirname(pkg_path)
+    print('listdir: {}'.format(tmp_name_dir))
+    print(os.listdir(tmp_name_dir))
     make_tar(tmp_name, cache_abs("result"))
     os.replace(tmp_name, pkg_path)
     print("Package built.")
