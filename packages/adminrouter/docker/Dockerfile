@@ -145,8 +145,12 @@ COPY adminrouter-redirect-http-https.conf \
 COPY ca.crt /run/dcos/pki/CA/certs/
 COPY ca.key /run/dcos/pki/CA/private/
 COPY ca.crt /run/dcos/pki/CA/ca-bundle.crt
-COPY adminrouter.crt /run/dcos/pki/tls/certs/
-COPY adminrouter.key /run/dcos/pki/tls/private/
+COPY adminrouter-ec.crt \
+     adminrouter-rsa.crt \
+     /run/dcos/pki/tls/certs/
+COPY adminrouter-ec.key \
+     adminrouter-rsa.key \
+     /run/dcos/pki/tls/private/
 
 # Workers run as the dcos_adminrouter group.
 RUN groupadd --system dcos_adminrouter
