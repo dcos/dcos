@@ -387,7 +387,7 @@ function d_type_enabled_if_xfs()
 function check_xfs_ftype() {
     RC=0
 
-    mesos_agent_dir="{{mesos_agent_work_dir}}"
+    mesos_agent_dir="{{ mesos_agent_work_dir }}"
     # Check if ftype=1 on the volume, for $mesos_agent_dir, if its on XFS filesystem
     ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
 
@@ -699,8 +699,7 @@ def make_bash(gen_out) -> None:
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
         'setup_services': setup_services,
-        'mesos_agent_work_dir': gen_out.arguments[mesos_agent_work_dir})
-
+        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir']})
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'
