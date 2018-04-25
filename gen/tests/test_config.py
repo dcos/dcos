@@ -815,6 +815,7 @@ def test_exhibitor_admin_password_obscured():
     assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_edited_ip_detect_script_yields_new_packages():
     with tempfile.NamedTemporaryFile() as f:
         arguments = make_arguments(new_arguments={'ip_detect_filename': f.name})
