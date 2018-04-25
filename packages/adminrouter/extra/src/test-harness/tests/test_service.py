@@ -26,7 +26,7 @@ from mocker.endpoints.mesos_dns import (
     EMPTY_SRV,
     SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT,
 )
-from util import GuardedSubprocess
+from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
 
 
 class TestServiceStateful:
@@ -856,7 +856,7 @@ class TestServiceStateful:
          ('false', False),
          (False, False),
          ],)
-    def test_if_requrl_rewriting_can_be_configured(
+    def test_if_req_url_rewriting_can_be_configured(
             self,
             master_ar_process_pertest,
             mocker,
@@ -897,3 +897,81 @@ class TestServiceStateful:
             path_expected,
             http_ver='websockets'
             )
+
+    @pytest.mark.parametrize(
+        'label_val,should_buffer',
+        [('yes', True),
+         ('true', True),
+         ('1', True),
+         ('make it so', True),
+         ('whatever', True),
+         ('', True),  # the label contains empty string
+         (None, True),  # the label is absent
+         ('false', False),
+         (False, False),
+         ],)
+    def test_if_request_buffering_can_be_configured(
+            self,
+            mocker,
+            nginx_class,
+            valid_user_header,
+            label_val,
+            should_buffer):
+        # If `DCOS_SERVICE_REQUEST_BUFFERING` is set to `false` (string) or
+        # `false` (boolean), Admin Router will not buffer the client request before
+        # sending it to the upstream. In any other case it the request is going
+        # to be buffered.
+
+        # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[])
+        mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                            func_name='set_srv_response',
+                            aux_data=EMPTY_SRV)
+
+        # Set the DCOS_SERVICE_REQUEST_BUFFERING for the test mock:
+        srv = SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT
+        if label_val is not None:
+            srv['labels']['DCOS_SERVICE_REQUEST_BUFFERING'] = label_val
+        new_apps = {"apps": [srv, ]}
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data=new_apps)
+
+        # In theory it is possible to write a test that really checks if the
+        # request was buffered or not. It would require talking to the mocked
+        # endpoint during the test and checking if it is receiving the data as
+        # it is being sent (there is no buffering) or only after the whole
+        # request has been uploaded (Nginx buffers the data). Such a feature
+        # would introduce some extra complexity into the test harness. Simply
+        # checking if AR is printing the warning to the error log seems to be
+        # good enough.
+        filter_regexp = {}
+        tmp = 'a client request body is buffered to a temporary file'
+        if label_val in ["false", False]:
+            filter_regexp[tmp] = SearchCriteria(0, True)
+        else:
+            filter_regexp[tmp] = SearchCriteria(1, True)
+
+        ar = nginx_class(role="master")
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
+        # In order to make Nginx print a warning to the errorlog, the request
+        # payload needs to be greater than client_body_buffer_size, which by
+        # default is set to 16k. We use here 2MB for safe measure.
+        # http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size
+        payload = {"data": "x" * 1024 * 1024 * 2}
+
+        with GuardedSubprocess(ar):
+            lbf = LineBufferFilter(
+                filter_regexp,
+                line_buffer=ar.stderr_line_buffer)
+            resp = requests.post(
+                url,
+                allow_redirects=False,
+                headers=valid_user_header,
+                data=payload)
+            lbf.scan_log_buffer()
+
+        assert lbf.extra_matches == {}
+        assert resp.status_code == 200
