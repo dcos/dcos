@@ -59,7 +59,15 @@ end
 
 
 local function request(url, accept_404_reply, auth_token)
-    local headers = {["User-Agent"] = "Master Admin Router"}
+    -- We need to make sure that Nginx does not reuse the TCP connection here,
+    -- as i.e. during failover it could result in fetching data from e.g. Mesos
+    -- master which already abdicated. On top of that we also need to force
+    -- re-resolving leader.mesos address which happens during the setup of the
+    -- new connection.
+    local headers = {
+        ["User-Agent"] = "Master Admin Router",
+        ["Connection"] = "close",
+        }
     if auth_token ~= nil then
         headers["Authorization"] = "token=" .. auth_token
     end
@@ -226,8 +234,24 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
+       local do_rewrite_requrl = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
+       if do_rewrite_requrl == false or do_rewrite_requrl == 'false' then
+          ngx.log(ngx.INFO, "DCOS_SERVICE_REWRITE_REQUEST_URLS for app '" .. appId .. "' set to 'false'")
+          do_rewrite_requrl = false
+       else
+          -- Treat everything else as true, i.e.:
+          -- * label is absent
+          -- * label is set to "true" (string) or true (bool)
+          -- * label is set to some random string
+          do_rewrite_requrl = true
+       end
+
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
-       svcApps[svcId] = {scheme=scheme, url=url}
+       svcApps[svcId] = {
+         scheme=scheme,
+         url=url,
+         do_rewrite_requrl=do_rewrite_requrl,
+         }
 
        ::continue::
     end

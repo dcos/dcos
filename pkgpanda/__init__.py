@@ -9,13 +9,20 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-import grp
+try:
+    import grp
+except ImportError:
+    pass
 import json
 import os
 import os.path
-import pwd
+try:
+    import pwd
+except ImportError:
+    pass
 import re
 import shutil
+import sys
 import tempfile
 from collections import Iterable
 from itertools import chain
@@ -27,7 +34,12 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, load_json, write_json, write_string)
+from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
+                           load_json, make_directory, remove_directory, write_json, write_string)
+
+if not is_windows:
+    assert 'grp' in sys.modules
+    assert 'pwd' in sys.modules
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -237,7 +249,7 @@ class Package:
 
     @property
     def requires(self):
-        return frozenset(self.__pkginfo.get('requires', list()))
+        return list(self.__pkginfo.get('requires', list()))
 
     @property
     def version(self):
@@ -473,7 +485,7 @@ class Repository:
 
         # Cleanup artifacts (if any) laying around from previous partial
         # package extractions.
-        check_call(['rm', '-rf', tmp_path])
+        remove_directory(tmp_path)
 
         fetcher(id, tmp_path)
         os.rename(tmp_path, pkg_path)
@@ -483,7 +495,7 @@ class Repository:
         path = self.package_path(id)
         if not os.path.exists(path):
             raise PackageNotFound(id)
-        shutil.rmtree(path)
+        remove_directory(path)
 
 
 class ConflictingFile(ValidationError):
@@ -595,7 +607,8 @@ class UserManagement:
 
         # Check if the user already exists and exit.
         try:
-            UserManagement.validate_user_group(username, groupname)
+            if not is_windows:
+                UserManagement.validate_user_group(username, groupname)
             self._users.add(username)
             return
         except KeyError as ex:
@@ -723,6 +736,7 @@ class Install:
         ids = set()
         for name in os.listdir(active_dir):
             package_path = os.path.realpath(os.path.join(active_dir, name))
+
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
             ids.add(os.path.basename(package_path))
@@ -767,7 +781,7 @@ class Install:
         for name in chain(new_names, old_names):
             if os.path.exists(name):
                 if os.path.isdir(name):
-                    shutil.rmtree(name)
+                    remove_directory(name)
                 else:
                     os.remove(name)
 
@@ -877,9 +891,8 @@ class Install:
             if self.__manage_state_dir:
                 state_dir_path = self.__state_dir_root + '/' + package.name
                 if package.state_directory:
-                    check_call(['mkdir', '-p', state_dir_path])
-
-                    if package.username:
+                    make_directory(state_dir_path)
+                    if package.username and not is_windows:
                         uid = sysusers.get_uid(package.username)
                         check_call(['chown', '-R', str(uid), state_dir_path])
 
@@ -955,7 +968,7 @@ class Install:
                 json.dump(state, f)
                 f.flush()
                 os.fsync(f.fileno())
-            os.rename(state_filename + ".new", state_filename)
+            os.replace(state_filename + ".new", state_filename)
 
         if archive:
             # TODO(cmaloney): stop all systemd services in dcos.target.wants

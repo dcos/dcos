@@ -1,6 +1,15 @@
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    pass
 import logging
 import os
+import sys
+
+from pkgpanda.util import is_windows
+
+if not is_windows:
+    assert 'fcntl' in sys.modules
 
 log = logging.getLogger(__name__)
 

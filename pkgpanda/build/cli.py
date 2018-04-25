@@ -33,7 +33,7 @@ def main():
             if variant_arg is None:
                 pkgpanda.build.build_tree_variants(package_store, arguments['--mkbootstrap'])
             else:
-                pkgpanda.build.build_tree(package_store, arguments['--mkbootstrap'], target_variant)
+                pkgpanda.build.build_tree(package_store, arguments['--mkbootstrap'], [target_variant])
             sys.exit(0)
 
         # Package name is the folder name.

@@ -36,6 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
+from pkgpanda.util import remove_directory, remove_file
 
 
 def print_repo_list(packages):
@@ -56,7 +57,7 @@ def uninstall(install, repository):
     # TODO(cmaloney): Make this not quite so magical
     print("Removing dcos.target")
     print(os.path.dirname(install.systemd_dir) + "/dcos.target")
-    check_call(['rm', '-f', os.path.dirname(install.systemd_dir) + "/dcos.target"])
+    remove_file(os.path.dirname(install.systemd_dir) + "/dcos.target")
 
     # Cleanup all systemd units
     # TODO(cmaloney): This is much more work than we need to do the job
@@ -80,10 +81,12 @@ def uninstall(install, repository):
         print("Uninstall directories: ", ','.join(all_names + [install.root]), file=sys.stderr)
         sys.exit(1)
 
-    check_call(['rm', '-rf'] + all_names)
+    else:
+        for name in all_names:
+            remove_directory(name)
 
     # Removing /opt/mesosphere
-    check_call(['rm', '-rf', install.root])
+    remove_directory(install.root)
 
 
 def find_checks(install, repository):

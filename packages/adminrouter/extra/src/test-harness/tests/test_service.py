@@ -3,6 +3,7 @@
 
 import time
 
+import pytest
 import requests
 
 from generic_test_code.common import (
@@ -842,3 +843,57 @@ class TestServiceStateful:
 
         assert len(r_reqs) == 1
         verify_header(r_reqs[0]['headers'], 'User-Agent', 'Master Admin Router')
+
+    @pytest.mark.parametrize(
+        'label_val,should_rewrite',
+        [('yes', True),
+         ('true', True),
+         ('1', True),
+         ('make it so', True),
+         ('whatever', True),
+         ('', True),  # the label contains empty string
+         (None, True),  # the label is absent
+         ('false', False),
+         (False, False),
+         ],)
+    def test_if_requrl_rewriting_can_be_configured(
+            self,
+            master_ar_process_pertest,
+            mocker,
+            valid_user_header,
+            label_val,
+            should_rewrite):
+        # If `DCOS_SERVICE_REWRITE_REQUEST_URLS` is set to `false` (string) or
+        # `false` (boolean), Admin Router will not strip the context path and
+        # the upstream request will be made with the same the URL path as the client
+        # request has been made. In any other case it the prefix will be stripped
+
+        # Remove the data from MesosDNS and Mesos mocks w.r.t. resolved service
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[])
+        mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                            func_name='set_srv_response',
+                            aux_data=EMPTY_SRV)
+
+        # Set non-standard socket for the applicaiton
+        srv = SCHEDULER_APP_ALWAYSTHERE_DIFFERENTPORT
+        if label_val is not None:
+            srv['labels']['DCOS_SERVICE_REWRITE_REQUEST_URLS'] = label_val
+        new_apps = {"apps": [srv, ]}
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data=new_apps)
+
+        # Check if the location now resolves correctly to the new app socket
+        if should_rewrite:
+            path_expected = "/foo/bar/"
+        else:
+            path_expected = "/service/scheduler-alwaysthere/foo/bar/"
+        generic_correct_upstream_request_test(
+            master_ar_process_pertest,
+            valid_user_header,
+            '/service/scheduler-alwaysthere/foo/bar/',
+            path_expected,
+            http_ver='websockets'
+            )

@@ -1,6 +1,9 @@
 package:
   - path: /etc/dcos-metrics-config.yaml
     content: |
+      producers:
+        prometheus:
+          port: 61091
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -18,6 +21,9 @@ package:
   - path: /bin/detect_ip_public
     permissions: "0755"
     content: {{ ip_detect_public_contents }}
+  - path: /bin/detect_ip6
+    permissions: "0755"
+    content: {{ ip6_detect_contents }}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
@@ -52,7 +58,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_slave_public/dcos-dns.json
@@ -62,7 +68,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_master/dcos-dns.json
@@ -76,7 +82,7 @@ package:
         "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc/mesos-dns.env
@@ -97,9 +103,10 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+      DCOS_NET_IPV6={{ enable_ipv6 }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -153,7 +160,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
+        "network": {{ dcos_overlay_network_json }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -384,8 +391,13 @@ package:
               "network_mode": "USER",
               "dns": {
                 "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
                 ]
               }
             }
@@ -439,7 +451,7 @@ package:
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
-      MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
+      MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
       MESOS_OFFER_TIMEOUT=2mins
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
@@ -505,6 +517,11 @@ package:
       MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
 {% case "false" %}
 {% endswitch %}
+{% switch enable_mesos_ipv6_discovery %}
+{% case "false" %}
+{% case "true" %}
+      MESOS_IP6_DISCOVERY_COMMAND=/opt/mesosphere/bin/detect_ip6
+{% endswitch %}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
   - path: /etc/docker_credentials
@@ -515,7 +532,7 @@ package:
 {% endswitch %}
   - path: /etc/mesos-slave
     content: |
-      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 9272},{"begin": 9274, "end": 32000}]}}]
+      MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]
   - path: /etc/mesos-slave-public
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
@@ -686,11 +703,6 @@ package:
               },
               {
                   "Port": 8080,
-                  "Uri": "/v2/eventSubscriptions",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 8080,
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
@@ -751,12 +763,12 @@ package:
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/flags",
+                  "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/state",
+                  "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {

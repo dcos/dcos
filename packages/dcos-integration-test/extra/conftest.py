@@ -1,17 +1,36 @@
 import logging
 import os
 
-import api_session_fixture
 import pytest
-from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
     check_json,
     wait_for_diagnostics_job,
     wait_for_diagnostics_list
 )
-logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
+from test_helpers import expanded_config
+
 log = logging.getLogger(__name__)
+
+pytest_plugins = ['pytest-dcos']
+
+
+@pytest.fixture(scope='session')
+def dcos_api_session(dcos_api_session_factory):
+    """ Overrides the dcos_api_session fixture to use
+    exhibitor settings currently used in the cluster
+    """
+    args = dcos_api_session_factory.get_args_from_env()
+
+    exhibitor_admin_password = None
+    if expanded_config['exhibitor_admin_password_enabled'] == 'true':
+        exhibitor_admin_password = expanded_config['exhibitor_admin_password']
+
+    api = dcos_api_session_factory(
+        exhibitor_admin_password=exhibitor_admin_password,
+        **args)
+    api.wait_for_dcos()
+    return api
 
 
 def pytest_configure(config):
@@ -42,11 +61,6 @@ def clean_marathon_state(dcos_api_session):
 
 
 @pytest.fixture(scope='session')
-def dcos_api_session():
-    return api_session_fixture.make_session_fixture()
-
-
-@pytest.fixture(scope='session')
 def noauth_api_session(dcos_api_session):
     return dcos_api_session.get_user_session(None)
 
@@ -67,7 +81,7 @@ def _dump_diagnostics(request, dcos_api_session):
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
 
         last_datapoint = {
             'time': None,
@@ -84,7 +98,7 @@ def _dump_diagnostics(request, dcos_api_session):
         bundles = _get_bundle_list(dcos_api_session)
         for bundle in bundles:
             for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
+                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
                                                 node=master_node)
                 bundle_path = os.path.join(os.path.expanduser('~'), bundle)
                 with open(bundle_path, 'wb') as f:

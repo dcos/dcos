@@ -3,10 +3,13 @@ import http.server
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import socketserver
+import stat
 import subprocess
+import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
@@ -17,16 +20,84 @@ from typing import List
 import requests
 import teamcity
 import yaml
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
+is_windows = platform.system() == "Windows"
 
-json_prettyprint_args = {
-    "sort_keys": True,
-    "indent": 2,
-    "separators": (',', ':')
-}
+
+def is_absolute_path(path):
+    if is_windows:
+        # We assume one char drive letter. Sometimes its two but not often
+        # pattern is <driveletter>:/string....
+        if path[1] == ':':
+            return True
+    else:
+        if path[0] == '/':
+            return True
+    return False
+
+
+def remove_file(path):
+    """removes a file. fails silently if the file does not exist"""
+    if is_windows:
+        # python library on Windows does not like symbolic links in directories
+        # so calling out to the cmd prompt to do this fixes that.
+        path = path.replace('/', '\\')
+        if os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
+    else:
+        subprocess.check_call(['rm', '-f', path])
+
+
+def remove_directory(path):
+    """recursively removes a directory tree. fails silently if the tree does not exist"""
+    if is_windows:
+        # python library on Windows does not like symbolic links in directories
+        # so calling out to the cmd prompt to do this fixes that.
+        path = path.replace('/', '\\')
+        if os.path.exists(path):
+            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
+    else:
+        subprocess.check_call(['rm', '-rf', path])
+
+
+def make_directory(path):
+    """Create a directory, creating intermediate directories if necessary"""
+    if is_windows:
+        path = path.replace('/', '\\')
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def copy_file(src_path, dst_path):
+    """copy a single directory item from one location to another"""
+    if is_windows:
+        # To make sure the copy works we are using cmd version as python
+        # libraries may not handle symbolic links and other things that are
+        # thrown at it.
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
+    else:
+        subprocess.check_call(['cp', src_path, dst_path])
+
+
+def copy_directory(src_path, dst_path):
+    """copy recursively a directory tree from one location to another"""
+    if is_windows:
+        # To make sure the copy works we are using cmd version as python
+        # libraries may not handle symbolic links and other things that are
+        # thrown at it.
+        src = src_path.replace('/', '\\')
+        dst = dst_path.replace('/', '\\')
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+    else:
+        subprocess.check_call(['cp', '-r', src_path, dst_path])
 
 
 def variant_str(variant):
@@ -63,6 +134,21 @@ def variant_suffix(variant, delim='.'):
     return delim + variant
 
 
+def get_requests_retry_session(max_retries=4, backoff_factor=1, status_forcelist=None):
+    status_forcelist = status_forcelist or [500, 502, 504]
+    # Default max retries 4 with sleeping between retries 1s, 2s, 4s, 8s
+    session = requests.Session()
+    custom_retry = Retry(total=max_retries,
+                         backoff_factor=backoff_factor,
+                         status_forcelist=status_forcelist)
+    custom_adapter = HTTPAdapter(max_retries=custom_retry)
+    # Any request through this session that starts with 'http://' or 'https://'
+    # will use the custom Transport Adapter created which include retries
+    session.mount('http://', custom_adapter)
+    session.mount('https://', custom_adapter)
+    return session
+
+
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
@@ -82,7 +168,7 @@ def download(out_filename, url, work_dir, rm_on_error=True):
         else:
             # Download the file.
             with open(out_filename, "w+b") as f:
-                r = requests.get(url, stream=True)
+                r = get_requests_retry_session().get(url, stream=True)
                 if r.status_code == 301:
                     raise Exception("got a 301")
                 r.raise_for_status()
@@ -130,8 +216,13 @@ def extract_tarball(path, target):
     # prevent partial extraction from ever laying around on the filesystem.
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
-        check_call(['mkdir', '-p', target])
-        check_call(['tar', '-xf', path, '-C', target])
+        make_directory(target)
+
+        if is_windows:
+            check_call(['bsdtar', '-xf', path, '-C', target])
+        else:
+            check_call(['tar', '-xf', path, '-C', target])
+
     except:
         # If there are errors, we can't really cope since we are already in an error state.
         rmtree(target, ignore_errors=True)
@@ -159,8 +250,8 @@ def load_yaml(filename):
 
 
 def write_yaml(filename, data, **kwargs):
-    with open(filename, "w+") as f:
-        return yaml.safe_dump(data, f, **kwargs)
+    dumped_yaml = yaml.safe_dump(data, **kwargs)
+    write_string(filename, dumped_yaml)
 
 
 def make_file(name):
@@ -169,13 +260,45 @@ def make_file(name):
 
 
 def write_json(filename, data):
-    with open(filename, "w+") as f:
-        return json.dump(data, f, **json_prettyprint_args)
+    dumped_json = json_prettyprint(data=data)
+    write_string(filename, dumped_json)
 
 
 def write_string(filename, data):
-    with open(filename, "w+") as f:
-        return f.write(data)
+    """
+    Write a string to a file.
+    Overwrite any data in that file.
+
+    We use an atomic write practice of creating a temporary file and then
+    moving that temporary file to the given ``filename``. This prevents race
+    conditions such as the file being read by another process after it is
+    opened here but not yet written to.
+
+    It also prevents us from creating or truncating a file before we fail to
+    write data to it because of low disk space.
+
+    If no file already exists at ``filename``, the new file is created with
+    permissions 0o644.
+    """
+    prefix = os.path.basename(filename)
+    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+
+    try:
+        permissions = os.stat(filename).st_mode
+    except FileNotFoundError:
+        permissions = 0o644
+
+    try:
+        try:
+            os.write(fd, data.encode())
+        finally:
+            os.close(fd)
+        os.chmod(temporary_filename, stat.S_IMODE(permissions))
+        os.replace(temporary_filename, filename)
+    except Exception:
+        os.remove(temporary_filename)
+        raise
 
 
 def load_string(filename):
@@ -184,7 +307,12 @@ def load_string(filename):
 
 
 def json_prettyprint(data):
-    return json.dumps(data, **json_prettyprint_args)
+    return json.dumps(
+        data,
+        sort_keys=True,
+        indent=2,
+        separators=(',', ':'),
+    )
 
 
 def if_exists(fn, *args, **kwargs):
@@ -226,11 +354,17 @@ def expect_fs(folder, contents):
 
 
 def make_tar(result_filename, change_folder):
-    tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
+    if is_windows:
+        tar_cmd = ["bsdtar"]
+    else:
+        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
     if which("pxz"):
         tar_cmd += ["--use-compress-program=pxz", "-cf"]
     else:
-        tar_cmd += ["-cJf"]
+        if is_windows:
+            tar_cmd += ["-cjf"]
+        else:
+            tar_cmd += ["-cJf"]
     tar_cmd += [result_filename, "-C", change_folder, "."]
     check_call(tar_cmd)
 

@@ -59,13 +59,13 @@ class MarathonApp:
         return str(self.app)
 
     def deploy(self, dcos_api_session):
-        return dcos_api_session.marathon.post('v2/apps', json=self.app).raise_for_status()
+        return dcos_api_session.marathon.post('/v2/apps', json=self.app).raise_for_status()
 
     @retrying.retry(
         wait_fixed=5000,
         stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
+        r = dcos_api_session.marathon.get('/v2/apps/{}'.format(self.id))
         assert_response_ok(r)
 
         self._info = r.json()
@@ -74,8 +74,8 @@ class MarathonApp:
     def info(self, dcos_api_session):
         try:
             if self._info['app']['tasksHealthy'] != self.app['instances']:
-                raise
-        except:
+                raise Exception("Number of Healthy Tasks not equal to number of instances.")
+        except Exception:
             self.wait(dcos_api_session)
         return self._info
 
@@ -95,7 +95,7 @@ class MarathonApp:
         return host, port
 
     def purge(self, dcos_api_session):
-        return dcos_api_session.marathon.delete('v2/apps/{}'.format(self.id))
+        return dcos_api_session.marathon.delete('/v2/apps/{}'.format(self.id))
 
 
 class MarathonPod:
@@ -148,14 +148,14 @@ class MarathonPod:
         return str(self.app)
 
     def deploy(self, dcos_api_session):
-        return dcos_api_session.marathon.post('v2/pods', json=self.app).raise_for_status()
+        return dcos_api_session.marathon.post('/v2/pods', json=self.app).raise_for_status()
 
     @retrying.retry(
         wait_fixed=5000,
         stop_max_delay=20 * 60 * 1000,
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
-        r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
+        r = dcos_api_session.marathon.get('/v2/pods/{}::status'.format(self.id))
         assert_response_ok(r)
 
         self._info = r.json()
@@ -165,8 +165,8 @@ class MarathonPod:
     def info(self, dcos_api_session):
         try:
             if self._info['status'] != 'STABLE':
-                raise
-        except:
+                raise Exception("The status information is not Stable!")
+        except Exception:
             self.wait(dcos_api_session)
         return self._info
 
@@ -181,7 +181,7 @@ class MarathonPod:
         return host, port
 
     def purge(self, dcos_api_session):
-        return dcos_api_session.marathon.delete('v2/pods/{}'.format(self.id))
+        return dcos_api_session.marathon.delete('/v2/pods/{}'.format(self.id))
 
 
 def unused_port():
@@ -365,7 +365,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
                 retry_on_exception=lambda x: True)
 def test_if_overlay_ok(dcos_api_session):
     def _check_overlay(hostname, port):
-        overlays = dcos_api_session.get('overlay-agent/overlay', host=hostname, port=port).json()['overlays']
+        overlays = dcos_api_session.get('/overlay-agent/overlay', host=hostname, port=port).json()['overlays']
         assert len(overlays) > 0
         for overlay in overlays:
             assert overlay['state']['status'] == 'STATUS_OK'

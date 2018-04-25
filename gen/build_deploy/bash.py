@@ -22,7 +22,10 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
-from pkgpanda.util import logger
+from pkgpanda.constants import (
+    cloud_config_yaml, dcos_services_yaml, install_root
+)
+from pkgpanda.util import copy_directory, copy_file, is_windows, logger, make_directory
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
@@ -50,7 +53,8 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/packages/{}'.format(custom_check_bins_package_id)
+        return (DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' +
+                'packages/{}'.format(custom_check_bins_package_id))
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -79,6 +83,7 @@ onprem_source = Source(entry={
         'platform': 'onprem',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
+        'ip6_detect_filename': '',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
         'enable_docker_gc': 'false'
     },
@@ -460,7 +465,6 @@ function check_all() {
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \
-            "9273 dcos-metrics" \
             "9942 metronome" \
             "9990 cosmos" \
             "15055 dcos-history" \
@@ -468,6 +472,7 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
+            "61091 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
@@ -480,6 +485,7 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
+            "61091 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
@@ -599,7 +605,7 @@ def make_bash(gen_out) -> None:
         gen_out.utils.add_stable_artifact(package_filename)
 
     setup_flags = ""
-    cloud_config = gen_out.templates['cloud-config.yaml']
+    cloud_config = gen_out.templates[cloud_config_yaml]
     # Assert the cloud-config is only write_files.
     assert len(cloud_config) == 1
     for file_dict in cloud_config['write_files']:
@@ -616,7 +622,7 @@ def make_bash(gen_out) -> None:
     # Reformat the DC/OS systemd units to be bash written and started.
     # Write out the units as files
     setup_services = ""
-    for service in gen_out.templates['dcos-services.yaml']:
+    for service in gen_out.templates[dcos_services_yaml]:
         # If no content, service is assumed to already exist
         if 'content' not in service:
             continue
@@ -630,7 +636,7 @@ def make_bash(gen_out) -> None:
     setup_services += "\n"
 
     # Start, enable services which request it.
-    for service in gen_out.templates['dcos-services.yaml']:
+    for service in gen_out.templates[dcos_services_yaml]:
         assert service['name'].endswith('.service')
         name = service['name'][:-8]
         if service.get('enable'):
@@ -704,7 +710,7 @@ def make_installer_docker(variant, variant_info, installer_info):
         def copy_to_build(src_prefix, filename):
             dest_filename = dest_path(filename)
             os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
-            subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
+            copy_file(os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename)
 
         def fill_template(base_name, format_args):
             pkgpanda.util.write_string(
@@ -724,7 +730,8 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_id': bootstrap_id,
             'dcos_image_commit': util.dcos_image_commit})
 
-        subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
+        if not is_windows:
+            subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync
@@ -739,9 +746,9 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
-            subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+            copy_directory('gen_extra', dest_path('gen_extra'))
         else:
-            subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
+            make_directory(dest_path('gen_extra'))
 
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])

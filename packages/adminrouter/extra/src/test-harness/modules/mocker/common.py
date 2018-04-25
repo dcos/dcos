@@ -73,8 +73,8 @@ class MockerBase:
         res.append(ReflectingTcpIpEndpoint(
             ip='127.0.0.1',
             port=15401,
-            certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
-            keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
+            certfile='/run/dcos/pki/tls/certs/adminrouter-ec.crt',
+            keyfile='/run/dcos/pki/tls/private/adminrouter-ec.key'))
         # Agent3
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.4', port=15003))
         # Agent AR 1
@@ -106,8 +106,8 @@ class MockerBase:
         res.append(ReflectingTcpIpEndpoint(
             ip='127.0.0.4',
             port=443,
-            certfile='/run/dcos/pki/tls/certs/adminrouter.crt',
-            keyfile='/run/dcos/pki/tls/private/adminrouter.key'))
+            certfile='/run/dcos/pki/tls/certs/adminrouter-ec.crt',
+            keyfile='/run/dcos/pki/tls/private/adminrouter-ec.key'))
         # metrics endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-metrics-master.sock'))
         # log endpoint
