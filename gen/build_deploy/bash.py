@@ -392,7 +392,7 @@ function check_xfs_ftype() {
     ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
 
     # Check if ftype=1 on the volume, for docker root dir, if its on XFS filesystem
-    docker_root_dir="$(docker info -f '{{{{.DockerRootDir}}')"
+    docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
     ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
 
     # If /var/lib/mesos doesn't exist then check /var/lib (parent directory) for ftype
