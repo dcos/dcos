@@ -368,9 +368,9 @@ function d_type_enabled_if_xfs()
     DIRNAME="$1"
 
     RC=0
-    if [[ ! -d "$DIRNAME" ]]; then
-        return $RC
-    fi
+    while [[ ! -d "$DIRNAME" ]]; do
+        DIRNAME="$(dirname "$DIRNAME")"
+    done
     read -r filesystem_device filesystem_type <<<"$(df -PT "$DIRNAME" | awk 'END{print $1,$2}')"
     if [[ "$filesystem_type" == "xfs" ]]; then
         echo -n -e "Checking if $DIRNAME is mounted with \"fytpe=1\": "
@@ -387,10 +387,11 @@ function d_type_enabled_if_xfs()
 function check_xfs_ftype() {
     RC=0
 
-    # If /var/lib/mesos exists check xfs attributes for it
-    ( d_type_enabled_if_xfs /var/lib/mesos ) || RC=1
+    mesos_agent_dir="{{mesos_agent_work_dir}}"
+    # Check if ftype=1 on the volume, for $mesos_agent_dir, if its on XFS filesystem
+    ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
 
-    # If docker root directory exists check xfs attributes for it
+    # Check if ftype=1 on the volume, for docker root dir, if its on XFS filesystem
     docker_root_dir="$(docker info -f '{{{{.DockerRootDir}}')"
     ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
 
@@ -697,7 +698,9 @@ def make_bash(gen_out) -> None:
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
-        'setup_services': setup_services})
+        'setup_services': setup_services,
+        'mesos_agent_work_dir': gen_out.arguments[mesos_agent_work_dir})
+
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'
