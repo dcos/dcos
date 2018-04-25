@@ -7,7 +7,7 @@
       "description": "Set LIBPROCESS_IP into docker container"
     },
     {
-      "ref": "d523dba4ca02ad15c0ce2fb9a93a7a1d7ec0eedf",
+      "ref": "6657f5452c65bdcd23e10228afce513963c3b0a2",
       "description": "Mesos UI: Change paths, pailer, and logs to work with a reverse proxy"
     },
     {
