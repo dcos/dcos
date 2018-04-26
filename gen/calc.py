@@ -973,7 +973,7 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
-        'adminrouter_tls_1_1_enabled': 'true',
+        'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
