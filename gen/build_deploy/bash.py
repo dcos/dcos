@@ -395,11 +395,6 @@ function check_xfs_ftype() {
     docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
     ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
 
-    # If /var/lib/mesos doesn't exist then check /var/lib (parent directory) for ftype
-    if [[ ! -d /var/lib/mesos  ]]; then
-        ( d_type_enabled_if_xfs /var/lib ) || RC=1
-    fi
-
     (( OVERALL_RC += $RC ))
     return $RC
 }
