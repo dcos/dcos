@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 import pkgpanda.util
@@ -115,3 +117,37 @@ def test_split_by_token():
     assert list(split_by_token('{', '}', 'some text {token} some more text', strip_token_decoration=True)) == [
         ('some text ', False), ('token', True), (' some more text', False)
     ]
+
+
+def test_write_string(tmpdir):
+    """
+    `pkgpanda.util.write_string` writes or overwrites a file with permissions
+    for User to read and write, Group to read and Other to read.
+
+    Permissions of the given filename are preserved, or a new file is created
+    with 0o644 permissions.
+
+    This test was written to make current functionality regression-safe which
+    is why no explanation is given for these particular permission
+    requirements.
+    """
+    filename = os.path.join(str(tmpdir), 'foo_filename')
+    pkgpanda.util.write_string(filename=filename, data='foo_contents')
+    with open(filename) as f:
+        assert f.read() == 'foo_contents'
+
+    pkgpanda.util.write_string(filename=filename, data='foo_contents_2')
+    with open(filename) as f:
+        assert f.read() == 'foo_contents_2'
+
+    st_mode = os.stat(filename).st_mode
+    expected_permission = 0o644
+    assert (st_mode & 0o777) == expected_permission
+
+    os.chmod(filename, 0o777)
+    pkgpanda.util.write_string(filename=filename, data='foo_contents_3')
+    with open(filename) as f:
+        assert f.read() == 'foo_contents_3'
+    st_mode = os.stat(filename).st_mode
+    expected_permission = 0o777
+    assert (st_mode & 0o777) == expected_permission
