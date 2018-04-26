@@ -317,6 +317,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         assert 'vtep_mac_oui' in overlay_network.keys(), (
             'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
 
+        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+        validate_int_in_range(vtep_mtu, 552, None)
+
         if 'subnet' in overlay:
             # Check the VTEP IP is present in the overlay configuration
             assert 'vtep_subnet' in overlay_network, (
