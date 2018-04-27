@@ -30,6 +30,9 @@ Format of the entries must be.
 
 * DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
 
+* Admin Router: It is now possible to disable HTTP request buffering for `/service/` endpoint requests through the DCOS_SERVICE_REQUEST_BUFFERING Marathon label
+
+* Admin Router: It is now possible to disable upstream request URL rewriting for `/service/` endpoint requests through the DCOS_SERVICE_REWRITE_REQUEST_URLS Marathon label
 
 ### Security Updates
 
