@@ -10,8 +10,8 @@ from subprocess import check_output
 import pytest
 import requests
 import retrying
-
 import test_helpers
+
 from dcos_test_utils import marathon
 
 log = logging.getLogger(__name__)
@@ -58,13 +58,13 @@ class MarathonApp:
 
     @retrying.retry(
         wait_fixed=5000,
-        stop_max_delay=20 * 60 * 1000,
-        retry_on_result=lambda res: res is False)
+        stop_max_delay=20 * 60 * 1000)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/apps/{}'.format(self.id))
-        r.raise_for_status()
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
+
         self._info = r.json()
-        return self._info['app']['tasksHealthy'] == self.app['instances']
+        assert self._info['app']['tasksHealthy'] == self.app['instances']
 
     def info(self, dcos_api_session):
         try:
@@ -151,9 +151,11 @@ class MarathonPod:
         retry_on_result=lambda res: res is False)
     def wait(self, dcos_api_session):
         r = dcos_api_session.marathon.get('v2/pods/{}::status'.format(self.id))
-        r.raise_for_status()
+        assert r.ok, 'status_code: {} content: {}'.format(r.status_code, r.content)
+
         self._info = r.json()
-        return self._info['status'] == 'STABLE'
+        error_msg = 'Status was {}: {}'.format(self._info['status'], self._info.get('message', 'no message'))
+        assert self._info['status'] == 'STABLE', error_msg
 
     def info(self, dcos_api_session):
         try:
