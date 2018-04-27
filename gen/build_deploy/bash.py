@@ -436,6 +436,7 @@ function check_all() {
     check unzip
     check ipset
     check systemd-notify
+    check ifconfig
 
     # $ systemctl --version ->
     # systemd nnn
