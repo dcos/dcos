@@ -99,14 +99,42 @@ def get_mounts_and_freespace(matching_mounts):
             # Per @cmaloney and @lingmann, we should hard exit here if volume
             # doesn't have sufficient space.
             raise VolumeDiscoveryException(
-                '{} has {} MB net free space, expected > 100M'.format(mount, net_free_space)
+                '{} has {} MB free space, expected > {} MB'.format(mount, free_space, TOLERANCE_MB)
             )
         yield (mount, net_free_space)
 
 
+def get_path_usage(path):
+    total = 0
+    dev = os.stat(path).st_dev
+    for dirpath, _, filenames in os.walk(path):
+        if os.stat(dirpath).st_dev != dev:
+            continue
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            if os.path.islink(filepath):
+                continue
+            try:
+                total += os.path.getsize(filepath)
+            except OSError as e:
+                print('ERROR: Cannot get size of file {}: {}'.format(filepath, e), file=sys.stderr)
+                sys.exit(1)
+    return floor(float(total) / MB)
+
+
+def get_root_volume_space(root_path):
+    available_space = get_disk_free(root_path)[1] + get_path_usage(root_path)
+    net_available_space = available_space - TOLERANCE_MB
+    if net_available_space <= 0:
+        raise VolumeDiscoveryException(
+            '{} has {} MB available space, expected > {} MB'.format(root_path, available_space, TOLERANCE_MB)
+        )
+    return (root_path, net_available_space)
+
+
 def _handle_root_volume(root_volume, role):
     os.makedirs(root_volume, exist_ok=True)
-    for common, _ in make_disk_resources_json(get_mounts_and_freespace([root_volume]), role):
+    for common, _ in make_disk_resources_json([get_root_volume_space(root_volume)], role):
         yield common, {}
 
 
