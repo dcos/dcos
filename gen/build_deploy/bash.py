@@ -356,6 +356,47 @@ EOM
     fi
 }
 
+function d_type_enabled_if_xfs()
+{
+    # Return 1 if $1 is a directory on XFS volume with ftype ! = 1
+    # otherwise return 0
+    DIRNAME="$1"
+
+    RC=0
+    # "df", the command being used to get the filesystem device and type,
+    # fails if the directory does not exist, hence we need to iterate up the
+    # directory chain to find a directory that exists before executing the command
+    while [[ ! -d "$DIRNAME" ]]; do
+        DIRNAME="$(dirname "$DIRNAME")"
+    done
+    read -r filesystem_device filesystem_type <<<"$(df --portability --print-type "$DIRNAME" | awk 'END{print $1,$2}')"
+    if [[ "$filesystem_type" == "xfs" ]]; then
+        echo -n -e "Checking if $DIRNAME is mounted with \"fytpe=1\": "
+        ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
+        if [[ "$ftype_value" != "ftype=1" ]]; then
+            RC=1
+        fi
+        print_status $RC "${NORMAL}(${ftype_value})"
+    fi
+    return $RC
+}
+
+# check node storage has d_type (ftype=1) support enabled if using XFS
+function check_xfs_ftype() {
+    RC=0
+
+    mesos_agent_dir="{{ mesos_agent_work_dir }}"
+    # Check if ftype=1 on the volume, for $mesos_agent_dir, if its on XFS filesystem
+    ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
+
+    # Check if ftype=1 on the volume, for docker root dir, if its on XFS filesystem
+    docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
+    ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
+
+    (( OVERALL_RC += $RC ))
+    return $RC
+}
+
 function check_all() {
     # Disable errexit because we want the preflight checks to run all the way
     # through and not bail in the middle, which will happen as it relies on
@@ -487,6 +528,7 @@ function check_all() {
         do
             check_service $service
         done
+        check_xfs_ftype
     fi
 
     # Check we're not in docker on devicemapper loopback as storage driver.
@@ -649,7 +691,8 @@ def make_bash(gen_out) -> None:
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
-        'setup_services': setup_services})
+        'setup_services': setup_services,
+        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir']})
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'
