@@ -368,10 +368,13 @@ function d_type_enabled_if_xfs()
     DIRNAME="$1"
 
     RC=0
+    # "df", the command being used to get the filesystem device and type,
+    # fails if the directory does not exist, hence we need to iterate up the
+    # directory chain to find a directory that exists before executing the command
     while [[ ! -d "$DIRNAME" ]]; do
         DIRNAME="$(dirname "$DIRNAME")"
     done
-    read -r filesystem_device filesystem_type <<<"$(df -PT "$DIRNAME" | awk 'END{print $1,$2}')"
+    read -r filesystem_device filesystem_type <<<"$(df --portability --print-type "$DIRNAME" | awk 'END{print $1,$2}')"
     if [[ "$filesystem_type" == "xfs" ]]; then
         echo -n -e "Checking if $DIRNAME is mounted with \"fytpe=1\": "
         ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
