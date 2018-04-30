@@ -4,7 +4,7 @@ import sys
 import threading
 
 from flask import Flask, Response
-from flask.ext.compress import Compress
+from flask_compress import Compress
 
 from history.statebuffer import BufferCollection, BufferUpdater
 
