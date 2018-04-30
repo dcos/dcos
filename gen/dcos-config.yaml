@@ -103,8 +103,7 @@ package:
   - path: /etc/dcos.network
     content: |
       [Match]
-      Type=bridge
-      Name=docker* m-* d-* vtep*
+      Name=docker* m-* d-* vtep* spartan minuteman
 
       [Link]
       Unmanaged=yes
