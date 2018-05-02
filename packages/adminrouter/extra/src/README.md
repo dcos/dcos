@@ -521,6 +521,48 @@ It is possible to workaround it by using another another HTTP reverse proxy in t
 
 This feature is available only for the tasks launched by the root Marathon.
 
+### Disabling request buffering for selected applications
+Some applications can not tolerate request buffering while there are others that require it in order to function properly. To support both groups, support for `DCOS_SERVICE_REQUEST_BUFFERING` label was introduced.
+
+If a task has `DCOS_SERVICE_REQUEST_BUFFERING` label set to `false` (string) or `false` (boolean), Admin Router will not perform request buffering for this application. Please see below for an example of how to enable it in an application definition:
+
+```json
+{
+  "labels": {
+    "DCOS_SERVICE_REQUEST_BUFFERING": false,
+    "DCOS_SERVICE_NAME": "myapp2",
+    "DCOS_SERVICE_SCHEME": "http",
+    "DCOS_SERVICE_PORT_INDEX": "0"
+  },
+  "id": "/myapp2",
+  "cmd": "echo \"It works!\" > index.html; /usr/local/bin/python -m http.server $PORT0",
+  "container": {
+    "type": "DOCKER",
+    "volumes": [],
+    "docker": {
+      "image": "python:3.6.5-stretch"
+    }
+  },
+  "cpus": 0.1,
+  "instances": 1,
+  "mem": 128,
+  "networks": [
+    {
+      "mode": "host"
+    }
+  ],
+  "portDefinitions": [
+    {
+      "name": "www",
+      "protocol": "tcp",
+      "port": 10000
+    }
+  ]
+}
+```
+
+This feature is available only for the tasks launched by the root Marathon.
+
 ## Authorization and authentication
 
 DC/OS uses DC/OS authentication token at the core of its authentication and

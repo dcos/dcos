@@ -234,23 +234,36 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
-       local do_rewrite_requrl = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
-       if do_rewrite_requrl == false or do_rewrite_requrl == 'false' then
+       local do_rewrite_req_url = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
+       if do_rewrite_req_url == false or do_rewrite_req_url == 'false' then
           ngx.log(ngx.INFO, "DCOS_SERVICE_REWRITE_REQUEST_URLS for app '" .. appId .. "' set to 'false'")
-          do_rewrite_requrl = false
+          do_rewrite_req_url = false
        else
           -- Treat everything else as true, i.e.:
           -- * label is absent
           -- * label is set to "true" (string) or true (bool)
           -- * label is set to some random string
-          do_rewrite_requrl = true
+          do_rewrite_req_url = true
+       end
+
+       local do_request_buffering = labels["DCOS_SERVICE_REQUEST_BUFFERING"]
+       if do_request_buffering == false or do_request_buffering == 'false' then
+          ngx.log(ngx.INFO, "DCOS_SERVICE_REQUEST_BUFFERING for app '" .. appId .. "' set to 'false'")
+          do_request_buffering = false
+       else
+          -- Treat everything else as true, i.e.:
+          -- * label is absent
+          -- * label is set to "true" (string) or true (bool)
+          -- * label is set to some random string
+          do_request_buffering = true
        end
 
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
        svcApps[svcId] = {
          scheme=scheme,
          url=url,
-         do_rewrite_requrl=do_rewrite_requrl,
+         do_rewrite_req_url=do_rewrite_req_url,
+         do_request_buffering=do_request_buffering,
          }
 
        ::continue::
