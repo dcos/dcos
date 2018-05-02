@@ -718,6 +718,11 @@ package:
               },
               {
                   "Port": 8080,
+                  "Uri": "/v2/pods",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
                   "Uri": "/v2/deployments",
                   "Role": ["master"]
               },
