@@ -3,23 +3,23 @@
   "git": "https://github.com/mesosphere/mesos",
   "patches": [
     {
-      "ref": "20e5654a294f599b637efadf32206e7b15398081",
+      "ref": "e6a42f59191bd34fd5e586b053cc837b62cf9cca",
       "description": "Set LIBPROCESS_IP into docker container."
     },
     {
-      "ref": "77ae0475cc692acb359afad6a26f4566460af2ec",
+      "ref": "9f11f3adf459a48eda77c7bffa5a5c5c2130b3ef",
       "description": "Mesos UI: updated the URL generation to make it work with adminrouter."
     },
     {
-      "ref": "f01e1ecc7ee9e9879d7059f8862a389f9f9c25c6",
+      "ref": "3ccc2e93daaa9efc92890929b70497c39cd4c0e3",
       "description": "Revert \"Fixed the broken metrics information of master in WebUI.\""
     },
     {
-      "ref": "1adcbaf630abe383fc3b7b28f8fdbf0bfa212d1b",
+      "ref": "560f129d15f050a337a915ff57694270481199c2",
       "description": "Updated mesos containerizer to ignore GPU isolator creation failure."
     },
     {
-      "ref": "09b92d822658b9563103d86ad45a9a7fdf85f271",
+      "ref": "d3bdbd8725e6a0c56a32efd241cc1052a75c3d72",
       "description": "Displayed resource provider resources in GET_RESOURCE_PROVIDER response."
     }
   ]
