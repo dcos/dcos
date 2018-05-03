@@ -571,6 +571,10 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             assert zipfile.is_zipfile(bundle_full_location)
             z = zipfile.ZipFile(bundle_full_location)
 
+            # validate error log is empty
+            log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
+            assert log_data, 'summaryErrorsReport.txt must be empty. Got {}'.format(log_data)
+
             # get a list of all files in a zip archive.
             archived_items = z.namelist()
 
