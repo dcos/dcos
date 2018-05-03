@@ -11,5 +11,3 @@ coreos:
     - name: locksmithd.service
       mask: true
       command: stop
-    - name: systemd-resolved.service
-      command: stop
