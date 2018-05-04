@@ -15,7 +15,6 @@ def make_session_fixture():
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
     dcos_api_session = dcos_api.DcosApiSession(
-        auth_user=dcos_api.DcosUser(helpers.CI_CREDENTIALS),
         exhibitor_admin_password=exhibitor_admin_password,
         **args)
     dcos_api_session.wait_for_dcos()
