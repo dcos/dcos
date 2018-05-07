@@ -103,6 +103,13 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
+  - path: /etc/dcos.network
+    content: |
+      [Match]
+      Name=docker* m-* d-* vtep* spartan minuteman
+
+      [Link]
+      Unmanaged=yes
   - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
