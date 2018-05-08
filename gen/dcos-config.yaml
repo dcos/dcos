@@ -103,6 +103,13 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
+  - path: /etc/dcos.network
+    content: |
+      [Match]
+      Name=docker* m-* d-* vtep* spartan minuteman
+
+      [Link]
+      Unmanaged=yes
   - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
@@ -489,6 +496,7 @@ package:
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true

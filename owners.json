@@ -3,15 +3,16 @@
   "asridharan ": {"slack": "avinash", "jira": "avinash"},
   "branden": {"slack": "branden", "jira": "branden"},
   "gpaul": {"slack": "gpaul", "jira": "gpaul"},
+  "greggomann": {"slack": "greg", "jira": "greg"},
   "jgehrcke": {"slack": "jp", "jira": "jp"},
+  "karya0": {"slack": "kapil", "jira": "kapil"},
   "klueska": {"slack": "klueska", "jira": "klueska"},
   "MatApple": {"slack": "mat", "jira": "mat"},
   "mnaboka": {"slack": "mnaboka", "jira": "mnaboka"},
-  "mellenburg": {"slack": "mellenburg", "jira": "michael.ellenburg"},
   "meichstedt": {"slack": "matthias.eichstedt", "jira": "matthias.eichstedt"},
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
-  "spahl": {"slack": "seb", "jira": "sebastien"},
+  "rukletsov": {"slack": "alexr", "jira": "alexr"},
   "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
   "vespian": {"slack": "prozlach", "jira": "prozlach"}
 }

@@ -108,7 +108,7 @@ local function resolve_via_marathon_apps_state(service_name, marathon_cache)
     return true, nil, nil
 end
 
-local function requrl_rewriting_required(service_name, marathon_cache)
+local function req_url_rewriting_required(service_name, marathon_cache)
     -- Determine if the upstream request should contain the
     -- `/service/<service_name>` part of the URL path or not.
     --
@@ -118,7 +118,7 @@ local function requrl_rewriting_required(service_name, marathon_cache)
     --
     -- Returns:
     --  A list with:
-    --  - true/false depending on whether requrl rewriting is enabled or not,
+    --  - true/false depending on whether req_url rewriting is enabled or not,
     --    `nil` if there was an error
     --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
@@ -135,7 +135,32 @@ local function requrl_rewriting_required(service_name, marathon_cache)
         return true, nil, nil
     end
 
-    return marathon_cache[service_name]['do_rewrite_requrl'], nil, nil
+    return marathon_cache[service_name]['do_rewrite_req_url'], nil, nil
+end
+
+local function request_buffering_required(service_name, marathon_cache)
+    -- Determine if the request buffering should be enabled for this request
+    --
+    -- Arguments:
+    --   service_name (string): service name that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
+    --
+    -- Returns:
+    --   true/false depending on whether req_url rewriting is enabled or not
+    --
+    if service_name == 'marathon' or service_name == 'metronome' then
+      -- These two services should always have the request buffering
+      -- enabled, no matter the marathon_cache, as they are resolved via Mesos
+      -- anyway.
+      return true
+    end
+
+    if marathon_cache[service_name] == nil then
+        -- By default we always cache for mesos frameworks
+        return true
+    end
+
+    return marathon_cache[service_name]['do_request_buffering']
 end
 
 local function resolve_via_mesos_dns(service_name)
@@ -264,7 +289,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     return res, err_code, err_text
 end
 
-local function recursive_resolve(auth, path)
+local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
     -- Resolve given service path using DC/OS cluster data.
     --
     -- This function tries to determine the service name component of the path
@@ -277,24 +302,16 @@ local function recursive_resolve(auth, path)
     --   mesos_cache (table): cached Mesos's apps state
     --
     -- Returns:
-    -- Nothing, it sets Nginx variables directly.
+    --   Apart from setting some Nginx variables directly, it returns the
+    --   resolved service name for the given URL.
 
     local resolved = false
     local more_segments = true
     local service_realpath = ""
-    local do_requrl_rewriting = true
+    local do_req_url_rewriting = true
+    local do_request_buffering = true
     local err_code = nil
     local err_text = nil
-
-    -- Acquire cache data:
-    -- On one hand we want to fetch cache only once no matter the number of
-    -- resolving attempts, on the other hand - we want to treat each cache
-    -- entry independently - if i.e. Marathon is borked but Mesos ``
-    -- Marathon-specific, we should still handle the request. This is the
-    -- reason why error checking is done in a different place than actually
-    -- fetching the cache data.
-    local marathon_cache = cache.get_cache_entry("svcapps")
-    local mesos_cache = cache.get_cache_entry("mesosstate")
 
     -- Resolve all the services!
     for i = 1, RESOLVE_LIMIT do
@@ -329,14 +346,14 @@ local function recursive_resolve(auth, path)
     auth.access_service_endpoint(service_realpath)
 
     -- Trim the URI prefix (or not):
-    do_requrl_rewriting, err_code, err_text = requrl_rewriting_required(service_name, marathon_cache)
+    do_req_url_rewriting, err_code, err_text = req_url_rewriting_required(service_name, marathon_cache)
     if err_code ~= nil then
         -- Send the error message to the user:
         ngx.status = err_code
         ngx.say(err_text)
         return ngx.exit(err_code)
     end
-    if do_requrl_rewriting then
+    if do_req_url_rewriting then
       prefix = "/service/" .. service_realpath
       adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
       if adjusted_prefix == "" then
@@ -347,6 +364,8 @@ local function recursive_resolve(auth, path)
 
     -- Will be used for HTTP Redirects' Location header adjustments:
     ngx.var.service_realpath = service_realpath
+
+    return service_name
 end
 
 -- Initialise and return the module:
@@ -355,6 +374,7 @@ function _M.init()
     local res = {}
 
     res.recursive_resolve = recursive_resolve
+    res.request_buffering_required = request_buffering_required
 
     return res
 end
