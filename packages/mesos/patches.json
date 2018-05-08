@@ -3,23 +3,23 @@
   "git": "https://github.com/mesosphere/mesos",
   "patches": [
     {
-      "ref": "d4b525e4ee76ebd3518e651ad3bad00e4d6fc3f6",
+      "ref": "4999edc46fe4320017f17abccaa7ec3778541952",
       "description": "Mesos UI: Change paths, pailer, and logs to work with a reverse proxy."
     },
     {
-      "ref": "56483bfa58fac720ac9cf7df96dc9bb4cf4df0c0",
+      "ref": "0f0e61f264bfe84bc79e335691dd55a9d0ba6c95",
       "description": "Revert \"Fixed the broken metrics information of master in WebUI.\""
     },
     {
-      "ref": "8aed90470dd250ab6ca3bc67923c152cd4419eb2",
+      "ref": "b26215ad124850c38bacd047b6c12164025816d1",
       "description": "Set LIBPROCESS_IP into docker container."
     },
     {
-      "ref": "da39a5a3ad05c7cc277a7f7602c29f40c57cef39",
+      "ref": "e0047ff103b9cf57ac9859749d03d91e8a0e113e",
       "description": "Updated mesos containerizer to ignore GPU isolator creation failure."
     },
     {
-      "ref": "bf8d2f21f403d8650ee9beeed7f7f2e55b79fc6f",
+      "ref": "1296f66a67cc498b522caae16c2617977592bd70",
       "description": "Added '--filter_gpu_resources' flag to the mesos master."
     }
   ]
