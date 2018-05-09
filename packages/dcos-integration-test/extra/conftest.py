@@ -30,7 +30,10 @@ def dcos_api_session(dcos_api_session_factory):
         exhibitor_admin_password=exhibitor_admin_password,
         **args)
     api.wait_for_dcos()
-    return api
+    try:
+        yield api
+    finally:
+        api.session.close()
 
 
 def pytest_configure(config):
