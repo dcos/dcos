@@ -27,6 +27,7 @@ def test_invalid_telemetry_enabled():
         err_msg)
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ports():
     test_bad_range = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'
@@ -62,6 +63,7 @@ bad_dns_forward_zones_str = """
 """
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_dns_forward_zones():
     zones = dns_forward_zones_str
@@ -76,6 +78,7 @@ def test_dns_forward_zones():
         err_msg)
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ipv4():
     test_ips = '["52.37.192.49", "52.37.181.230", "foo", "52.37.163.105", "bar"]'
@@ -121,6 +124,7 @@ def test_invalid_bootstrap_url():
         "Must not end in a '/'")
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_validate_duplicates():
     test_ips = '["10.0.0.1", "10.0.0.2", "10.0.0.1"]'
@@ -195,6 +199,7 @@ def test_cluster_docker_credentials():
         true_false_msg)
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_exhibitor_storage_master_discovery():
     msg_master_discovery = "When master_discovery is not static, exhibitor_storage_backend must be " \
@@ -244,6 +249,7 @@ def test_validate_s3_prefix():
     validate_success({'s3_prefix': 'bar/baz'})
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_validate_default_overlay_network_name():
     msg = "Default overlay network name does not reference a defined overlay network: foo"
@@ -787,6 +793,7 @@ def test_validate_mesos_work_dir():
     )
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_fault_domain_disabled():
     arguments = make_arguments(new_arguments={
@@ -799,6 +806,7 @@ def test_fault_domain_disabled():
     assert 'fault_domain_detect_contents' not in generated.arguments
 
 
+# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_exhibitor_admin_password_obscured():
     var_name = 'exhibitor_admin_password'

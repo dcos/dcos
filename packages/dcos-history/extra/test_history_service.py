@@ -55,12 +55,14 @@ def history_service(monkeypatch, tmpdir):
     return test_client, populate_buffer, mock_data, sb
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_ping(history_service):
     resp = history_service[0].get("/ping")
     assert resp.data.decode() == 'pong'
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_endpoint_last(history_service):
     history_service[1](60)  # 2 minutes of data
@@ -68,6 +70,7 @@ def test_endpoint_last(history_service):
     assert resp.data.decode() == history_service[2][-1]
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_endpoint_minute(history_service):
     history_service[1](60)  # 2 minutes of data
@@ -77,6 +80,7 @@ def test_endpoint_minute(history_service):
     assert resp.data.decode() == minute_resp
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_endpoint_hour(history_service):
     history_service[1](30 * 60 * 2)  # 2 hours of data
@@ -88,6 +92,7 @@ def test_endpoint_hour(history_service):
     assert resp.data.decode() == '[' + ','.join(filtered_history) + ']'
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_file_trimming(history_service):
     history_service[1](30 * 60 * 2)  # 2 hours of data
@@ -95,6 +100,7 @@ def test_file_trimming(history_service):
     assert len(os.listdir(history_service[3].buffers['hour'].path)) == 60
 
 
+# TODO: DCOS_OSS-3472 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_data_recovery(monkeypatch, tmpdir):
 
