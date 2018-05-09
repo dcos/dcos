@@ -13,6 +13,5 @@
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
-  "vespian": {"slack": "prozlach", "jira": "prozlach"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
 }
