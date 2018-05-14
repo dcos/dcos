@@ -317,6 +317,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         assert 'vtep_mac_oui' in overlay_network.keys(), (
             'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
 
+        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+        validate_int_in_range(vtep_mtu, 552, None)
+
         if 'subnet' in overlay:
             # Check the VTEP IP is present in the overlay configuration
             assert 'vtep_subnet' in overlay_network, (
@@ -764,6 +767,11 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
                     'timeout': '1s'
                 },
+                'ifconfig': {
+                    'description': 'The ifconfig utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
+                    'timeout': '1s'
+                },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
@@ -795,6 +803,7 @@ def calculate_check_config(check_time):
                 'tar',
                 'curl',
                 'unzip',
+                'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
@@ -982,7 +991,7 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
-        'adminrouter_tls_1_1_enabled': 'true',
+        'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
