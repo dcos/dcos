@@ -259,7 +259,6 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
-@pytest.mark.skip(reason='DCOS_OSS-1993')
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
