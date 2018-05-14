@@ -45,6 +45,10 @@ Format of the entries must be.
 
 * TLS: Admin Router should be configured with both RSA and EC type certificates. (DCOS-22050)
 
+* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS-21958)
+
+* Disable the TLS 1.1 protocol for Master Admin Router's TLS. (DCOS-22326)
+
 
 ### Notable changes
 

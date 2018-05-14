@@ -31,9 +31,10 @@ class TestAdminRouterTLSConfig:
         expected_configuration = dedent(
             """\
             # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
-            # Modulo ChaCha20 cipher.
+            # Modulo ChaCha20 cipher and 3DES bulk encryption algorithm.
+            # For 3DES see https://jira.mesosphere.com/browse/DCOS-21958
 
-            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+            ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5:!3DES;
 
             ssl_prefer_server_ciphers on;
             # To manually test which TLS versions are enabled on a node, use
@@ -41,7 +42,7 @@ class TestAdminRouterTLSConfig:
             #
             # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
             # details.
-            ssl_protocols TLSv1.1 TLSv1.2;
+            ssl_protocols TLSv1.2;
             """
         )
         assert config['content'] == expected_configuration
@@ -122,7 +123,7 @@ class TestSetCipherOverride:
             config_path: str) -> List[str]:
         """
         Finds the line that looks like:
-        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5:!3DES;
         and returns the list of ciphers.
         Args:
             new_config_arguments: Arguments which are added to the 'standard'
@@ -149,7 +150,7 @@ class TestSetCipherOverride:
             new_config_arguments: Dict[str, str]) -> List[str]:
         """
         Finds the line that looks like:
-        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:EECDH+3DES:RSA+3DES:!MD5;
+        ssl_ciphers EECDH+AES256:RSA+AES256:EECDH+AES128:RSA+AES128:!MD5:!3DES;
         and returns the list of ciphers.
         Args:
             new_config_arguments: Arguments which are added to the 'standard'
@@ -207,7 +208,7 @@ class TestSetCipherOverride:
         ciphers = self.supported_ssl_ciphers_master(
             new_config_arguments=new_arguments,
         )
-        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5']
+        assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5:!3DES']
 
     # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
@@ -289,9 +290,10 @@ class TestToggleTLSVersions:
             new_config_arguments={},
         )
         disable_tls1_protocols = self.supported_tls_protocols_ar_master(
-            new_config_arguments={'adminrouter_tls_1_0_enabled': 'false'},
+            new_config_arguments={'adminrouter_tls_1_0_enabled': 'false',
+                                  'adminrouter_tls_1_1_enabled': 'false'},
         )
-        assert default_protocols == ['TLSv1.1', 'TLSv1.2']
+        assert default_protocols == ['TLSv1.2']
         assert default_protocols == disable_tls1_protocols
 
     @pytest.mark.parametrize(
