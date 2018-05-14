@@ -574,6 +574,11 @@ def _download_bundle_from_master(dcos_api_session, master_index):
             # get a list of all files in a zip archive.
             archived_items = z.namelist()
 
+            # validate error log is empty
+            if 'summaryErrorsReport.txt' in archived_items:
+                log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
+                raise AssertionError('summaryErrorsReport.txt must be empty. Got {}'.format(log_data))
+
             # validate all files in zip archive are not empty
             for item in archived_items:
                 assert z.getinfo(item).file_size, 'item {} is empty'.format(item)
