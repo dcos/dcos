@@ -35,9 +35,6 @@ import schema
 import yaml
 
 import gen.internals
-import pkgpanda.exceptions
-from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, hash_str
 
 
 DCOS_VERSION = '1.12-dev'
@@ -320,6 +317,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         assert 'vtep_mac_oui' in overlay_network.keys(), (
             'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
 
+        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+        validate_int_in_range(vtep_mtu, 552, None)
+
         if 'subnet' in overlay:
             # Check the VTEP IP is present in the overlay configuration
             assert 'vtep_subnet' in overlay_network, (
@@ -413,39 +413,6 @@ def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
 
 def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
-
-
-def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
-    return hash_checkout({
-        "commit": dcos_image_commit,
-        "template_filenames": json.loads(template_filenames),
-        "sources_id": sources_id})
-
-
-def calculate_config_package_ids(config_package_names, config_id):
-    def get_config_package_id(config_package_name):
-        pkg_id_str = "{}--setup_{}".format(config_package_name, config_id)
-        # validate the pkg_id_str generated is a valid PackageId
-        return pkg_id_str
-
-    return json.dumps(list(sorted(map(get_config_package_id, json.loads(config_package_names)))))
-
-
-def calculate_cluster_packages(config_package_ids, package_ids):
-    return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
-
-
-def calculate_cluster_package_list_id(cluster_packages):
-    return hash_str(cluster_packages)
-
-
-def validate_cluster_packages(cluster_packages):
-    pkg_id_list = json.loads(cluster_packages)
-    for pkg_id in pkg_id_list:
-        try:
-            PackageId(pkg_id)
-        except pkgpanda.exceptions.ValidationError as ex:
-            raise AssertionError(str(ex)) from ex
 
 
 def calculate_no_proxy(no_proxy):
@@ -800,6 +767,11 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
                     'timeout': '1s'
                 },
+                'ifconfig': {
+                    'description': 'The ifconfig utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
+                    'timeout': '1s'
+                },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
@@ -831,6 +803,7 @@ def calculate_check_config(check_time):
                 'tar',
                 'curl',
                 'unzip',
+                'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
@@ -957,7 +930,6 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
-        validate_cluster_packages,
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -1019,7 +991,7 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
-        'adminrouter_tls_1_1_enabled': 'true',
+        'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
@@ -1131,10 +1103,6 @@ entry = {
         'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
-        'config_package_ids': calculate_config_package_ids,
-        'cluster_packages': calculate_cluster_packages,
-        'cluster_package_list_id': calculate_cluster_package_list_id,
-        'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',

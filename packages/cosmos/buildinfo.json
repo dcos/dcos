@@ -5,8 +5,8 @@
   ],
   "single_source": {
     "kind": "url",
-    "url": "https://downloads.dcos.io/cosmos/0.6.0-SNAPSHOT-334-master-4cf11c8ab4/cosmos-server-0.6.0-SNAPSHOT-334-master-4cf11c8ab4-one-jar.jar",
-    "sha1": "d61a297dd463630d360e47210ce97e3173f815ae"
+    "url": "https://downloads.dcos.io/cosmos/0.6.0-SNAPSHOT-339-master-7917458253/cosmos-server-0.6.0-SNAPSHOT-339-master-7917458253-one-jar.jar",
+    "sha1": "34b9b7605e4840fd3ed2be3a891581b18de2285b"
   },
   "username": "dcos_cosmos",
   "state_directory": true

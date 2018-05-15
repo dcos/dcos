@@ -479,6 +479,90 @@ as `.js` and `.css` files. This is due to the fact that the linked resources wil
 be reachable only in their relative location
 `<dcos-cluster>/services/<application ID><link>`.
 
+### Disabling URL path rewriting for selected applications
+Some applications like Jenkins or Artifactory, permit specifying a context path (e.g. `/service/jenkins`) that is used while generating application URLs (both relative and absolute). However, normally Admin Router strips these, and this can lead to breakages, esp. for assets like JavaScript files and images.
+
+It is possible to workaround it by using another another HTTP reverse proxy in the application container which rewrites URLs from / to /service/jenkins. This isn't ideal though, so an extra Marathon label is recognized by Admin Router. If a task has `DCOS_SERVICE_REWRITE_REQUEST_URLS` label set to `false`(string) or `false`(boolean), Admin Router will not strip the context path and the upstream request will be made with the same the URL path as the client request has been made. Please see below for an example of how to enable it in an application definition:
+
+```json
+{
+  "labels": {
+    "DCOS_SERVICE_REWRITE_REQUEST_URLS": "false",
+    "DCOS_SERVICE_NAME": "myapp",
+    "DCOS_SERVICE_SCHEME": "http",
+    "DCOS_SERVICE_PORT_INDEX": "0"
+  },
+  "id": "/myapp",
+  "cmd": "echo \"It works!\" > index.html; /usr/local/bin/python -m http.server $PORT0",
+  "container": {
+    "type": "DOCKER",
+    "volumes": [],
+    "docker": {
+      "image": "python:3.6.5-stretch"
+    }
+  },
+  "cpus": 0.1,
+  "instances": 1,
+  "mem": 128,
+  "networks": [
+    {
+      "mode": "host"
+    }
+  ],
+  "portDefinitions": [
+    {
+      "name": "www",
+      "protocol": "tcp",
+      "port": 10000
+    }
+  ]
+}
+```
+
+This feature is available only for the tasks launched by the root Marathon.
+
+### Disabling request buffering for selected applications
+Some applications can not tolerate request buffering while there are others that require it in order to function properly. To support both groups, support for `DCOS_SERVICE_REQUEST_BUFFERING` label was introduced.
+
+If a task has `DCOS_SERVICE_REQUEST_BUFFERING` label set to `false` (string) or `false` (boolean), Admin Router will not perform request buffering for this application. Please see below for an example of how to enable it in an application definition:
+
+```json
+{
+  "labels": {
+    "DCOS_SERVICE_REQUEST_BUFFERING": false,
+    "DCOS_SERVICE_NAME": "myapp2",
+    "DCOS_SERVICE_SCHEME": "http",
+    "DCOS_SERVICE_PORT_INDEX": "0"
+  },
+  "id": "/myapp2",
+  "cmd": "echo \"It works!\" > index.html; /usr/local/bin/python -m http.server $PORT0",
+  "container": {
+    "type": "DOCKER",
+    "volumes": [],
+    "docker": {
+      "image": "python:3.6.5-stretch"
+    }
+  },
+  "cpus": 0.1,
+  "instances": 1,
+  "mem": 128,
+  "networks": [
+    {
+      "mode": "host"
+    }
+  ],
+  "portDefinitions": [
+    {
+      "name": "www",
+      "protocol": "tcp",
+      "port": 10000
+    }
+  ]
+}
+```
+
+This feature is available only for the tasks launched by the root Marathon.
+
 ## Authorization and authentication
 
 DC/OS uses DC/OS authentication token at the core of its authentication and
