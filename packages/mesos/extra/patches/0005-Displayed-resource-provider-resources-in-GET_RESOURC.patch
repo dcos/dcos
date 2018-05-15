@@ -1,0 +1,91 @@
+From 27d91e1fe46f09b2c74f2dc4efe4f58ae59ae0a8 Mon Sep 17 00:00:00 2001
+From: Benjamin Bannier <benjamin.bannier@mesosphere.io>
+Date: Tue, 20 Mar 2018 10:08:09 +0100
+Subject: [PATCH] Displayed resource provider resources in
+ GET_RESOURCE_PROVIDER response.
+
+Review: https://reviews.apache.org/r/65832/
+---
+ include/mesos/agent/agent.proto    |  1 +
+ include/mesos/v1/agent/agent.proto |  1 +
+ src/slave/http.cpp                 |  3 +++
+ src/tests/api_tests.cpp            | 18 ++++++++++++++----
+ 4 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/include/mesos/agent/agent.proto b/include/mesos/agent/agent.proto
+index fd74695ad..8c84400ea 100644
+--- a/include/mesos/agent/agent.proto
++++ b/include/mesos/agent/agent.proto
+@@ -548,6 +548,7 @@ message Response {
+   message GetResourceProviders {
+     message ResourceProvider {
+       required ResourceProviderInfo resource_provider_info = 1;
++      repeated Resource total_resources = 2;
+     }
+ 
+     repeated ResourceProvider resource_providers = 1;
+diff --git a/include/mesos/v1/agent/agent.proto b/include/mesos/v1/agent/agent.proto
+index 9d90b18f3..0e526fd6a 100644
+--- a/include/mesos/v1/agent/agent.proto
++++ b/include/mesos/v1/agent/agent.proto
+@@ -548,6 +548,7 @@ message Response {
+   message GetResourceProviders {
+     message ResourceProvider {
+       required ResourceProviderInfo resource_provider_info = 1;
++      repeated Resource total_resources = 2;
+     }
+ 
+     repeated ResourceProvider resource_providers = 1;
+diff --git a/src/slave/http.cpp b/src/slave/http.cpp
+index 3abcc1e71..93cdd7c3d 100644
+--- a/src/slave/http.cpp
++++ b/src/slave/http.cpp
+@@ -1895,6 +1895,9 @@ Future<Response> Http::getResourceProviders(
+ 
+     provider->mutable_resource_provider_info()
+       ->CopyFrom(resourceProvider->info);
++
++    provider->mutable_total_resources()->CopyFrom(
++        resourceProvider->totalResources);
+   }
+ 
+   return OK(serialize(acceptType, evolve(response)), stringify(acceptType));
+diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
+index fb4587931..dc1939230 100644
+--- a/src/tests/api_tests.cpp
++++ b/src/tests/api_tests.cpp
+@@ -6144,10 +6144,10 @@ TEST_P(AgentAPITest, GetResourceProviders)
+   info.set_type("org.apache.mesos.rp.test");
+   info.set_name("test");
+ 
+-  v1::MockResourceProvider resourceProvider(
+-      info,
+-      v1::createDiskResource(
+-          "200", "*", None(), None(), v1::createDiskSourceRaw()));
++  v1::Resource resource = v1::createDiskResource(
++      "200", "*", None(), None(), v1::createDiskSourceRaw());
++
++  v1::MockResourceProvider resourceProvider(info, resource);
+ 
+   // Start and register a resource provider.
+   string scheme = "http";
+@@ -6189,6 +6189,16 @@ TEST_P(AgentAPITest, GetResourceProviders)
+ 
+   EXPECT_EQ(info.type(), responseInfo.type());
+   EXPECT_EQ(info.name(), responseInfo.name());
++
++  ASSERT_TRUE(responseInfo.has_id());
++  resource.mutable_provider_id()->CopyFrom(responseInfo.id());
++
++  const v1::Resources responseResources =
++    v1Response->get_resource_providers()
++      .resource_providers(0)
++      .total_resources();
++
++  EXPECT_EQ(v1::Resources(resource), responseResources);
+ }
+ 
+ 
+-- 
+2.16.3
+

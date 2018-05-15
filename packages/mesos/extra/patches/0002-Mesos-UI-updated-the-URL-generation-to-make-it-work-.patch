@@ -1,0 +1,51 @@
+From 6d478a33ec85904482bae974e43beff8d21f8ce9 Mon Sep 17 00:00:00 2001
+From: Gaston Kleiman <gaston.kleiman@gmail.com>
+Date: Mon, 9 Oct 2017 15:19:08 -0700
+Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
+ adminrouter.
+
+- Use /mesos/agent/{agent_id}/{process_name} as the agent URL prefix.
+- Redirect from Mesos webui location (host:5050) to adminrouter
+  (host/mesos).
+---
+ src/webui/master/static/js/controllers.js | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
+index 59665869d..6e0a40f93 100644
+--- a/src/webui/master/static/js/controllers.js
++++ b/src/webui/master/static/js/controllers.js
+@@ -54,7 +54,7 @@
+     var port = agent.pid.substring(agent.pid.lastIndexOf(':') + 1);
+     var processId = agent.pid.substring(0, agent.pid.indexOf('@'));
+ 
+-    var url = '//' + agent.hostname + ':' + port;
++    var url = '/agent/' + agent.id;
+ 
+     if (includeProcessId) {
+       url += '/' + processId;
+@@ -372,6 +372,12 @@
+   mesosApp.controller('MainCtrl', [
+       '$scope', '$http', '$location', '$timeout', '$modal',
+       function($scope, $http, $location, $timeout, $modal) {
++    // Redirect from the direct Mesos webui URL to the DC/OS URL that goes through adminrouter.
++    if ($location.port() === 5050) {
++      var url = $location.protocol() + "://" + $location.host() + "/mesos";
++      window.location = url;
++    }
++
+     $scope.doneLoading = true;
+ 
+     // Adding bindings into scope so that they can be used from within
+@@ -559,7 +565,7 @@
+         ).open();
+       } else {
+         pailer(
+-            '//' + $scope.$location.host() + ':' + $scope.$location.port(),
++            '/mesos',
+             '/master/log',
+             'Mesos Master (' + $scope.$location.host() + ':' + $scope.$location.port() + ')');
+       }
+-- 
+2.16.3
+
