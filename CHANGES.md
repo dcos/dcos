@@ -36,6 +36,8 @@
 
 * Consolidated pkgpanda's package download method. (DCOS_OSS-2317)
 
+* Consolidated the Exhibitor bootstrapping shortcut by atomically reading and writing the ZooKeeper PID file. (DCOS-14199)
+
 * Increased the Mesos executor reregistration timeout to consolidate an agent failover scenario. (DCOS_OSS-2335)
 
 * DC/OS UI: incorporated [multiple](https://github.com/dcos/dcos/pull/2799) fixes and improvements.
