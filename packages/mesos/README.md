@@ -1,5 +1,6 @@
 <h2>Mesos Patches</h2>
 
+TEST.
 We need to apply some patches on top of upstream Apache Mesos before building in
 DC/OS.  The patches are stored in the [extra/patches] directory and applied as part of [build] script.
 
