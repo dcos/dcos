@@ -8,6 +8,7 @@ cd $OPENRESTY_DIR
 ./configure \
     "--prefix=$AR_BIN_DIR" \
     --with-file-aio \
+    --with-http_stub_status_module \
     --with-http_gunzip_module \
     --with-http_gzip_static_module \
     --without-mail_pop3_module \
