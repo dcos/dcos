@@ -1,4 +1,4 @@
-## DC/OS 1.11.2
+## DC/OS 1.11.3
 
 
 ### Notable changes
@@ -10,6 +10,40 @@
 ### Security updates
 
 
+## DC/OS 1.11.2
+
+
+### Notable changes
+
+* Updated to [Mesos 1.5.1-dev](https://github.com/mesosphere/mesos/blob/27d91e1fe46f09b2c74f2dc4efe4f58ae59ae0a8/CHANGELOG).
+
+* Updated to [Marathon 1.6.392](https://github.com/dcos/dcos/pull/2678).
+
+* Updated to [Metronome 0.4.2](https://github.com/dcos/metronome/releases/tag/v0.4.2).
+
+
+### Fixed and improved
+
+* DC/OS Metrics: metric names are now sanitized for better compatibility with Prometheus. (DCOS_OSS-2360)
+
+* Reverted the Marathon configuration change for GPU resources which was introduced with the 1.11.1 release. (MARATHON-8090)
+
+* The IP detect script and fault domain detect script may now be changed with a config upgrade. (DCOS-21611)
+
+* DC/OS UI: Fixed a number of bugs.
+
+* Upgraded Erlang/OTP runtime to address a race condition in TLS connection establishment. (DCOS_OSS-2378)
+
+* Consolidated pkgpanda's package download method. (DCOS_OSS-2317)
+
+* Increased the Mesos executor reregistration timeout to consolidate an agent failover scenario. (DCOS_OSS-2335)
+
+
+### Security updates
+
+* Admin Router on the DC/OS master nodes now does not support TLS 1.1 and the 3DES bulk encryption algorithm anymore by default. (DCOS-21958)
+
+
 ## DC/OS 1.11.1
 
 
@@ -17,7 +51,7 @@
 
 * Updated to [Mesos 1.5.1-dev](https://github.com/mesosphere/mesos/blob/b2eeb11ede805a7830cd6fb796d0b21a647aba04/CHANGELOG).
 
-* Updated to [Marathon 1.5.5](https://github.com/mesosphere/marathon/releases).
+* Updated to [Marathon 1.6.352](https://github.com/mesosphere/marathon/releases).
 
 * Updated to [Metronome 0.4.1](https://github.com/dcos/metronome/releases/tag/v0.4.1).
 
