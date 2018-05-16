@@ -30,13 +30,13 @@
 
 * The IP detect script and fault domain detect script may now be changed with a config upgrade. (DCOS-21611)
 
-* DC/OS UI: Fixed a number of bugs.
-
 * Upgraded Erlang/OTP runtime to address a race condition in TLS connection establishment. (DCOS_OSS-2378)
 
 * Consolidated pkgpanda's package download method. (DCOS_OSS-2317)
 
 * Increased the Mesos executor reregistration timeout to consolidate an agent failover scenario. (DCOS_OSS-2335)
+
+* DC/OS UI: incorporated [multiple](https://github.com/dcos/dcos/pull/2799) fixes and improvements.
 
 
 ### Security updates
