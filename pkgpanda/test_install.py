@@ -19,6 +19,7 @@ def install():
 
 
 # Test that the active set is detected correctly.
+# TODO: DCOS_OSS-3471 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_active(install):
     active = install.get_active()
@@ -43,6 +44,7 @@ def test_recovery_noop(install):
     assert not action
 
 
+# TODO: DCOS_OSS-3471 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_recovery_archive(tmpdir):
     # Recover from the "archive" state correctly.
@@ -70,6 +72,7 @@ def test_recovery_archive(tmpdir):
         })
 
 
+# TODO: DCOS_OSS-3471 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_recovery_move_new(tmpdir):
     # From the "move_new" state correctly.
