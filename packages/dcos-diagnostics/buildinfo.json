@@ -2,9 +2,9 @@
   "requires": ["exhibitor"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-diagnostics.git",
+    "git": "https://github.com/amitaekbote/dcos-diagnostics.git",
     "ref": "63964b85d56d2cfe7e933402ac9e8db5703005f0",
-    "ref_origin": "master"
+    "ref_origin": "parallelchecks"
   },
   "username": "dcos_diagnostics",
   "group": "systemd-journal",
