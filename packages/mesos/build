@@ -3,6 +3,12 @@ libdir="$PKG_PATH/lib"
 
 # TODO(cmaloney): Check prerequisites installed (glog, protobuf, boost)
 pushd "/pkg/src/mesos"
+
+# Apply patches from packages/mesos/patch directory. All patches are numbered
+for patch in /pkg/extra/patches/*; do
+  git -c user.name="Mesosphere CI" -c user.email="mesosphere-ci@users.noreply.github.com" am $patch
+done
+
 ./bootstrap
 
 mkdir -p build
