@@ -207,6 +207,7 @@ def test_storage_provider_aws(release_config_aws, tmpdir):
     exercise_storage_provider(tmpdir, 'aws_s3', release_config_aws)
 
 
+# TODO: DCOS_OSS-3460 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_storage_provider_local(tmpdir):
     work_dir = tmpdir.mkdir("work")

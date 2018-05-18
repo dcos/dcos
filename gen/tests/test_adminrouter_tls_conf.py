@@ -14,6 +14,7 @@ class TestAdminRouterTLSConfig:
     level.
     """
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_master_default(self):
         """
@@ -46,6 +47,7 @@ class TestAdminRouterTLSConfig:
         )
         assert config['content'] == expected_configuration
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_agent_default(self):
         """
@@ -78,6 +80,7 @@ class TestAdminRouterTLSConfig:
         # Both TLS version and ciphers are overridden
         (('false', 'true', 'false'), 'EECDH+AES256:RSA+AES256'),
     ])
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_agent_cannot_be_configured(self, tls_versions, ciphers):
         """
@@ -170,6 +173,7 @@ class TestSetCipherOverride:
         config_path = '/etc/adminrouter-tls-agent.conf'
         return self.supported_ssl_ciphers(new_config_arguments, config_path)
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_cipher_agent_default(self):
         """
@@ -180,6 +184,7 @@ class TestSetCipherOverride:
         )
         assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5']
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_cipher_agent_cannot_override(self):
         """
@@ -192,6 +197,7 @@ class TestSetCipherOverride:
         )
         assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5']
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_cipher_master_default(self):
         """
@@ -204,6 +210,7 @@ class TestSetCipherOverride:
         )
         assert ciphers == ['EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5:!3DES']
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_cipher_master_custom(self):
         """
@@ -260,6 +267,7 @@ class TestToggleTLSVersions:
         'adminrouter_tls_1_1_enabled',
         'adminrouter_tls_1_2_enabled',
     ])
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_tls_version_flag_true_false(self, config_name):
         """
@@ -271,6 +279,7 @@ class TestToggleTLSVersions:
             message=true_false_msg,
         )
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_default_master(self):
         """
@@ -297,6 +306,7 @@ class TestToggleTLSVersions:
             (('false', 'true', 'false'), ['TLSv1.1']),
         ]
     )
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_enable_custom_tls_versions(self, enabled, expected_protocols):
         new_arguments = {'adminrouter_tls_1_0_enabled': enabled[0],
@@ -307,6 +317,7 @@ class TestToggleTLSVersions:
         )
         assert protocols == expected_protocols
 
+    # TODO: DCOS_OSS-3463 - muted Windows tests requiring investigation
     @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
     def test_no_tls_version_enabled(self):
         """
