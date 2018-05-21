@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
+MODE=${1:-}
 
 echo ">>> In configure_dcos_system.sh:"
 
@@ -50,6 +51,9 @@ sed -i'' -E 's/^(Defaults.*requiretty)/#\1/' /etc/sudoers
 
 echo ">>> Adding group [nogroup]"
 /usr/sbin/groupadd -f nogroup
+
+# Skip cleanup if requested
+[ "$MODE" == "no-cleanup" ] && exit 0
 
 echo ">>> Cleaning up SSH host keys"
 shred -u /etc/ssh/*_key /etc/ssh/*_key.pub
