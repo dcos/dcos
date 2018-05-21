@@ -1,24 +1,29 @@
 {
-  "requires": ["openssl", "libevent", "curl", "boost-libs"],
-  "single_source" : {
-    "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "a1c6a7a3c54518f97a34f28b1792885b928b948c",
-    "ref_origin" : "master"
-  },
+  "requires": [
+    "openssl", 
+    "libevent", 
+    "curl", 
+    "boost-libs"
+  ], 
+  "single_source": {
+    "kind": "git", 
+    "git": "https://github.com/apache/mesos", 
+    "ref": "64243b078d574e36c29df33587511661230f6aff", 
+    "ref_origin": "master"
+  }, 
   "environment": {
-    "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
+    "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib", 
     "MESOS_NATIVE_JAVA_LIBRARY": "/opt/mesosphere/lib/libmesos.so"
-  },
-  "state_directory": true,
+  }, 
+  "state_directory": true, 
   "sysctl": {
-      "dcos-mesos-slave": {
-          "vm.max_map_count": 262144,
-          "vm.swappiness": 1
-      },
-      "dcos-mesos-slave-public": {
-          "vm.max_map_count": 262144,
-          "vm.swappiness": 1
-      }
+    "dcos-mesos-slave": {
+      "vm.max_map_count": 262144, 
+      "vm.swappiness": 1
+    }, 
+    "dcos-mesos-slave-public": {
+      "vm.max_map_count": 262144, 
+      "vm.swappiness": 1
+    }
   }
 }
