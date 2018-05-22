@@ -20,7 +20,7 @@ Format of the entries must be.
 
 * Includes Mesos Version 1.4 [dcos-mesos-1.4.x-nightly-315d047](https://github.com/mesosphere/mesos/tree/dcos-mesos-1.4.x-nightly-315d047)
 
-* Includes Metronome version 0.4.2
+* Includes Metronome version [0.4.2](https://github.com/dcos/metronome/releases/tag/v0.4.2)
 
 
 ### Fixed and improved
