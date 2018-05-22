@@ -31,6 +31,8 @@ Format of the entries must be.
 
 * Block DC/OS install if mesos work dir or docker root dir is XFS but not mounted with ftype=1 (COPS-3158)
 
+* DCOS-UI: Update the version to [1.10.6](https://github.com/dcos/dcos/pull/2788)
+
 
 ### Security Updates
 
