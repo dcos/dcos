@@ -1,3 +1,45 @@
+## DC/OS 1.10.7
+
+```
+* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
+* For Security updates, please call out in Security updates section.
+* Add to the top of the existing list.
+* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
+
+Format of the entries must be.
+
+* Entry with no-newlines. (DCOS_OSS_JIRA)
+<new-line>
+* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
+```
+
+
+### Notable changes
+
+* Includes Marathon version [1.5.8](https://github.com/dcos/dcos/pull/2707)  (DCOS_OSS-2352)
+
+* Includes Mesos Version 1.4 [dcos-mesos-1.4.x-nightly-315d047](https://github.com/mesosphere/mesos/tree/dcos-mesos-1.4.x-nightly-315d047)
+
+* Includes Metronome version 0.4.2
+
+
+### Fixed and improved
+
+* Increase the mesos executor registration timeout from 2 seconds to 20 seconds. (DCOS_OSS-2335)
+
+* Consolidated the Exhibitor bootstrapping shortcut by atomically reading and writing the ZooKeeper PID file. (DCOS-14199)
+
+* Block DC/OS install if mesos work dir or docker root dir is XFS but not mounted with ftype=1 (COPS-3158)
+
+
+### Security Updates
+
+* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS-21958)
+
+
+### TODO: (skumaran) - Include CHANGES.md for 1.10.6 release.
+
+
 ## DC/OS 1.10.5
 
 ### Notable changes
