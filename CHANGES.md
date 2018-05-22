@@ -36,7 +36,7 @@ Format of the entries must be.
 
 ### Security Updates
 
-* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS-21958)
+* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS_OSS-3537)
 
 
 ### TODO: (skumaran) - Include CHANGES.md for 1.10.6 release.
