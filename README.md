@@ -134,15 +134,38 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     dcos-shell pytest
     ```
 
-## Using DC/OS Docker
+## Using a Docker Cluster with DC/OS E2E
 
-One way to run the integration tests is to use [DC/OS Docker](https://github.com/dcos/dcos-docker).
+One way to run the integration tests is to use the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
 
-1. Setup DC/OS in containers using [DC/OS Docker](https://github.com/dcos/dcos-docker).
+This lets you create, run and manage clusters in test environments.
+Each DC/OS node is represented by a Docker container.
 
-One way to do this is to use the [DC/OS Docker Quick Start tool](https://github.com/dcos/dcos-docker#quick-start).
+1. Setup DC/OS in containers using the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
 
-2. Run `make test`.
+For example, after [installing the DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html#installation), create a cluster:
+
+```
+dcos-docker create /tmp/dcos_generate_config.sh \
+    --masters 1 \
+    --agents 2 \
+    --public-agents 1 \
+    --cluster-id default
+```
+
+2. Run `pytest` on a master node.
+
+For example:
+
+```
+dcos-docker run pytest
+```
+
+3. Destroy the cluster.
+
+```
+dcos-docker destroy
+```
 
 # Build
 
