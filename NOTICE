@@ -40,10 +40,6 @@ CockroachDB
 - CockroachDB License
 - https://github.com/cockroachdb/cockroach/blob/master/LICENSE
 
-dcos-installer-ui
-- Apache License, Version 2.0
-- https://github.com/dcos/dcos-installer-ui/blob/master/LICENSE
-
 dcos-signal
 - Apache License, Version 2.0
 - https://github.com/dcos/dcos-signal/blob/master/LICENSE
