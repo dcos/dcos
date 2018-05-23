@@ -3,7 +3,7 @@
 
 ### Notable changes
 
-* Support for CoreOS 1688.4.0, 1688.5.3. (DCOS_OSS-2417, DCOS_OSS-3548)
+* Support for CoreOS 1688.4.0, 1688.5.3 (DCOS_OSS-2417, DCOS_OSS-3548)
 
 
 ### Fixed and improved
