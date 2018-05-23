@@ -172,18 +172,3 @@ class JsonDelegate(AbstractSSHLibDelegate):
             json_status['hosts'][ip_port]['host_status'] = 'unstarted'
 
         self._dump_json_state(name, json_status)
-
-
-class SyncCmdDelegate(AbstractSSHLibDelegate):
-    """Used for running synchronous commands in CLI or general orchestration
-    without a long-running server process
-    """
-    def on_update(self, future, callback_called):
-        chain_name, result_object, host = future.result()
-        callback_called.set_result(True)
-
-    def on_done(self, name, result, host_status=None):
-        pass
-
-    def prepare_status(self, name, nodes):
-        pass

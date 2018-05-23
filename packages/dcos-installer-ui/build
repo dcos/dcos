@@ -1,9 +1,0 @@
-#!/bin/bash
-cd "/pkg/src/dcos-installer-ui"
-npm install -g gulp@3.9.1
-npm install
-echo "module.exports = {};" > ./src/js/config/Config.dev.js
-
-npm run dist
-
-cp -r dist/ "$PKG_PATH"/usr

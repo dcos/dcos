@@ -105,12 +105,6 @@ def run_preflight(config, pf_script_path=(SERVE_DIR + '/dcos_install.sh'), block
     chains = []
 
     preflight_chain = ssh.utils.CommandChain('preflight')
-    # In web mode run if no --offline flag used.
-    if options.action == 'web':
-        if options.offline:
-            log.debug('Offline mode used. Do not install prerequisites on CentOS7, RHEL7 in web mode')
-        else:
-            _add_prereqs_script(preflight_chain)
 
     add_pre_action(preflight_chain, pf.user)
     preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Copying preflight script')
