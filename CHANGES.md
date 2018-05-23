@@ -5,6 +5,7 @@
 * For Security updates, please call out in Security updates section.
 * Add to the top of the existing list.
 * External Projects like Mesos and Marathon shall provide a link to their published changelogs.
+* Added (marathon)/v2/pods endpoint to diagnostics bundle. (COPS-3191)
 
 Format of the entries must be.
 
