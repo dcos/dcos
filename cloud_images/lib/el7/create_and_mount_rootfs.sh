@@ -6,7 +6,7 @@ set -o errexit -o nounset -o pipefail
 : ${DEVICE:?"ERROR: DEVICE must be set"}
 : ${ROOTFS:?"ERROR: ROOTFS must be set"}
 
-PARTITION=${DEVICE}1
+PARTITION="${DEVICE}1"
 
 parted -s "${DEVICE}" -- \
   mklabel msdos \
