@@ -4,6 +4,7 @@ package:
       producers:
         prometheus:
           port: 61091
+          static_buffer: true
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
