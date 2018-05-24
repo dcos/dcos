@@ -5,6 +5,8 @@
 
 * Added support for CoreOS 1688.4.0. (DCOS_OSS-2417)
 
+* Updated to [DC/OS UI 1.11+1.13.0](https://github.com/dcos/dcos-ui/blob/1.11%2Bv1.13.0/CHANGELOG.md)
+
 
 ### Fixed and improved
 
