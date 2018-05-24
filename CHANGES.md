@@ -16,6 +16,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Update DC/OS UI to [master+v1.14.0](https://github.com/dcos/dcos-ui/blob/master%2Bv1.14.0/CHANGELOG.md)
+
 * Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
 
 * DC/OS Metrics: moved the prometheus producer from port 9273 to port 61091. (DCOS_OSS-2368)
