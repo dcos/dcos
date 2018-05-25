@@ -20,6 +20,9 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
+
+* Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
 
 ### Security Updates
 
