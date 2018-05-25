@@ -25,6 +25,20 @@ chmod +x "$marathon_wrapper"
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
 
+postinstall_conf="/var/lib/dcos/marathon/environment"
+if [ ! -f $"postinstall_conf" ]; then
+  cat <<-EOF > "$postinstall_conf"
+# You may specify Marathon post-install configuration in this file. It will persist between upgrades.
+#
+# Environment variables specified here will override those specified via installation configuration.
+#
+# Please review section "Specifying Command Line Arguments with Environment Variables" in the docs:
+#
+#    https://mesosphere.github.io/marathon/docs/command-line-flags.html
+
+EOF
+fi
+
 cat <<EOF > "$marathon_service"
 [Unit]
 Description=Marathon: container orchestration engine
