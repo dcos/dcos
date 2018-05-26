@@ -990,6 +990,7 @@ entry = {
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
+        'marathon_java_args': '',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
