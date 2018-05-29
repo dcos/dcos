@@ -10,7 +10,7 @@ Mesosphere DC/OS has two primary repositories.
 
 In our design, the closed source Mesosphere Enterprise DC/OS depends on the Open Source DC/OS, [builds on top of the artifact](https://github.com/mesosphere/dcos-enterprise/blob/master/util/build.py) from the Open source DC/OS.
 
-We have designed our DC/OS pull request workflow, in such a way,  we test our Open Source changes
+We have designed our DC/OS pull request workflow in a way we test our Open Source changes
 with the Enterprise consumer,  we keep both versions ready for release at any moment in time.
 It can be cumbersome, and error-prone to deal with two version control systems at the same time.
 A friendly bot called `@mesosphere-mergebot` comes to our rescue and helps the developers with the process.
@@ -131,7 +131,7 @@ tested as a batch against the HEAD of the target branch, and merged.
 
 #### Who are the committers, who can merge the PR?
 
-We have concept of owners, called [dcos-owners](https://github.com/dcos/dcos/blob/1.11/owners.json) listed in this file.
+We have concept of owners, called [dcos-owners](https://github.com/dcos/dcos/blob/master/owners.json) listed in this file.
 
 They can issue a command like
 
@@ -153,9 +153,9 @@ the PR. They can review the PR, review the failure, and can unblock you by doing
 @mesosphere-mergebot override-status <status-check> JIRA-WHICH-IS-NOT-CLOSED
 ```
 
-#### What do I do if I suspect there is a mergebot problem in the above process?
+#### What do I do if I suspect there is a problem, and it is not related to my pull request?
 
-Please ping `#tools-infra` channel for support.
+Please report a bug at https://jira.mesosphere.com/
 
 
 ## dcos-owners
