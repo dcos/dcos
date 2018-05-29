@@ -1,6 +1,7 @@
 # Various tests that don't fit into the other categories and don't make their own really.
 
 import os
+import uuid
 
 import yaml
 
@@ -36,3 +37,52 @@ def test_profile_symlink():
     symlink_target = expanded_config['profile_symlink_target']
     expected_symlink_source = expanded_config['profile_symlink_source']
     assert expected_symlink_source == os.readlink(symlink_target)
+
+
+def test_checks(dcos_api_session):
+    base_cmd = [
+        '/opt/mesosphere/bin/dcos-shell',
+        'dcos-check-runner',
+        'check',
+    ]
+    test_uuid = uuid.uuid4().hex
+
+    # Poststart node checks should pass.
+    dcos_api_session.metronome_one_off({
+        'id': 'test-checks-node-poststart-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(base_cmd + ['node-poststart']),
+        },
+    })
+
+    # Cluster checks should pass.
+    dcos_api_session.metronome_one_off({
+        'id': 'test-checks-cluster-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join(base_cmd + ['cluster']),
+        },
+    })
+
+    # Check runner should only use the PATH and LD_LIBRARY_PATH from check config.
+    dcos_api_session.metronome_one_off({
+        'id': 'test-checks-env-' + test_uuid,
+        'run': {
+            'cpus': .1,
+            'mem': 128,
+            'disk': 0,
+            'cmd': ' '.join([
+                'env',
+                'PATH=badvalue',
+                'LD_LIBRARY_PATH=badvalue',
+                '/opt/mesosphere/bin/dcos-check-runner',
+                'check',
+                'node-poststart',
+            ]),
+        },
+    })
