@@ -48,6 +48,7 @@ def test_set_superuser_password(tmpdir):
         assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
 
 
+# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_generate_node_upgrade_script(tmpdir, monkeypatch):
     upgrade_config = """
@@ -250,6 +251,7 @@ bootstrap_url: http://example.com
 """
 
 
+# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
@@ -322,6 +324,7 @@ def aws_cf_configure(config, tmpdir, monkeypatch):
         return backend.do_aws_cf_configure()
 
 
+# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, caplog):
     """
@@ -339,6 +342,7 @@ def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, cap
     assert [expected_message] == filtered_messages
 
 
+# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure_logs_validation_errors(tmpdir, monkeypatch, caplog):
     """

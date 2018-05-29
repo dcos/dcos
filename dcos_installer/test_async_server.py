@@ -280,6 +280,7 @@ public_agent_list: []
 '''
 
 
+# TODO: DCOS_OSS-3474 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_action_deploy_post(client, monkeypatch):
     route = '/api/v1/action/deploy'

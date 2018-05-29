@@ -24,16 +24,19 @@ mesos-config:
 """
 
 
+# TODO: DCOS_OSS-3466 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list():
     assert run(["pkgpanda", "list", "--repository={}".format(resources_test_dir("packages"))]) == list_output
 
 
+# TODO: DCOS_OSS-3466 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_active():
     assert run(["pkgpanda", "active", "--root={}".format(resources_test_dir("install"))]) == active_output
 
 
+# TODO: DCOS_OSS-3466 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_remove(tmpdir):
     repo_dir = str(tmpdir.join("repo"))
