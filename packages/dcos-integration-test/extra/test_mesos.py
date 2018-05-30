@@ -136,7 +136,14 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
 
 
 def test_files_api(dcos_api_session):
+    '''
+    This test verifies that the standard output and error of a Mesos task can be
+    read. We check that neither standard output nor error are empty files. Since
+    the default `marathon_test_app()` does not write to its standard output the
+    task definition is modified to output something there.
+    '''
     app, test_uuid = test_helpers.marathon_test_app()
+    app['cmd'] = 'echo $DCOS_TEST_UUID && ' + app['cmd']
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
