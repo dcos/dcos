@@ -53,11 +53,23 @@ def delete_ec2_volume(name, timeout=300):
     """
     def _force_detach_volume(volume):
         for attachment in volume.attachments:
-            volume.detach_from_instance(
-                DryRun=False,
-                InstanceId=attachment['InstanceId'],
-                Device=attachment['Device'],
-                Force=True)
+            try:
+                volume.detach_from_instance(
+                    DryRun=False,
+                    InstanceId=attachment['InstanceId'],
+                    Device=attachment['Device'],
+                    Force=True)
+            except exceptions.ClientError as exc:
+                # See the following link for the structure of the exception:
+                # https://github.com/boto/botocore/blob/4d4c86b2bdd4b7a8e110e02abd4367f07137ca47/botocore/exceptions.py#L346
+                err_message = exc.response['Error']['Message']
+                err_code = exc.response['Error']['Code']
+                # See the following link for details of the error message:
+                # https://jira.mesosphere.com/browse/DCOS-37441?focusedCommentId=156163&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-156163
+                available_msg = "is in the 'available' state"
+                if err_code == 'IncorrectState' and available_msg in err_message:
+                    return
+                raise
 
     @retrying.retry(wait_fixed=30 * 1000, stop_max_delay=timeout * 1000,
                     retry_on_exception=lambda exc: isinstance(exc, botocore.exceptions.ClientError))
