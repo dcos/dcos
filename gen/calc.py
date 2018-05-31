@@ -780,7 +780,7 @@ def calculate_check_config(check_time):
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': '30s',
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
