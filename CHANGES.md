@@ -39,6 +39,17 @@ Format of the entries must be.
 * Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS_OSS-3537)
 
 
+## DC/OS 1.10.8
+
+### Notable changes
+
+### Fixed and improved
+
+* Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
+
+### Security
+
+
 ### TODO: (skumaran) - Include CHANGES.md for 1.10.6 release.
 
 
