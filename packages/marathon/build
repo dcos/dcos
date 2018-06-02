@@ -40,7 +40,7 @@ PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
-# The env file in /var/lib/dcos is for post-install configuration and presists with upgrades.
+# The env file in /var/lib/dcos is for post-install configuration and persists with upgrades.
 EnvironmentFile=-/var/lib/dcos/marathon/environment
 Environment=JAVA_HOME=${JAVA_HOME}
 ExecStartPre=/bin/ping -c1 leader.mesos
