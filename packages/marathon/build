@@ -22,22 +22,6 @@ mkdir -p "$(dirname "$marathon_wrapper")"
 envsubst '$PKG_PATH' < /pkg/extra/marathon.sh > "$marathon_wrapper"
 chmod +x "$marathon_wrapper"
 
-postinstall_conf="/var/lib/dcos/marathon/environment"
-# Check for the existence of this file so we don't clobber it on upgrade
-if [ ! -f $"postinstall_conf" ]; then
-  mkdir -p "$(dirname "$postinstall_conf")"
-  cat <<-EOF > "$postinstall_conf"
-# You may specify Marathon post-install configuration in this file. It will persist between upgrades.
-#
-# Environment variables specified here will override those specified via installation configuration.
-#
-# Please review section "Specifying Command Line Arguments with Environment Variables" in the docs:
-#
-#    https://mesosphere.github.io/marathon/docs/command-line-flags.html
-
-EOF
-fi
-
 marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
 
