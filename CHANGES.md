@@ -9,6 +9,8 @@
 
 * Updated to [Marathon 1.6.496](https://github.com/dcos/dcos/pull/2678).
 
+* Updated REX-Ray version to 0.11.1 (DCOS_OSS-3597) [rexray v0.11.1](https://github.com/rexray/rexray/releases/tag/v0.11.1)
+
 
 ### Fixed and improved
 
