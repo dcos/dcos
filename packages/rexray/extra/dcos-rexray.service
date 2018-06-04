@@ -14,4 +14,6 @@ Environment=DOCKER_LEGACY=true
 ExecStartPre=/bin/rm -f /var/run/libstorage/lsx.lock
 # Allow REX-Ray configuration to be changed during upgrade.
 ExecStartPre=/bin/cp /opt/mesosphere/etc/rexray.conf /etc/rexray/config.yml
+# Prevent startup error: "open /run/docker/plugins/rexray.sock: no such file or directory"
+ExecStartPre=/bin/mkdir -p /run/docker/plugins
 ExecStart=__PKG_PATH__/bin/rexray start -f
