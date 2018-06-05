@@ -3,8 +3,8 @@
   "sources": {
     "toybox": {
       "kind": "url_extract",
-      "url": "https://landley.net/toybox/downloads/toybox-0.7.6.tar.gz",
-      "sha1": "4c71edbbb09707523ff759b94076fdd2110320ef"
+      "url": "https://landley.net/toybox/downloads/toybox-0.7.1.tar.gz",
+      "sha1": "46c0918ca77127db3db196c0db446577f8247d3a"
     }
   }
 }
