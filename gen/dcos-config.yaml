@@ -149,7 +149,8 @@ package:
         },
         {dcos_overlay,
           [
-            {enable_overlay, {{ dcos_overlay_enable }}}
+            {enable_overlay, {{ dcos_overlay_enable }}},
+            {enable_ipv6, {{ enable_ipv6 }}}
           ]
         },
         {dcos_rest,
@@ -167,7 +168,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network_json }}
+        "network": {{ dcos_overlay_network }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -202,7 +203,8 @@ package:
           "allocate_subnet": true,
           "mesos_bridge": true,
           "docker_bridge": true,
-          "overlay_mtu": {{ dcos_overlay_mtu }}
+          "overlay_mtu": {{ dcos_overlay_mtu }},
+          "enable_ipv6": {{ enable_ipv6 }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
        }
@@ -215,7 +217,8 @@ package:
           "allocate_subnet": true,
           "mesos_bridge": false,
           "docker_bridge": false,
-          "overlay_mtu": {{ dcos_overlay_mtu }}
+          "overlay_mtu": {{ dcos_overlay_mtu }},
+          "enable_ipv6": {{ enable_ipv6 }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
