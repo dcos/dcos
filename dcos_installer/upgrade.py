@@ -77,22 +77,22 @@ if [[ "$found_version" != "{{ installed_cluster_version }}" ]]; then
     exit 1
 fi
 
-if [[ "$SKIP_CHECKS" = "false" ]]; then
-    # Check if the node has node/cluster checks and run them
-    if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-        # command exists
-        if ! output="$(dcos-diagnostics check node-poststart 2>&1)"; then
-            echo "Cannot proceed with upgrade, node checks failed"
+# Probe for which check command is available, if any.
+check_cmd=""
+if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+    # dcos-diagnostics provides checks.
+    check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
+fi
+
+# If we aren't skipping checks and have a check command available, run checks.
+if [[ "$SKIP_CHECKS" = "false" && ! -z "$check_cmd" ]]; then
+    for check_type in "node-poststart cluster"; do
+        if ! output="$($check_cmd $check_type 2>&1)"; then
+            echo "Cannot proceed with upgrade, $check_type checks failed"
             echo >&2 "$output"
             exit 1
         fi
-
-        if ! clusteroutput="$(dcos-diagnostics check cluster 2>&1)"; then
-            echo "Cannot proceed with upgrade, cluster checks failed"
-            echo >&2 "$clusteroutput"
-            exit 1
-        fi
-    fi
+    done
 fi
 
 # Determine this node's role.
