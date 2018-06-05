@@ -127,71 +127,71 @@ aws_region_names = [
 
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-44a03c22',
-        'stable': 'ami-44a03c22',
+        'coreos': 'ami-a2b6a2de',
+        'stable': 'ami-a2b6a2de',
         'el7': 'ami-965345f8',
         'el7prereq': 'ami-72f93314',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-d085f3ac',
-        'stable': 'ami-d085f3ac',
+        'coreos': 'ami-41461c3d',
+        'stable': 'ami-41461c3d',
         'el7': 'ami-8af586e9',
         'el7prereq': 'ami-cac2b2a9',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-21ce3c43',
-        'stable': 'ami-21ce3c43',
+        'coreos': 'ami-f58e4097',
+        'stable': 'ami-f58e4097',
         'el7': 'ami-427d9c20',
         'el7prereq': 'ami-a0d736c2',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
-        'coreos': 'ami-90c152ff',
-        'stable': 'ami-90c152ff',
+        'coreos': 'ami-604e118b',
+        'stable': 'ami-604e118b',
         'el7': 'ami-2d0cbc42',
         'el7prereq': 'ami-b371c1dc',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
-        'coreos': 'ami-32d1474b',
-        'stable': 'ami-32d1474b',
+        'coreos': 'ami-34237c4d',
+        'stable': 'ami-34237c4d',
         'el7': 'ami-e46ea69d',
         'el7prereq': 'ami-4d4f8634',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
-        'coreos': 'ami-78befd14',
-        'stable': 'ami-78befd14',
+        'coreos': 'ami-8d2472e1',
+        'stable': 'ami-8d2472e1',
         'el7': 'ami-a5acd0c9',
         'el7prereq': 'ami-1264187e',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
-        'coreos': 'ami-e582d29f',
-        'stable': 'ami-e582d29f',
+        'coreos': 'ami-9e2685e3',
+        'stable': 'ami-9e2685e3',
         'el7': 'ami-771beb0d',
         'el7prereq': 'ami-b05aadca',
         'natami': 'ami-4c9e4b24'
     },
     'us-gov-west-1': {
-        'coreos': 'ami-9579f7f4',
-        'stable': 'ami-9579f7f4',
+        'coreos': 'ami-e0aa3f81',
+        'stable': 'ami-e0aa3f81',
         'el7': 'ami-9923a1f8',
         'el7prereq': 'ami-9923a1f8',
         'natami': 'ami-fe991b9f'
     },
     'us-west-1': {
-        'coreos': 'ami-e0696980',
-        'stable': 'ami-e0696980',
+        'coreos': 'ami-07a6b767',
+        'stable': 'ami-07a6b767',
         'el7': 'ami-866151e6',
         'el7prereq': 'ami-63cafb03',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
-        'coreos': 'ami-65269d1d',
-        'stable': 'ami-65269d1d',
+        'coreos': 'ami-b41377cc',
+        'stable': 'ami-b41377cc',
         'el7': 'ami-a9b24bd1',
         'el7prereq': 'ami-1de01e65',
         'natami': 'ami-bb69128b'
