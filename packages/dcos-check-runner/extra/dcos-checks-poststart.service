@@ -1,0 +1,7 @@
+[Unit]
+Description=DC/OS Poststart Checks: Run node-poststart checks
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+StandardOutput=journal
+User=dcos_check_runner
+ExecStart=/opt/mesosphere/bin/dcos-check-runner check node-poststart

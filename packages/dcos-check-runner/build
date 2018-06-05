@@ -6,3 +6,11 @@ cd /pkg/src/github.com/dcos/dcos-check-runner/
 make install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
+
+# Create the poststart check service and timer
+service="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.service"
+mkdir -p "$(dirname "$service")"
+cp /pkg/extra/dcos-checks-poststart.service "$service"
+timer="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.timer"
+mkdir -p "$(dirname "$timer")"
+cp /pkg/extra/dcos-checks-poststart.timer "$timer"

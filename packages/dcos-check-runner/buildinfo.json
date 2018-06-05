@@ -4,5 +4,6 @@
     "git": "https://github.com/dcos/dcos-check-runner.git",
     "ref": "1a241be934d81b4c146c0d5cc0f3d1a337ab23f3",
     "ref_origin": "master"
-  }
+  },
+  "username": "dcos_check_runner"
 }

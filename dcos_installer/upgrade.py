@@ -79,8 +79,11 @@ fi
 
 # Probe for which check command is available, if any.
 check_cmd=""
-if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-    # dcos-diagnostics provides checks.
+if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
+    # dcos-check-runner is available.
+    check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
+elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+    # Older-version cluster with checks provided by dcos-diagnostics.
     check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
 fi
 
@@ -130,7 +133,9 @@ pkgpanda activate --no-block {{ cluster_packages }} >&3
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300
     set +o errexit
-    until OUT="$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster 2>&1)" || [[ $T -eq 0 ]]; do
+    cmd="/opt/mesosphere/bin/dcos-check-runner check node-poststart && \
+/opt/mesosphere/bin/dcos-check-runner check cluster"
+    until OUT="$($cmd 2>&1)" || [[ $T -eq 0 ]]; do
         sleep 1
         let T=T-1
     done

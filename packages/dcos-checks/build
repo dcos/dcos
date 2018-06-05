@@ -10,13 +10,3 @@ cd /pkg/src/github.com/dcos/dcos-checks
 
 go install -v
 cp -r /pkg/bin/ "$PKG_PATH"
-
-# Create the service file for all roles
-service="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.service"
-mkdir -p "$(dirname "$service")"
-cp /pkg/extra/dcos-checks-poststart.service "$service"
-
-# Create service timer
-service_timer="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.timer"
-mkdir -p "$(dirname "$service_timer")"
-cp /pkg/extra/dcos-checks-poststart.timer "$service_timer"

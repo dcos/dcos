@@ -216,7 +216,7 @@ late_services = """- name: dcos-cfn-signal.service
     EnvironmentFile=/opt/mesosphere/etc/cfn_signal_metadata
     Environment="AWS_CFN_SIGNAL_THIS_RESOURCE={{ report_name }}"
     ExecStartPre=/bin/ping -c1 leader.mesos
-    ExecStartPre=/opt/mesosphere/bin/dcos-diagnostics check node-poststart
+    ExecStartPre=/opt/mesosphere/bin/dcos-check-runner check node-poststart
     ExecStartPre=/opt/mesosphere/bin/cfn-signal
     ExecStart=/usr/bin/touch /var/lib/dcos-cfn-signal"""
 
