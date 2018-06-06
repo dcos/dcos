@@ -52,6 +52,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
+
 * Removed the DC/OS web installer. (DCOS_OSS-2256)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
