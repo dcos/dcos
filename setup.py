@@ -41,7 +41,7 @@ setup(
         'coloredlogs',
         'Flask',
         'flask-compress',
-        'urllib3',
+        'urllib3==1.22',
         'chardet',
         'PyJWT',
         # Pins taken from 'azure==2.0.0rc4'
