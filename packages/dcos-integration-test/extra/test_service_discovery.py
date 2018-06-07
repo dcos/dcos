@@ -3,6 +3,8 @@ import logging
 
 import socket
 
+import subprocess
+
 import pytest
 import requests
 import retrying
@@ -187,6 +189,16 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
     """
     net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
     """
+
+    subprocess.run(['sudo', '/opt/mesosphere/bin/dcos-net-env', 'eval',
+                    '''
+                    recon_trace:calls(
+                        {jiffy, decode, 2}, 100000,
+                        [{scope, local}, {pid, dcos_net_mesos_state},
+                         {formatter, fun ({trace, _Pid , call, {jiffy, decode, [Data, _Opts]}}) ->
+                               io_lib:format("[dcos_net_mesos_listener] ~s~n", [Data])
+                         end}, {io_server, user}]).
+                    '''], check=True)
 
     with dcos_api_session.marathon.deploy_and_cleanup(app_definition):
         service_points = dcos_api_session.marathon.get_app_service_endpoints(app_definition['id'])
