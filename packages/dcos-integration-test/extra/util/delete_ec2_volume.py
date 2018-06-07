@@ -45,8 +45,8 @@ def _remove_env_vars(*env_vars):
 
 @retrying.retry(
     wait_exponential_multiplier=1000,
-    wait_exponential_max=300 * 000,
-    stop_max_delay=1800 * 000,
+    wait_exponential_max=300 * 1000,
+    stop_max_delay=1800 * 1000,
     retry_on_exception=is_rate_limit_error)
 def delete_ec2_volume(name, timeout=600):
     """Delete an EC2 EBS volume by its "Name" tag
