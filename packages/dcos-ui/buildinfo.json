@@ -1,9 +1,9 @@
 {
-  "docker": "node:4.4.4",
-  "single_source": {
-    "kind": "git",
-    "git": "https://github.com/dcos/dcos-ui.git",
-    "ref": "4c029645b5b168fb14d8a402787ba64cb47d49c3",
-    "ref_origin": "1.11+v1.13.0"
-  }
+    "docker": "node:4.4.4",
+    "single_source": {
+        "kind": "git",
+        "git": "https://github.com/dcos/dcos-ui.git",
+        "ref": "8b3fd93b7cf98984456a1e664fca453c6aae16ca",
+        "ref_origin": "1.11+v1.14.0"
+    }
 }
