@@ -7,6 +7,8 @@
 
 * Updated to [DC/OS UI 1.11+1.13.0](https://github.com/dcos/dcos-ui/blob/1.11%2Bv1.13.0/CHANGELOG.md)
 
+* Added check in custom installer for ftype=1 on Mesos and Docker work directories if using XFS. (COPS-3158)
+
 
 ### Fixed and improved
 
