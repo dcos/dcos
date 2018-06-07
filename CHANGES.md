@@ -5,12 +5,18 @@
 
 * Support for CoreOS 1688.4.0, 1688.5.3. (DCOS_OSS-2417, DCOS_OSS-3548)
 
-* Updated to [DC/OS UI 1.11+1.13.0](https://github.com/dcos/dcos-ui/blob/1.11%2Bv1.13.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.14.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.14.0/CHANGELOG.md)
 
-* Added check in custom installer for ftype=1 on Mesos and Docker work directories if using XFS. (COPS-3158)
+* Updated to [Marathon 1.6.496](https://github.com/dcos/dcos/pull/2678).
 
 
 ### Fixed and improved
+
+* Added check in custom installer for ftype=1 on Mesos and Docker work directories if using XFS. (COPS-3158)
+
+* Increase the limit of Cosmos
+
+* DCOS Cosmos: Increase the limit of max-payload size at /v2/apps Marathon end point. (DCOS-34435)
 
 
 ### Security updates
