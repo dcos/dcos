@@ -58,4 +58,4 @@ Format of the entries must be.
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
 
-* Updated REX-Ray version to 0.11.1 (DCOS_OSS-3597) [rexray v0.11.1](https://github.com/rexray/rexray/releases/tag/v0.11.1)
+* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
