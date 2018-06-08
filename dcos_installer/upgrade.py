@@ -73,26 +73,29 @@ fi
 found_version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
 if [[ "$found_version" != "{{ installed_cluster_version }}" ]]; then
     echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}." \
-         "Version found on node: $found_version"
+        "Version found on node: $found_version"
     exit 1
 fi
 
-if [[ "$SKIP_CHECKS" = "false" ]]; then
-   # Check if the node has node/cluster checks and run them
-   if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-      # command exists
-      if ! output="$(dcos-diagnostics check node-poststart 2>&1)"; then
-          echo "Cannot proceed with upgrade, node checks failed"
-          echo >&2 "$output"
-          exit 1
-      fi
+# Probe for which check command is available, if any.
+check_cmd=""
+if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
+    # dcos-check-runner is available.
+    check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
+elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+    # Older-version cluster with checks provided by dcos-diagnostics.
+    check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
+fi
 
-      if ! clusteroutput="$(dcos-diagnostics check cluster 2>&1)"; then
-          echo "Cannot proceed with upgrade, cluster checks failed"
-          echo >&2 "$clusteroutput"
-          exit 1
-      fi
-   fi
+# If we aren't skipping checks and have a check command available, run checks.
+if [[ "$SKIP_CHECKS" = "false" && ! -z "$check_cmd" ]]; then
+    for check_type in "node-poststart cluster"; do
+        if ! output="$($check_cmd $check_type 2>&1)"; then
+            echo "Cannot proceed with upgrade, $check_type checks failed"
+            echo >&2 "$output"
+            exit 1
+        fi
+    done
 fi
 
 # Determine this node's role.
@@ -101,7 +104,7 @@ ROLE_DIR=/etc/mesosphere/roles
 num_roles=$( (ls --format=single-column $ROLE_DIR/{master,slave,slave_public} || true) 2>/dev/null | wc -l)
 if [ "$num_roles" -ne "1" ]; then
     echo "ERROR: Can't determine this node's role." \
-         "One of master, slave, or slave_public must be present under $ROLE_DIR."
+        "One of master, slave, or slave_public must be present under $ROLE_DIR."
     exit 1
 fi
 
@@ -130,14 +133,16 @@ pkgpanda activate --no-block {{ cluster_packages }} >&3
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300
     set +o errexit
-    until OUT="$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster 2>&1)" || [[ $T -eq 0 ]]; do
-      sleep 1
-      let T=T-1
+    cmd="/opt/mesosphere/bin/dcos-check-runner check node-poststart && \
+/opt/mesosphere/bin/dcos-check-runner check cluster"
+    until OUT="$($cmd 2>&1)" || [[ $T -eq 0 ]]; do
+        sleep 1
+        let T=T-1
     done
     RETCODE=$?
     if [[ $RETCODE -ne 0 ]]; then
-       echo "Node upgrade not successful, checks failed"
-       echo >&2 "$OUT"
+        echo "Node upgrade not successful, checks failed"
+        echo >&2 "$OUT"
     fi
     exit $RETCODE
     set -o errexit

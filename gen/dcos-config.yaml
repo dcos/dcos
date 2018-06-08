@@ -596,6 +596,8 @@ package:
       }
   - path: /etc/dcos-diagnostics-runner-config.json
     content: {{ check_config_contents }}
+  - path: /etc/dcos-check-config.json
+    content: {{ check_config_contents }}
   - path: /etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
