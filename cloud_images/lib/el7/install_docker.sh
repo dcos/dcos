@@ -4,10 +4,10 @@ set -o errexit -o nounset -o pipefail
 echo ">>> In install_docker.sh:"
 
 echo ">>> Installing Docker CE"
-curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-engine-17.05.0.ce-1.el7.centos.x86_64.rpm \
-  https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-17.05.0.ce-1.el7.centos.x86_64.rpm
-curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-engine-selinux-17.05.0.ce-1.el7.centos.noarch.rpm \
-  https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-17.05.0.ce-1.el7.centos.noarch.rpm
+curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-ce-17.06.2.ce-1.el7.centos.x86_64.rpm \
+  https://download.docker.com/linux/centos/7/x86_64/edge/Packages/docker-ce-17.06.2.ce-1.el7.centos.x86_64.rpm
+curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-ce-selinux-17.05.0.ce-1.el7.centos.noarch.rpm \
+  https://download.docker.com/linux/centos/7/x86_64/edge/Packages/docker-ce-selinux-17.05.0.ce-1.el7.centos.noarch.rpm
 
 yum -t -y install /tmp/docker*.rpm || true
 systemctl enable docker
