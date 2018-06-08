@@ -3,6 +3,8 @@
 
 ### Notable changes
 
+* Increased the timeout for the `mesos_agent_registered_with_masters` check. (DCOS_OSS-2277)
+
 ### Fixed and improved
 
 ### Security updates
