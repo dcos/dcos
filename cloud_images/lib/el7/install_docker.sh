@@ -3,6 +3,8 @@ set -o errexit -o nounset -o pipefail
 
 echo ">>> In install_docker.sh:"
 
+yum -t -y remove container-selinux
+
 echo ">>> Installing Docker CE"
 curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/docker-ce-17.06.2.ce-1.el7.centos.x86_64.rpm \
   https://download.docker.com/linux/centos/7/x86_64/edge/Packages/docker-ce-17.06.2.ce-1.el7.centos.x86_64.rpm
