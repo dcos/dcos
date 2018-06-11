@@ -1,4 +1,4 @@
-## DC/OS 1.10.7
+## DC/OS 1.10.8
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -13,6 +13,18 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+### Notable changes
+
+* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+
+
+### Fixed and improved
+
+
+### Security Updates
+
+
+## DC/OS 1.10.7
 
 ### Notable changes
 
