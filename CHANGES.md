@@ -57,3 +57,5 @@ Format of the entries must be.
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
+
+* Updated dcos-checks timeouts
