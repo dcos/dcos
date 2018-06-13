@@ -78,6 +78,8 @@
 
 ### Fixed and improved
 
+* DC/OS checks: Update checks timeout
+
 * Admin Router: Fixed a bug where Mesos leader changes would not be picked up (leading to unexpected 404 HTTP responses when using the service endpoint). (DCOS-21451)
 
 * Networking: Landed performance improvements and bug fixes in [lashup](https://github.com/dcos/lashup). (DCOS_OSS-2229)
