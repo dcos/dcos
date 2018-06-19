@@ -34,6 +34,8 @@ Format of the entries must be.
 
 * Admin Router: It is now possible to disable upstream request URL rewriting for `/service/` endpoint requests through the DCOS_SERVICE_REWRITE_REQUEST_URLS Marathon label. (DCOS_OSS-2420)
 
+* Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
+
 
 ### Security Updates
 
