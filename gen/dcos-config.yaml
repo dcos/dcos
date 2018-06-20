@@ -594,8 +594,6 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-diagnostics-runner-config.json
-    content: {{ check_config_contents }}
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
   - path: /etc/dcos-diagnostics.env

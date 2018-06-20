@@ -375,8 +375,10 @@ function d_type_enabled_if_xfs()
         DIRNAME="$(dirname "$DIRNAME")"
     done
     read -r filesystem_device filesystem_type <<<"$(df --portability --print-type "$DIRNAME" | awk 'END{print $1,$2}')"
-    if [[ "$filesystem_type" == "xfs" ]]; then
-        echo -n -e "Checking if $DIRNAME is mounted with \"fytpe=1\": "
+    # -b $filesystem_device check is there prevent this from failing in certain special dcos-docker configs
+    # see https://jira.mesosphere.com/browse/DCOS_OSS-3549
+    if [[ "$filesystem_type" == "xfs" && -b "$filesystem_device" ]]; then
+        echo -n -e "Checking if $DIRNAME is mounted with \"ftype=1\": "
         ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
         if [[ "$ftype_value" != "ftype=1" ]]; then
             RC=1
