@@ -1,3 +1,17 @@
+## DC/OS 1.11.4
+
+
+### Notable changes
+
+* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+
+
+### Fixed and improved
+
+
+### Security updates
+
+
 ## DC/OS 1.11.3
 
 

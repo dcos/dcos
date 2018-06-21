@@ -1,7 +1,8 @@
 {
-  "single_source": {
-    "kind": "url",
-    "url": "https://downloads.dcos.io/packages/rexray/rexray-Linux-x86_64-0.9.0.tar.gz",
-    "sha1": "be07ec9a41e5dc287fbe62006025de8a64392afb"
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/rexray/rexray.git",
+    "ref": "fc8bfbd2d02c2690fc3a755a9560dd12c88e0852",
+    "ref_origin": "v0.11.2"
   }
 }
