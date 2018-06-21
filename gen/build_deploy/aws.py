@@ -1,11 +1,12 @@
 """AWS Image Creation, Management, Testing"""
 
 import json
-import logging
 from copy import deepcopy
 from typing import Tuple
 
+import boto3
 import botocore.exceptions
+import pkg_resources
 import yaml
 from pkg_resources import resource_string
 from retrying import retry
@@ -13,18 +14,12 @@ from retrying import retry
 import gen
 import gen.build_deploy.util as util
 import pkgpanda.util
-import release
-import release.storage
 from gen.internals import Late, Source
 from pkgpanda.util import logger, split_by_token
 
 
 def get_ip_detect(name):
     return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
-
-
-def calculate_fault_domain_detect_contents(name):
-    return yaml.dump(resource_string('gen', 'fault-domain-detect/{}.sh'.format(name)).decode())
 
 
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
@@ -54,18 +49,10 @@ aws_base_source = Source(entry={
         'aws_stack_name': Late('{ "Ref" : "AWS::StackName" }'),
         'ip_detect_contents': get_ip_detect('aws'),
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': get_ip_detect('aws6'),
         'exhibitor_explicit_keys': 'false',
         'cluster_name': Late('{ "Ref" : "AWS::StackName" }'),
         'master_discovery': 'master_http_loadbalancer',
-        # DRY the cluster packages list in CF templates.
-        # This late expression isn't a Late because cluster-packages.json must go into cloud config, not the late
-        # package. The variable referenced here is stored behind two unnecessary keys because of CF template syntax
-        # requirements. See
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html.
-        # TODO(branden): Make this unnecessary by turning cluster-packages.json into a build artifact. See
-        # https://mesosphere.atlassian.net/browse/DCOS-13824.
-        'cluster_packages_json': '{ "Fn::FindInMap" : [ "ClusterPackagesJson", "default", "default" ] }',
-        'cluster_packages_json_var': lambda cluster_packages: json.dumps(cluster_packages),
         # The cloud_config template variables pertaining to "cloudformation.json"
         'master_cloud_config': '{{ master_cloud_config }}',
         'agent_private_cloud_config': '{{ slave_cloud_config }}',
@@ -73,7 +60,8 @@ aws_base_source = Source(entry={
         # template variable for the generating advanced template cloud configs
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents('aws')
+        'fault_domain_detect_contents': yaml.dump(
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
     },
     'conditional': {
         'oauth_available': {
@@ -82,6 +70,17 @@ aws_base_source = Source(entry={
                     'oauth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
                     'adminrouter_auth_enabled': Late('{ "Ref" : "OAuthEnabled" }'),
                 }
+            },
+            'false': {}
+        },
+        'licensing_enabled': {
+            'true': {
+                'must': {
+                    'license_key_contents': Late('{ "Ref" : "LicenseKey" }'),
+                },
+                'secret': [
+                    'license_key_contents',
+                ],
             },
             'false': {},
         }
@@ -132,49 +131,49 @@ region_to_ami_map = {
         'coreos': 'ami-93f2baf4',
         'stable': 'ami-93f2baf4',
         'el7': 'ami-965345f8',
-        'el7prereq': 'ami-72f93314',
+        'el7prereq': 'ami-f1aee697',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
         'coreos': 'ami-aacc7dc9',
         'stable': 'ami-aacc7dc9',
         'el7': 'ami-8af586e9',
-        'el7prereq': 'ami-cac2b2a9',
+        'el7prereq': 'ami-a55504d9',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
         'coreos': 'ami-9db0b0fe',
         'stable': 'ami-9db0b0fe',
         'el7': 'ami-427d9c20',
-        'el7prereq': 'ami-a0d736c2',
+        'el7prereq': 'ami-5ba66539',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
         'coreos': 'ami-903df7ff',
         'stable': 'ami-903df7ff',
         'el7': 'ami-2d0cbc42',
-        'el7prereq': 'ami-b371c1dc',
+        'el7prereq': 'ami-6a610905',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
         'coreos': 'ami-abcde0cd',
         'stable': 'ami-abcde0cd',
         'el7': 'ami-e46ea69d',
-        'el7prereq': 'ami-4d4f8634',
+        'el7prereq': 'ami-c51a54bc',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
         'coreos': 'ami-c11573ad',
         'stable': 'ami-c11573ad',
         'el7': 'ami-a5acd0c9',
-        'el7prereq': 'ami-1264187e',
+        'el7prereq': 'ami-f8f2b894',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
         'coreos': 'ami-1ad0000c',
         'stable': 'ami-1ad0000c',
         'el7': 'ami-771beb0d',
-        'el7prereq': 'ami-b05aadca',
+        'el7prereq': 'ami-27e5235a',
         'natami': 'ami-4c9e4b24'
     },
     'us-gov-west-1': {
@@ -188,14 +187,14 @@ region_to_ami_map = {
         'coreos': 'ami-b31d43d3',
         'stable': 'ami-b31d43d3',
         'el7': 'ami-866151e6',
-        'el7prereq': 'ami-63cafb03',
+        'el7prereq': 'ami-03bbae63',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
         'coreos': 'ami-444dcd24',
         'stable': 'ami-444dcd24',
         'el7': 'ami-a9b24bd1',
-        'el7prereq': 'ami-1de01e65',
+        'el7prereq': 'ami-845acbfc',
         'natami': 'ami-bb69128b'
     }
 }
@@ -217,6 +216,7 @@ late_services = """- name: dcos-cfn-signal.service
     EnvironmentFile=/opt/mesosphere/etc/cfn_signal_metadata
     Environment="AWS_CFN_SIGNAL_THIS_RESOURCE={{ report_name }}"
     ExecStartPre=/bin/ping -c1 leader.mesos
+    ExecStartPre=/opt/mesosphere/bin/dcos-check-runner check node-poststart
     ExecStartPre=/opt/mesosphere/bin/cfn-signal
     ExecStart=/usr/bin/touch /var/lib/dcos-cfn-signal"""
 
@@ -272,24 +272,6 @@ groups = {
 }
 
 
-def get_test_session(config=None):
-    if config is None:
-        assert release._config is not None
-        # TODO(cmaloney): HACK. Stashing and pulling the config from release/__init__.py
-        # is definitely not the right way to do this.
-
-        if 'testing' not in release._config:
-            raise RuntimeError("No testing section in configuration")
-
-        if 'aws' not in release._config['testing']:
-            raise RuntimeError("No testing.aws section in configuration")
-
-        config = release._config['testing']['aws']
-
-    # TODO(cmaloney): get_session shouldn't live in release.storage
-    return release.call_matching_arguments(release.storage.aws.get_session, config, True)
-
-
 def gen_ami_mapping(mappings):
     # create new dict with required mappings
     # all will have region by default
@@ -341,12 +323,7 @@ def render_cloudformation(cf_template, **kwds):
 
 @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000)
 def validate_cf(template_body):
-    try:
-        session = get_test_session()
-    except Exception as ex:
-        logging.warning("Skipping  AWS CloudFormation validation because couldn't get a test session: {}".format(ex))
-        return
-    client = session.client('cloudformation')
+    client = boto3.session.Session().client('cloudformation')
     try:
         client.validate_template(TemplateBody=template_body)
     except botocore.exceptions.ClientError as ex:
@@ -365,9 +342,11 @@ def _as_cf_artifact(filename, cloudformation):
 def _as_artifact_and_pkg(variant_prefix, filename, bundle: Tuple):
     cloudformation, results = bundle
     yield _as_cf_artifact("{}{}".format(variant_prefix, filename), cloudformation)
-    yield {'packages': results.config_package_ids}
-    if results.late_package_id:
-        yield {'packages': [results.late_package_id]}
+    for filename in results.stable_artifacts:
+        yield {
+            'reproducible_path': filename,
+            'local_path': filename,
+        }
 
 
 def gen_supporting_template():
@@ -389,13 +368,15 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
     ]
-    if cc_params['os_type'] == 'coreos':
+    supported_os = ('coreos', 'el7')
+    if cc_params['os_type'] not in supported_os:
+        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+    elif cc_params['os_type'] == 'coreos':
         extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
         cloud_init_implementation = 'coreos'
     elif cc_params['os_type'] == 'el7':
         cloud_init_implementation = 'canonical'
-    else:
-        raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
+        cc_params['os_type'] = 'el7prereq'
 
     results = gen.generate(
         arguments=variant_args,
@@ -436,12 +417,13 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
 def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path, os_type):
     for node_type in ['master', 'priv-agent', 'pub-agent']:
         # TODO(cmaloney): This forcibly overwriting arguments might overwrite a user set argument
+
         # without noticing (such as exhibitor_storage_backend)
         node_template_id, node_source = groups[node_type]
         local_source = Source()
         local_source.add_must('os_type', os_type)
         local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7", "el7prereq"}))
-        params = deepcopy(cf_instance_groups[node_template_id])
+        params = cf_instance_groups[node_template_id]
         params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
         params['node_type'] = node_type
@@ -460,7 +442,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
                 bundle = make_advanced_bundle(arguments,
                                               [node_source, local_source, num_masters_source],
                                               template_name,
-                                              params)
+                                              deepcopy(params))
                 yield from _as_artifact('{}.json'.format(master_tk), bundle)
 
                 # Zen template corresponding to this number of masters
@@ -477,7 +459,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
             bundle = make_advanced_bundle(arguments,
                                           [node_source, local_source],
                                           template_name,
-                                          params)
+                                          deepcopy(params))
             yield from _as_artifact('{}-{}'.format(os_type, template_name), bundle)
 
 
@@ -520,7 +502,7 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
         # Specialize the dcos-cfn-signal service
         cc_variant = results.utils.add_units(
             cc_variant,
-            yaml.safe_load(gen.template.parse_str(late_services).render(params)))
+            yaml.safe_load(gen.template.parse_str(late_services).render(deepcopy(params))))
 
         # Add roles
         cc_variant = results.utils.add_roles(cc_variant, params['roles'] + ['aws'])

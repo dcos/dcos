@@ -2,10 +2,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-checks.git",
-    "ref": "e707916d48efaeff45451ecb7213e07cab86afef",
+    "ref": "c34c5a76bd49bf5df224e0c8abca51a71dece475",
     "ref_origin": "master"
-  },
-  "state_directory": true,
-  "username": "dcos_diagnostics",
-  "group": "systemd-journal"
+  }
 }

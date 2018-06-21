@@ -11,8 +11,8 @@ import requests
 from generic_test_code.common import (
     generic_correct_upstream_dest_test,
     generic_correct_upstream_request_test,
-    generic_response_headers_verify_test,
     generic_upstream_headers_verify_test,
+    generic_verify_response_test,
     overridden_file_content,
     verify_header,
 )
@@ -96,7 +96,7 @@ class TestHistoryServiceRouting:
                                 headers=valid_user_header)
 
         assert resp.status_code == 503
-        assert 'Mesos leader is unknown' in resp.text
+        assert 'mesos leader is unknown' in resp.text
 
     def test_if_leader_is_local_state_is_handled(
             self, nginx_class, valid_user_header):
@@ -160,7 +160,7 @@ class TestHistoryServiceRouting:
                                 headers=h)
 
         assert resp.status_code == 503
-        assert 'Mesos leader is unknown' in resp.text
+        assert 'mesos leader is unknown' in resp.text
 
 
 class TestMetadata:
@@ -360,8 +360,8 @@ class TestMisc:
             aux_data=accel_buff_header,
         )
 
-        generic_response_headers_verify_test(master_ar_process_perclass,
-                                             valid_user_header,
-                                             '/system/v1/logs/foo/bar',
-                                             assert_headers=accel_buff_header,
-                                             )
+        generic_verify_response_test(
+            master_ar_process_perclass,
+            valid_user_header,
+            '/system/v1/logs/foo/bar',
+            assert_headers=accel_buff_header)

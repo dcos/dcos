@@ -14,6 +14,7 @@ import gen.build_deploy.util as util
 import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
+from pkgpanda.constants import cloud_config_yaml
 from pkgpanda.util import split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
@@ -54,13 +55,14 @@ azure_base_source = Source(entry={
     'must': {
         'resolvers': '["168.63.129.16"]',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
+        'ip6_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure6.sh').decode()),
         'master_discovery': 'static',
         'exhibitor_storage_backend': 'azure',
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/azure.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
     },
     'conditional': {
         'oauth_available': {
@@ -69,6 +71,17 @@ azure_base_source = Source(entry={
                     'oauth_enabled': Late("[[[variables('oauthEnabled')]]]"),
                     'adminrouter_auth_enabled': Late("[[[variables('oauthEnabled')]]]"),
                 }
+            },
+            'false': {},
+        },
+        'licensing_enabled': {
+            'true': {
+                'must': {
+                    'license_key_contents': Late("[[[variables('licenseKey')]]]"),
+                },
+                'secret': [
+                    'license_key_contents',
+                ],
             },
             'false': {},
         }
@@ -145,10 +158,10 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     '''
     results = gen.generate(
         arguments=gen_arguments,
-        extra_templates=['azure/cloud-config.yaml', 'azure/templates/' + arm_template + '.json'],
+        extra_templates=['azure/' + cloud_config_yaml, 'azure/templates/' + arm_template + '.json'],
         extra_sources=[azure_base_source] + extra_sources)
 
-    cloud_config = results.templates['cloud-config.yaml']
+    cloud_config = results.templates[cloud_config_yaml]
 
     # Add general services
     cloud_config = results.utils.add_services(cloud_config, 'canonical')
@@ -247,14 +260,16 @@ def make_template(num_masters, gen_arguments, varietal, bootstrap_variant_prefix
     else:
         raise ValueError("Unknown Azure varietal specified")
 
-    yield {'packages': results.config_package_ids}
-    if results.late_package_id:
-        yield {'packages': [results.late_package_id]}
     yield {
         'channel_path': 'azure/{}{}-{}master.azuredeploy.json'.format(bootstrap_variant_prefix, varietal, num_masters),
         'local_content': arm,
         'content_type': 'application/json; charset=utf-8'
     }
+    for filename in results.stable_artifacts:
+        yield {
+            'reproducible_path': filename,
+            'local_path': filename,
+        }
 
 
 def do_create(tag, build_name, reproducible_artifact_path, commit, variant_arguments, all_completes):

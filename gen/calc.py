@@ -35,10 +35,9 @@ import schema
 import yaml
 
 import gen.internals
-import pkgpanda.exceptions
-from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout
 
+
+DCOS_VERSION = '1.12-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -227,6 +226,12 @@ def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_fil
     return ip_detect_contents
 
 
+def calculate_ip6_detect_contents(ip6_detect_filename):
+    if ip6_detect_filename != '':
+        return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
+    return yaml.dump("")
+
+
 def calculate_rexray_config_contents(rexray_config):
     return yaml.dump(
         # Assume block style YAML (not flow) for REX-Ray config.
@@ -293,48 +298,57 @@ def validate_dcos_overlay_network(dcos_overlay_network):
     except ValueError as ex:
         raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
 
-    # Check the VTEP IP, VTEP MAC keys are present in the overlay
-    # configuration
-    assert 'vtep_subnet' in overlay_network.keys(), (
-        'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet: {}."
-            " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-
-    assert 'vtep_subnet6' in overlay_network.keys(), (
-        'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-    try:
-        ipaddress.ip_network(overlay_network['vtep_subnet6'])
-    except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for vtep_subnet6: {}."
-            " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-
-    assert 'vtep_mac_oui' in overlay_network.keys(), (
-        'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-    assert 'overlays' in overlay_network.keys(), (
+    assert 'overlays' in overlay_network, (
         'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+
     assert len(overlay_network['overlays']) > 0, (
-        'We need at least one overlay network configuration {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network))
 
     for overlay in overlay_network['overlays']:
+        assert 'name' in overlay, (
+            'Missing "name" in overlay configuration: {}'.format(overlay))
+
         assert (len(overlay['name']) <= 13), (
             "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
 
-        if overlay['name'] == 'dcos':
+        assert ('subnet' in overlay or 'subnet6' in overlay), (
+            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
+
+        assert 'vtep_mac_oui' in overlay_network.keys(), (
+            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
+
+        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+        validate_int_in_range(vtep_mtu, 552, None)
+
+        if 'subnet' in overlay:
+            # Check the VTEP IP is present in the overlay configuration
+            assert 'vtep_subnet' in overlay_network, (
+                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet: {}."
+                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet'])
             except ValueError as ex:
                 raise AssertionError(
                     "Incorrect value for overlay subnet {}."
                     " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
-        elif overlay['name'] == 'dcos6':
+
+        if 'subnet6' in overlay:
+            # Check the VTEP IP6 is present in the overlay configuration
+            assert 'vtep_subnet6' in overlay_network, (
+                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
+
+            try:
+                ipaddress.ip_network(overlay_network['vtep_subnet6'])
+            except ValueError as ex:
+                raise AssertionError(
+                    "Incorrect value for vtep_subnet6: {}."
+                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
             try:
                 ipaddress.ip_network(overlay['subnet6'])
             except ValueError as ex:
@@ -381,35 +395,6 @@ def validate_mesos_dns_ip_sources(mesos_dns_ip_sources):
 
 def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
-
-
-def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
-    return hash_checkout({
-        "commit": dcos_image_commit,
-        "template_filenames": json.loads(template_filenames),
-        "sources_id": sources_id})
-
-
-def calculate_config_package_ids(config_package_names, config_id):
-    def get_config_package_id(config_package_name):
-        pkg_id_str = "{}--setup_{}".format(config_package_name, config_id)
-        # validate the pkg_id_str generated is a valid PackageId
-        return pkg_id_str
-
-    return json.dumps(list(sorted(map(get_config_package_id, json.loads(config_package_names)))))
-
-
-def calculate_cluster_packages(config_package_ids, package_ids):
-    return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
-
-
-def validate_cluster_packages(cluster_packages):
-    pkg_id_list = json.loads(cluster_packages)
-    for pkg_id in pkg_id_list:
-        try:
-            PackageId(pkg_id)
-        except pkgpanda.exceptions.ValidationError as ex:
-            raise AssertionError(str(ex)) from ex
 
 
 def calculate_no_proxy(no_proxy):
@@ -505,6 +490,13 @@ def validate_dcos_l4lb_max_named_ip6(dcos_l4lb_max_named_ip6):
     validate_ipv6_addresses([dcos_l4lb_max_named_ip6])
 
 
+def validate_dcos_l4lb_enable_ipv6(dcos_l4lb_enable_ipv6, enable_ipv6):
+    validate_true_false(dcos_l4lb_enable_ipv6)
+    if enable_ipv6 == 'false':
+        assert dcos_l4lb_enable_ipv6 == 'false', "When enable_ipv6 is false, " \
+            "dcos_l4lb_enable_ipv6 must be false as well"
+
+
 def calculate_docker_credentials_dcos_owned(cluster_docker_credentials):
     if cluster_docker_credentials == "{}":
         return "false"
@@ -543,6 +535,53 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def calculate_adminrouter_tls_version_override(
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled):
+    tls_versions = list()
+    if adminrouter_tls_1_0_enabled == 'true':
+        tls_versions.append('TLSv1')
+
+    if adminrouter_tls_1_1_enabled == 'true':
+        tls_versions.append('TLSv1.1')
+
+    if adminrouter_tls_1_2_enabled == 'true':
+        tls_versions.append('TLSv1.2')
+
+    tls_version_string = " ".join(tls_versions)
+    return tls_version_string
+
+
+def calculate_adminrouter_tls_cipher_override(adminrouter_tls_cipher_suite):
+    if adminrouter_tls_cipher_suite != '':
+        return 'true'
+    else:
+        return 'false'
+
+
+def validate_adminrouter_tls_version_present(
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled):
+
+    tls_version_flags = [
+        adminrouter_tls_1_0_enabled,
+        adminrouter_tls_1_1_enabled,
+        adminrouter_tls_1_2_enabled,
+    ]
+
+    enabled_tls_flags_count = len(
+        [flag for flag in tls_version_flags if flag == 'true'])
+
+    msg = (
+        'At least one of adminrouter_tls_1_0_enabled, '
+        'adminrouter_tls_1_1_enabled and adminrouter_tls_1_2_enabled must be '
+        "set to 'true'."
+    )
+    assert enabled_tls_flags_count > 0, msg
+
+
 def validate_s3_prefix(s3_prefix):
     # See DCOS_OSS-1353
     assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
@@ -550,6 +589,12 @@ def validate_s3_prefix(s3_prefix):
 
 def validate_dns_bind_ip_blacklist(dns_bind_ip_blacklist):
     return validate_ip_list(dns_bind_ip_blacklist)
+
+
+def calculate_dns_bind_ip_blacklist_json(dns_bind_ip_blacklist, dns_bind_ip_reserved):
+    ips = validate_json_list(dns_bind_ip_blacklist)
+    reserved_ips = validate_json_list(dns_bind_ip_reserved)
+    return json.dumps(reserved_ips + ips)
 
 
 def validate_dns_forward_zones(dns_forward_zones):
@@ -672,13 +717,15 @@ def calculate_check_config(check_time):
             'checks': {
                 'components_master': {
                     'description': 'All DC/OS components are healthy.',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components'],
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
+                            '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
                     'timeout': '3s',
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001'],
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
+                            '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
                     'timeout': '3s',
                     'roles': ['agent']
                 },
@@ -702,6 +749,11 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
                     'timeout': '1s'
                 },
+                'ifconfig': {
+                    'description': 'The ifconfig utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
+                    'timeout': '1s'
+                },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
@@ -710,7 +762,7 @@ def calculate_check_config(check_time):
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': '30s',
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
@@ -733,6 +785,7 @@ def calculate_check_config(check_time):
                 'tar',
                 'curl',
                 'unzip',
+                'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
@@ -859,7 +912,6 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
-        validate_cluster_packages,
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -885,6 +937,7 @@ entry = {
         validate_dcos_l4lb_max_named_ip,
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
+        validate_dcos_l4lb_enable_ipv6,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -893,7 +946,11 @@ entry = {
         validate_exhibitor_storage_master_discovery,
         lambda exhibitor_admin_password_enabled: validate_true_false(exhibitor_admin_password_enabled),
         lambda enable_lb: validate_true_false(enable_lb),
+        lambda enable_ipv6: validate_true_false(enable_ipv6),
         lambda adminrouter_tls_1_0_enabled: validate_true_false(adminrouter_tls_1_0_enabled),
+        lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
+        lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
+        validate_adminrouter_tls_version_present,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -903,28 +960,35 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda licensing_enabled: validate_true_false(licensing_enabled),
+        lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
+        'dns_bind_ip_reserved': '["198.51.100.4"]',
         'dns_bind_ip_blacklist': '[]',
         'dns_forward_zones': '{}',
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
+        'adminrouter_tls_1_1_enabled': 'false',
+        'adminrouter_tls_1_2_enabled': 'true',
+        'adminrouter_tls_cipher_suite': '',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
-        'cluster_packages_json': lambda cluster_packages: cluster_packages,
         'enable_lb': 'true',
+        'enable_ipv6': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
         'gc_delay': '2days',
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'master_dns_bindall': 'true',
@@ -975,6 +1039,7 @@ entry = {
         'dcos_l4lb_max_named_ip': '11.255.255.255',
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
+        'dcos_l4lb_enable_ipv6': 'false',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1002,23 +1067,24 @@ entry = {
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
-        'fault_domain_detect_contents': calculate_fault_domain_detect_contents
+        'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'license_key_contents': '',
+        'enable_mesos_ipv6_discovery': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
+        'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
-        'dcos_version': '1.11-dev',
+        'dcos_version': DCOS_VERSION,
+        'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
-        'config_package_ids': calculate_config_package_ids,
-        'cluster_packages': calculate_cluster_packages,
-        'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',
@@ -1046,7 +1112,10 @@ entry = {
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_ld_library_path': '/opt/mesosphere/lib'
+        'check_ld_library_path': '/opt/mesosphere/lib',
+        'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
+        'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
+        'licensing_enabled': 'false',
     },
     'secret': [
         'cluster_docker_credentials',

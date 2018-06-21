@@ -42,6 +42,11 @@ endpoint_tests:
       - master
 ######### /dcos-metadata/ui-config.json
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /dcos-metadata/ui-config.json
       is_unauthed_access_permitted:
         locations:
           - /dcos-metadata/ui-config.json

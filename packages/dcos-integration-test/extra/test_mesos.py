@@ -9,6 +9,9 @@ import retrying
 import test_helpers
 from dcos_test_utils import marathon, recordio
 
+__maintainer__ = 'Gilbert88'
+__contact__ = 'core-team@mesosphere.io'
+
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
 # then an empty data chunk to indicate end-of-stream.
@@ -133,7 +136,14 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
 
 
 def test_files_api(dcos_api_session):
+    '''
+    This test verifies that the standard output and error of a Mesos task can be
+    read. We check that neither standard output nor error are empty files. Since
+    the default `marathon_test_app()` does not write to its standard output the
+    task definition is modified to output something there.
+    '''
     app, test_uuid = test_helpers.marathon_test_app()
+    app['cmd'] = 'echo $DCOS_TEST_UUID && ' + app['cmd']
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
@@ -169,6 +179,100 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
                 app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
 
         assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
+
+
+def test_blkio_stats(dcos_api_session):
+    # Launch a Marathon application to do some disk writes, and then verify that
+    # the cgroups blkio statistics of the application can be correctly retrieved.
+    app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
+    app_id = 'integration-test-{}'.format(test_uuid)
+
+    # The application will generate a 10k file with 10 disk writes.
+    #
+    # TODO(qianzhang): In some old platforms (CentOS 6 and Ubuntu 14),
+    # the first disk write of a blkio cgroup will always be missed in
+    # the blkio throttling statistics, so here we run two `dd` commands,
+    # the first one which does only one disk write will be missed on
+    # those platforms, and the second one will be recorded in the blkio
+    # throttling statistics. When we drop the CentOS 6 and Ubuntu 14
+    # support in future, we should remove the first `dd` command.
+    marker_file = 'marker'
+    app['cmd'] = ('dd if=/dev/zero of=file bs=1024 count=1 oflag=dsync && '
+                  'dd if=/dev/zero of=file bs=1024 count=10 oflag=dsync && '
+                  'echo -n done > {} && sleep 1000').format(marker_file)
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app, check_health=False):
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
+        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+
+        # Wait up to 10 seconds for the marker file to appear which
+        # indicates the disk writes via `dd` command are done.
+        @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
+        def get_marker_file_content():
+            return dcos_api_session.mesos_sandbox_file(
+                app_task['slaveId'], marathon_framework_id, app_task['id'], marker_file)
+
+        assert get_marker_file_content() == 'done'
+
+        # Fetch the Mesos master state
+        master_ip = dcos_api_session.masters[0]
+        r = dcos_api_session.get('/state', host=master_ip, port=5050)
+        assert r.status_code == 200
+        state = r.json()
+
+        # Find the agent_id from master state
+        agent_id = None
+        for framework in state['frameworks']:
+            for task in framework['tasks']:
+                if app_id in task['id']:
+                    agent_id = task['slave_id']
+        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(app_id)
+
+        # Find hostname from agent_id
+        agent_hostname = None
+        for agent in state['slaves']:
+            if agent['id'] == agent_id:
+                agent_hostname = agent['hostname']
+        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
+        logging.debug('Located %s on agent %s', app_id, agent_hostname)
+
+        # Fetch the Mesos agent statistics
+        r = dcos_api_session.get('/monitor/statistics', host=agent_hostname, port=5051)
+        assert r.status_code == 200
+        stats = r.json()
+
+        total_io_serviced = None
+        total_io_service_bytes = None
+        for stat in stats:
+            # Find the statistic for the Marathon application that we deployed. Since what that
+            # Marathon application launched is a Mesos command task (i.e., using Mesos built-in
+            # command executor), the executor ID will be same as the task ID, so if we find the
+            # `app_id` in an executor ID of a statistic, that must be the statistic entry
+            # corresponding to the application that we deployed.
+            if app_id in stat['executor_id']:
+                # We only care about the blkio throttle statistics but not the blkio cfq statistics,
+                # because in the environment where the disk IO scheduler is not `cfq`, all the cfq
+                # statistics may be 0.
+                throttle_stats = stat['statistics']['blkio_statistics']['throttling']
+                for throttle_stat in throttle_stats:
+                    if 'device' not in throttle_stat:
+                        total_io_serviced = throttle_stat['io_serviced'][0]['value']
+                        total_io_service_bytes = throttle_stat['io_service_bytes'][0]['value']
+
+        assert total_io_serviced is not None, ('Total blkio throttling IO serviced not found '
+                                               'for app_id {}'.format(app_id))
+        assert total_io_service_bytes is not None, ('Total blkio throttling IO service bytes '
+                                                    'not found for app_id {}'.format(app_id))
+        # We expect the statistics retrieved from Mesos agent are equal or greater than what we
+        # did with the `dd` command (i.e., 10 and 10240), because:
+        #   1. Besides the disk writes done by the `dd` command, the statistics may also include
+        #      some disk reads, e.g., to load the necessary executable binary and libraries.
+        #   2. In the environment where RAID is enabled, there may be multiple disk writes to
+        #      different disks for a single `dd` write.
+        assert int(total_io_serviced) >= 10, ('Total blkio throttling IO serviced for app_id {} '
+                                              'are less than 10'.format(app_id))
+        assert int(total_io_service_bytes) >= 10240, ('Total blkio throttling IO service bytes for '
+                                                      'app_id {} are less than 10240'.format(app_id))
 
 
 def get_region_zone(domain):

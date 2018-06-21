@@ -86,11 +86,6 @@
       "url": "https://pypi.python.org/packages/source/c/coloredlogs/coloredlogs-3.5.tar.gz",
       "sha1": "251c88bd48ee3e23a12b416f7297202e544d0cd2"
     },
-    "docker-py": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/d/docker-py/docker-py-1.7.2.tar.gz",
-      "sha1": "bc4f33cac9d6ad13c41ac7ff3e76de30fef8c4cf"
-    },
     "docutils": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",

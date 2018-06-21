@@ -3,10 +3,12 @@ import os
 import sys
 import tempfile
 from subprocess import CalledProcessError, check_call
+from typing import List
 
 from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
+                                install_root,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
@@ -178,7 +180,7 @@ def setup(install, repository):
 
     # Check for /opt/mesosphere/install_progress. If found, recover the partial
     # update.
-    if os.path.exists("/opt/mesosphere/install_progress"):
+    if os.path.exists(install_root + "/install_progress"):
         took_action, msg = install.recover_swap_active()
         if not took_action:
             print("No recovery performed: {}".format(msg))
@@ -189,6 +191,20 @@ def _start_dcos_target(block_systemd):
     check_call(["systemctl", "daemon-reload"])
     check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
     check_call(["systemctl", "start", "dcos.target"] + no_block)
+
+
+def _get_package_list(package_list_id: str, repository_url: str) -> List[str]:
+    package_list_url = repository_url + '/package_lists/{}.package_list.json'.format(package_list_id)
+    with tempfile.NamedTemporaryFile() as f:
+        download(f.name, package_list_url, os.getcwd(), rm_on_error=False)
+        package_list = load_json(f.name)
+
+    if not isinstance(package_list, list):
+        raise ValidationError('{} should contain a JSON list of packages. Got a {}'.format(
+            package_list_url, type(package_list)
+        ))
+
+    return package_list
 
 
 def _do_bootstrap(install, repository):
@@ -260,14 +276,12 @@ def _do_bootstrap(install, repository):
         print("Calculated active packages from bootstrap tarball")
         to_activate = list(install.get_active())
 
-        # Fetch and activate all requested additional packages to accompany the bootstrap packages.
-        cluster_packages_filename = install.get_config_filename("setup-flags/cluster-packages.json")
-        cluster_packages = if_exists(load_json, cluster_packages_filename)
-        print("Checking for cluster packages in:", cluster_packages_filename)
-        if cluster_packages:
-            if not isinstance(cluster_packages, list):
-                raise ValidationError('{} should contain a JSON list of packages. Got a {}'.format(
-                    cluster_packages_filename, type(cluster_packages)))
+        package_list_filename = install.get_config_filename("setup-flags/cluster-package-list")
+        print("Checking for cluster packages in:", package_list_filename)
+        package_list_id = if_exists(load_string, package_list_filename)
+        if package_list_id:
+            print("Cluster package list:", package_list_id)
+            cluster_packages = _get_package_list(package_list_id, repository_url)
             print("Loading cluster-packages: {}".format(cluster_packages))
 
             for package_id_str in cluster_packages:

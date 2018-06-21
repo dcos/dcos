@@ -6,6 +6,9 @@ import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
+__maintainer__ = 'vespian'
+__contact__ = 'dcos-security@mesosphere.io'
+
 
 def test_if_dcos_ui_is_up(dcos_api_session):
     r = dcos_api_session.get('/')
@@ -79,6 +82,13 @@ def test_if_uiconfig_is_available(dcos_api_session):
     assert 'uiConfiguration' in r.json()
 
 
+def test_if_version_is_available(dcos_api_session):
+    r = dcos_api_session.get('/dcos-metadata/dcos-version.json')
+
+    assert r.status_code == 200
+    assert 'version' in r.json()
+
+
 def test_if_dcos_history_service_is_up(dcos_api_session):
     r = dcos_api_session.get('/dcos-history-service/ping')
 
@@ -86,27 +96,30 @@ def test_if_dcos_history_service_is_up(dcos_api_session):
     assert 'pong' == r.text
 
 
-def test_if_marathon_ui_is_up(dcos_api_session):
-    r = dcos_api_session.get('/marathon/ui/')
+def test_if_marathon_is_up(dcos_api_session):
+    r = dcos_api_session.get('/marathon/v2/info')
 
     assert r.status_code == 200
-    assert len(r.text) > 100
-    assert '<title>Marathon</title>' in r.text
+    response_json = r.json()
+    assert "name" in response_json
+    assert "marathon" == response_json["name"]
 
 
 def test_if_marathon_ui_redir_works(dcos_api_session):
     r = dcos_api_session.get('/marathon')
-
     assert r.status_code == 200
     assert '<title>Marathon</title>' in r.text
 
 
 def test_if_srouter_service_endpoint_works(dcos_api_session):
-    r = dcos_api_session.get('/service/marathon/ui/')
+    r = dcos_api_session.get('/service/marathon/v2/info')
 
     assert r.status_code == 200
     assert len(r.text) > 100
-    assert '<title>Marathon</title>' in r.text
+    response_json = r.json()
+    assert "name" in response_json
+    assert "marathon" == response_json["name"]
+    assert "version" in response_json
 
 
 def test_if_mesos_api_is_up(dcos_api_session):

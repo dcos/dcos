@@ -1,0 +1,6 @@
+root:
+  - path: c:\placeholder\placeholder
+    permissions: "0644"
+    owner: root
+    content: |
+      placeholder

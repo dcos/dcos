@@ -2,14 +2,13 @@
 Generating node upgrade script
 """
 
-import subprocess
 import uuid
 
 import gen.build_deploy.util as util
 import gen.calc
 import gen.template
 from dcos_installer.constants import SERVE_DIR
-from pkgpanda.util import write_string
+from pkgpanda.util import make_directory, write_string
 
 
 node_upgrade_template = """#!/bin/bash
@@ -50,12 +49,19 @@ if [ -t 1 ]; then
 fi
 
 SKIP_CHECKS=false
+VERBOSE=false
 
 if [[ $# -ne 0 ]]; then
-  if [[ "$1" = "--skip-checks" ]]; then
-     echo "Skipping checks"
-     SKIP_CHECKS=true
-  fi
+    for var in "$@"; do
+        if [[ "$var" = "--skip-checks" ]]; then
+            echo "Skipping checks"
+            SKIP_CHECKS=true
+        fi
+        if [[ "$var" = "--verbose" ]]; then
+            echo "Verbose mode on"
+            VERBOSE=true
+        fi
+    done
 fi
 
 if [[ $EUID -ne 0 ]]; then
@@ -67,26 +73,29 @@ fi
 found_version=`grep "version" /opt/mesosphere/etc/dcos-version.json | cut -d '"' -f 4`
 if [[ "$found_version" != "{{ installed_cluster_version }}" ]]; then
     echo "ERROR: Expecting to upgrade DC/OS from {{ installed_cluster_version }} to {{ installer_version }}." \
-         "Version found on node: $found_version"
+        "Version found on node: $found_version"
     exit 1
 fi
 
-if [[ "$SKIP_CHECKS" = "false" ]]; then
-   # Check if the node has node/cluster checks and run them
-   if [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-      # command exists
-      if ! output="$(dcos-diagnostics check node-poststart 2>&1)"; then
-          echo "Cannot proceed with upgrade, node checks failed"
-          echo >&2 "$output"
-          exit 1
-      fi
+# Probe for which check command is available, if any.
+check_cmd=""
+if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
+    # dcos-check-runner is available.
+    check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
+elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+    # Older-version cluster with checks provided by dcos-diagnostics.
+    check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
+fi
 
-      if ! clusteroutput="$(dcos-diagnostics check cluster 2>&1)"; then
-          echo "Cannot proceed with upgrade, cluster checks failed"
-          echo >&2 "$clusteroutput"
-          exit 1
-      fi
-   fi
+# If we aren't skipping checks and have a check command available, run checks.
+if [[ "$SKIP_CHECKS" = "false" && ! -z "$check_cmd" ]]; then
+    for check_type in "node-poststart cluster"; do
+        if ! output="$($check_cmd $check_type 2>&1)"; then
+            echo "Cannot proceed with upgrade, $check_type checks failed"
+            echo >&2 "$output"
+            exit 1
+        fi
+    done
 fi
 
 # Determine this node's role.
@@ -95,7 +104,7 @@ ROLE_DIR=/etc/mesosphere/roles
 num_roles=$( (ls --format=single-column $ROLE_DIR/{master,slave,slave_public} || true) 2>/dev/null | wc -l)
 if [ "$num_roles" -ne "1" ]; then
     echo "ERROR: Can't determine this node's role." \
-         "One of master, slave, or slave_public must be present under $ROLE_DIR."
+        "One of master, slave, or slave_public must be present under $ROLE_DIR."
     exit 1
 fi
 
@@ -110,22 +119,33 @@ elif [ -f $ROLE_DIR/slave_public ]; then
     role_name="public agent"
 fi
 
+
+if [[ "$VERBOSE" = "true" ]]; then
+    exec 3>&1
+else
+    exec 3>/dev/null
+fi
+
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
-pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} > /dev/null
-pkgpanda activate --no-block {{ cluster_packages }} > /dev/null
+pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} >&3
+pkgpanda activate --no-block {{ cluster_packages }} >&3
 
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300
-    until OUT="$(dcos-diagnostics check node-poststart && dcos-diagnostics check cluster 2>&1)" || [[ $T -eq 0 ]]; do
-      sleep 1
-      let T=T-1
+    set +o errexit
+    cmd="/opt/mesosphere/bin/dcos-check-runner check node-poststart && \
+/opt/mesosphere/bin/dcos-check-runner check cluster"
+    until OUT="$($cmd 2>&1)" || [[ $T -eq 0 ]]; do
+        sleep 1
+        let T=T-1
     done
     RETCODE=$?
     if [[ $RETCODE -ne 0 ]]; then
-       echo "Node upgrade not successful, checks failed"
-       echo >&2 "$OUT"
+        echo "Node upgrade not successful, checks failed"
+        echo >&2 "$OUT"
     fi
     exit $RETCODE
+    set -o errexit
 fi
 """
 
@@ -151,7 +171,7 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
 
     upgrade_script_path = '/upgrade/' + uuid.uuid4().hex
 
-    subprocess.check_call(['mkdir', '-p', serve_dir + upgrade_script_path])
+    make_directory(serve_dir + upgrade_script_path)
 
     write_string(serve_dir + upgrade_script_path + '/dcos_node_upgrade.sh', bash_script)
 

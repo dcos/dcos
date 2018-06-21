@@ -6,7 +6,6 @@ import os.path
 import shutil
 import subprocess
 import tempfile
-from typing import List
 
 import checksumdir
 import pkg_resources
@@ -23,7 +22,10 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
-from pkgpanda.util import logger
+from pkgpanda.constants import (
+    cloud_config_yaml, dcos_services_yaml, install_root
+)
+from pkgpanda.util import copy_directory, copy_file, is_windows, logger, make_directory
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
@@ -51,7 +53,8 @@ def calculate_custom_check_bins_package_id(
 def calculate_check_search_path(custom_check_bins_provided, custom_check_bins_package_id):
     if custom_check_bins_provided == 'true':
         assert custom_check_bins_package_id != ''
-        return DEFAULT_CHECK_SEARCH_PATH + ':/opt/mesosphere/packages/{}'.format(custom_check_bins_package_id)
+        return (DEFAULT_CHECK_SEARCH_PATH + ':' + install_root + '/' +
+                'packages/{}'.format(custom_check_bins_package_id))
     return DEFAULT_CHECK_SEARCH_PATH
 
 
@@ -80,6 +83,7 @@ onprem_source = Source(entry={
         'platform': 'onprem',
         'resolvers': '["8.8.8.8", "8.8.4.4"]',
         'ip_detect_filename': 'genconf/ip-detect',
+        'ip6_detect_filename': '',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
         'enable_docker_gc': 'false'
     },
@@ -92,7 +96,7 @@ onprem_source = Source(entry={
         'custom_check_bins_hash': calculate_custom_check_bins_hash,
         'custom_check_bins_package_id': calculate_custom_check_bins_package_id,
         'check_search_path': calculate_check_search_path,
-    }
+    },
 })
 
 
@@ -117,7 +121,7 @@ bash_template = """#!/bin/bash
 #   dcos image commit: {{ dcos_image_commit }}
 #   generation date: {{ generation_date }}
 #
-# Copyright 2016 Mesosphere, Inc.
+# Copyright 2017 Mesosphere, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -288,11 +292,27 @@ function check_service() {
   (( OVERALL_RC += $RC ))
 }
 
+function empty_dir() {
+    # Return 0 if $1 is a directory containing no files.
+    DIRNAME=$1
+
+    RC=0
+    if [[ ( ! -d "$DIRNAME" ) || $(ls -A "$DIRNAME") ]]; then
+        RC=1
+    fi
+    return $RC
+}
+
 function check_preexisting_dcos() {
     echo -e -n 'Checking if DC/OS is already installed: '
-    if [[ ( -d /etc/systemd/system/dcos.target ) || \
-       ( -d /etc/systemd/system/dcos.target.wants ) || \
-       ( -d /opt/mesosphere ) ]]; then
+    if (
+        # dcos.target exists and is a directory, OR
+        [[ -d /etc/systemd/system/dcos.target ]] ||
+        # dcos.target.wants exists and is a directory, OR
+        [[ -d /etc/systemd/system/dcos.target.wants ]] ||
+        # /opt/mesosphere exists and is not an empty directory
+        ( [[ -a /opt/mesosphere ]] && ( ! empty_dir /opt/mesosphere ) )
+    ); then
         # this will print: Checking if DC/OS is already installed: FAIL (Currently installed)
         print_status 1 "${NORMAL}(Currently installed)"
         echo
@@ -339,6 +359,49 @@ EOM
     else
         print_status 0 "${NORMAL}(${storage_driver} ${data_file})"
     fi
+}
+
+function d_type_enabled_if_xfs()
+{
+    # Return 1 if $1 is a directory on XFS volume with ftype ! = 1
+    # otherwise return 0
+    DIRNAME="$1"
+
+    RC=0
+    # "df", the command being used to get the filesystem device and type,
+    # fails if the directory does not exist, hence we need to iterate up the
+    # directory chain to find a directory that exists before executing the command
+    while [[ ! -d "$DIRNAME" ]]; do
+        DIRNAME="$(dirname "$DIRNAME")"
+    done
+    read -r filesystem_device filesystem_type <<<"$(df --portability --print-type "$DIRNAME" | awk 'END{print $1,$2}')"
+    # -b $filesystem_device check is there prevent this from failing in certain special dcos-docker configs
+    # see https://jira.mesosphere.com/browse/DCOS_OSS-3549
+    if [[ "$filesystem_type" == "xfs" && -b "$filesystem_device" ]]; then
+        echo -n -e "Checking if $DIRNAME is mounted with \"ftype=1\": "
+        ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
+        if [[ "$ftype_value" != "ftype=1" ]]; then
+            RC=1
+        fi
+        print_status $RC "${NORMAL}(${ftype_value})"
+    fi
+    return $RC
+}
+
+# check node storage has d_type (ftype=1) support enabled if using XFS
+function check_xfs_ftype() {
+    RC=0
+
+    mesos_agent_dir="{{ mesos_agent_work_dir }}"
+    # Check if ftype=1 on the volume, for $mesos_agent_dir, if its on XFS filesystem
+    ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
+
+    # Check if ftype=1 on the volume, for docker root dir, if its on XFS filesystem
+    docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
+    ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
+
+    (( OVERALL_RC += $RC ))
+    return $RC
 }
 
 function check_all() {
@@ -416,6 +479,7 @@ function check_all() {
     check unzip
     check ipset
     check systemd-notify
+    check ifconfig
 
     # $ systemctl --version ->
     # systemd nnn
@@ -452,11 +516,10 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
-            "61420 epmd" \
-            "62053 dcos-net" \
+            "61091 dcos-metrics" \
+            "61420 dcos-net" \
             "62080 dcos-net" \
-            "62501 dcos-net" \
-            "63053 dcos-net"
+            "62501 dcos-net"
         do
             check_service $service
         done
@@ -466,14 +529,14 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
-            "61420 epmd" \
-            "62053 dcos-net" \
+            "61091 dcos-metrics" \
+            "61420 dcos-net" \
             "62080 dcos-net" \
-            "62501 dcos-net" \
-            "63053 dcos-net"
+            "62501 dcos-net"
         do
             check_service $service
         done
+        check_xfs_ftype
     fi
 
     # Check we're not in docker on devicemapper loopback as storage driver.
@@ -571,14 +634,12 @@ fi
 
 def generate(gen_out, output_dir):
     print("Generating Bash configuration files for DC/OS")
-    extra_files = make_bash(gen_out)
-    util.do_bundle_onprem(extra_files, gen_out, output_dir)
+    make_bash(gen_out)
+    util.do_bundle_onprem(gen_out, output_dir)
 
 
-def make_bash(gen_out) -> List[str]:
+def make_bash(gen_out) -> None:
     """Build bash deployment artifacts and return a list of their filenames."""
-    artifacts = []
-
     # Build custom check bins package
     if gen_out.arguments['custom_check_bins_provided'] == 'true':
         package_filename = 'packages/{}/{}.tar.xz'.format(
@@ -586,10 +647,10 @@ def make_bash(gen_out) -> List[str]:
             gen_out.arguments['custom_check_bins_package_id'],
         )
         make_custom_check_bins_package(gen_out.arguments['custom_check_bins_dir'], package_filename)
-        artifacts.append(package_filename)
+        gen_out.utils.add_stable_artifact(package_filename)
 
     setup_flags = ""
-    cloud_config = gen_out.templates['cloud-config.yaml']
+    cloud_config = gen_out.templates[cloud_config_yaml]
     # Assert the cloud-config is only write_files.
     assert len(cloud_config) == 1
     for file_dict in cloud_config['write_files']:
@@ -606,7 +667,7 @@ def make_bash(gen_out) -> List[str]:
     # Reformat the DC/OS systemd units to be bash written and started.
     # Write out the units as files
     setup_services = ""
-    for service in gen_out.templates['dcos-services.yaml']:
+    for service in gen_out.templates[dcos_services_yaml]:
         # If no content, service is assumed to already exist
         if 'content' not in service:
             continue
@@ -620,7 +681,7 @@ def make_bash(gen_out) -> List[str]:
     setup_services += "\n"
 
     # Start, enable services which request it.
-    for service in gen_out.templates['dcos-services.yaml']:
+    for service in gen_out.templates[dcos_services_yaml]:
         assert service['name'].endswith('.service')
         name = service['name'][:-8]
         if service.get('enable'):
@@ -638,14 +699,13 @@ def make_bash(gen_out) -> List[str]:
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
-        'setup_services': setup_services})
+        'setup_services': setup_services,
+        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir']})
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'
     pkgpanda.util.write_string(install_script_filename, bash_script)
-    artifacts.append(install_script_filename)
-
-    return artifacts
+    gen_out.utils.add_channel_artifact(install_script_filename)
 
 
 def make_custom_check_bins_package(source_dir, package_filename):
@@ -696,7 +756,7 @@ def make_installer_docker(variant, variant_info, installer_info):
         def copy_to_build(src_prefix, filename):
             dest_filename = dest_path(filename)
             os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
-            subprocess.check_call(['cp', os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename])
+            copy_file(os.getcwd() + '/' + src_prefix + '/' + filename, dest_filename)
 
         def fill_template(base_name, format_args):
             pkgpanda.util.write_string(
@@ -716,7 +776,8 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_id': bootstrap_id,
             'dcos_image_commit': util.dcos_image_commit})
 
-        subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
+        if not is_windows:
+            subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync
@@ -731,9 +792,9 @@ def make_installer_docker(variant, variant_info, installer_info):
 
         # Copy across gen_extra if it exists
         if os.path.exists('gen_extra'):
-            subprocess.check_call(['cp', '-r', 'gen_extra', dest_path('gen_extra')])
+            copy_directory('gen_extra', dest_path('gen_extra'))
         else:
-            subprocess.check_call(['mkdir', '-p', dest_path('gen_extra')])
+            make_directory(dest_path('gen_extra'))
 
         print("Building docker container in " + build_dir)
         subprocess.check_call(['docker', 'build', '-t', docker_image_name, build_dir])

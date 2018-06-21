@@ -1,4 +1,4 @@
-Copyright 2016 Mesosphere, Inc.
+Copyright 2017 Mesosphere, Inc.
 
 Licensed under the Mesosphere Tools License Terms (the “Agreement”);
 you may not use this file except in compliance with the Agreement.
@@ -9,3 +9,176 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
 See the Agreement for the specific language governing permissions and
 limitations under the Agreement.
+
+Below is a list of third party open source software which is provided by
+Mesosphere in connection with Mesosphere DC/OS.
+
+dcos-diagnostics
+- Apache License, Version 2.0
+- https://github.com/dcos/dcos-diagnostics/blob/master/LICENSE
+
+boost-system
+- Boost Software License, Version 1.0
+- http://www.boost.org/LICENSE_1_0.txt
+
+boto
+- MIT License
+- https://github.com/boto/boto/blob/develop/LICENSE
+
+cosmos
+- Apache License, Version 2.0
+- https://github.com/dcos/cosmos/blob/master/LICENSE.txt
+
+curl
+- https://curl.haxx.se/docs/copyright.html
+
+cfssl
+- BSD 2-clause "Simplified" License
+- https://github.com/cloudflare/cfssl/blob/master/LICENSE
+
+CockroachDB
+- CockroachDB License
+- https://github.com/cockroachdb/cockroach/blob/master/LICENSE
+
+dcos-check-runner
+- Apache License, Version 2.0
+- https://github.com/dcos/dcos-check-runner/blob/master/LICENSE
+
+dcos-signal
+- Apache License, Version 2.0
+- https://github.com/dcos/dcos-signal/blob/master/LICENSE
+
+dcos-ui
+- Apache License, Version 2.0
+- https://github.com/dcos/dcos-ui/blob/master/LICENSE
+
+dnspython
+- ISC License
+- https://github.com/rthalley/dnspython/blob/master/LICENSE
+
+erlang
+- http://www.erlang.org/EPLICENSE
+
+exhibitor
+- Apache License, Version 2.0
+- https://github.com/dcos/exhibitor/blob/master/LICENSE.txt
+
+flask
+- Flask License
+- http://flask.pocoo.org/docs/0.12/license/#flask-license
+
+Gunicorn:
+- Gnuicorn License
+- https://github.com/benoitc/gunicorn/blob/master/LICENSE
+
+hadoop
+- Apache License, Version 2.0
+- https://github.com/apache/hadoop/blob/trunk/LICENSE.txt
+
+Hashicorp's Vault
+- Mozilla Public License 2.0
+- https://github.com/hashicorp/vault/blob/master/LICENSE
+
+java
+- http://www.oracle.com/technetwork/java/javase/terms/license/index.html
+
+libevent
+- Libvent License
+- http://libevent.org/LICENSE.txt
+
+marathon
+- Apache License, Version 2.0
+- https://github.com/mesosphere/marathon/blob/master/LICENSE
+
+mesos
+- Apache License, Version 2.0
+- https://github.com/apache/mesos/blob/master/LICENSE
+
+mesos-buildenv
+- Apache License, Version 2.0
+- https://github.com/dcos/mesos-buildenv/blob/master/LICENSE
+
+mesos-dns
+- Apache License, Version 2.0
+- https://github.com/mesosphere/mesos-dns/blob/master/LICENSE
+
+minuteman
+- Apache License, Version 2.0
+- https://github.com/dcos/minuteman/blob/master/LICENSE
+
+Nginx
+- http://nginx.org/LICENSE
+
+ncurses
+- MIT License
+- http://invisible-island.net/ncurses/ncurses-license.html
+
+openssl
+- https://www.openssl.org/source/license.html
+
+python
+- https://www.python.org/download/releases/3.6/license/
+
+python-click
+- BSD 3-Clause License
+- https://github.com/pallets/click/blob/master/LICENSE
+
+python-dateutil
+- python-dateutil License
+- https://github.com/dateutil/dateutil/blob/master/LICENSE
+
+python-docopt
+- MIT License
+- https://github.com/docopt/docopt/blob/master/LICENSE-MIT
+
+python-jinja2
+- python-jinja2 License
+- https://github.com/pallets/jinja/blob/master/LICENSE
+
+python-kazoo
+- Mozilla Public License 1.1
+- https://github.com/python-zk/kazoo/blob/master/LICENSE
+
+python-markupsafe
+- BSD 3-Clause License
+- https://github.com/pallets/markupsafe/blob/master/LICENSE
+
+python-passlib
+- BSD 3-Clause License
+- http://passlib.readthedocs.io/en/stable/copyright.html?highlight=license#license-for-passlib
+
+python-pyyaml
+- MIT License
+- https://github.com/yaml/pyyaml/blob/master/LICENSE
+
+python-requests
+- Apache License, Version 2.0
+- https://github.com/requests/requests/blob/master/LICENSE
+
+python-retrying
+- Apache License, Version 2.0
+- https://github.com/rholder/retrying/blob/master/LICENSE
+
+six
+- MIT License
+- https://github.com/benjaminp/six/blob/master/LICENSE
+
+spartan
+- Apache License, Version 2.0
+- https://github.com/dcos/spartan/blob/master/LICENSE
+
+strace
+- Berkeley-style license
+- https://github.com/strace/strace/blob/master/COPYING
+
+toybox
+- BSD 3-Clause License
+- https://github.com/landley/toybox/blob/master/LICENSE
+
+rexray
+- Apache License, Version 2.0
+- https://rexray.readthedocs.io/en/stable/about/license/
+
+dvdcli
+- Apache License, Version 2.0
+- https://github.com/codedellemc/dvdcli/blob/master/LICENSE

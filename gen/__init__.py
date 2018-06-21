@@ -27,17 +27,53 @@ import gen.calc
 import gen.internals
 import gen.template
 import gen.util
+import pkgpanda.exceptions
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, json_prettyprint, load_string, split_by_token, write_json, write_yaml
+from pkgpanda.constants import (
+    cloud_config_yaml,
+    config_dir,
+    dcos_config_yaml,
+    dcos_services_yaml,
+)
+from pkgpanda.util import (
+    hash_checkout,
+    is_absolute_path,
+    is_windows,
+    json_prettyprint,
+    load_string,
+    split_by_token,
+    write_json,
+    write_string,
+    write_yaml,
+)
 
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
 
-role_template = '/etc/mesosphere/roles/{}'
+role_template = config_dir + '/roles/{}'
 
-CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+if is_windows:
+    CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+else:
+    CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
 PACKAGE_KEYS = {'package', 'root'}
+
+
+# Allow overriding calculators with a `gen_extra/calc.py` if it exists
+gen_extra_calc = None
+if os.path.exists('gen_extra/calc.py'):
+    gen_extra_calc = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+
+
+def validate_downstream_entry(entry: dict) -> None:
+    """Raise an exception if entry is an invalid downstream gen.internals.Source entry."""
+    version_key = 'dcos_version'
+    entry_keys = set(entry.get('must', {}).keys()) | set(entry.get('default', {}).keys())
+    if version_key in entry_keys:
+        raise Exception(
+            'The downstream entry redefines config param {}, which must be inherited from upstream'.format(version_key)
+        )
 
 
 def stringify_configuration(configuration: dict):
@@ -145,6 +181,8 @@ utils = Bunch({
     "add_roles": add_roles,
     "role_names": role_names,
     "add_services": None,
+    "add_stable_artifact": None,
+    "add_channel_artifact": None,
     "add_units": add_units,
     "render_cloudconfig": render_cloudconfig
 })
@@ -269,8 +307,9 @@ def do_gen_package(config, package_filename):
         # Write out the individual files
         for file_info in config["package"]:
             assert file_info.keys() <= {"path", "content", "permissions"}
-            if file_info['path'].startswith('/'):
-                path = tmpdir + file_info['path']
+            if is_absolute_path(file_info['path']):
+                fileinfo_drive, fileinfo_path = os.path.splitdrive(file_info['path'])
+                path = tmpdir + fileinfo_path
             else:
                 path = tmpdir + '/' + file_info['path']
             try:
@@ -280,7 +319,7 @@ def do_gen_package(config, package_filename):
                 pass
 
             with open(path, 'w') as f:
-                f.write(file_info['content'])
+                f.write(file_info['content'] or '')
 
             # the file has special mode defined, handle that.
             if 'permissions' in file_info:
@@ -340,7 +379,7 @@ def extract_files_containing_late_variables(start_files):
             'File info must not contain late config placeholder in fields other than content: {}'.format(file_info)
         )
 
-        if _late_bind_placeholder_in(file_info['content']):
+        if file_info['content'] and _late_bind_placeholder_in(file_info['content']):
             found_files.append(file_info)
         else:
             left_files.append(file_info)
@@ -415,8 +454,14 @@ def get_dcosconfig_source_target_and_templates(
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
-    config_package_names = ['dcos-config', 'dcos-metadata']
-    template_filenames = ['dcos-config.yaml', 'cloud-config.yaml', 'dcos-metadata.yaml', 'dcos-services.yaml']
+    # There are separate configuration files for windows vs non-windows as a lot
+    # of configuration on windows will be different.
+    if is_windows:
+        config_package_names = ['dcos-config-windows', 'dcos-metadata']
+    else:
+        config_package_names = ['dcos-config', 'dcos-metadata']
+
+    template_filenames = [dcos_config_yaml, cloud_config_yaml, 'dcos-metadata.yaml', dcos_services_yaml]
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
@@ -434,14 +479,20 @@ def get_dcosconfig_source_target_and_templates(
                 "Internal Error: Only know how to merge YAML templates at this point in time. "
                 "Can't merge template {} in template_list {}".format(filename, templates[key]))
 
-    targets = target_from_templates(templates)
+    # Include a base target that references variables we need to calculate cluster_packages.
+    base_target = gen.internals.Target({
+        'config_package_names',
+        'dcos_image_commit',
+        'package_ids',
+        'template_filenames',
+    })
+    targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
     base_source.add_entry(gen.calc.entry, replace_existing=False)
 
-    # Allow overriding calculators with a `gen_extra/calc.py` if it exists
-    if os.path.exists('gen_extra/calc.py'):
-        mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
-        base_source.add_entry(mod.entry, replace_existing=True)
+    if gen_extra_calc:
+        validate_downstream_entry(gen_extra_calc.entry)
+        base_source.add_entry(gen_extra_calc.entry, replace_existing=True)
 
     def add_builtin(name, value):
         base_source.add_must(name, json_prettyprint(value))
@@ -458,16 +509,14 @@ def get_dcosconfig_source_target_and_templates(
     # unset argument errors. The placeholder value with be replaced with the actual value after all other variables are
     # calculated.
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
+    add_builtin('cluster_packages', temporary_str)
+    add_builtin('cluster_package_list_id', temporary_str)
     add_builtin('user_arguments_full', temporary_str)
     add_builtin('user_arguments', temporary_str)
     add_builtin('config_yaml_full', temporary_str)
     add_builtin('config_yaml', temporary_str)
     add_builtin('expanded_config', temporary_str)
     add_builtin('expanded_config_full', temporary_str)
-
-    # Note: must come last so the hash of the "base_source" this is beign added to contains all the
-    # variables but this.
-    add_builtin('sources_id', hash_checkout([hash_checkout(source.make_id()) for source in sources]))
 
     return sources, targets, templates
 
@@ -480,7 +529,7 @@ def build_late_package(late_files, config_id, provider):
     # isn't already one.
     for file_info in late_files:
         assert file_info['path'] != '/pkginfo.json'
-        assert file_info['path'].startswith('/')
+        assert is_absolute_path(file_info['path'])
 
     late_files.append({
         "path": "/pkginfo.json",
@@ -549,6 +598,25 @@ def user_arguments_to_yaml(user_arguments: dict):
     )
 
 
+def validate_cluster_packages(cluster_packages):
+    for pkg_id in cluster_packages:
+        try:
+            PackageId(pkg_id)
+        except pkgpanda.exceptions.ValidationError as ex:
+            raise Exception('Invalid cluster package ID: {}'.format(str(ex))) from ex
+
+
+def get_config_id(argument_dict: dict):
+    """Return a unique ID for the configuration represented by argument_dict."""
+    # dcos_image_commit and template_filenames should be included in argument_dict, but we reference them explicitly to
+    # ensure that the config ID reflects the current commit and config templates.
+    return hash_checkout({
+        'commit': argument_dict['dcos_image_commit'],
+        'template_filenames': argument_dict['template_filenames'],
+        'argument_dict': argument_dict,
+    })
+
+
 def generate(
         arguments,
         extra_templates=list(),
@@ -568,7 +636,20 @@ def generate(
     secret_variables = set(get_secret_variables(sources) + secret_builtins)
     masked_value = '**HIDDEN**'
 
+    # Calculate config ID after all variables are resolved, to make sure any change in config yields a new config ID.
+    config_id = get_config_id(argument_dict)
+
+    # Calculate values that depend on the config ID.
+    config_package_names = json.loads(argument_dict['config_package_names'])
+    package_ids = json.loads(argument_dict['package_ids'])
+    config_package_ids = ['{}--setup_{}'.format(name, config_id) for name in config_package_names]
+    cluster_packages = sorted(config_package_ids + package_ids)
+    validate_cluster_packages(cluster_packages)
+    cluster_package_list_id = hash_checkout(cluster_packages)
+
     # Calculate values for builtin variables.
+    argument_dict['cluster_packages'] = json.dumps(cluster_packages)
+    argument_dict['cluster_package_list_id'] = cluster_package_list_id
     user_arguments_masked = {k: (masked_value if k in secret_variables else v) for k, v in user_arguments.items()}
     argument_dict['user_arguments_full'] = json_prettyprint(user_arguments)
     argument_dict['user_arguments'] = json_prettyprint(user_arguments_masked)
@@ -602,9 +683,9 @@ def generate(
     # Validate there aren't any unexpected top level directives in any of the files
     # (likely indicates a misspelling)
     for name, template in rendered_templates.items():
-        if name == 'dcos-services.yaml':  # yaml list of the service files
+        if name == dcos_services_yaml:  # yaml list of the service files
             assert isinstance(template, list)
-        elif name == 'cloud-config.yaml':
+        elif name == cloud_config_yaml:
             assert template.keys() <= CLOUDCONFIG_KEYS, template.keys()
         elif isinstance(template, str):  # Not a yaml template
             pass
@@ -612,12 +693,22 @@ def generate(
             log.debug("validating template file %s", name)
             assert template.keys() <= PACKAGE_KEYS, template.keys()
 
+    stable_artifacts = []
+    channel_artifacts = []
+
     # Find all files which contain late bind variables and turn them into a "late bind package"
     # TODO(cmaloney): check there are no late bound variables in cloud-config.yaml
     late_files, regular_files = extract_files_containing_late_variables(
-        rendered_templates['dcos-config.yaml']['package'])
+        rendered_templates[dcos_config_yaml]['package'])
     # put the regular files right back
-    rendered_templates['dcos-config.yaml'] = {'package': regular_files}
+    rendered_templates[dcos_config_yaml] = {'package': regular_files}
+
+    # Render cluster package list artifact.
+    cluster_package_list_filename = 'package_lists/{}.package_list.json'.format(cluster_package_list_id)
+    os.makedirs(os.path.dirname(cluster_package_list_filename), mode=0o755, exist_ok=True)
+    write_string(cluster_package_list_filename, argument_dict['cluster_packages'])
+    log.info('Cluster package list: {}'.format(cluster_package_list_filename))
+    stable_artifacts.append(cluster_package_list_filename)
 
     def make_package_filename(package_id, extension):
         return 'packages/{0}/{1}{2}'.format(
@@ -629,8 +720,8 @@ def generate(
     cluster_package_info = {}
 
     # Prepare late binding config, if any.
-    late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
-    if late_variables:
+    late_package = build_late_package(late_files, config_id, argument_dict['provider'])
+    if late_variables and late_package:
         # Render the late binding package. This package will be downloaded onto
         # each cluster node during bootstrap and rendered into the final config
         # using the values from the late config file.
@@ -639,13 +730,14 @@ def generate(
         os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
         write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
         log.info('Package filename: {}'.format(late_package_filename))
+        stable_artifacts.append(late_package_filename)
 
         # Add the late config file to cloud config. The expressions in
         # late_variables will be resolved by the service handling the cloud
         # config (e.g. Amazon CloudFormation). The rendered late config file
         # on a cluster node's filesystem will contain the final values.
-        rendered_templates['cloud-config.yaml']['root'].append({
-            'path': '/etc/mesosphere/setup-flags/late-config.yaml',
+        rendered_templates[cloud_config_yaml]['root'].append({
+            'path': config_dir + '/setup-flags/late-config.yaml',
             'permissions': '0644',
             'owner': 'root',
             # TODO(cmaloney): don't prettyprint to save bytes.
@@ -657,7 +749,7 @@ def generate(
             })})
 
     # Collect metadata for cluster packages.
-    for package_id_str in json.loads(argument_dict['cluster_packages']):
+    for package_id_str in cluster_packages:
         package_id = PackageId(package_id_str)
         package_filename = make_package_filename(package_id, '.tar.xz')
 
@@ -667,13 +759,14 @@ def generate(
         }
 
     # Render config packages.
-    config_package_ids = json.loads(argument_dict['config_package_ids'])
     for package_id_str in config_package_ids:
         package_id = PackageId(package_id_str)
+        package_filename = cluster_package_info[package_id.name]['filename']
         do_gen_package(rendered_templates[package_id.name + '.yaml'], cluster_package_info[package_id.name]['filename'])
+        stable_artifacts.append(package_filename)
 
     # Convert cloud-config to just contain write_files rather than root
-    cc = rendered_templates['cloud-config.yaml']
+    cc = rendered_templates[cloud_config_yaml]
 
     # Shouldn't contain any packages. Providers should pull what they need to
     # late bind out of other packages via cc_package_file.
@@ -684,22 +777,33 @@ def generate(
     cc['write_files'] = []
     # Do the transform
     for item in cc_root:
-        assert item['path'].startswith('/')
+        assert is_absolute_path(item['path'])
         cc['write_files'].append(item)
-    rendered_templates['cloud-config.yaml'] = cc
+    rendered_templates[cloud_config_yaml] = cc
 
-    # Add in the add_services util. Done here instead of the initial
-    # map since we need to bind in parameters
+    # Add utils that need to be defined here so they can be bound to locals.
     def add_services(cloudconfig, cloud_init_implementation):
-        return add_units(cloudconfig, rendered_templates['dcos-services.yaml'], cloud_init_implementation)
+        return add_units(cloudconfig, rendered_templates[dcos_services_yaml], cloud_init_implementation)
 
     utils.add_services = add_services
+
+    def add_stable_artifact(filename):
+        assert filename not in stable_artifacts + channel_artifacts
+        stable_artifacts.append(filename)
+
+    utils.add_stable_artifact = add_stable_artifact
+
+    def add_channel_artifact(filename):
+        assert filename not in stable_artifacts + channel_artifacts
+        channel_artifacts.append(filename)
+
+    utils.add_channel_artifact = add_channel_artifact
 
     return Bunch({
         'arguments': argument_dict,
         'cluster_packages': cluster_package_info,
-        'config_package_ids': config_package_ids,
-        'late_package_id': late_package['name'] if late_package else None,
+        'stable_artifacts': stable_artifacts,
+        'channel_artifacts': channel_artifacts,
         'templates': rendered_templates,
         'utils': utils
     })

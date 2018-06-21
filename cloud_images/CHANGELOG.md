@@ -1,5 +1,43 @@
 ## Changelog
 
+### 2018-03-12
+
+#### dcos-centos7-201803121129
+
+* Adding support for fifth generation EC2 instances (i.e. m5 and c5):
+* Support for AWS ENA network adapters.
+* Enhancing DC/OS volume setup script to work with different block device names.
+
+Base (source) AMI:
+* ami-bd48b3c0 (us-east-1)
+
+DC/OS AMI's:
+ap-northeast-1: ami-f1aee697
+ap-northeast-2: ami-74a8041a
+ap-south-1: ami-866e37e9
+ap-southeast-1: ami-a55504d9
+ap-southeast-2: ami-5ba66539
+ca-central-1: ami-8478ffe0
+eu-central-1: ami-6a610905
+eu-west-1: ami-c51a54bc
+eu-west-2: ami-891ef9ee
+eu-west-3: ami-c55fe9b8
+sa-east-1: ami-f8f2b894
+us-east-1: ami-27e5235a
+us-east-2: ami-8f0234ea
+us-west-1: ami-03bbae63
+us-west-2: ami-845acbfc
+
+### 2017-10-20
+
+#### cloud_images
+
+Support for building on Red Hat Linux
+* new `rhel7/` folder/image and build scripts
+* added `lib` folder with shared provisioning scripts
+* reworked `centos7/` scripts to use shared provisioning scripts
+* updated `README.md` to be more platform-agnostic
+
 ### 2017-05-29
 
 #### dcos-centos7-201705292021

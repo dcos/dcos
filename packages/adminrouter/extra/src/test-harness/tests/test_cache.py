@@ -4,6 +4,7 @@ import copy
 import logging
 import time
 
+import pytest
 import requests
 
 from generic_test_code.common import ping_mesos_agent, verify_header
@@ -26,7 +27,7 @@ class TestCache:
             'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -67,7 +68,7 @@ class TestCache:
             'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
             'Mesos state cache has been successfully updated': SearchCriteria(3, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(3, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(3, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(3, True),
             }
         cache_poll_period = 4
 
@@ -113,7 +114,7 @@ class TestCache:
             'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -492,7 +493,7 @@ class TestCache:
             resp = requests.get(url,
                                 allow_redirects=False,
                                 headers=valid_user_header)
-            assert resp.status_code == 404
+            assert resp.status_code == 503
 
     def test_if_absence_of_agent_is_handled_by_cache(
             self, nginx_class, mocker, valid_user_header):
@@ -585,7 +586,7 @@ class TestCache:
     def test_if_broken_response_from_marathon_is_handled(
             self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
-            'Cannot decode Marathon leader JSON': SearchCriteria(1, True),
+            'Cannot decode marathon leader JSON': SearchCriteria(1, True),
         }
 
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -684,18 +685,18 @@ class TestCache:
     def test_if_temp_dns_borkage_does_not_disrupt_mesosleader_caching(
             self, nginx_class, dns_server_mock, valid_user_header):
         filter_regexp_pre = {
-            'Marathon leader cache has been successfully updated':
+            'marathon leader cache has been successfully updated':
                 SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated':
                 SearchCriteria(1, True),
             'Mesos state cache has been successfully updated':
                 SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
 
         filter_regexp_post = {
-            'Marathon leader cache has been successfully updated':
+            'marathon leader cache has been successfully updated':
                 SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated':
                 SearchCriteria(1, True),
@@ -756,13 +757,62 @@ class TestCache:
 
             assert lbf.extra_matches == {}
 
+    # This test can succed 40-50% number of times if we remove the fix. Hence
+    # we re-run it here 5 times.
+    @pytest.mark.parametrize('execution_number', range(5))
+    def test_if_mesos_leader_failover_is_followed_by_cache_http(
+            self,
+            nginx_class,
+            valid_user_header,
+            mocker,
+            dns_server_mock,
+            execution_number):
+        # Nginx resolver enforces 5s (grep for `resolver ... valid=Xs`), so it
+        # is VERY important to use cache pool period of >5s.
+        cache_poll_period = 6
+        ar = nginx_class(
+            cache_poll_period=cache_poll_period,
+            cache_expiration=cache_poll_period - 1,
+            upstream_mesos="http://leader.mesos:5050",
+            )
+
+        # Enable recording for Mesos mocks:
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='record_requests')
+        mocker.send_command(endpoint_id='http://127.0.0.3:5050',
+                            func_name='record_requests')
+        dns_server_mock.set_dns_entry('leader.mesos.', ip="127.0.0.2", ttl=2)
+        with GuardedSubprocess(ar):
+            # Force cache refresh early, so that we do not have to wait too
+            # long
+            ping_mesos_agent(ar,
+                             valid_user_header,
+                             agent_id=EXTRA_AGENT_DICT['id'],
+                             expect_status=404)
+
+            dns_server_mock.set_dns_entry('leader.mesos.', ip="127.0.0.3", ttl=2)
+
+            # First poll (2s) + normal poll interval(4s) < 2 * normal poll
+            # interval(4s)
+            time.sleep(cache_poll_period * 2)
+
+        mesosmock_pre_reqs = mocker.send_command(
+            endpoint_id='http://127.0.0.2:5050',
+            func_name='get_recorded_requests')
+        mesosmock_post_reqs = mocker.send_command(
+            endpoint_id='http://127.0.0.3:5050',
+            func_name='get_recorded_requests')
+        assert len(mesosmock_pre_reqs) == 1
+        assert len(mesosmock_post_reqs) == 1
+
 
 class TestCacheMesosLeader:
     def test_if_unset_hostip_var_is_handled(self, nginx_class, valid_user_header):
         filter_regexp = {
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         ar = nginx_class(host_ip=None)
@@ -782,7 +832,7 @@ class TestCacheMesosLeader:
         filter_regexp = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'DNS server returned error code': SearchCriteria(1, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(0, True),
         }
 
@@ -812,19 +862,21 @@ class TestCacheMesosLeader:
         local_leader_ip = "127.0.0.2"
         filter_regexp_pre = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
-            'Mesos Leader is non-local: `{}`'.format(nonlocal_leader_ip):
+            'mesos leader is non-local: `{}`'.format(nonlocal_leader_ip):
                 SearchCriteria(1, True),
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(0, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         filter_regexp_post = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
-            'Mesos Leader is local': SearchCriteria(1, True),
-            'Local Mesos Master IP address is unknown, cache entry is unusable':
+            'mesos leader is local': SearchCriteria(1, True),
+            'Private IP address of the host is unknown, ' +
+            'aborting cache-entry creation for mesos leader':
                 SearchCriteria(0, True),
-            '`Mesos Leader` state cache has been successfully updated':
+            'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
 

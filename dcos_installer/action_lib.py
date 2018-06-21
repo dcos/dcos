@@ -6,7 +6,14 @@ from typing import Optional
 
 import pkgpanda
 import ssh.utils
-from dcos_installer.constants import BOOTSTRAP_DIR, CHECK_RUNNER_CMD, CLUSTER_PACKAGES_PATH, SERVE_DIR, SSH_KEY_PATH
+from dcos_installer.constants import (
+    BOOTSTRAP_DIR,
+    CHECK_RUNNER_CMD,
+    CLUSTER_PACKAGES_PATH,
+    PACKAGE_LIST_DIR,
+    SERVE_DIR,
+    SSH_KEY_PATH,
+)
 from ssh.runner import Node
 
 
@@ -98,12 +105,6 @@ def run_preflight(config, pf_script_path=(SERVE_DIR + '/dcos_install.sh'), block
     chains = []
 
     preflight_chain = ssh.utils.CommandChain('preflight')
-    # In web mode run if no --offline flag used.
-    if options.action == 'web':
-        if options.offline:
-            log.debug('Offline mode used. Do not install prerequisites on CentOS7, RHEL7 in web mode')
-        else:
-            _add_prereqs_script(preflight_chain)
 
     add_pre_action(preflight_chain, pf.user)
     preflight_chain.add_copy(pf_script_path, REMOTE_TEMP_DIR, stage='Copying preflight script')
@@ -128,6 +129,12 @@ def _add_copy_dcos_install(chain, local_install_path=SERVE_DIR):
     local_install_path = os.path.join(local_install_path, dcos_install_script)
     remote_install_path = os.path.join(REMOTE_TEMP_DIR, dcos_install_script)
     chain.add_copy(local_install_path, remote_install_path, stage='Copying dcos_install.sh')
+
+
+def _add_copy_package_list(chain, local_package_list_path):
+    remote_dir = os.path.join(REMOTE_TEMP_DIR, 'package_lists')
+    chain.add_execute(['mkdir', '-p', remote_dir], stage='Creating directory')
+    chain.add_copy(local_package_list_path, remote_dir, stage='Copying package list')
 
 
 def _add_copy_packages(chain, local_pkg_base_path=SERVE_DIR):
@@ -171,6 +178,28 @@ def _get_bootstrap_tarball(tarball_base_dir=BOOTSTRAP_DIR):
         log.error('You must run genconf.py before attempting Deploy.')
         raise ExecuteException('bootstrap tarball not found in {}'.format(tarball_base_dir))
     return tarball
+
+
+def _get_cluster_package_list(serve_dir: str=SERVE_DIR, package_list_base_dir: str=PACKAGE_LIST_DIR) -> str:
+    """Return the local filename for the cluster package list."""
+    latest_filename = os.path.join(SERVE_DIR, 'cluster-package-list.latest')
+    if not os.path.exists(latest_filename):
+        err_msg = 'Unable to find {}'.format(latest_filename)
+        log.error(err_msg)
+        log.error('You must run genconf.py before attempting Deploy.')
+        raise ExecuteException(err_msg)
+
+    with open(latest_filename) as f:
+        latest_id = f.read().strip()
+
+    package_list_filename = os.path.join(package_list_base_dir, '{}.package_list.json'.format(latest_id))
+    if not os.path.exists(package_list_filename):
+        err_msg = 'Unable to find {}'.format(package_list_filename)
+        log.error(err_msg)
+        log.error('You must run genconf.py before attempting Deploy.')
+        raise ExecuteException(err_msg)
+
+    return package_list_filename
 
 
 def _read_state_file(state_file):
@@ -230,6 +259,8 @@ def install_dcos(
 
     bootstrap_tarball = _get_bootstrap_tarball()
     log.debug("Local bootstrap found: %s", bootstrap_tarball)
+    cluster_package_list = _get_cluster_package_list()
+    log.debug("Local cluster package list found: %s", cluster_package_list)
 
     targets = []
     if hosts:
@@ -259,6 +290,7 @@ def install_dcos(
     _add_copy_dcos_install(chain)
     _add_copy_packages(chain)
     _add_copy_bootstap(chain, bootstrap_tarball)
+    _add_copy_package_list(chain, cluster_package_list)
 
     chain.add_execute(
         lambda node: (
@@ -379,7 +411,7 @@ echo "Validating distro..."
 distro="$(source /etc/os-release && echo "${ID}")"
 if [[ "${distro}" == 'coreos' ]]; then
   echo "Distro: CoreOS"
-  echo "CoreOS includes all prerequisites by default." >&2
+  echo "All prerequisites already installed"
   exit 0
 elif [[ "${distro}" == 'rhel' ]]; then
   echo "Distro: RHEL"

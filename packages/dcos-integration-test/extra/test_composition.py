@@ -12,6 +12,9 @@ import requests
 
 from test_helpers import expanded_config
 
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
 
 @pytest.mark.first
 def test_dcos_cluster_is_up(dcos_api_session):
@@ -164,15 +167,14 @@ def test_signal_service(dcos_api_session):
     all_node_units = [
         'diagnostics-service',
         'diagnostics-socket',
-        'dns-watchdog-service',
         'gen-resolvconf-service',
         'gen-resolvconf-timer',
-        'l4lb-watchdog-service',
         'net-service',
         'net-watchdog-service',
-        'overlay-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer']
+        'signal-timer',
+        'checks-poststart-service',
+        'checks-poststart-timer']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [
@@ -210,9 +212,11 @@ def test_signal_service(dcos_api_session):
             = len(dcos_api_session.all_slaves)
         exp_data['diagnostics']['properties']["health-unit-dcos-{}-unhealthy".format(unit)] = 0
 
-    def check_signal_data():
+    def check_signal_data(dcos_api_session):
         # Check the entire hash of diagnostics data
-        assert r_data['diagnostics'] == exp_data['diagnostics']
+        if r_data['diagnostics'] != exp_data['diagnostics']:
+            units_health = dcos_api_session.health.get('/units').json()
+            assert r_data['diagnostics'] == exp_data['diagnostics'], units_health
         # Check a subset of things regarding Mesos that we can logically check for
         framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
         assert 'marathon' in framework_names
@@ -221,7 +225,7 @@ def test_signal_service(dcos_api_session):
         assert len(r_data['cosmos']['properties']['package_list']) == 0
 
     try:
-        check_signal_data()
+        check_signal_data(dcos_api_session)
     except AssertionError as err:
         logging.info('System report: {}'.format(direct_report.json()))
         raise err

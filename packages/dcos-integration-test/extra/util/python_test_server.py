@@ -49,6 +49,12 @@ def setup_logging():
 
 
 class TestHTTPRequestHandler(BaseHTTPRequestHandler):
+    def address_string(self):
+        address = super().address_string()
+        if address.startswith("::ffff:"):
+            return address[7:]
+        return address
+
     def log_message(self, fmt, *args):
         """Override logging settings of base class
 
@@ -286,7 +292,7 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
 # is to handle requests serially. If a connection is severed, this can result in the server hanging for the TCP
 # timeout before answering another requests...leading to failures.
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
-    pass
+    address_family = socket.AF_INET6
 
 
 def _verify_environment():

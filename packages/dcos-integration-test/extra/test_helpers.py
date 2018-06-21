@@ -4,6 +4,9 @@ import uuid
 
 from dcos_test_utils import marathon
 
+__maintainer__ = 'mellenburg'
+__contact__ = 'tools-infra-team@mesosphere.io'
+
 TEST_APP_NAME_FMT = 'integration-test-{}'
 
 
@@ -37,7 +40,8 @@ def marathon_test_app(
         network: marathon.Network=marathon.Network.HOST,
         healthcheck_protocol: marathon.Healthcheck=marathon.Healthcheck.HTTP,
         vip: str=None,
-        host_constraint: str=None):
+        host_constraint: str=None,
+        network_name: str='dcos'):
     """ Creates an app definition for the python test server which will be
     consistent (i.e. deployable with green health checks and desired network
     routability). To learn more about the test server, see in this repo:
@@ -135,7 +139,7 @@ def marathon_test_app(
         if vip is not None:
             app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
     elif network == marathon.Network.USER:
-        app['ipAddress'] = {'networkName': 'dcos'}
+        app['ipAddress'] = {'networkName': network_name}
         if container_type != marathon.Container.DOCKER:
             app['ipAddress']['discovery'] = {
                 'ports': [{

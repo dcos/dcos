@@ -3,20 +3,29 @@ libdir="$PKG_PATH/lib"
 
 # TODO(cmaloney): Check prerequisites installed (glog, protobuf, boost)
 pushd "/pkg/src/mesos"
+
+# Apply patches from packages/mesos/patch directory. All patches are numbered
+for patch in /pkg/extra/patches/*; do
+  git -c user.name="Mesosphere CI" -c user.email="mesosphere-ci@users.noreply.github.com" am $patch
+done
+
 ./bootstrap
 
 mkdir -p build
 pushd build
 # TODO(cmaloney): --with-glog=/usr --with-protobuf=/usr --with-boost=/usr
 # TODO(cmaloney): DESTDIR builds so we don't have to build as root?
+# TODO(nfnt): --with-grpc=/usr
 LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
+  --enable-grpc \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
   --with-boost=/opt/mesosphere/active/boost-libs \
+  --disable-werror \
   --sbindir="$PKG_PATH/bin"
 make -j$NUM_CORES
 

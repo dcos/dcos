@@ -227,6 +227,8 @@ INITIAL_STATEJSON = {
 
 # pylint: disable=R0903
 class MesosHTTPRequestHandler(RecordingHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+
     """A request hander class mimicking Mesos master daemon.
     """
     def _calculate_response(self, base_path, url_args, body_args=None):

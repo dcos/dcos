@@ -4,8 +4,8 @@ libraries to support the dcos installer.
 """
 import json
 import logging
+import os
 
-import boto3
 import botocore.exceptions
 
 import gen
@@ -105,10 +105,10 @@ def validate_aws_bucket_access(aws_template_storage_region_name,
                                aws_template_storage_bucket_path,
                                aws_template_storage_bucket_path_autocreate):
 
-    session = boto3.session.Session(
-        aws_access_key_id=aws_template_storage_access_key_id,
-        aws_secret_access_key=aws_template_storage_secret_access_key,
-        region_name=aws_template_storage_region_name)
+    session = release.storage.aws.get_aws_session(
+        aws_template_storage_access_key_id,
+        aws_template_storage_secret_access_key,
+        aws_template_storage_region_name)
 
     bucket = session.resource('s3').Bucket(aws_template_storage_bucket)
 
@@ -134,18 +134,6 @@ def validate_aws_bucket_access(aws_template_storage_region_name,
                 aws_template_storage_bucket_path, aws_template_storage_bucket, ex)) from ex
 
 
-def validate_aws_template_storage_access_key_id(aws_template_storage_access_key_id):
-    assert aws_template_storage_access_key_id, "Must be non-empty"
-
-
-def validate_aws_template_storage_secret_access_key(aws_template_storage_secret_access_key):
-    assert aws_template_storage_secret_access_key, "Must be non-empty"
-
-
-def calculate_reproducible_artifact_path(config_id):
-    return 'config_id/{}'.format(config_id)
-
-
 def calculate_base_repository_url(
         aws_template_storage_region_name,
         aws_template_storage_bucket,
@@ -156,24 +144,14 @@ def calculate_base_repository_url(
         path=aws_template_storage_bucket_path)
 
 
-# Figure out the s3 bucket url from region + bucket + path
-def calculate_cloudformation_s3_url(bootstrap_url, config_id):
-    return '{}/config_id/{}'.format(bootstrap_url, config_id)
-
-
-# Figure out the s3 bucket url from region + bucket + path
-def calculate_cloudformation_s3_url_full(cloudformation_s3_url):
-    return '{}/cloudformation'.format(cloudformation_s3_url)
-
-
 def calculate_aws_template_storage_region_name(
         aws_template_storage_access_key_id,
         aws_template_storage_secret_access_key,
         aws_template_storage_bucket):
 
-    session = boto3.session.Session(
-        aws_access_key_id=aws_template_storage_access_key_id,
-        aws_secret_access_key=aws_template_storage_secret_access_key)
+    session = release.storage.aws.get_aws_session(
+        aws_template_storage_access_key_id,
+        aws_template_storage_secret_access_key)
 
     try:
         location_info = session.client('s3').get_bucket_location(Bucket=aws_template_storage_bucket)
@@ -199,9 +177,7 @@ aws_advanced_source = gen.internals.Source({
         lambda aws_template_storage_bucket_path_autocreate:
             gen.calc.validate_true_false(aws_template_storage_bucket_path_autocreate),
         validate_aws_template_storage_region_name,
-        validate_aws_bucket_access,
-        validate_aws_template_storage_access_key_id,
-        validate_aws_template_storage_secret_access_key
+        validate_aws_bucket_access
     ],
     'default': {
         'num_masters': '5',
@@ -219,10 +195,7 @@ aws_advanced_source = gen.internals.Source({
         'package_ids': lambda bootstrap_variant: json.dumps(
             config_util.installer_latest_complete_artifact(bootstrap_variant)['packages']
         ),
-        'cloudformation_s3_url': calculate_cloudformation_s3_url,
-        'cloudformation_s3_url_full': calculate_cloudformation_s3_url_full,
         'bootstrap_url': calculate_base_repository_url,
-        'reproducible_artifact_path': calculate_reproducible_artifact_path,
     },
     'secret': [
         'aws_template_storage_access_key_id',
@@ -249,12 +222,9 @@ def get_aws_advanced_target():
             'aws_template_storage_bucket_path',
             'aws_template_upload',
             'aws_template_storage_bucket_path_autocreate',
-            'cloudformation_s3_url',
-            'cloudformation_s3_url_full',
             'provider',
             'bootstrap_url',
             'bootstrap_variant',
-            'reproducible_artifact_path',
             'package_ids'},
         sub_scopes={
             'aws_template_upload': gen.internals.Scope(
@@ -281,6 +251,15 @@ def do_aws_cf_configure():
 
     # TODO(cmaloney): Move to Config class introduced in https://github.com/dcos/dcos/pull/623
     config = Config(CONFIG_PATH)
+
+    # This process is usually ran from a docker container where default boto3 credential
+    # method may fail and as such, we allow passing these creds explicitly
+    if 'aws_template_storage_access_key_id' in config:
+        os.environ['AWS_ACCESS_KEY_ID'] = config['aws_template_storage_access_key_id']
+    if 'aws_template_storage_secret_access_key' in config:
+        os.environ['AWS_SECRET_ACCESS_KEY'] = config['aws_template_storage_secret_access_key']
+    if 'aws_template_storage_region_name' in config:
+        os.environ['AWS_DEFAULT_REGION'] = config['aws_template_storage_region_name']
 
     gen_config = config.as_gen_format()
 
@@ -309,12 +288,18 @@ def do_aws_cf_configure():
     # done a validation run.
     full_config = {k: v.value for k, v in resolver.arguments.items()}
 
+    # Calculate the config ID and values that depend on it.
+    config_id = gen.get_config_id(full_config)
+    reproducible_artifact_path = 'config_id/{}'.format(config_id)
+    cloudformation_s3_url = '{}/config_id/{}'.format(full_config['bootstrap_url'], config_id)
+    cloudformation_s3_url_full = '{}/cloudformation'.format(cloudformation_s3_url)
+
     # TODO(cmaloney): Switch to using the targets
     gen_config['bootstrap_url'] = full_config['bootstrap_url']
     gen_config['provider'] = full_config['provider']
     gen_config['bootstrap_id'] = full_config['bootstrap_id']
     gen_config['package_ids'] = full_config['package_ids']
-    gen_config['cloudformation_s3_url_full'] = full_config['cloudformation_s3_url_full']
+    gen_config['cloudformation_s3_url_full'] = cloudformation_s3_url_full
 
     # Convert the bootstrap_Variant string we have back to a bootstrap_id as used internally by all
     # the tooling (never has empty string, uses None to say "no variant")
@@ -324,7 +309,7 @@ def do_aws_cf_configure():
     for built_resource in list(gen.build_deploy.aws.do_create(
             tag='dcos_generate_config.sh --aws-cloudformation',
             build_name='Custom',
-            reproducible_artifact_path=full_config['reproducible_artifact_path'],
+            reproducible_artifact_path=reproducible_artifact_path,
             variant_arguments={bootstrap_variant: gen_config},
             commit=full_config['dcos_image_commit'],
             all_completes=None)):
@@ -350,7 +335,7 @@ def do_aws_cf_configure():
     repository = release.Repository(
         full_config['aws_template_storage_bucket_path'],
         None,
-        'config_id/' + full_config['config_id'])
+        'config_id/' + config_id)
 
     storage_commands = repository.make_commands({'core_artifacts': [], 'channel_artifacts': artifacts})
 
@@ -361,7 +346,7 @@ def do_aws_cf_configure():
 
     log.warning(
         "Generated templates locally available at %s",
-        cf_dir + "/" + full_config["reproducible_artifact_path"])
+        cf_dir + "/" + reproducible_artifact_path)
     # TODO(cmaloney): Print where the user can find the files locally
 
     if full_config['aws_template_upload'] == 'false':
@@ -370,15 +355,14 @@ def do_aws_cf_configure():
     storage_provider = release.storage.aws.S3StorageProvider(
         bucket=full_config['aws_template_storage_bucket'],
         object_prefix=None,
-        download_url=full_config['cloudformation_s3_url'],
+        download_url=cloudformation_s3_url,
         region_name=full_config['aws_template_storage_region_name'],
         access_key_id=full_config['aws_template_storage_access_key_id'],
         secret_access_key=full_config['aws_template_storage_secret_access_key'])
 
     log.warning("Uploading to AWS")
     release.apply_storage_commands({'aws': storage_provider}, storage_commands)
-    log.warning("AWS CloudFormation templates now available at: {}".format(
-        full_config['cloudformation_s3_url']))
+    log.warning("AWS CloudFormation templates now available at: {}".format(cloudformation_s3_url))
 
     # TODO(cmaloney): Print where the user can find the files in AWS
     # TODO(cmaloney): Dump out a JSON with machine paths to make scripting easier.

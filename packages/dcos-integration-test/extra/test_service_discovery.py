@@ -9,6 +9,9 @@ import retrying
 import test_helpers
 from dcos_test_utils import marathon
 
+__maintainer__ = 'urbanserj'
+__contact__ = 'dcos-networking@mesosphere.io'
+
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
@@ -69,7 +72,8 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
 
     app_definition['instances'] = 2
 
-    assert len(dcos_api_session.slaves) >= 2, "Test requires a minimum of two agents"
+    if len(dcos_api_session.slaves) < 2:
+        pytest.skip("Service Discovery Tests require a minimum of two agents.")
 
     app_definition["constraints"] = [["hostname", "UNIQUE"], ]
 
@@ -172,6 +176,13 @@ def get_marathon_addresses_by_service_points(service_points):
     return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
 
 
+def get_dcos_dns_records():
+    response = requests.get('http://127.0.0.1:62080/v1/records')
+    if response.status_code != 200:
+        return None
+    return response.json()
+
+
 def assert_service_discovery(dcos_api_session, app_definition, net_types):
     """
     net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
@@ -191,8 +202,12 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
                         retry_on_exception=lambda x: True)
         def _ensure_dns_converged():
             app_name = app_definition['id']
-            dns_addrs = get_dns_addresses_by_app_name(app_name)
-
+            try:
+                dns_addrs = get_dns_addresses_by_app_name(app_name)
+            except socket.gaierror as err:
+                records = get_dcos_dns_records()
+                logging.info("dcos-dns records: {}".format(records))
+                raise err
             asserted = False
             if len(net_types) == 2:
                 if (DNSOverlay in net_types) and (DNSPortMap in net_types):

@@ -212,6 +212,21 @@ class TestAuthnJWTValidator:
             headers=auth_header,
             )
 
+    def test_valid_auth_token_with_bearer_header(
+            self,
+            master_ar_process_perclass,
+            jwt_generator,
+            ):
+        # We accept "forever tokens"
+        token = jwt_generator(uid='test')
+        auth_header = {'Authorization': 'Bearer {}'.format(token)}
+        assert_endpoint_response(
+            master_ar_process_perclass,
+            EXHIBITOR_PATH,
+            200,
+            headers=auth_header,
+            )
+
 
 class TestAuthCustomErrorPages:
     def test_correct_401_page_content(self, master_ar_process_pertest, repo_is_ee):
@@ -294,7 +309,7 @@ class TestAuthPrecedence:
             allow_redirects=False,
             headers=valid_user_header)
 
-        assert resp.status_code == 404
+        assert resp.status_code == 503
 
     def test_if_historyservice_endpoint_auth_precedence_is_enforced(
             self, valid_user_header, mocker, nginx_class):

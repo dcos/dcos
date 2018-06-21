@@ -1,6 +1,11 @@
 endpoint_tests:
 ######### /exhibitor endpoint
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /exhibitor/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: skip
@@ -37,6 +42,11 @@ endpoint_tests:
 
 ######### /service endpoint
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /service/scheduler-alwaysthere/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -193,6 +203,12 @@ endpoint_tests:
 
 ######### /agent endpoint
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
+          - /slave/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -244,6 +260,11 @@ endpoint_tests:
     type:
       - master
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /system/health/v1/foo/bar
       # Check Open/EE config for this test:
       is_upstream_req_ok:
         expected_http_ver: HTTP/1.0
@@ -261,6 +282,12 @@ endpoint_tests:
 ######### /system/v1/agent/ endpoint
 # Agent A
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs/foo/bar?key=value&var=num
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/foo/bar?key=value&var=num
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: skip
@@ -334,6 +361,12 @@ endpoint_tests:
 
 ######### /system/v1/leader endpoint
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /system/v1/leader/mesos/foo/bar?key=value&var=num
+          - /system/v1/leader/marathon/foo/bar?key=value&var=num
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: skip
@@ -385,6 +418,11 @@ endpoint_tests:
     type:
       - master
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /system/v1/logs/foo/bar
       is_upstream_correct:
         test_paths:
           - /system/v1/logs/foo/bar
@@ -407,6 +445,11 @@ endpoint_tests:
 
 ######### /cosmos/service
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /cosmos/service/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -429,6 +472,11 @@ endpoint_tests:
 
 ######### /capabilities
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /capabilities
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -448,7 +496,8 @@ endpoint_tests:
 
 ######### /acs/api/v1/
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
+        expect_http_status: 200
         nocaching_headers_are_sent: true
         test_paths:
           - /acs/api/v1/reflect/me
@@ -471,6 +520,11 @@ endpoint_tests:
 
 ######### /package
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /package/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -492,6 +546,11 @@ endpoint_tests:
 
 ######### /navstar/lashup/key
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /navstar/lashup/key
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: skip
@@ -511,6 +570,11 @@ endpoint_tests:
 
 ######### /dcos-history-service/foo/bar
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /dcos-history-service/foo/bar
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: skip
@@ -530,6 +594,11 @@ endpoint_tests:
 
 ######### /mesos_dns
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /mesos_dns/v1/reflect/me
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: false
@@ -553,6 +622,11 @@ endpoint_tests:
 
 ######### /mesos
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /mesos/reflect/me
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -576,6 +650,11 @@ endpoint_tests:
 
 ######### /pkgpanda
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /pkgpanda/foo/bar
       is_upstream_correct:
         test_paths:
           - /pkgpanda/foo/bar
@@ -619,13 +698,19 @@ endpoint_tests:
 
 ######### /pkgpanda/active.buildinfo.full.json
   - tests:
-      are_response_headers_ok:
+      is_response_correct:
+        expect_http_status: 200
         nocaching_headers_are_sent: true
         test_paths:
           - /pkgpanda/active.buildinfo.full.json
     type:
       - master
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /dcos-metadata/dcos-version.json
       is_unauthed_access_permitted:
         locations:
           - /dcos-metadata/dcos-version.json
@@ -635,6 +720,11 @@ endpoint_tests:
 
 ######### /system/v1/metrics endpoint
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /system/v1/metrics/foo/bar
       is_upstream_req_ok:
         expected_http_ver: HTTP/1.0
         test_paths:
@@ -677,6 +767,11 @@ endpoint_tests:
       - master
 ######### /marathon
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /marathon/v2/reflect/me
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true
@@ -704,6 +799,11 @@ endpoint_tests:
 ######### This is a special case of a service behind /service endpoint:
 ######### /service/metronome
   - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /service/metronome/v2/reflect/me
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
         auth_token_is_forwarded: true

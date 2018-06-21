@@ -1,6 +1,9 @@
 package:
   - path: /etc/dcos-metrics-config.yaml
     content: |
+      producers:
+        prometheus:
+          port: 61091
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -18,9 +21,19 @@ package:
   - path: /bin/detect_ip_public
     permissions: "0755"
     content: {{ ip_detect_public_contents }}
+  - path: /bin/detect_ip6
+    permissions: "0755"
+    content: {{ ip6_detect_contents }}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
+{% switch licensing_enabled %}
+{% case "true" %}
+  - path: /etc/license.txt
+    permissions: "0600"
+    content: {{ license_key_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: /check/check_ip
     permissions: "0755"
     content: |
@@ -45,7 +58,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_slave_public/dcos-dns.json
@@ -55,7 +68,7 @@ package:
         "bind_interface": "spartan",
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc_master/dcos-dns.json
@@ -69,7 +82,7 @@ package:
         "upstream_resolvers": {{ resolvers }},
         "udp_port": 53,
         "tcp_port": 53,
-        "bind_ip_blacklist": {{ dns_bind_ip_blacklist }},
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
         "forward_zones": {{ dns_forward_zones }}
       }
   - path: /etc/mesos-dns.env
@@ -90,9 +103,17 @@ package:
         "IPSources": {{ mesos_dns_ip_sources }},
         "SetTruncateBit": {{ mesos_dns_set_truncate_bit }}
       }
-  - path: /etc/dcos-net-watchdog
+  - path: /etc/dcos.network
+    content: |
+      [Match]
+      Name=docker* m-* d-* vtep* spartan minuteman
+
+      [Link]
+      Unmanaged=yes
+  - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
+      DCOS_NET_IPV6={{ enable_ipv6 }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -119,6 +140,7 @@ package:
         {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
+            {enable_ipv6, {{ dcos_l4lb_enable_ipv6 }}},
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
             {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
             {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},
@@ -127,7 +149,8 @@ package:
         },
         {dcos_overlay,
           [
-            {enable_overlay, {{ dcos_overlay_enable }}}
+            {enable_overlay, {{ dcos_overlay_enable }}},
+            {enable_ipv6, {{ enable_ipv6 }}}
           ]
         },
         {dcos_rest,
@@ -180,7 +203,8 @@ package:
           "allocate_subnet": true,
           "mesos_bridge": true,
           "docker_bridge": true,
-          "overlay_mtu": {{ dcos_overlay_mtu }}
+          "overlay_mtu": {{ dcos_overlay_mtu }},
+          "enable_ipv6": {{ enable_ipv6 }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
        }
@@ -193,7 +217,8 @@ package:
           "allocate_subnet": true,
           "mesos_bridge": false,
           "docker_bridge": false,
-          "overlay_mtu": {{ dcos_overlay_mtu }}
+          "overlay_mtu": {{ dcos_overlay_mtu }},
+          "enable_ipv6": {{ enable_ipv6 }}
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
@@ -367,7 +392,7 @@ package:
       }
 {% case "false" %}
 {% endswitch %}
-  - path: /etc/mesos-slave-dns.json 
+  - path: /etc/mesos-slave-dns.json
     content: |
       {
         "docker":
@@ -375,13 +400,27 @@ package:
             {
               "network_mode": "USER",
               "dns": {
-                "nameservers": [ 
+                "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
                                 "198.51.100.1",
                                 "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
                 ]
               }
             }
         ]
+      }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
       }
   - path: /etc/logrotate_master.config
     content: |
@@ -422,7 +461,7 @@ package:
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
-      MESOS_SLAVE_REMOVAL_RATE_LIMIT=1/20mins
+      MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
       MESOS_OFFER_TIMEOUT=2mins
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
@@ -438,6 +477,7 @@ package:
 {% case "false" %}
 {% endswitch %}
       GLOG_drop_log_memory=false
+      LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
   - path: /etc/mesos-master-provider
     content: |
@@ -459,6 +499,8 @@ package:
       MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
+      MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
@@ -469,6 +511,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
+      MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       GLOG_drop_log_memory=false
 {% switch use_mesos_hooks %}
 {% case "true" %}
@@ -484,6 +527,11 @@ package:
 {% case "true" %}
       MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
 {% case "false" %}
+{% endswitch %}
+{% switch enable_mesos_ipv6_discovery %}
+{% case "false" %}
+{% case "true" %}
+      MESOS_IP6_DISCOVERY_COMMAND=/opt/mesosphere/bin/detect_ip6
 {% endswitch %}
 {% switch cluster_docker_credentials_dcos_owned %}
 {% case "true" %}
@@ -546,7 +594,7 @@ package:
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
-  - path: /etc/dcos-diagnostics-runner-config.json
+  - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
   - path: /etc/dcos-diagnostics.env
     content: |
@@ -666,11 +714,6 @@ package:
               },
               {
                   "Port": 8080,
-                  "Uri": "/v2/eventSubscriptions",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 8080,
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
@@ -731,12 +774,12 @@ package:
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/flags",
+                  "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/state",
+                  "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {
@@ -752,21 +795,6 @@ package:
               {
                   "Port": 8123,
                   "Uri": "/v1/version",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/last",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/minute",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 15055,
-                  "Uri": "/history/hour",
                   "Role": ["master"]
               }
           ],
@@ -972,23 +1000,31 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
-  - path: /etc/adminrouter-tls.conf
+  - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
-      # Modulo ChaCha20 cipher.
-      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+      # Modulo ChaCha20 cipher and 3DES bulk encryption algorithm.
+      # For 3DES see https://jira.mesosphere.com/browse/DCOS-21958
+{% switch adminrouter_tls_cipher_override %}
+{% case "false" %}
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5:!3DES;
+{% case "true" %}
+      ssl_ciphers {{ adminrouter_tls_cipher_suite }};
+{% endswitch %}
       ssl_prefer_server_ciphers on;
       # To manually test which TLS versions are enabled on a node, use
       # `openssl` commands.
       #
       # See comments on https://jira.mesosphere.com/browse/DCOS-13437 for more
       # details.
-{% switch adminrouter_tls_1_0_enabled %}
-{% case "true" %}
-      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-{% case "false" %}
-      ssl_protocols TLSv1.1 TLSv1.2;
-{% endswitch %}
+      ssl_protocols {{ adminrouter_tls_version_override }};
+  - path: /etc/adminrouter-tls-agent.conf
+    content: |
+      # Note that Agent Admin Router only serves cluster-internal clients. Hence,
+      # browser compatibility is not a criterion for the TLS cipher suite selection.
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
+      ssl_prefer_server_ciphers on;
+      ssl_protocols TLSv1.2;
   - path: /etc_slave/adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
