@@ -1,5 +1,6 @@
 # Contributing
 
+ - Before you can contribute, you will need to sign the [Contributor License Agreement](cla.pdf) and send the signed copy to legal@mesosphere.com.
  - Pull Requests (PR) for small fixes / typos / etc. are very welcome, just make a PR with the fix and it should land quickly.
  - If a PR check fails on your PR, most of the CI logs are open and viewable without an account (login as guest using the button on the login screen). If you can't see it, ask in DC/OS community or the PR and someone will forward the needed information.
  - PRs will get reviewed independently, then landed in groups called "trains". This makes it so we don't have to endlessly rebase PRs in master. Trains depart regularly, so don't worry about missing one. It'll get in.
