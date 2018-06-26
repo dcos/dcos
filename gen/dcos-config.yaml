@@ -936,6 +936,18 @@ package:
     content: |
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
+      MARATHON_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
+      MARATHON_MESOS_USER=root
+      MARATHON_JVM_ARGS="-J-server -J-verbose:gc -J-XX:+PrintGCDetails -J-XX:+PrintGCTimeStamps "
+      MARATHON_USER_DIR=/var/lib/dcos/marathon
+      MARATHON_MESOS_ROLE="slave_public"
+      MARATHON_FEATURES="vips,task_killing,external_volumes,gpu_resources"
+      MARATHON_ACCEPTED_ROLES="*"
+      MARATHON_MAX_INSTANCES_PER_OFFER=100
+      MARATHON_TASK_LAUNCH_TIMEOUT=86400000
+      MARATHON_DECLINE_OFFER_DURATION=300000
+      MARATHON_LEADER_UI_URL="/mesos"
+      MARATHON_PRINCIPAL=dcos_marathon
 {% switch dcos_overlay_enable %}
 {% case "true" %}
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
