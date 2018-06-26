@@ -744,6 +744,16 @@ package:
                   "Port": 15055,
                   "Uri": "/history/hour",
                   "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/overlay-master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/overlay-agent/overlay",
+                  "Role": ["agent", "agent_public"]
               }
           ],
           "LocalFiles": [
@@ -769,11 +779,35 @@ package:
               {
                   "Location": "/var/lib/dcos/exhibitor/conf/zoo.cfg",
                   "Role": ["master"]
+              },
+              {
+                  "Location": "/etc/resolv.conf"
+              },
+              {
+                  "Location": "/proc/net/ip_vs"
+              },
+              {
+                  "Location": "/proc/net/ip_vs_conn"
+              },
+              {
+                  "Location": "/proc/net/fib_trie"
               }
           ],
           "LocalCommands": [
               {
                   "Command": ["dmesg"]
+              },
+              {
+                  "Command": ["ip", "addr"]
+              },
+              {
+                  "Command": ["ip", "route"]
+              },
+              {
+                  "Command": ["ifconfig", "-a"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
               }
           ]
         }
