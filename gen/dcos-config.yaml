@@ -596,6 +596,15 @@ package:
       }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
+  - path: /etc_master/dcos-check-runner.yaml
+    content: |
+        role: master
+  - path: /etc_slave/dcos-check-runner.yaml
+    content: |
+        role: agent
+  - path: /etc_slave_public/dcos-check-runner.yaml
+    content: |
+        role: agent  # Checks don't distinguish between public and private agents.
   - path: /etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
