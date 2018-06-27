@@ -1,6 +1,7 @@
 {
   "amitaekbote": {"slack": "amitaekbote", "jira": "aekbote"},
   "branden": {"slack": "branden", "jira": "branden"},
+  "gauripowale": {"slack": "gpowale", "jira": "gauripowale"},
   "gpaul": {"slack": "gpaul", "jira": "gpaul"},
   "greggomann": {"slack": "greg", "jira": "greg"},
   "jgehrcke": {"slack": "jp", "jira": "jp"},
@@ -12,6 +13,5 @@
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
-  "gauripowale": {"slack": "gpowale", "jira": "gauripowale"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
 }
