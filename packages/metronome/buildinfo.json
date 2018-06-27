@@ -4,7 +4,7 @@
         "kind": "url_extract",
         "url":
             "https://s3.amazonaws.com/downloads.mesosphere.io/metronome/releases/0.8.2/metronome-0.8.2.tgz",
-        "sha1": "d901da621a585943362706941c3cef6dad526b8f"
+        "sha1": "b51632d5dc2a9b9bd210e1d321c9f634e019810a"
     },
     "username": "dcos_metronome",
     "state_directory": true
