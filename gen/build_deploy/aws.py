@@ -135,15 +135,15 @@ region_to_ami_map = {
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-961ac5f4',
-        'stable': 'ami-961ac5f4',
+        'coreos': 'ami-3cded940',
+        'stable': 'ami-3cded940',
         'el7': 'ami-8af586e9',
         'el7prereq': 'ami-a55504d9',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-9db0b0fe',
-        'stable': 'ami-9db0b0fe',
+        'coreos': 'ami-961ac5f4',
+        'stable': 'ami-961ac5f4',
         'el7': 'ami-427d9c20',
         'el7prereq': 'ami-5ba66539',
         'natami': 'ami-996402a3'
