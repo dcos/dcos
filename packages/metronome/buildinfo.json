@@ -3,8 +3,8 @@
     "single_source": {
         "kind": "url_extract",
         "url":
-            "https://s3.amazonaws.com/downloads.mesosphere.io/metronome/releases/0.3.5/metronome-0.3.5.tgz",
-        "sha1": "2ff7c41ff969e3c552194b7338f9e0ca14a3deb5"
+            "https://s3.amazonaws.com/downloads.mesosphere.io/metronome/releases/0.8.2/metronome-0.8.2.tgz",
+        "sha1": "b51632d5dc2a9b9bd210e1d321c9f634e019810a"
     },
     "username": "dcos_metronome",
     "state_directory": true
