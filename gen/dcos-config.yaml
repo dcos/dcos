@@ -562,7 +562,8 @@ package:
   - path: /etc_master/dcos-log-config.json
     content: |
       {
-        "role": "master"
+        "role": "master",
+        "port": 4040
       }
   - path: /etc_slave/dcos-log-config.json
     content: |

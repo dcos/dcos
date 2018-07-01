@@ -27,6 +27,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 2181: dcos-exhibitor
  - 2888: dcos-exhibitor
  - 3888: dcos-exhibitor
+ - 4040: dcos-log
  - 5050: dcos-mesos-master
  - 7070: dcos-cosmos
  - 8080: dcos-marathon
