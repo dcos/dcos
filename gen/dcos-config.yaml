@@ -623,12 +623,18 @@ package:
   - path: /etc_master/dcos-check-runner.yaml
     content: |
         role: master
+        systemd-socket: true
+        base-uri: /system/checks
   - path: /etc_slave/dcos-check-runner.yaml
     content: |
         role: agent
+        systemd-socket: true
+        base-uri: /system/checks
   - path: /etc_slave_public/dcos-check-runner.yaml
     content: |
         role: agent  # Checks don't distinguish between public and private agents.
+        systemd-socket: true
+        base-uri: /system/checks
   - path: /etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json

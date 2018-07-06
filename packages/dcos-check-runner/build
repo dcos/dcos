@@ -14,3 +14,11 @@ cp /pkg/extra/dcos-checks-poststart.service "$service"
 timer="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.timer"
 mkdir -p "$(dirname "$timer")"
 cp /pkg/extra/dcos-checks-poststart.timer "$timer"
+
+# Create the checks API service and socket
+service="$PKG_PATH/dcos.target.wants/dcos-checks-api.service"
+mkdir -p "$(dirname "$service")"
+cp /pkg/extra/dcos-checks-api.service "$service"
+socket="$PKG_PATH/dcos.target.wants/dcos-checks-api.socket"
+mkdir -p "$(dirname "$socket")"
+cp /pkg/extra/dcos-checks-api.socket "$socket"

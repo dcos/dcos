@@ -130,6 +130,11 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
+    -- /system/checks/
+    res.access_system_checks_endpoint = function()
+        return res.do_authn_and_authz_or_exit()
+    end
+
     -- /system/health/v1
     res.access_system_health_endpoint = function()
         return res.do_authn_and_authz_or_exit()

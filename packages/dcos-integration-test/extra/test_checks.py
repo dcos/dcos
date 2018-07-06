@@ -1,3 +1,4 @@
+import random
 import uuid
 
 
@@ -52,3 +53,35 @@ def test_checks_cli(dcos_api_session):
             ]),
         },
     })
+
+
+def test_checks_api(dcos_api_session):
+    """Test the checks API at /system/checks/"""
+    checks_uri = '/system/checks/'
+    # Test that we can list and run node and cluster checks on a master, agent, and public agent.
+    check_nodes = []
+    for nodes in [dcos_api_session.masters, dcos_api_session.slaves, dcos_api_session.public_slaves]:
+        if nodes:
+            check_nodes.append(random.choice(nodes))
+    print('Testing', checks_uri, 'on these nodes:', check_nodes)
+
+    for node in check_nodes:
+        for check_type in ['node', 'cluster']:
+            uri = '{}{}/'.format(checks_uri, check_type)
+            print('Testing', uri, 'on', node)
+
+            # List checks
+            r = dcos_api_session.get(uri, node=node)
+            assert r.status_code == 200
+            checks = r.json()
+            assert isinstance(checks, dict)
+
+            # Run checks
+            r = dcos_api_session.post(uri, node=node)
+            assert r.status_code == 200
+            results = r.json()
+            assert isinstance(results, dict)
+            assert results['status'] == 0
+
+            # Make sure we ran all the listed checks.
+            assert set(checks.keys()) == set(results['checks'].keys())
