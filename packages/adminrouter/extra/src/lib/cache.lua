@@ -585,15 +585,13 @@ end
 
 local function periodically_refresh_cache(auth_token)
     -- This function is invoked from within init_worker_by_lua code.
-    -- ngx.timer.at() can be called here, whereas most of the other ngx.*
-    -- API is not available.
+    -- ngx.timer.every() is called here, a more robust alternative to
+    -- ngx.timer.at() as suggested by the openresty/lua-nginx-module
+    -- documentation: 
+    -- https://github.com/openresty/lua-nginx-module/tree/v0.10.9#ngxtimerat
 
     timerhandler = function(premature)
-        -- Handler for recursive timer invocation.
-        -- Within a timer callback, plenty of the ngx.* API is available,
-        -- with the exception of e.g. subrequests. As ngx.sleep is also not
-        -- available in the current context, the recommended approach of
-        -- implementing periodic tasks is via recursively defined timers.
+        -- Handler for periodic timer invocation.
 
         -- Premature timer execution: worker process tries to shut down.
         if premature then
@@ -602,17 +600,9 @@ local function periodically_refresh_cache(auth_token)
 
         -- Invoke timer business logic.
         refresh_cache(true, auth_token)
-
-        -- Register new timer.
-        local ok, err = ngx.timer.at(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
-        if not ok then
-            ngx.log(ngx.ERR, "Failed to create timer: " .. err)
-        else
-            ngx.log(ngx.INFO, "Created recursive timer for cache updating.")
-        end
     end
 
-    -- Trigger initial timer, about CACHE_FIRST_POLL_DELAY seconds after
+    -- Trigger the timer, every CACHE_POLL_PERIOD seconds after
     -- Nginx startup.
     local ok, err = ngx.timer.at(_CONFIG.CACHE_FIRST_POLL_DELAY, timerhandler)
     if not ok then
@@ -620,6 +610,14 @@ local function periodically_refresh_cache(auth_token)
         return
     else
         ngx.log(ngx.INFO, "Created initial recursive timer for cache updating.")
+    end
+
+    local ok, err = ngx.timer.every(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
+    if not ok then
+        ngx.log(ngx.ERR, "Failed to create timer: " .. err)
+        return
+    else
+        ngx.log(ngx.INFO, "Created timer for cache updating.")
     end
 end
 
