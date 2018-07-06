@@ -609,7 +609,7 @@ local function periodically_refresh_cache(auth_token)
         ngx.log(ngx.ERR, "Failed to create timer: " .. err)
         return
     else
-        ngx.log(ngx.INFO, "Created initial recursive timer for cache updating.")
+        ngx.log(ngx.INFO, "Created initial timer for cache updating.")
     end
 
     local ok, err = ngx.timer.every(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
@@ -617,7 +617,7 @@ local function periodically_refresh_cache(auth_token)
         ngx.log(ngx.ERR, "Failed to create timer: " .. err)
         return
     else
-        ngx.log(ngx.INFO, "Created timer for cache updating.")
+        ngx.log(ngx.INFO, "Created periodic timer for cache updating.")
     end
 end
 
