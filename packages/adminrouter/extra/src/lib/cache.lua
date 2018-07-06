@@ -602,7 +602,7 @@ local function periodically_refresh_cache(auth_token)
         refresh_cache(true, auth_token)
     end
 
-    -- Trigger the timer, every CACHE_POLL_PERIOD seconds after
+    -- Trigger the initial cache update CACHE_FIRST_POLL_DELAY seconds after
     -- Nginx startup.
     local ok, err = ngx.timer.at(_CONFIG.CACHE_FIRST_POLL_DELAY, timerhandler)
     if not ok then
@@ -612,6 +612,8 @@ local function periodically_refresh_cache(auth_token)
         ngx.log(ngx.INFO, "Created initial timer for cache updating.")
     end
 
+    -- Trigger the timer, every CACHE_POLL_PERIOD seconds after
+    -- Nginx startup.
     local ok, err = ngx.timer.every(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
     if not ok then
         ngx.log(ngx.ERR, "Failed to create timer: " .. err)
