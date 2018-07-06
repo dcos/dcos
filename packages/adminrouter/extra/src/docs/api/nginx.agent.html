@@ -479,9 +479,33 @@
         <label class="heading"><span class="route-type toggle-route-type">File</span> <span class="route-desc">retrieves static files.</span> </label>
         </input>
       </li>
+      <li class="route route-type-unknown">
+        <input type="checkbox" data-type="unknown" checked="checked">
+        <label class="heading"><span class="route-type toggle-route-type">Unknown</span> <span class="route-desc">unrecognized routing mechanism.</span> </label>
+        </input>
+      </li>
     </ul>
   </div>
   <ul class="resources">
+    <li id="resource-other" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="other" href="#other" aria-hidden="true" class="toggle-route-group" data-id="other">
+            <div class="arrow arrow-right"></div>Other</a>
+        </h2>
+        <span class="options"><a href="#other" class="toggle-route-group" data-id="other">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-other" class="routes">
+        <li class="route route-type-unknown">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Unknown</span>
+              <span class="route-path"><code>/</code></span>
+            </h3>
+          </div>
+        </li>
+      </ul>
+    </li>
     <li id="resource-metadata" class="resource">
       <div class="heading">
         <h2>
@@ -579,6 +603,43 @@
         <span class="options"><a href="#system" class="toggle-route-group" data-id="system">Show/Hide</a> </span>
       </div>
       <ul id="routes-system" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/system/checks/</code></span>
+            </h3>
+            <span class="route-desc">Node and cluster checks</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>unix:/run/dcos/dcos-checks-api.sock</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Checks API
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
         <li class="route route-type-proxy">
           <div class="heading">
             <h3>

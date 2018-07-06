@@ -1,5 +1,8 @@
 ngindox: 0.1.0
 backends:
+  dcos_checks_api:
+    server: 'unix:/run/dcos/dcos-checks-api.sock'
+    name: DC/OS Checks API
   dcos_diagnostics:
     server: 'unix:/run/dcos/dcos-diagnostics.sock'
     name: DC/OS Diagnostics
@@ -17,6 +20,10 @@ backends:
     name: DC/OS Component Package Manager (Pkgpanda)
     reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
 routes:
+  /:
+    group: Other
+    matcher: path
+    path: /
   /dcos-metadata/dcos-version.json:
     group: Metadata
     matcher: path
@@ -31,6 +38,14 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
+  /system/checks/:
+    group: System
+    matcher: path
+    description: Node and cluster checks
+    proxy:
+      path: 'http://$backend'
+      backend: dcos_checks_api
+    path: /system/checks/
   /system/health/v1:
     group: System
     matcher: path
