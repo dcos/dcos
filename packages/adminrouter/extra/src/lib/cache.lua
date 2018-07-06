@@ -589,6 +589,8 @@ local function periodically_refresh_cache(auth_token)
     -- ngx.timer.at() as suggested by the openresty/lua-nginx-module
     -- documentation: 
     -- https://github.com/openresty/lua-nginx-module/tree/v0.10.9#ngxtimerat
+    -- See https://jira.mesosphere.com/browse/DCOS-38248 for details on the
+    -- cache update problems caused by the recursive use of ngx.timer.at()
 
     timerhandler = function(premature)
         -- Handler for periodic timer invocation.
