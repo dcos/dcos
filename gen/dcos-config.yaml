@@ -617,6 +617,9 @@ package:
       }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
+  - path: /etc/dcos-check-runner.env
+    content: |
+      DCOS_CHECK_RUNNER_CONFIG_PATH=/opt/mesosphere/etc/dcos-check-runner.yaml
   - path: /etc_master/dcos-check-runner.yaml
     content: |
         role: master
