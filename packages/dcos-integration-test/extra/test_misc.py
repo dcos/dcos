@@ -3,6 +3,7 @@
 import os
 import uuid
 
+import pytest
 import yaml
 
 from test_helpers import expanded_config
@@ -13,6 +14,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 # Test that user config is loadable
 # TODO(cmaloney): Validate it contains some settings we expact.
+@pytest.mark.supportedwindows
 def test_load_user_config():
     with open('/opt/mesosphere/etc/user.config.yaml', 'r') as f:
         user_config = yaml.load(f)
@@ -24,6 +26,7 @@ def test_load_user_config():
     # platforms have different sets...
 
 
+@pytest.mark.supportedwindows
 def test_expanded_config():
     # Caluclated parameters should be present
     assert 'master_quorum' in expanded_config
@@ -32,6 +35,7 @@ def test_expanded_config():
     # platforms have different sets...
 
 
+@pytest.mark.supportedwindows
 def test_profile_symlink():
     """Assert the DC/OS profile script is symlinked from the correct source."""
     symlink_target = expanded_config['profile_symlink_target']

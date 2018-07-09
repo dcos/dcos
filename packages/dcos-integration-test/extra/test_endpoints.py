@@ -10,6 +10,7 @@ __maintainer__ = 'vespian'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
+@pytest.mark.supportedwindows
 def test_if_dcos_ui_is_up(dcos_api_session):
     r = dcos_api_session.get('/')
 
@@ -29,6 +30,7 @@ def test_if_dcos_ui_is_up(dcos_api_session):
         assert link_response.status_code == 200
 
 
+@pytest.mark.supportedwindows
 def test_if_mesos_is_up(dcos_api_session):
     r = dcos_api_session.get('/mesos')
 
@@ -47,6 +49,7 @@ def test_if_all_mesos_slaves_have_registered(dcos_api_session):
     assert slaves_ips == dcos_api_session.all_slaves
 
 
+@pytest.mark.supportedwindows
 def test_if_exhibitor_api_is_up(dcos_api_session):
     r = dcos_api_session.exhibitor.get('/exhibitor/v1/cluster/list')
     assert r.status_code == 200
@@ -55,12 +58,14 @@ def test_if_exhibitor_api_is_up(dcos_api_session):
     assert data["port"] > 0
 
 
+@pytest.mark.supportedwindows
 def test_if_exhibitor_ui_is_up(dcos_api_session):
     r = dcos_api_session.exhibitor.get('/')
     assert r.status_code == 200
     assert 'Exhibitor for ZooKeeper' in r.text
 
 
+@pytest.mark.supportedwindows
 def test_if_zookeeper_cluster_is_up(dcos_api_session):
     r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
@@ -75,6 +80,7 @@ def test_if_zookeeper_cluster_is_up(dcos_api_session):
     assert zks_leaders == 1
 
 
+@pytest.mark.supportedwindows
 def test_if_uiconfig_is_available(dcos_api_session):
     r = dcos_api_session.get('/dcos-metadata/ui-config.json')
 
@@ -89,6 +95,7 @@ def test_if_version_is_available(dcos_api_session):
     assert 'version' in r.json()
 
 
+@pytest.mark.supportedwindows
 def test_if_dcos_history_service_is_up(dcos_api_session):
     r = dcos_api_session.get('/dcos-history-service/ping')
 
@@ -96,6 +103,7 @@ def test_if_dcos_history_service_is_up(dcos_api_session):
     assert 'pong' == r.text
 
 
+@pytest.mark.supportedwindows
 def test_if_marathon_is_up(dcos_api_session):
     r = dcos_api_session.get('/marathon/v2/info')
 
@@ -105,12 +113,14 @@ def test_if_marathon_is_up(dcos_api_session):
     assert "marathon" == response_json["name"]
 
 
+@pytest.mark.supportedwindows
 def test_if_marathon_ui_redir_works(dcos_api_session):
     r = dcos_api_session.get('/marathon')
     assert r.status_code == 200
     assert '<title>Marathon</title>' in r.text
 
 
+@pytest.mark.supportedwindows
 def test_if_srouter_service_endpoint_works(dcos_api_session):
     r = dcos_api_session.get('/service/marathon/v2/info')
 
@@ -122,6 +132,7 @@ def test_if_srouter_service_endpoint_works(dcos_api_session):
     assert "version" in response_json
 
 
+@pytest.mark.supportedwindows
 def test_if_mesos_api_is_up(dcos_api_session):
     r = dcos_api_session.get('/mesos_dns/v1/version')
     assert r.status_code == 200
@@ -130,6 +141,7 @@ def test_if_mesos_api_is_up(dcos_api_session):
     assert data["Service"] == 'Mesos-DNS'
 
 
+@pytest.mark.supportedwindows
 def test_if_pkgpanda_metadata_is_available(dcos_api_session):
     r = dcos_api_session.get('/pkgpanda/active.buildinfo.full.json')
     assert r.status_code == 200
@@ -153,6 +165,7 @@ def test_if_dcos_history_service_is_getting_data(dcos_api_session):
     check_up()
 
 
+@pytest.mark.supportedwindows
 def test_if_we_have_capabilities(dcos_api_session):
     """Indirectly test that Cosmos is up since this call is handled by Cosmos.
     """
@@ -327,6 +340,7 @@ def _validate_overlay_backend(overlay_name, backend):
         raise AssertionError("Could not find key :" + str(ex)) from ex
 
 
+@pytest.mark.supportedwindows
 def test_if_cosmos_is_only_available_locally(dcos_api_session):
     # One should not be able to connect to the cosmos HTTP and admin ports
     # over non-lo interfaces
