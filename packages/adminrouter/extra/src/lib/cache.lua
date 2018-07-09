@@ -13,8 +13,27 @@ local util = require "util"
 --
 -- CACHE_BACKEND_REQUEST_TIMEOUT << CACHE_REFRESH_LOCK_TIMEOUT
 --
--- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
+-- Before changing CACHE_POLL_PERIOD, please check the comment for resolver
 -- statement configuration in includes/http/master.conf
+--
+-- Initial timer-triggered cache update early after nginx startup:
+-- It makes sense to have this initial timer-triggered cache
+-- update _early_ after nginx startup at all, and it makes sense to make it
+-- very early, so that we reduce the likelihood for an HTTP request to be slowed
+-- down when it is incoming _before_ the normally scheduled periodic cache
+-- update (example: the HTTP request comes in 15 seconds after nginx startup,
+-- and the first regular timer-triggered cache update is triggered only 25
+-- seconds after nginx startup).
+--
+-- It makes sense to have this time window not be too narrow, especially not
+-- close to 0 seconds: under a lot of load there *will* be HTTP requests
+-- incoming before the initial timer-triggered update, even if the first
+-- timer callback is scheduled to be executed after 0 seconds.
+-- There is code in place for handling these HTTP requests, and that code path
+-- must be kept explicit, regularly exercised, and well-tested. There is a test
+-- harness test that tests/exercises it, but it overrides the default values
+-- with the ones that allow for testability. So the idea is that we leave
+-- initial update scheduled after 2 seconds, as opposed to 0 seconds.
 --
 -- All are in units of seconds. Below are the defaults:
 local _CONFIG = {}
@@ -587,7 +606,7 @@ local function periodically_refresh_cache(auth_token)
     -- This function is invoked from within init_worker_by_lua code.
     -- ngx.timer.every() is called here, a more robust alternative to
     -- ngx.timer.at() as suggested by the openresty/lua-nginx-module
-    -- documentation: 
+    -- documentation:
     -- https://github.com/openresty/lua-nginx-module/tree/v0.10.9#ngxtimerat
     -- See https://jira.mesosphere.com/browse/DCOS-38248 for details on the
     -- cache update problems caused by the recursive use of ngx.timer.at()
