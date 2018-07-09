@@ -11,8 +11,18 @@ local util = require "util"
 --
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
--- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2) < CACHE_REFRESH_LOCK_TIMEOUT
---
+-- There are 3 requests (2xMarathon + Mesos) made to upstream components.
+-- The cache should be kept locked for the whole time until
+-- the responses are received from all the components. Therefore,
+-- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2) <= CACHE_REFRESH_LOCK_TIMEOUT
+-- On the other hand, the documentation
+-- (https://github.com/openresty/lua-resty-lock#new) says that the
+-- CACHE_REFRESH_LOCK_TIMEOUT should not exceed the expiration time, which
+-- is equal to 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2). Taking into accounts
+-- both constraints, we would have to set CACHE_REFRESH_LOCK_TIMEOUT =
+-- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2). We set it to
+-- 3 * CACHE_BACKEND_REQUEST_TIMEOUT hoping that the 2 requests to Marathon and
+-- 1 request to Mesos will be done immediately one after another.
 -- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
 -- statement configuration in includes/http/master.conf
 --
@@ -520,7 +530,8 @@ local function refresh_cache(from_timer, auth_token)
         ngx.log(ngx.INFO, "Executing cache refresh triggered by request")
         -- Cache content is required for current request
         -- processing. Wait for lock acquisition, for at
-        -- most _CONFIG.CACHE_REFRESH_LOCK_TIMEOUT * 3 seconds.
+        -- most _CONFIG.CACHE_REFRESH_LOCK_TIMEOUT * 3 seconds (2xMarathon +
+        -- 1 Mesos request).
         lock = shmlock:new("shmlocks", {timeout=_CONFIG.CACHE_REFRESH_LOCK_TIMEOUT,
                                         exptime=lock_ttl })
         local elapsed, err = lock:lock("cache")
