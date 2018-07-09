@@ -11,7 +11,7 @@ local util = require "util"
 --
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
--- CACHE_BACKEND_REQUEST_TIMEOUT << CACHE_REFRESH_LOCK_TIMEOUT
+-- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2) < CACHE_REFRESH_LOCK_TIMEOUT
 --
 -- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
 -- statement configuration in includes/http/master.conf
@@ -520,7 +520,7 @@ local function refresh_cache(from_timer, auth_token)
         ngx.log(ngx.INFO, "Executing cache refresh triggered by request")
         -- Cache content is required for current request
         -- processing. Wait for lock acquisition, for at
-        -- most 20 seconds.
+        -- most _CONFIG.CACHE_REFRESH_LOCK_TIMEOUT * 3 seconds.
         lock = shmlock:new("shmlocks", {timeout=_CONFIG.CACHE_REFRESH_LOCK_TIMEOUT,
                                         exptime=lock_ttl })
         local elapsed, err = lock:lock("cache")
