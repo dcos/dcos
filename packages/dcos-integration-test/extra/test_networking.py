@@ -29,7 +29,7 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None, ipv6=False):
+    def __init__(self, container, network, host, vip=None, ipv6=False, app_prefix=None):
         self._network = network
         self._container = container
         if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
@@ -39,7 +39,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_prefix=app_prefix)
         elif network == marathon.Network.USER:
             self.app, self.uuid = test_helpers.marathon_test_app(
                 network=marathon.Network.USER,
@@ -48,7 +49,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_prefix=app_prefix)
             if vip is not None and container == marathon.Container.DOCKER:
                 del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
@@ -289,7 +291,7 @@ def test_vip(dcos_api_session,
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
-    errors = 0
+    errors = list()
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
     for vip, hosts, cmd, origin_app, proxy_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
@@ -299,13 +301,13 @@ def test_vip(dcos_api_session,
             ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
         except Exception as e:
             log.error('Exception: {}'.format(e))
-            errors = errors + 1
+            errors.append(e)
         finally:
             log.info('Purging application: {}'.format(origin_app.id))
             origin_app.purge(dcos_api_session)
             log.info('Purging application: {}'.format(proxy_app.id))
             origin_app.purge(dcos_api_session)
-    assert errors == 0
+    assert len(errors) == 0
 
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
@@ -332,7 +334,22 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ip
     return tests
 
 
+def create_app_prefix(vip_net. proxy_net, container, ipv6, named_vip):
+    prefixes = [
+        'test-vip',
+        str(vip_net),
+        str(proxy_net),
+        str(container),
+        'ipv6' if ipv6 else 'ipv4'
+        ]
+    if named_vip:
+        prefixes.append('namedvip')
+
+    return '-'.join(prefixes)
+
+
 def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host):
+    app_prefix = create_app_prefix(vip_net, proxy_net, container, ipv6, named_vip)
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
@@ -350,12 +367,13 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
         '/opt/mesosphere/bin/curl -s -f -m 5',
         '--ipv6' if ipv6 else '--ipv4',
         vipaddr)
+
     if container == Container.POD:
-        origin_app = MarathonPod(vip_net, origin_host, vip)
-        proxy_app = MarathonPod(proxy_net, proxy_host)
+        origin_app = MarathonPod(vip_net, origin_host, vip, app_prefix='{}-origin'.format(app_prefix))
+        proxy_app = MarathonPod(proxy_net, proxy_host, app_prefix='{}-proxy'.format(app_prefix))
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6)
-        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6)
+        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6, app_prefix='{}-origin'.format(app_prefix))
+        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6, app_prefix='{}-proxy'.format(app_prefix))
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
 
