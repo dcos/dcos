@@ -374,6 +374,7 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_selftest(dcos_api_session):
     """
     test invokes dcos-diagnostics `self test` functionality
@@ -386,6 +387,7 @@ def test_dcos_diagnostics_selftest(dcos_api_session):
             assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -483,6 +485,7 @@ def test_dcos_diagnostics_bundle_download_and_extract(dcos_api_session):
     _download_bundle_from_master(dcos_api_session, 0)
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_bundle_download_and_extract_from_another_master(dcos_api_session):
     """
     test bundle download and validate zip file
@@ -644,6 +647,7 @@ def test_bundle_delete(dcos_api_session):
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 
+@pytest.mark.supportedwindows
 def test_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
     diagnostics_bundle_status = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))

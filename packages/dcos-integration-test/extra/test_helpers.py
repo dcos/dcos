@@ -33,7 +33,7 @@ with open('/opt/mesosphere/etc/expanded.config.json', 'r') as f:
     expanded_config['exhibitor_admin_password'] = get_exhibitor_admin_password()
 
 
-def marathon_test_app(
+def marathon_test_app_linux(
         host_port: int=0,
         container_port: int=None,
         container_type: marathon.Container=marathon.Container.NONE,
@@ -163,3 +163,73 @@ def marathon_test_app(
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     return app, test_uuid
+
+
+def marathon_test_app_windows(
+        host_constraint: str=None,
+        host_port: int=None,
+        network_name: str='dcosnat'):
+    """ Creates an app definition for the python test server container
+
+    Args:
+        host_port: port that marathon will use to route traffic into the
+            test server container.
+        host_constraint: string representing a hostname for an agent that this
+            app should run on
+
+    Return:
+        (dict, str): 2-Tuple of app definition (dict) and app ID (string)
+    """
+    # Container type can be only DOCKER
+    container_type = marathon.Container.DOCKER
+    # This will return an app definition to spawn the microsoft/iis container
+    # which uses port 80
+    container_port = 80
+    if host_port is None:
+        # provide a dummy value if user is indifferent
+        host_port = 31500
+
+    test_uuid = uuid.uuid4().hex
+    app = copy.deepcopy({
+        'id': TEST_APP_NAME_FMT.format(test_uuid),
+        'cpus': 1,
+        'mem': 512,
+        'disk': 0,
+        'instances': 1,
+        'healthChecks': [
+            {
+                'protocol': 'MESOS_HTTP',
+                'path': '/',
+                'gracePeriodSeconds': 300,
+                'intervalSeconds': 60,
+                'timeoutSeconds': 20,
+                'maxConsecutiveFailures': 3,
+                'port': container_port,
+                'path': '/',
+                'ignoreHttp1xx': False
+            }
+        ],
+    })
+
+    app['networks'] = [
+        {'mode': 'container', 'name': network_name}]
+    app['container'] = {
+        'type': container_type.value,
+        'docker': {'image': 'microsoft/iis:windowsservercore-1803'},
+        'volumes': []}
+    app['container']['docker']['forcePullImage'] = False
+    app['container']['docker']['privileged'] = False
+    app['container']['docker']['portMappings'] = [{
+        'containerPort': container_port,
+        'hostPort': host_port}]
+
+    if host_constraint is not None:
+        app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
+    # Add Windows constraint
+    app['constraints'] = app.get('constraints', []) + [['os', 'LIKE', 'Windows']]
+    app['acceptedResourceRoles'] = ["slave_public"]
+
+    return app, test_uuid
+
+
+marathon_test_app = marathon_test_app_linux
