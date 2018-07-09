@@ -23,8 +23,8 @@ local env_vars = {CACHE_FIRST_POLL_DELAY = 2,
                   CACHE_EXPIRATION = 20,
                   CACHE_MAX_AGE_SOFT_LIMIT = 75,
                   CACHE_MAX_AGE_HARD_LIMIT = 259200,
-                  CACHE_BACKEND_REQUEST_TIMEOUT = 10,
-                  CACHE_REFRESH_LOCK_TIMEOUT = 20,
+                  CACHE_BACKEND_REQUEST_TIMEOUT = 60,
+                  CACHE_REFRESH_LOCK_TIMEOUT = 180,
                   }
 
 for key, value in pairs(env_vars) do
