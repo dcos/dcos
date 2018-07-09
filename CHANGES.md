@@ -38,6 +38,9 @@ Format of the entries must be.
 
 * Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
 
+* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
+
+* Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
 
 ### Security Updates
 
