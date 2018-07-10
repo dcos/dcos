@@ -1,4 +1,4 @@
-From caec92b95ae68568a09d15466d724ca9aaf8ace9 Mon Sep 17 00:00:00 2001
+From d8ebc0de2b2462d6bbffec15b91474cf9ab130e7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:36 -0700
 Subject: [PATCH] Included nested command check output in the executor logs.
@@ -14,7 +14,7 @@ Review: https://reviews.apache.org/r/61697/
  1 file changed, 68 insertions(+)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index 30dda0e6e..9781a4149 100644
+index 0b6b85b88..656e9168a 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
 @@ -41,11 +41,13 @@
@@ -81,7 +81,7 @@ index 30dda0e6e..9781a4149 100644
  CheckerProcess::CheckerProcess(
      const CheckInfo& _check,
      const string& _launcherDir,
-@@ -542,6 +587,10 @@ void CheckerProcess::__nestedCommandCheck(
+@@ -543,6 +588,10 @@ void CheckerProcess::__nestedCommandCheck(
    //
    // This means that this future will not be completed until after the
    // check command has finished or the connection has been closed.
@@ -92,7 +92,7 @@ index 30dda0e6e..9781a4149 100644
    connection.send(request, false)
      .after(checkTimeout,
             defer(self(),
-@@ -583,6 +632,25 @@ void CheckerProcess::___nestedCommandCheck(
+@@ -584,6 +633,25 @@ void CheckerProcess::___nestedCommandCheck(
      return;
    }
  

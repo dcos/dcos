@@ -1,4 +1,4 @@
-From 621ac66716a8606c498c14cc57298af3f1b15597 Mon Sep 17 00:00:00 2001
+From 49aee8a763b9d3b85ff2f6c19193df9340de320d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:39 -0700
 Subject: [PATCH] Raised the logging level of some check and health check
@@ -13,10 +13,10 @@ Review: https://reviews.apache.org/r/61791/
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index d527690ad..81d45b3b3 100644
+index d62bdb5d1..47eb21a67 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
-@@ -795,7 +795,7 @@ void CheckerProcess::processCommandCheckResult(
+@@ -796,7 +796,7 @@ void CheckerProcess::processCommandCheckResult(
    // see MESOS-7242.
    if (future.isReady() && WIFEXITED(future.get())) {
      const int exitCode = WEXITSTATUS(future.get());
@@ -25,7 +25,7 @@ index d527690ad..81d45b3b3 100644
  
      CheckStatusInfo checkStatusInfo;
      checkStatusInfo.set_type(check.type());
-@@ -956,8 +956,8 @@ void CheckerProcess::processHttpCheckResult(
+@@ -957,8 +957,8 @@ void CheckerProcess::processHttpCheckResult(
    Result<CheckStatusInfo> result = None();
  
    if (future.isReady()) {
@@ -36,7 +36,7 @@ index d527690ad..81d45b3b3 100644
  
      CheckStatusInfo checkStatusInfo;
      checkStatusInfo.set_type(check.type());
-@@ -1097,8 +1097,8 @@ void CheckerProcess::processTcpCheckResult(
+@@ -1098,8 +1098,8 @@ void CheckerProcess::processTcpCheckResult(
    Result<CheckStatusInfo> result = None();
  
    if (future.isReady()) {

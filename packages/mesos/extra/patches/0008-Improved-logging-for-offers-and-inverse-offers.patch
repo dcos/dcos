@@ -1,0 +1,77 @@
+From 148b02ab7c9d0b6affe8caccbdc5b50def5b8e61 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston.kleiman@gmail.com>
+Date: Tue, 3 Jul 2018 12:09:16 -0700
+Subject: [PATCH] Improved logging for offers and inverse offers.
+
+Log offer IDs and inverse offer IDs when sending out offers and
+inverse offers so it is easier to match them to their ACCEPT or DECLINE
+calls and removals.
+
+Also log at `VLOG(2)` level which resources are offered.
+
+NOTE: It is possible to enable `VLOG(2)` logs just for `master.cpp` by
+setting the following env variable when starting the master:
+`GLOG_vmodule=master=2`.
+
+Review: https://reviews.apache.org/r/67817
+---
+ src/master/master.cpp | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index f654300c2..8208beec3 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -7566,6 +7566,9 @@ void Master::offer(
+   // and a single allocation role.
+   ResourceOffersMessage message;
+ 
++  // We keep track of the offer IDs so that we can log them.
++  vector<OfferID> offerIds;
++
+   foreachkey (const string& role, resources) {
+     foreachpair (const SlaveID& slaveId,
+                  const Resources& offered,
+@@ -7710,6 +7713,13 @@ void Master::offer(
+       // Add the offer *AND* the corresponding slave's PID.
+       message.add_offers()->MergeFrom(offer_);
+       message.add_pids(slave->pid);
++
++      offerIds.push_back(offer_.id());
++
++      VLOG(2) << "Sending offer " << offer_.id()
++              << " containing resources " << offered
++              << " on agent " << *slave
++              << " to framework " << *framework;
+     }
+   }
+ 
+@@ -7717,8 +7727,7 @@ void Master::offer(
+     return;
+   }
+ 
+-  LOG(INFO) << "Sending " << message.offers().size()
+-            << " offers to framework " << *framework;
++  LOG(INFO) << "Sending offers " << offerIds << " to framework " << *framework;
+ 
+   framework->send(message);
+ }
+@@ -7806,8 +7815,13 @@ void Master::inverseOffer(
+     return;
+   }
+ 
+-  LOG(INFO) << "Sending " << message.inverse_offers().size()
+-            << " inverse offers to framework " << *framework;
++  vector<OfferID> inverseOfferIds;
++  foreach (const InverseOffer& inverseOffer, message.inverse_offers()) {
++    inverseOfferIds.push_back(inverseOffer.id());
++  }
++
++  LOG(INFO) << "Sending inverse offers " << inverseOfferIds << " to framework "
++            << *framework;
+ 
+   framework->send(message);
+ }
+-- 
+2.16.3
+
