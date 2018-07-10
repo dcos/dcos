@@ -337,13 +337,12 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ip
     return tests
 
 
-def create_app_prefix(vip_net, proxy_net, container, ipv6, named_vip):
-    prefixes = ['vip', vip_net.value.lower(), proxy_net.value.lower()]
-    return '-'.join(prefixes)
+def create_app_prefix(vip_net, proxy_net):
+    return '-'.join(['vip', vip_net.value.lower(), proxy_net.value.lower()])
 
 
 def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host):
-    app_prefix = create_app_prefix(vip_net, proxy_net, container, ipv6, named_vip)
+    app_prefix = create_app_prefix(vip_net, proxy_net)
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
