@@ -101,7 +101,7 @@ class MarathonApp:
 
 
 class MarathonPod:
-    def __init__(self, network, host, vip=None):
+    def __init__(self, network, host, vip=None, app_prefix=None):
         self._network = network
         container_port = 0
         if network is not marathon.Network.HOST:
@@ -112,7 +112,10 @@ class MarathonPod:
         #     src/main/scala/mesosphere/mesos/TaskGroupBuilder.scala#L420-L443
         port = '$ENDPOINT_TEST' if network == marathon.Network.HOST else container_port
         self.uuid = uuid.uuid4().hex
-        self.id = '/integration-test-{}'.format(self.uuid)
+        if app_prefix:
+            self.id = '/integration-test-{}-{}'.format(app_prefix, self.uuid)
+        else:
+            self.id = '/integration-test-{}'.format(self.uuid)
         self.app = {
             'id': self.id,
             'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
