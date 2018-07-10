@@ -82,8 +82,9 @@ class TestCache:
         # Make regular polling occur faster than usual to speed up the tests.
         ar = nginx_class(cache_poll_period=cache_poll_period, cache_expiration=3)
 
-        # In total, we should get three cache updates in given time frame:
-        timeout = CACHE_FIRST_POLL_DELAY + cache_poll_period * 2 + 1
+        # In total, we should get three cache updates in given time frame plus
+        # one NOOP due to cache not being expired yet:
+        timeout = cache_poll_period * 3 + 1
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp,
@@ -769,7 +770,7 @@ class TestCache:
             execution_number):
         # Nginx resolver enforces 5s (grep for `resolver ... valid=Xs`), so it
         # is VERY important to use cache pool period of >5s.
-        cache_poll_period = 6
+        cache_poll_period = 8
         ar = nginx_class(
             cache_poll_period=cache_poll_period,
             cache_expiration=cache_poll_period - 1,
@@ -792,8 +793,8 @@ class TestCache:
 
             dns_server_mock.set_dns_entry('leader.mesos.', ip="127.0.0.3", ttl=2)
 
-            # First poll (2s) + normal poll interval(4s) < 2 * normal poll
-            # interval(4s)
+            # First poll, request triggered (0s) + normal poll interval(6s)
+            # interval(6s) + 2
             time.sleep(cache_poll_period * 2)
 
         mesosmock_pre_reqs = mocker.send_command(
