@@ -291,7 +291,7 @@ def test_vip(dcos_api_session,
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
-    errors = list()
+    errors = []
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
     for vip, hosts, cmd, origin_app, proxy_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
@@ -307,7 +307,7 @@ def test_vip(dcos_api_session,
             origin_app.purge(dcos_api_session)
             log.info('Purging application: {}'.format(proxy_app.id))
             origin_app.purge(dcos_api_session)
-    assert len(errors) == 0
+    assert not errors
 
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
@@ -334,17 +334,8 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ip
     return tests
 
 
-def create_app_prefix(vip_net. proxy_net, container, ipv6, named_vip):
-    prefixes = [
-        'test-vip',
-        str(vip_net),
-        str(proxy_net),
-        str(container),
-        'ipv6' if ipv6 else 'ipv4'
-        ]
-    if named_vip:
-        prefixes.append('namedvip')
-
+def create_app_prefix(vip_net, proxy_net, container, ipv6, named_vip):
+    prefixes = ['vip', vip_net.value.lower(), proxy_net.value.lower()]
     return '-'.join(prefixes)
 
 
@@ -372,7 +363,8 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
         origin_app = MarathonPod(vip_net, origin_host, vip, app_prefix='{}-origin'.format(app_prefix))
         proxy_app = MarathonPod(proxy_net, proxy_host, app_prefix='{}-proxy'.format(app_prefix))
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6, app_prefix='{}-origin'.format(app_prefix))
+        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6,
+                                 app_prefix='{}-origin'.format(app_prefix))
         proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6, app_prefix='{}-proxy'.format(app_prefix))
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
