@@ -1,0 +1,81 @@
+From 56875145431fc0211788c54a5c2fff026ebe0128 Mon Sep 17 00:00:00 2001
+From: Gilbert Song <songzihao1990@gmail.com>
+Date: Fri, 6 Jul 2018 11:34:33 -0700
+Subject: [PATCH] Added FrameworkMetrics struct in framework struct.
+
+Review: https://reviews.apache.org/r/66819/
+---
+ src/master/master.hpp  |  8 +++++++-
+ src/master/metrics.cpp |  7 +++++++
+ src/master/metrics.hpp | 10 ++++++++++
+ 3 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 706f3ad9c..b14b49f01 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -2823,6 +2823,9 @@ struct Framework
+   // This is only set for HTTP frameworks.
+   Option<process::Owned<Heartbeater>> heartbeater;
+ 
++  // This is used for per-framwork metrics.
++  FrameworkMetrics metrics;
++
+ private:
+   Framework(Master* const _master,
+             const Flags& masterFlags,
+@@ -2837,8 +2840,11 @@ private:
+       registeredTime(time),
+       reregisteredTime(time),
+       completedTasks(masterFlags.max_completed_tasks_per_framework),
+-      unreachableTasks(masterFlags.max_unreachable_tasks_per_framework)
++      unreachableTasks(masterFlags.max_unreachable_tasks_per_framework),
++      metrics(_info)
+   {
++    CHECK(_info.has_id());
++
+     foreach (const std::string& role, roles) {
+       // NOTE: It's possible that we're already being tracked under the role
+       // because a framework can unsubscribe from a role while it still has
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 7a1314fbf..02a238ae2 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -510,6 +510,13 @@ void Metrics::incrementTasksStates(
+ }
+ 
+ 
++FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
++  : frameworkInfo(_frameworkInfo) {}
++
++
++FrameworkMetrics::~FrameworkMetrics() {}
++
++
+ string normalizeMetricKey(const string& key)
+ {
+   string name = strings::lower(key);
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 1c2e907ef..c2cd5f3b7 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -208,6 +208,16 @@ struct Metrics
+ };
+ 
+ 
++struct FrameworkMetrics
++{
++  explicit FrameworkMetrics(const FrameworkInfo& _frameworkInfo);
++
++  ~FrameworkMetrics();
++
++  const FrameworkInfo frameworkInfo;
++};
++
++
+ std::string normalizeMetricKey(const std::string& key);
+ 
+ 
+-- 
+2.14.1
+

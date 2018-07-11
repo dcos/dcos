@@ -1,0 +1,148 @@
+From 1497d00eb168620152a42ba37df79b334f437a62 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Fri, 6 Jul 2018 11:34:52 -0700
+Subject: [PATCH] Added per-framework offer metrics.
+
+Review: https://reviews.apache.org/r/67812/
+---
+ src/master/master.cpp  | 14 ++++++++++++++
+ src/master/metrics.cpp | 20 +++++++++++++++++++-
+ src/master/metrics.hpp |  5 +++++
+ 3 files changed, 38 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 511d4a4e7..4f65db0ff 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -3953,6 +3953,8 @@ void Master::accept(
+     // Validate the offers.
+     error = validation::offer::validate(accept.offer_ids(), this, framework);
+ 
++    size_t offersAccepted = 0;
++
+     // Compute offered resources and remove the offers. If the
+     // validation failed, return resources to the allocator.
+     foreach (const OfferID& offerId, accept.offer_ids()) {
+@@ -3970,6 +3972,8 @@ void Master::accept(
+           slaveId = offer->slave_id();
+           allocationInfo = offer->allocation_info();
+           offeredResources += offer->resources();
++
++          offersAccepted++;
+         }
+ 
+         removeOffer(offer);
+@@ -3981,6 +3985,8 @@ void Master::accept(
+       LOG(WARNING) << "Ignoring accept of offer " << offerId
+                    << " since it is no longer valid";
+     }
++
++    framework->metrics.offers_accepted += offersAccepted;
+   }
+ 
+   // If invalid, send TASK_DROPPED for the launch attempts. If the
+@@ -5179,6 +5185,8 @@ void Master::decline(
+ 
+   ++metrics->messages_decline_offers;
+ 
++  size_t offersDeclined = 0;
++
+   //  Return resources to the allocator.
+   foreach (const OfferID& offerId, decline.offer_ids()) {
+     Offer* offer = getOffer(offerId);
+@@ -5190,6 +5198,8 @@ void Master::decline(
+           decline.filters());
+ 
+       removeOffer(offer);
++
++      offersDeclined++;
+       continue;
+     }
+ 
+@@ -5198,6 +5208,8 @@ void Master::decline(
+     LOG(WARNING) << "Ignoring decline of offer " << offerId
+                  << " since it is no longer valid";
+   }
++
++  framework->metrics.offers_declined += offersDeclined;
+ }
+ 
+ 
+@@ -7742,6 +7754,7 @@ void Master::offer(
+ 
+   LOG(INFO) << "Sending offers " << offerIds << " to framework " << *framework;
+ 
++  framework->metrics.offers_sent += message.offers().size();
+   framework->send(message);
+ }
+ 
+@@ -9238,6 +9251,7 @@ void Master::removeOffer(Offer* offer, bool rescind)
+   if (rescind) {
+     RescindResourceOfferMessage message;
+     message.mutable_offer_id()->MergeFrom(offer->id());
++    framework->metrics.offers_rescinded++;
+     framework->send(message);
+   }
+ 
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 37458f6e5..3686f6d24 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -517,12 +517,25 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     calls(
+         getFrameworkMetricPrefix(frameworkInfo) + "calls"),
+     events(
+-        getFrameworkMetricPrefix(frameworkInfo) + "events")
++        getFrameworkMetricPrefix(frameworkInfo) + "events"),
++    offers_sent(
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/sent"),
++    offers_accepted(
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/accepted"),
++    offers_declined(
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/declined"),
++    offers_rescinded(
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded")
+ {
+   process::metrics::add(subscribed);
+   process::metrics::add(calls);
+   process::metrics::add(events);
+ 
++  process::metrics::add(offers_sent);
++  process::metrics::add(offers_accepted);
++  process::metrics::add(offers_declined);
++  process::metrics::add(offers_rescinded);
++
+   // Add metrics for scheduler calls.
+   for (int index = 0;
+        index < scheduler::Call::Type_descriptor()->value_count();
+@@ -601,6 +614,11 @@ FrameworkMetrics::~FrameworkMetrics()
+   foreachvalue (const Counter& counter, update_event_task_states) {
+     process::metrics::remove(counter);
+   }
++
++  process::metrics::remove(offers_sent);
++  process::metrics::remove(offers_accepted);
++  process::metrics::remove(offers_declined);
++  process::metrics::remove(offers_rescinded);
+ }
+ 
+ 
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index ce0ad767c..263796a21 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -229,6 +229,11 @@ struct FrameworkMetrics
+   process::metrics::Counter events;
+   hashmap<scheduler::Event::Type, process::metrics::Counter> event_types;
+   hashmap<TaskState, process::metrics::Counter> update_event_task_states;
++
++  process::metrics::Counter offers_sent;
++  process::metrics::Counter offers_accepted;
++  process::metrics::Counter offers_declined;
++  process::metrics::Counter offers_rescinded;
+ };
+ 
+ 
+-- 
+2.14.1
+

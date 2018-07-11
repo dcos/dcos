@@ -1,0 +1,139 @@
+From 4d0abdd875a92722088298eacf825dd61ef2f6e0 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Fri, 6 Jul 2018 11:34:42 -0700
+Subject: [PATCH] Added per-framework metrics for scheduler calls.
+
+Review: https://reviews.apache.org/r/67776/
+---
+ src/master/http.cpp    |  2 ++
+ src/master/master.cpp  |  6 ++++++
+ src/master/metrics.cpp | 41 ++++++++++++++++++++++++++++++++++++++++-
+ src/master/metrics.hpp |  5 +++++
+ 4 files changed, 53 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/http.cpp b/src/master/http.cpp
+index b5ba500f3..2e3f2d1ce 100644
+--- a/src/master/http.cpp
++++ b/src/master/http.cpp
+@@ -1044,6 +1044,8 @@ Future<Response> Master::Http::scheduler(
+     return BadRequest("Framework cannot be found");
+   }
+ 
++  framework->metrics.incrementCall(call.type());
++
+   // TODO(greggomann): Move this implicit scheduler authorization
+   // into the authorizer. See MESOS-7399.
+   if (principal.isSome() && principal != framework->info.principal()) {
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index ba93bb4cf..511d4a4e7 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -2440,6 +2440,8 @@ void Master::receive(
+     return;
+   }
+ 
++  framework->metrics.incrementCall(call.type());
++
+   // This is possible when master --> framework link is broken (i.e., one
+   // way network partition) and the framework is not aware of it. There
+   // is no way for driver based frameworks to detect this in the absence
+@@ -2744,6 +2746,8 @@ void Master::_subscribe(
+ 
+     addFramework(framework, suppressedRoles);
+ 
++    framework->metrics.incrementCall(scheduler::Call::SUBSCRIBE);
++
+     FrameworkRegisteredMessage message;
+     message.mutable_framework_id()->MergeFrom(framework->id());
+     message.mutable_master_info()->MergeFrom(info_);
+@@ -2777,6 +2781,8 @@ void Master::_subscribe(
+ 
+   CHECK_NOTNULL(framework);
+ 
++  framework->metrics.incrementCall(scheduler::Call::SUBSCRIBE);
++
+   if (!framework->recovered()) {
+     // The framework has previously been registered with this master;
+     // it may or may not currently be connected.
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index c5a67ef6b..355ffb6e3 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -513,15 +513,54 @@ void Metrics::incrementTasksStates(
+ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+   : frameworkInfo(_frameworkInfo),
+     subscribed(
+-        getFrameworkMetricPrefix(frameworkInfo) + "subscribed")
++        getFrameworkMetricPrefix(frameworkInfo) + "subscribed"),
++    calls(
++        getFrameworkMetricPrefix(frameworkInfo) + "calls")
+ {
+   process::metrics::add(subscribed);
++  process::metrics::add(calls);
++
++  // Add metrics for scheduler calls.
++  for (int index = 0;
++       index < scheduler::Call::Type_descriptor()->value_count();
++       index++) {
++    const google::protobuf::EnumValueDescriptor* descriptor =
++      scheduler::Call::Type_descriptor()->value(index);
++
++    const scheduler::Call::Type type =
++      static_cast<scheduler::Call::Type>(descriptor->number());
++
++    if (type == scheduler::Call::UNKNOWN) {
++      continue;
++    }
++
++    Counter counter = Counter(
++        getFrameworkMetricPrefix(frameworkInfo) + "calls/" +
++        strings::lower(descriptor->name()));
++
++    call_types.put(type, counter);
++    process::metrics::add(counter);
++  }
+ }
+ 
+ 
+ FrameworkMetrics::~FrameworkMetrics()
+ {
+   process::metrics::remove(subscribed);
++
++  process::metrics::remove(calls);
++  foreachvalue (const Counter& counter, call_types) {
++    process::metrics::remove(counter);
++  }
++}
++
++
++void FrameworkMetrics::incrementCall(const scheduler::Call::Type& callType)
++{
++  CHECK(call_types.contains(callType));
++
++  call_types.get(callType).get()++;
++  calls++;
+ }
+ 
+ 
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 8cda3083b..195076e8e 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -215,9 +215,14 @@ struct FrameworkMetrics
+ 
+   ~FrameworkMetrics();
+ 
++  void incrementCall(const scheduler::Call::Type& callType);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
++
++  process::metrics::Counter calls;
++  hashmap<scheduler::Call::Type, process::metrics::Counter> call_types;
+ };
+ 
+ 
+-- 
+2.14.1
+

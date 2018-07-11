@@ -1,0 +1,251 @@
+From 334c4991bc1f433d201fd6e0ece6b94b7482e190 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Fri, 6 Jul 2018 11:35:21 -0700
+Subject: [PATCH] Added framework metrics for filtered resources to the
+ allocator.
+
+These metrics count the number of times that the allocator has
+filtered resources out of this framework's offer stream,
+with separate metrics for different types of filtering.
+
+Review: https://reviews.apache.org/r/66844/
+---
+ src/master/allocator/mesos/hierarchical.cpp | 63 ++++++++++++++++++++++++-----
+ src/master/allocator/mesos/hierarchical.hpp |  2 +-
+ src/master/allocator/mesos/metrics.cpp      | 40 +++++++++++++++++-
+ src/master/allocator/mesos/metrics.hpp      |  7 ++++
+ 4 files changed, 99 insertions(+), 13 deletions(-)
+
+diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
+index 6529e1e90..5821e398d 100644
+--- a/src/master/allocator/mesos/hierarchical.cpp
++++ b/src/master/allocator/mesos/hierarchical.cpp
+@@ -1698,12 +1698,18 @@ void HierarchicalAllocatorProcess::__allocate()
+         if (filterGpuResources &&
+             !framework.capabilities.gpuResources &&
+             slave.getTotal().gpus().getOrElse(0) > 0) {
++          framework.metrics->resources_filtered++;
++          framework.metrics->resources_filtered_gpu++;
++
+           continue;
+         }
+ 
+         // If this framework is not region-aware, don't offer it
+         // resources on agents in remote regions.
+         if (!framework.capabilities.regionAware && isRemoteSlave(slave)) {
++          framework.metrics->resources_filtered++;
++          framework.metrics->resources_filtered_region_aware++;
++
+           continue;
+         }
+ 
+@@ -1872,9 +1878,21 @@ void HierarchicalAllocatorProcess::__allocate()
+         // resources with refined reservations if the framework does not have
+         // the capability.
+         if (!framework.capabilities.reservationRefinement) {
+-          resources = resources.filter([](const Resource& resource) {
+-            return !Resources::hasRefinedReservations(resource);
+-          });
++          bool resourcesFiltered = false;
++          resources =
++            resources.filter([&resourcesFiltered](const Resource& resource) {
++              if (Resources::hasRefinedReservations(resource)) {
++                resourcesFiltered = true;
++                return false;
++              }
++              return true;
++            });
++
++          if (resourcesFiltered) {
++            framework.metrics->resources_filtered++;
++            framework.metrics
++              ->resources_filtered_reservation_refinement++;
++          }
+         }
+ 
+         // If the framework filters these resources, ignore. The unallocated
+@@ -1950,7 +1968,7 @@ void HierarchicalAllocatorProcess::__allocate()
+         CHECK(slaves.contains(slaveId));
+         CHECK(frameworks.contains(frameworkId));
+ 
+-        const Framework& framework = frameworks.at(frameworkId);
++        Framework& framework = frameworks.at(frameworkId);
+         Slave& slave = slaves.at(slaveId);
+ 
+         // Only offer resources from slaves that have GPUs to
+@@ -1959,12 +1977,18 @@ void HierarchicalAllocatorProcess::__allocate()
+         if (filterGpuResources &&
+             !framework.capabilities.gpuResources &&
+             slave.getTotal().gpus().getOrElse(0) > 0) {
++          framework.metrics->resources_filtered++;
++          framework.metrics->resources_filtered_gpu++;
++
+           continue;
+         }
+ 
+         // If this framework is not region-aware, don't offer it
+         // resources on agents in remote regions.
+         if (!framework.capabilities.regionAware && isRemoteSlave(slave)) {
++          framework.metrics->resources_filtered++;
++          framework.metrics->resources_filtered_region_aware++;
++
+           continue;
+         }
+ 
+@@ -2011,7 +2035,12 @@ void HierarchicalAllocatorProcess::__allocate()
+ 
+         // Remove revocable resources if the framework has not opted for them.
+         if (!framework.capabilities.revocableResources) {
+-          resources = resources.nonRevocable();
++          Resources nonRevocableResources = resources.nonRevocable();
++          if (nonRevocableResources != resources) {
++            framework.metrics->resources_filtered++;
++            framework.metrics->resources_filtered_revocable++;
++          }
++          resources = nonRevocableResources;
+         }
+ 
+         // When reservation refinements are present, old frameworks without the
+@@ -2024,9 +2053,20 @@ void HierarchicalAllocatorProcess::__allocate()
+         // resources with refined reservations if the framework does not have
+         // the capability.
+         if (!framework.capabilities.reservationRefinement) {
+-          resources = resources.filter([](const Resource& resource) {
+-            return !Resources::hasRefinedReservations(resource);
+-          });
++          bool resourcesFiltered = false;
++          resources =
++            resources.filter([&resourcesFiltered](const Resource& resource) {
++              if (Resources::hasRefinedReservations(resource)) {
++                resourcesFiltered = true;
++                return false;
++              }
++              return true;
++            });
++
++          if (resourcesFiltered) {
++            framework.metrics->resources_filtered++;
++            framework.metrics->resources_filtered_reservation_refinement++;
++          }
+         }
+ 
+         // If allocating these resources would reduce the headroom
+@@ -2281,12 +2321,12 @@ bool HierarchicalAllocatorProcess::isFiltered(
+     const FrameworkID& frameworkId,
+     const string& role,
+     const SlaveID& slaveId,
+-    const Resources& resources) const
++    const Resources& resources)
+ {
+   CHECK(frameworks.contains(frameworkId));
+   CHECK(slaves.contains(slaveId));
+ 
+-  const Framework& framework = frameworks.at(frameworkId);
++  Framework& framework = frameworks.at(frameworkId);
+   const Slave& slave = slaves.at(slaveId);
+ 
+   // TODO(mpark): Consider moving these filter logic out and into the master,
+@@ -2334,6 +2374,9 @@ bool HierarchicalAllocatorProcess::isFiltered(
+               << " for role " << role
+               << " of framework " << frameworkId;
+ 
++      framework.metrics->resources_filtered++;
++      framework.metrics->resources_filtered_decline++;
++
+       return true;
+     }
+   }
+diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
+index a804d0958..4ca6f71fd 100644
+--- a/src/master/allocator/mesos/hierarchical.hpp
++++ b/src/master/allocator/mesos/hierarchical.hpp
+@@ -275,7 +275,7 @@ protected:
+       const FrameworkID& frameworkId,
+       const std::string& role,
+       const SlaveID& slaveId,
+-      const Resources& resources) const;
++      const Resources& resources);
+ 
+   // Returns true if there is an inverse offer filter for this framework
+   // on this slave.
+diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
+index 7a4b153db..8de9e16df 100644
+--- a/src/master/allocator/mesos/metrics.cpp
++++ b/src/master/allocator/mesos/metrics.cpp
+@@ -27,6 +27,8 @@
+ 
+ #include "master/allocator/mesos/hierarchical.hpp"
+ 
++#include "master/metrics.hpp"
++
+ using std::string;
+ 
+ using process::metrics::PullGauge;
+@@ -203,10 +205,44 @@ void Metrics::removeRole(const string& role)
+ 
+ 
+ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+-  : frameworkInfo(_frameworkInfo) {}
++  : frameworkInfo(_frameworkInfo),
++    resources_filtered(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered"),
++    resources_filtered_decline(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered/decline"),
++    resources_filtered_gpu(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered/gpu_resources"),
++    resources_filtered_region_aware(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered/region_aware"),
++    resources_filtered_reservation_refinement(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered/reservation_refinement"),
++    resources_filtered_revocable(
++        getFrameworkMetricPrefix(frameworkInfo) +
++          "allocation/resources_filtered/revocable_resources")
++{
++  process::metrics::add(resources_filtered);
++  process::metrics::add(resources_filtered_decline);
++  process::metrics::add(resources_filtered_gpu);
++  process::metrics::add(resources_filtered_region_aware);
++  process::metrics::add(resources_filtered_reservation_refinement);
++  process::metrics::add(resources_filtered_revocable);
++}
+ 
+ 
+-FrameworkMetrics::~FrameworkMetrics() {}
++FrameworkMetrics::~FrameworkMetrics()
++{
++  process::metrics::remove(resources_filtered);
++  process::metrics::remove(resources_filtered_decline);
++  process::metrics::remove(resources_filtered_gpu);
++  process::metrics::remove(resources_filtered_region_aware);
++  process::metrics::remove(resources_filtered_reservation_refinement);
++  process::metrics::remove(resources_filtered_revocable);
++}
+ 
+ } // namespace internal {
+ } // namespace allocator {
+diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
+index daac93f7e..dfc7c8ec7 100644
+--- a/src/master/allocator/mesos/metrics.hpp
++++ b/src/master/allocator/mesos/metrics.hpp
+@@ -98,6 +98,13 @@ struct FrameworkMetrics
+   ~FrameworkMetrics();
+ 
+   const FrameworkInfo frameworkInfo;
++
++  process::metrics::Counter resources_filtered;
++  process::metrics::Counter resources_filtered_decline;
++  process::metrics::Counter resources_filtered_gpu;
++  process::metrics::Counter resources_filtered_region_aware;
++  process::metrics::Counter resources_filtered_reservation_refinement;
++  process::metrics::Counter resources_filtered_revocable;
+ };
+ 
+ } // namespace internal {
+-- 
+2.14.1
+
