@@ -1,4 +1,4 @@
-From 73056cd6a903049aa0c0a40bde4089ef59af2f55 Mon Sep 17 00:00:00 2001
+From 9d3d1fc1a228d4c0a015d906888f0709e54801c4 Mon Sep 17 00:00:00 2001
 From: Benno Evers <bevers@mesosphere.com>
 Date: Wed, 23 May 2018 14:43:31 +0200
 Subject: [PATCH] Add ad-hoc benchmarking functions.
@@ -431,5 +431,5 @@ index b802fd153..19ae88d0f 100644
      process::Future<process::http::Response> readFile(
          const mesos::master::Call& call,
 -- 
-2.16.3
+2.14.1
 

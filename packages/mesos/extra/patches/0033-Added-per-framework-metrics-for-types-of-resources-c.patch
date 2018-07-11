@@ -1,0 +1,197 @@
+From 4845a0e428c837fef8bfa9e44e2fde14bfc23758 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Fri, 6 Jul 2018 11:35:50 -0700
+Subject: [PATCH] Added per-framework metrics for types of resources contained
+ in offers.
+
+Review: https://reviews.apache.org/r/67235/
+---
+ src/master/master.cpp  |  3 ++
+ src/master/metrics.cpp | 98 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/master/metrics.hpp | 12 +++++++
+ 3 files changed, 113 insertions(+)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index e9d888ded..8b9f933a2 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -7728,6 +7728,9 @@ void Master::offer(
+         }
+       }
+ 
++      framework->metrics.incrementOffersWithResourceTypes(offer_.resources());
++      framework->metrics.incrementOfferedResourceTypes(offer_.resources());
++
+       // Per MESOS-8237, it is problematic to show the
+       // `Resource.allocation_info` for pre-MULTI_ROLE schedulers.
+       // Pre-MULTI_ROLE schedulers are not `AllocationInfo` aware,
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 45096109b..85815325f 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -14,6 +14,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++#include <set>
+ #include <string>
+ 
+ #include <mesos/scheduler/scheduler.hpp>
+@@ -531,6 +532,35 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+         getFrameworkMetricPrefix(frameworkInfo) + "offers/declined"),
+     offers_rescinded(
+         getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded"),
++    offers_with_resource_types(
++        {{"cpus",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offers/sent/with_cpus")},
++         {"mem",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offers/sent/with_mem")},
++         {"disk",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offers/sent/with_disk")},
++         {"ports",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offers/sent/with_ports")},
++         {"gpus",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offers/sent/with_gpus")}}),
++    offered_resource_types(
++        {{"cpus",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offered_resources/cpus")},
++         {"mem",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offered_resources/mem")},
++         {"disk",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offered_resources/disk")},
++         {"gpus",
++          Counter(getFrameworkMetricPrefix(frameworkInfo) +
++              "offered_resources/gpus")}}),
+     operations(
+         getFrameworkMetricPrefix(frameworkInfo) + "operations"),
+     refuse_seconds_infinite(
+@@ -560,6 +590,14 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+   process::metrics::add(offers_declined);
+   process::metrics::add(offers_rescinded);
+ 
++  foreachvalue (const Counter& counter, offers_with_resource_types) {
++    process::metrics::add(counter);
++  }
++
++  foreachvalue (const Counter& counter, offered_resource_types) {
++    process::metrics::add(counter);
++  }
++
+   process::metrics::add(refuse_seconds_infinite);
+   foreachvalue (const Counter& counter, refuseSecondsBuckets) {
+     process::metrics::add(counter);
+@@ -695,6 +733,14 @@ FrameworkMetrics::~FrameworkMetrics()
+   process::metrics::remove(offers_declined);
+   process::metrics::remove(offers_rescinded);
+ 
++  foreachvalue (const Counter& counter, offers_with_resource_types) {
++    process::metrics::remove(counter);
++  }
++
++  foreachvalue (const Counter& counter, offered_resource_types) {
++    process::metrics::remove(counter);
++  }
++
+   foreachvalue (const auto& sourceReason, terminal_task_reasons) {
+     foreachvalue (const auto& reasonCounter, sourceReason) {
+       foreachvalue (const Counter& counter, reasonCounter) {
+@@ -781,6 +827,58 @@ void FrameworkMetrics::incrementOperation(const Offer::Operation& operation)
+ }
+ 
+ 
++void FrameworkMetrics::incrementOffersWithResourceTypes(
++    const Resources& resources)
++{
++  // Track the resource types we have incremented for this offer.
++  std::set<string> resourceNames;
++
++  foreach (const Resource& resource, resources) {
++    if (!Resources::isEmpty(resource) &&
++        resourceNames.count(resource.name()) == 0) {
++      if (!offers_with_resource_types.contains(resource.name())) {
++        Counter counter(
++            getFrameworkMetricPrefix(frameworkInfo) +
++            "offers/sent/with_" + resource.name());
++        offers_with_resource_types.put(resource.name(), counter);
++        process::metrics::add(counter);
++        counter++;
++        resourceNames.insert(resource.name());
++      } else {
++        offers_with_resource_types.at(resource.name())++;
++        resourceNames.insert(resource.name());
++      }
++    }
++  }
++}
++
++
++void FrameworkMetrics::incrementOfferedResourceTypes(const Resources& resources)
++{
++  // Track the resource types we have incremented for this offer.
++  std::set<string> resourceNames;
++
++  foreach (const Resource& resource, resources) {
++    if (resource.type() == Value::SCALAR &&
++        !Resources::isEmpty(resource) &&
++        resourceNames.count(resource.name()) == 0) {
++      if (!offered_resource_types.contains(resource.name())) {
++        Counter counter(
++            getFrameworkMetricPrefix(frameworkInfo) +
++            "offered_resources/" + resource.name());
++        offered_resource_types.put(resource.name(), counter);
++        process::metrics::add(counter);
++        counter += resource.scalar().value();
++        resourceNames.insert(resource.name());
++      } else {
++        offered_resource_types.at(resource.name()) += resource.scalar().value();
++        resourceNames.insert(resource.name());
++      }
++    }
++  }
++}
++
++
+ string normalizeMetricKey(const string& key)
+ {
+   string name = strings::lower(key);
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 3e54cd37f..9e57f97c7 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -233,6 +233,10 @@ struct FrameworkMetrics
+ 
+   void incrementOfferFilterBuckets(const Duration _duration);
+ 
++  void incrementOffersWithResourceTypes(const Resources& resources);
++
++  void incrementOfferedResourceTypes(const Resources& resources);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
+@@ -249,6 +253,14 @@ struct FrameworkMetrics
+   process::metrics::Counter offers_declined;
+   process::metrics::Counter offers_rescinded;
+ 
++  // Counts the numbers of offers containing a particular type of resource sent
++  // to this framework. Note that several common resource types (cpus, mem,
++  // disk, gpus) are tracked by default, with others added lazily when needed.
++  hashmap<std::string, process::metrics::Counter> offers_with_resource_types;
++
++  // Counts the total resources offered for each scalar resource type.
++  hashmap<std::string, process::metrics::Counter> offered_resource_types;
++
+   typedef hashmap<TaskStatus::Reason, process::metrics::Counter> Reasons;
+   typedef hashmap<TaskStatus::Source, Reasons> SourcesReasons;
+   hashmap<TaskState, SourcesReasons> terminal_task_reasons;
+-- 
+2.14.1
+

@@ -1,4 +1,4 @@
-From 36b9a55029b55c2daa0e5b738e173eea3efc30fd Mon Sep 17 00:00:00 2001
+From ce795b26bde71f9116e552869db9192ed4f88670 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:37 -0700
 Subject: [PATCH] Made the log output handling of TCP and HTTP checks
@@ -69,5 +69,5 @@ index 656e9168a..d62bdb5d1 100644
  
    if (exitCode != 0) {
 -- 
-2.16.3
+2.14.1
 

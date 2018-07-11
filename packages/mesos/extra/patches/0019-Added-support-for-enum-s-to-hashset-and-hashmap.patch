@@ -1,0 +1,78 @@
+From e417499d347c2eea7be80b27486e07b9157764eb Mon Sep 17 00:00:00 2001
+From: Benjamin Hindman <benjamin.hindman@gmail.com>
+Date: Sun, 27 Aug 2017 17:06:48 -0700
+Subject: [PATCH] Added support for enum's to hashset and hashmap.
+
+Review: https://reviews.apache.org/r/63941
+---
+ 3rdparty/stout/include/stout/hashmap.hpp |  7 ++++---
+ 3rdparty/stout/include/stout/hashset.hpp | 25 +++++++++++++++++++++++--
+ 2 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/3rdparty/stout/include/stout/hashmap.hpp b/3rdparty/stout/include/stout/hashmap.hpp
+index 539bbfd92..faf8002f6 100644
+--- a/3rdparty/stout/include/stout/hashmap.hpp
++++ b/3rdparty/stout/include/stout/hashmap.hpp
+@@ -24,14 +24,15 @@
+ #include "none.hpp"
+ #include "option.hpp"
+ 
+-
+ // Provides a hash map via 'std::unordered_map'. We inherit from it to add
+ // new functions as well as to provide better names for some of the
+ // existing functions.
+-
+ template <typename Key,
+           typename Value,
+-          typename Hash = std::hash<Key>,
++          typename Hash = typename std::conditional<
++            std::is_enum<Key>::value,
++            EnumClassHash,
++            std::hash<Key>>::type,
+           typename Equal = std::equal_to<Key>>
+ class hashmap : public std::unordered_map<Key, Value, Hash, Equal>
+ {
+diff --git a/3rdparty/stout/include/stout/hashset.hpp b/3rdparty/stout/include/stout/hashset.hpp
+index d2f7d5ddb..6af209c53 100644
+--- a/3rdparty/stout/include/stout/hashset.hpp
++++ b/3rdparty/stout/include/stout/hashset.hpp
+@@ -21,13 +21,34 @@
+ 
+ #include "foreach.hpp"
+ 
++// Prior to C++14 we can't use an enum type as the key to any
++// hash-based collection because of a defect in the standard. See
++// www.open-std.org/jtc1/sc22/wg21/docs/lwg-defects.html#2148 for more
++// details. The workaround for now is to use the following hash
++// function when using an enum.
++//
++// TODO(benh): Remove this once we move to C++14.
++struct EnumClassHash
++{
++  template <typename T>
++  std::size_t operator()(T t) const
++  {
++    static_assert(
++        sizeof(typename std::underlying_type<T>::type) <= sizeof(std::size_t),
++        "Expecting enum type to be convertible to std::size_t");
++    return static_cast<std::size_t>(t);
++  }
++};
++
+ 
+ // Provides a hash set via 'std::unordered_set'. We inherit from it to add
+ // new functions as well as to provide better naming for some of the
+ // existing functions.
+-
+ template <typename Elem,
+-          typename Hash = std::hash<Elem>,
++          typename Hash = typename std::conditional<
++            std::is_enum<Elem>::value,
++            EnumClassHash,
++            std::hash<Elem>>::type,
+           typename Equal = std::equal_to<Elem>>
+ class hashset : public std::unordered_set<Elem, Hash, Equal>
+ {
+-- 
+2.14.1
+
