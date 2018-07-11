@@ -795,7 +795,7 @@ class TestCache:
 
             # First poll, request triggered (0s) + normal poll interval(6s)
             # interval(6s) + 2
-            time.sleep(cache_poll_period * 2)
+            time.sleep(cache_poll_period + 2)
 
         mesosmock_pre_reqs = mocker.send_command(
             endpoint_id='http://127.0.0.2:5050',
