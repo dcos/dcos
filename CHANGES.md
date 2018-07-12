@@ -8,6 +8,7 @@
 
 ### Fixed and improved
 
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 ### Security updates
 
