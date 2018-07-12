@@ -20,6 +20,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+
 * Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
 
 * Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
