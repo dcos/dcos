@@ -7,9 +7,9 @@
   ], 
   "single_source": {
     "kind": "git", 
-    "git": "https://github.com/apache/mesos", 
-    "ref": "22471b83a418e614b19a7ae50b73ee028dc7c363", 
-    "ref_origin": "master"
+    "git": "https://github.com/mesosphere/mesos", 
+    "ref": "63b115ad354ca7b2bd81d0968719814b1982c441", 
+    "ref_origin": "gilbert/cgroup-mounts"
   }, 
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib", 
