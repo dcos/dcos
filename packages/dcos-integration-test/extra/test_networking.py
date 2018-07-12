@@ -260,7 +260,7 @@ def test_ipv6(dcos_api_session, same_host):
         log.info('Purging application: {}'.format(origin_app.id))
         origin_app.purge(dcos_api_session)
         log.info('Purging application: {}'.format(proxy_app.id))
-        origin_app.purge(dcos_api_session)
+        proxy_app.purge(dcos_api_session)
 
 
 @pytest.mark.slow
