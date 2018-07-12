@@ -24,6 +24,14 @@ Format of the entries must be.
 
 * Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
 
+* Add task labels as tags on container metrics (DCOS_OSS-3304)
+
+* Increase the mesos agent response timeout for dcos-metrics (DCOS-37452)
+
+* Prevent cosmos-specific labels being sent as metrics tags (DCOS-37451)
+
+* Improve the way statsd timers are handled in dcos-metrcs (DCOS-38083)
+
 ### Security Updates
 
 
