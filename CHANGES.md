@@ -16,6 +16,7 @@ Format of the entries must be.
 ### Notable changes
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+* Includes Marathon [1.5.11](https://github.com/mesosphere/marathon/releases/tag/v1.5.11)
 
 
 ### Fixed and improved
