@@ -17,8 +17,12 @@ Format of the entries must be.
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
 
+* Includes Marathon [1.5.11](https://github.com/mesosphere/marathon/releases/tag/v1.5.11)
+
 
 ### Fixed and improved
+
+* L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
 
 * Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
 
