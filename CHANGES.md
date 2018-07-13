@@ -8,6 +8,7 @@
 
 ### Fixed and improved
 
+* L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
 
 ### Security updates
 
