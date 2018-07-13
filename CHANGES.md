@@ -1,3 +1,5 @@
+## DC/OS 1.10.8
+
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
@@ -10,8 +12,6 @@ Format of the entries must be.
 <new-line>
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
-
-## DC/OS 1.10.8
 
 ### Notable changes
 
