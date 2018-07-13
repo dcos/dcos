@@ -10,6 +10,8 @@
 
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
+* L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
+
 ### Security updates
 
 
