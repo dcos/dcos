@@ -1,4 +1,6 @@
-## DC/OS 1.11.3
+## DC/OS 1.11.4
+
+* Updated to [Mesos 1.5.2-dev](https://github.com/apache/mesos/commit/fc8e9746ba5df1e19980ac57a384b7de73ff9e58)
 
 
 ### Notable changes
