@@ -270,7 +270,7 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+def validate_network_default_name(overlay_network_default_name, dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
@@ -278,9 +278,9 @@ def validate_network_default_name(dcos_overlay_network_default_name, dcos_overla
 
     overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
 
-    assert dcos_overlay_network_default_name in overlay_names, (
+    assert overlay_network_default_name in overlay_names, (
         "Default overlay network name does not reference a defined overlay network: {}".format(
-            dcos_overlay_network_default_name))
+            overlay_network_default_name))
 
 
 def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
@@ -897,6 +897,7 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 
 __dcos_overlay_network_default_name = 'dcos'
+__dcos_overlay_network6_default_name = 'dcos6'
 
 
 entry = {
@@ -1029,12 +1030,14 @@ entry = {
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }, {
-                'name': 'dcos6',
+                'name': __dcos_overlay_network6_default_name,
                 'subnet6': 'fd01:b::/64',
                 'prefix6': 80
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_overlay_network6_default_name': __dcos_overlay_network6_default_name,
+        'dcos_ucr_default_bridge_network_name': 'mesos-bridge',
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
         'dcos_l4lb_min_named_ip': '11.0.0.0',
