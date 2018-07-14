@@ -161,6 +161,16 @@ package:
           ]
         }
       ].
+  - path: /etc/dcos-cni-networks
+    content: |
+      {
+        "names": [
+            "{{ dcos_overlay_network_default_name }}",
+            "{{ dcos_overlay_network6_default_name }}",
+            "{{ dcos_ucr_default_bridge_network_name }}",
+            "kube-cni"
+         ]
+       }
   - path: /etc/overlay/config/master.json
     content: |
       {
@@ -170,7 +180,7 @@ package:
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
       {
-        "name": "mesos-bridge",
+        "name": "{{ dcos_ucr_default_bridge_network_name }}",
         "type" : "mesos-cni-port-mapper",
         "excludeDevices" : ["ucr-br0"],
         "chain": "UCR-DEFAULT-BRIDGE",
