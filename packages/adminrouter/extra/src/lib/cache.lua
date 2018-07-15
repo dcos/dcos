@@ -12,7 +12,6 @@ local util = require "util"
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
 --
--- Before changing CACHE_POLL_PERIOD, please check the comment for resolver
 -- There are 3 requests (2xMarathon + Mesos) made to upstream components.
 -- The cache should be kept locked for the whole time until
 -- the responses are received from all the components. Therefore,
@@ -25,6 +24,7 @@ local util = require "util"
 -- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2). We set it to
 -- 3 * CACHE_BACKEND_REQUEST_TIMEOUT hoping that the 2 requests to Marathon and
 -- 1 request to Mesos will be done immediately one after another.
+--
 -- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
 -- statement configuration in includes/http/master.conf
 --
