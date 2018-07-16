@@ -11,10 +11,43 @@ local util = require "util"
 --
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
--- CACHE_BACKEND_REQUEST_TIMEOUT << CACHE_REFRESH_LOCK_TIMEOUT
 --
+-- Before changing CACHE_POLL_PERIOD, please check the comment for resolver
+--
+-- There are 3 requests (2xMarathon + Mesos) made to upstream components.
+-- The cache should be kept locked for the whole time until
+-- the responses are received from all the components. Therefore,
+-- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2) <= CACHE_REFRESH_LOCK_TIMEOUT
+-- The 2s delay between requests is choosen arbitrarily.
+-- On the other hand, the documentation
+-- (https://github.com/openresty/lua-resty-lock#new) says that the
+-- CACHE_REFRESH_LOCK_TIMEOUT should not exceed the expiration time, which
+-- is equal to 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2). Taking into account
+-- both constraints, we would have to set CACHE_REFRESH_LOCK_TIMEOUT =
+-- 3 * (CACHE_BACKEND_REQUEST_TIMEOUT + 2). We set it to
+-- 3 * CACHE_BACKEND_REQUEST_TIMEOUT hoping that the 2 requests to Marathon and
+-- 1 request to Mesos will be done immediately one after another.
 -- Before changing CACHE_POLL_INTERVAL, please check the comment for resolver
 -- statement configuration in includes/http/master.conf
+--
+-- Initial timer-triggered cache update early after nginx startup:
+-- It makes sense to have this initial timer-triggered cache
+-- update _early_ after nginx startup at all, and it makes sense to make it
+-- very early, so that we reduce the likelihood for an HTTP request to be slowed
+-- down when it is incoming _before_ the normally scheduled periodic cache
+-- update (example: the HTTP request comes in 15 seconds after nginx startup,
+-- and the first regular timer-triggered cache update is triggered only 25
+-- seconds after nginx startup).
+--
+-- It makes sense to have this time window not be too narrow, especially not
+-- close to 0 seconds: under a lot of load there *will* be HTTP requests
+-- incoming before the initial timer-triggered update, even if the first
+-- timer callback is scheduled to be executed after 0 seconds.
+-- There is code in place for handling these HTTP requests, and that code path
+-- must be kept explicit, regularly exercised, and well-tested. There is a test
+-- harness test that tests/exercises it, but it overrides the default values
+-- with the ones that allow for testability. So the idea is that we leave
+-- initial update scheduled after 2 seconds, as opposed to 0 seconds.
 --
 -- All are in units of seconds. Below are the defaults:
 local _CONFIG = {}
@@ -23,8 +56,8 @@ local env_vars = {CACHE_FIRST_POLL_DELAY = 2,
                   CACHE_EXPIRATION = 20,
                   CACHE_MAX_AGE_SOFT_LIMIT = 75,
                   CACHE_MAX_AGE_HARD_LIMIT = 259200,
-                  CACHE_BACKEND_REQUEST_TIMEOUT = 10,
-                  CACHE_REFRESH_LOCK_TIMEOUT = 20,
+                  CACHE_BACKEND_REQUEST_TIMEOUT = 60,
+                  CACHE_REFRESH_LOCK_TIMEOUT = 180,
                   }
 
 for key, value in pairs(env_vars) do
@@ -518,7 +551,8 @@ local function refresh_cache(from_timer, auth_token)
         ngx.log(ngx.INFO, "Executing cache refresh triggered by request")
         -- Cache content is required for current request
         -- processing. Wait for lock acquisition, for at
-        -- most 20 seconds.
+        -- most _CONFIG.CACHE_REFRESH_LOCK_TIMEOUT * 3 seconds (2xMarathon +
+        -- 1 Mesos request).
         lock = shmlock:new("shmlocks", {timeout=_CONFIG.CACHE_REFRESH_LOCK_TIMEOUT,
                                         exptime=lock_ttl })
         local elapsed, err = lock:lock("cache")
@@ -556,15 +590,15 @@ end
 
 local function periodically_refresh_cache(auth_token)
     -- This function is invoked from within init_worker_by_lua code.
-    -- ngx.timer.at() can be called here, whereas most of the other ngx.*
-    -- API is not available.
+    -- ngx.timer.every() is called here, a more robust alternative to
+    -- ngx.timer.at() as suggested by the openresty/lua-nginx-module
+    -- documentation:
+    -- https://github.com/openresty/lua-nginx-module/tree/v0.10.9#ngxtimerat
+    -- See https://jira.mesosphere.com/browse/DCOS-38248 for details on the
+    -- cache update problems caused by the recursive use of ngx.timer.at()
 
     timerhandler = function(premature)
-        -- Handler for recursive timer invocation.
-        -- Within a timer callback, plenty of the ngx.* API is available,
-        -- with the exception of e.g. subrequests. As ngx.sleep is also not
-        -- available in the current context, the recommended approach of
-        -- implementing periodic tasks is via recursively defined timers.
+        -- Handler for periodic timer invocation.
 
         -- Premature timer execution: worker process tries to shut down.
         if premature then
@@ -573,24 +607,26 @@ local function periodically_refresh_cache(auth_token)
 
         -- Invoke timer business logic.
         refresh_cache(true, auth_token)
-
-        -- Register new timer.
-        local ok, err = ngx.timer.at(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
-        if not ok then
-            ngx.log(ngx.ERR, "Failed to create timer: " .. err)
-        else
-            ngx.log(ngx.INFO, "Created recursive timer for cache updating.")
-        end
     end
 
-    -- Trigger initial timer, about CACHE_FIRST_POLL_DELAY seconds after
+    -- Trigger the initial cache update CACHE_FIRST_POLL_DELAY seconds after
     -- Nginx startup.
     local ok, err = ngx.timer.at(_CONFIG.CACHE_FIRST_POLL_DELAY, timerhandler)
     if not ok then
         ngx.log(ngx.ERR, "Failed to create timer: " .. err)
         return
     else
-        ngx.log(ngx.INFO, "Created initial recursive timer for cache updating.")
+        ngx.log(ngx.INFO, "Created initial timer for cache updating.")
+    end
+
+    -- Trigger the timer, every CACHE_POLL_PERIOD seconds after
+    -- Nginx startup.
+    local ok, err = ngx.timer.every(_CONFIG.CACHE_POLL_PERIOD, timerhandler)
+    if not ok then
+        ngx.log(ngx.ERR, "Failed to create timer: " .. err)
+        return
+    else
+        ngx.log(ngx.INFO, "Created periodic timer for cache updating.")
     end
 end
 

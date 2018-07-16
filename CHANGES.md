@@ -8,6 +8,19 @@
 
 ### Fixed and improved
 
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+
+* L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
+
+* Prevent metric names beginning with a number in prometheus output (DCOS_OSS-2360)
+
+* Add task labels as tags on container metrics (DCOS_OSS-3304)
+
+* Increase the mesos agent response timeout for dcos-metrics (DCOS-37452)
+
+* Prevent cosmos-specific labels being sent as metrics tags (DCOS-37451)
+
+* Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
 
 ### Security updates
 
