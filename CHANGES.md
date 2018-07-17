@@ -22,6 +22,9 @@
 
 * Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
 
+* Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
+
+
 ### Security updates
 
 
