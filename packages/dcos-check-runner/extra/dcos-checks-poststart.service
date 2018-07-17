@@ -3,5 +3,6 @@ Description=DC/OS Poststart Checks: Run node-poststart checks
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 StandardOutput=journal
-User=dcos_check_runner
+User=root
+Group=root
 ExecStart=/opt/mesosphere/bin/dcos-check-runner check node-poststart

@@ -44,6 +44,9 @@ Format of the entries must be.
 
 * Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
 
+* Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
+
+
 ### Security Updates
 
 * Update cURL to 7.59. (DCOS_OSS-2367)
