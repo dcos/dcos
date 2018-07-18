@@ -419,7 +419,6 @@ function check_all() {
     done
 
     check_preexisting_dcos
-    check_selinux
     check_sort_capability
 
     local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
