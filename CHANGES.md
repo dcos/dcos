@@ -25,6 +25,7 @@
 
 * Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
 
+* CNI module now stores configuration on a tmpfs dir, allocated IP addresses are recycled upon agent reboot. (DCOS_OSS-3750)
 
 ### Security updates
 
