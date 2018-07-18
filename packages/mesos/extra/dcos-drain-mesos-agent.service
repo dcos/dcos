@@ -1,0 +1,9 @@
+[Unit]
+Description=Drain Mesos Agent: Stop Mesos tasks on shutdown/reboot
+Before=shutdown.target reboot.target halt.target
+After=dcos-mesos-slave.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStop=/usr/bin/systemctl kill -s SIGUSR1 dcos-mesos-slave.service
