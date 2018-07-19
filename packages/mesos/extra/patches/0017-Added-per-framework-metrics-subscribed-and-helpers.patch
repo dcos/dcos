@@ -1,0 +1,163 @@
+From 252de79565de6c7e243441bb0ca34dea0852ddcf Mon Sep 17 00:00:00 2001
+From: Gilbert Song <songzihao1990@gmail.com>
+Date: Fri, 6 Jul 2018 11:34:35 -0700
+Subject: [PATCH] Added per framework metrics 'subscribed' and helpers.
+
+Review: https://reviews.apache.org/r/66820/
+---
+ src/master/master.cpp  | 17 ++++++++++++-----
+ src/master/master.hpp  |  6 +++++-
+ src/master/metrics.cpp | 12 ++++++++++--
+ src/master/metrics.hpp |  3 +++
+ 4 files changed, 30 insertions(+), 8 deletions(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 8208beec3..ba93bb4cf 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -437,6 +437,13 @@ void Framework::untrackUnderRole(const string& role)
+ }
+ 
+ 
++void Framework::setFrameworkState(Framework::State _state)
++{
++  state = _state;
++  metrics.subscribed = state == Framework::State::ACTIVE ? 1 : 0;
++}
++
++
+ void Master::initialize()
+ {
+   LOG(INFO) << "Master " << info_.id() << " (" << info_.hostname() << ")"
+@@ -3170,7 +3177,7 @@ void Master::_subscribe(
+       // NOTE: We do this after recovering resources (above) so that
+       // the allocator has the correct view of the framework's share.
+       if (!framework->active()) {
+-        framework->state = Framework::State::ACTIVE;
++        framework->setFrameworkState(Framework::State::ACTIVE);
+         allocator->activateFramework(framework->id());
+       }
+ 
+@@ -3284,7 +3291,7 @@ void Master::disconnect(Framework* framework)
+ 
+   LOG(INFO) << "Disconnecting framework " << *framework;
+ 
+-  framework->state = Framework::State::DISCONNECTED;
++  framework->setFrameworkState(Framework::State::DISCONNECTED);
+ 
+   if (framework->pid.isSome()) {
+     // Remove the framework from authenticated. This is safe because
+@@ -3307,7 +3314,7 @@ void Master::deactivate(Framework* framework, bool rescind)
+ 
+   LOG(INFO) << "Deactivating framework " << *framework;
+ 
+-  framework->state = Framework::State::INACTIVE;
++  framework->setFrameworkState(Framework::State::INACTIVE);
+ 
+   // Tell the allocator to stop allocating resources to this framework.
+   allocator->deactivateFramework(framework->id());
+@@ -8238,7 +8245,7 @@ Try<Nothing> Master::activateRecoveredFramework(
+   }
+ 
+   // Activate the framework.
+-  framework->state = Framework::State::ACTIVE;
++  framework->setFrameworkState(Framework::State::ACTIVE);
+   allocator->activateFramework(framework->id());
+ 
+   // Export framework metrics if a principal is specified in `FrameworkInfo`.
+@@ -8396,7 +8403,7 @@ void Master::_failoverFramework(Framework* framework)
+   // NOTE: We do this after recovering resources (above) so that
+   // the allocator has the correct view of the framework's share.
+   if (!framework->active()) {
+-    framework->state = Framework::State::ACTIVE;
++    framework->setFrameworkState(Framework::State::ACTIVE);
+     allocator->activateFramework(framework->id());
+   }
+ 
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index b14b49f01..19f05dd1a 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -1609,6 +1609,7 @@ private:
+   Master& operator=(const Master&); // No assigning.
+ 
+   friend struct Framework;
++  friend struct FrameworkMetrics;
+   friend struct Metrics;
+   friend struct Slave;
+   friend struct SlavesWriter;
+@@ -2733,6 +2734,8 @@ struct Framework
+   void trackUnderRole(const std::string& role);
+   void untrackUnderRole(const std::string& role);
+ 
++  void setFrameworkState(State _state);
++
+   Master* const master;
+ 
+   FrameworkInfo info;
+@@ -2836,7 +2839,6 @@ private:
+       info(_info),
+       roles(protobuf::framework::getRoles(_info)),
+       capabilities(_info.capabilities()),
+-      state(state),
+       registeredTime(time),
+       reregisteredTime(time),
+       completedTasks(masterFlags.max_completed_tasks_per_framework),
+@@ -2845,6 +2847,8 @@ private:
+   {
+     CHECK(_info.has_id());
+ 
++    setFrameworkState(state);
++
+     foreach (const std::string& role, roles) {
+       // NOTE: It's possible that we're already being tracked under the role
+       // because a framework can unsubscribe from a role while it still has
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 02a238ae2..c5a67ef6b 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -511,10 +511,18 @@ void Metrics::incrementTasksStates(
+ 
+ 
+ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+-  : frameworkInfo(_frameworkInfo) {}
++  : frameworkInfo(_frameworkInfo),
++    subscribed(
++        getFrameworkMetricPrefix(frameworkInfo) + "subscribed")
++{
++  process::metrics::add(subscribed);
++}
+ 
+ 
+-FrameworkMetrics::~FrameworkMetrics() {}
++FrameworkMetrics::~FrameworkMetrics()
++{
++  process::metrics::remove(subscribed);
++}
+ 
+ 
+ string normalizeMetricKey(const string& key)
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index c2cd5f3b7..8cda3083b 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -22,6 +22,7 @@
+ 
+ #include <process/metrics/counter.hpp>
+ #include <process/metrics/pull_gauge.hpp>
++#include <process/metrics/push_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/hashmap.hpp>
+@@ -215,6 +216,8 @@ struct FrameworkMetrics
+   ~FrameworkMetrics();
+ 
+   const FrameworkInfo frameworkInfo;
++
++  process::metrics::PushGauge subscribed;
+ };
+ 
+ 
+-- 
+2.14.1
+

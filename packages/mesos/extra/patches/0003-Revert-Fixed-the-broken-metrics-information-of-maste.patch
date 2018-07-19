@@ -1,4 +1,4 @@
-From 105c40a69b72ab76994c6cc5c83e76454e6a299c Mon Sep 17 00:00:00 2001
+From 4c3ea8166f38a3923285e9905e189056fa9b3e4c Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
 Subject: [PATCH] Revert "Fixed the broken metrics information of master in
@@ -69,5 +69,5 @@ index ed60f7d40..d69e92017 100644
              $timeout(pollMetrics, $scope.delay);
            }
 -- 
-2.16.3
+2.14.1
 

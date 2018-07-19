@@ -1,0 +1,935 @@
+From 8582d89d09c104c1fb2a0fb116218435a3484224 Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Fri, 27 Apr 2018 16:07:05 -0700
+Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
+
+Review: https://reviews.apache.org/r/66832/
+---
+ src/examples/balloon_framework.cpp                 |  8 ++--
+ src/examples/disk_full_framework.cpp               |  8 ++--
+ src/examples/long_lived_framework.cpp              |  8 ++--
+ src/log/log.hpp                                    |  2 +-
+ src/log/metrics.hpp                                |  6 +--
+ src/master/allocator/mesos/metrics.cpp             | 32 ++++++-------
+ src/master/allocator/mesos/metrics.hpp             | 26 +++++------
+ src/master/allocator/sorter/drf/metrics.cpp        |  6 +--
+ src/master/allocator/sorter/drf/metrics.hpp        |  4 +-
+ src/master/master.hpp                              |  2 +-
+ src/master/metrics.cpp                             | 28 +++++------
+ src/master/metrics.hpp                             | 54 +++++++++++-----------
+ src/master/registrar.cpp                           | 10 ++--
+ src/sched/sched.cpp                                |  6 +--
+ src/scheduler/scheduler.cpp                        |  6 +--
+ src/slave/containerizer/fetcher_process.hpp        |  6 +--
+ .../mesos/isolators/filesystem/linux.hpp           |  4 +-
+ src/slave/metrics.cpp                              | 28 +++++------
+ src/slave/metrics.hpp                              | 36 +++++++--------
+ src/slave/slave.hpp                                |  2 +-
+ 20 files changed, 141 insertions(+), 141 deletions(-)
+
+diff --git a/src/examples/balloon_framework.cpp b/src/examples/balloon_framework.cpp
+index c1fe723b8..26226bcc8 100644
+--- a/src/examples/balloon_framework.cpp
++++ b/src/examples/balloon_framework.cpp
+@@ -32,7 +32,7 @@
+ #include <process/time.hpp>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/bytes.hpp>
+@@ -55,7 +55,7 @@ using google::protobuf::RepeatedPtrField;
+ using process::Clock;
+ using process::defer;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ using process::metrics::Counter;
+ 
+ const double CPUS_PER_TASK = 0.1;
+@@ -360,8 +360,8 @@ private:
+       process::metrics::remove(abnormal_terminations);
+     }
+ 
+-    process::metrics::Gauge uptime_secs;
+-    process::metrics::Gauge registered;
++    process::metrics::PullGauge uptime_secs;
++    process::metrics::PullGauge registered;
+ 
+     process::metrics::Counter tasks_finished;
+     process::metrics::Counter tasks_oomed;
+diff --git a/src/examples/disk_full_framework.cpp b/src/examples/disk_full_framework.cpp
+index 916420771..6f25e36a3 100644
+--- a/src/examples/disk_full_framework.cpp
++++ b/src/examples/disk_full_framework.cpp
+@@ -30,7 +30,7 @@
+ #include <process/time.hpp>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/bytes.hpp>
+@@ -47,7 +47,7 @@ using std::string;
+ using process::Clock;
+ using process::defer;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ using process::metrics::Counter;
+ 
+ const double CPUS_PER_TASK = 0.1;
+@@ -317,8 +317,8 @@ private:
+       process::metrics::remove(abnormal_terminations);
+     }
+ 
+-    process::metrics::Gauge uptime_secs;
+-    process::metrics::Gauge registered;
++    process::metrics::PullGauge uptime_secs;
++    process::metrics::PullGauge registered;
+ 
+     process::metrics::Counter tasks_finished;
+     process::metrics::Counter tasks_disk_full;
+diff --git a/src/examples/long_lived_framework.cpp b/src/examples/long_lived_framework.cpp
+index 12077d427..bf0a4e596 100644
+--- a/src/examples/long_lived_framework.cpp
++++ b/src/examples/long_lived_framework.cpp
+@@ -34,7 +34,7 @@
+ #include <process/time.hpp>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/flags.hpp>
+@@ -81,7 +81,7 @@ using process::TLDR;
+ 
+ using process::http::OK;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ using process::metrics::Counter;
+ 
+ // NOTE: Per-task resources are nominal because all of the resources for the
+@@ -471,8 +471,8 @@ private:
+       process::metrics::remove(abnormal_terminations);
+     }
+ 
+-    process::metrics::Gauge uptime_secs;
+-    process::metrics::Gauge subscribed;
++    process::metrics::PullGauge uptime_secs;
++    process::metrics::PullGauge subscribed;
+ 
+     process::metrics::Counter offers_received;
+     process::metrics::Counter tasks_launched;
+diff --git a/src/log/log.hpp b/src/log/log.hpp
+index 24481aaae..33780165d 100644
+--- a/src/log/log.hpp
++++ b/src/log/log.hpp
+@@ -26,7 +26,7 @@
+ #include <process/process.hpp>
+ #include <process/shared.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ #include <stout/nothing.hpp>
+ 
+diff --git a/src/log/metrics.hpp b/src/log/metrics.hpp
+index b537e0a78..4a9efcef9 100644
+--- a/src/log/metrics.hpp
++++ b/src/log/metrics.hpp
+@@ -19,7 +19,7 @@
+ 
+ #include <string>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ namespace mesos {
+ namespace internal {
+@@ -36,9 +36,9 @@ struct Metrics
+ 
+   ~Metrics();
+ 
+-  process::metrics::Gauge recovered;
++  process::metrics::PullGauge recovered;
+ 
+-  process::metrics::Gauge ensemble_size;
++  process::metrics::PullGauge ensemble_size;
+ };
+ 
+ } // namespace log {
+diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
+index 4892dbce6..5194f5b3b 100644
+--- a/src/master/allocator/mesos/metrics.cpp
++++ b/src/master/allocator/mesos/metrics.cpp
+@@ -20,7 +20,7 @@
+ 
+ #include <mesos/quota/quota.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/hashmap.hpp>
+@@ -29,7 +29,7 @@
+ 
+ using std::string;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ 
+ namespace mesos {
+ namespace internal {
+@@ -67,13 +67,13 @@ Metrics::Metrics(const HierarchicalAllocatorProcess& _allocator)
+   string resources[] = {"cpus", "mem", "disk"};
+ 
+   foreach (const string& resource, resources) {
+-    Gauge total(
++    PullGauge total(
+         "allocator/mesos/resources/" + resource + "/total",
+         defer(allocator,
+               &HierarchicalAllocatorProcess::_resources_total,
+               resource));
+ 
+-    Gauge offered_or_allocated(
++    PullGauge offered_or_allocated(
+         "allocator/mesos/resources/" + resource + "/offered_or_allocated",
+         defer(allocator,
+               &HierarchicalAllocatorProcess::_resources_offered_or_allocated,
+@@ -96,27 +96,27 @@ Metrics::~Metrics()
+   process::metrics::remove(allocation_run);
+   process::metrics::remove(allocation_run_latency);
+ 
+-  foreach (const Gauge& gauge, resources_total) {
++  foreach (const PullGauge& gauge, resources_total) {
+     process::metrics::remove(gauge);
+   }
+ 
+-  foreach (const Gauge& gauge, resources_offered_or_allocated) {
++  foreach (const PullGauge& gauge, resources_offered_or_allocated) {
+     process::metrics::remove(gauge);
+   }
+ 
+   foreachkey (const string& role, quota_allocated) {
+-    foreachvalue (const Gauge& gauge, quota_allocated[role]) {
++    foreachvalue (const PullGauge& gauge, quota_allocated[role]) {
+       process::metrics::remove(gauge);
+     }
+   }
+ 
+   foreachkey (const string& role, quota_guarantee) {
+-    foreachvalue (const Gauge& gauge, quota_guarantee[role]) {
++    foreachvalue (const PullGauge& gauge, quota_guarantee[role]) {
+       process::metrics::remove(gauge);
+     }
+   }
+ 
+-  foreachvalue (const Gauge& gauge, offer_filters_active) {
++  foreachvalue (const PullGauge& gauge, offer_filters_active) {
+     process::metrics::remove(gauge);
+   }
+ }
+@@ -126,21 +126,21 @@ void Metrics::setQuota(const string& role, const Quota& quota)
+ {
+   CHECK(!quota_allocated.contains(role));
+ 
+-  hashmap<string, Gauge> allocated;
+-  hashmap<string, Gauge> guarantees;
++  hashmap<string, PullGauge> allocated;
++  hashmap<string, PullGauge> guarantees;
+ 
+   foreach (const Resource& resource, quota.info.guarantee()) {
+     CHECK_EQ(Value::SCALAR, resource.type());
+     double value = resource.scalar().value();
+ 
+-    Gauge guarantee = Gauge(
++    PullGauge guarantee = PullGauge(
+         "allocator/mesos/quota"
+         "/roles/" + role +
+         "/resources/" + resource.name() +
+         "/guarantee",
+         process::defer([value]() { return value; }));
+ 
+-    Gauge offered_or_allocated(
++    PullGauge offered_or_allocated(
+         "allocator/mesos/quota"
+         "/roles/" + role +
+         "/resources/" + resource.name() +
+@@ -166,7 +166,7 @@ void Metrics::removeQuota(const string& role)
+ {
+   CHECK(quota_allocated.contains(role));
+ 
+-  foreachvalue (const Gauge& gauge, quota_allocated[role]) {
++  foreachvalue (const PullGauge& gauge, quota_allocated[role]) {
+     process::metrics::remove(gauge);
+   }
+ 
+@@ -178,7 +178,7 @@ void Metrics::addRole(const string& role)
+ {
+   CHECK(!offer_filters_active.contains(role));
+ 
+-  Gauge gauge(
++  PullGauge gauge(
+       "allocator/mesos/offer_filters/roles/" + role + "/active",
+       defer(allocator,
+             &HierarchicalAllocatorProcess::_offer_filters_active,
+@@ -192,7 +192,7 @@ void Metrics::addRole(const string& role)
+ 
+ void Metrics::removeRole(const string& role)
+ {
+-  Option<Gauge> gauge = offer_filters_active.get(role);
++  Option<PullGauge> gauge = offer_filters_active.get(role);
+ 
+   CHECK_SOME(gauge);
+ 
+diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
+index d56a10b2d..6d386225c 100644
+--- a/src/master/allocator/mesos/metrics.hpp
++++ b/src/master/allocator/mesos/metrics.hpp
+@@ -23,7 +23,7 @@
+ #include <mesos/quota/quota.hpp>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/timer.hpp>
+ 
+ #include <process/pid.hpp>
+@@ -56,12 +56,12 @@ struct Metrics
+   const process::PID<HierarchicalAllocatorProcess> allocator;
+ 
+   // Number of dispatch events currently waiting in the allocator process.
+-  process::metrics::Gauge event_queue_dispatches;
++  process::metrics::PullGauge event_queue_dispatches;
+ 
+   // TODO(bbannier) This metric is identical to `event_queue_dispatches`, but
+   // uses a name deprecated in 1.0. This metric should be removed after the
+   // deprecation cycle.
+-  process::metrics::Gauge event_queue_dispatches_;
++  process::metrics::PullGauge event_queue_dispatches_;
+ 
+   // Number of times the allocation algorithm has run.
+   process::metrics::Counter allocation_runs;
+@@ -72,22 +72,22 @@ struct Metrics
+   // The latency of allocation runs due to the batching of allocation requests.
+   process::metrics::Timer<Milliseconds> allocation_run_latency;
+ 
+-  // Gauges for the total amount of each resource in the cluster.
+-  std::vector<process::metrics::Gauge> resources_total;
++  // PullGauges for the total amount of each resource in the cluster.
++  std::vector<process::metrics::PullGauge> resources_total;
+ 
+-  // Gauges for the allocated amount of each resource in the cluster.
+-  std::vector<process::metrics::Gauge> resources_offered_or_allocated;
++  // PullGauges for the allocated amount of each resource in the cluster.
++  std::vector<process::metrics::PullGauge> resources_offered_or_allocated;
+ 
+-  // Gauges for the per-role quota allocation for each resource.
+-  hashmap<std::string, hashmap<std::string, process::metrics::Gauge>>
++  // PullGauges for the per-role quota allocation for each resource.
++  hashmap<std::string, hashmap<std::string, process::metrics::PullGauge>>
+     quota_allocated;
+ 
+-  // Gauges for the per-role quota guarantee for each resource.
+-  hashmap<std::string, hashmap<std::string, process::metrics::Gauge>>
++  // PullGauges for the per-role quota guarantee for each resource.
++  hashmap<std::string, hashmap<std::string, process::metrics::PullGauge>>
+     quota_guarantee;
+ 
+-  // Gauges for the per-role count of active offer filters.
+-  hashmap<std::string, process::metrics::Gauge> offer_filters_active;
++  // PullGauges for the per-role count of active offer filters.
++  hashmap<std::string, process::metrics::PullGauge> offer_filters_active;
+ };
+ 
+ } // namespace internal {
+diff --git a/src/master/allocator/sorter/drf/metrics.cpp b/src/master/allocator/sorter/drf/metrics.cpp
+index ff63fbac5..ece151c79 100644
+--- a/src/master/allocator/sorter/drf/metrics.cpp
++++ b/src/master/allocator/sorter/drf/metrics.cpp
+@@ -30,7 +30,7 @@ using std::string;
+ using process::UPID;
+ using process::defer;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ 
+ namespace mesos {
+ namespace internal {
+@@ -48,7 +48,7 @@ Metrics::Metrics(
+ 
+ Metrics::~Metrics()
+ {
+-  foreachvalue (const Gauge& gauge, dominantShares) {
++  foreachvalue (const PullGauge& gauge, dominantShares) {
+     process::metrics::remove(gauge);
+   }
+ }
+@@ -58,7 +58,7 @@ void Metrics::add(const string& client)
+ {
+   CHECK(!dominantShares.contains(client));
+ 
+-  Gauge gauge(
++  PullGauge gauge(
+       path::join(prefix, client, "/shares/", "/dominant"),
+       defer(context, [this, client]() {
+         // The client may have been removed if the dispatch
+diff --git a/src/master/allocator/sorter/drf/metrics.hpp b/src/master/allocator/sorter/drf/metrics.hpp
+index 61568cb52..1ff7489ee 100644
+--- a/src/master/allocator/sorter/drf/metrics.hpp
++++ b/src/master/allocator/sorter/drf/metrics.hpp
+@@ -21,7 +21,7 @@
+ 
+ #include <process/pid.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ #include <stout/hashmap.hpp>
+ 
+@@ -51,7 +51,7 @@ struct Metrics
+   const std::string prefix;
+ 
+   // Dominant share of each client.
+-  hashmap<std::string, process::metrics::Gauge> dominantShares;
++  hashmap<std::string, process::metrics::PullGauge> dominantShares;
+ };
+ 
+ } // namespace allocator {
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 19ae88d0f..706f3ad9c 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -1906,7 +1906,7 @@ private:
+   // copyable metric types only.
+   std::shared_ptr<Metrics> metrics;
+ 
+-  // Gauge handlers.
++  // PullGauge handlers.
+   double _uptime_secs()
+   {
+     return (process::Clock::now() - startTime).secs();
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 64fc829ac..5c1d08664 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -17,7 +17,7 @@
+ #include <string>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/foreach.hpp>
+@@ -26,7 +26,7 @@
+ #include "master/metrics.hpp"
+ 
+ using process::metrics::Counter;
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ 
+ using std::string;
+ 
+@@ -300,15 +300,15 @@ Metrics::Metrics(const Master& master)
+   const string resources[] = {"cpus", "gpus", "mem", "disk"};
+ 
+   foreach (const string& resource, resources) {
+-    Gauge total(
++    PullGauge total(
+         "master/" + resource + "_total",
+         defer(master, &Master::_resources_total, resource));
+ 
+-    Gauge used(
++    PullGauge used(
+         "master/" + resource + "_used",
+         defer(master, &Master::_resources_used, resource));
+ 
+-    Gauge percent(
++    PullGauge percent(
+         "master/" + resource + "_percent",
+         defer(master, &Master::_resources_percent, resource));
+ 
+@@ -322,15 +322,15 @@ Metrics::Metrics(const Master& master)
+   }
+ 
+   foreach (const string& resource, resources) {
+-    Gauge total(
++    PullGauge total(
+         "master/" + resource + "_revocable_total",
+         defer(master, &Master::_resources_revocable_total, resource));
+ 
+-    Gauge used(
++    PullGauge used(
+         "master/" + resource + "_revocable_used",
+         defer(master, &Master::_resources_revocable_used, resource));
+ 
+-    Gauge percent(
++    PullGauge percent(
+         "master/" + resource + "_revocable_percent",
+         defer(master, &Master::_resources_revocable_percent, resource));
+ 
+@@ -440,32 +440,32 @@ Metrics::~Metrics()
+   process::metrics::remove(slave_unreachable_completed);
+   process::metrics::remove(slave_unreachable_canceled);
+ 
+-  foreach (const Gauge& gauge, resources_total) {
++  foreach (const PullGauge& gauge, resources_total) {
+     process::metrics::remove(gauge);
+   }
+   resources_total.clear();
+ 
+-  foreach (const Gauge& gauge, resources_used) {
++  foreach (const PullGauge& gauge, resources_used) {
+     process::metrics::remove(gauge);
+   }
+   resources_used.clear();
+ 
+-  foreach (const Gauge& gauge, resources_percent) {
++  foreach (const PullGauge& gauge, resources_percent) {
+     process::metrics::remove(gauge);
+   }
+   resources_percent.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_total) {
++  foreach (const PullGauge& gauge, resources_revocable_total) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_total.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_used) {
++  foreach (const PullGauge& gauge, resources_revocable_used) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_used.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_percent) {
++  foreach (const PullGauge& gauge, resources_revocable_percent) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_percent.clear();
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index f701efec0..1ef74dedf 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -21,7 +21,7 @@
+ #include <vector>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/hashmap.hpp>
+@@ -41,28 +41,28 @@ struct Metrics
+ 
+   ~Metrics();
+ 
+-  process::metrics::Gauge uptime_secs;
+-  process::metrics::Gauge elected;
++  process::metrics::PullGauge uptime_secs;
++  process::metrics::PullGauge elected;
+ 
+-  process::metrics::Gauge slaves_connected;
+-  process::metrics::Gauge slaves_disconnected;
+-  process::metrics::Gauge slaves_active;
+-  process::metrics::Gauge slaves_inactive;
+-  process::metrics::Gauge slaves_unreachable;
++  process::metrics::PullGauge slaves_connected;
++  process::metrics::PullGauge slaves_disconnected;
++  process::metrics::PullGauge slaves_active;
++  process::metrics::PullGauge slaves_inactive;
++  process::metrics::PullGauge slaves_unreachable;
+ 
+-  process::metrics::Gauge frameworks_connected;
+-  process::metrics::Gauge frameworks_disconnected;
+-  process::metrics::Gauge frameworks_active;
+-  process::metrics::Gauge frameworks_inactive;
++  process::metrics::PullGauge frameworks_connected;
++  process::metrics::PullGauge frameworks_disconnected;
++  process::metrics::PullGauge frameworks_active;
++  process::metrics::PullGauge frameworks_inactive;
+ 
+-  process::metrics::Gauge outstanding_offers;
++  process::metrics::PullGauge outstanding_offers;
+ 
+   // Task state metrics.
+-  process::metrics::Gauge tasks_staging;
+-  process::metrics::Gauge tasks_starting;
+-  process::metrics::Gauge tasks_running;
+-  process::metrics::Gauge tasks_unreachable;
+-  process::metrics::Gauge tasks_killing;
++  process::metrics::PullGauge tasks_staging;
++  process::metrics::PullGauge tasks_starting;
++  process::metrics::PullGauge tasks_running;
++  process::metrics::PullGauge tasks_unreachable;
++  process::metrics::PullGauge tasks_killing;
+   process::metrics::Counter tasks_finished;
+   process::metrics::Counter tasks_failed;
+   process::metrics::Counter tasks_killed;
+@@ -167,9 +167,9 @@ struct Metrics
+   process::metrics::Counter recovery_slave_removals;
+ 
+   // Process metrics.
+-  process::metrics::Gauge event_queue_messages;
+-  process::metrics::Gauge event_queue_dispatches;
+-  process::metrics::Gauge event_queue_http_requests;
++  process::metrics::PullGauge event_queue_messages;
++  process::metrics::PullGauge event_queue_dispatches;
++  process::metrics::PullGauge event_queue_http_requests;
+ 
+   // Successful registry operations.
+   process::metrics::Counter slave_registrations;
+@@ -192,14 +192,14 @@ struct Metrics
+   process::metrics::Counter slave_unreachable_canceled;
+ 
+   // Non-revocable resources.
+-  std::vector<process::metrics::Gauge> resources_total;
+-  std::vector<process::metrics::Gauge> resources_used;
+-  std::vector<process::metrics::Gauge> resources_percent;
++  std::vector<process::metrics::PullGauge> resources_total;
++  std::vector<process::metrics::PullGauge> resources_used;
++  std::vector<process::metrics::PullGauge> resources_percent;
+ 
+   // Revocable resources.
+-  std::vector<process::metrics::Gauge> resources_revocable_total;
+-  std::vector<process::metrics::Gauge> resources_revocable_used;
+-  std::vector<process::metrics::Gauge> resources_revocable_percent;
++  std::vector<process::metrics::PullGauge> resources_revocable_total;
++  std::vector<process::metrics::PullGauge> resources_revocable_used;
++  std::vector<process::metrics::PullGauge> resources_revocable_percent;
+ 
+   void incrementTasksStates(
+       const TaskState& state,
+diff --git a/src/master/registrar.cpp b/src/master/registrar.cpp
+index 488b0896b..9fd95a967 100644
+--- a/src/master/registrar.cpp
++++ b/src/master/registrar.cpp
+@@ -30,7 +30,7 @@
+ #include <process/owned.hpp>
+ #include <process/process.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ #include <process/metrics/timer.hpp>
+ 
+@@ -67,7 +67,7 @@ using process::http::OK;
+ 
+ using process::http::authentication::Principal;
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ using process::metrics::Timer;
+ 
+ using std::deque;
+@@ -174,14 +174,14 @@ private:
+       process::metrics::remove(state_store);
+     }
+ 
+-    Gauge queued_operations;
+-    Gauge registry_size_bytes;
++    PullGauge queued_operations;
++    PullGauge registry_size_bytes;
+ 
+     Timer<Milliseconds> state_fetch;
+     Timer<Milliseconds> state_store;
+   } metrics;
+ 
+-  // Gauge handlers.
++  // PullGauge handlers.
+   double _queued_operations()
+   {
+     return operations.size();
+diff --git a/src/sched/sched.cpp b/src/sched/sched.cpp
+index a835ce01c..18d56405c 100644
+--- a/src/sched/sched.cpp
++++ b/src/sched/sched.cpp
+@@ -61,7 +61,7 @@
+ #include <process/process.hpp>
+ #include <process/protobuf.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/abort.hpp>
+@@ -1625,8 +1625,8 @@ private:
+     }
+ 
+     // Process metrics.
+-    process::metrics::Gauge event_queue_messages;
+-    process::metrics::Gauge event_queue_dispatches;
++    process::metrics::PullGauge event_queue_messages;
++    process::metrics::PullGauge event_queue_dispatches;
+   } metrics;
+ 
+   double _event_queue_messages()
+diff --git a/src/scheduler/scheduler.cpp b/src/scheduler/scheduler.cpp
+index ce6925802..c30ce7f1c 100644
+--- a/src/scheduler/scheduler.cpp
++++ b/src/scheduler/scheduler.cpp
+@@ -54,7 +54,7 @@
+ #include <process/process.hpp>
+ #include <process/protobuf.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <process/ssl/flags.hpp>
+@@ -751,8 +751,8 @@ private:
+     }
+ 
+     // Process metrics.
+-    process::metrics::Gauge event_queue_messages;
+-    process::metrics::Gauge event_queue_dispatches;
++    process::metrics::PullGauge event_queue_messages;
++    process::metrics::PullGauge event_queue_dispatches;
+   } metrics;
+ 
+   double _event_queue_messages()
+diff --git a/src/slave/containerizer/fetcher_process.hpp b/src/slave/containerizer/fetcher_process.hpp
+index 034fe34fe..56fecf237 100644
+--- a/src/slave/containerizer/fetcher_process.hpp
++++ b/src/slave/containerizer/fetcher_process.hpp
+@@ -28,7 +28,7 @@
+ #include <process/process.hpp>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ #include <stout/hashmap.hpp>
+ 
+@@ -258,8 +258,8 @@ private:
+     process::metrics::Counter task_fetches_succeeded;
+     process::metrics::Counter task_fetches_failed;
+ 
+-    process::metrics::Gauge cache_size_total_bytes;
+-    process::metrics::Gauge cache_size_used_bytes;
++    process::metrics::PullGauge cache_size_total_bytes;
++    process::metrics::PullGauge cache_size_used_bytes;
+   } metrics;
+ 
+   const Flags flags;
+diff --git a/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp b/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
+index c7fbda55e..d9c97a53e 100644
+--- a/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
++++ b/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
+@@ -23,7 +23,7 @@
+ #include <process/owned.hpp>
+ #include <process/pid.hpp>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ #include <stout/hashmap.hpp>
+ 
+@@ -97,7 +97,7 @@ private:
+         const process::PID<LinuxFilesystemIsolatorProcess>& isolator);
+     ~Metrics();
+ 
+-    process::metrics::Gauge containers_new_rootfs;
++    process::metrics::PullGauge containers_new_rootfs;
+   } metrics;
+ 
+   double _containers_new_rootfs();
+diff --git a/src/slave/metrics.cpp b/src/slave/metrics.cpp
+index 0eb2b59ed..3dc2bc0cd 100644
+--- a/src/slave/metrics.cpp
++++ b/src/slave/metrics.cpp
+@@ -16,7 +16,7 @@
+ 
+ #include <string>
+ 
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/foreach.hpp>
+@@ -30,7 +30,7 @@ namespace mesos {
+ namespace internal {
+ namespace slave {
+ 
+-using process::metrics::Gauge;
++using process::metrics::PullGauge;
+ 
+ Metrics::Metrics(const Slave& slave)
+   : uptime_secs(
+@@ -133,15 +133,15 @@ Metrics::Metrics(const Slave& slave)
+   const string resources[] = {"cpus", "gpus", "mem", "disk"};
+ 
+   foreach (const string& resource, resources) {
+-    Gauge total(
++    PullGauge total(
+         "slave/" + resource + "_total",
+         defer(slave, &Slave::_resources_total, resource));
+ 
+-    Gauge used(
++    PullGauge used(
+         "slave/" + resource + "_used",
+         defer(slave, &Slave::_resources_used, resource));
+ 
+-    Gauge percent(
++    PullGauge percent(
+         "slave/" + resource + "_percent",
+         defer(slave, &Slave::_resources_percent, resource));
+ 
+@@ -155,15 +155,15 @@ Metrics::Metrics(const Slave& slave)
+   }
+ 
+   foreach (const string& resource, resources) {
+-    Gauge total(
++    PullGauge total(
+         "slave/" + resource + "_revocable_total",
+         defer(slave, &Slave::_resources_revocable_total, resource));
+ 
+-    Gauge used(
++    PullGauge used(
+         "slave/" + resource + "_revocable_used",
+         defer(slave, &Slave::_resources_revocable_used, resource));
+ 
+-    Gauge percent(
++    PullGauge percent(
+         "slave/" + resource + "_revocable_percent",
+         defer(slave, &Slave::_resources_revocable_percent, resource));
+ 
+@@ -214,32 +214,32 @@ Metrics::~Metrics()
+ 
+   process::metrics::remove(container_launch_errors);
+ 
+-  foreach (const Gauge& gauge, resources_total) {
++  foreach (const PullGauge& gauge, resources_total) {
+     process::metrics::remove(gauge);
+   }
+   resources_total.clear();
+ 
+-  foreach (const Gauge& gauge, resources_used) {
++  foreach (const PullGauge& gauge, resources_used) {
+     process::metrics::remove(gauge);
+   }
+   resources_used.clear();
+ 
+-  foreach (const Gauge& gauge, resources_percent) {
++  foreach (const PullGauge& gauge, resources_percent) {
+     process::metrics::remove(gauge);
+   }
+   resources_percent.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_total) {
++  foreach (const PullGauge& gauge, resources_revocable_total) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_total.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_used) {
++  foreach (const PullGauge& gauge, resources_revocable_used) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_used.clear();
+ 
+-  foreach (const Gauge& gauge, resources_revocable_percent) {
++  foreach (const PullGauge& gauge, resources_revocable_percent) {
+     process::metrics::remove(gauge);
+   }
+   resources_revocable_percent.clear();
+diff --git a/src/slave/metrics.hpp b/src/slave/metrics.hpp
+index 3fc933ca6..2adff6664 100644
+--- a/src/slave/metrics.hpp
++++ b/src/slave/metrics.hpp
+@@ -20,7 +20,7 @@
+ #include <vector>
+ 
+ #include <process/metrics/counter.hpp>
+-#include <process/metrics/gauge.hpp>
++#include <process/metrics/pull_gauge.hpp>
+ 
+ 
+ namespace mesos {
+@@ -35,26 +35,26 @@ struct Metrics
+ 
+   ~Metrics();
+ 
+-  process::metrics::Gauge uptime_secs;
+-  process::metrics::Gauge registered;
++  process::metrics::PullGauge uptime_secs;
++  process::metrics::PullGauge registered;
+ 
+   process::metrics::Counter recovery_errors;
+ 
+-  process::metrics::Gauge frameworks_active;
++  process::metrics::PullGauge frameworks_active;
+ 
+-  process::metrics::Gauge tasks_staging;
+-  process::metrics::Gauge tasks_starting;
+-  process::metrics::Gauge tasks_running;
+-  process::metrics::Gauge tasks_killing;
++  process::metrics::PullGauge tasks_staging;
++  process::metrics::PullGauge tasks_starting;
++  process::metrics::PullGauge tasks_running;
++  process::metrics::PullGauge tasks_killing;
+   process::metrics::Counter tasks_finished;
+   process::metrics::Counter tasks_failed;
+   process::metrics::Counter tasks_killed;
+   process::metrics::Counter tasks_lost;
+   process::metrics::Counter tasks_gone;
+ 
+-  process::metrics::Gauge executors_registering;
+-  process::metrics::Gauge executors_running;
+-  process::metrics::Gauge executors_terminating;
++  process::metrics::PullGauge executors_registering;
++  process::metrics::PullGauge executors_running;
++  process::metrics::PullGauge executors_terminating;
+   process::metrics::Counter executors_terminated;
+   process::metrics::Counter executors_preempted;
+ 
+@@ -64,19 +64,19 @@ struct Metrics
+   process::metrics::Counter valid_framework_messages;
+   process::metrics::Counter invalid_framework_messages;
+ 
+-  process::metrics::Gauge executor_directory_max_allowed_age_secs;
++  process::metrics::PullGauge executor_directory_max_allowed_age_secs;
+ 
+   process::metrics::Counter container_launch_errors;
+ 
+   // Non-revocable resources.
+-  std::vector<process::metrics::Gauge> resources_total;
+-  std::vector<process::metrics::Gauge> resources_used;
+-  std::vector<process::metrics::Gauge> resources_percent;
++  std::vector<process::metrics::PullGauge> resources_total;
++  std::vector<process::metrics::PullGauge> resources_used;
++  std::vector<process::metrics::PullGauge> resources_percent;
+ 
+   // Revocable resources.
+-  std::vector<process::metrics::Gauge> resources_revocable_total;
+-  std::vector<process::metrics::Gauge> resources_revocable_used;
+-  std::vector<process::metrics::Gauge> resources_revocable_percent;
++  std::vector<process::metrics::PullGauge> resources_revocable_total;
++  std::vector<process::metrics::PullGauge> resources_revocable_used;
++  std::vector<process::metrics::PullGauge> resources_revocable_percent;
+ };
+ 
+ } // namespace slave {
+diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
+index 5926ef3ea..26c5700dd 100644
+--- a/src/slave/slave.hpp
++++ b/src/slave/slave.hpp
+@@ -525,7 +525,7 @@ private:
+   void _forwardOversubscribed(
+       const process::Future<Resources>& oversubscribable);
+ 
+-  // Gauge methods.
++  // PullGauge methods.
+   double _frameworks_active()
+   {
+     return static_cast<double>(frameworks.size());
+-- 
+2.14.1
+
