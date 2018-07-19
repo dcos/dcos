@@ -4,6 +4,7 @@
 ### Notable changes
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+* Updated to [DC/OS UI 1.11+v1.15.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.15.0/CHANGELOG.md)
 
 
 ### Fixed and improved
@@ -24,6 +25,7 @@
 
 * Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
 
+* CNI module now stores configuration on a tmpfs dir, allocated IP addresses are recycled upon agent reboot. (DCOS_OSS-3750)
 
 ### Security updates
 
