@@ -34,7 +34,7 @@ Format of the entries must be.
 
 * Prevent cosmos-specific labels being sent as metrics tags (DCOS-37451)
 
-* Improve the way statsd timers are handled in dcos-metrcs (DCOS-38083)
+* Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
 
 ### Security Updates
 
