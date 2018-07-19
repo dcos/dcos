@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -o errexit
+set -o xtrace
+set -o nounset
+
+project="github.com/influxdata/telegraf"
+project_src_path="$GOPATH/src/$project"
+
+# Add the project to $GOPATH.
+mkdir -p $(dirname $project_src_path)
+ln -s /pkg/src/$PKG_NAME $project_src_path
+
+# Build telegraf and add it to the package.
+mkdir -p $PKG_PATH/bin/
+(cd $project_src_path && make deps && make telegraf)
+mv $project_src_path/telegraf $PKG_PATH/bin/
+# Add the telegraf startup script to the package.
+cp /pkg/extra/start_telegraf.sh $PKG_PATH/bin/
+
+# Add the dcos-telegraf unit file to the package.
+mkdir -p $PKG_PATH/dcos.target.wants/
+cp /pkg/extra/dcos-telegraf.service $PKG_PATH/dcos.target.wants/
