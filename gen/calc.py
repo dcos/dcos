@@ -759,6 +759,11 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
                     'timeout': '1s'
                 },
+                'docker': {
+                    'description': 'The docker utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'docker'],
+                    'timeout': '1s'
+                },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
@@ -785,6 +790,7 @@ def calculate_check_config(check_time):
                 'tar',
                 'curl',
                 'unzip',
+                'docker',
                 'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
