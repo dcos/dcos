@@ -20,6 +20,8 @@ Format of the entries must be.
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
 
+* Docker is now part of the DC/OS node check. (DCOS_OSS-3845)
+
 * Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
 
 * DC/OS Metrics: moved the prometheus producer from port 9273 to port 61091. (DCOS_OSS-2368)
