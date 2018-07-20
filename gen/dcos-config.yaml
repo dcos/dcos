@@ -148,6 +148,7 @@ package:
           "hairpinMode": true,
           "ipam": {
             "type": "host-local",
+            "dataDir": "{{ dcos_cni_data_dir }}",
             "subnet": "{{ dcos_ucr_default_bridge_subnet }}",
             "routes": [
             { "dst":
@@ -160,6 +161,7 @@ package:
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "cni_data_dir": "{{ dcos_cni_data_dir }}",
         "network_config":
         {
           "allocate_subnet": true,
@@ -173,6 +175,7 @@ package:
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "cni_data_dir": "{{ dcos_cni_data_dir }}",
         "network_config" :
         {
           "allocate_subnet": true,
