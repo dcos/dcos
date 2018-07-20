@@ -27,6 +27,8 @@
 
 * CNI module now stores configuration on a tmpfs dir, allocated IP addresses are recycled upon agent reboot. (DCOS_OSS-3750)
 
+* Add debug route to metrics API (DCOS-37454)
+
 ### Security updates
 
 
