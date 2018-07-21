@@ -760,7 +760,7 @@ def calculate_check_config(check_time):
                     'timeout': '1s'
                 },
                 'docker': {
-                    'description': 'The docker utility is available',
+                    'description': 'Docker is installed',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'docker'],
                     'timeout': '1s'
                 },
