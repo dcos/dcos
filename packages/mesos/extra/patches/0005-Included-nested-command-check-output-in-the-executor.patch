@@ -1,4 +1,4 @@
-From 86d262fbca497c0e4570fdc68321207d18add4be Mon Sep 17 00:00:00 2001
+From d8ebc0de2b2462d6bbffec15b91474cf9ab130e7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:36 -0700
 Subject: [PATCH] Included nested command check output in the executor logs.
@@ -119,5 +119,5 @@ index 0b6b85b88..656e9168a 100644
      .onFailed([promise](const string& failure) {
        promise->fail(
 -- 
-2.14.1
+2.16.3
 

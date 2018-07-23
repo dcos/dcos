@@ -1,4 +1,4 @@
-From 1f94e0bdc2a69321c702b23adfb6aa0280f00ac7 Mon Sep 17 00:00:00 2001
+From 49aee8a763b9d3b85ff2f6c19193df9340de320d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:39 -0700
 Subject: [PATCH] Raised the logging level of some check and health check
@@ -48,5 +48,5 @@ index d62bdb5d1..47eb21a67 100644
      CheckStatusInfo checkStatusInfo;
      checkStatusInfo.set_type(check.type());
 -- 
-2.14.1
+2.16.3
 
