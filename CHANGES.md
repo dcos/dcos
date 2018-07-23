@@ -4,7 +4,8 @@
 `git cp 5eb83a8344f9df71b45dca5359912bbf83ea8035`
 https://github.com/mesosphere/dcos/commit/5eb83a8344f9df71b45dca5359912bbf83ea8035
 
-* TODO: Metrics updates are merged into 1.10 however it still needs a fix https://jira.mesosphere.com/browse/DCOS-39684
+* Metrics now uses the 1.11 ref, incorporating the prometheus producer:
+https://github.com/mesosphere/dcos/commit/581128c7482e271f1f02389afb2099207f075fc2c
 
 ## DC/OS 1.10.9
 
