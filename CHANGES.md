@@ -1,3 +1,17 @@
+## From Product
+
+* Added extra Mesos patches for ad-hoc state benchmarking
+git cp 2fa393b6899c3e66ec05a2e8bd178692a8731541
+https://github.com/mesosphere/dcos/commit/2fa393b6899c3e66ec05a2e8bd178692a8731541
+
+* Added more Mesos patches for per-framework metrics.
+git cp 994767cadd50a04ade83e9b7e669e0511eba60f9
+https://github.com/mesosphere/dcos/commit/994767cadd50a04ade83e9b7e669e0511eba60f9
+
+* Enabled verbose logging for Mesos agents.
+git cp 5eb83a8344f9df71b45dca5359912bbf83ea8035
+https://github.com/mesosphere/dcos/commit/5eb83a8344f9df71b45dca5359912bbf83ea8035
+
 ## DC/OS 1.10.9
 
 * Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
