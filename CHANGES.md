@@ -1,3 +1,7 @@
+## Changes from 1.12 for the mixed workload scale test
+
+*
+
 ## DC/OS 1.12.0
 
 ```
