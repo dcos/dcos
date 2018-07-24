@@ -72,4 +72,6 @@ Format of the entries must be.
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
 
+* Updated DC/OS UI version from v1.12.0-rc.1 to master+v2.0.0+221b011f [Changelog (in this case it is the whole file, later it is only the last release)](https://github.com/dcos/dcos-ui/blob/master/CHANGELOG.md#200-2018-07-24)
+
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
