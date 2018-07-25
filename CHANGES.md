@@ -16,6 +16,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Azure ARM Template: Update the Linux SKU and Version in Azure ARM template. (DCOS_OSS-3805)
+
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
