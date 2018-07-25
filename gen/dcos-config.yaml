@@ -409,6 +409,11 @@ package:
       GLOG_drop_log_memory=false
       LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
+{% switch log_offers %}
+{% case "true" %}
+      GLOG_vmodule=master=2
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
