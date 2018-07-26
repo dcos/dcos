@@ -1,3 +1,4 @@
+import logging
 import random
 import uuid
 
@@ -63,12 +64,12 @@ def test_checks_api(dcos_api_session):
     for nodes in [dcos_api_session.masters, dcos_api_session.slaves, dcos_api_session.public_slaves]:
         if nodes:
             check_nodes.append(random.choice(nodes))
-    print('Testing', checks_uri, 'on these nodes:', check_nodes)
+    logging.info('Testing %s on these nodes: %s', checks_uri, ', '.join(check_nodes))
 
     for node in check_nodes:
         for check_type in ['node', 'cluster']:
             uri = '{}{}/'.format(checks_uri, check_type)
-            print('Testing', uri, 'on', node)
+            logging.info('Testing %s on %s', uri, node)
 
             # List checks
             r = dcos_api_session.get(uri, node=node)
