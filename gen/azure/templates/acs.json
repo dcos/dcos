@@ -145,14 +145,14 @@
     },
     "linuxSku": {
       "type": "string",
-      "defaultValue": "16.04.0-LTS",
+      "defaultValue": "16.04-LTS",
       "metadata": {
         "description": "This is the linux sku used by the linux cluster"
       }
     },
     "linuxVersion": {
       "type": "string",
-      "defaultValue": "16.04.201606270",
+      "defaultValue": "16.04.201807240",
       "metadata": {
         "description": "This is the linux version used by the linux cluster"
       }
