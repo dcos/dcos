@@ -963,6 +963,7 @@ entry = {
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
+        lambda log_offers: validate_true_false(log_offers),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1074,7 +1075,8 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
-        'enable_mesos_ipv6_discovery': 'false'
+        'enable_mesos_ipv6_discovery': 'false',
+        'log_offers': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',
