@@ -15,6 +15,9 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+
+* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
 
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
