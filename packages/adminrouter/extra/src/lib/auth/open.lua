@@ -130,7 +130,7 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /system/checks/
+    -- /system/checks/v1
     res.access_system_checks_endpoint = function()
         return res.do_authn_and_authz_or_exit()
     end

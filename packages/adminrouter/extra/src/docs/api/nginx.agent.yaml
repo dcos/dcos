@@ -38,14 +38,14 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
-  /system/checks/:
+  /system/checks/v1:
     group: System
     matcher: path
     description: Node and cluster checks
     proxy:
       path: 'http://$backend'
       backend: dcos_checks_api
-    path: /system/checks/
+    path: /system/checks/v1
   /system/health/v1:
     group: System
     matcher: path

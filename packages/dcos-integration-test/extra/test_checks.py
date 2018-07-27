@@ -58,7 +58,7 @@ def test_checks_cli(dcos_api_session):
 
 def test_checks_api(dcos_api_session):
     """Test the checks API at /system/checks/"""
-    checks_uri = '/system/checks/'
+    checks_uri = '/system/checks/v1/'
     # Test that we can list and run node and cluster checks on a master, agent, and public agent.
     check_nodes = []
     for nodes in [dcos_api_session.masters, dcos_api_session.slaves, dcos_api_session.public_slaves]:
