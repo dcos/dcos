@@ -1,5 +1,4 @@
 {
-  "asridharan ": {"slack": "avinash", "jira": "avinash"},
   "branden": {"slack": "branden", "jira": "branden"},
   "gpaul": {"slack": "gpaul", "jira": "gpaul"},
   "jgehrcke": {"slack": "jp", "jira": "jp"},
@@ -10,5 +9,4 @@
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
-  "vespian": {"slack": "prozlach", "jira": "prozlach"}
 }
