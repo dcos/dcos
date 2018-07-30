@@ -492,6 +492,11 @@ package:
       GLOG_drop_log_memory=false
       LIBPROCESS_NUM_WORKER_THREADS=16
       SASL_PATH=/opt/mesosphere/lib/sasl2
+{% switch log_offers %}
+{% case "true" %}
+      GLOG_vmodule=master=2
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
@@ -1017,6 +1022,8 @@ package:
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
       METRONOME_MESOS_USER=root
       LIBPROCESS_PORT=15201
+      METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600
+      METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}
