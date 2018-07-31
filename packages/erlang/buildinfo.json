@@ -4,8 +4,8 @@
     "erlang": {
       "kind": "git",
       "git": "https://github.com/erlang/otp.git",
-      "ref": "c5ee502e6031986983d3596745cad7fd547fd9c2",
-      "ref_origin": "maint-20"
+      "ref": "4664de710ded469916fcc8f85d4e9791adc319e9",
+      "ref_origin": "maint-21"
     }
   }
 }
