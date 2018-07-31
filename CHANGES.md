@@ -1,3 +1,7 @@
+## DC/OS 1.10.9
+
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
 ## DC/OS 1.10.8
 
 ```
