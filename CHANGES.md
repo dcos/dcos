@@ -16,6 +16,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Mesos: Expose memory profiling endpoints. (DCOS_OSS-2137)
+
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
@@ -63,6 +65,8 @@ Format of the entries must be.
 
 
 ### Notable changes
+
+* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
