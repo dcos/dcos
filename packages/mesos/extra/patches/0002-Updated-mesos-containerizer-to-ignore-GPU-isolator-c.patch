@@ -1,4 +1,4 @@
-From 7659c405f51c1771fd341c9fad34085982774014 Mon Sep 17 00:00:00 2001
+From 43bdd1efeb550461a406764d157f0e55cf49dbc7 Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
 Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
@@ -23,10 +23,10 @@ by https://reviews.apache.org/r/62472/
  1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
-index 01386ac3d..991fe1163 100644
+index 98129d006..d112ab73a 100644
 --- a/src/slave/containerizer/mesos/containerizer.cpp
 +++ b/src/slave/containerizer/mesos/containerizer.cpp
-@@ -437,8 +437,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -443,8 +443,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
      {"gpu/nvidia",
        [&nvidia] (const Flags& flags) -> Try<Isolator*> {
          if (!nvml::isAvailable()) {
@@ -39,7 +39,7 @@ index 01386ac3d..991fe1163 100644
          }
  
          CHECK_SOME(nvidia)
-@@ -498,7 +500,9 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -504,7 +506,9 @@ Try<MesosContainerizer*> MesosContainerizer::create(
                     isolator.error());
      }
  
@@ -51,5 +51,5 @@ index 01386ac3d..991fe1163 100644
  
    // Next, apply any custom isolators in the order given by the flags.
 -- 
-2.16.3
+2.15.2 (Apple Git-101.1)
 
