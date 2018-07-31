@@ -11,6 +11,7 @@
   "MatApple": {"slack": "mat", "jira": "mat"},
   "mnaboka": {"slack": "mnaboka", "jira": "mnaboka"},
   "meichstedt": {"slack": "matthias.eichstedt", "jira": "matthias.eichstedt"},
+  "nLight": {"slack": "drozhkov", "jira": "drozhkov"},
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
