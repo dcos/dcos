@@ -1,5 +1,5 @@
 {
-  "docker": "golang:1.10",
+  "docker": "golang:1.10-stretch",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/telegraf.git",
