@@ -1,4 +1,5 @@
 {
+  "MatApple": {"slack": "mat", "jira": "mat"},
   "amitaekbote": {"slack": "amitaekbote", "jira": "aekbote"},
   "branden": {"slack": "branden", "jira": "branden"},
   "dgoel": {"slack": "dgoel", "jira": "dgoel"},
@@ -6,17 +7,16 @@
   "gpaul": {"slack": "gpaul", "jira": "gpaul"},
   "greggomann": {"slack": "greg", "jira": "greg"},
   "jgehrcke": {"slack": "jp", "jira": "jp"},
+  "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
   "karya0": {"slack": "kapil", "jira": "kapil"},
   "klueska": {"slack": "klueska", "jira": "klueska"},
-  "MatApple": {"slack": "mat", "jira": "mat"},
-  "mnaboka": {"slack": "mnaboka", "jira": "mnaboka"},
   "meichstedt": {"slack": "matthias.eichstedt", "jira": "matthias.eichstedt"},
+  "mnaboka": {"slack": "mnaboka", "jira": "mnaboka"},
   "nLight": {"slack": "drozhkov", "jira": "drozhkov"},
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
   "sambatyon": {"slack": "alexander", "jira": "alexander"},
-  "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
   "timaa2k": {"slack": "tweidner", "jira": "timweidner"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
 }
