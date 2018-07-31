@@ -15,5 +15,8 @@
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
+  "sambatyon": {"slack": "alexander", "jira": "alexander"},
+  "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
+  "timaa2k": {"slack": "tweidner", "jira": "timweidner"}
 }
