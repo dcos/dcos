@@ -21,6 +21,7 @@ LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
   --enable-grpc \
+  --enable-jemalloc-allocator \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
