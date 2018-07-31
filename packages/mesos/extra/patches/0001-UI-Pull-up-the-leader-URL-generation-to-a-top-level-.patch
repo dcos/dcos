@@ -1,0 +1,174 @@
+From c834f1517c2b4551928af9c38bd97f266952d62c Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Mon, 30 Jul 2018 18:53:54 -0700
+Subject: [PATCH] UI: Pull up the leader URL generation to a top-level
+ function.
+
+This path pulls up the leader URL prefix generation to a top-level
+function in order to have it re-used across controllers.
+
+This also ensures that everything shown is consistently coming
+from the leading master, specifically, now the log viewer shows
+the leading master's log (and the UI messaging is updated in this
+patch accordingly).
+
+Having this logic in just one place makes it easier to modify it,
+e.g., to make it possible to use the UI via a reverse proxy.
+
+Review: https://reviews.apache.org/r/68120
+---
+ src/webui/app/controllers.js | 69 ++++++++++++++++++++++----------------------
+ src/webui/app/home.html      |  4 +--
+ 2 files changed, 37 insertions(+), 36 deletions(-)
+
+diff --git a/src/webui/app/controllers.js b/src/webui/app/controllers.js
+index 7c228a162..8049cf611 100644
+--- a/src/webui/app/controllers.js
++++ b/src/webui/app/controllers.js
+@@ -63,6 +63,16 @@
+     return url;
+   }
+ 
++  function leadingMasterURLPrefix(leader_info) {
++    if (leader_info) {
++      return '//' + leader_info.hostname + ':' + leader_info.port;
++    }
++
++    // If we do not have `leader_info` available (e.g. the first
++    // time we are retrieving state), fallback to the current master.
++    return '';
++  }
++
+   // Invokes the pailer, building the endpoint URL with the specified urlPrefix
+   // and path.
+   function pailer(urlPrefix, path, window_title) {
+@@ -440,18 +450,6 @@
+       if (!matched) $scope.navbarActiveTab = null;
+     });
+ 
+-    var leadingMasterURL = function(path) {
+-      // Use current location as address in case we could not find the
+-      // leading master.
+-      var address = location.hostname + ':' + location.port;
+-      if ($scope.state && $scope.state.leader_info) {
+-          address = $scope.state.leader_info.hostname + ':' +
+-                    $scope.state.leader_info.port;
+-      }
+-
+-      return '//' + address + path;
+-    }
+-
+     var popupErrorModal = function() {
+       if ($scope.delay >= 128000) {
+         $scope.delay = 2000;
+@@ -511,7 +509,13 @@
+       // the leading master automatically. This would cause a CORS error if we
+       // use XMLHttpRequest here. To avoid the CORS error, we use JSONP as a
+       // workaround. Please refer to MESOS-5911 for further details.
+-      $http.jsonp(leadingMasterURL('/master/state?jsonp=JSON_CALLBACK'))
++      //
++      // Note that `$scope.state` will not be defined during the first
++      // request.
++      var leader_info = $scope.state ? $scope.state.leader_info : null;
++
++      $http.jsonp(leadingMasterURLPrefix(leader_info) +
++                  '/master/state?jsonp=JSON_CALLBACK')
+         .success(function(response) {
+           if (updateState($scope, $timeout, response)) {
+             $scope.delay = updateInterval(_.size($scope.agents));
+@@ -526,7 +530,10 @@
+     };
+ 
+     var pollMetrics = function() {
+-      $http.jsonp(leadingMasterURL('/metrics/snapshot?jsonp=JSON_CALLBACK'))
++      var leader_info = $scope.state ? $scope.state.leader_info : null;
++
++      $http.jsonp(leadingMasterURLPrefix(leader_info) +
++                  '/metrics/snapshot?jsonp=JSON_CALLBACK')
+         .success(function(response) {
+           if (updateMetrics($scope, $timeout, response)) {
+             $scope.delay = updateInterval(_.size($scope.agents));
+@@ -548,29 +555,25 @@
+     pollMetrics();
+   }]);
+ 
+-  mesosApp.controller('HomeCtrl', function($scope, $http) {
++  mesosApp.controller('HomeCtrl', function($scope) {
+     var hostname = $scope.$location.host() + ':' + $scope.$location.port();
+ 
+     var update = function() {
+       $scope.streamLogs = function(_$event) {
+         pailer(
+-            '//' + hostname,
++            leadingMasterURLPrefix($scope.state.leader_info),
+             '/master/log',
+             'Mesos Master (' + hostname + ')');
+       };
+ 
+-      // We must query the '/flags' endpoint of *this* master since
+-      // `$scope.state` contains the leader master state.
+-      $http.jsonp('//' + hostname + '/flags?jsonp=JSON_CALLBACK')
+-        .success(function (response) {
+-          // The master attaches a "/master/log" file when either
+-          // of these flags are set.
+-          $scope.log_file_attached = response.flags.external_log_file || response.flags.log_dir;
+-        })
+-        .error(function(reason) {
+-          $scope.alert_message = 'Failed to get master flags: ' + reason;
+-          $('#alert').show();
+-        });
++      // Note that we always show the leader's log, which is why
++      // we examine the leader's flags to determine whether the
++      // log file is attached.
++      $scope.log_file_attached =
++        $scope.state.flags.external_log_file || $scope.state.flags.log_dir;
++
++      $scope.leader_url_prefix =
++        leadingMasterURLPrefix($scope.state.leader_info);
+     };
+ 
+     if ($scope.state) {
+@@ -585,9 +588,8 @@
+ 
+   mesosApp.controller('RolesCtrl', function($scope, $http) {
+     var update = function() {
+-      // TODO(haosdent): Send requests to the leading master directly
+-      // once `leadingMasterURL` is public.
+-      $http.jsonp('master/roles?jsonp=JSON_CALLBACK')
++      $http.jsonp(leadingMasterURLPrefix($scope.state.leader_info) +
++                  '/master/roles?jsonp=JSON_CALLBACK')
+       .success(function(response) {
+         $scope.roles = response;
+       })
+@@ -610,9 +612,8 @@
+ 
+   mesosApp.controller('MaintenanceCtrl', function($scope, $http) {
+     var update = function() {
+-      // TODO(haosdent): Send requests to the leading master directly
+-      // once `leadingMasterURL` is public.
+-      $http.jsonp('master/maintenance/schedule?jsonp=JSON_CALLBACK')
++      $http.jsonp(leadingMasterURLPrefix($scope.state.leader_info) +
++                  '/master/maintenance/schedule?jsonp=JSON_CALLBACK')
+       .success(function(response) {
+         $scope.maintenance = response;
+       })
+diff --git a/src/webui/app/home.html b/src/webui/app/home.html
+index ff965952d..838dbfe2f 100644
+--- a/src/webui/app/home.html
++++ b/src/webui/app/home.html
+@@ -46,10 +46,10 @@
+       </dl>
+ 
+       <p ng-if="log_file_attached">
+-        <b>Master Log:</b>
++        <b>Leading Master Log:</b>
+         <span class="btn-group">
+           <!-- Links can look like buttons using Bootstrap classes. -->
+-          <a class="btn btn-xs btn-default" href="//{{$location.host()}}:{{$location.port()}}/files/download?path=/master/log">
++          <a class="btn btn-xs btn-default" href="{{leader_url_prefix}}/files/download?path=/master/log">
+             Download
+           </a>
+           <button class="btn btn-xs btn-default" ng-click="streamLogs($event)">
+-- 
+2.15.2 (Apple Git-101.1)
+
