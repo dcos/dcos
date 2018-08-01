@@ -7,9 +7,9 @@
   ], 
   "single_source": {
     "kind": "git", 
-    "git": "https://github.com/apache/mesos", 
-    "ref": "9147283171d761a4d38710f24ba654f8a96e325c", 
-    "ref_origin": "master"
+    "git": "https://github.com/mesosphere/mesos", 
+    "ref": "16ac162e836a80dfda160fdc137fee42c978979c", 
+    "ref_origin": "greg/iptables"
   }, 
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib", 
