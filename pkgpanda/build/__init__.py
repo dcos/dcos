@@ -458,6 +458,7 @@ def hash_files_in_folder(directory):
         for name in filenames:
             path = root + '/' + name
             base = path[len(directory) + 1:]
+            print('file_hash_dict[{}] = hash({})'.format(base, path))
             file_hash_dict[base] = pkgpanda.util.sha1(path)
 
         # If the directory has files inside of it, then it'll be picked up implicitly. by the files
@@ -470,6 +471,7 @@ def hash_files_in_folder(directory):
             if path:
                 file_hash_dict[root[len(directory) + 1:]] = ""
 
+    print('file_hash_dict = {}'.format(json.dumps(file_hash_dict)))
     return file_hash_dict
 
 
