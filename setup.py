@@ -15,12 +15,12 @@ def get_advanced_templates():
 # checksum calculated during when the ./release script is run.
 # That leads to cached packages hashes being different from what
 # is cached in S3 and prevents us from building DC/OS locally.
-expected_dcos_builder_files = set([
+expected_dcos_builder_files = [
     'docker/dcos-builder/Dockerfile',
     'docker/dcos-builder/README.md',
-])
-dcos_builder_files = set([filename[len('./pkgpanda/'):] for filename in glob.glob('./pkgpanda/docker/**/*')])
-if expected_dcos_builder_files != dcos_builder_files:
+]
+dcos_builder_files = [filename[len('./pkgpanda/'):] for filename in glob.glob('./pkgpanda/docker/**/*')]
+if set(expected_dcos_builder_files) != set(dcos_builder_files):
     raise Exception('Expected ./pkgpanda/docker/dcos-buillder to contain {} but it had {}'.format(
         expected_dcos_builder_files, dcos_builder_files))
 
