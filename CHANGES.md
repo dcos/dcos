@@ -64,6 +64,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Updated DC/OS UI to master+v2.2.2 [Changelog](https://github.com/dcos/dcos-ui/releases)
+
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
 * Removed the DC/OS web installer. (DCOS_OSS-2256)
