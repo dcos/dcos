@@ -31,10 +31,10 @@ agent_public_unit="$PKG_PATH/dcos.target.wants_slave_public/dcos-telegraf.servic
 
 # Add the master unit file to the package.
 mkdir -p $(dirname $master_unit)
-SERVICE_ACCOUNT="dcos-telegraf-master" envsubst '${SERVICE_ACCOUNT}' < $unit_template > $master_unit
+SERVICE="dcos-telegraf-master" envsubst '${SERVICE}' < $unit_template > $master_unit
 
 # Add the agent unit files to the package.
 for unit in $agent_unit $agent_public_unit; do
   mkdir -p $(dirname $unit)
-  SERVICE_ACCOUNT="dcos-telegraf-agent" envsubst '${SERVICE_ACCOUNT}' < $unit_template > $unit
+  SERVICE="dcos-telegraf-agent" envsubst '${SERVICE}' < $unit_template > $unit
 done

@@ -14,5 +14,5 @@ EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
 
-ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE_ACCOUNT}
+ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
