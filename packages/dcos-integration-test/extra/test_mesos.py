@@ -184,6 +184,22 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
         assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
 
 
+def test_memory_profiling(dcos_api_session):
+    # Test that we can fetch raw memory profiles
+    master_ip = dcos_api_session.masters[0]
+    r0 = dcos_api_session.get(
+        '/memory-profiler/start', host=master_ip, port=5050)
+    assert r0.status_code == 200, r0.text
+
+    r1 = dcos_api_session.get(
+        '/memory-profiler/stop', host=master_ip, port=5050)
+    assert r1.status_code == 200, r1.text
+
+    r2 = dcos_api_session.get(
+        '/memory-profiler/download/raw', host=master_ip, port=5050)
+    assert r2.status_code == 200, r2.text
+
+
 def test_blkio_stats(dcos_api_session):
     # Launch a Marathon application to do some disk writes, and then verify that
     # the cgroups blkio statistics of the application can be correctly retrieved.
