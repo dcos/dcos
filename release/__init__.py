@@ -488,6 +488,7 @@ def do_build_docker(name, path):
 
 
 def _do_build_docker(name, path):
+    print('Hash docker dir: {}'.format(path))
     path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
