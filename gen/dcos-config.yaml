@@ -1206,9 +1206,18 @@ package:
         ## If true, compute and report the sum of all non-idle CPU states.
         report_active = false
       [[inputs.mem]]
-      # Telegraf refuses to start if no outputs are defined. This will eventually be
-      # replaced with real outputs.
-      [[outputs.discard]]
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$IP_ADDRESS:5051"
+      # Read metrics from one or many prometheus clients
+      [[inputs.prometheus]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$IP_ADDRESS:5051"
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
