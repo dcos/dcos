@@ -1,0 +1,70 @@
+From ab0413838dd9f61a46f481583220ba1b73b6e2ec Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Fri, 27 Apr 2018 16:06:58 -0700
+Subject: [PATCH] Added a test for PushGauge.
+
+Review: https://reviews.apache.org/r/66830/
+---
+ .../libprocess/src/tests/metrics_tests.cpp    | 32 +++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/3rdparty/libprocess/src/tests/metrics_tests.cpp b/3rdparty/libprocess/src/tests/metrics_tests.cpp
+index bb7c9e37e..d394a42bf 100644
+--- a/3rdparty/libprocess/src/tests/metrics_tests.cpp
++++ b/3rdparty/libprocess/src/tests/metrics_tests.cpp
+@@ -31,6 +31,7 @@
+ #include <process/metrics/counter.hpp>
+ #include <process/metrics/gauge.hpp>
+ #include <process/metrics/metrics.hpp>
++#include <process/metrics/push_gauge.hpp>
+ #include <process/metrics/timer.hpp>
+ 
+ namespace authentication = process::http::authentication;
+@@ -47,6 +48,7 @@ using http::Unauthorized;
+ 
+ using metrics::Counter;
+ using metrics::Gauge;
++using metrics::PushGauge;
+ using metrics::Timer;
+ 
+ using process::Clock;
+@@ -170,6 +172,36 @@ TEST_F(MetricsTest, THREADSAFE_Gauge)
+ }
+ 
+ 
++TEST_F(MetricsTest, PushGauge)
++{
++  // Gauge with a value.
++  PushGauge gauge("test/gauge");
++
++  AWAIT_READY(metrics::add(gauge));
++
++  AWAIT_EXPECT_EQ(0.0, gauge.value());
++
++  ++gauge;
++  AWAIT_EXPECT_EQ(1.0, gauge.value());
++
++  gauge += 42;
++  AWAIT_EXPECT_EQ(43.0, gauge.value());
++
++  --gauge;
++  AWAIT_EXPECT_EQ(42.0, gauge.value());
++
++  gauge -= 42;
++  AWAIT_EXPECT_EQ(0.0, gauge.value());
++
++  gauge = 42;
++  AWAIT_EXPECT_EQ(42.0, gauge.value());
++
++  EXPECT_NONE(gauge.statistics());
++
++  AWAIT_READY(metrics::remove(gauge));
++}
++
++
+ TEST_F(MetricsTest, Statistics)
+ {
+   Counter counter("test/counter", process::TIME_SERIES_WINDOW);
+-- 
+2.17.0
+

@@ -1,0 +1,200 @@
+From c2957b57b4b577d2a4016c1276a44b0e8815fdef Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:31 -0700
+Subject: [PATCH] Added per-framework metrics for task states.
+
+Review: https://reviews.apache.org/r/67813/
+---
+ src/master/master.cpp  | 14 +++++++++--
+ src/master/master.hpp  |  2 ++
+ src/master/metrics.cpp | 54 ++++++++++++++++++++++++++++++++++++++++++
+ src/master/metrics.hpp |  7 ++++++
+ 4 files changed, 75 insertions(+), 2 deletions(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 91f907c1f..2ab632338 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -10279,6 +10279,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+   // task transitioned to a new state.
+   bool sendSubscribersUpdate = false;
+ 
++  Framework* framework = getFramework(task->framework_id());
++
+   // Set 'removable' to true if this is the first time the task
+   // transitioned to a removable state. Also set the latest state.
+   bool removable;
+@@ -10292,6 +10294,11 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+         sendSubscribersUpdate = true;
+       }
+ 
++      // When we observe a transition away from a non-terminal state,
++      // decrement the relevant metric.
++      framework->metrics.decrementActiveTaskState(task->state());
++      framework->metrics.incrementTaskState(latestState.get());
++
+       task->set_state(latestState.get());
+     }
+   } else {
+@@ -10305,6 +10312,11 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+         sendSubscribersUpdate = true;
+       }
+ 
++      // When we observe a transition away from a non-terminal state,
++      // decrement the relevant metric.
++      framework->metrics.decrementActiveTaskState(task->state());
++      framework->metrics.incrementTaskState(status.state());
++
+       task->set_state(status.state());
+     }
+   }
+@@ -10336,7 +10348,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+     // transitioned to `TASK_KILLED` by `removeFramework()`, thus
+     // `sendSubscribersUpdate` shouldn't have been set to true.
+     // TODO(chhsiao): This may be changed after MESOS-6608 is resolved.
+-    Framework* framework = getFramework(task->framework_id());
+     CHECK_NOTNULL(framework);
+ 
+     subscribers.send(
+@@ -10365,7 +10376,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+ 
+     slave->recoverResources(task);
+ 
+-    Framework* framework = getFramework(task->framework_id());
+     if (framework != nullptr) {
+       framework->recoverResources(task);
+     }
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 431e8732c..40df26b81 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -2280,6 +2280,8 @@ struct Framework
+       }
+     }
+ 
++    metrics.incrementTaskState(task->state());
++
+     if (!master->subscribers.subscribed.empty()) {
+       master->subscribers.send(
+           protobuf::master::event::createTaskAdded(*task),
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index d62514c0e..91c5ed167 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include <process/metrics/counter.hpp>
+ #include <process/metrics/pull_gauge.hpp>
++#include <process/metrics/push_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/foreach.hpp>
+@@ -31,6 +32,7 @@
+ 
+ using process::metrics::Counter;
+ using process::metrics::PullGauge;
++using process::metrics::PushGauge;
+ 
+ using std::string;
+ 
+@@ -583,6 +585,30 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     event_types.put(type, counter);
+     process::metrics::add(counter);
+   }
++
++  // Add metrics for both active and terminal task states.
++  for (int index = 0; index < TaskState_descriptor()->value_count(); index++) {
++    const google::protobuf::EnumValueDescriptor* descriptor =
++      TaskState_descriptor()->value(index);
++
++    const TaskState state = static_cast<TaskState>(descriptor->number());
++
++    if (protobuf::isTerminalState(state)) {
++      Counter counter = Counter(
++          getFrameworkMetricPrefix(frameworkInfo) + "tasks/terminal/" +
++          strings::lower(descriptor->name()));
++
++      terminal_task_states.put(state, counter);
++      process::metrics::add(counter);
++    } else {
++      PushGauge gauge = PushGauge(
++          getFrameworkMetricPrefix(frameworkInfo) + "tasks/active/" +
++          strings::lower(TaskState_Name(state)));
++
++      active_task_states.put(state, gauge);
++      process::metrics::add(gauge);
++    }
++  }
+ }
+ 
+ 
+@@ -604,6 +630,14 @@ FrameworkMetrics::~FrameworkMetrics()
+   process::metrics::remove(offers_accepted);
+   process::metrics::remove(offers_declined);
+   process::metrics::remove(offers_rescinded);
++
++  foreachvalue (const Counter& counter, terminal_task_states) {
++    process::metrics::remove(counter);
++  }
++
++  foreachvalue (const PushGauge& gauge, active_task_states) {
++    process::metrics::remove(gauge);
++  }
+ }
+ 
+ 
+@@ -616,6 +650,26 @@ void FrameworkMetrics::incrementCall(const scheduler::Call::Type& callType)
+ }
+ 
+ 
++void FrameworkMetrics::incrementTaskState(const TaskState& state)
++{
++  if (protobuf::isTerminalState(state)) {
++    CHECK(terminal_task_states.contains(state));
++    terminal_task_states.get(state).get()++;
++  } else {
++    CHECK(active_task_states.contains(state));
++    active_task_states.get(state).get() += 1;
++  }
++}
++
++
++void FrameworkMetrics::decrementActiveTaskState(const TaskState& state)
++{
++  CHECK(active_task_states.contains(state));
++
++  active_task_states.get(state).get() -= 1;
++}
++
++
+ string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
+ {
+   // Percent-encode the framework name to avoid characters like '/' and ' '.
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index b6fe20fb5..071246b71 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -221,6 +221,9 @@ struct FrameworkMetrics
+ 
+   void incrementEvent(const scheduler::Event& event);
+ 
++  void incrementTaskState(const TaskState& state);
++  void decrementActiveTaskState(const TaskState& state);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
+@@ -235,6 +238,10 @@ struct FrameworkMetrics
+   process::metrics::Counter offers_accepted;
+   process::metrics::Counter offers_declined;
+   process::metrics::Counter offers_rescinded;
++
++  hashmap<TaskState, process::metrics::Counter> terminal_task_states;
++
++  hashmap<TaskState, process::metrics::PushGauge> active_task_states;
+ };
+ 
+ 
+-- 
+2.17.0
+

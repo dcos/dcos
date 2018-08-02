@@ -1,0 +1,214 @@
+From c4858c89adfc6f76f90f7070057d7d80bb97113d Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:59:04 -0700
+Subject: [PATCH] Added per-framework metrics for suppressed roles.
+
+Review: https://reviews.apache.org/r/66870/
+---
+ src/master/allocator/mesos/hierarchical.cpp | 17 ++++++
+ src/master/allocator/mesos/metrics.cpp      | 66 ++++++++++++++++++++-
+ src/master/allocator/mesos/metrics.hpp      | 12 ++++
+ 3 files changed, 93 insertions(+), 2 deletions(-)
+
+diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
+index c39685bcc..c77cd497f 100644
+--- a/src/master/allocator/mesos/hierarchical.cpp
++++ b/src/master/allocator/mesos/hierarchical.cpp
+@@ -283,8 +283,10 @@ void HierarchicalAllocatorProcess::addFramework(
+ 
+     if (suppressedRoles.count(role)) {
+       frameworkSorters.at(role)->deactivate(frameworkId.value());
++      framework.metrics->suppressRole(role);
+     } else {
+       frameworkSorters.at(role)->activate(frameworkId.value());
++      framework.metrics->reviveRole(role);
+     }
+   }
+ 
+@@ -452,6 +454,10 @@ void HierarchicalAllocatorProcess::updateFramework(
+     return result;
+   }();
+ 
++  foreach (const string& role, newSuppressedRoles) {
++    framework.metrics->suppressRole(role);
++  }
++
+   foreach (const string& role, removedRoles | newSuppressedRoles) {
+     CHECK(frameworkSorters.contains(role));
+     frameworkSorters.at(role)->deactivate(frameworkId.value());
+@@ -467,6 +473,8 @@ void HierarchicalAllocatorProcess::updateFramework(
+     if (framework.offerFilters.contains(role)) {
+       framework.offerFilters.erase(role);
+     }
++
++    framework.metrics->removeSubscribedRole(role);
+   }
+ 
+   const set<string> addedRoles = [&]() {
+@@ -485,7 +493,13 @@ void HierarchicalAllocatorProcess::updateFramework(
+     return result;
+   }();
+ 
++  foreach (const string& role, newRevivedRoles) {
++    framework.metrics->reviveRole(role);
++  }
++
+   foreach (const string& role, addedRoles) {
++    framework.metrics->addSubscribedRole(role);
++
+     // NOTE: It's possible that we're already tracking this framework
+     // under the role because a framework can unsubscribe from a role
+     // while it still has resources allocated to the role.
+@@ -750,6 +764,7 @@ void HierarchicalAllocatorProcess::removeFilters(const SlaveID& slaveId)
+       if (erased) {
+         frameworkSorters.at(role)->activate(id.value());
+         framework.suppressedRoles.erase(role);
++        framework.metrics->reviveRole(role);
+       }
+     }
+   }
+@@ -1314,6 +1329,7 @@ void HierarchicalAllocatorProcess::suppressOffers(
+ 
+     frameworkSorters.at(role)->deactivate(frameworkId.value());
+     framework.suppressedRoles.insert(role);
++    framework.metrics->suppressRole(role);
+   }
+ 
+   LOG(INFO) << "Suppressed offers for roles " << stringify(roles)
+@@ -1342,6 +1358,7 @@ void HierarchicalAllocatorProcess::reviveOffers(
+ 
+     frameworkSorters.at(role)->activate(frameworkId.value());
+     framework.suppressedRoles.erase(role);
++    framework.metrics->reviveRole(role);
+   }
+ 
+   // We delete each actual `OfferFilter` when
+diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
+index 7a4b153db..0b5534715 100644
+--- a/src/master/allocator/mesos/metrics.cpp
++++ b/src/master/allocator/mesos/metrics.cpp
+@@ -21,15 +21,21 @@
+ #include <mesos/quota/quota.hpp>
+ 
+ #include <process/metrics/pull_gauge.hpp>
++#include <process/metrics/push_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+ 
+ #include <stout/hashmap.hpp>
+ 
++#include "common/protobuf_utils.hpp"
++
++#include "master/metrics.hpp"
++
+ #include "master/allocator/mesos/hierarchical.hpp"
+ 
+ using std::string;
+ 
+ using process::metrics::PullGauge;
++using process::metrics::PushGauge;
+ 
+ namespace mesos {
+ namespace internal {
+@@ -203,10 +209,66 @@ void Metrics::removeRole(const string& role)
+ 
+ 
+ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+-  : frameworkInfo(_frameworkInfo) {}
++  : frameworkInfo(_frameworkInfo)
++{
++  // TODO(greggomann): Calling `getRoles` below copies the roles from the
++  // framework info, which could become expensive if the number of roles grows
++  // large. Consider optimizing this.
++  foreach (
++      const string& role,
++      protobuf::framework::getRoles(frameworkInfo)) {
++    addSubscribedRole(role);
++  }
++}
++
++
++FrameworkMetrics::~FrameworkMetrics()
++{
++  foreach (const string& role, suppressed.keys()) {
++    removeSubscribedRole(role);
++  }
++
++  CHECK(suppressed.empty());
++}
++
++
++void FrameworkMetrics::reviveRole(const string& role)
++{
++  auto iter = suppressed.find(role);
++  CHECK(iter != suppressed.end());
++  iter->second = 0;
++}
+ 
+ 
+-FrameworkMetrics::~FrameworkMetrics() {}
++void FrameworkMetrics::suppressRole(const string& role)
++{
++  auto iter = suppressed.find(role);
++  CHECK(iter != suppressed.end());
++  iter->second = 1;
++}
++
++
++void FrameworkMetrics::addSubscribedRole(const string& role)
++{
++  auto result = suppressed.emplace(
++      role,
++      PushGauge(
++          getFrameworkMetricPrefix(frameworkInfo) + "roles/" +
++          role + "/suppressed"));
++
++  CHECK(result.second);
++  process::metrics::add(result.first->second);
++}
++
++
++void FrameworkMetrics::removeSubscribedRole(const string& role)
++{
++  auto iter = suppressed.find(role);
++
++  CHECK(iter != suppressed.end());
++  process::metrics::remove(iter->second);
++  suppressed.erase(iter);
++}
+ 
+ } // namespace internal {
+ } // namespace allocator {
+diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
+index daac93f7e..34cc16b3a 100644
+--- a/src/master/allocator/mesos/metrics.hpp
++++ b/src/master/allocator/mesos/metrics.hpp
+@@ -24,6 +24,7 @@
+ 
+ #include <process/metrics/counter.hpp>
+ #include <process/metrics/pull_gauge.hpp>
++#include <process/metrics/push_gauge.hpp>
+ #include <process/metrics/timer.hpp>
+ 
+ #include <process/pid.hpp>
+@@ -97,7 +98,18 @@ struct FrameworkMetrics
+ 
+   ~FrameworkMetrics();
+ 
++  void reviveRole(const std::string& role);
++  void suppressRole(const std::string& role);
++
++  // Since frameworks can update their list of roles,
++  // these methods add/remove per-role metrics.
++  void addSubscribedRole(const std::string& role);
++  void removeSubscribedRole(const std::string& role);
++
+   const FrameworkInfo frameworkInfo;
++
++  // Suppresion state metric (boolean 0 or 1) for each role.
++  hashmap<std::string, process::metrics::PushGauge> suppressed;
+ };
+ 
+ } // namespace internal {
+-- 
+2.17.0
+

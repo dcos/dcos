@@ -1,0 +1,85 @@
+From c70f372f228277748d1aeb535c72c08b798fb447 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:45 -0700
+Subject: [PATCH] Enabled per-framework metrics in the allocator.
+
+The `FrameworkMetrics` struct will hold per-framework metrics tracked
+by the allocator.
+
+Review: https://reviews.apache.org/r/66843/
+---
+ src/master/allocator/mesos/hierarchical.cpp |  3 ++-
+ src/master/allocator/mesos/hierarchical.hpp |  2 ++
+ src/master/allocator/mesos/metrics.cpp      |  7 +++++++
+ src/master/allocator/mesos/metrics.hpp      | 10 ++++++++++
+ 4 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
+index 58155ad4c..5b32b3da2 100644
+--- a/src/master/allocator/mesos/hierarchical.cpp
++++ b/src/master/allocator/mesos/hierarchical.cpp
+@@ -140,7 +140,8 @@ HierarchicalAllocatorProcess::Framework::Framework(
+   : roles(protobuf::framework::getRoles(frameworkInfo)),
+     suppressedRoles(_suppressedRoles),
+     capabilities(frameworkInfo.capabilities()),
+-    active(_active) {}
++    active(_active),
++    metrics(new FrameworkMetrics(frameworkInfo)) {}
+ 
+ 
+ void HierarchicalAllocatorProcess::initialize(
+diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
+index ec45e163e..ff96beea3 100644
+--- a/src/master/allocator/mesos/hierarchical.hpp
++++ b/src/master/allocator/mesos/hierarchical.hpp
+@@ -332,6 +332,8 @@ protected:
+     hashmap<SlaveID, hashset<InverseOfferFilter*>> inverseOfferFilters;
+ 
+     bool active;
++
++    process::Owned<FrameworkMetrics> metrics;
+   };
+ 
+   double _event_queue_dispatches()
+diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
+index 5194f5b3b..7a4b153db 100644
+--- a/src/master/allocator/mesos/metrics.cpp
++++ b/src/master/allocator/mesos/metrics.cpp
+@@ -201,6 +201,13 @@ void Metrics::removeRole(const string& role)
+   process::metrics::remove(gauge.get());
+ }
+ 
++
++FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
++  : frameworkInfo(_frameworkInfo) {}
++
++
++FrameworkMetrics::~FrameworkMetrics() {}
++
+ } // namespace internal {
+ } // namespace allocator {
+ } // namespace master {
+diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
+index 6d386225c..daac93f7e 100644
+--- a/src/master/allocator/mesos/metrics.hpp
++++ b/src/master/allocator/mesos/metrics.hpp
+@@ -90,6 +90,16 @@ struct Metrics
+   hashmap<std::string, process::metrics::PullGauge> offer_filters_active;
+ };
+ 
++
++struct FrameworkMetrics
++{
++  explicit FrameworkMetrics(const FrameworkInfo& _frameworkInfo);
++
++  ~FrameworkMetrics();
++
++  const FrameworkInfo frameworkInfo;
++};
++
+ } // namespace internal {
+ } // namespace allocator {
+ } // namespace master {
+-- 
+2.17.0
+

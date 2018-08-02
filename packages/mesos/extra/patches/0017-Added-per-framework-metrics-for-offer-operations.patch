@@ -1,0 +1,150 @@
+From df6eef63affd1edee3b5ddce0b30371bbccd5f3c Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:39 -0700
+Subject: [PATCH] Added per-framework metrics for offer operations.
+
+Review: https://reviews.apache.org/r/67814/
+---
+ src/master/master.cpp  | 14 ++++++++++++++
+ src/master/metrics.cpp | 41 ++++++++++++++++++++++++++++++++++++++++-
+ src/master/metrics.hpp |  5 +++++
+ 3 files changed, 59 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 2ab632338..8d90cb019 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -5112,6 +5112,10 @@ void Master::_accept(
+                       << (launchExecutor ?
+                           " new executor" : " existing executor");
+ 
++            // Increment this metric here for LAUNCH since it
++            // does not make use of the `_apply()` function.
++            framework->metrics.incrementOperation(operation);
++
+             send(slave->pid, message);
+           }
+         }
+@@ -5319,6 +5323,10 @@ void Master::_accept(
+                   << *slave << " on "
+                   << (launchExecutor ? " new executor" : " existing executor");
+ 
++        // Increment this metric here for LAUNCH_GROUP since it
++        // does not make use of the `_apply()` function.
++        framework->metrics.incrementOperation(operation);
++
+         send(slave->pid, message);
+ 
+         break;
+@@ -10824,6 +10832,12 @@ void Master::_apply(
+ 
+     send(slave->pid, message);
+   }
++
++  if (framework != nullptr) {
++    // We increment per-framework operation metrics for all operations except
++    // LAUNCH and LAUNCH_GROUP here.
++    framework->metrics.incrementOperation(operationInfo);
++  }
+ }
+ 
+ 
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 91c5ed167..6ec826596 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -531,7 +531,9 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     offers_declined(
+         getFrameworkMetricPrefix(frameworkInfo) + "offers/declined"),
+     offers_rescinded(
+-        getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded")
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded"),
++    operations(
++        getFrameworkMetricPrefix(frameworkInfo) + "operations")
+ {
+   process::metrics::add(subscribed);
+ 
+@@ -609,6 +611,29 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+       process::metrics::add(gauge);
+     }
+   }
++
++  // Add metrics for offer operations.
++  process::metrics::add(operations);
++  for (int index = 0;
++       index < Offer::Operation::Type_descriptor()->value_count();
++       index++) {
++    const google::protobuf::EnumValueDescriptor* descriptor =
++      Offer::Operation::Type_descriptor()->value(index);
++
++    const Offer::Operation::Type type =
++      static_cast<Offer::Operation::Type>(descriptor->number());
++
++    if (type == Offer::Operation::UNKNOWN) {
++      continue;
++    }
++
++    Counter counter =
++      Counter(getFrameworkMetricPrefix(frameworkInfo) +
++      "operations/" + strings::lower(descriptor->name()));
++
++    operation_types.put(type, counter);
++    process::metrics::add(counter);
++  }
+ }
+ 
+ 
+@@ -638,6 +663,11 @@ FrameworkMetrics::~FrameworkMetrics()
+   foreachvalue (const PushGauge& gauge, active_task_states) {
+     process::metrics::remove(gauge);
+   }
++
++  process::metrics::remove(operations);
++  foreachvalue (const Counter& counter, operation_types) {
++    process::metrics::remove(counter);
++  }
+ }
+ 
+ 
+@@ -670,6 +700,15 @@ void FrameworkMetrics::decrementActiveTaskState(const TaskState& state)
+ }
+ 
+ 
++void FrameworkMetrics::incrementOperation(const Offer::Operation& operation)
++{
++  CHECK(operation_types.contains(operation.type()));
++
++  operation_types.get(operation.type()).get()++;
++  operations++;
++}
++
++
+ string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
+ {
+   // Percent-encode the framework name to avoid characters like '/' and ' '.
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 071246b71..7ce3941b2 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -224,6 +224,8 @@ struct FrameworkMetrics
+   void incrementTaskState(const TaskState& state);
+   void decrementActiveTaskState(const TaskState& state);
+ 
++  void incrementOperation(const Offer::Operation& operation);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
+@@ -242,6 +244,9 @@ struct FrameworkMetrics
+   hashmap<TaskState, process::metrics::Counter> terminal_task_states;
+ 
+   hashmap<TaskState, process::metrics::PushGauge> active_task_states;
++
++  process::metrics::Counter operations;
++  hashmap<Offer::Operation::Type, process::metrics::Counter> operation_types;
+ };
+ 
+ 
+-- 
+2.17.0
+

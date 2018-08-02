@@ -1,4 +1,4 @@
-From 738bbb470d79092f50fa048c683fd17ca2ff3181 Mon Sep 17 00:00:00 2001
+From d45d6a45de2ebc437302675c53fabdf2fb1a1d11 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Tue, 10 Jul 2018 08:06:32 -0700
 Subject: [PATCH] Improved logging for offers and inverse offers.
@@ -73,5 +73,5 @@ index 05724f117..cc4674ced 100644
    framework->send(message);
  }
 -- 
-2.16.3
+2.17.0
 

@@ -1,0 +1,29 @@
+From b2c491e4556d002e5f527c0744dfb7d7bd09b698 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:48 -0700
+Subject: [PATCH] Changed the 'capacity_' member of 'BoundedHashMap' to
+ non-const.
+
+This prevents the assignment operator from being implicitly deleted.
+
+Review: https://reviews.apache.org/r/66855/
+---
+ 3rdparty/stout/include/stout/boundedhashmap.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/3rdparty/stout/include/stout/boundedhashmap.hpp b/3rdparty/stout/include/stout/boundedhashmap.hpp
+index 09a9b96f0..f73ec6b66 100644
+--- a/3rdparty/stout/include/stout/boundedhashmap.hpp
++++ b/3rdparty/stout/include/stout/boundedhashmap.hpp
+@@ -149,7 +149,7 @@ public:
+   typename list::const_iterator end() const { return entries_.cend(); }
+ 
+ private:
+-  const size_t capacity_;
++  size_t capacity_;
+   list entries_; // Key-value pairs ordered by insertion order.
+   map keys_; // Map from key to "pointer" to key's location in list.
+ };
+-- 
+2.17.0
+
