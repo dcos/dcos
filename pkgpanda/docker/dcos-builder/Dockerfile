@@ -67,4 +67,6 @@ RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 
 RUN pip install awscli
 
+# No-op edit to trigger cache rebuild
+
 ENTRYPOINT ["/bin/bash", "-o", "nounset", "-o", "pipefail", "-o", "errexit"]
