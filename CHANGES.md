@@ -16,6 +16,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* dcos-diagnostics capture `dmesg` with human readable timestamps. (DCOS_OSS-1020)
+
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
