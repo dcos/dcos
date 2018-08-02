@@ -1,4 +1,4 @@
-From 6d478a33ec85904482bae974e43beff8d21f8ce9 Mon Sep 17 00:00:00 2001
+From f1ad107f22982873734d8d9dac743e81bb353188 Mon Sep 17 00:00:00 2001
 From: Gaston Kleiman <gaston.kleiman@gmail.com>
 Date: Mon, 9 Oct 2017 15:19:08 -0700
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
