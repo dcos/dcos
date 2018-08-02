@@ -1219,19 +1219,19 @@ package:
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         # The address of the local Mesos agent
-        mesos_agent_url = "http://$IP_ADDRESS:5051"
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
       # Read metrics from one or many prometheus clients
       [[inputs.prometheus]]
         # The address of the local Mesos agent
-        mesos_agent_url = "http://$IP_ADDRESS:5051"
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         # The address of the local Mesos agent
-        mesos_agent_url = "http://$IP_ADDRESS:5051"
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
       # Read metrics from one or many prometheus clients
       [[inputs.prometheus]]
         # The address of the local Mesos agent
-        mesos_agent_url = "http://$IP_ADDRESS:5051"
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
