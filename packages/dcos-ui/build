@@ -2,7 +2,7 @@
 
 cd "/pkg/src/dcos-ui"
 
-npm install -g npm@3.9.1
+npm install -g npm
 
 # Run npm install with `unsafe-perm` flag to run install scripts with root
 # privileges. Without those privileges the installation will fail to write some
