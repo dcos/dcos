@@ -877,7 +877,7 @@ package:
           ],
           "LocalCommands": [
               {
-                  "Command": ["dmesg"]
+                  "Command": ["dmesg", "-T"]
               },
               {
                   "Command": ["ip", "addr"]
