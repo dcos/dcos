@@ -516,13 +516,18 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
-                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz'] + expected_common_files
+                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json'
+                             ] + expected_common_files
+
+    expected_agent_common_files = ['5051-containers.json']
 
     # for agent host
-    expected_agent_files = ['dcos-mesos-slave.service.gz', '5051-containers.json'] + expected_common_files
+    expected_agent_files = ['dcos-mesos-slave.service.gz'
+                            ] + expected_agent_common_files + expected_common_files
 
     # for public agent host
-    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
+    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'
+                                   ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
         # raises KeyError if item is not in zipfile.
