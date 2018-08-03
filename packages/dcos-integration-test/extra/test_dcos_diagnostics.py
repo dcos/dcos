@@ -518,7 +518,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz'] + expected_common_files
 
     # for agent host
-    expected_agent_files = ['dcos-mesos-slave.service.gz'] + expected_common_files
+    expected_agent_files = ['dcos-mesos-slave.service.gz', '5051-containers.json'] + expected_common_files
 
     # for public agent host
     expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files

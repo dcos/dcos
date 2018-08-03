@@ -836,6 +836,11 @@ package:
                   "Port": 5051,
                   "Uri": "/overlay-agent/overlay",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/containers",
+                  "Role": ["agent", "agent_public"]
               }
           ],
           "LocalFiles": [
