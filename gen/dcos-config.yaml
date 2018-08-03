@@ -637,6 +637,11 @@ package:
                   "Role": ["master"]
               },
               {
+                  "Port": 5050,
+                  "Uri": "/quota",
+                  "Role": ["master"]
+              },
+              {
                   "Port": 8080,
                   "Uri": "/metrics",
                   "Role": ["master"]
