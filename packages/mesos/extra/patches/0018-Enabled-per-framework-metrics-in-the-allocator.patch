@@ -1,4 +1,4 @@
-From c70f372f228277748d1aeb535c72c08b798fb447 Mon Sep 17 00:00:00 2001
+From e869c6699a0724409e5f7ad7d3603c430e228a25 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:45 -0700
 Subject: [PATCH] Enabled per-framework metrics in the allocator.

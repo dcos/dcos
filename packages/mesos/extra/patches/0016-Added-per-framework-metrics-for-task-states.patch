@@ -1,18 +1,18 @@
-From c2957b57b4b577d2a4016c1276a44b0e8815fdef Mon Sep 17 00:00:00 2001
+From 40b3167eccc12f5b043fff96ccc79a747b914eec Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:31 -0700
 Subject: [PATCH] Added per-framework metrics for task states.
 
 Review: https://reviews.apache.org/r/67813/
 ---
- src/master/master.cpp  | 14 +++++++++--
+ src/master/master.cpp  | 18 ++++++++++++--
  src/master/master.hpp  |  2 ++
  src/master/metrics.cpp | 54 ++++++++++++++++++++++++++++++++++++++++++
  src/master/metrics.hpp |  7 ++++++
- 4 files changed, 75 insertions(+), 2 deletions(-)
+ 4 files changed, 79 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 91f907c1f..2ab632338 100644
+index 91f907c1f..d341eb2e8 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -10279,6 +10279,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
@@ -24,31 +24,35 @@ index 91f907c1f..2ab632338 100644
    // Set 'removable' to true if this is the first time the task
    // transitioned to a removable state. Also set the latest state.
    bool removable;
-@@ -10292,6 +10294,11 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10292,6 +10294,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
          sendSubscribersUpdate = true;
        }
  
-+      // When we observe a transition away from a non-terminal state,
-+      // decrement the relevant metric.
-+      framework->metrics.decrementActiveTaskState(task->state());
-+      framework->metrics.incrementTaskState(latestState.get());
++      if (framework != nullptr) {
++        // When we observe a transition away from a non-terminal state,
++        // decrement the relevant metric.
++        framework->metrics.decrementActiveTaskState(task->state());
++        framework->metrics.incrementTaskState(latestState.get());
++      }
 +
        task->set_state(latestState.get());
      }
    } else {
-@@ -10305,6 +10312,11 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10305,6 +10314,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
          sendSubscribersUpdate = true;
        }
  
-+      // When we observe a transition away from a non-terminal state,
-+      // decrement the relevant metric.
-+      framework->metrics.decrementActiveTaskState(task->state());
-+      framework->metrics.incrementTaskState(status.state());
++      if (framework != nullptr) {
++        // When we observe a transition away from a non-terminal state,
++        // decrement the relevant metric.
++        framework->metrics.decrementActiveTaskState(task->state());
++        framework->metrics.incrementTaskState(status.state());
++      }
 +
        task->set_state(status.state());
      }
    }
-@@ -10336,7 +10348,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10336,7 +10352,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
      // transitioned to `TASK_KILLED` by `removeFramework()`, thus
      // `sendSubscribersUpdate` shouldn't have been set to true.
      // TODO(chhsiao): This may be changed after MESOS-6608 is resolved.
@@ -56,7 +60,7 @@ index 91f907c1f..2ab632338 100644
      CHECK_NOTNULL(framework);
  
      subscribers.send(
-@@ -10365,7 +10376,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10365,7 +10380,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
  
      slave->recoverResources(task);
  

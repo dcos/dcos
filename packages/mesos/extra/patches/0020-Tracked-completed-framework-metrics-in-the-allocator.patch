@@ -1,4 +1,4 @@
-From a5abdcd8f0c6d76534b9d722d67066125bcb3e84 Mon Sep 17 00:00:00 2001
+From 7307642eba6d968079e00c35681fd7414d734bbb Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:49 -0700
 Subject: [PATCH] Tracked completed framework metrics in the allocator.
@@ -169,7 +169,7 @@ index ff96beea3..b86b01b00 100644
    {
    public:
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 8d90cb019..0da359fc2 100644
+index 42fce66ed..9a887ae17 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -810,7 +810,8 @@ void Master::initialize()

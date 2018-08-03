@@ -1,4 +1,4 @@
-From df6eef63affd1edee3b5ddce0b30371bbccd5f3c Mon Sep 17 00:00:00 2001
+From 6c07c4f760d54b3d0d8de08f1cda75a4dcb84fa3 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:39 -0700
 Subject: [PATCH] Added per-framework metrics for offer operations.
@@ -11,7 +11,7 @@ Review: https://reviews.apache.org/r/67814/
  3 files changed, 59 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 2ab632338..8d90cb019 100644
+index d341eb2e8..42fce66ed 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -5112,6 +5112,10 @@ void Master::_accept(
@@ -36,7 +36,7 @@ index 2ab632338..8d90cb019 100644
          send(slave->pid, message);
  
          break;
-@@ -10824,6 +10832,12 @@ void Master::_apply(
+@@ -10828,6 +10836,12 @@ void Master::_apply(
  
      send(slave->pid, message);
    }
