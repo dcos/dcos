@@ -871,6 +871,15 @@ package:
               },
               {
                   "Location": "/proc/net/fib_trie"
+              },
+              {
+                  "Location": "/proc/cmdline"
+              },
+              {
+                  "Location": "/proc/cpuinfo"
+              },
+              {
+                  "Location": "/proc/meminfo"
               }
           ],
           "LocalCommands": [
