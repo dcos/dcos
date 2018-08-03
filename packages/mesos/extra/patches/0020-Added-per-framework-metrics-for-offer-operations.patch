@@ -1,0 +1,169 @@
+From aeba36a01c6c09398b8b4d14a42ae79b25055079 Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:39 -0700
+Subject: [PATCH] Added per-framework metrics for offer operations.
+
+Review: https://reviews.apache.org/r/67814/
+---
+ src/master/master.cpp  | 12 ++++++++++++
+ src/master/metrics.cpp | 41 ++++++++++++++++++++++++++++++++++++++++-
+ src/master/metrics.hpp |  5 +++++
+ 3 files changed, 57 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index d9617a348..94d162ad3 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -4520,6 +4520,8 @@ void Master::_accept(
+                   << operation.reserve().resources() << " from framework "
+                   << *framework << " to agent " << *slave;
+ 
++        framework->metrics.incrementOperation(operation);
++
+         _apply(slave, operation);
+ 
+         operations.push_back(operation);
+@@ -4575,6 +4577,8 @@ void Master::_accept(
+                   << operation.unreserve().resources() << " from framework "
+                   << *framework << " to agent " << *slave;
+ 
++        framework->metrics.incrementOperation(operation);
++
+         _apply(slave, operation);
+ 
+         operations.push_back(operation);
+@@ -4640,6 +4644,8 @@ void Master::_accept(
+                   << operation.create().volumes() << " from framework "
+                   << *framework << " to agent " << *slave;
+ 
++        framework->metrics.incrementOperation(operation);
++
+         _apply(slave, operation);
+ 
+         operations.push_back(operation);
+@@ -4721,6 +4727,8 @@ void Master::_accept(
+                   << operation.destroy().volumes() << " from framework "
+                   << *framework << " to agent " << *slave;
+ 
++        framework->metrics.incrementOperation(operation);
++
+         _apply(slave, operation);
+ 
+         operations.push_back(operation);
+@@ -4880,6 +4888,8 @@ void Master::_accept(
+                       << *framework << " with resources " << task.resources()
+                       << " on agent " << *slave;
+ 
++            framework->metrics.incrementOperation(operation);
++
+             send(slave->pid, message);
+           }
+ 
+@@ -5084,6 +5094,8 @@ void Master::_accept(
+                   << " of framework " << *framework << " with resources "
+                   << totalResources << " on agent " << *slave;
+ 
++        framework->metrics.incrementOperation(operation);
++
+         send(slave->pid, message);
+ 
+         break;
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 91c5ed167..6ec826596 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -531,7 +531,9 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     offers_declined(
+         getFrameworkMetricPrefix(frameworkInfo) + "offers/declined"),
+     offers_rescinded(
+-        getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded")
++        getFrameworkMetricPrefix(frameworkInfo) + "offers/rescinded"),
++    operations(
++        getFrameworkMetricPrefix(frameworkInfo) + "operations")
+ {
+   process::metrics::add(subscribed);
+ 
+@@ -609,6 +611,29 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+       process::metrics::add(gauge);
+     }
+   }
++
++  // Add metrics for offer operations.
++  process::metrics::add(operations);
++  for (int index = 0;
++       index < Offer::Operation::Type_descriptor()->value_count();
++       index++) {
++    const google::protobuf::EnumValueDescriptor* descriptor =
++      Offer::Operation::Type_descriptor()->value(index);
++
++    const Offer::Operation::Type type =
++      static_cast<Offer::Operation::Type>(descriptor->number());
++
++    if (type == Offer::Operation::UNKNOWN) {
++      continue;
++    }
++
++    Counter counter =
++      Counter(getFrameworkMetricPrefix(frameworkInfo) +
++      "operations/" + strings::lower(descriptor->name()));
++
++    operation_types.put(type, counter);
++    process::metrics::add(counter);
++  }
+ }
+ 
+ 
+@@ -638,6 +663,11 @@ FrameworkMetrics::~FrameworkMetrics()
+   foreachvalue (const PushGauge& gauge, active_task_states) {
+     process::metrics::remove(gauge);
+   }
++
++  process::metrics::remove(operations);
++  foreachvalue (const Counter& counter, operation_types) {
++    process::metrics::remove(counter);
++  }
+ }
+ 
+ 
+@@ -670,6 +700,15 @@ void FrameworkMetrics::decrementActiveTaskState(const TaskState& state)
+ }
+ 
+ 
++void FrameworkMetrics::incrementOperation(const Offer::Operation& operation)
++{
++  CHECK(operation_types.contains(operation.type()));
++
++  operation_types.get(operation.type()).get()++;
++  operations++;
++}
++
++
+ string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
+ {
+   // Percent-encode the framework name to avoid characters like '/' and ' '.
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 071246b71..7ce3941b2 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -224,6 +224,8 @@ struct FrameworkMetrics
+   void incrementTaskState(const TaskState& state);
+   void decrementActiveTaskState(const TaskState& state);
+ 
++  void incrementOperation(const Offer::Operation& operation);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
+@@ -242,6 +244,9 @@ struct FrameworkMetrics
+   hashmap<TaskState, process::metrics::Counter> terminal_task_states;
+ 
+   hashmap<TaskState, process::metrics::PushGauge> active_task_states;
++
++  process::metrics::Counter operations;
++  hashmap<Offer::Operation::Type, process::metrics::Counter> operation_types;
+ };
+ 
+ 
+-- 
+2.17.0
+
