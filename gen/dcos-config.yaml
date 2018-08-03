@@ -887,6 +887,9 @@ package:
                   "Command": ["ifconfig", "-a"]
               },
               {
+                  "Command": ["ps", "aux", "ww"]
+              },
+              {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
               }
           ]
