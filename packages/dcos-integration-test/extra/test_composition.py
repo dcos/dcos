@@ -178,7 +178,8 @@ def test_signal_service(dcos_api_session):
         'pkgpanda-api-service',
         'signal-timer',
         'checks-poststart-service',
-        'checks-poststart-timer']
+        'checks-poststart-timer',
+        'telegraf-service']
     slave_units = [
         'mesos-slave-service']
     public_slave_units = [
