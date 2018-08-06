@@ -1,0 +1,434 @@
+From cb9154579e39cfa22659b89eaf709c19efd68c41 Mon Sep 17 00:00:00 2001
+From: Benno Evers <bevers@mesosphere.com>
+Date: Wed, 23 May 2018 14:43:31 +0200
+Subject: [PATCH] Add ad-hoc benchmarking functions.
+
+---
+ src/CMakeLists.txt                |   4 ++
+ src/Makefile.am                   |   1 +
+ src/benchmarking/benchmarking.cpp | 140 ++++++++++++++++++++++++++++++++++++++
+ src/benchmarking/benchmarking.hpp |  59 ++++++++++++++++
+ src/master/http.cpp               |  50 ++++++++++++--
+ src/master/master.hpp             |   6 +-
+ 6 files changed, 252 insertions(+), 8 deletions(-)
+ create mode 100644 src/benchmarking/benchmarking.cpp
+ create mode 100644 src/benchmarking/benchmarking.hpp
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 0e0913bcd..a023f1bb6 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -205,6 +205,9 @@ endif ()
+ set(APPC_SRC
+   appc/spec.cpp)
+ 
++set(BENCHAMRKING_SRC
++  benchmarking/benchmarking.cpp)
++
+ set(AUTHENTICATION_SRC
+   authentication/cram_md5/authenticatee.cpp
+   authentication/cram_md5/authenticator.cpp
+@@ -491,6 +494,7 @@ set(MESOS_SRC
+   ${APPC_SRC}
+   ${AUTHENTICATION_SRC}
+   ${AUTHORIZER_SRC}
++  ${BENCHAMRKING_SRC}
+   ${COMMON_SRC}
+   ${CSI_SRC}
+   ${DOCKER_SRC}
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 10ef9775e..bbb678376 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -990,6 +990,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
+   authorizer/acls.cpp							\
+   authorizer/authorizer.cpp						\
+   authorizer/local/authorizer.cpp					\
++  benchmarking/benchmarking.cpp       \
+   checks/checker.cpp							\
+   checks/checker_process.cpp						\
+   checks/health_checker.cpp						\
+diff --git a/src/benchmarking/benchmarking.cpp b/src/benchmarking/benchmarking.cpp
+new file mode 100644
+index 000000000..19cff369b
+--- /dev/null
++++ b/src/benchmarking/benchmarking.cpp
+@@ -0,0 +1,140 @@
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License
++
++#include "benchmarking/benchmarking.hpp"
++
++#include <cstdio>
++#include <cstring>
++#include <ctime>
++#include <map>
++#include <unistd.h>
++
++#include <process/http.hpp>
++
++#include "logging/logging.hpp"
++
++namespace {
++
++std::string decorate(const char* basename)
++{
++  time_t now = ::time(nullptr);
++  pid_t pid = ::getpid();
++
++  return std::string(basename) +
++    "-p" + std::to_string(pid) +
++    "-t" + std::to_string(now);
++}
++
++
++class TimestampedFile {
++public:
++  TimestampedFile(const char* basename)
++  {
++    std::string path = decorate(basename);
++    out = fopen(path.c_str(), "w+");
++    if (!out) {
++      // Don't throw so we don't impact other scale tests.
++      LOG(WARNING)
++        << "Couldn't open output file " << path << ": "
++        << strerror(errno);
++    }
++  }
++
++  ~TimestampedFile()
++  {
++    if (out) {
++      fclose(out);
++    }
++  }
++
++  bool append(const char* s) {
++    if (!out) {
++      return false;
++    }
++
++    int result = fputs(s, out);
++    fflush(out);
++    return result != EOF;
++  }
++
++private:
++  // We use stdio over iostreams because the latter frequently
++  // has a measurable impact on i/o operations, and we want to
++  // minimize that as much as possible.
++  FILE* out;
++};
++
++
++TimestampedFile& measurementFile() {
++  static TimestampedFile file("/tmp/state-json-benchmarking");
++  return file;
++}
++
++} // namespace {
++
++
++namespace mesos {
++namespace internal {
++namespace benchmarking {
++namespace state_json {
++
++namespace {
++
++long long toMilliseconds(const struct timespec& ts)
++{
++  // microseconds:
++  // ts.tv_sec * 1000000ll + ts.tv_nsec / 1000ll;
++
++  // TODO(bevers): We should probably adjust the origin
++  // so it's measured in milliseconds since epoch.
++  return ts.tv_sec * 1000ll + ts.tv_nsec / 1000000ll;
++}
++
++
++const char* string(RequestType requestType)
++{
++  static std::map<RequestType, const char*> statuses = {
++     {RequestType::v0State, "v0Sta"},
++     {RequestType::v1GetState, "v1Get"},
++     {RequestType::v1Subscribe, "v1Sub"}
++  };
++
++  return statuses[requestType];
++}
++
++} // namespace {
++
++
++void logStateRequest(
++    RequestType requestType,
++    const process::http::Request& request,
++    const process::http::Response& response)
++{
++  std::string line(256, '\0');
++
++  sprintf(&line[0], "request %s %lx (%lu bytes) - %lld %lld %lld %lld %lld\n",
++      string(requestType),
++      request.requestNumber,
++      response.body.size(),
++      toMilliseconds(request.received),
++      toMilliseconds(request.authorizing),
++      toMilliseconds(request.crunching),
++      toMilliseconds(request.serializing),
++      toMilliseconds(request.finished));
++
++  measurementFile().append(line.c_str());
++}
++
++} // namespace state_json {
++} // namespace benchmarking {
++} // namespace internal {
++} // namespace mesos {
+diff --git a/src/benchmarking/benchmarking.hpp b/src/benchmarking/benchmarking.hpp
+new file mode 100644
+index 000000000..3dcb26ceb
+--- /dev/null
++++ b/src/benchmarking/benchmarking.hpp
+@@ -0,0 +1,59 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++#ifndef __BENCHMARKING_HPP__
++#define __BENCHMARKING_HPP__
++
++#include <cstdint>
++
++
++struct timespec;
++
++namespace process {
++namespace http {
++
++struct Request;
++struct Response;
++
++} // namespace http {
++} // namespace process {
++
++
++namespace mesos {
++namespace internal {
++namespace benchmarking {
++namespace state_json {
++
++
++enum class RequestType {
++  v0State,
++  v1GetState,
++  v1Subscribe
++};
++
++
++void logStateRequest(
++    RequestType requestType,
++    const process::http::Request& request,
++    const process::http::Response& response);
++
++
++} // namespace state_json {
++} // namespace benchmarking {
++} // namespace internal {
++} // namespace mesos {
++
++#endif
+diff --git a/src/master/http.cpp b/src/master/http.cpp
+index d43fbd689..4b7c1ea17 100644
+--- a/src/master/http.cpp
++++ b/src/master/http.cpp
+@@ -66,6 +66,8 @@
+ #include <stout/utils.hpp>
+ #include <stout/uuid.hpp>
+ 
++#include "benchmarking/benchmarking.hpp"
++
+ #include "common/build.hpp"
+ #include "common/http.hpp"
+ #include "common/protobuf_utils.hpp"
+@@ -729,7 +731,7 @@ Future<Response> Master::Http::api(
+       return readFile(call, principal, acceptType);
+ 
+     case mesos::master::Call::GET_STATE:
+-      return getState(call, principal, acceptType);
++      return getState(call, principal, acceptType, request);
+ 
+     case mesos::master::Call::GET_AGENTS:
+       return getAgents(call, principal, acceptType);
+@@ -759,7 +761,7 @@ Future<Response> Master::Http::api(
+       return getMaster(call, principal, acceptType);
+ 
+     case mesos::master::Call::SUBSCRIBE:
+-      return subscribe(call, principal, acceptType);
++      return subscribe(call, principal, acceptType, request);
+ 
+     case mesos::master::Call::RESERVE_RESOURCES:
+       return reserveResources(call, principal, acceptType);
+@@ -817,11 +819,14 @@ Future<Response> Master::Http::api(
+ Future<Response> Master::Http::subscribe(
+     const mesos::master::Call& call,
+     const Option<Principal>& principal,
+-    ContentType contentType) const
++    ContentType contentType,
++    const Request& request) const
+ {
+   CHECK_EQ(mesos::master::Call::SUBSCRIBE, call.type());
+ 
++  ::clock_gettime(CLOCK_MONOTONIC, &request.authorizing);
+   return ObjectApprovers::create(
++
+       master->authorizer,
+       principal,
+       {VIEW_FRAMEWORK, VIEW_TASK, VIEW_EXECUTOR, VIEW_ROLE})
+@@ -837,6 +842,8 @@ Future<Response> Master::Http::subscribe(
+ 
+           HttpConnection http{pipe.writer(), contentType, id::UUID::random()};
+ 
++          ::clock_gettime(CLOCK_MONOTONIC, &request.crunching);
++
+           mesos::master::Event event;
+           event.set_type(mesos::master::Event::SUBSCRIBED);
+           *event.mutable_subscribed()->mutable_get_state() =
+@@ -845,8 +852,15 @@ Future<Response> Master::Http::subscribe(
+           event.mutable_subscribed()->set_heartbeat_interval_seconds(
+               DEFAULT_HEARTBEAT_INTERVAL.secs());
+ 
++          ::clock_gettime(CLOCK_MONOTONIC, &request.serializing);
++
+           http.send<mesos::master::Event, v1::master::Event>(event);
+ 
++          ::clock_gettime(CLOCK_MONOTONIC, &request.finished);
++
++          benchmarking::state_json::logStateRequest(
++              benchmarking::state_json::RequestType::v1Subscribe, request, ok);
++
+           mesos::master::Event heartbeatEvent;
+           heartbeatEvent.set_type(mesos::master::Event::HEARTBEAT);
+           http.send<mesos::master::Event, v1::master::Event>(heartbeatEvent);
+@@ -1913,24 +1927,37 @@ mesos::master::Response::GetExecutors Master::Http::_getExecutors(
+ Future<Response> Master::Http::getState(
+     const mesos::master::Call& call,
+     const Option<Principal>& principal,
+-    ContentType contentType) const
++    ContentType contentType,
++    const Request& request) const
+ {
+   CHECK_EQ(mesos::master::Call::GET_STATE, call.type());
+ 
++  ::clock_gettime(CLOCK_MONOTONIC, &request.authorizing);
+   return ObjectApprovers::create(
++
+       master->authorizer,
+       principal,
+       {VIEW_FRAMEWORK, VIEW_TASK, VIEW_EXECUTOR, VIEW_ROLE})
+     .then(defer(
+         master->self(),
+         [=](const Owned<ObjectApprovers>& approvers) -> Response {
++          ::clock_gettime(CLOCK_MONOTONIC, &request.crunching);
++
+           mesos::master::Response response;
+           response.set_type(mesos::master::Response::GET_STATE);
+ 
+           *response.mutable_get_state() = _getState(approvers);
+ 
+-          return OK(
++          ::clock_gettime(CLOCK_MONOTONIC, &request.serializing);
++
++          auto ok = OK(
+               serialize(contentType, evolve(response)), stringify(contentType));
++
++          ::clock_gettime(CLOCK_MONOTONIC, &request.finished);
++          benchmarking::state_json::logStateRequest(
++              benchmarking::state_json::RequestType::v1GetState, request, ok);
++
++          return std::move(ok);
+         }));
+ }
+ 
+@@ -2815,6 +2842,8 @@ Future<Response> Master::Http::state(
+     const Request& request,
+     const Option<Principal>& principal) const
+ {
++  ::clock_gettime(CLOCK_MONOTONIC, &request.authorizing);
++
+   // TODO(greggomann): Remove this check once the `Principal` type is used in
+   // `ReservationInfo`, `DiskInfo`, and within the master's `principals` map.
+   // See MESOS-7202.
+@@ -2838,6 +2867,7 @@ Future<Response> Master::Http::state(
+         [this, request](const Owned<ObjectApprovers>& approvers) -> Response {
+           // This lambda is consumed before the outer lambda
+           // returns, hence capture by reference is fine here.
++      ::clock_gettime(CLOCK_MONOTONIC, &request.crunching);
+           auto state = [this, &approvers](JSON::ObjectWriter* writer) {
+             writer->field("version", MESOS_VERSION);
+ 
+@@ -2971,7 +3001,15 @@ Future<Response> Master::Http::state(
+             writer->field("unregistered_frameworks", [](JSON::ArrayWriter*) {});
+           };
+ 
+-          return OK(jsonify(state), request.url.query.get("jsonp"));
++      ::clock_gettime(CLOCK_MONOTONIC, &request.serializing);
++
++      auto ok = OK(jsonify(state), request.url.query.get("jsonp"));
++
++      ::clock_gettime(CLOCK_MONOTONIC, &request.finished);
++      benchmarking::state_json::logStateRequest(
++          benchmarking::state_json::RequestType::v0State, request, ok);
++
++      return std::move(ok);
+         }));
+ }
+ 
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 209b998db..53c8516d2 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -1788,7 +1788,8 @@ private:
+     process::Future<process::http::Response> getState(
+         const mesos::master::Call& call,
+         const Option<process::http::authentication::Principal>& principal,
+-        ContentType contentType) const;
++        ContentType contentType,
++        const process::http::Request& request) const;
+ 
+     mesos::master::Response::GetState _getState(
+         const process::Owned<ObjectApprovers>& approvers) const;
+@@ -1796,7 +1797,8 @@ private:
+     process::Future<process::http::Response> subscribe(
+         const mesos::master::Call& call,
+         const Option<process::http::authentication::Principal>& principal,
+-        ContentType contentType) const;
++        ContentType contentType,
++        const process::http::Request& request) const;
+ 
+     process::Future<process::http::Response> readFile(
+         const mesos::master::Call& call,
+-- 
+2.16.3
+

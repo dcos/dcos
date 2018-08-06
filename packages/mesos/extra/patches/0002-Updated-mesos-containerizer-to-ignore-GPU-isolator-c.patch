@@ -1,4 +1,4 @@
-From 43bdd1efeb550461a406764d157f0e55cf49dbc7 Mon Sep 17 00:00:00 2001
+From ac6fe199885bd681df833ee744b2de4cba47bd4a Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
 Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
@@ -51,5 +51,5 @@ index 98129d006..d112ab73a 100644
  
    // Next, apply any custom isolators in the order given by the flags.
 -- 
-2.15.2 (Apple Git-101.1)
+2.16.3
 
