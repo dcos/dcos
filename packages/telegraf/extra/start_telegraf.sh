@@ -15,5 +15,8 @@ cluster_id="$(cat ${cluster_id_file})"
 # Export the cluster ID to an env var so telegraf config can reference it.
 export DCOS_CLUSTER_ID="${cluster_id}"
 
+# Export the IP address
+export NODE_PRIVATE_IP="$(/opt/mesosphere/bin/detect_ip)"
+
 # Start telegraf.
 exec /opt/mesosphere/bin/telegraf "$@"

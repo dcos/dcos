@@ -3,7 +3,7 @@ package:
     content: |
       producers:
         prometheus:
-          port: 61091
+          port: 61092
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -1216,15 +1216,32 @@ package:
         ## If true, compute and report the sum of all non-idle CPU states.
         report_active = false
       [[inputs.mem]]
-      # Telegraf refuses to start if no outputs are defined. This will eventually be
-      # replaced with real outputs.
-      [[outputs.discard]]
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+      # Read metrics from one or many prometheus clients
+      [[inputs.prometheus]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+      # Read metrics from one or many prometheus clients
+      [[inputs.prometheus]]
+        # The address of the local Mesos agent
+        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
