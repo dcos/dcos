@@ -941,6 +941,7 @@ package:
       # For post-installation customization, edit the file /var/lib/dcos/marathon/environment
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
+      MARATHON_SUPPRESS_OFFERS=
       MARATHON_JAVA_ARGS={{ marathon_java_args }}
 {% switch dcos_overlay_enable %}
 {% case "true" %}
