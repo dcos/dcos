@@ -128,7 +128,7 @@ if exhibitor_backend == 'STATIC':
     master_ips = [i.split(':')[1] for i in exhibitor_staticensemble.split(',')]
     if detected_ip not in master_ips:
         message = (
-            "ip-detect returned {master_ip}. "
+            "ERROR: ip-detect returned {master_ip}. "
             "{master_ip} is not in the configured list of masters."
         ).format(master_ip=detected_ip)
         print(message)
