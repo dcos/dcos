@@ -1,3 +1,16 @@
+## DC/OS 1.11.5
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
+
+### Security updates
+
+
 ## DC/OS 1.11.4
 
 
