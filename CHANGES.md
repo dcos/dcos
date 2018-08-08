@@ -1,9 +1,5 @@
 ## DC/OS 1.10.9
 
-* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
-
-## DC/OS 1.10.8
-
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
@@ -16,6 +12,21 @@ Format of the entries must be.
 <new-line>
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
+
+### Notable changes
+
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
+
+### Fixed and improved
+
+* Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
+
+### Security Updates
+
+
+## DC/OS 1.10.8
+
 
 ### Notable changes
 
