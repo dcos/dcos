@@ -1,4 +1,4 @@
-import glob
+from pathlib import Path
 
 from setuptools import setup
 
@@ -17,12 +17,12 @@ def get_advanced_templates():
 # That leads to cached packages hashes being different from what
 # is cached in S3 and prevents us from building DC/OS locally.
 expected_dcos_builder_files = [
-    'docker/dcos-builder/Dockerfile',
-    'docker/dcos-builder/README.md',
+    Path('docker/dcos-builder/Dockerfile'),
+    Path('docker/dcos-builder/README.md'),
 ]
-dcos_builder_files = [filename[len('./pkgpanda/'):] for filename in glob.glob('./pkgpanda/docker/**/*')]
+dcos_builder_files = [f.relative_to(Path("./pkgpanda")) for f in Path("./pkgpanda").glob('docker/**/*') if f.is_file()]
 if set(expected_dcos_builder_files) != set(dcos_builder_files):
-    raise Exception('Expected ./pkgpanda/docker/dcos-buillder to contain {} but it had {}'.format(
+    raise Exception('Expected ./pkgpanda/docker/dcos-builder to contain {} but it had {}'.format(
         expected_dcos_builder_files, dcos_builder_files))
 
 
@@ -126,7 +126,7 @@ setup(
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
-        'pkgpanda': expected_dcos_builder_files,
+        'pkgpanda': [str(f) for f in expected_dcos_builder_files],
     },
     zip_safe=False
 )
