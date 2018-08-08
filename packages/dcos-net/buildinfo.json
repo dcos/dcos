@@ -4,8 +4,8 @@
     "dcos-net": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-net.git",
-      "ref": "84e6278a6916e7f2481256b33b25db06a16907ae",
-      "ref_origin": "master"
+      "ref": "66d5d2468516902eaa719390f7cbb36d00f3a527",
+      "ref_origin": "urbanserj/otp21"
     }
   },
   "sysctl": {
