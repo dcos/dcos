@@ -68,6 +68,8 @@ Format of the entries must be.
 
 * Disable the TLS 1.1 protocol for Master Admin Router's TLS. (DCOS-22326)
 
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
+
 
 ### Notable changes
 
