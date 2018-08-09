@@ -301,7 +301,7 @@ endpoint_tests:
   - tests:
       is_response_correct:
         expect_http_status: 200
-        nocaching_headers_are_sent: skip
+        nocaching_headers_are_sent: false
         test_paths:
           - /system/checks/v1/node/
           - /system/checks/v1/cluster/
