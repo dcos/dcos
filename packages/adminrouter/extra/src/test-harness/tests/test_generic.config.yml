@@ -283,7 +283,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: true
-        auth_token_is_forwarded: skip
+        auth_token_is_forwarded: false
         test_paths:
           - /system/checks/v1/node/
           - /system/checks/v1/cluster/
@@ -292,7 +292,7 @@ endpoint_tests:
   - tests:
       are_upstream_req_headers_ok:
         skip_authcookie_filtering_test: false
-        auth_token_is_forwarded: skip
+        auth_token_is_forwarded: false
         test_paths:
           - /system/checks/v1/node/
           - /system/checks/v1/cluster/
