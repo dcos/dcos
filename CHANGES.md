@@ -1,3 +1,10 @@
+## DC/OS 1.11.5
+
+### Security updates
+
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
+
+
 ## DC/OS 1.11.4
 
 
