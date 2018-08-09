@@ -66,6 +66,8 @@ Format of the entries must be.
 
 * Disable the TLS 1.1 protocol for Master Admin Router's TLS. (DCOS-22326)
 
+* Update Java to 8u181. (DCOS_OSS-3922)
+
 
 ### Notable changes
 
