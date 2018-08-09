@@ -1,6 +1,9 @@
 package:
   - path: /etc/dcos-metrics-config.yaml
     content: |
+      producers:
+        prometheus:
+          port: 61091
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -450,6 +453,7 @@ package:
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
       GLOG_drop_log_memory=false
+      GLOG_v=1
 {% switch use_mesos_hooks %}
 {% case "true" %}
       MESOS_HOOKS={{ mesos_hooks }}
@@ -937,6 +941,7 @@ package:
       # For post-installation customization, edit the file /var/lib/dcos/marathon/environment
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
+      MARATHON_SUPPRESS_OFFERS=
       MARATHON_JAVA_ARGS={{ marathon_java_args }}
 {% switch dcos_overlay_enable %}
 {% case "true" %}

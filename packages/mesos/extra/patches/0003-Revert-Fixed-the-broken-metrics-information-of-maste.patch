@@ -1,4 +1,4 @@
-From 105c40a69b72ab76994c6cc5c83e76454e6a299c Mon Sep 17 00:00:00 2001
+From 4e4254b5186d34e328dbb0d3b74c921e1d1e75b3 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
 Subject: [PATCH] Revert "Fixed the broken metrics information of master in
@@ -9,7 +9,7 @@ This reverts commit b2fc58883e2cd0ca144fd1b0e10cad4235a50223.
 In DC/OS, redirection to the leading master is handled by the
 Adminrouter component.
 ---
- src/webui/master/static/js/controllers.js | 24 +++++++-----------------
+ src/webui/master/static/js/controllers.js | 24 +++++++----------------
  1 file changed, 7 insertions(+), 17 deletions(-)
 
 diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
@@ -69,5 +69,5 @@ index ed60f7d40..d69e92017 100644
              $timeout(pollMetrics, $scope.delay);
            }
 -- 
-2.16.3
+2.17.0
 

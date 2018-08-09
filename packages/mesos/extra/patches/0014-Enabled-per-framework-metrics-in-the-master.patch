@@ -1,0 +1,103 @@
+From e1d6dbf0c0128f8eabe4752bfdf98adafd054a6d Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:57:56 -0700
+Subject: [PATCH] Enabled per-framework metrics in the master.
+
+The `FrameworkMetrics` struct will be used to track per-framework
+metrics in the master.
+
+Review: https://reviews.apache.org/r/67962/
+---
+ src/master/master.hpp  |  8 +++++++-
+ src/master/metrics.cpp | 16 ++++++++++++++++
+ src/master/metrics.hpp | 13 +++++++++++++
+ 3 files changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 54fb02ec8..3117c4f7b 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -2821,6 +2821,9 @@ struct Framework
+   // This is only set for HTTP frameworks.
+   Option<process::Owned<Heartbeater>> heartbeater;
+ 
++  // This is used for per-framwork metrics.
++  FrameworkMetrics metrics;
++
+ private:
+   Framework(Master* const _master,
+             const Flags& masterFlags,
+@@ -2835,8 +2838,11 @@ private:
+       registeredTime(time),
+       reregisteredTime(time),
+       completedTasks(masterFlags.max_completed_tasks_per_framework),
+-      unreachableTasks(masterFlags.max_unreachable_tasks_per_framework)
++      unreachableTasks(masterFlags.max_unreachable_tasks_per_framework),
++      metrics(_info)
+   {
++    CHECK(_info.has_id());
++
+     foreach (const std::string& role, roles) {
+       // NOTE: It's possible that we're already being tracked under the role
+       // because a framework can unsubscribe from a role while it still has
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 5c1d08664..beeb700df 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -16,6 +16,8 @@
+ 
+ #include <string>
+ 
++#include <process/http.hpp>
++
+ #include <process/metrics/counter.hpp>
+ #include <process/metrics/pull_gauge.hpp>
+ #include <process/metrics/metrics.hpp>
+@@ -510,6 +512,20 @@ void Metrics::incrementTasksStates(
+ }
+ 
+ 
++FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
++  : frameworkInfo(_frameworkInfo) {}
++
++
++FrameworkMetrics::~FrameworkMetrics() {}
++
++
++string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
++{
++  // Percent-encode the framework name to avoid characters like '/' and ' '.
++  return "master/frameworks/" + process::http::encode(frameworkInfo.name()) +
++    "/" + stringify(frameworkInfo.id()) + "/";
++}
++
+ } // namespace master {
+ } // namespace internal {
+ } // namespace mesos {
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 1ef74dedf..9f10aecba 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -207,6 +207,19 @@ struct Metrics
+       const TaskStatus::Reason& reason);
+ };
+ 
++
++struct FrameworkMetrics
++{
++  explicit FrameworkMetrics(const FrameworkInfo& _frameworkInfo);
++
++  ~FrameworkMetrics();
++
++  const FrameworkInfo frameworkInfo;
++};
++
++
++std::string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo);
++
+ } // namespace master {
+ } // namespace internal {
+ } // namespace mesos {
+-- 
+2.17.0
+

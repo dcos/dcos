@@ -1,3 +1,12 @@
+## changes from the 1.10 product branch
+
+* Enabled verbose logging for Mesos agents.
+`git cp 5eb83a8344f9df71b45dca5359912bbf83ea8035`
+https://github.com/mesosphere/dcos/commit/5eb83a8344f9df71b45dca5359912bbf83ea8035
+
+* Metrics now uses the 1.11 ref, incorporating the prometheus producer:
+https://github.com/mesosphere/dcos/commit/581128c7482e271f1f02389afb2099207f075fc2c
+
 ## DC/OS 1.10.9
 
 * Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
