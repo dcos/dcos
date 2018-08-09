@@ -1,4 +1,4 @@
-From f1ad107f22982873734d8d9dac743e81bb353188 Mon Sep 17 00:00:00 2001
+From 7fafef398a76d7743e5783971930abf6463c6f12 Mon Sep 17 00:00:00 2001
 From: Gaston Kleiman <gaston.kleiman@gmail.com>
 Date: Mon, 9 Oct 2017 15:19:08 -0700
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
@@ -47,5 +47,5 @@ index 59665869d..6e0a40f93 100644
              'Mesos Master (' + $scope.$location.host() + ':' + $scope.$location.port() + ')');
        }
 -- 
-2.16.3
+2.17.0
 
