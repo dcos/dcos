@@ -97,7 +97,9 @@ end
 
 local function is_container_network(app)
     local container = app["container"]
-    return container and app["networks"][1]["mode"] == "container"
+    local network = app["networks"][1]
+
+    return container and network and network["mode"] == "container"
 end
 
 local function fetch_and_store_marathon_apps(auth_token)
