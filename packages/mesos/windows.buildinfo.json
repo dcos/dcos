@@ -5,9 +5,5 @@
     "ref": "49cab93b565d250fd7e88cd8bb9cd49abbdd7da4",
     "ref_origin": "master"
   },
-  "environment": {
-    "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
-    "MESOS_NATIVE_JAVA_LIBRARY": "/opt/mesosphere/lib/libmesos.so"
-  },
   "state_directory": true
 }

@@ -1,0 +1,28 @@
+[Unit]
+Description=Mesos Agent Public: distributed systems kernel public agent
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=2
+KillMode=control-group
+Delegate=true
+LimitNOFILE=infinity
+TasksMax=infinity
+SyslogIdentifier=mesos-agent
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-mesos-slave-public.log
+StandardError=file:c:\var\log\dcos-mesos-slave-public.log
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\mesos-slave-common.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\mesos-slave-public.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\proxy.env.ps1
+EnvironmentFile=-c:\opt\mesosphere\etc\mesos-slave-common-extras.ps1
+EnvironmentFile=-c:\var\lib\dcos\mesos-slave-common.ps1
+EnvironmentFile=-c:\var\lib\dcos\mesos-resources.ps1
+EnvironmentFile=-c:\run\dcos\etc\mesos-slave-public.ps1
+EnvironmentFile=-c:\azuredata\mesos\auth-env.ps1
+ExecStartPre=ping.exe -n 1 ready.spartan
+ExecStartPre=pwsh.exe -file c:\opt\mesosphere\bin\mesos-agent-setup.ps1
+ExecStartPre=c:\opt\mesosphere\bin\python\scripts\bootstrap.exe dcos-mesos-slave-public
+ExecStart=c:\opt\mesosphere\bin\mesos-agent.exe
