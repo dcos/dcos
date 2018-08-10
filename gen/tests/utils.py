@@ -8,6 +8,7 @@ import json
 import pkg_resources
 
 import gen
+from pkgpanda.util import is_windows
 
 true_false_msg = "Must be one of 'true', 'false'. Got 'foo'."
 
@@ -17,9 +18,15 @@ def make_arguments(new_arguments):
     Fields with default values should not be added in here so that the
     default values are also tested.
     """
+    if is_windows:
+        ipdetect_script = "ip-detect/aws.ps1"
+        ipdetect6_script = "ip-detect/aws6.ps1"
+    else:
+        ipdetect_script = "ip-detect/aws.sh"
+        ipdetect6_script = "ip-detect/aws6.sh"
     arguments = copy.deepcopy({
-        'ip_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws.sh'),
-        'ip6_detect_filename': pkg_resources.resource_filename('gen', 'ip-detect/aws6.sh'),
+        'ip_detect_filename': pkg_resources.resource_filename('gen', ipdetect_script),
+        'ip6_detect_filename': pkg_resources.resource_filename('gen', ipdetect6_script),
         'bootstrap_id': '123',
         'package_ids': json.dumps(['package--version']),
         'exhibitor_zk_path': '/dcos',
