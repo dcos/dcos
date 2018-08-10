@@ -1,0 +1,11 @@
+{
+  "requires": [
+    {"name":"python", "variant":"windows"},
+    {"name":"dcos-image-deps", "variant":"windows"},
+    {"name":"python-azure-mgmt-resource", "variant":"windows"}
+  ],
+  "single_source": {
+    "kind": "git_local",
+    "rel_path": "../../"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "requires": [
+    {"name":"dcos-image", "variant":"windows"},
+    {"name":"python", "variant":"windows"},
+    {"name":"teamcity-messages", "variant":"windows"}
+  ]
+}
