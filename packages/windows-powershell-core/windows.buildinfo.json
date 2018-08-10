@@ -1,0 +1,13 @@
+{
+  "requires": [{"name":"windows-7zip", "variant":"windows"}],
+  "sources": {
+    "windows-powershell-core": {
+      "kind": "url",
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v6.0.2/PowerShell-6.0.2-win-x64.zip",
+      "sha1": "0462f0c8aafcf5b74ddc66aac7e10126e0a514f0"
+    }
+  },
+  "environment": {
+    "PSMODULEPATH": "$env:PSMODULEPATH;C:\\Users\\Documents\\WindowsPowerShell\\Modules;C:\\Program Files\\WindowsPowerShell\\Modules;C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\Modules"
+  }
+}
