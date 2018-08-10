@@ -760,42 +760,42 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/metrics",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/apps",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/deployments",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/info",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/leader",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/queue",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/tasks",
                   "Role": ["master"]
               },

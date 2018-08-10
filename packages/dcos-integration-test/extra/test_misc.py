@@ -29,6 +29,8 @@ def test_load_user_config():
 def test_expanded_config():
     # Caluclated parameters should be present
     assert 'master_quorum' in expanded_config
+    # Defined and used parameters should be present
+    assert 'marathon_port' in expanded_config
 
     # TODO(cmaloney): Test user provided parameters are present. All the
     # platforms have different sets...
