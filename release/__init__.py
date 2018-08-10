@@ -29,12 +29,6 @@ from gen.calc import DCOS_VERSION
 from pkgpanda.constants import DOCKERFILE_DIR
 from pkgpanda.util import is_windows, logger
 
-if is_windows:
-    # DC/OS is not supported on AWS at this time.
-    provider_names = ['azure', 'bash']
-else:
-    provider_names = ['aws', 'azure', 'bash']
-
 
 class ConfigError(Exception):
     pass
@@ -124,7 +118,7 @@ def from_json(json_str):
     return null_to_none(json.loads(json_str))
 
 
-def load_providers():
+def load_providers(provider_names):
     return {name: importlib.import_module("gen.build_deploy." + name)
             for name in provider_names}
 
@@ -393,7 +387,7 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content': '',
 #       'content_file': '',
 #       }]}}
-def make_channel_artifacts(metadata):
+def make_channel_artifacts(metadata, provider_names):
     artifacts = [{
         'channel_path': 'version',
         'local_content': DCOS_VERSION,
@@ -410,7 +404,7 @@ def make_channel_artifacts(metadata):
     log.setLevel(logging.DEBUG)
 
     provider_data = {}
-    providers = load_providers()
+    providers = load_providers(provider_names)
     for name, module in sorted(providers.items()):
         bootstrap_url = metadata['repository_url']
 
@@ -725,10 +719,11 @@ class ReleaseManager():
 
             self.__storage_providers[name] = storage
 
-    def __init__(self, config, noop):
+    def __init__(self, config, noop, provider_names):
         self._setup_storage(config.get('storage', dict()))
         self.__noop = noop
         self.__config = config
+        self.__provider_names = provider_names
 
         preferred_name = config.get('options', dict()).get('preferred')
         if preferred_name:
@@ -790,7 +785,7 @@ class ReleaseManager():
         assert 'tag' in metadata
         del metadata['channel_artifacts']
 
-        metadata['channel_artifacts'] = make_channel_artifacts(metadata)
+        metadata['channel_artifacts'] = make_channel_artifacts(metadata, self.__provider_names)
 
         storage_commands = repository.make_commands(metadata)
         self.apply_storage_commands(storage_commands)
@@ -802,7 +797,7 @@ class ReleaseManager():
         metadata = self.get_metadata(src_channel)
         self.fetch_key_artifacts(metadata)
         del metadata['channel_artifacts']
-        make_channel_artifacts(metadata)
+        make_channel_artifacts(metadata, self.__provider_names)
 
         return metadata
 
@@ -839,7 +834,7 @@ class ReleaseManager():
         metadata['tag'] = tag
         assert 'channel_artifacts' not in metadata
 
-        metadata['channel_artifacts'] = make_channel_artifacts(metadata)
+        metadata['channel_artifacts'] = make_channel_artifacts(metadata, self.__provider_names)
 
         storage_commands = repository.make_commands(metadata)
         self.apply_storage_commands(storage_commands)
@@ -868,6 +863,11 @@ def main():
         action='store_true',
         help="Do not take any actions on the storage providers, just run the "
              "whole build, produce the list of actions than no-op.")
+
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help="Build an installer artifact and terminate. Do not run any cloud provider stages.")
 
     parser.add_argument(
         '-c',
@@ -929,7 +929,19 @@ def main():
         print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
         sys.exit(1)
 
-    release_manager = ReleaseManager(config, options.noop)
+    # Set the various stages that need to execute after packages are built.
+    if is_windows:
+        # DC/OS is not supported on AWS at this time.
+        provider_names = ['azure', 'bash']
+    else:
+        provider_names = ['aws', 'azure', 'bash']
+
+    # If the '--local' option is specified we don't do any cloud
+    # provider-related operations, we just build a local installer artifact.
+    if options.local:
+        provider_names = ['bash']
+
+    release_manager = ReleaseManager(config, options.noop, provider_names)
     if options.action == 'promote':
         release_manager.promote(options.source_channel, options.destination_repository, options.destination_channel)
     elif options.action == 'create':
