@@ -1,0 +1,22 @@
+$ErrorActionPreference = "stop"
+
+. c:\\opt\\mesosphere\\environment.export.ps1
+
+$env:PYTHONUNBUFFERED="notemtpy"
+$env:AIOHTTP_NOSENDFILE=1
+
+$env:DCOS_IMAGE_COMMIT="{dcos_image_commit}"
+$env:BOOTSTRAP_ID="{bootstrap_id}"
+$env:BOOTSTRAP_VARIANT="{variant}"
+
+# ash exec inside busybox doesn't have an equivalent to `-a` letting us set argv0
+# directly, and python also doesn't have a way of setting it, so we pass argv0
+# out of line and have it picked up by the installer
+$env:INSTALLER_ARGV0="dcos_generate_config.windows.ps1"
+
+# On windows python scripts have a .exe generated that you execute
+invoke-expression "& `"c:\\opt\\mesosphere\\bin\\python\\scripts\\dcos_installer.exe`" $args"
+if($LASTEXITCODE) {{
+    Write-Output "ERROR: Failed to run dcos_installer.exe"
+    exit -1
+}}

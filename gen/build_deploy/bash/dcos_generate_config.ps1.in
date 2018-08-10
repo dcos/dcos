@@ -1,0 +1,56 @@
+# variant: {variant}
+#
+# All logging and tool output should be redirected to stderr
+# as the Docker container might output json that would
+# otherwise be tainted.
+#
+$ErrorActionPreference = "stop"
+
+# preflight checks
+$arguments = @("version")
+Invoke-Expression "& `"docker`" $arguments"
+if ($LASTEXITCODE -ne 0)
+{{
+    Write-Error "docker should be installed and running. Aborting."
+    exit -1
+}}
+
+
+# extract payload and load into docker if not extracted
+write-output "Loading into docker daemon, this step can take a few minutes"
+
+$arguments = $("load", "-i", "{genconf_tar}")
+Invoke-Expression "& `"docker`" $arguments"
+if ($LASTEXITCODE -ne 0)
+{{
+    Write-Error "docker fails to load tar file"
+    exit -1
+}}
+
+$env:PORT='9000'
+$env:DCOS_INSTALLER_DAEMONIZE='false'
+$env:DCOS_INSTALLER_CONTAINER_NAME='{genconf_tar}'
+
+if ($env:DCOS_INSTALLER_DAEMONIZE -eq "true" )
+{{
+    $arguments = @("run", "--name=$env:DCOS_INSTALLER_CONTAINER_NAME", "-d", "-p", "${{env:PORT}}:9000", "-v", "$pwd\genconf\:c:\genconf", "{docker_image_name}")
+    $arguments += $args
+    Invoke-Expression "& `"docker.exe`" $arguments"
+    if($LASTEXITCODE)
+    {{
+        Write-Output "ERROR: Failed to run: docker.exe $arguments"
+        exit -1
+    }}
+}}
+else
+{{
+    $arguments = @("run", "--rm", "--name=$env:DCOS_INSTALLER_CONTAINER_NAME", "-i", "-p", "${{env:PORT}}:9000", "-v", "$pwd\genconf\:c:\genconf", "{docker_image_name}")
+    $arguments += $args
+    Invoke-Expression "& `"docker.exe`" $arguments"
+    if($LASTEXITCODE)
+    {{
+        Write-Output "ERROR: Failed to run: docker.exe $arguments"
+        exit -1
+    }}
+}}
+

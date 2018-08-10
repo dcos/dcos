@@ -1,0 +1,29 @@
+# escape=`
+# The above line changes the default escape character to back-tick as
+# windows uses the default backslash for filenames making filepaths hard
+# to read
+
+FROM microsoft/windowsservercore:1803
+MAINTAINER help@dcos.io
+
+WORKDIR c:\
+VOLUME ["c:/genconf"]
+
+ADD https://7-zip.org/a/7z1801-x64.msi c:\temp\7z1801-x64.msi
+RUN "md c:\\opt\\mesosphere\\bin"
+RUN start /wait msiexec /i \temp\7z1801-x64.msi /qn INSTALLDIR="c:\\opt\\mesosphere\\bin\\7-Zip"
+
+# running powershell core from within bootstrap bin directory
+ENTRYPOINT c:\opt\mesosphere\bin\PowerShell-Core\pwsh.exe -file c:\installer_internal_wrapper.ps1
+
+# Add the mutable artifacts last to increase caching, starting with the common one
+COPY {installer_bootstrap_filename} c:\temp\
+RUN ""c:\\opt\\mesosphere\\bin\\7-Zip\\7z.exe" e c:\\temp\\{installer_bootstrap_filename} -oc:\\temp"
+RUN ""c:\\opt\\mesosphere\\bin\\7-Zip\\7z.exe" x c:\\temp\\{bootstrap_id}.bootstrap.tar -aos -oc:\\opt\\mesosphere\\"
+COPY installer_internal_wrapper.ps1 c:\installer_internal_wrapper.ps1
+COPY {bootstrap_filename} c:\artifacts\bootstrap\{bootstrap_filename}
+COPY {packages_dir} c:\artifacts\packages
+COPY {bootstrap_active_filename} c:\artifacts\bootstrap\{bootstrap_active_filename}
+COPY {bootstrap_latest_filename} c:\artifacts\bootstrap\{bootstrap_latest_filename}
+COPY {latest_complete_filename} c:\artifacts\complete\{latest_complete_filename}
+COPY gen_extra\ c:\gen_extra
