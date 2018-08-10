@@ -1,0 +1,8 @@
+{
+  "docker": "microsoft/windowsservercore:1803",
+  "single_source" : {
+    "kind": "url_extract",
+    "url" : "file://foo.tar.gz",
+    "sha1": "56d290e877b90646394f6584e7091e5412d4a8f7"
+  }
+}
