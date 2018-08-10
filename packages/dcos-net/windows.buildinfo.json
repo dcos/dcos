@@ -1,0 +1,12 @@
+{
+  "requires": [
+    {"name":"libsodium", "variant":"windows"}],
+  "sources": {
+    "dcos-net": {
+      "kind": "git",
+      "git": "https://github.com/dcos/dcos-net.git",
+      "ref": "e78ab07e5d3f03239b23c24402b38e6ae917ff97",
+      "ref_origin": "master"
+    }
+  }
+}

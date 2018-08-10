@@ -1,0 +1,12 @@
+[Unit]
+Description=Generate resolv.conf Timer: periodically updates the network name resolution configuration
+
+[Service]
+KillSignal=SIGKILL
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-gen-resolvconf-timer.log
+StandardError=file:c:\var\log\dcos-gen-resolvconf-timer.log
+
+[Timer]
+OnBootSec=5sec
+OnUnitActiveSec=1min

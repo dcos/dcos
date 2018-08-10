@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/jedisct1/libsodium.git",
+    "ref": "415f07969205f1fb7fd89034177f5194edfc9c9f",
+    "ref_origin" : "master"
+  }
+}

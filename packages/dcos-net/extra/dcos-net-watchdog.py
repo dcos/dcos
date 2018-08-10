@@ -8,6 +8,8 @@ import time
 
 import dns.query
 
+from pkgpanda.constants import is_windows
+
 
 WATCHDOG_TIMEOUT = 60
 NAME_SERVERS = ['198.51.100.1', '198.51.100.2', '198.51.100.3']
@@ -31,7 +33,7 @@ def watchdog(ns):
     except dns.exception.Timeout:
         logging.error('DNS Server Timeout')
     except:
-        logging.erorr('Exception: {}'.sys.exc_info()[1])
+        logging.error('Exception: {}'.format(sys.exc_info()[1]))
     return False
 
 
@@ -40,11 +42,21 @@ def kill(name):
         logging.info('Killing is disabled')
         return 0
     logging.info('Killing %s', name)
-    r = subprocess.run(['/usr/bin/env',
-                        'systemctl', 'kill',
-                        '--signal', 'SIGKILL',
-                        '--kill-who', 'main',
-                        name])
+    if is_windows:
+        # On Windows, we issue directly the service restart command via PowerShell.
+        # This will solve potential problems when the dcos-net agent is blocked due
+        # to any weird windows-systemctl problems.
+        # Under normal conditions, when receiving the service restart command,
+        # the windows-sytemctl package will send a SIGKILL signal to the
+        # erl.exe process used by dcos-net.
+        command = ['pwsh.exe', '-Command', 'Restart-Service', '-Force', name]
+    else:
+        command = ['/usr/bin/env',
+                   'systemctl', 'kill',
+                   '--signal', 'SIGKILL',
+                   '--kill-who', 'main',
+                   name]
+    r = subprocess.run(command)
     if r.returncode == 0:
         logging.info('%s was successfully killed', name)
     return r.returncode

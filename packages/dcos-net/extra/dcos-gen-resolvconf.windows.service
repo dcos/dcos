@@ -1,0 +1,13 @@
+[Unit]
+Description=Generate resolv.conf: configures network name resolution
+
+[Service]
+Type=oneshot
+KillSignal=SIGKILL
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-gen-resolvconf-service.log
+StandardError=file:c:\var\log\dcos-gen-resolvconf-service.log
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dns_config.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dns_search_config.ps1
+ExecStart=powershell.exe -file c:\opt\mesosphere\active\dcos-net\dcos-net\bin\gen_resolvconf.ps1

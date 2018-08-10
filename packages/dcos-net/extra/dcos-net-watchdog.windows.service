@@ -1,0 +1,15 @@
+[Unit]
+Description=DC/OS Net Watchdog: restarts dcos-net when it is unhealthy
+
+[Service]
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=15
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-net-watchdog.log
+StandardError=file:c:\var\log\dcos-net-watchdog.log
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dcos_net.ps1
+Environment=HOME=c:\opt\mesosphere
+ExecStart=python.exe c:\opt\mesosphere\active\dcos-net\dcos-net\bin\dcos-net-watchdog.py

@@ -1,0 +1,21 @@
+[Unit]
+Description=DC/OS Net: A distributed systems & network overlay orchestration engine
+
+[Service]
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=5
+LimitNOFILE=16384
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-net.log
+StandardError=file:c:\var\log\dcos-net.log
+WorkingDirectory=c:\opt\mesosphere\active\dcos-net
+EnvironmentFile=c:\opt\mesosphere\etc\check_time.env.ps1
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dcos_net.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dns_config.ps1
+Environment=HOME=c:\opt\mesosphere
+ExecStartPre=pwsh.exe -file c:\opt\mesosphere\active\dcos-net\dcos-net\bin\dcos-net-setup.ps1
+ExecStartPre=c:\opt\mesosphere\bin\python\scripts\bootstrap.exe dcos-net
+ExecStart=c:\opt\mesosphere\active\dcos-net\dcos-net\erts-10.1\bin\erl.exe -boot c:\opt\mesosphere\active\dcos-net\dcos-net\releases\0.0.1\dcos-net -config c:\opt\mesosphere\etc\sys.config -args_file C:\opt\mesosphere\etc\vm.args -noshell -noinput +Bd -mode embedded -pa -- foreground
