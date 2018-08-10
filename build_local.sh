@@ -45,4 +45,4 @@ python3.5 -m venv /tmp/dcos_build_venv
 ./prep_local
 
 # Build a release of DC/OS
-release create `whoami` local_build $tree_variants
+release create --noop --local `whoami` local_build $tree_variants
