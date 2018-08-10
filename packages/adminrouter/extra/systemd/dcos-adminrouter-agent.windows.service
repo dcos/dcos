@@ -1,0 +1,18 @@
+[Unit]
+Description=Admin Router Agent: exposes a unified control plane proxy for components and services using apache
+
+[Service]
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=5
+LimitNOFILE=16384
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+Type=forking
+PrivateDevices=yes
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-adminrouter-agent.log
+StandardError=file:c:\var\log\dcos-adminrouter-agent.log
+ExecStartPre=ping.exe -n 1 ready.spartan
+ExecStartPre=ping.exe -n 1 leader.mesos
+ExecStart=c:\opt\mesosphere\bin\Apache24\bin\httpd.exe -f c:\opt\mesosphere\bin\Apache24\conf\adminrouter.conf
