@@ -179,7 +179,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        local host_or_ip = task["host"] --take host  by default
 
        if is_container_network(app) then
-          ngx.log(ngx.NOTICE, "app '" .. appId .. "' is in container network")
+          ngx.log(ngx.NOTICE, "app '" .. appId .. "' is in a container network")
           -- override with the ip of the task
           local task_ip_addresses = task["ipAddresses"]
           if task_ip_addresses then
