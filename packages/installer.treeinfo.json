@@ -1,8 +1,10 @@
 {
   "exclude": [
-    "erts",
-    "openstackservice",
-    "spartan"
+    "windows-7zip",
+    "windows-apache",
+    "windows-powershell-core",
+    "windows-python",
+    "windows-systemctl"
   ],
   "core_package_list": [
     "dcos-image"

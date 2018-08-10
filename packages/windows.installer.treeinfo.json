@@ -88,5 +88,5 @@
     "telegraf",
     "toybox"
   ],
-  "bootstrap_package_list": ["dcos-image"]
+  "core_package_list": ["dcos-image"]
 }
