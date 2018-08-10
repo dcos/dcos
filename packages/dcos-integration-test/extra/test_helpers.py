@@ -1,6 +1,11 @@
 import copy
+import datetime
 import json
+import logging
+import os
 import uuid
+
+import retrying
 
 from dcos_test_utils import marathon
 
@@ -21,6 +26,63 @@ def get_exhibitor_admin_password():
     creds = exhibitor_realm.split(':')[1].strip()
     password = creds.split(',')[0].strip()
     return password
+
+
+def _get_bundle_list(dcos_api_session):
+    response = check_json(dcos_api_session.health.get('/report/diagnostics/list/all'))
+    bundles = []
+    for _, bundle_list in response.items():
+        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
+            # append bundles and get just the filename.
+            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
+    return bundles
+
+
+def check_json(response):
+    response.raise_for_status()
+    try:
+        json_response = response.json()
+        logging.debug('Response: {}'.format(json_response))
+    except ValueError:
+        logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
+        raise
+    assert len(json_response) > 0, 'Empty JSON returned from dcos-diagnostics request'
+    return json_response
+
+
+@retrying.retry(wait_fixed=2000, stop_max_delay=120000,
+                retry_on_result=lambda x: x is False)
+def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
+    response = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
+    # find if the job is still running
+    job_running = False
+    percent_done = 0
+    for _, attributes in response.items():
+        assert 'is_running' in attributes, '`is_running` field is missing in response'
+        assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
+
+        if attributes['is_running']:
+            percent_done = attributes['job_progress_percentage']
+            logging.info("Job is running. Progress: {}".format(percent_done))
+            job_running = True
+            break
+
+    # if we ran this bit previously compare the current datapoint with the one we saved
+    if last_datapoint['time'] and last_datapoint['value']:
+        if percent_done <= last_datapoint['value']:
+            assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
+                "Job is not progressing"
+            )
+    last_datapoint['value'] = percent_done
+    last_datapoint['time'] = datetime.datetime.now()
+
+    return not job_running
+
+
+# sometimes it may take extra few seconds to list bundles after the job is finished.
+@retrying.retry(stop_max_delay=5000)
+def wait_for_diagnostics_list(dcos_api_session):
+    assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
 
 
 # make the expanded config available at import time to allow determining
