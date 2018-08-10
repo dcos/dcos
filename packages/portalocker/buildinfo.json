@@ -1,0 +1,10 @@
+{
+  "requires": ["python"],
+  "sources": {
+    "portalocker": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/57/41/05e79e5516db1cc0c967b3202388cde729f871c871b0a07bf24ff11adfcf/portalocker-1.2.1-py2.py3-none-any.whl",
+      "sha1": "b6fdc8335bbd6ed96dc56c9a857d64b88adc8b58"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 {
   "requires": [
     "dcos-image",
+    "portalocker",
     "python",
     "python-kazoo",
     "python-requests",

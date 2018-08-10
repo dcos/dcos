@@ -1,9 +1,19 @@
+import platform
+
 from setuptools import setup
+
 
 requires = [
     'kazoo',
     'requests',
+    'portalocker'
 ]
+
+if platform.system() == "Windows":
+    requires += [
+        'pywin32',
+        'pypiwin32'
+    ]
 
 
 setup(

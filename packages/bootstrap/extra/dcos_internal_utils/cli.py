@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import ctypes
 import json
 import logging
 import os
@@ -18,15 +19,21 @@ from jwt.utils import base64url_decode, bytes_to_number
 
 from dcos_internal_utils import bootstrap, exhibitor
 from pkgpanda.actions import apply_service_configuration
+from pkgpanda.util import is_windows
 
 log = logging.getLogger(__name__)
 
 
 def check_root(fun):
     def wrapper(b, opts):
-        if os.getuid() != 0:
-            log.error('bootstrap must be run as root')
-            sys.exit(1)
+        if is_windows:
+            if ctypes.windll.shell32.IsUserAnAdmin() != 1:
+                log.error('bootstrap must be run as root')
+                sys.exit(1)
+        else:
+            if os.getuid() != 0:
+                log.error('bootstrap must be run as root')
+                sys.exit(1)
         fun(b, opts)
     return wrapper
 

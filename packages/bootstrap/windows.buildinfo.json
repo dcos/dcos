@@ -1,0 +1,10 @@
+{
+  "requires": [
+    {"name":"dcos-image", "variant":"windows"},
+    {"name":"portalocker", "variant":"windows"},
+    {"name":"python", "variant":"windows"},
+    {"name":"python-kazoo", "variant":"windows"},
+    {"name":"python-requests", "variant":"windows"}
+  ],
+  "state_directory": true
+}

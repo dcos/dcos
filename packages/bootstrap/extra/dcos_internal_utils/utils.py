@@ -1,19 +1,11 @@
-try:
-    import fcntl
-except ImportError:
-    pass
 import logging
 import os
 import subprocess
-import sys
+
+import portalocker
 
 import gen
 
-from pkgpanda.util import is_windows
-
-
-if not is_windows:
-    assert 'fcntl' in sys.modules
 
 log = logging.getLogger(__name__)
 
@@ -32,20 +24,21 @@ def detect_ip():
 
 class Directory:
     def __init__(self, path):
-        self.path = path
+        # open does not support directories, so use file in directory
+        self.path = path + os.sep + ".directorylock"
 
     def __enter__(self):
         log.info('Opening {}'.format(self.path))
-        self.fd = os.open(self.path, os.O_RDONLY)
+        self.fd = open(self.path, "w")
         log.info('Opened {} with fd {}'.format(self.path, self.fd))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         log.info('Closing {} with fd {}'.format(self.path, self.fd))
-        os.close(self.fd)
+        self.fd.close()
 
     def lock(self):
-        return Flock(self.fd, fcntl.LOCK_EX)
+        return Flock(self.fd, portalocker.LOCK_EX)
 
 
 class Flock:
@@ -55,10 +48,10 @@ class Flock:
     def __enter__(self):
         log.info('Locking fd {}'.format(self.fd))
         # If the fcntl() fails, an IOError is raised.
-        fcntl.flock(self.fd, self.op)
+        portalocker.lock(self.fd, self.op)
         log.info('Locked fd {}'.format(self.fd))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        fcntl.flock(self.fd, fcntl.LOCK_UN)
+        portalocker.unlock(self.fd)
         log.info('Unlocked fd {}'.format(self.fd))
