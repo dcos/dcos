@@ -470,6 +470,7 @@ def hash_files_in_folder(directory):
             if path:
                 file_hash_dict[root[len(directory) + 1:]] = ""
 
+    print('file_hash_dict = {}'.format(json.dumps(file_hash_dict)))
     return file_hash_dict
 
 
@@ -490,6 +491,7 @@ def hash_folder_abs(directory, work_dir):
 
 
 def hash_folder(directory):
+    print("hash_folder: {}".format(directory))
     return hash_checkout(hash_files_in_folder(directory))
 
 
@@ -785,6 +787,7 @@ def build_package_variants(package_store, name, clean_after_build=True, recursiv
 class IdBuilder():
 
     def __init__(self, buildinfo):
+        print("IdBuilder.__init__: {}".format(json.dumps(buildinfo)))
         self._start_keys = set(buildinfo.keys())
         self._buildinfo = copy.deepcopy(buildinfo)
         self._taken = set()
@@ -794,6 +797,7 @@ class IdBuilder():
             raise BuildError("Key {} shouldn't be in buildinfo, but was".format(field))
 
     def add(self, field, value):
+        print("IdBuilder.add: field={}, value={}".format(field, value))
         self._check_no_key(field)
         self._buildinfo[field] = value
 
@@ -805,6 +809,7 @@ class IdBuilder():
         return self._buildinfo[field]
 
     def replace(self, taken_field, new_field, new_value):
+        print("IdBuilder.replace: taken_field={}, new_field={}, new_value={}".format(taken_field, new_field, new_value))
         assert taken_field in self._buildinfo
         self._check_no_key(new_field)
         del self._buildinfo[taken_field]
@@ -812,6 +817,7 @@ class IdBuilder():
         self._taken.add(new_field)
 
     def update(self, field, new_value):
+        print("IdBuilder.update: field={}, new_value={}".format(field, new_value))
         assert field in self._buildinfo
         self._buildinfo[field] = new_value
 
@@ -822,6 +828,7 @@ class IdBuilder():
         if remaining_keys:
             raise BuildError("ERROR: Unknown keys {} in buildinfo.json".format(remaining_keys))
 
+        print("IdBuilder.get_builds_ids: {}".format(self._buildinfo))
         return self._buildinfo
 
 
@@ -832,6 +839,7 @@ def build(package_store: PackageStore, name: str, variant, clean_after_build, re
 
 
 def _build(package_store, name, variant, clean_after_build, recursive):
+    print("_build: name={}, variant={}, clean_after_build={}, recursive={}".format(name, variant, clean_after_build, recursive))
     assert isinstance(package_store, PackageStore)
     tmpdir = tempfile.TemporaryDirectory(prefix="pkgpanda_repo")
     repository = Repository(tmpdir.name)
@@ -1084,6 +1092,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     # If the package is already built, don't do anything.
     pkg_path = package_store.get_package_cache_folder(name) + '/{}.tar.xz'.format(pkg_id)
 
+    print("Checking whether package {} already exists".format(pkg_path))
     # Done if it exists locally
     if exists(pkg_path):
         print("Package up to date. Not re-building.")
