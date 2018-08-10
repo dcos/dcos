@@ -1,0 +1,9 @@
+{
+  "sources": {
+    "windows-7zip": {
+      "kind": "url",
+      "url": "https://7-zip.org/a/7z1801-x64.msi",
+      "sha1": "e64a7b6c55d65a2594a112f5d41c5ec0fba06c7d"
+    }
+  }
+}
