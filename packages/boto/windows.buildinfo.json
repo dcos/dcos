@@ -1,0 +1,35 @@
+{
+  "requires": [
+    {"name":"python", "variant":"windows"},
+    {"name":"six", "variant":"windows"}, 
+    {"name":"python-dateutil", "variant":"windows"},
+    {"name":"python-requests", "variant":"windows"}
+  ],
+  "sources": {
+    "boto3": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/7d/09/66fef826fb13a2cee74a1df56c269d2794a90ece49c3b77113b733e4b91d/boto3-1.4.8-py2.py3-none-any.whl",
+      "sha1": "1e5ca3a1a91ec124615362806452aac6b547ccf2"
+    },
+    "jmespath": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/j/jmespath/jmespath-0.9.0-py2.py3-none-any.whl",
+      "sha1": "742976d7293dd23de008b38e8eea9a0c3bb20294"
+    },
+    "futures": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/py2.py3/f/futures/futures-2.2.0-py2.py3-none-any.whl",
+      "sha1": "51a5e9bf2ef09ec23971d57c8ae83719f997d485"
+    },
+    "botocore": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/4c/5a/8bca1ef99a82ffaa5b7f0debeab2b86cba2a6f38c5f4cf0e984f95b89f01/botocore-1.8.1-py2.py3-none-any.whl",
+      "sha1": "3ed7a866a3ec928f54a033f50db930c076e41713"
+    },
+    "s3transfer": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/53/a8/dbee2c13508a4f1060ec44a0889d6766508912905a16edb593f628e92db1/s3transfer-0.1.11-py2.py3-none-any.whl",
+      "sha1": "3569560d886f48b0e0e9286fc1c733902f6bd91e"
+    }
+  }
+}

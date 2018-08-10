@@ -1,0 +1,18 @@
+{
+  "requires": [
+    {"name":"python", "variant":"windows"},
+    {"name":"teamcity-messages", "variant":"windows"}
+  ],
+  "sources": {
+    "pytest": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/a0/2f/076c816e2402c4911ccee4b93ba0475145b7cffd0320ca8efa0add7c469c/pytest-3.0.3.tar.gz",
+      "sha1": "e7fb899ecac031a84e66f991289203d3c1f7c6cb"
+    },
+    "colorama": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/db/c8/7dcf9dbcb22429512708fe3a547f8b6101c0d02137acbd892505aee57adf/colorama-0.3.9-py2.py3-none-any.whl",
+      "sha1": "e76349362848d6e9dcc2d50926059babf2a8d2da"
+    }
+  }
+}

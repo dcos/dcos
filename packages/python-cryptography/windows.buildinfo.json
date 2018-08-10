@@ -1,0 +1,24 @@
+{
+  "requires": [
+    {"name":"python", "variant":"windows"},
+    {"name":"python-idna", "variant":"windows"},
+    {"name":"python-pycparser", "variant":"windows"}
+  ],
+  "sources": {
+    "cryptography": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/6e/d2/af9586c75a9c8f776ff837728a6b716cbd748a487c79d76bb2f698522012/cryptography-2.2.1-cp36-cp36m-win_amd64.whl",
+      "sha1": "219bb2f5d702c87dfa12d5b5ca1e11bfa34b507d"
+    },
+    "asn1crypto": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/5e/85/d9b46c307ff2b5504432425cd99e2d9f13ab7a9835ba45c93da299cb1ec8/asn1crypto-0.23.0-py2.py3-none-any.whl",
+      "sha1": "664233097c6bee3d9ae1802a411ba4f629116406"
+    },
+    "cffi": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz",
+      "sha1": "16265a4b305d433fb9089b19278502e904b0cb43"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "requires": [{"name":"python", "variant":"windows"}],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/02/2b/02b66a8417918654afb8e129fb5a03dbb07ef73b66aea628f60bd60c7596/passlib-1.7.0-py2.py3-none-any.whl",
+    "sha1": "c58455c2d55843259cf2c3197b1b2ecbe8b991d4"
+  }
+}

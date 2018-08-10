@@ -1,0 +1,8 @@
+{
+  "requires": [{"name":"python", "variant":"windows"}],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/8a/a6/4d931a2c77a224d27c78382f4ce8ec07542d4426ea2793bea77a689273c2/PyJWT-1.5.3-py2.py3-none-any.whl",
+    "sha1": "b1985b2c7b78d768c078f03987a919ddb2b98435"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "requires": [
+    {"name":"python", "variant":"windows"},
+    {"name":"python-jinja2", "variant":"windows"},
+    {"name":"python-markupsafe", "variant":"windows"},
+    {"name":"python-requests", "variant":"windows"}
+  ],
+  "sources": {
+    "Flask": {
+      "kind": "url_extract",
+      "url": "https://github.com/pallets/flask/archive/0.11.1.tar.gz",
+      "sha1": "6350522686e0463e01e453d2a7c0d04203083d0f"
+    },
+    "click": {
+      "kind": "url_extract",
+      "url": "https://github.com/pallets/click/archive/6.6.tar.gz",
+      "sha1": "766c6595cc7a1ed12051306094d010e7d85c027f"
+    },
+    "flask-compress": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/0e/2a/378bd072928f6d92fd8c417d66b00c757dc361c0405a46a0134de6fd323d/Flask-Compress-1.4.0.tar.gz",
+      "sha1": "68b5eb124b02993c9466dfb2438e0ba79d2d5809"
+    },
+    "itsdangerous": {
+      "kind": "url_extract",
+      "url": "https://github.com/mitsuhiko/itsdangerous/archive/0.24.tar.gz",
+      "sha1": "c163104c0d80830c6f8c28dee4fe1e576602780f"
+    },
+    "Werkzeug": {
+      "kind": "url_extract",
+      "url": "https://github.com/mitsuhiko/werkzeug/archive/0.10.4.tar.gz",
+      "sha1": "aa0c13e3c2a59f53e857f5bf33dc5aea282550cb"
+    }
+  }
+}
