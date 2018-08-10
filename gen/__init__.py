@@ -35,6 +35,7 @@ from pkgpanda.constants import (
     config_dir,
     dcos_config_yaml,
     dcos_services_yaml,
+    systemd_system_root
 )
 from pkgpanda.util import (
     hash_checkout,
@@ -51,7 +52,7 @@ from pkgpanda.util import (
 # List of all roles all templates should have.
 role_names = {"master", "slave", "slave_public"}
 
-role_template = config_dir + '/roles/{}'
+role_template = config_dir + os.sep + 'roles' + os.sep + '{}'
 
 if is_windows:
     CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
@@ -138,7 +139,7 @@ def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
         for unit in services:
             unit_name = unit['name']
             if 'content' in unit:
-                write_files_entry = {'path': '/etc/systemd/system/{}'.format(unit_name),
+                write_files_entry = {'path': systemd_system_root + '{}'.format(unit_name),
                                      'content': unit['content'],
                                      'permissions': '0644'}
                 cloudconfig['write_files'].append(write_files_entry)
@@ -232,7 +233,7 @@ def load_templates(template_dict):
         for template_name in template_list:
             result_list.append(gen.template.parse_resources(template_name))
 
-            extra_filename = "gen_extra/" + template_name
+            extra_filename = "gen_extra" + os.sep + template_name
             if os.path.exists(extra_filename):
                 result_list.append(gen.template.parse_str(
                     load_string(extra_filename)))
@@ -311,7 +312,7 @@ def do_gen_package(config, package_filename):
                 fileinfo_drive, fileinfo_path = os.path.splitdrive(file_info['path'])
                 path = tmpdir + fileinfo_path
             else:
-                path = tmpdir + '/' + file_info['path']
+                path = tmpdir + os.sep + file_info['path']
             try:
                 if os.path.dirname(path):
                     os.makedirs(os.path.dirname(path), mode=0o755)
@@ -528,11 +529,11 @@ def build_late_package(late_files, config_id, provider):
     # Add a empty pkginfo.json to the late package after validating there
     # isn't already one.
     for file_info in late_files:
-        assert file_info['path'] != '/pkginfo.json'
-        assert is_absolute_path(file_info['path'])
+        assert file_info['path'] != (os.sep + 'pkginfo.json')
+        assert file_info['path'].startswith(os.sep)
 
     late_files.append({
-        "path": "/pkginfo.json",
+        "path": os.sep + "pkginfo.json",
         "content": "{}"})
 
     return {
@@ -727,7 +728,7 @@ def generate(
         # using the values from the late config file.
         late_package_id = PackageId(late_package['name'])
         late_package_filename = make_package_filename(late_package_id, '.dcos_config')
-        os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
+        os.makedirs(os.path.dirname(late_package_filename), mode=0o755, exist_ok=True)
         write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
         log.info('Package filename: {}'.format(late_package_filename))
         stable_artifacts.append(late_package_filename)
@@ -736,8 +737,9 @@ def generate(
         # late_variables will be resolved by the service handling the cloud
         # config (e.g. Amazon CloudFormation). The rendered late config file
         # on a cluster node's filesystem will contain the final values.
+        _, late_config_path = os.path.splitdrive(os.path.abspath(config_dir + '/setup-flags/late-config.yaml'))
         rendered_templates[cloud_config_yaml]['root'].append({
-            'path': config_dir + '/setup-flags/late-config.yaml',
+            'path': late_config_path,
             'permissions': '0644',
             'owner': 'root',
             # TODO(cmaloney): don't prettyprint to save bytes.
@@ -777,7 +779,7 @@ def generate(
     cc['write_files'] = []
     # Do the transform
     for item in cc_root:
-        assert is_absolute_path(item['path'])
+        assert item['path'].startswith(os.sep)
         cc['write_files'].append(item)
     rendered_templates[cloud_config_yaml] = cc
 

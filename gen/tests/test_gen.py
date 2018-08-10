@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 import gen
-import pkgpanda.util
+from pkgpanda.util import is_windows
 
 
 def file_mode(filename: str) -> str:
@@ -24,7 +24,8 @@ def assert_package_contents(config: dict, package_contents_dir: str) -> None:
             file_path = package_contents_dir + '/' + file_info['path']
 
         assert os.path.exists(file_path)
-        assert file_mode(file_path) == file_info.get('permissions', '0644')
+        if not is_windows:
+            assert file_mode(file_path) == file_info.get('permissions', '0644')
         with open(file_path, encoding='utf-8') as f:
             assert f.read() == (file_info['content'] or '')
 
@@ -52,29 +53,27 @@ def assert_do_gen_package(config: dict) -> None:
         assert_package_contents(config, package_extract_dir)
 
 
-# TODO: DCOS_OSS-3461 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_gen_package():
     assert_do_gen_package({'package': [
         {
-            'path': '/etc/foo',
+            'path': os.sep + 'etc' + os.sep + 'foo',
             'content': 'foo',
             'permissions': '0600',
         },
         {
-            'path': '/bin/bar',
+            'path': os.sep + 'bin' + os.sep + 'bar',
             'content': 'bar',
         },
         {
-            'path': '/baz/qux/quux',
+            'path': os.sep + 'baz' + os.sep + 'qux' + os.sep + 'quux',
             'content': 'quux',
         },
         {
-            'path': '/emptyfile1',
+            'path': os.sep + 'emptyfile1',
             'content': '',
         },
         {
-            'path': '/emptyfile2',
+            'path': os.sep + 'emptyfile2',
             'content': None,
         },
     ]})
@@ -82,7 +81,7 @@ def test_do_gen_package():
     # File paths may omit the leading slash.
     assert_do_gen_package({'package': [
         {
-            'path': 'etc/foo',
+            'path': 'etc' + os.sep + 'foo',
             'content': 'foo',
         },
     ]})
@@ -91,7 +90,7 @@ def test_do_gen_package():
     with pytest.raises(Exception):
         assert_do_gen_package({'package': [
             {
-                'path': '/etc/foo',
+                'path': os.sep + 'etc' + os.sep + 'foo',
                 'content': 'foo',
                 'unrecognized_key': 'value',
             },
@@ -101,7 +100,7 @@ def test_do_gen_package():
     with pytest.raises(Exception):
         assert_do_gen_package({'package': [
             {
-                'path': '/etc/foo',
+                'path': os.sep + 'etc' + os.sep + 'foo',
             },
         ]})
     with pytest.raises(Exception):

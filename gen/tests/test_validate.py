@@ -1,24 +1,18 @@
 import logging
 
-import pytest
-
 import gen
-import pkgpanda.util
 from gen.build_deploy.bash import onprem_source
+from pkgpanda.util import is_windows
 
 
 # TODO(cmaloney): Should be able to pass an exact tree to gen so that we can test
 # one little piece at a time rather than having to rework this every time that
 # DC/OS parameters change.
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason no mesos master")
 def test_error_during_calc(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    assert gen.validate({
-        'ip_detect_filename': 'not-a-existing-file',
-        'bootstrap_variant': ''
-    }, extra_sources=[onprem_source]) == {
+    extra_sources = {
         'status': 'errors',
         'errors': {
             'ip_detect_contents': {'message': 'ip-detect script `not-a-existing-file` must exist'}
@@ -26,13 +20,19 @@ def test_error_during_calc(monkeypatch):
         'unset': {
             'bootstrap_url',
             'cluster_name',
-            'exhibitor_storage_backend',
             'master_discovery'
         }
     }
+    if is_windows:
+        extra_sources['unset'].add('master_list')
+    else:
+        extra_sources['unset'].add('exhibitor_storage_backend')
+    assert gen.validate({
+        'ip_detect_filename': 'not-a-existing-file',
+        'bootstrap_variant': ''
+    }, extra_sources=[onprem_source]) == extra_sources
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_error_during_validate(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()

@@ -15,7 +15,7 @@ import gen.template
 import pkgpanda.build
 from gen.internals import Late, Source
 from pkgpanda.constants import cloud_config_yaml
-from pkgpanda.util import split_by_token
+from pkgpanda.util import is_windows, split_by_token
 
 # TODO(cmaloney): Make it so the template only completes when services are properly up.
 late_services = ""
@@ -44,6 +44,11 @@ def validate_provider(provider):
     assert provider == 'azure'
 
 
+if is_windows:
+    shell_extension = ".ps1"
+else:
+    shell_extension = ".sh"
+
 azure_base_source = Source(entry={
     'validate': [
         validate_provider
@@ -54,15 +59,17 @@ azure_base_source = Source(entry={
     },
     'must': {
         'resolvers': '["168.63.129.16"]',
-        'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
-        'ip6_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure6.sh').decode()),
+        'ip_detect_contents': yaml.dump(
+            pkg_resources.resource_string('gen', 'ip-detect/azure' + shell_extension).decode()),
+        'ip6_detect_contents': yaml.dump(
+            pkg_resources.resource_string('gen', 'ip-detect/azure6' + shell_extension).decode()),
         'master_discovery': 'static',
         'exhibitor_storage_backend': 'azure',
         'master_cloud_config': '{{ master_cloud_config }}',
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud' + shell_extension).decode())
     },
     'conditional': {
         'oauth_available': {
