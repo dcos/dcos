@@ -61,7 +61,7 @@ class VolumeDiscoveryException(Exception):
 
 def find_mounts_matching(pattern):
     '''
-    find all matching mounts from the output of the mount command
+    Find all matching mounts from the output of the mount command
     '''
     print('Looking for mounts matching pattern "{}"'.format(pattern.pattern))
     mounts = subprocess.check_output(['mount'], universal_newlines=True)
@@ -83,17 +83,27 @@ def make_disk_resources_json(mounts, role):
         yield json.loads(common), json.loads(disk)
 
 
-def get_disk_free(path):
+def get_total_space(path):
     '''
     @type path: str
 
     @rtype tuple
     '''
-    return (path, floor(float(shutil.disk_usage(path).free) / MB))
+    return (path, floor(float(shutil.disk_usage(path).total) / MB))
 
 
 def get_mounts_and_freespace(matching_mounts):
-    for mount, free_space in map(get_disk_free, matching_mounts):
+    # The "free" space on a mount volume is its total amount of space.
+    # We use the total space (and not the free space) because we are
+    # filling information regarding mount volumes. Those are reserved
+    # for frameworks and should thus be fully available.
+    # We have previously seen, when only using the free disks available,
+    # issues when restarting an agent after adding a new volume.
+    # This is because Mesos does not tolerate changes in the amount of
+    # disk space available for mounted volumes. If the volume was used
+    # by a framework before the restart, the Mesos agent would refuse to
+    # start due to incompatible agent resources (DCOS_OSS-3921).
+    for mount, free_space in map(get_total_space, matching_mounts):
         net_free_space = free_space - TOLERANCE_MB
         if net_free_space <= 0:
             # Per @cmaloney and @lingmann, we should hard exit here if volume
@@ -120,7 +130,7 @@ def main(output_env_file):
     '''
     Find mounts and freespace matching MOUNT_PATTERN, create RESOURCES for the
     disks, and merge the list of disk resources with optionally existing
-    MESOS_RESOURCES environment varianble.
+    MESOS_RESOURCES environment variable.
 
     @type output_env_file: str, filename to write resources
     '''
