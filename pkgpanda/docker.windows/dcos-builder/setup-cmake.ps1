@@ -14,3 +14,13 @@ if($p.ExitCode -ne 0) {
     Throw "Failed to install $FILENAME_PATH"
 }
 
+# cmake has some OS race condition problems with file operations.
+# bump settings a bit in a hope to solve this
+$registryPath = "HKCU:\Software\Kitware\CMake\Config"
+$retryCountName = "FilesystemRetryCount"
+$retryCountValue = 10 # normal is 5
+$retryDelayName = "FilesystemRetryDelay"
+$retryDelayValue = 1000 # normal is 500
+New-Item -Path $registryPath -Force | Out-Null
+New-ItemProperty -Path $registryPath -Name $retryCountName -Value $retryCountValue -PropertyType DWORD -Force | Out-Null
+New-ItemProperty -Path $registryPath -Name $retryDelayName -Value $retryDelayValue -PropertyType DWORD -Force | Out-Null
