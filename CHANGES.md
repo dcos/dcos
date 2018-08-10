@@ -1,3 +1,16 @@
+## DC/OS 1.11.5
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+
+* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
+
+
 ## DC/OS 1.11.4
 
 
