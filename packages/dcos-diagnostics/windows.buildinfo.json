@@ -1,0 +1,11 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-diagnostics.git",
+    "ref": "f612504f524c74f10b48c0e1a2cdb06820529e50",
+    "ref_origin": "master"
+  },
+  "username": "dcos_diagnostics",
+  "group": "systemd-journal",
+  "state_directory": true
+}

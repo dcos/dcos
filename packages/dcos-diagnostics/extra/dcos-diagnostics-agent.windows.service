@@ -1,0 +1,20 @@
+[Unit]
+Description=DC/OS Diagnostics Agent: exposes component health
+
+[Service]
+EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+EnvironmentFile=c:\opt\mesosphere\etc\dcos-diagnostics.env.ps1
+EnvironmentFile=-c:\opt\mesosphere\etc\dcos-diagnostics-extra.env.ps1
+KillSignal=SIGKILL
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+LimitNOFILE=16384
+PermissionsStartOnly=True
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-diagnostics.log
+StandardError=file:c:\var\log\dcos-diagnostics.log
+SupplementaryGroups=dcos_adminrouter
+ExecStartPre=c:\opt\mesosphere\bin\python\scripts\bootstrap.exe dcos-diagnostics-agent
+ExecStartPre=c:\opt\mesosphere\bin\python\scripts\bootstrap.exe dcos-checks-agent
+ExecStart=c:\opt\mesosphere\bin\dcos-diagnostics.exe daemon --config c:\opt\mesosphere\etc\dcos-diagnostics-config.json
