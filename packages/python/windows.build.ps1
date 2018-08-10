@@ -1,25 +1,83 @@
-$ErrorActionPreference = "stop"
+$ErrorActionPreference = "Stop"
 
-Set-Location "c:/pkg/src"
-Write-Host "Installing python to directory ${env:PKG_PATH}"
+$MESOSPHERE_DIR = Join-Path $env:SystemDrive "opt\mesosphere"
+$PIP_TMP_DIR = Join-Path $env:SystemDrive "pip_tmp"
+$PYTHON_PREFIX = Join-Path $env:SystemDrive "Python"
+$PKG_DIR = Join-Path $env:SystemDrive "pkg"
 
-$tmpdir = "c:\python363.tmp"
-
-$parameters = @{
-    'FilePath' = "c:/pkg/src/python/python-3.6.3.exe"
-
-    'ArgumentList' = @("/quiet", "/passive", "InstallAllUsers=1", "PrependPath=1", "Include_test=0", "Include_tcltk=0", "TargetDir=$tmpdir")
-    'Wait' = $true
-    'PassThru' = $true
+function Start-ExecuteWithRetry {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ScriptBlock]$ScriptBlock,
+        [int]$MaxRetryCount=10,
+        [int]$RetryInterval=3,
+        [string]$RetryMessage,
+        [array]$ArgumentList=@()
+    )
+    $currentErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $retryCount = 0
+    while ($true) {
+        try {
+            $res = Invoke-Command -ScriptBlock $ScriptBlock `
+                                  -ArgumentList $ArgumentList
+            $ErrorActionPreference = $currentErrorActionPreference
+            return $res
+        } catch [System.Exception] {
+            $retryCount++
+            if ($retryCount -gt $MaxRetryCount) {
+                $ErrorActionPreference = $currentErrorActionPreference
+                Throw
+            } else {
+                if($RetryMessage) {
+                    Write-Output $RetryMessage
+                } elseif($_) {
+                    Write-Output $_.ToString()
+                }
+                Start-Sleep $RetryInterval
+            }
+        }
+    }
 }
-$p = Start-Process @parameters
-if ($p.ExitCode -ne 0) {
-    Throw "Failed to install python-3.6.3"
+
+
+. "$MESOSPHERE_DIR\environment.export.ps1"
+
+New-Item -ItemType "Directory" -Force -Path $PIP_TMP_DIR
+
+$params = @("-m", "ensurepip", "--root", $PIP_TMP_DIR)
+Start-ExecuteWithRetry -ScriptBlock {
+    $p = Start-Process -Wait -PassThru -FilePath "python.exe" -ArgumentList $params
+    if($p.ExitCode -ne 0) {
+        Throw ("Failed to install pip and setuptools. Exit code: $($p.ExitCode)")
+    }
+} -RetryMessage "Failed to install pip and setuptools. Retrying..."
+
+Move-Item -Path "$PIP_TMP_DIR\opt\mesosphere\bin\Python" $PYTHON_PREFIX
+Remove-Item -Recurse $PIP_TMP_DIR
+Rename-Item -Path "$PYTHON_PREFIX\Scripts\pip3.exe" -NewName "$PYTHON_PREFIX\Scripts\pip.exe"
+Rename-Item -Path "$PYTHON_PREFIX\Scripts\easy_install-3.6.exe" -NewName "$PYTHON_PREFIX\Scripts\easy_install.exe"
+
+$env:PYTHONPATH = "$PYTHON_PREFIX\Lib;$PYTHON_PREFIX\Lib\site-packages"
+
+$packages = @("pypiwin32", "pywin32")
+foreach($package in $packages) {
+    $whl = Get-Item "$PKG_DIR\src\$package\*.whl"
+    $params = @("-m", "pip", "install", "--no-deps", "--no-index", "--prefix=$PYTHON_PREFIX", "$whl")
+    $p = Start-Process -Wait -PassThru -FilePath "python.exe" -ArgumentList $params
+    if($p.ExitCode -ne 0) {
+        Throw ("Failed to install $package Python library. Exit code: $($p.ExitCode)")
+    }
 }
 
-& "$tmpdir\scripts\pip" install "--no-deps" "--install-option=`"--prefix=$tmpdir`"" "c:\pkg\src\cython\Cython-0.27.3"
-if ($LASTEXITCODE -ne 0) {
-    Throw "Failed to install Cython-0.27.3"
+$packages = @("cython", "pywin32-ctypes")
+foreach($package in $packages) {
+    $params = @("-m", "pip", "install", "--no-deps", "--prefix=$PYTHON_PREFIX", "$PKG_DIR\src\$package")
+    $p = Start-Process -Wait -PassThru -FilePath "python.exe" -ArgumentList $params
+    if($p.ExitCode -ne 0) {
+        Throw ("Failed to install $package Python library. Exit code: $($p.ExitCode)")
+    }
 }
 
-copy-item -recurse -path "$tmpdir\*" -destination "$env:PKG_PATH\"
+New-Item -ItemType "Directory" -Force -Path "$env:PKG_PATH\bin"
+Copy-Item -Recurse -Path $PYTHON_PREFIX -Destination "$env:PKG_PATH\bin\"

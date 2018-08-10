@@ -1,0 +1,13 @@
+{
+  "environment": {
+    "PYTHONPATH": "c:\\opt\\mesosphere\\bin\\Python;c:\\opt\\mesosphere\\bin\\Python\\DLLs;c:\\opt\\mesosphere\\bin\\Python\\lib;c:\\opt\\mesosphere\\bin\\Python\\lib\\plat-win;c:\\opt\\mesosphere\\bin\\Python\\lib\\site-packages",
+    "PYTHONUNBUFFERED": "true"
+  },
+  "sources": {
+    "python": {
+      "kind": "url",
+      "url": "https://www.python.org/ftp/python/3.6.5/python-3.6.5-amd64.exe",
+      "sha1": "453a4445a3dc8f295f637cad51b69d233d4089ba"
+    }
+  }
+}
