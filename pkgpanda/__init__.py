@@ -30,12 +30,14 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
+                                install_root,
                                 RESERVED_UNIT_NAMES,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
-                           load_json, make_directory, remove_directory, write_json, write_string)
+from pkgpanda.util import (copy_file, download, extract_tarball, if_exists, is_windows, islink, load_json,
+                           make_directory, make_symlink, realpath, remove_directory, remove_file, rename_file,
+                           write_json, write_string)
 
 if not is_windows:
     assert 'grp' in sys.modules
@@ -46,13 +48,22 @@ if not is_windows:
 
 reserved_env_vars = ["LD_LIBRARY_PATH", "PATH"]
 
-env_header = """# Pkgpanda provided environment variables
-LD_LIBRARY_PATH={0}/lib
-PATH={0}/bin:/usr/bin:/bin:/sbin\n\n"""
-
-env_export_header = """# Pkgpanda provided environment variables
-export LD_LIBRARY_PATH={0}/lib
-export PATH="{0}/bin:$PATH"\n\n"""
+if is_windows:
+    environment_filename = "environment.ps1"
+    environment_export_filename = "environment.export.ps1"
+    env_header = """# Pkgpanda provided environment variables
+    $env:PATH="$env:PATH;{0}\\bin\\scripts;{0}\\bin"\n\n"""
+    env_export_header = """# Pkgpanda provided environment variables
+    $env:PATH="{0}\\bin\\scripts;{0}\\bin;$env:PATH"\n\n"""
+else:
+    environment_filename = "environment"
+    environment_export_filename = "environment.export"
+    env_header = """# Pkgpanda provided environment variables
+    LD_LIBRARY_PATH={0}/lib
+    PATH={0}/bin:/usr/bin:/bin:/sbin\n\n"""
+    env_export_header = """# Pkgpanda provided environment variables
+    export LD_LIBRARY_PATH={0}/lib
+    export PATH="{0}/bin:$PATH"\n\n"""
 
 name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
 version_regex = "^[a-zA-Z0-9@_+:.]+$"
@@ -115,20 +126,25 @@ class Systemd:
         """
         for unit_name in self.unit_names(new_wants_dir):
             wants_symlink_path = os.path.join(new_wants_dir, unit_name)
-            package_file_path = os.path.realpath(wants_symlink_path)
+            package_file_path = realpath(wants_symlink_path)
             systemd_file_path = os.path.join(self.__base_systemd, unit_name)
             tmp_systemd_file_path = systemd_file_path + self.new_unit_suffix
 
             # Copy the unit file to the systemd directory with a suffix added to the filename.
             # This file will be moved to systemd_file_path when the new package set is swapped in.
-            shutil.copyfile(package_file_path, tmp_systemd_file_path)
+            copy_file(package_file_path, tmp_systemd_file_path)
             shutil.copymode(package_file_path, tmp_systemd_file_path)
 
             # Rewrite the symlink to point to the copied unit file's destination.
-            # This symlink won't point to the correct file until the copied unit file is moved to its target location
-            # during activate_new_unit_files().
-            os.remove(wants_symlink_path)
-            os.symlink(systemd_file_path, wants_symlink_path)
+            remove_file(wants_symlink_path)
+            if is_windows:
+                # on windows we use hard links so we link to the temporary name and it will
+                # still be fine after the rename
+                make_symlink(tmp_systemd_file_path, wants_symlink_path)
+            else:
+                # This symlink won't point to the correct file until the copied unit file is moved to its
+                # target location during activate_new_unit_files().
+                make_symlink(systemd_file_path, wants_symlink_path)
 
     def remove_unit_files(self):
         if not os.path.exists(self.__unit_directory):
@@ -384,9 +400,13 @@ def requests_fetcher(base_url, id_str, target, work_dir):
     url = base_url + "/packages/{0}/{1}.tar.xz".format(id.name, id_str)
     # TODO(cmaloney): Use a private tmp directory so there is no chance of a user
     # intercepting the tarball + other validation data locally.
-    with tempfile.NamedTemporaryFile(suffix=".tar.xz") as file:
-        download(file.name, url, work_dir, rm_on_error=False)
-        extract_tarball(file.name, target)
+    with tempfile.NamedTemporaryFile(suffix=".tar.xz", delete=False) as file:
+        filename = file.name
+    try:
+        download(filename, url, work_dir, rm_on_error=False)
+        extract_tarball(filename, target)
+    finally:
+        os.remove(filename)
 
 
 class Repository:
@@ -488,7 +508,7 @@ class Repository:
         remove_directory(tmp_path)
 
         fetcher(id, tmp_path)
-        os.rename(tmp_path, pkg_path)
+        rename_file(tmp_path, pkg_path)
         return True
 
     def remove(self, id):
@@ -516,12 +536,12 @@ def symlink_tree(src, dest):
         # real directory and symlink everything inside.
         # NOTE: We could relax this and follow symlinks, but then we
         # need to be careful about recursive filesystem layouts.
-        if os.path.isdir(src_path) and not os.path.islink(src_path):
+        if os.path.isdir(src_path) and not islink(src_path):
             if os.path.exists(dest_path):
                 # We can only merge a directory into a directory.
                 # We won't merge into a symlink directory because that could
                 # result in a package editing inside another package.
-                if not os.path.isdir(dest_path) and not os.path.islink(dest_path):
+                if not os.path.isdir(dest_path) and not islink(dest_path):
                     raise ValidationError(
                         "Can't merge a file `{0}` and directory (or symlink) `{1}` with the same name."
                         .format(src_path, dest_path))
@@ -532,7 +552,7 @@ def symlink_tree(src, dest):
             symlink_tree(src_path, dest_path)
         else:
             try:
-                os.symlink(src_path, dest_path)
+                make_symlink(src_path, dest_path)
             except FileNotFoundError as ex:
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
@@ -624,7 +644,7 @@ class UserManagement:
         add_user_cmd = [
             'useradd',
             '--system',
-            '--home-dir', '/opt/mesosphere',
+            '--home-dir', install_root,
             '--shell', '/sbin/nologin',
             '-c', 'DCOS System User',
         ]
@@ -735,7 +755,8 @@ class Install:
 
         ids = set()
         for name in os.listdir(active_dir):
-            package_path = os.path.realpath(os.path.join(active_dir, name))
+            filename = os.path.join(active_dir, name)
+            package_path = realpath(filename)
 
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
@@ -756,8 +777,8 @@ class Install:
         return list(map(
             self._make_abs,
             self.__well_known_dirs + [
-                "environment",
-                "environment.export",
+                environment_filename,
+                environment_export_filename,
                 "active",
                 "active.buildinfo.full.json"
             ]))
@@ -800,8 +821,8 @@ class Install:
             symlink_tree(src, dest)
 
         # Set the new LD_LIBRARY_PATH, PATH.
-        env_contents = env_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
-        env_export_contents = env_export_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
+        env_contents = env_header.format(install_root if self.__fake_path else self.__root)
+        env_export_contents = env_export_header.format(install_root if self.__fake_path else self.__root)
 
         active_buildinfo_full = {}
 
@@ -857,7 +878,7 @@ class Install:
                                                                                     ex.src))
 
             # Add to the active folder
-            os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
+            make_symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
 
             # Add to the environment and environment.export contents
 
@@ -865,8 +886,14 @@ class Install:
             env_export_contents += "# package: {0}\n".format(package.id)
 
             for k, v in package.environment.items():
-                env_contents += "{0}={1}\n".format(k, v)
-                env_export_contents += "export {0}={1}\n".format(k, v)
+                if is_windows:
+                    env_contents += "${0}='{1}'\n".format(k, v)
+                    # note: need quotes around the environment value so nested environment
+                    # variables are expanded properly
+                    env_export_contents += '$env:{0}="{1}"\n'.format(k, v)
+                else:
+                    env_contents += "{0}={1}\n".format(k, v)
+                    env_export_contents += "export {0}={1}\n".format(k, v)
 
             env_contents += "\n"
             env_export_contents += "\n"
@@ -917,11 +944,11 @@ class Install:
         write_json(dcos_service_configuration_file, dcos_service_configuration)
 
         # Write out the new environment file.
-        new_env = self._make_abs("environment.new")
+        new_env = self._make_abs(environment_filename + ".new")
         write_string(new_env, env_contents)
 
         # Write out the new environment.export file
-        new_env_export = self._make_abs("environment.export.new")
+        new_env_export = self._make_abs(environment_export_filename + ".new")
         write_string(new_env_export, env_export_contents)
 
         # Write out the buildinfo of every active package

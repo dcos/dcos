@@ -1,7 +1,7 @@
 import abc
 import os.path
 import shutil
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import CalledProcessError, check_call, check_output, DEVNULL
 
 from pkgpanda.exceptions import ValidationError
 from pkgpanda.util import download_atomic, is_windows, logger, sha1
@@ -220,7 +220,7 @@ def _identify_archive_type(filename):
     return 'unknown'
 
 
-def _check_components_sanity(path):
+def _check_components_sanity(path, allow_extra_files):
     """Check if archive is sane
 
     Check if there is only one top level component (directory) in the extracted
@@ -228,18 +228,29 @@ def _check_components_sanity(path):
 
     Args:
         path: path to the extracted archive's directory
+        allow_extra_files: if true only checks that there is 1 directory
+            to move and ignores other files.
 
     Raises:
         Raise an exception if there is anything else than a single directory
     """
     dir_contents = os.listdir(path)
 
-    if len(dir_contents) != 1 or not os.path.isdir(os.path.join(path, dir_contents[0])):
-        raise ValidationError("Extracted archive has more than one top level"
-                              "component, unable to strip it.")
+    if allow_extra_files:
+        dir_count = 0
+        for dir_file in dir_contents:
+            if os.path.isdir(os.path.join(path, dir_file)):
+                dir_count += 1
+        if dir_count != 1:
+            raise ValidationError("Extracted archive has more than one top level"
+                                  "directory, unable to strip it.")
+    else:
+        if len(dir_contents) != 1 or not os.path.isdir(os.path.join(path, dir_contents[0])):
+            raise ValidationError("Extracted archive has more than one top level"
+                                  "component, unable to strip it.")
 
 
-def _strip_first_path_component(path):
+def _strip_first_path_component(path, allow_extra_files=False):
     """Simulate tar's --strip-components=1 behaviour using file operations
 
     Unarchivers like unzip do not support stripping component paths while
@@ -248,10 +259,14 @@ def _strip_first_path_component(path):
 
     Args:
         path: path where extracted archive contents can be found
+        allow_extra_files will allow extra files in the top-level directory
     """
-    _check_components_sanity(path)
+    _check_components_sanity(path, allow_extra_files)
 
-    top_level_dir = os.path.join(path, os.listdir(path)[0])
+    for dir_file in os.listdir(path):
+        if os.path.isdir(os.path.join(path, dir_file)):
+            top_level_dir = os.path.join(path, dir_file)
+            break
 
     contents = os.listdir(top_level_dir)
 
@@ -268,12 +283,28 @@ def extract_archive(archive, dst_dir):
 
     if archive_type == 'tar':
         if is_windows:
-            check_call(["bsdtar", "-xf", archive, "-C", dst_dir])
+            tmp_filename, tmp_extension = os.path.splitext(archive)
+            if tmp_extension == ".xz" or tmp_extension == ".gz":
+                tar_filename = dst_dir + os.sep + os.path.basename(tmp_filename)
+                # note 'e' means extract without directory so we can find the enclosed tar
+                check_call(['7z', 'e', archive, '-o' + dst_dir], stdout=DEVNULL)
+                delete_intermediate_file = True
+            else:
+                tar_filename = archive
+                delete_intermediate_file = False
+                # now untar
+            try:
+                check_call(['7z', 'x', tar_filename, '-o' + dst_dir], stdout=DEVNULL)
+            finally:
+                if delete_intermediate_file:
+                    os.remove(tar_filename)
+            # 7zip does not support '--strip-components=1',
+            _strip_first_path_component(dst_dir, True)
         else:
             check_call(["tar", "-xf", archive, "--strip-components=1", "-C", dst_dir])
     elif archive_type == 'zip':
         if is_windows:
-            check_call(["powershell.exe", "-command", "expand-archive", "-path", archive, "-destinationpath", dst_dir])
+            check_call(["7z", "x", archive, "-o" + dst_dir], stdout=DEVNULL)
         else:
             check_call(["unzip", "-x", archive, "-d", dst_dir])
         # unzip binary does not support '--strip-components=1',

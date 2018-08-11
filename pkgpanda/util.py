@@ -1,3 +1,4 @@
+import ctypes
 import hashlib
 import http.server
 import json
@@ -15,6 +16,7 @@ from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
+from time import sleep
 from typing import List
 
 import requests
@@ -25,6 +27,7 @@ from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
+
 
 is_windows = platform.system() == "Windows"
 
@@ -48,7 +51,7 @@ def remove_file(path):
         # so calling out to the cmd prompt to do this fixes that.
         path = path.replace('/', '\\')
         if os.path.exists(path):
-            subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
+            subprocess.call(['cmd.exe', '/c', 'del', '/q', path], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['rm', '-f', path])
 
@@ -60,9 +63,35 @@ def remove_directory(path):
         # so calling out to the cmd prompt to do this fixes that.
         path = path.replace('/', '\\')
         if os.path.exists(path):
-            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
+            for retry in range(1, 10):
+                try:
+                    subprocess.check_call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path], stdout=subprocess.DEVNULL)
+                except subprocess.CalledProcessError:
+                    if retry == 10:
+                        raise
+                    else:
+                        sleep(0.05)
+                        continue
+                break
     else:
         subprocess.check_call(['rm', '-rf', path])
+
+
+def rename_file(src, dst):
+    """Rename a file or directory"""
+    if is_windows:
+        for retry in range(1, 10):
+            try:
+                os.rename(src, dst)
+            except PermissionError:
+                if retry == 10:
+                    raise
+                else:
+                    sleep(0.05)
+                    continue
+            break
+    else:
+        os.rename(src, dst)
 
 
 def make_directory(path):
@@ -82,7 +111,7 @@ def copy_file(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['cp', src_path, dst_path])
 
@@ -95,9 +124,58 @@ def copy_directory(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['cp', '-r', src_path, dst_path])
+
+
+def make_symlink(src_path, dst_path):
+    if is_windows:
+        if os.path.isdir(src_path):
+            # create a junction for directories
+            src = src_path.replace('/', '\\')
+            dst = dst_path.replace('/', '\\')
+            subprocess.check_call(['cmd.exe', '/c', 'mklink', '/J', dst, src], stdout=subprocess.DEVNULL)
+        else:
+            # create hard link for files
+            os.link(src_path, dst_path)
+
+    else:
+        os.symlink(src_path, dst_path)
+
+
+def _is_junction(path):
+    if is_windows:
+        if os.path.isdir(path):
+            file_attribute_reparse_point = 0x0400
+            attributes = ctypes.windll.kernel32.GetFileAttributesW(path)
+            return (attributes & file_attribute_reparse_point) > 0
+    else:
+        return False
+
+
+def islink(path):
+    if is_windows:
+        if os.path.isdir(path):
+            return _is_junction(path)
+        elif os.stat(path).st_nlink > 1:
+            return True
+        else:
+            return os.path.islink(path)
+    else:
+        return os.path.islink(path)
+
+
+def realpath(path):
+    if is_windows:
+        if os.path.exists(path) and (_is_junction(path) or os.stat(path).st_nlink > 1):
+            # if a junction or hard link call powershell to get the target link
+            return subprocess.check_output(["powershell", "(get-item " + path + ").target"]).decode().splitlines()[0]
+        else:
+            # regular file so let os.path do its thing
+            return os.path.realpath(path)
+    else:
+        return os.path.realpath(path)
 
 
 def variant_str(variant):
@@ -217,9 +295,30 @@ def extract_tarball(path, target):
     try:
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         make_directory(target)
-
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
+            # need to uncompress if ends with .XZ or .gz
+            archive_filename, compression_type = os.path.splitext(path)
+
+            if compression_type == "":
+                # If we have no extension we probably compressed/tarred into a temporary file
+                compression_type = ".XZ"
+            compression_type = compression_type[1:]
+
+            if compression_type == "tar":
+                # We are just a tarball, so un-tar it
+                check_call(['7z', 'x', path, '-o' + target], stdout=subprocess.DEVNULL)
+            else:
+                # We have compression and tarball
+                _, archive_type = os.path.splitext(archive_filename)
+                if archive_type == "":
+                    archive_type = ".tar"
+                archive_type = archive_type[1:]
+
+            # uncompress sends to stdout
+            uncompress_cmdline = '7z e {} -t{} -so'.format(path, compression_type)
+            # untar pulls input from stdin
+            untar_cmdline = '7z x -si -t{} -o{}'.format(archive_type, target)
+            check_call('{} | {}'.format(uncompress_cmdline, untar_cmdline), stdout=subprocess.DEVNULL, shell=True)
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
@@ -281,7 +380,7 @@ def write_string(filename, data):
     permissions 0o644.
     """
     prefix = os.path.basename(filename)
-    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    tmp_file_dir = os.path.dirname(realpath(filename))
     fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
 
     try:
@@ -355,18 +454,48 @@ def expect_fs(folder, contents):
 
 def make_tar(result_filename, change_folder):
     if is_windows:
-        tar_cmd = ["bsdtar"]
+        # on Windows with 7z we need to first tar, then we compress.
+        destination_path = os.path.abspath(change_folder) + os.sep
+        # Create a temporary .tar file
+        tar_filename, compression_type = os.path.splitext(os.path.abspath(result_filename))
+        if compression_type == "":
+            compression_type = ".XZ"
+        compression_type = compression_type[1::]
+        if tar_filename == os.path.abspath(result_filename):
+            tar_filename += ".tar"
+        _, archive_type = os.path.splitext(tar_filename)
+        archive_type = archive_type[1:]
+        delete_file = False
+        try:
+            tar_cmd = ["7z", "a", "-snh", "-snl", "-t" + archive_type, "-sae", tar_filename, "*"]
+            proc = subprocess.Popen(tar_cmd, cwd=destination_path, stdout=subprocess.DEVNULL)
+            proc.wait()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(proc.returncode, tar_cmd)
+
+            # now we can compress the tar file to the final name
+            # We are creating a new archive, so if one already exists we need to delete it
+            delete_file = True
+            if os.path.exists(os.path.abspath(result_filename)):
+                os.remove(result_filename)
+            tar_cmd = ["7z", "a", "-t" + compression_type, "-sae", os.path.abspath(result_filename), tar_filename]
+            proc = subprocess.Popen(tar_cmd, stdout=subprocess.DEVNULL)
+            proc.wait()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(proc.returncode, tar_cmd)
+        finally:
+            # remove the temporary file
+            if delete_file:
+                os.remove(tar_filename)
+
     else:
         tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
-    if which("pxz"):
-        tar_cmd += ["--use-compress-program=pxz", "-cf"]
-    else:
-        if is_windows:
-            tar_cmd += ["-cjf"]
+        if which("pxz"):
+            tar_cmd += ["--use-compress-program=pxz", "-cf"]
         else:
             tar_cmd += ["-cJf"]
-    tar_cmd += [result_filename, "-C", change_folder, "."]
-    check_call(tar_cmd)
+        tar_cmd += [os.path.abspath(result_filename), "-C", os.path.abspath(change_folder), "."]
+        check_call(tar_cmd)
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
@@ -383,7 +512,7 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                     new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
                     # Remove the old link and write a new one.
                     os.remove(full_path)
-                    os.symlink(new_target, full_path)
+                    make_symlink(new_target, full_path)
 
 
 def check_forbidden_services(path, services):
