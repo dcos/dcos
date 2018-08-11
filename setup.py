@@ -1,3 +1,4 @@
+import platform
 from pathlib import Path
 
 from setuptools import setup
@@ -16,14 +17,41 @@ def get_advanced_templates():
 # checksum calculated during when the ./release script is run.
 # That leads to cached packages hashes being different from what
 # is cached in S3 and prevents us from building DC/OS locally.
-expected_dcos_builder_files = [
-    Path('docker/dcos-builder/Dockerfile'),
-    Path('docker/dcos-builder/README.md'),
+if platform.system() == "Windows":
+    expected_dcos_builder_files = [
+        Path('docker.windows/dcos-builder/Dockerfile'),
+        Path('docker.windows/dcos-builder/README.md'),
+        Path('docker.windows/dcos-builder/setup-cmake.ps1'),
+        Path('docker.windows/dcos-builder/setup-erlang.ps1'),
+        Path('docker.windows/dcos-builder/setup-git.ps1'),
+        Path('docker.windows/dcos-builder/setup-golang.ps1'),
+        Path('docker.windows/dcos-builder/setup-make.ps1'),
+        Path('docker.windows/dcos-builder/setup-patch.ps1')
+    ]
+    docker_directory = "docker.windows"
+else:
+    expected_dcos_builder_files = [
+        Path('docker/dcos-builder/Dockerfile'),
+        Path('docker/dcos-builder/README.md'),
+    ]
+    docker_directory = "docker"
+
+dcos_builder_files = [
+    f.relative_to(Path("./pkgpanda")) for f in Path("./pkgpanda").glob(docker_directory + '/**/*') if f.is_file()
 ]
-dcos_builder_files = [f.relative_to(Path("./pkgpanda")) for f in Path("./pkgpanda").glob('docker/**/*') if f.is_file()]
 if set(expected_dcos_builder_files) != set(dcos_builder_files):
-    raise Exception('Expected ./pkgpanda/docker/dcos-builder to contain {} but it had {}'.format(
+    raise Exception('Expected ./pkgpanda/' + docker_directory + '/dcos-builder to contain {} but it had {}'.format(
         expected_dcos_builder_files, dcos_builder_files))
+
+
+def get_extra_install_requires():
+    if platform.system() == "Windows":
+        return [
+            'pywin32-ctypes',
+            'colorama'
+        ]
+    else:
+        return []
 
 
 setup(
@@ -82,7 +110,8 @@ setup(
         'retrying',
         'schema',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
-        'teamcity-messages'],
+        'teamcity-messages'
+    ] + get_extra_install_requires(),
     entry_points={
         'console_scripts': [
             'release=release:main',
@@ -93,14 +122,20 @@ setup(
     },
     package_data={
         'gen': [
+            'ip-detect/aws.ps1',
             'ip-detect/aws.sh',
+            'ip-detect/aws6.ps1',
             'ip-detect/aws6.sh',
+            'ip-detect/aws_public.ps1',
             'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
+            'ip-detect/azure.ps1',
             'ip-detect/azure6.sh',
+            'ip-detect/azure6.ps1',
             'ip-detect/vagrant.sh',
             'ip-detect/vagrant6.sh',
             'fault-domain-detect/cloud.sh',
+            'fault-domain-detect/cloud.ps1',
             'fault-domain-detect/aws.sh',
             'fault-domain-detect/azure.sh',
             'cloud-config.yaml',
@@ -120,8 +155,11 @@ setup(
             'azure/templates/azure.html',
             'azure/templates/azuredeploy.json',
             'build_deploy/bash/dcos_generate_config.sh.in',
+            'build_deploy/bash/dcos_generate_config.ps1.in',
             'build_deploy/bash/Dockerfile.in',
+            'build_deploy/bash/Dockerfile.windows.in',
             'build_deploy/bash/installer_internal_wrapper.in',
+            'build_deploy/bash/installer_internal_wrapper.ps1.in',
             'build_deploy/bash/dcos-launch.spec',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
