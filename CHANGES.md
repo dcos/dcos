@@ -8,6 +8,10 @@
 
 * Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
 
+* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+
+* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
+
 ### Security updates
 
 
