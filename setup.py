@@ -1,3 +1,5 @@
+import platform
+
 from setuptools import setup
 
 
@@ -6,6 +8,16 @@ def get_advanced_templates():
     template_names = ['advanced-master', 'advanced-priv-agent', 'advanced-pub-agent', 'infra', 'zen']
 
     return [template_base + name + '.json' for name in template_names]
+
+
+def get_extra_install_requires():
+    if platform.system() == "Windows":
+        return [
+            'pywin32-ctypes',
+            'colorama'
+        ]
+    else:
+        return []
 
 
 setup(
@@ -64,7 +76,8 @@ setup(
         'retrying',
         'schema',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
-        'teamcity-messages'],
+        'teamcity-messages'
+    ] + get_extra_install_requires(),
     entry_points={
         'console_scripts': [
             'release=release:main',
@@ -75,14 +88,20 @@ setup(
     },
     package_data={
         'gen': [
+            'ip-detect/aws.ps1',
             'ip-detect/aws.sh',
+            'ip-detect/aws6.ps1',
             'ip-detect/aws6.sh',
+            'ip-detect/aws_public.ps1',
             'ip-detect/aws_public.sh',
             'ip-detect/azure.sh',
+            'ip-detect/azure.ps1',
             'ip-detect/azure6.sh',
+            'ip-detect/azure6.ps1',
             'ip-detect/vagrant.sh',
             'ip-detect/vagrant6.sh',
             'fault-domain-detect/cloud.sh',
+            'fault-domain-detect/cloud.ps1',
             'fault-domain-detect/aws.sh',
             'fault-domain-detect/azure.sh',
             'cloud-config.yaml',
@@ -102,14 +121,24 @@ setup(
             'azure/templates/azure.html',
             'azure/templates/azuredeploy.json',
             'build_deploy/bash/dcos_generate_config.sh.in',
+            'build_deploy/bash/dcos_generate_config.ps1.in',
             'build_deploy/bash/Dockerfile.in',
+            'build_deploy/bash/Dockerfile.windows.in',
             'build_deploy/bash/installer_internal_wrapper.in',
+            'build_deploy/bash/installer_internal_wrapper.ps1.in',
             'build_deploy/bash/dcos-launch.spec',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
         'pkgpanda': [
-            'docker/dcos-builder/Dockerfile'
+            'docker/dcos-builder/Dockerfile',
+            'docker.windows/dcos-builder/Dockerfile',
+            'docker.windows/dcos-builder/setup-cmake.ps1',
+            'docker.windows/dcos-builder/setup-erlang.ps1',
+            'docker.windows/dcos-builder/setup-git.ps1',
+            'docker.windows/dcos-builder/setup-golang.ps1',
+            'docker.windows/dcos-builder/setup-make.ps1',
+            'docker.windows/dcos-builder/setup-patch.ps1'
         ]
     },
     zip_safe=False
