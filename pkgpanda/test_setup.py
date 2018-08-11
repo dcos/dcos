@@ -2,9 +2,7 @@ import os
 from shutil import copytree
 from subprocess import check_call, check_output
 
-import pytest
-
-from pkgpanda.util import expect_fs, is_windows, load_json, resources_test_dir, run
+from pkgpanda.util import expect_fs, is_windows, islink, load_json, realpath, resources_test_dir, run
 
 
 def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
@@ -13,8 +11,6 @@ def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
     return repo_path
 
 
-# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_setup(tmpdir):
     repo_path = tmp_repository(tmpdir)
     tmpdir.join("root", "bootstrap").write("", ensure=True)
@@ -31,6 +27,11 @@ def test_setup(tmpdir):
     expect_fs("{0}".format(tmpdir), ["repository", "root"])
 
     # TODO(cmaloney): Validate things got placed correctly.
+    if is_windows:
+        environment_extension = ".ps1"
+    else:
+        environment_extension = ""
+
     expect_fs(
         "{0}/root".format(tmpdir),
         {
@@ -46,8 +47,8 @@ def test_setup(tmpdir):
             "include": [],
             "dcos.target.wants": ["dcos-mesos-master.service"],
             "dcos.target": None,
-            "environment": None,
-            "environment.export": None,
+            "environment" + environment_extension: None,
+            "environment.export" + environment_extension: None,
             "dcos-mesos-master.service": None           # rooted_systemd
         })
 
@@ -114,8 +115,8 @@ def test_setup(tmpdir):
             "include": [],
             "dcos.target": None,
             "dcos.target.wants": ["dcos-mesos-master.service"],
-            "environment": None,
-            "environment.export": None,
+            "environment" + environment_extension: None,
+            "environment.export" + environment_extension: None,
             "active.old": ["dcos-provider-abcdef-test", "mesos", "mesos-config"],
             "bin.old": [
                 "mesos",
@@ -126,8 +127,8 @@ def test_setup(tmpdir):
             "etc.old": ["dcos-service-configuration.json", "foobar", "some.json"],
             "include.old": [],
             "dcos.target.wants.old": ["dcos-mesos-master.service"],
-            "environment.old": None,
-            "environment.export.old": None,
+            "environment" + environment_extension + ".old": None,
+            "environment.export" + environment_extension + ".old": None,
             "dcos-mesos-master.service": None       # rooted systemd
         })
 
@@ -168,8 +169,6 @@ def test_setup(tmpdir):
     expect_fs("{0}".format(tmpdir), {"repository": None})
 
 
-# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_activate(tmpdir):
     repo_path = tmp_repository(tmpdir)
     state_dir_root = tmpdir.join("package_state")
@@ -264,8 +263,6 @@ def test_activate(tmpdir):
     # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
 
 
-# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_systemd_unit_files(tmpdir):
     repo_path = tmp_repository(tmpdir)
     tmpdir.join("root", "bootstrap").write("", ensure=True)
@@ -284,6 +281,10 @@ def test_systemd_unit_files(tmpdir):
     wants_path = '{}/root/dcos.target.wants/{}'.format(tmpdir, unit_file)
 
     # The unit file is copied to the base dir and symlinked from dcos.target.wants.
-    assert os.path.islink(wants_path)
-    assert os.path.isfile(base_path) and not os.path.islink(base_path)
-    assert os.path.realpath(wants_path) == base_path
+    assert islink(wants_path)
+
+    # on Windows we are using hard links, so base_path will report it is a link
+    # therefore this path will be skipped on Windows
+    if not is_windows:
+        assert os.path.isfile(base_path) and not islink(base_path)
+    assert realpath(wants_path) == os.path.abspath(base_path)

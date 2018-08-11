@@ -3,10 +3,8 @@ import operator
 import os
 from shutil import copytree
 
-import pytest
-
-from pkgpanda.http import app
-from pkgpanda.util import is_windows, resources_test_dir
+from pkgpanda.http.server import app
+from pkgpanda.util import is_windows, make_symlink, resources_test_dir
 
 
 def assert_response(response, status_code, body, headers=None, body_cmp=operator.eq):
@@ -86,8 +84,6 @@ def _set_test_config(app):
     app.config['DCOS_REPO_DIR'] = resources_test_dir('packages')
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list_packages():
     _set_test_config(app)
     client = app.test_client()
@@ -99,8 +95,6 @@ def test_list_packages():
     ])
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_get_package():
     _set_test_config(app)
     client = app.test_client()
@@ -118,8 +112,6 @@ def test_get_package():
     assert_error(client.get('/repository/!@#*'), 404)
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list_active_packages():
     _set_test_config(app)
     client = app.test_client()
@@ -129,8 +121,6 @@ def test_list_active_packages():
         'mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8']
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_get_active_package():
     _set_test_config(app)
     client = app.test_client()
@@ -148,12 +138,24 @@ def test_get_active_package():
     assert_error(client.get('/active/!@#*'), 404)
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
+def fixup_active_dir_symlinks(fixup_active_dir):
+    dir_contents = os.listdir(fixup_active_dir)
+    for dir_item in dir_contents:
+        full_path = fixup_active_dir + '\\' + dir_item
+        item_link = os.path.abspath(fixup_active_dir + '\\' + os.readlink(full_path))
+        os.unlink(full_path)
+        make_symlink(item_link, full_path)
+
+
 def test_activate_packages(tmpdir):
     _set_test_config(app)
     install_dir = str(tmpdir.join('install'))
     copytree(resources_test_dir('install'), install_dir, symlinks=True)
+    if is_windows:
+        fixup_active_dir = install_dir + '\\active'
+        packages_dir = str(tmpdir.join('packages'))
+        copytree(resources_test_dir('packages'), packages_dir)
+        fixup_active_dir_symlinks(fixup_active_dir)
     app.config['DCOS_ROOT'] = install_dir
     app.config['DCOS_ROOTED_SYSTEMD'] = True
     client = app.test_client()
@@ -198,8 +200,6 @@ def test_activate_packages(tmpdir):
     )
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_fetch_package(tmpdir):
     _set_test_config(app)
     client = app.test_client()
@@ -243,8 +243,6 @@ def test_fetch_package(tmpdir):
     )
 
 
-# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_remove_package(tmpdir):
     _set_test_config(app)
     repo_dir = str(tmpdir.join('repo'))

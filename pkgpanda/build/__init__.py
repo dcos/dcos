@@ -109,7 +109,7 @@ def get_src_fetcher(src_info, cache_dir, working_directory):
         if kind not in pkgpanda.build.src_fetchers.all_fetchers:
             raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
                 kind,
-                pkgpanda.src_fetchers.all_fetchers.keys()))
+                pkgpanda.build.src_fetchers.all_fetchers.keys()))
 
         args = {
             'src_info': src_info,
@@ -1114,20 +1114,16 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Clean out src, result so later steps can use them freely for building.
     def clean():
-        # Run a docker container to remove src/ and result/
-        cmd = DockerCmd()
-        cmd.volumes = {
-            package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
-        }
         if is_windows:
-            cmd.container = "microsoft/windowsservercore:1709"
-            filename = PKG_DIR + "\\src"
-            cmd.run("package-cleaner",
-                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
-            filename = PKG_DIR + "\\result"
-            cmd.run("package-cleaner",
-                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
+            remove_dir = package_store.get_package_cache_folder(name)
+            remove_directory(remove_dir + "\\src")
+            remove_directory(remove_dir + "\\result")
         else:
+            # Run a docker container to remove src/ and result/
+            cmd = DockerCmd()
+            cmd.volumes = {
+                package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
+            }
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
 
@@ -1212,21 +1208,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # Getting the result out
         cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id),
         # The build script directory
-        package_dir: PKG_DIR + "/build:ro"
+        package_dir: PKG_DIR + "/build:ro",
+        # Getting the result out
+        install_dir: install_root + ":ro"
     })
-
-    if is_windows:
-        cmd.volumes.update({
-            # todo: This is a temporary work around until Windows RS4 comes out that has a fix
-            # that allows overlapping mount directories. We should not make this also happen
-            # on Linux as it will probably break a bunch of stuff unnecessarily that will only
-            # need to be undone in the future.
-            install_dir: install_root + "/install_dir:ro"
-        })
-    else:
-        cmd.volumes.update({
-            install_dir: install_root + ":ro"
-        })
 
     if os.path.exists(extra_dir):
         cmd.volumes[extra_dir] = PKG_DIR + "/extra:ro"
@@ -1243,7 +1228,17 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # TODO(cmaloney): Run a wrapper which sources
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
-        command = [PKG_DIR + "/build/" + build_script_file]
+        if is_windows:
+            command = ["powershell.exe",
+                       "-file",
+                       PKG_DIR + "/build/" + build_script_file]
+        else:
+            command = ["/bin/bash",
+                       "-o", "nounset",
+                       "-o", "pipefail",
+                       "-o", "errexit",
+                       PKG_DIR + "/build/" + build_script_file]
+
         cmd.run("package-builder", command)
     except CalledProcessError as ex:
         raise BuildError("docker exited non-zero: {}\nCommand: {}".format(ex.returncode, ' '.join(ex.cmd)))

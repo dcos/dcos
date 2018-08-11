@@ -9,6 +9,7 @@ from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 install_root,
+                                is_windows,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
@@ -189,15 +190,22 @@ def setup(install, repository):
 def _start_dcos_target(block_systemd):
     no_block = [] if block_systemd else ["--no-block"]
     check_call(["systemctl", "daemon-reload"])
-    check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
+    enable_command = ["systemctl", "enable", "dcos.target", '--no-reload']
+    if is_windows:
+        enable_command += ['--systemd-execpath', 'c:\\opt\\mesosphere\\bin\\']
+    check_call(enable_command)
     check_call(["systemctl", "start", "dcos.target"] + no_block)
 
 
 def _get_package_list(package_list_id: str, repository_url: str) -> List[str]:
     package_list_url = repository_url + '/package_lists/{}.package_list.json'.format(package_list_id)
-    with tempfile.NamedTemporaryFile() as f:
-        download(f.name, package_list_url, os.getcwd(), rm_on_error=False)
-        package_list = load_json(f.name)
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+    try:
+        download(filename, package_list_url, os.getcwd(), rm_on_error=False)
+        package_list = load_json(filename)
+    finally:
+        os.remove(filename)
 
     if not isinstance(package_list, list):
         raise ValidationError('{} should contain a JSON list of packages. Got a {}'.format(
@@ -240,23 +248,31 @@ def _do_bootstrap(install, repository):
             raise ValidationError("Late package must have the version setup. Bad package: {}".format(pkg_id_str))
 
         # Collect the late config package.
-        with tempfile.NamedTemporaryFile() as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            filename = f.name
+        try:
             download(
-                f.name,
+                filename,
                 repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
                 rm_on_error=False,
             )
-            late_package = load_yaml(f.name)
+            late_package = load_yaml(filename)
+        finally:
+            os.remove(filename)
 
         # Resolve the late package using the bound late config values.
         final_late_package = resolve_late_package(late_package, late_values)
 
         # Render the package onto the filesystem and add it to the package
         # repository.
-        with tempfile.NamedTemporaryFile() as f:
-            do_gen_package(final_late_package, f.name)
-            repository.add(lambda _, target: extract_tarball(f.name, target), pkg_id_str)
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            filename = f.name
+        try:
+            do_gen_package(final_late_package, filename)
+            repository.add(lambda _, target: extract_tarball(filename, target), pkg_id_str)
+        finally:
+            os.remove(filename)
         setup_packages_to_activate.append(pkg_id_str)
 
     # If active.json is set on the host, use that as the set of packages to
