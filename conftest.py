@@ -3,6 +3,7 @@ import os
 import pytest
 
 import release
+from pkgpanda.util import is_windows
 
 
 @pytest.fixture
@@ -21,6 +22,8 @@ def release_config_testing(release_config):
 
 @pytest.fixture
 def release_config_aws(release_config_testing):
+    if is_windows:
+        pytest.skip("Skipped because AWS is not supported on Windows")
     if 'aws' not in release_config_testing:
         pytest.skip("Skipped because there is no `testing.aws` configuration in dcos-release.config.yaml")
     return release_config_testing['aws']
