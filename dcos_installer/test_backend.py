@@ -9,9 +9,9 @@ import boto3
 import passlib.hash
 import pytest
 
-import pkgpanda.util
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
+from pkgpanda.util import is_windows
 
 os.environ["BOOTSTRAP_ID"] = "12345"
 
@@ -48,8 +48,6 @@ def test_set_superuser_password(tmpdir):
         assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_generate_node_upgrade_script(tmpdir, monkeypatch):
     upgrade_config = """
 ---
@@ -65,19 +63,26 @@ process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 master_list: ['10.0.0.1', '10.0.0.2', '10.0.0.5']
 """
-    monkeypatch.setenv('BOOTSTRAP_VARIANT', '')
+    monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
     create_config(upgrade_config, tmpdir)
     create_fake_build_artifacts(tmpdir)
 
     output = subprocess.check_output(['dcos_installer', '--generate-node-upgrade-script', 'fake'], cwd=str(tmpdir))
+    if is_windows:
+        upgrade_script = "dcos_node_upgrade.ps1"
+    else:
+        upgrade_script = "dcos_node_upgrade.sh"
     assert output.decode('utf-8').splitlines()[-1].split("Node upgrade script URL: ", 1)[1]\
-                                                  .endswith("dcos_node_upgrade.sh")
+                                                  .endswith(upgrade_script)
 
     try:
         subprocess.check_output(['dcos_installer', '--generate-node-upgrade-script'], cwd=str(tmpdir))
     except subprocess.CalledProcessError as e:
         print(e.output)
-        assert e.output.decode('ascii') == "Must provide the version of the cluster upgrading from\n"
+        if is_windows:
+            assert e.output.decode('ascii') == "Must provide the version of the cluster upgrading from\r\n"
+        else:
+            assert e.output.decode('ascii') == "Must provide the version of the cluster upgrading from\n"
     else:
         raise Exception("Test passed, this should not pass without specifying a version number")
 
@@ -100,9 +105,15 @@ def test_good_create_config_from_post(tmpdir):
     temp_config_path = workspace + '/config.yaml'
     make_default_config_if_needed(temp_config_path)
 
-    temp_ip_detect_path = workspace + '/ip-detect'
+    if is_windows:
+        temp_ip_detect_path = workspace + '\\ip-detect.ps1'
+    else:
+        temp_ip_detect_path = workspace + '/ip-detect'
     f = open(temp_ip_detect_path, "w")
-    f.write("#/bin/bash foo")
+    if is_windows:
+        f.write("write-host foo")
+    else:
+        f.write("#/bin/bash foo")
 
     good_post_data = {
         "agent_list": ["10.0.0.2"],
@@ -147,7 +158,6 @@ def test_bad_create_config_from_post(tmpdir):
     assert messages == expected_bad_messages
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Code tests linux configuration")
 def test_do_validate_config(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
 
@@ -156,12 +166,16 @@ def test_do_validate_config(tmpdir, monkeypatch):
     genconf_dir.ensure(dir=True)
     temp_config_path = str(genconf_dir.join('config.yaml'))
 
-    # Initialize with defautls
+    # Initialize with defaults
     make_default_config_if_needed(temp_config_path)
 
     create_fake_build_artifacts(tmpdir)
+    if is_windows:
+        ipdetect_filename = "genconf\\ip-detect.ps1"
+    else:
+        ipdetect_filename = "genconf/ip-detect"
     expected_output = {
-        'ip_detect_contents': 'ip-detect script `genconf/ip-detect` must exist',
+        'ip_detect_contents': 'ip-detect script `' + ipdetect_filename + '` must exist',
         'ssh_user': 'Must set ssh_user, no way to calculate value.',
         'master_list': 'Must set master_list, no way to calculate value.',
         'ssh_key_path': 'could not find ssh private key: genconf/ssh_key'
@@ -251,8 +265,6 @@ bootstrap_url: http://example.com
 """
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
     create_config(simple_full_config, tmpdir)
@@ -324,8 +336,6 @@ def aws_cf_configure(config, tmpdir, monkeypatch):
         return backend.do_aws_cf_configure()
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, caplog):
     """
     Log messages are logged exactly once.
@@ -342,8 +352,7 @@ def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, cap
     assert [expected_message] == filtered_messages
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
+@pytest.mark.skipif(is_windows, reason="No exhibitor configuration on Windows")
 def test_do_configure_logs_validation_errors(tmpdir, monkeypatch, caplog):
     """
     Configuration validation errors are logged as `error` messages.
@@ -379,7 +388,10 @@ def create_config(config_str, tmpdir):
     genconf_dir.ensure(dir=True)
     config_path = genconf_dir.join('config.yaml')
     config_path.write(config_str)
-    genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
+    if is_windows:
+        genconf_dir.join('ip-detect.ps1').write('#!/bin/pwsh\nwrite-host 127.0.0.1')
+    else:
+        genconf_dir.join('ip-detect').write('#!/bin/bash\necho 127.0.0.1')
 
 
 def create_fake_build_artifacts(tmpdir):

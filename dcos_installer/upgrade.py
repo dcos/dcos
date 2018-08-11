@@ -8,10 +8,114 @@ import gen.build_deploy.util as util
 import gen.calc
 import gen.template
 from dcos_installer.constants import SERVE_DIR
-from pkgpanda.util import make_directory, write_string
+from pkgpanda.util import is_windows, make_directory, write_string
 
 
-node_upgrade_template = """#!/bin/bash
+if is_windows:
+    node_upgrade_template = """
+#
+# PowerShell script to upgrade DC/OS on a node
+#
+# Metadata:
+#   dcos image commit: {{ dcos_image_commit }}
+#   generation date: {{ generation_date }}
+#
+# Copyright 2018 Mesosphere, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+function Start-ExecuteWithRetry {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ScriptBlock]$ScriptBlock,
+        [int]$MaxRetryCount=10,
+        [int]$RetryInterval=3,
+        [string]$RetryMessage,
+        [array]$ArgumentList=@()
+    )
+    $currentErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $retryCount = 0
+    while ($true) {
+        try {
+            $res = Invoke-Command -ScriptBlock $ScriptBlock `
+                                  -ArgumentList $ArgumentList
+            $ErrorActionPreference = $currentErrorActionPreference
+            return $res
+        } catch [System.Exception] {
+            $retryCount++
+            if ($retryCount -gt $MaxRetryCount) {
+                $ErrorActionPreference = $currentErrorActionPreference
+                Throw
+            } else {
+                if($RetryMessage) {
+                    Write-Output $RetryMessage
+                } elseif($_) {
+                    Write-Output $_.ToString()
+                }
+                Start-Sleep $RetryInterval
+            }
+        }
+    }
+}
+
+. c:\\opt\\mesosphere\\environment.export.ps1
+
+$ROLE_DIR="c:\\etc\\mesosphere\\roles"
+
+$roles = get-item $ROLE_DIR\\slave,$ROLE_DIR\\slave_public -ErrorAction SilentlyContinue
+if ($roles.count -ne 1)
+{
+    Write-Output "ERROR: Can't determine this node's role."
+    Write-Output "One of slave, or slave_public must be present under $ROLE_DIR."
+    exit 1
+}
+
+if ($roles.name -eq "slave")
+{
+    $role = "slave"
+    $role_name = "agent"
+}
+elseif ($roles.name -eq "slave_public")
+{
+    $role = "slave_public"
+    $role_name = "public agent"
+}
+
+# On Windows we need to stop the services ahead of time because files are
+# locked in the c:\\opt\\mesosphere\\bin.old directory relating to
+# service files. Not doing this will cause upgrade to fail due to
+# the .old directories being locked.
+Get-Service dcos-* | Stop-Service -Force
+Start-ExecuteWithRetry -ScriptBlock {
+    Remove-Item -Recurse -Force c:\\opt\\mesosphere\\bin.old
+} -RetryMessage "Failed to cleanup bin.old directory. Retrying..."
+
+Write-Output "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
+pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
+if ($LASTEXITCODE -ne 0)
+{
+    Throw "Failed to fetch packages from bootstrap node during upgrade"
+}
+pkgpanda activate --no-block {{ cluster_packages }}
+if ($LASTEXITCODE -ne 0)
+{
+    Throw "Failed to activate new packages during upgrade"
+}
+"""
+else:
+    node_upgrade_template = """#!/bin/bash
 #
 # BASH script to upgrade DC/OS on a node
 #
@@ -173,8 +277,12 @@ def generate_node_upgrade_script(gen_out, installed_cluster_version, serve_dir=S
 
     make_directory(serve_dir + upgrade_script_path)
 
-    write_string(serve_dir + upgrade_script_path + '/dcos_node_upgrade.sh', bash_script)
+    if is_windows:
+        script_name = '/dcos_node_upgrade.ps1'
+    else:
+        script_name = '/dcos_node_upgrade.sh'
+    write_string(serve_dir + upgrade_script_path + script_name, bash_script)
 
-    print("Node upgrade script URL: " + bootstrap_url + upgrade_script_path + '/dcos_node_upgrade.sh')
+    print("Node upgrade script URL: " + bootstrap_url + upgrade_script_path + script_name)
 
     return 0
