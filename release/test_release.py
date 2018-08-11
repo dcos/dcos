@@ -77,7 +77,7 @@ def test_strip_locals():
     assert src_list == [{'a': {'local_a': 'foo'}, 'local_b': '/test', 'c': {'d': 'e', 'f': 'g'}}, 'local_h']
 
 
-def exercise_storage_provider(tmpdir, name, config):
+def exercise_storage_provider(tmpdir, name, config, sep_override='/'):
     store = release.call_matching_arguments(release.get_storage_provider_factory(name), config, True)
 
     # Make a uniquely named test storage location, and try to upload / copy files
@@ -111,9 +111,9 @@ def exercise_storage_provider(tmpdir, name, config):
             '--verbose',
             store.url + path])
 
-    def get_path(path):
+    def get_path(path, sep='/'):
         assert not path.startswith('/')
-        return test_base_path + '/' + path
+        return test_base_path + sep + path
 
     def check_file(path, contents):
         # The store should be internally consistent / API return it exists now.
@@ -172,13 +172,25 @@ def exercise_storage_provider(tmpdir, name, config):
 
         # Check that listing all the files in the storage provider gives the list of
         # files we've uploaded / checked and only that list of files.
-        assert store.list_recursive(test_base_path) == {
-            get_path('upload_file.txt'),
-            get_path('upload_bytes.txt'),
-            get_path('dir1/bar/upload_bytes2.txt'),
-            get_path('new_dir/copy_path.txt'),
-            get_path('copy_file.txt')
-        }
+        if is_windows:
+            # Different libraries seem to do different things with separators
+            # making it impossible to be consistent
+            result_files = {
+                get_path('upload_file.txt'),
+                get_path('upload_bytes.txt'),
+                get_path('dir1' + sep_override + 'bar/upload_bytes2.txt', sep_override),
+                get_path('new_dir/copy_path.txt', sep_override),
+                get_path('copy_file.txt')
+            }
+        else:
+            result_files = {
+                get_path('upload_file.txt'),
+                get_path('upload_bytes.txt'),
+                get_path('dir1/bar/upload_bytes2.txt'),
+                get_path('new_dir/copy_path.txt'),
+                get_path('copy_file.txt')
+            }
+        assert store.list_recursive(test_base_path) == result_files
 
         # Check that cleanup removes everything
         store.remove_recursive(test_base_path)
@@ -207,12 +219,15 @@ def test_storage_provider_aws(release_config_aws, tmpdir):
     exercise_storage_provider(tmpdir, 'aws_s3', release_config_aws)
 
 
-# TODO: DCOS_OSS-3460 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_storage_provider_local(tmpdir):
     work_dir = tmpdir.mkdir("work")
     repo_dir = tmpdir.mkdir("repository")
-    exercise_storage_provider(work_dir, 'local_path', {'path': str(repo_dir)})
+    if is_windows:
+        # some filesystem functions are using backslash instead of always using forward slash
+        sep_override = '\\'
+    else:
+        sep_override = '/'
+    exercise_storage_provider(work_dir, 'local_path', {'path': str(repo_dir)}, sep_override)
 
 
 copy_make_commands_result = {'stage1': [
