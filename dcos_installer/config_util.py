@@ -7,7 +7,7 @@ import gen
 import gen.build_deploy.bash
 import pkgpanda
 from dcos_installer.constants import ARTIFACT_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR
-from pkgpanda.util import make_directory
+from pkgpanda.util import copy_file, make_directory
 
 log = logging.getLogger(__name__)
 
@@ -55,11 +55,11 @@ def do_move_atomic(src_dir, dest_dir, filenames):
 
     def mkdir(dirname):
         created_dirs.append(dirname)
-        subprocess.check_output(['mkdir', dirname])
+        make_directory(dirname)
 
     def copy(src, dest):
         created_files.append(dest)
-        subprocess.check_output(['cp', src, dest])
+        copy_file(src, dest)
 
     def rollback():
         for filename in reversed(created_files):
