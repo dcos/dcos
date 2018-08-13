@@ -13,6 +13,16 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
+
+### Security Updates
+
+* Update Java to 8u181. (DCOS_OSS-3933)
+
+
+## DC/OS 1.10.8
+
 ### Notable changes
 
 * Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
