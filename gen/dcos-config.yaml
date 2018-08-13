@@ -126,6 +126,29 @@ package:
           [
             {agent_polling_enabled, false}
           ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, false}
+          ]
+        }
+      ].
+  - path: /etc_slave/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
+        }
+      ].
+  - path: /etc_slave_public/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
         }
       ].
   - path: /etc/dcos-net.config.d/common.config
@@ -156,11 +179,6 @@ package:
         {dcos_rest,
           [
             {enable_rest, {{ dcos_net_rest_enable }}}
-          ]
-        },
-        {telemetry,
-          [
-            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
