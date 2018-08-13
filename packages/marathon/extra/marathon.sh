@@ -9,7 +9,7 @@ export LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
 : ${MARATHON_MAX_INSTANCES_PER_OFFER=100}
 : ${MARATHON_TASK_LAUNCH_TIMEOUT=86400000}
 : ${MARATHON_DECLINE_OFFER_DURATION=300000}
-: ${MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"}
+: ${MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources,maintenance_mode"}
 : ${MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"}
 : ${MARATHON_MESOS_USER="root"}
 
