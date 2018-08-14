@@ -719,6 +719,16 @@ package:
                   "Role":["agent", "agent_public"]
               },
               {
+                  "Port": 5051,
+                  "Uri": "/containers",
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/quota",
+                  "Role": ["master"]
+              },
+              {
                   "Port": 8123,
                   "Uri": "/v1/config",
                   "Role": ["master"]
@@ -767,11 +777,23 @@ package:
               {
                   "Location": "/var/lib/dcos/exhibitor/conf/zoo.cfg",
                   "Role": ["master"]
+              },
+              {
+                  "Location": "/proc/cmdline"
+              },
+              {
+                  "Location": "/proc/cpuinfo"
+              },
+              {
+                  "Location": "/proc/meminfo"
               }
           ],
           "LocalCommands": [
               {
                   "Command": ["dmesg"]
+              },
+              {
+                  "Command": ["ps", "aux", "ww"]
               }
           ]
         }
