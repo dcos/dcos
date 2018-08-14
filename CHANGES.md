@@ -21,7 +21,7 @@
 ### Notable changes
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
-* Updated to [DC/OS UI 1.11+v1.16.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.16.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.17.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.17.0/CHANGELOG.md)
 
 
 ### Fixed and improved
