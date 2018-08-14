@@ -919,6 +919,9 @@ package:
               },
               {
                   "Location": "/proc/meminfo"
+              },
+              {
+                  "Location": "/proc/self/mountinfo"
               }
           ],
           "LocalCommands": [

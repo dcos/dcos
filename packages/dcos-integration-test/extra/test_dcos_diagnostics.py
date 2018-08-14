@@ -512,7 +512,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                              'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
                              'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json',
                              'var/lib/dcos/cluster-id.gz', 'ps_aux_ww-4.output.gz',
-                             'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz']
+                             'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz', 'proc/self/mountinfo.gz']
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
