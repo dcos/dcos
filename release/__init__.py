@@ -854,6 +854,14 @@ class ReleaseManager():
 _config = None
 
 
+def load_provider_names():
+    # Set the various stages that need to execute after packages are built.
+    if is_windows:
+        # DC/OS is not supported on AWS at this time.
+        return ['azure', 'bash']
+    return ['aws', 'azure', 'bash']
+
+
 def main():
     parser = argparse.ArgumentParser(description='DC/OS Release Management Tool.')
     subparsers = parser.add_subparsers(title='commands')
@@ -929,15 +937,10 @@ def main():
         print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
         sys.exit(1)
 
-    # Set the various stages that need to execute after packages are built.
-    if is_windows:
-        # DC/OS is not supported on AWS at this time.
-        provider_names = ['azure', 'bash']
-    else:
-        provider_names = ['aws', 'azure', 'bash']
-
-    # If the '--local' option is specified we don't do any cloud
-    # provider-related operations, we just build a local installer artifact.
+    # Set the stages that need to run once individual packages have been built.
+    provider_names = load_provider_names()
+    # If the '--local' option is specified we don't do any cloud provider
+    # operations, we just build a local installer artifact.
     if options.local:
         provider_names = ['bash']
 
