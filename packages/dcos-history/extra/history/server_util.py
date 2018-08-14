@@ -41,9 +41,10 @@ def headers_cb():
     defaults in this method. This method can be set by adding a dcos_auth_python package
     with a get_auth_headers method
     """
+    return_headers = headers.copy()
     if add_headers_cb:
-        headers.update(add_headers_cb())
-    return headers
+        return_headers.update(add_headers_cb())
+    return return_headers
 
 
 def update():
