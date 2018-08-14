@@ -130,6 +130,8 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-oauth.service',
     ]
     all_node_units = [
+        'dcos-checks-api.service',
+        'dcos-checks-api.socket',
         'dcos-diagnostics.service',
         'dcos-diagnostics.socket',
         'dcos-gen-resolvconf.service',
