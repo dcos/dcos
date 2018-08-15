@@ -9,6 +9,7 @@ from gen import do_gen_package, resolve_late_package
 from pkgpanda import PackageId, requests_fetcher
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_PATH,
                                 install_root,
+                                is_windows,
                                 SYSCTL_SETTING_KEY)
 from pkgpanda.exceptions import FetchError, PackageConflict, ValidationError
 from pkgpanda.util import (download, extract_tarball, if_exists, load_json,
@@ -189,7 +190,10 @@ def setup(install, repository):
 def _start_dcos_target(block_systemd):
     no_block = [] if block_systemd else ["--no-block"]
     check_call(["systemctl", "daemon-reload"])
-    check_call(["systemctl", "enable", "dcos.target", '--no-reload'])
+    enable_command = ["systemctl", "enable", "dcos.target", '--no-reload']
+    if is_windows:
+        enable_command += ['--systemd-execpath', 'c:\\opt\\mesosphere\\bin\\']
+    check_call(enable_command)
     check_call(["systemctl", "start", "dcos.target"] + no_block)
 
 

@@ -57,10 +57,24 @@ elseif ($roles.name -eq "slave_public")
     $role_name="public agent"
 }
 
-write-output "TODO: UPGRADE NOT YET SUPPORTED"
+# On Windows we need to stop the services ahead of time because files are
+# locked in the c:\\opt\\mesosphere\\bin.old directory relating to
+# service files. Not doing this will cause upgrade to fail due to
+# the .old directories being locked. The sleep makes sure things
+# are actually shut down before deleting the directory
+get-service dcos* | stop-service
+start-sleep -seconds 5
+remove-item -recurse -force c:\\opt\\mesosphere\\bin.old
+
 write-output "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }}
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to fetch packages from bootstrap node during upgrade"
+}
 pkgpanda activate --no-block {{ cluster_packages }}
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to activate new packages during upgrade"
+}
 """
 else:
     node_upgrade_template = """#!/bin/bash
