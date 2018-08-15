@@ -8,7 +8,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "4354cfb353939032d542e9c2c538b681049c0e44",
+    "ref": "53801319b7d5981a54f255864ec3af26ca3f7148",
     "ref_origin": "gilbert/debug"
   },
   "environment": {
