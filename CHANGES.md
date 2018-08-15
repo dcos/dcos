@@ -13,8 +13,17 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+### What's new
+
+* Admin Router now supports gzip compression for CSS, Javascript, and JSON MIME types. (DCOS-5978)
+
+
+### Breaking changes
+
+
 
 ### Fixed and improved
+
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
 
 * Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
