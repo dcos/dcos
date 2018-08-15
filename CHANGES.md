@@ -14,6 +14,8 @@
 
 ### Security updates
 
+* Update Java to 8u181. (DCOS_OSS-3932)
+
 
 ## DC/OS 1.11.4
 
