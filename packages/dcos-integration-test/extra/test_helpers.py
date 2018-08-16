@@ -41,7 +41,8 @@ def marathon_test_app_linux(
         healthcheck_protocol: marathon.Healthcheck=marathon.Healthcheck.HTTP,
         vip: str=None,
         host_constraint: str=None,
-        network_name: str='dcos'):
+        network_name: str='dcos',
+        app_prefix: str=None):
     """ Creates an app definition for the python test server which will be
     consistent (i.e. deployable with green health checks and desired network
     routability). To learn more about the test server, see in this repo:
@@ -75,7 +76,7 @@ def marathon_test_app_linux(
     if network == marathon.Network.USER:
         assert host_port != 0, 'Cannot auto-assign a port on USER network!'
 
-    test_uuid = uuid.uuid4().hex
+    test_uuid = uuid.uuid4().hex if app_prefix is None else "{}-{}".format(app_prefix, uuid.uuid4().hex)
     app = copy.deepcopy({
         'id': TEST_APP_NAME_FMT.format(test_uuid),
         'cpus': 0.1,
