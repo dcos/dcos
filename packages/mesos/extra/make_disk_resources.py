@@ -61,7 +61,7 @@ class VolumeDiscoveryException(Exception):
 
 def find_mounts_matching(pattern):
     '''
-    find all matching mounts from the output of the mount command
+    Find all matching mounts from the output of the mount command
     '''
     print('Looking for mounts matching pattern "{}"'.format(pattern.pattern))
     mounts = subprocess.check_output(['mount'], universal_newlines=True)
