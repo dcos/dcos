@@ -15,6 +15,13 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+
+* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
+
+* Mesos: Expose memory profiling endpoints. (DCOS_OSS-2137)
+
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
 
@@ -38,6 +45,12 @@ Format of the entries must be.
 
 * Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
 
+* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
+
+* Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
+
+* Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
+
 
 ### Security Updates
 
@@ -55,6 +68,10 @@ Format of the entries must be.
 
 
 ### Notable changes
+
+* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
+
+* Updated DC/OS UI to master+v2.3.0 [Changelog](https://github.com/dcos/dcos-ui/releases)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 

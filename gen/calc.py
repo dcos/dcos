@@ -270,7 +270,7 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+def validate_network_default_name(overlay_network_default_name, dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
@@ -278,9 +278,9 @@ def validate_network_default_name(dcos_overlay_network_default_name, dcos_overla
 
     overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
 
-    assert dcos_overlay_network_default_name in overlay_names, (
+    assert overlay_network_default_name in overlay_names, (
         "Default overlay network name does not reference a defined overlay network: {}".format(
-            dcos_overlay_network_default_name))
+            overlay_network_default_name))
 
 
 def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
@@ -712,6 +712,15 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
 
 
 def calculate_check_config(check_time):
+    # We consider only two timeouts:
+    # * 1s for immediate checks (such as checking for the presence of CLI utilities).
+    # * 30s for any check which is expected to take more than 1s.
+    #
+    # The 30s value was chosen arbitrarily. It may be increased in the future as required.
+    # We chose not to use a value greater than 1min, as the checks are automatically executed
+    # in parallel every minute.
+    instant_check_timeout = "1s"
+    normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
             'checks': {
@@ -719,62 +728,62 @@ def calculate_check_config(check_time):
                     'description': 'All DC/OS components are healthy.',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
                             '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
                             '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'xz': {
                     'description': 'The xz utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'tar': {
                     'description': 'The tar utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'curl': {
                     'description': 'The curl utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'unzip': {
                     'description': 'The unzip utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'ifconfig': {
                     'description': 'The ifconfig utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '30s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
                     'description': 'Journald directory has the right owners and permissions',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                 },
             },
             'prestart': [],
@@ -800,7 +809,7 @@ def calculate_check_config(check_time):
         check_config['node_checks']['checks'][clock_sync_check_name] = {
             'description': 'System clock is in sync.',
             'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
-            'timeout': '1s'
+            'timeout': instant_check_timeout
         }
         check_config['node_checks']['poststart'].append(clock_sync_check_name)
 
@@ -897,6 +906,7 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 
 __dcos_overlay_network_default_name = 'dcos'
+__dcos_overlay_network6_default_name = 'dcos6'
 
 
 entry = {
@@ -962,6 +972,7 @@ entry = {
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
+        lambda log_offers: validate_true_false(log_offers),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -991,6 +1002,7 @@ entry = {
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
+        'marathon_java_args': '',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
@@ -1015,6 +1027,7 @@ entry = {
         'ui_banner_dismissible': 'null',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
+        'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
@@ -1027,12 +1040,14 @@ entry = {
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }, {
-                'name': 'dcos6',
+                'name': __dcos_overlay_network6_default_name,
                 'subnet6': 'fd01:b::/64',
                 'prefix6': 80
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_overlay_network6_default_name': __dcos_overlay_network6_default_name,
+        'dcos_ucr_default_bridge_network_name': 'mesos-bridge',
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
         'dcos_l4lb_min_named_ip': '11.0.0.0',
@@ -1069,7 +1084,8 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
-        'enable_mesos_ipv6_discovery': 'false'
+        'enable_mesos_ipv6_discovery': 'false',
+        'log_offers': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',

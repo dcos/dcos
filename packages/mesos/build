@@ -21,6 +21,7 @@ LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --enable-libevent --enable-ssl \
   --enable-install-module-dependencies \
   --enable-grpc \
+  --enable-jemalloc-allocator \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \
   --with-curl=/opt/mesosphere/active/curl \
@@ -71,6 +72,10 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_sl
 disk_resource_script="$PKG_PATH/bin/make_disk_resources.py"
 cp /pkg/extra/make_disk_resources.py "$disk_resource_script"
 chmod +x "$disk_resource_script"
+
+upgrade_cni_script="$PKG_PATH/bin/upgrade_cni.py"
+cp /pkg/extra/upgrade_cni.py "$upgrade_cni_script"
+chmod +x "$upgrade_cni_script"
 
 mesos_start_wrapper="$PKG_PATH/bin/start_mesos.sh"
 cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
