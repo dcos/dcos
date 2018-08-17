@@ -279,6 +279,44 @@ endpoint_tests:
       - master
       - agent
 
+######### /system/checks/ endpoint
+  - tests:
+      are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: true
+        auth_token_is_forwarded: false
+        test_paths:
+          - /system/checks/v1/node/
+          - /system/checks/v1/cluster/
+    type:
+      - agent
+  - tests:
+      are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: false
+        test_paths:
+          - /system/checks/v1/node/
+          - /system/checks/v1/cluster/
+    type:
+      - master
+  - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: false
+        test_paths:
+          - /system/checks/v1/node/
+          - /system/checks/v1/cluster/
+      # Check Open/EE config for this test:
+      is_upstream_req_ok:
+        expected_http_ver: HTTP/1.0
+        test_paths:
+          - expected: /system/checks/v1/node/
+            sent: /system/checks/v1/node/
+          - expected: /system/checks/v1/cluster/
+            sent: /system/checks/v1/cluster/
+    type:
+      - master
+      - agent
+
 ######### /system/v1/agent/ endpoint
 # Agent A
   - tests:

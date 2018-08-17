@@ -21,6 +21,8 @@ Format of the entries must be.
 
 * Mesos: Expose memory profiling endpoints. (DCOS_OSS-2137)
 
+* Added an API for checks at /system/checks/ on all cluster nodes. (DCOS_OSS-1406)
+
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
