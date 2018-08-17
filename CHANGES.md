@@ -3,6 +3,7 @@
 
 ### Notable changes
 
+* Updated to [DC/OS UI 1.11+v1.19.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.19.0/CHANGELOG.md)
 
 ### Fixed and improved
 
