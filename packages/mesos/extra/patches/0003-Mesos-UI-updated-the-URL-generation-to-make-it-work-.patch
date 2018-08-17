@@ -1,4 +1,4 @@
-From 71fab44624b9052d6749d32ad0ee320da7c8f47a Mon Sep 17 00:00:00 2001
+From dc6f62bad992323a70455e4e072bec445b5c021a Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
