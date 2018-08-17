@@ -718,12 +718,12 @@ package:
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/flags",
+                  "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
                   "Port": 5051,
-                  "Uri": "/slave/state",
+                  "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {
