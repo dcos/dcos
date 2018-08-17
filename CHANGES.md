@@ -15,6 +15,13 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+
+* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
+
+* Mesos: Expose memory profiling endpoints. (DCOS_OSS-2137)
+
+* Added an API for checks at /system/checks/ on all cluster nodes. (DCOS_OSS-1406)
 
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
@@ -63,6 +70,10 @@ Format of the entries must be.
 
 
 ### Notable changes
+
+* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
+
+* Updated DC/OS UI to master+v2.3.0 [Changelog](https://github.com/dcos/dcos-ui/releases)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 

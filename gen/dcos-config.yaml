@@ -126,6 +126,29 @@ package:
           [
             {agent_polling_enabled, false}
           ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, false}
+          ]
+        }
+      ].
+  - path: /etc_slave/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
+        }
+      ].
+  - path: /etc_slave_public/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
         }
       ].
   - path: /etc/dcos-net.config.d/common.config
@@ -156,11 +179,6 @@ package:
         {dcos_rest,
           [
             {enable_rest, {{ dcos_net_rest_enable }}}
-          ]
-        },
-        {telemetry,
-          [
-            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
@@ -469,63 +487,71 @@ package:
       }
   - path: /etc/mesos-master
     content: |
+      GLOG_drop_log_memory=false
+      LIBPROCESS_NUM_WORKER_THREADS=16
       MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
+      MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
+      MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      MESOS_HOSTNAME_LOOKUP=false
+      MESOS_MAX_SLAVE_PING_TIMEOUTS=20
+      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32|disk:32
+      MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
+      MESOS_OFFER_TIMEOUT=2mins
+      MESOS_QUORUM={{ master_quorum }}
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
-      MESOS_OFFER_TIMEOUT=2mins
+      MESOS_WEIGHTS={{ weights }}
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
-      MESOS_WEIGHTS={{ weights }}
-      MESOS_QUORUM={{ master_quorum }}
-      MESOS_HOSTNAME_LOOKUP=false
-      MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
-      MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      SASL_PATH=/opt/mesosphere/lib/sasl2
 {% switch has_mesos_max_completed_tasks_per_framework %}
 {% case "true" %}
       MESOS_MAX_COMPLETED_TASKS_PER_FRAMEWORK={{ mesos_max_completed_tasks_per_framework }}
 {% case "false" %}
 {% endswitch %}
-      GLOG_drop_log_memory=false
-      LIBPROCESS_NUM_WORKER_THREADS=16
-      SASL_PATH=/opt/mesosphere/lib/sasl2
+{% switch log_offers %}
+{% case "true" %}
+      GLOG_vmodule=master=2
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-master-provider
     content: |
       MESOS_CLUSTER={{ cluster_name }}
   - path: /etc/mesos-slave-common
     content: |
-      MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
-      MESOS_CONTAINERIZERS=docker,mesos
-      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
-      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
-      MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
-      MESOS_ISOLATION={{ mesos_isolation }}
-      MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
-      MESOS_IMAGE_PROVIDERS=docker
-      MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
-      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
-      MESOS_WORK_DIR={{ mesos_agent_work_dir }}
-      MESOS_SLAVE_SUBSYSTEMS=cpu,memory
-      MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
-      MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
-      MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
-      MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
-      MESOS_RECONFIGURATION_POLICY=additive
-      MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
+      GLOG_drop_log_memory=false
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
+      MESOS_CONTAINERIZERS=docker,mesos
+      MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
+      MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
       MESOS_DOCKER_REMOVE_DELAY={{ docker_remove_delay }}
       MESOS_DOCKER_STOP_TIMEOUT={{ docker_stop_timeout }}
       MESOS_DOCKER_STORE_DIR=/var/lib/mesos/slave/store/docker
+      MESOS_DOCKER_VOLUME_CHECKPOINT_DIR=/var/lib/mesos/isolators/docker/volume
+      MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
+      MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
+      MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
+      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_HOSTNAME_LOOKUP=false
-      MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
-      GLOG_drop_log_memory=false
+      MESOS_IMAGE_PROVIDERS=docker
+      MESOS_ISOLATION={{ mesos_isolation }}
+      MESOS_LAUNCHER_DIR=/opt/mesosphere/active/mesos/libexec/mesos
+      MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
+      MESOS_MEMORY_PROFILING=true
+      MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
+      MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
+      MESOS_RECONFIGURATION_POLICY=additive
+      MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
+      MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_WORK_DIR={{ mesos_agent_work_dir }}
 {% switch use_mesos_hooks %}
 {% case "true" %}
       MESOS_HOOKS={{ mesos_hooks }}
@@ -609,15 +635,24 @@ package:
       }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
+  - path: /etc/dcos-check-runner.env
+    content: |
+      DCOS_CHECK_RUNNER_CONFIG_PATH=/opt/mesosphere/etc/dcos-check-runner.yaml
   - path: /etc_master/dcos-check-runner.yaml
     content: |
         role: master
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave/dcos-check-runner.yaml
     content: |
         role: agent
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave_public/dcos-check-runner.yaml
     content: |
         role: agent  # Checks don't distinguish between public and private agents.
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
@@ -717,6 +752,11 @@ package:
               {
                   "Port": 5050,
                   "Uri": "/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/quota",
                   "Role": ["master"]
               },
               {
@@ -828,6 +868,11 @@ package:
                   "Port": 5051,
                   "Uri": "/overlay-agent/overlay",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/containers",
+                  "Role": ["agent", "agent_public"]
               }
           ],
           "LocalFiles": [
@@ -865,6 +910,15 @@ package:
               },
               {
                   "Location": "/proc/net/fib_trie"
+              },
+              {
+                  "Location": "/proc/cmdline"
+              },
+              {
+                  "Location": "/proc/cpuinfo"
+              },
+              {
+                  "Location": "/proc/meminfo"
               }
           ],
           "LocalCommands": [
@@ -879,6 +933,9 @@ package:
               },
               {
                   "Command": ["ifconfig", "-a"]
+              },
+              {
+                  "Command": ["ps", "aux", "ww"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
@@ -1017,6 +1074,8 @@ package:
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
       METRONOME_MESOS_USER=root
       LIBPROCESS_PORT=15201
+      METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
+      METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600000
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}
@@ -1138,3 +1197,83 @@ package:
     content: {{ fault_domain_detect_contents }}
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/telegraf.env
+    content: |
+      TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
+      TELEGRAF_CONFIG_DIR=/opt/mesosphere/etc/telegraf/telegraf.d/
+  - path: /etc/telegraf/telegraf.conf
+    content: |
+      # Telegraf config for all nodes
+      [global_tags]
+        # Tags to be applied to all metrics.
+        dcos_cluster_name="{{ cluster_name }}"
+        dcos_cluster_id="$DCOS_CLUSTER_ID"
+      [agent]
+        ## Default data collection interval for all inputs
+        interval = "10s"
+        ## Rounds collection interval to 'interval'
+        ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
+        round_interval = true
+        ## Telegraf will send metrics to outputs in batches of at most
+        ## metric_batch_size metrics.
+        ## This controls the size of writes that Telegraf sends to output plugins.
+        metric_batch_size = 1000
+        ## For failed writes, telegraf will cache metric_buffer_limit metrics for each
+        ## output, and will flush this buffer on a successful write. Oldest metrics
+        ## are dropped first when this buffer fills.
+        ## This buffer only fills when writes fail to output plugin(s).
+        metric_buffer_limit = 10000
+        ## Collection jitter is used to jitter the collection by a random amount.
+        ## Each plugin will sleep for a random time within jitter before collecting.
+        ## This can be used to avoid many plugins querying things like sysfs at the
+        ## same time, which can have a measurable effect on the system.
+        collection_jitter = "0s"
+        ## Default flushing interval for all outputs. You shouldn't set this below
+        ## interval. Maximum flush_interval will be flush_interval + flush_jitter
+        flush_interval = "10s"
+        ## Jitter the flush interval by a random amount. This is primarily to avoid
+        ## large write spikes for users running a large number of telegraf instances.
+        ## ie, a jitter of 5s and interval 10s means flushes will happen every 10-15s
+        flush_jitter = "0s"
+        ## By default or when set to "0s", precision will be set to the same
+        ## timestamp order as the collection interval, with the maximum being 1s.
+        ##   ie, when interval = "10s", precision will be "1s"
+        ##       when interval = "250ms", precision will be "1ms"
+        ## Precision will NOT be used for service inputs. It is up to each individual
+        ## service input to set the timestamp at the appropriate precision.
+        ## Valid time units are "ns", "us", "ms", "s".
+        precision = ""
+        ## Logging configuration:
+        ## Run telegraf with debug log messages.
+        debug = false
+        ## Run telegraf in quiet mode (error log messages only).
+        quiet = false
+        ## Specify the log file name. The empty string means to log to stderr.
+        logfile = ""
+        ## Override default hostname, if empty use os.Hostname()
+        hostname = ""
+        ## If set to true, do no set the "host" tag in the telegraf agent.
+        omit_hostname = false
+      # Read metrics about cpu usage
+      [[inputs.cpu]]
+        ## Whether to report per-cpu stats or not
+        percpu = true
+        ## Whether to report total system cpu stats or not
+        totalcpu = true
+        ## If true, collect raw CPU time metrics.
+        collect_cpu_time = false
+        ## If true, compute and report the sum of all non-idle CPU states.
+        report_active = false
+      [[inputs.mem]]
+      # Telegraf refuses to start if no outputs are defined. This will eventually be
+      # replaced with real outputs.
+      [[outputs.discard]]
+  - path: /etc_master/telegraf/telegraf.d/master.conf
+    content: |
+      # Additional Telegraf config for masters
+  - path: /etc_slave/telegraf/telegraf.d/agent.conf
+    content: |
+      # Additional Telegraf config for agents
+  - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
+    content: |
+      # Additional Telegraf config for agents

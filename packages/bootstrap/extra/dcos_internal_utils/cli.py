@@ -72,6 +72,8 @@ bootstrappers = {
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
     'dcos-net': noop,
+    'dcos-telegraf-master': noop,
+    'dcos-telegraf-agent': noop,
 }
 
 

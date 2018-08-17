@@ -1,5 +1,8 @@
+import copy
 import json
 import logging
+import os
+import subprocess
 import uuid
 
 import pytest
@@ -181,6 +184,22 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
         assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
 
 
+def test_memory_profiling(dcos_api_session):
+    # Test that we can fetch raw memory profiles
+    master_ip = dcos_api_session.masters[0]
+    r0 = dcos_api_session.get(
+        '/memory-profiler/start', host=master_ip, port=5050)
+    assert r0.status_code == 200, r0.text
+
+    r1 = dcos_api_session.get(
+        '/memory-profiler/stop', host=master_ip, port=5050)
+    assert r1.status_code == 200, r1.text
+
+    r2 = dcos_api_session.get(
+        '/memory-profiler/download/raw', host=master_ip, port=5050)
+    assert r2.status_code == 200, r2.text
+
+
 def test_blkio_stats(dcos_api_session):
     # Launch a Marathon application to do some disk writes, and then verify that
     # the cgroups blkio statistics of the application can be correctly retrieved.
@@ -325,3 +344,142 @@ def test_fault_domain(dcos_api_session):
 
         # agent_zone might be different on agents, so we just make sure it's a sane value
         assert agent_zone, 'agent_zone cannot be empty'
+
+
+@pytest.fixture
+def reserved_disk(dcos_api_session):
+    """
+    Set up an agent with one disk in a role.
+
+    Reserve a chunk of `disk` resources on an agent for a role, and the
+    remaining resources to another role. With that a framework in the first
+    role will only be offered `disk` resources.
+    """
+    # Setup.
+
+    def principal():
+        is_enterprise = os.getenv('DCOS_ENTERPRISE', 'false').lower() == 'true'
+
+        if is_enterprise:
+            return dcos_api_session.auth_user.uid
+        else:
+            return 'reserved_disk_fixture_principal'
+
+    dcos_api_session.principal = principal()
+
+    # Keep track of all reservations we created so we can clean them up on
+    # teardown or on error paths.
+    reserved_resources = []
+
+    try:
+        # Get the ID of a private agent. We some assume that resources on that
+        # agent are unreserved.
+        r = dcos_api_session.get('/mesos/slaves')
+        assert r.status_code == 200, r.text
+        response = json.loads(r.text)
+        slaves = [
+            slave['id'] for slave in response['slaves']
+            if 'public_ip' not in slave['attributes']]
+        assert slaves, 'Could not find any private agents'
+        slave_id = slaves[0]
+
+        # Create a unique role to reserve the disk to. The test framework should
+        # register in this role.
+        dcos_api_session.role = 'disk-' + uuid.uuid4().hex
+
+        resources1 = {
+            'agent_id': {'value': slave_id},
+            'resources': [
+                {
+                    'type': 'SCALAR',
+                    'name': 'disk',
+                    'reservations': [
+                        {
+                            'type': 'DYNAMIC',
+                            'role': dcos_api_session.role,
+                            'principal': dcos_api_session.principal,
+                        }
+                    ],
+                    'scalar': {'value': 32}
+                }
+            ]
+        }
+
+        request = {'type': 'RESERVE_RESOURCES', 'reserve_resources': resources1}
+        r = dcos_api_session.post('/mesos/api/v1', json=request)
+        assert r.status_code == 202, r.text
+
+        reserved_resources.append(resources1)
+
+        # Reserve the remaining agent resources for another role. We let the Mesos
+        # master perform the calculation of the unreserved resources on the agent
+        # which requires another query.
+        r = dcos_api_session.get('/mesos/slaves')
+        assert r.status_code == 200, r.text
+        response = json.loads(r.text)
+
+        unreserved = [
+            slave['unreserved_resources_full'] for slave in response['slaves']
+            if slave['id'] == slave_id]
+        assert len(unreserved) == 1
+        unreserved = unreserved[0]
+        another_role = uuid.uuid4().hex
+        for resource in unreserved:
+            resource['reservations'] = [
+                {
+                    'type': 'DYNAMIC',
+                    'role': another_role,
+                    'principal': dcos_api_session.principal,
+                }
+            ]
+            resource.pop('role')
+
+        resources2 = copy.deepcopy(resources1)
+        resources2['resources'] = unreserved
+        request = {'type': 'RESERVE_RESOURCES', 'reserve_resources': resources2}
+        r = dcos_api_session.post('/mesos/api/v1', json=request)
+        assert r.status_code == 202, r.text
+
+        reserved_resources.append(resources2)
+
+        yield dcos_api_session
+
+    finally:
+        # Teardown.
+        #
+        # Remove all reservations this fixture has created in reverse order.
+        for resources in reversed(reserved_resources):
+            request = {
+                'type': 'UNRESERVE_RESOURCES',
+                'unreserve_resources': resources}
+            r = dcos_api_session.post('/mesos/api/v1', json=request)
+            assert r.status_code == 202, r.text
+
+
+@pytest.mark.skipif(
+    test_helpers.expanded_config.get('security') == 'strict',
+    reason='Missing framework authentication for mesos-execute')
+def test_min_allocatable_resources(reserved_disk):
+    """Test that the Mesos master creates offers for just `disk` resources."""
+    # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
+    # offers.
+    name = \
+        'test-min-test_min-allocatable-resources-{}'.format(uuid.uuid4().hex)
+
+    argv = [
+        '/opt/mesosphere/bin/mesos-execute',
+        '--resources=disk:32',
+        '--role=' + reserved_disk.role,
+        '--command=:',
+        '--master=leader.mesos:5050',
+        '--name={}'.format(name),
+        '--env={"LC_ALL":"C"}']
+
+    output = subprocess.check_output(
+        argv,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True)
+
+    # If the framework received any status update it launched a task which
+    # means it was offered resources.
+    assert 'Received status update' in output, output

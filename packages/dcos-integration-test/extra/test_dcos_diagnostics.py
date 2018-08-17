@@ -511,17 +511,23 @@ def _download_bundle_from_master(dcos_api_session, master_index):
     expected_common_files = ['dmesg-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
                              'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
                              'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json',
-                             'var/lib/dcos/cluster-id.gz']
+                             'var/lib/dcos/cluster-id.gz', 'ps_aux_ww-4.output.gz',
+                             'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz']
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
-                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz'] + expected_common_files
+                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json'
+                             ] + expected_common_files
+
+    expected_agent_common_files = ['5051-containers.json']
 
     # for agent host
-    expected_agent_files = ['dcos-mesos-slave.service.gz'] + expected_common_files
+    expected_agent_files = ['dcos-mesos-slave.service.gz'
+                            ] + expected_agent_common_files + expected_common_files
 
     # for public agent host
-    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'] + expected_common_files
+    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'
+                                   ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
         # raises KeyError if item is not in zipfile.
@@ -598,9 +604,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                 gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
                 verify_unit_response(gzipped_unit_output, 100)
 
-                for expected_master_file in expected_master_files:
-                    expected_file = master_folder + expected_master_file
-                    assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
+                verify_archived_items(master_folder, archived_items, expected_master_files)
 
             # make sure all required log files for agent node are in place.
             for slave_ip in dcos_api_session.slaves:
@@ -615,9 +619,7 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                 gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
                 verify_unit_response(gzipped_unit_output, 100)
 
-                for expected_agent_file in expected_agent_files:
-                    expected_file = agent_folder + expected_agent_file
-                    assert expected_file in archived_items, 'expecting {} in {}'.format(expected_file, archived_items)
+                verify_archived_items(agent_folder, archived_items, expected_agent_files)
 
             # make sure all required log files for public agent node are in place.
             for public_slave_ip in dcos_api_session.public_slaves:
@@ -632,9 +634,13 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                 gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
                 verify_unit_response(gzipped_unit_output, 100)
 
-                for expected_public_agent_file in expected_public_agent_files:
-                    expected_file = agent_public_folder + expected_public_agent_file
-                    assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
+                verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
+
+
+def verify_archived_items(folder, archived_items, expected_files):
+    for expected_file in expected_files:
+        expected_file = folder + expected_file
+        assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
 
 
 def test_bundle_delete(dcos_api_session):
