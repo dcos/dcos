@@ -1,5 +1,4 @@
 import pytest
-
 import retrying
 
 __maintainer__ = 'mnaboka'
@@ -126,6 +125,12 @@ def test_metrics_containers(dcos_api_session):
 
         return True
 
+    def check_tags(tags: dict, expected_tag_names: set):
+        """Assert that tags contains only expected keys with nonempty values."""
+        assert set(tags.keys()) == expected_tag_names
+        for tag_name, tag_val in tags.items():
+            assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+
     @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
@@ -156,19 +161,24 @@ def test_metrics_containers(dcos_api_session):
 
                 cid_registry = []
                 for dp in container_response.json()['datapoints']:
+                    # Verify expected tags are present.
                     assert 'tags' in dp, 'got {}'.format(dp)
-                    # blkio stats have 'device' tags as well
-                    assert len(dp['tags']) >= 5, 'got {}'.format(
-                        len(dp['tags']))
+                    expected_tag_names = {
+                        'container_id',
+                        'executor_id',
+                        'executor_name',
+                        'framework_id',
+                        'source',
+                    }
+                    if dp['name'].startswith('blkio.'):
+                        # blkio stats have 'blkio_device' tags.
+                        expected_tag_names.add('blkio_device')
+                    check_tags(dp['tags'], expected_tag_names)
 
                     # Ensure all container ID's in the container/<id> endpoint are
                     # the same.
-                    assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
-
-                    for k, v in dp['tags'].items():
-                        assert len(v) != 0, 'tag values must not be empty'
 
                 assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
                 assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
@@ -200,7 +210,7 @@ def test_metrics_containers(dcos_api_session):
                     for k in datapoint_keys:
                         assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                    assert 'test_tag_key' in uptime_dp['tags'], 'got {}'.format(uptime_dp)
+                    check_tags(uptime_dp['tags'], {'test_tag_key'})
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
 
                     assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
