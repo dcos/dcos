@@ -143,7 +143,8 @@ def test_data_recovery(monkeypatch, tmpdir):
 
 def test_add_headers(history_service):
     resp = history_service[0].get('/history/minute')
-    # check that new header is added
-    assert resp.headers['Authorization'] == 'test'
+    # check that auth header is not added to response - this would leak the
+    # auth token back to the user
+    assert 'Authorization' not in resp.headers
     # check that original headers are still there
     assert resp.headers['Access-Control-Max-Age'] == '86400'
