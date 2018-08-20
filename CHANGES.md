@@ -28,6 +28,8 @@ Format of the entries must be.
 
 ### Security Updates
 
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
+
 * Update Java to 8u181. (DCOS_OSS-3933)
 
 
