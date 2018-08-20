@@ -1,6 +1,5 @@
 ## DC/OS 1.11.5
 
-
 ### Notable changes
 
 
@@ -15,6 +14,8 @@
 ### Security updates
 
 * Update Java to 8u181. (DCOS_OSS-3932)
+
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
 
 
 ## DC/OS 1.11.4
