@@ -54,7 +54,7 @@ Finally it generates the bootstrap node docker file and uploads all artifacts to
 
 ### Deploying DCOS
 
-Deployment of the Windows bootstrap node works in a similar way to that of Linux. The following powershell code is an example of how to download and run the bootstrap script:
+Deployment of the Windows bootstrap node works in a similar way to that of Linux, except instead of downloading a script with the bootstrap embedded in the script we have an archive with a docker image and a file in it. The following powershell code is an example of how to download and run the bootstrap script:
 
 ```powershell.exe
     # Create a directory to download and run the bootstrap configuration from
@@ -71,7 +71,12 @@ Deployment of the Windows bootstrap node works in a similar way to that of Linux
     # Download the compressed tarball
     curl.exe -O <url_to_tarball>/dcos_generate_config.windows.tar.xz
 
-    # Run the extracted script
+    # Extract the docker image and install script. Note that you will need
+    # to install 7-Zip from https://www.7-zip.org/download.html.
+    # Extraction looks like this:
+    & cmd /c "$env:ProgramFiles\7-zip\7z.exe e dcos_generate_config.windows.tar.xz -so | $env:ProgramFiles\7-zip\7z.exe x -si -ttar"
+
+    # Run the extracted script to load and run the docker image
     & dcos_generate_config.ps1
 
 ```

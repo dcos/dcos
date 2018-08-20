@@ -1070,9 +1070,20 @@ def make_installer_docker(variant, variant_info, installer_info):
             ['docker', 'save', docker_image_name],
             stdout=open(genconf_tar, 'w'))
         if is_windows:
-            tar_filename = "tar.exe"
-            subprocess.check_call([tar_filename, '-cf', os.path.abspath(installer_filename), genconf_tar,
-                                  script_filename])
+            # Compressed tarballs need to be done in two commands, first archive to a
+            # tar file, then compressed. We can stream the archive to stdout and then
+            # compress that by reading the archive from stdin
+            archive_name, _ = os.path.splitext(os.path.abspath(installer_filename))
+
+            # Archive to stdout
+            archive_command = "7z.exe a {} {} {} -so".format(archive_name,
+                                                             genconf_tar,
+                                                             script_filename)
+
+            # compress from stdin
+            compress_command = "7z.exe a {} -si".format(os.path.abspath(installer_filename))
+            commandline = "{} | {}".format(archive_command, compress_command)
+            subprocess.check_call(commandline, stdout=subprocess.DEVNULL, shell=True)
         else:
             tar_filename = "tar"
             subprocess.check_call([tar_filename, 'cvf', '-', genconf_tar], stdout=open(installer_filename, 'a'))
