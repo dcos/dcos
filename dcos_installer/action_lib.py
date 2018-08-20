@@ -404,7 +404,7 @@ def _add_prereqs_script(chain):
 # Exit on error, unset variable, or error in pipe chain
 set -o errexit -o nounset -o pipefail
 
-# For setenforce & xfs_info
+# For xfs_info
 PATH=$PATH:/usr/sbin:/sbin
 
 echo "Validating distro..."
@@ -529,16 +529,6 @@ yum_install git
 yum_install unzip
 yum_install xz
 yum_install ipset
-
-echo "Validating SELinux..."
-if [[ "$(getenforce)" == "Enforcing" ]]; then
-  echo "Disabling enforcement..."
-  sudo setenforce 0
-fi
-if ! grep -q '^SELINUX=disabled' /etc/sysconfig/selinux; then
-  echo "Disabling SELinux..."
-  sudo sed -i --follow-symlinks 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
-fi
 
 if [[ "${install_docker}" == 'true' ]]; then
   echo "Installing Docker..."
