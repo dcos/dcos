@@ -126,6 +126,14 @@ package:
           ]
         }
       ].
+  - path: /etc/dcos-cni-networks
+    content: |
+      {
+        "names": [
+            "{{ dcos_overlay_network_default_name }}",
+            "{{ dcos_ucr_default_bridge_network_name }}"
+         ]
+       }
   - path: /etc/overlay/config/master.json
     content: |
       {
@@ -135,7 +143,7 @@ package:
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
       {
-        "name": "mesos-bridge",
+        "name": "{{ dcos_ucr_default_bridge_network_name }}",
         "type" : "mesos-cni-port-mapper",
         "excludeDevices" : ["ucr-br0"],
         "chain": "UCR-DEFAULT-BRIDGE",
@@ -148,6 +156,7 @@ package:
           "hairpinMode": true,
           "ipam": {
             "type": "host-local",
+            "dataDir": "{{ dcos_cni_data_dir }}",
             "subnet": "{{ dcos_ucr_default_bridge_subnet }}",
             "routes": [
             { "dst":
@@ -160,6 +169,7 @@ package:
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "cni_data_dir": "{{ dcos_cni_data_dir }}",
         "network_config":
         {
           "allocate_subnet": true,
@@ -173,6 +183,7 @@ package:
     content: |
       {
         "cni_dir":"/opt/mesosphere/etc/dcos/network/cni",
+        "cni_data_dir": "{{ dcos_cni_data_dir }}",
         "network_config" :
         {
           "allocate_subnet": true,
@@ -949,6 +960,8 @@ package:
       METRONOME_PLAY_SERVER_HTTP_PORT=9000
       METRONOME_MESOS_USER=root
       LIBPROCESS_PORT=15201
+      METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
+      METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}

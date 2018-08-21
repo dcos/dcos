@@ -1,4 +1,4 @@
-## DC/OS 1.10.8
+## DC/OS 1.10.9
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -13,6 +13,31 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
+
+### Security Updates
+
+* Update Java to 8u181. (DCOS_OSS-3933)
+
+
+## DC/OS 1.10.8
+
+### Notable changes
+
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
+
+### Fixed and improved
+
+* Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
+
+### Security Updates
+
+
+## DC/OS 1.10.8
+
+
 ### Notable changes
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
@@ -23,6 +48,8 @@ Format of the entries must be.
 ### Fixed and improved
 
 * L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
+
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
 
