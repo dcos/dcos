@@ -5,8 +5,8 @@
   ], 
   "single_source": {
     "kind": "git", 
-    "git": "https://github.com/dcos/dcos-mesos-modules.git", 
-    "ref": "26d11daee118055ab0975b0eaa0a25b6cf1a35c3", 
-    "ref_origin": "master"
+    "git": "https://github.com/greggomann/dcos-mesos-modules.git", 
+    "ref": "0de58a4fb60f8dde050f3655e6d680f4780e91bb",
+    "ref_origin": "greg/metrics-mesos-module"
   }
 }
