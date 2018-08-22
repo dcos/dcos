@@ -127,6 +127,9 @@ class MockerBase:
             ReflectingUnixSocketEndpoint('/run/dcos/dcos-diagnostics.sock'))
         # DC/OS Metronome
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=9000))
+        # Checks API
+        res.append(
+            ReflectingUnixSocketEndpoint('/run/dcos/dcos-checks-api.sock'))
         # TODO - other endpoints common for all flavours go here...
 
         return res

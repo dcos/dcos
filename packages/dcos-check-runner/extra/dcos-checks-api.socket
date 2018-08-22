@@ -1,0 +1,8 @@
+[Unit]
+Description=DC/OS Checks API Socket: socket for DC/OS Checks API
+
+[Socket]
+ListenStream=/run/dcos/dcos-checks-api.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660
