@@ -6,7 +6,7 @@
   "single_source": {
     "kind": "url",
     "url": "https://s3-us-west-2.amazonaws.com/takirala-dev/cosmos-onejar/open/cosmos-server_2.12-0.6.0-SNAPSHOT-one-jar.jar",
-    "sha1": "5418b00c9bb6154a41d9902a581fbaf1b95fbc44"
+    "sha1": "75f45eb9714d08fda4012df3dcc32219bcd90383"
   },
   "username": "dcos_cosmos",
   "state_directory": true
