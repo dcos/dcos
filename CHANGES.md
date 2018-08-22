@@ -1,3 +1,15 @@
+## DC/OS 1.11.6
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
+### Security updates
+
+
 ## DC/OS 1.11.5
 
 ### Notable changes
@@ -11,8 +23,6 @@
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
 
 * Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
-
-* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 ### Security updates
 
