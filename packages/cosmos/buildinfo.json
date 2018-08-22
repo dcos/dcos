@@ -5,8 +5,8 @@
   ],
   "single_source": {
     "kind": "url",
-    "url": "https://downloads.dcos.io/cosmos/0.6.1-29/cosmos-server-0.6.1-29-one-jar.jar",
-    "sha1": "e5d3079509492766fb60dcaa83d9d3ef6e4aaa8b"
+    "url": "https://s3-us-west-2.amazonaws.com/takirala-dev/cosmos-onejar/open/cosmos-server_2.12-0.6.0-SNAPSHOT-one-jar.jar",
+    "sha1": "75f45eb9714d08fda4012df3dcc32219bcd90383"
   },
   "username": "dcos_cosmos",
   "state_directory": true
