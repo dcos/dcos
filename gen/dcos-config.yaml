@@ -126,6 +126,29 @@ package:
           [
             {agent_polling_enabled, false}
           ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, false}
+          ]
+        }
+      ].
+  - path: /etc_slave/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
+        }
+      ].
+  - path: /etc_slave_public/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
         }
       ].
   - path: /etc/dcos-net.config.d/common.config
@@ -156,11 +179,6 @@ package:
         {dcos_rest,
           [
             {enable_rest, {{ dcos_net_rest_enable }}}
-          ]
-        },
-        {telemetry,
-          [
-            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
@@ -617,15 +635,24 @@ package:
       }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
+  - path: /etc/dcos-check-runner.env
+    content: |
+      DCOS_CHECK_RUNNER_CONFIG_PATH=/opt/mesosphere/etc/dcos-check-runner.yaml
   - path: /etc_master/dcos-check-runner.yaml
     content: |
         role: master
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave/dcos-check-runner.yaml
     content: |
         role: agent
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave_public/dcos-check-runner.yaml
     content: |
         role: agent  # Checks don't distinguish between public and private agents.
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc/dcos-diagnostics.env
     content: |
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
@@ -725,6 +752,11 @@ package:
               {
                   "Port": 5050,
                   "Uri": "/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/quota",
                   "Role": ["master"]
               },
               {
@@ -836,6 +868,11 @@ package:
                   "Port": 5051,
                   "Uri": "/overlay-agent/overlay",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/containers",
+                  "Role": ["agent", "agent_public"]
               }
           ],
           "LocalFiles": [
@@ -873,6 +910,15 @@ package:
               },
               {
                   "Location": "/proc/net/fib_trie"
+              },
+              {
+                  "Location": "/proc/cmdline"
+              },
+              {
+                  "Location": "/proc/cpuinfo"
+              },
+              {
+                  "Location": "/proc/meminfo"
               }
           ],
           "LocalCommands": [
@@ -887,6 +933,9 @@ package:
               },
               {
                   "Command": ["ifconfig", "-a"]
+              },
+              {
+                  "Command": ["ps", "aux", "ww"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
