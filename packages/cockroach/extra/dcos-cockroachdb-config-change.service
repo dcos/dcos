@@ -1,0 +1,19 @@
+[Unit]
+Description=CockroachDB Disable Diagnostics: Disable CockroachDB diagnostic reporting
+Documentation=https://docs.mesosphere.com
+
+[Service]
+Type=simple
+# This unit must run as the dcos_bouncer user in Enterprise DC/OS.  It is not
+# required in Open DC/OS but to minimize the operational diff we retain this
+# directive in Open DC/OS.
+User=dcos_bouncer
+StartLimitInterval=0
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=16384
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
+
+[Install]
+WantedBy=multi-user.target

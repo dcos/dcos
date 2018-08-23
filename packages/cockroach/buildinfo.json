@@ -1,0 +1,10 @@
+{
+  "single_source" : {
+      "kind": "git",
+      "git": "git@github.com:cockroachdb/cockroach.git",
+      "ref": "fc0e2d1ba3d4a4750c0d6c2e57d08b6ab3135361",
+      "ref_origin": "v1.1.8"
+  },
+  "username": "dcos_cockroach",
+  "state_directory": true
+}

@@ -1,0 +1,8 @@
+[Unit]
+Description=CockroachDB Set Configuration Timer: Timer to periodically set the CockroachDB configuration
+Documentation=https://docs.mesosphere.com
+
+[Timer]
+OnBootSec=5sec
+OnStartupSec=5min
+OnUnitActiveSec=10min
