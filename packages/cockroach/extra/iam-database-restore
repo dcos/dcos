@@ -1,0 +1,188 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+import time
+import logging
+import subprocess
+from subprocess import CalledProcessError
+
+from dcos_internal_utils import utils
+
+
+"""Use this node's internal IP address to reach the local CockroachDB instance
+and restore the IAM database from a backup.
+
+This program is expected to be executed manually to recover should the IAM
+database become corrupt or otherwise require rolling back to a previous
+snapshot.
+"""
+
+
+log = logging.getLogger(__name__)
+logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
+
+
+def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str) -> None:
+    """Recover the IAM database from `backup_file_path`.
+
+    1. Use `cockroach sql` to create a temporary database called `iam_new`.
+    2. Then use `cockroach sql` to load the backup of the IAM database from
+       `backup_file_path` into the new database.
+    3. Then rename the active `iam` database to `iam_old`.
+    4. Finally, rename the `iam_new` database to `iam`.
+
+    If an error occurs at any point the operation is backed out and
+    cleaned up. Failure during cleanup results in an error state from
+    which manual operator intervention may be required.
+
+    Args:
+        my_internal_ip: The internal IP of the current host.
+        backup_file_path: A path to a local file containing the SQL backup.
+        db_suffix: a date-time (to second) string used to rename databases.
+"""
+
+    def _create_database(dbname: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'sql',
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-e',
+            'CREATE DATABASE {}'.format(dbname),
+            ]
+        msg = 'Creating database `{}` via command `{}`'.format(
+            dbname, ' '.join(command))
+        log.info(msg)
+        try:
+            subprocess.run(command, check=True)
+            log.info("Created database `{}`.".format(dbname))
+        except CalledProcessError:
+            log.error('Failed to create database `{}`.'.format(dbname))
+            raise
+
+    def _load_data(dbname: str, backup_file_path: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'sql',
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '--database={}'.format(dbname),
+            ]
+        msg = (
+            'Loading backup into database `{}` by '
+            'streaming statements over stdin to command `{}`'
+            ).format(dbname, ' '.join(command))
+        log.info(msg)
+        with open(backup_file_path, 'rb') as f:
+            try:
+                subprocess.run(command, stdin=f, check=True)
+                log.info("Successfully loaded data into database `{}`.".format(dbname))
+            except CalledProcessError:
+                log.error('Failed to load data into database `{}`.'.format(dbname))
+                raise
+
+    def _rename_database(oldname: str, newname: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'sql',
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-e',
+            'ALTER DATABASE {} RENAME to {}'.format(oldname, newname),
+            ]
+        msg = 'Rename database `{}` to `{}` via command `{}`'.format(
+            oldname, newname, ' '.join(command))
+        log.info(msg)
+        try:
+            subprocess.run(command, check=True)
+        except CalledProcessError:
+            log.error('Failed to rename database `{}` -> `{}`.'.format(oldname, newname))
+            raise
+
+    def _drop_database(dbname: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'sql',
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-e',
+            'DROP DATABASE {}'.format(dbname),
+            ]
+        msg = 'Drop database `{}` via command `{}`'.format(
+            dbname, ' '.join(command))
+        log.info(msg)
+        try:
+            subprocess.run(command, check=True)
+            log.info("Removed database `{}`.".format(dbname))
+        except CalledProcessError:
+            log.error('Failed to drop database')
+            raise
+
+    # We add the current date and time as suffix to the database names so this
+    # script can be run multiple times.
+    newdbname = 'iam_new_{}'.format(db_suffix)
+    curdbname = 'iam'
+    olddbname = 'iam_old_{}'.format(db_suffix)
+
+    # 1. Use `cockroach sql` to create a temporary database called `iam_new`.
+    _create_database(dbname=newdbname)
+
+    # 2. Then use `cockroach sql` to load the backup of the IAM database from
+    #    `backup_file_path` into the new database.
+    try:
+        _load_data(dbname=newdbname, backup_file_path=backup_file_path)
+    except CalledProcessError:
+        # Loading the data failed, so remove the 'iam_new' database
+        _drop_database(newdbname)
+        raise
+
+    # 3. Then rename the active `iam` database to `iam_old`.
+    try:
+        _rename_database(oldname=curdbname, newname=olddbname)
+    except CalledProcessError:
+        # Renaming the existing database failed, so remove the 'iam_new' database
+        _drop_database(newdbname)
+        raise
+
+    # 4. Finally, rename the `iam_new` database to `iam`.
+    try:
+        _rename_database(oldname=newdbname, newname=curdbname)
+    except CalledProcessError:
+        # Renaming the new database failed, so rename the old one back and
+        # remove the 'iam_new' database
+        _rename_database(oldname=olddbname, newname=curdbname)
+        _drop_database('iam_new')
+        raise
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description='Restore the IAM database from a backup file.')
+    parser.add_argument(
+        'backup_file_path', type=str,
+        help='the path to a file containing the IAM database backup to restore')
+    return parser.parse_args()
+
+
+def main() -> None:
+    # Determine the internal IP address of this node.
+    my_internal_ip = utils.detect_ip()
+    log.info('My internal IP address is `{}`'.format(my_internal_ip))
+
+    args = _parse_args()
+    log.info('Backup filepath: {}'.format(args.backup_file_path))
+
+    try:
+        recover_database(
+            my_internal_ip=my_internal_ip,
+            backup_file_path=args.backup_file_path,
+            db_suffix=time.strftime('%Y%m%d_%H%M%S'),
+            )
+    except subprocess.CalledProcessError:
+        log.error("Failed to restore IAM database.")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
