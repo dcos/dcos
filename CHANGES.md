@@ -12,8 +12,9 @@ Format of the entries must be.
 <new-line>
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
+### Notable Changes
 
-* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+* Updated to [DC/OS UI 1.10.9-rc2](https://github.com/dcos/dcos-ui/releases/tag/1.10+v1.10.9-rc2)
 
 
 ### Security Updates
