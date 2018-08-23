@@ -432,6 +432,11 @@ def main() -> None:
     zk = zk_connect(zk_user=zk_user, zk_secret=zk_secret)
     # We are connected to ZooKeeper.
 
+    # Ensure that the ZNodes exist.
+    zk.ensure_path("/cockroach")
+    zk.ensure_path("/cockroach/nodes")
+    zk.ensure_path("/cockroach/locking")
+
     # Determine whether the cluster has been bootstrapped already by
     # checking whether the `ZK_NODES_PATH` ZNode has children. This is
     # best-effort as we aren't holding the lock, but we do call
