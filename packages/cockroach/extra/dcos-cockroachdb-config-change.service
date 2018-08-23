@@ -4,10 +4,7 @@ Documentation=https://docs.mesosphere.com
 
 [Service]
 Type=simple
-# This unit must run as the dcos_bouncer user in Enterprise DC/OS.  It is not
-# required in Open DC/OS but to minimize the operational diff we retain this
-# directive in Open DC/OS.
-User=dcos_bouncer
+User=dcos_cockroach
 StartLimitInterval=0
 Restart=on-failure
 RestartSec=5
