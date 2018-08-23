@@ -13,15 +13,6 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
-* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
-
-
-### Security Updates
-
-* Update Java to 8u181. (DCOS_OSS-3933)
-
-
-## DC/OS 1.10.8
 
 ### Notable changes
 
@@ -32,7 +23,14 @@ Format of the entries must be.
 
 * Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
 
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+
+
 ### Security Updates
+
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
+
+* Update Java to 8u181. (DCOS_OSS-3933)
 
 
 ## DC/OS 1.10.8
@@ -49,8 +47,6 @@ Format of the entries must be.
 
 * L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
 
-* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
-
 * Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
 
 * Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
@@ -61,7 +57,7 @@ Format of the entries must be.
 
 * Prevent cosmos-specific labels being sent as metrics tags (DCOS-37451)
 
-* Improve the way statsd timers are handled in dcos-metrcs (DCOS-38083)
+* Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
 
 ### Security Updates
 
