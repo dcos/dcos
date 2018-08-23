@@ -35,6 +35,8 @@ import schema
 import yaml
 
 import gen.internals
+from pkgpanda.constants import install_root, profile_dir
+from pkgpanda.util import is_windows
 
 
 DCOS_VERSION = '1.12-dev'
@@ -85,6 +87,14 @@ def validate_json_list(value):
 
 
 def valid_ipv4_address(ip):
+    if is_windows:
+        # Windows implementation does not think '1' is an invalid address
+        # therefore we will at least make sure we have 4 dotted parts before
+        # handing off to inet_pton
+        ip_parts = ip.split('.')
+        if len(ip_parts) != 4:
+            return False
+
     try:
         socket.inet_pton(socket.AF_INET, ip)
         return True
@@ -103,7 +113,7 @@ def validate_ipv4_addresses(ips: list):
 
 
 def validate_absolute_path(path):
-    if not path.startswith('/'):
+    if not os.path.isabs(path):
         raise AssertionError('Must be an absolute filesystem path starting with /')
 
 
@@ -213,6 +223,20 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     # Mesos log directory.  This maximum takes into account the number
     # of rotated logs that stay in the archive subdirectory.
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
+def calculate_lb_contents():
+    if is_windows:
+        return 'false'
+    else:
+        return 'true'
+
+
+def calculate_dcos_overlay_enable():
+    if is_windows:
+        return 'false'
+    else:
+        return 'true'
 
 
 def calculate_ip_detect_contents(ip_detect_filename):
@@ -428,11 +452,14 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 
 
 def calculate_mesos_isolation(enable_gpu_isolation):
-    isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
-                 'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
-                 'com_mesosphere_MetricsIsolatorModule')
-    if enable_gpu_isolation == 'true':
-        isolators += ',gpu/nvidia'
+    if is_windows:
+        isolators = ('windows/cpu,filesystem/windows,windows/mem')
+    else:
+        isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
+                     'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
+                     'com_mesosphere_MetricsIsolatorModule')
+        if enable_gpu_isolation == 'true':
+            isolators += ',gpu/nvidia'
     return isolators
 
 
@@ -991,7 +1018,7 @@ entry = {
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
         'check_time': 'true',
-        'enable_lb': 'true',
+        'enable_lb': calculate_lb_contents,
         'enable_ipv6': 'true',
         'docker_remove_delay': '1hrs',
         'docker_stop_timeout': '20secs',
@@ -1030,7 +1057,7 @@ entry = {
         'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
-        'dcos_overlay_enable': "true",
+        'dcos_overlay_enable': calculate_dcos_overlay_enable,
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
             'vtep_subnet6': 'fd01:a::/64',
@@ -1080,7 +1107,7 @@ entry = {
         'custom_checks': '{}',
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
-        'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'mesos_agent_work_dir': os.path.abspath('/var/lib/mesos/slave'),
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
@@ -1123,12 +1150,12 @@ entry = {
         'cluster_docker_registry_enabled': calculate_cluster_docker_registry_enabled,
         'has_master_external_loadbalancer':
             lambda master_external_loadbalancer: calculate_set(master_external_loadbalancer),
-        'profile_symlink_source': '/opt/mesosphere/bin/add_dcos_path.sh',
-        'profile_symlink_target': '/etc/profile.d/dcos.sh',
+        'profile_symlink_source': install_root + os.sep + 'bin' + os.sep + 'add_dcos_path.sh',
+        'profile_symlink_target': profile_dir + os.sep + 'dcos.sh',
         'profile_symlink_target_dir': calculate_profile_symlink_target_dir,
         'fair_sharing_excluded_resource_names': calculate_fair_sharing_excluded_resource_names,
         'check_config_contents': calculate_check_config_contents,
-        'check_ld_library_path': '/opt/mesosphere/lib',
+        'check_ld_library_path': install_root + os.sep + 'lib',
         'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
         'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
         'licensing_enabled': 'false',

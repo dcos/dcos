@@ -1,4 +1,4 @@
-$FILENAME_PATH = "c:\temp\otp_win64_19.3.exe"
+$FILENAME_PATH = "c:\temp\otp_win64_20.3.exe"
 $INSTALL_DIR = Join-Path $env:ProgramFiles "erlang"
 $INSTALL_ARGS = @( "/S", "/D=$INSTALL_DIR" )
  

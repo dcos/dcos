@@ -1,2 +1,36 @@
-- name: placeholder
-  command: restart
+- name: dcos-download.service
+  content: |
+    [Unit]
+    Description=Pkgpanda: Download DC/OS to this host.
+    ConditionPathExists=!c:\opt\mesosphere\active\
+    [Service]
+    Type=oneshot
+    StandardOutput=journal+console
+    StandardError=journal+console
+    User=dcos_download
+    ExecStartPre=cmd.exe /c if not exist c:\{{ bootstrap_tmp_dir }} mkdir c:\{{ bootstrap_tmp_dir }}
+    ExecStartPre=curl.exe --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o c:\{{ bootstrap_tmp_dir }}\bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/{{ bootstrap_id }}.bootstrap.tar.xz
+    ExecStartPre=cmd.exe /c if not exist c:\opt\mesosphere mkdir c:\opt\mesosphere
+    ExecStartPre=c:\opt\mesosphere\bin\7z e c:\{{ bootstrap_tmp_dir }}\bootstrap.tar.xz -oc:\{{ bootstrap_tmp_dir }}
+    ExecStart=c:\opt\mesosphere\bin\7z x c:\{{ bootstrap_tmp_dir }}\bootstrap.tar -aos -oc:\opt\mesosphere
+    ExecStartPost=-cmd.exe /c del /f c:\{{ bootstrap_tmp_dir }}\bootstrap.tar.xz
+    ExecStartPost=-cmd.exe /c del /f c:\{{ bootstrap_tmp_dir }}\bootstrap.tar
+- name: dcos-setup.service
+  command: start
+  no_block: true
+  enable: true
+  content: |
+    [Unit]
+    Description=Pkgpanda: Specialize DC/OS for this host.
+    Requires=dcos-download.service
+    After=dcos-download.service
+    [Service]
+    Type=oneshot
+    StandardOutput=journal+console
+    StandardError=journal+console
+    User=dcos_setup
+    EnvironmentFile=c:\opt\mesosphere\environment.export.ps1
+    ExecStartPre=pip install --upgrade --force-reinstall pywin32
+    ExecStart=c:\opt\mesosphere\bin\scripts\pkgpanda setup --no-block-systemd
+    [Install]
+    WantedBy=multi-user.target

@@ -1,17 +1,480 @@
 package:
-  - path: c:\pkginfo.json
+  - path: \bin_slave\servicelist.txt
+    content: |
+      dcos-adminrouter-agent.service
+      dcos-diagnostics.service
+      dcos-mesos-slave.service
+      dcos-metrics-agent.service
+      dcos-net.service
+  - path: \bin_slave_public\servicelist.txt
+    content: |
+      dcos-adminrouter-agent.service
+      dcos-diagnostics.service
+      dcos-mesos-slave-public.service
+      dcos-metrics-agent.service
+      dcos-net.service
+  - path: \etc\dcos-metrics-config.yaml
+    content: |
+      collector:
+        mesos_agent:
+          request_timeout: 30s
+  - path: \etc\dcos-metrics.env.ps1
+    content: |
+      $env:DCOS_METRICS_CONFIG_PATH="c:\opt\mesosphere\etc\dcos-metrics-config.yaml"
+  - path: \pkginfo.json
     content: |
       {
         "environment": {
-          "MESOS_IP_DISCOVERY_COMMAND": "c:\\opt\mesosphere\\bin\\detect_ip.ps1",
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: c:\etc\mesosphere\setup-flags\repository-url
-    permissions: "0644"
+  - path: \bin\detect_ip.ps1
+    permissions: "0755"
+    content: {{ ip_detect_contents }}
+  - path: \bin\detect_ip_public.ps1
+    permissions: "0755"
+    content: {{ ip_detect_public_contents }}
+  - path: \bin\detect_ip6.ps1
+    permissions: "0755"
+    content: {{ ip6_detect_contents }}
+  - path: \etc\license.txt
+    permissions: "0600"
+    content: {{ license_key_contents }}
+  - path: \etc_master\master_count
     content: |
-      {{ bootstrap_url }}
-  - path: c:\etc\mesosphere\setup-flags\cluster-package-list
-    permissions: "0644"
+      {{ num_masters }}
+  - path: \etc_slave\dcos-dns.json
     content: |
-      {{ cluster_package_list_id }}
+      {
+        "upstream_resolvers": {{ resolvers }},
+        "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53,
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
+        "forward_zones": {{ dns_forward_zones }}
+      }
+  - path: \etc_slave_public\dcos-dns.json
+    content: |
+      {
+        "upstream_resolvers": {{ resolvers }},
+        "bind_interface": "spartan",
+        "udp_port": 53,
+        "tcp_port": 53,
+        "bind_ip_blacklist": {{ dns_bind_ip_blacklist_json }},
+        "forward_zones": {{ dns_forward_zones }}
+      }
+  - path: \etc\mesos-slave-common.ps1
+    content: |
+      $env:MESOS_MASTER="zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos"
+      $env:MESOS_CONTAINERIZERS="docker,mesos"
+      $env:MESOS_EXTERNAL_LOG_FILE="c:\var\log\mesos\mesos-agent.log"
+      # $env:MESOS_MODULES_DIR="c:\opt\mesosphere\etc\mesos-slave-modules"
+      # $env:MESOS_CONTAINER_LOGGER="com_mesosphere_mesos_JournaldLogger"
+      $env:MESOS_ISOLATION="{{ mesos_isolation }}"
+      #$env:MESOS_DOCKER_VOLUME_CHECKPOINT_DIR="c:\var\lib\mesos\isolators\docker\volume"
+      #$env:MESOS_IMAGE_PROVIDERS="docker"
+      #$env:MESOS_NETWORK_CNI_CONFIG_DIR="c:\opt\mesosphere\etc\dcos\network\cni"
+      #$env:MESOS_NETWORK_CNI_PLUGINS_DIR="c:\opt\mesosphere\active\cni\;c:\opt\mesosphere\active\dcos-cni\;c:\opt\mesosphere\active\mesos\libexec\mesos"
+      $env:MESOS_WORK_DIR="{{ mesos_agent_work_dir }}"
+      $env:MESOS_SLAVE_SUBSYSTEMS="cpu,memory"
+      $env:MESOS_LAUNCHER_DIR="c:\opt\mesosphere\active\mesos\bin"
+      $env:MESOS_EXECUTOR_ENVIRONMENT_VARIABLES="file:///opt/mesosphere/etc/mesos-executor-environment.json"
+      $env:MESOS_EXECUTOR_REGISTRATION_TIMEOUT="10mins"
+      $env:MESOS_RECONFIGURATION_POLICY="additive"
+      $env:MESOS_RECOVERY_TIMEOUT="{{ mesos_recovery_timeout }}"
+      #$env:MESOS_CGROUPS_ENABLE_CFS="true"
+      #$env:MESOS_CGROUPS_LIMIT_SWAP="false"
+      $env:MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE="true"
+      $env:MESOS_DOCKER_REMOVE_DELAY="{{ docker_remove_delay }}"
+      $env:MESOS_DOCKER_STOP_TIMEOUT="{{ docker_stop_timeout }}"
+      $env:MESOS_DOCKER_STORE_DIR="c:\var\lib\mesos\slave\store\docker"
+      $env:MESOS_GC_DELAY="{{ gc_delay }}"
+      $env:MESOS_HOSTNAME_LOOKUP="false"
+      $env:MESOS_DEFAULT_CONTAINER_DNS="file:///opt/mesosphere/etc/mesos-slave-dns.json"
+      $env:MESOS_IMAGE_GC_CONFIG="file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json"
+      $env:GLOG_drop_log_memory="false"
+{% switch use_mesos_hooks %}
+{% case "true" %}
+      MESOS_HOOKS={{ mesos_hooks }}
+{% case "false" %}
+{% endswitch %}
+{% switch cluster_docker_registry_enabled %}
+{% case "true" %}
+      MESOS_DOCKER_REGISTRY={{ cluster_docker_registry_url }}
+{% case "false" %}
+{% endswitch %}
+{% switch cluster_docker_credentials_enabled %}
+{% case "true" %}
+      MESOS_DOCKER_CONFIG=file://{{ cluster_docker_credentials_path }}
+{% case "false" %}
+{% endswitch %}
+{% switch enable_mesos_ipv6_discovery %}
+{% case "false" %}
+{% case "true" %}
+      MESOS_IP6_DISCOVERY_COMMAND=c:\opt\mesosphere\bin\detect_ip6.ps1
+{% endswitch %}
+{% switch cluster_docker_credentials_dcos_owned %}
+{% case "true" %}
+  - path: /etc/docker_credentials
+    permissions: "0600"
+    content: |
+        {{ cluster_docker_credentials }}
+{% case "false" %}
+{% endswitch %}
+  - path: /etc/mesos-slave-dns.json
+    content: |
+      {
+        "docker":
+        [
+            {
+              "network_mode": "USER",
+              "dns": {
+                "nameservers": [
+{% switch enable_ipv6 %}
+{% case "true" %}
+                                "198.51.100.1",
+                                "fd01:d::c633:6401"
+{% case "false" %}
+                                "198.51.100.1"
+{% endswitch %}
+                ]
+              }
+            }
+        ]
+      }
+  - path: /etc/mesos-slave-image-gc-config.json
+    content: |
+      {
+        "image_disk_headroom": 0.1,
+        "image_disk_watch_interval": {
+          "nanoseconds": 300000000000
+        },
+        "excluded_images": []
+      }
+  - path: \etc\docker_credentials
+    permissions: "0600"
+    content: |
+        {{ cluster_docker_credentials }}
+  - path: \etc\mesos-slave.ps1
+    content: |
+      $env:MESOS_RESOURCES='[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1025, "end": 2180},{"begin": 2182, "end": 3887},{"begin": 3889, "end": 5049},{"begin": 5052, "end": 8079},{"begin": 8082, "end": 8180},{"begin": 8182, "end": 32000}]}}]'
+      $env:MESOS_ATTRIBUTES='os:Windows'
+  - path: \etc\mesos-slave-public.ps1
+    content: |
+      $env:MESOS_RESOURCES='[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]'
+      $env:MESOS_DEFAULT_ROLE='slave_public'
+      $env:MESOS_ATTRIBUTES='os:Windows;public_ip:true'
+  - path: \etc\mesos-executor-environment.json
+    content: |
+      {
+        "SHELL": "powershell.exe",
+        "LIBPROCESS_NUM_WORKER_THREADS": "8"
+      }
+  - path: \etc\dcos-diagnostics-runner-config.json
+    content: {{ check_config_contents }}
+  - path: \etc\dcos-diagnostics.env.ps1
+    content: |
+      $env:DCOS_DIAGNOSTICS_CONFIG_PATH="c:\opt\mesosphere\etc\dcos-diagnostics-config.json"
+  - path: \etc_slave\dcos-diagnostics-config.json
+    content: |
+      {
+        "role": "agent",
+        "endpoint-config": "c:\\opt\\mesosphere\\etc\\dcos-diagnostics-endpoint-config.json",
+        "agent-port": 61001
+      }
+  - path: \etc_slave_public\dcos-diagnostics-config.json
+    content: |
+      {
+        "role": "agent_public",
+        "endpoint-config": "c:\\opt\\mesosphere\\etc\\dcos-diagnostics-endpoint-config.json",
+        "agent-port": 61001
+      }
+  - path: \etc\dcos-diagnostics-endpoint-config.json
+    content: |
+        {
+          "HTTPEndpoints": [
+              {
+                  "Port": 5050,
+                  "Uri": "/__processes__",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/flags",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/frameworks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/schedule",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/maintenance/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/roles",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/slaves",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/state-summary",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/master/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/metrics/snapshot",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/registrar(1)/registry",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/system/stats.json",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5050,
+                  "Uri": "/version",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/metrics",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/apps",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/deployments",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/groups",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/info",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/leader",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/queue",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/list",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/log",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/cluster/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8181,
+                  "Uri": "/exhibitor/v1/config/get-state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/__processes__",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/metrics/snapshot",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/flags",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/state",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/system/stats.json",
+                  "Role":["agent", "agent_public"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/config",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8123,
+                  "Uri": "/v1/version",
+                  "Role": ["master"]
+              }
+          ],
+          "LocalFiles": [
+              {
+                  "Location": "c:\\opt\\mesosphere\\active.buildinfo.full.json"
+              },
+              {
+                  "Location": "c:\\opt\\mesosphere\\etc\\dcos-version.json"
+              },
+              {
+                  "Location": "c:\\opt\\mesosphere\\etc\\expanded.config.json"
+              },
+              {
+                  "Location": "c:\\opt\\mesosphere\\etc\\user.config.yaml"
+              },
+              {
+                  "Location": "c:\\var\\lib\\dcos\\cluster-id"
+              },
+              {
+                  "Location": "c:\\var\\lib\\dcos\\exhibitor\\zookeeper\\snapshot\\myid",
+                  "Role": ["master"]
+              },
+              {
+                  "Location": "c:\\var\\lib\\dcos\\exhibitor\\conf\\zoo.cfg",
+                  "Role": ["master"]
+              }
+          ],
+          "LocalCommands": [
+              {
+                  "Command": ["dmesg"]
+              }
+          ]
+        }
+  - path: \etc\master_list
+    content: |
+      {{ master_list }}
+  - path: \etc\extra_master_addresses
+    content: |
+  - path: \etc\user.config.yaml
+    content: |
+{{ config_yaml }}
+  - path: \etc\user.config.full.yaml
+    permissions: "0600"
+    content: |
+{{ config_yaml_full }}
+  - path: \etc\expanded.config.json
+    content: |
+{{ expanded_config }}
+  - path: \etc\expanded.config.full.json
+    permissions: "0600"
+    content: |
+{{ expanded_config_full }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: \bin\detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}
+  - path: \etc\proxy.env.ps1
+{% switch use_proxy %}
+{% case "true" %}
+    content: |
+      $env:http_proxy="{{ http_proxy }}"
+      $env:https_proxy="{{ https_proxy }}"
+      $env:no_proxy="{{ no_proxy_final }}"
+{% case "false" %}
+    content: ""
+{% endswitch %}
+  - path: /etc/dcos-net.config.d/common.config
+    content: |
+      [
+        {dcos_dns,
+          [
+            {bind_ips, [{198, 51, 100, 1}, {198, 51, 100, 2}, {198, 51, 100, 3}]}
+          ]
+        },
+        {dcos_net,
+          [
+            {dist_port, 62501},
+            {epmd_port, 61420}
+          ]
+        },
+        {dcos_l4lb,
+          [
+            {enable_lb, false},
+            {enable_networking, false}
+          ]
+        },
+        {dcos_overlay,
+          [
+            {enable_overlay, false}
+          ]
+        },
+        {dcos_rest,
+          [
+            {enable_rest, {{ dcos_net_rest_enable }}}
+          ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
+        }
+      ].
+  - path: /etc/check_time.env.ps1
+    content: |
+        $env:ENABLE_CHECK_TIME="{{ check_time }}"
+  - path: /etc/dcos_net.ps1
+    content: |
+      $env:DCOS_NET_WATCHDOG="{{ dcos_net_watchdog }}"
+      $env:DCOS_NET_IPV6="{{ enable_ipv6 }}"
+  - path: /etc/dns_config.ps1
+    content: |
+      $env:MASTER_SOURCE="master_list"
+      $env:RESOLVERS="{{ resolvers_str }}"

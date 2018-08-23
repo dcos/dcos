@@ -15,11 +15,17 @@ import gen
 import gen.build_deploy.util as util
 import pkgpanda.util
 from gen.internals import Late, Source
-from pkgpanda.util import logger, split_by_token
+from pkgpanda.util import is_windows, logger, split_by_token
+
+
+if is_windows:
+    shell_extension = ".ps1"
+else:
+    shell_extension = ".sh"
 
 
 def get_ip_detect(name):
-    return yaml.dump(resource_string('gen', 'ip-detect/{}.sh'.format(name)).decode())
+    return yaml.dump(resource_string('gen', ('ip-detect/{}' + shell_extension).format(name)).decode())
 
 
 def calculate_ip_detect_public_contents(aws_masters_have_public_ip):
@@ -61,7 +67,7 @@ aws_base_source = Source(entry={
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud' + shell_extension).decode())
     },
     'conditional': {
         'oauth_available': {
