@@ -25,3 +25,7 @@ test/build/*
 PASSED
 FAILED
 test/.vagrant/*
+packages/dcos-provider-*
+package_lists
+.vscode
+.python-version
