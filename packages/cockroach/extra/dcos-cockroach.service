@@ -15,7 +15,6 @@ EnvironmentFile=-/run/dcos/etc/cockroach
 Environment=COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true
 ExecStartPre=/usr/bin/mkdir -p /run/dcos/cockroach
 ExecStartPre=/bin/chown -R dcos_cockroach /run/dcos/cockroach
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach
 ExecStartPre=/opt/mesosphere/active/cockroach/bin/register.py
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroach.sh
 ExecStartPost=-/usr/bin/sleep 15
