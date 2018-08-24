@@ -82,18 +82,11 @@ def get_expected_master_node_count() -> int:
     with open(dcos_cfg_path, 'rb') as f:
         dcos_config = json.loads(f.read().decode('utf-8'))
 
-    # If `master_discovery` is set to `static` then the `master_list` config key
-    # is present and the reference.
-    if dcos_config['master_discovery'] == 'static':
-        # The `'master_list'` key holds a value which is unfortunately not
-        # a list, but a stringified list. Example value:
-        # '["10.10.0.131", "10.10.0.16", "10.10.0.22"]'
-        log.info("Get master node count from dcos_config['master_list']")
-        log.info("dcos_config['master_list']: %r", dcos_config['master_list'])
-        return len(dcos_config['master_list'].split(','))
-
-    # For dynamic master node discovery the expected number of master nodes is
-    # provided by the `num_masters` config key.
+    # If the master discovery strategy is dynamic, the num_masters
+    # configuration item is required to specify the expected number of masters.
+    # If the master discovery strategy is static, the num_masters configuration
+    # item is auto-populated from the given master_list. As such, we rely on
+    # num_masters regardless of master discovery strategy.
     log.info("Get master node count from dcos_config['num_masters']")
     return int(dcos_config['num_masters'])
 
