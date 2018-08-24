@@ -250,7 +250,7 @@ def test_ipv6(dcos_api_session, same_host):
         log.info('Purging application: {}'.format(origin_app.id))
         origin_app.purge(dcos_api_session)
         log.info('Purging application: {}'.format(proxy_app.id))
-        origin_app.purge(dcos_api_session)
+        proxy_app.purge(dcos_api_session)
 
 
 @pytest.mark.slow
@@ -284,7 +284,7 @@ def test_vip(dcos_api_session,
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
-    errors = 0
+    errors = []
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
     for vip, hosts, cmd, origin_app, proxy_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
@@ -294,13 +294,13 @@ def test_vip(dcos_api_session,
             ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
         except Exception as e:
             log.error('Exception: {}'.format(e))
-            errors = errors + 1
+            errors.append(e)
         finally:
             log.info('Purging application: {}'.format(origin_app.id))
             origin_app.purge(dcos_api_session)
             log.info('Purging application: {}'.format(proxy_app.id))
-            origin_app.purge(dcos_api_session)
-    assert errors == 0
+            proxy_app.purge(dcos_api_session)
+    assert not errors
 
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):

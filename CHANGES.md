@@ -1,8 +1,8 @@
 ## DC/OS 1.11.5
 
-
 ### Notable changes
 
+* Updated to [DC/OS UI 1.11+v1.19.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.19.0/CHANGELOG.md)
 
 ### Fixed and improved
 
@@ -15,6 +15,8 @@
 ### Security updates
 
 * Update Java to 8u181. (DCOS_OSS-3932)
+
+* Prevent dcos-history leaking auth tokens (DCOS-40373)
 
 
 ## DC/OS 1.11.4
