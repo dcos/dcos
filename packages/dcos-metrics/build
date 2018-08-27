@@ -25,7 +25,7 @@ make install
 popd
 
 # Copy the json file describing metrics modules.
-module_json="$PKG_PATH/etc/mesos-slave-modules/metrics.json"
+module_json="$PKG_PATH/legacy-metrics-mesos-module-config.json"
 mkdir -p "$(dirname "$module_json")"
 cp /pkg/extra/metrics.json "$module_json"
 
