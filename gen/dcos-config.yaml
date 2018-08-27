@@ -363,6 +363,22 @@ package:
            }
         ]
       }
+  - path: /etc/mesos-slave-modules/metrics.json
+    content: |
+      {
+        "libraries": [ {
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "modules": [ {
+            "name": "com_mesosphere_dcos_MetricsIsolatorModule",
+            "parameters": [
+              {"key": "dcos_metrics_service_scheme", "value": "http"},
+              {"key": "dcos_metrics_service_network", "value": "unix"},
+              {"key": "dcos_metrics_service_address", "value": "/run/dcos/telegraf/dcos_statsd.sock"},
+              {"key": "dcos_metrics_service_endpoint", "value": "/container"}
+            ]
+          } ]
+        } ]
+      }
 {% case "false" %}
 {% endswitch %}
   - path: /etc/mesos-slave-modules/journal_logger_modules.json
