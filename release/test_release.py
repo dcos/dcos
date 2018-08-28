@@ -11,6 +11,7 @@ import release
 import release.storage.aws
 from pkgpanda.build import BuildError
 from pkgpanda.util import is_windows, make_directory, variant_prefix, write_json, write_string
+from . import load_provider_names
 
 
 def roundtrip_to_json(data, mid_state, new_end_state=None):
@@ -573,6 +574,8 @@ def test_make_channel_artifacts(monkeypatch, release_config_aws):
     monkeypatch.setattr('gen.build_deploy.bash.make_installer_docker', mock_make_installer_docker)
     monkeypatch.setattr('pkgpanda.util.make_tar.__code__', mock_make_tar.__code__)
 
+    provider_names = load_provider_names()
+
     metadata = {
         'commit': 'sha-1',
         'tag': 'test_tag',
@@ -626,7 +629,7 @@ def test_make_channel_artifacts(monkeypatch, release_config_aws):
         'azure_download_url': 'https://azure.example.com'
     }
 
-    channel_artifacts = release.make_channel_artifacts(metadata)
+    channel_artifacts = release.make_channel_artifacts(metadata, provider_names)
 
     # Validate the artifacts are vaguely useful
     for artifact in channel_artifacts:
