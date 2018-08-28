@@ -12,7 +12,7 @@ backends:
     name: DC/OS Log
     reference: 'https://dcos.io/docs/1.10/monitoring/logging/logging-api/'
   metrics:
-    server: 'unix:/run/dcos/dcos-metrics-agent.sock'
+    server: 'unix:/run/dcos/telegraf-dcos-metrics.sock'
     name: DC/OS Metrics
     reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
   pkgpanda:

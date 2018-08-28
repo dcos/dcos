@@ -1331,9 +1331,36 @@ package:
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "master"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
