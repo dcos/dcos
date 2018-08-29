@@ -15,6 +15,8 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
+
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
 
 * Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
