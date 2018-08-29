@@ -53,6 +53,8 @@ Format of the entries must be.
 
 * Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
 
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
 
 ### Security Updates
 
