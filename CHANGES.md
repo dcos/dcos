@@ -1,10 +1,5 @@
 ## DC/OS 1.10.9
 
-* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
-* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861) 
-
-## DC/OS 1.10.8
-
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
@@ -18,10 +13,22 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
-
 ### Notable changes
 
-* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+
+### Fixed and improved
+
+* Updated to [DC/OS UI 1.10.9-rc2](https://github.com/dcos/dcos-ui/releases/tag/1.10+v1.10.9-rc2)
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861) 
+
+
+### Security Updates
+
+* Update Java to 8u181. (DCOS_OSS-3933)
+
+
+## DC/OS 1.10.8
 
 
 ### Fixed and improved
