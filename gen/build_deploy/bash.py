@@ -524,7 +524,7 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
-            "61091 dcos-metrics" \
+            "61092 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
@@ -537,7 +537,7 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
-            "61091 dcos-metrics" \
+            "61092 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
