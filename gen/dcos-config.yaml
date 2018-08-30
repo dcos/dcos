@@ -1298,7 +1298,21 @@ package:
         collect_cpu_time = false
         ## If true, compute and report the sum of all non-idle CPU states.
         report_active = false
+      # Read metrics about memory usage
       [[inputs.mem]]
+      # Read metrics about disk usage by mount point
+      [[inputs.disk]]
+        ## Ignore mount points by filesystem type.
+        # TODO(branden): Do we want to ignore any fs types?
+        #ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
+      # Read metrics about swap memory usage
+      [[inputs.swap]]
+      # Gather metrics about network interfaces
+      [[inputs.net]]
+      # Get the number of processes and group them by status
+      [[inputs.processes]]
+      # Read metrics about system load & uptime
+      [[inputs.system]]
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         ## The URL of the local mesos agent
