@@ -1,4 +1,4 @@
-From b2e28ce5caaaf59d3d0d7894faef36b424838934 Mon Sep 17 00:00:00 2001
+From 11a5b919e9aa68d2df2bc158498bd8413ae9e8e8 Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
@@ -61,5 +61,5 @@ index 8049cf611..74f65f574 100644
  
      // Adding bindings into scope so that they can be used from within
 -- 
-2.15.2 (Apple Git-101.1)
+2.16.3
 
