@@ -1,5 +1,10 @@
 ## DC/OS 1.10.9
 
+* Updated to [DC/OS UI 1.10.9-rc.1](https://github.com/dcos/dcos-ui/releases/tag/v1.10.9-rc.1)
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861) 
+
+## DC/OS 1.10.8
+
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
