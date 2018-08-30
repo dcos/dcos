@@ -15,6 +15,8 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
+
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
 
 * Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
@@ -53,6 +55,8 @@ Format of the entries must be.
 
 * Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
 
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
 
 ### Security Updates
 
@@ -73,7 +77,7 @@ Format of the entries must be.
 
 * Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
 
-* Updated DC/OS UI to master+v2.3.0 [Changelog](https://github.com/dcos/dcos-ui/releases)
+* Updated DC/OS UI to master+v2.14.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.14.0)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
@@ -84,3 +88,5 @@ Format of the entries must be.
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+
+* DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded (DCOS-38953)

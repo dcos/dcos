@@ -760,43 +760,48 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/metrics",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/apps",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/deployments",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/info",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/leader",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/queue",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/pods",
                   "Role": ["master"]
               },
               {
@@ -919,11 +924,14 @@ package:
               },
               {
                   "Location": "/proc/meminfo"
+              },
+              {
+                  "Location": "/proc/self/mountinfo"
               }
           ],
           "LocalCommands": [
               {
-                  "Command": ["dmesg"]
+                  "Command": ["dmesg", "-T"]
               },
               {
                   "Command": ["ip", "addr"]
@@ -939,6 +947,15 @@ package:
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
+              },
+              {
+                  "Command": ["timedatectl"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /etc/*-release"]
+              },
+              {
+                  "Command": ["systemctl", "list-units", "dcos*"]
               }
           ]
         }
@@ -1044,7 +1061,7 @@ package:
       "oauth":{"enabled":false},
 {% endswitch %}
 {% endswitch %}
-      "tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
+      "intercom":{"enabled":{{ intercom_enabled }}, "appId": "wn4z9z0y"},"tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
   - path: /etc_master/marathon
     content: |
       # This file will be overwritten on DC/OS upgrade.
