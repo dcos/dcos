@@ -31,15 +31,17 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-def test_metrics_agents_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_agents_prom(dcos_api_session, prometheus_port):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61092/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-def test_metrics_masters_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_masters_prom(dcos_api_session, prometheus_port):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':61092/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
