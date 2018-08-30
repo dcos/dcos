@@ -38,3 +38,8 @@ for unit in $agent_unit $agent_public_unit; do
   mkdir -p $(dirname $unit)
   SERVICE="dcos-telegraf-agent" envsubst '${SERVICE}' < $unit_template > $unit
 done
+
+# Add the socket unit to the package for all roles.
+socket_unit="$PKG_PATH/dcos.target.wants/dcos-telegraf.socket"
+mkdir -p $(dirname $socket_unit)
+cp /pkg/extra/dcos-telegraf.socket $socket_unit
