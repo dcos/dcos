@@ -90,3 +90,5 @@ Format of the entries must be.
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
 
 * DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded (DCOS-38953)
+
+* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
