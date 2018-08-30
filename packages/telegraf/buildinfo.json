@@ -2,9 +2,9 @@
   "docker": "golang:1.10-stretch",
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/mesosphere/telegraf.git",
-    "ref": "c58d7b7ed21805d5957d961631b640e683e768ae",
-    "ref_origin": "dcos-statsd"
+    "git": "https://github.com/branden/telegraf.git",
+    "ref": "40f0bb32e49f8f1561ea841407529c4d2a4de69b",
+    "ref_origin": "dcos-integration"
   },
   "username": "dcos_telegraf"
 }
