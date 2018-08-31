@@ -1320,15 +1320,15 @@ package:
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
       # Plugin for monitoring statsd metrics from mesos tasks
-      #[[inputs.dcos_statsd]]
-      #  ## The address on which the command API should listen
-      #  listen = "/run/dcos/telegraf/dcos_statsd.sock"
-      #  ## The directory in which container information is stored
-      #  containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
-      #  ## The period after which requests to the API should time out
-      #  timeout = "15s"
-      #  ## The hostname or IP address on which to host statsd servers
-      #  statsd_host = "198.51.100.1"
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The directory in which container information is stored
+        containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
