@@ -16,7 +16,10 @@ EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
 
+RuntimeDirectory=dcos/telegraf
+RuntimeDirectoryPreserve=yes
+
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
-ExecStartPre=mkdir -p ${TELEGRAF_CONTAINERS_DIR}
-ExecStartPre=[ -d ${LEGACY_CONTAINERS_DIR} ] && mv ${LEGACY_CONTAINERS_DIR} ${TELEGRAF_CONTAINERS_DIR}
+ExecStartPre=/usr/bin/mkdir -p ${TELEGRAF_CONTAINERS_DIR}
+ExecStartPre=${PKG_PATH}/tools/migrate_containers_dir.sh ${LEGACY_CONTAINERS_DIR} ${TELEGRAF_CONTAINERS_DIR}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
