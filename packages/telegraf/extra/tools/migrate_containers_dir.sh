@@ -38,6 +38,11 @@ if dir_contains_files "${TELEGRAF_CONTAINERS_DIR}"; then
     exit 1
 fi
 
+# Delete destination dir if it exists, so we don't move the legacy dir *into* it.
+if [ -d "${TELEGRAF_CONTAINERS_DIR}" ]; then
+    rmdir "${TELEGRAF_CONTAINERS_DIR}"
+fi
+
 echo "Migrating ${LEGACY_CONTAINERS_DIR} to ${TELEGRAF_CONTAINERS_DIR}..."
 mv "${LEGACY_CONTAINERS_DIR}" "${TELEGRAF_CONTAINERS_DIR}"
 echo "Done."
