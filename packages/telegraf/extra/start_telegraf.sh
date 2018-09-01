@@ -20,5 +20,10 @@ export DCOS_CLUSTER_ID="${cluster_id}"
 export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
 export DCOS_MESOS_ID="fake_mesos_id" # TODO(branden)
 
+# Create containers dir for dcos_statsd input.
+mkdir -p "${TELEGRAF_CONTAINERS_DIR}"
+# Migrate old containers dir to new location in case the cluster was upgraded.
+/opt/mesosphere/active/telegraf/tools/migrate_containers_dir.sh "${LEGACY_CONTAINERS_DIR}" "${TELEGRAF_CONTAINERS_DIR}"
+
 # Start telegraf.
 exec /opt/mesosphere/bin/telegraf "$@"
