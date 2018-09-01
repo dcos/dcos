@@ -1318,7 +1318,7 @@ package:
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
       # Plugin for monitoring statsd metrics from mesos tasks
@@ -1334,7 +1334,7 @@ package:
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
