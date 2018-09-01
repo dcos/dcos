@@ -525,7 +525,6 @@ function check_all() {
             "46839 metronome" \
             "61053 mesos-dns" \
             "61091 telegraf" \
-            "61092 dcos-metrics" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -538,7 +537,6 @@ function check_all() {
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
             "61091 telegraf" \
-            "61092 dcos-metrics" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
