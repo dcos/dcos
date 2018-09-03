@@ -77,7 +77,7 @@ Format of the entries must be.
 
 * Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
 
-* Updated DC/OS UI to master+v2.18.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.18.0)
+* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
