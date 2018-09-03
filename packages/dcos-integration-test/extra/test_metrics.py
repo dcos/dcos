@@ -200,7 +200,7 @@ def test_metrics_containers(dcos_api_session):
                     # We expect three datapoints, could be in any order
                     uptime_dp = None
                     for dp in app_response.json()['datapoints']:
-                        if dp['name'] == 'statsd_tester.time.uptime':
+                        if dp['name'] == 'statsd_tester_time_uptime':
                             uptime_dp = dp
                             break
 
@@ -211,7 +211,13 @@ def test_metrics_containers(dcos_api_session):
                     for k in datapoint_keys:
                         assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                    check_tags(uptime_dp['tags'], {'test_tag_key'})
+                    expected_tag_names = {
+                        'dcos_cluster_id',
+                        'test_tag_key',
+                        'dcos_cluster_name',
+                        'host'
+                    }
+                    check_tags(uptime_dp['tags'], expected_tag_names)
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
 
                     assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
