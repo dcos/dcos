@@ -136,7 +136,7 @@ def test_metrics_containers(dcos_api_session):
     @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
-        debug_eid = []
+        debug_task_name = []
 
         for agent in app_endpoints:
 
@@ -167,11 +167,10 @@ def test_metrics_containers(dcos_api_session):
                     assert 'tags' in dp, 'got {}'.format(dp)
                     expected_tag_names = {
                         'container_id',
-                        'executor_id',
-                        'executor_name',
-                        'framework_id',
-                        'source',
                     }
+                    if 'executor_name' in dp['tags']:
+                        # if present we want to make sure it has a valid value.
+                        expected_tag_names.add('executor_name')
                     if dp['name'].startswith('blkio.'):
                         # blkio stats have 'blkio_device' tags.
                         expected_tag_names.add('blkio_device')
@@ -183,13 +182,13 @@ def test_metrics_containers(dcos_api_session):
                     assert(check_cid(cid_registry))
 
                 assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
-                assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
+                assert 'task_name' in container_response.json()['dimensions'], 'got {}'.format(
                     container_response.json()['dimensions'])
 
-                debug_eid.append(container_response.json()['dimensions']['executor_id'])
+                debug_task_name.append(container_response.json()['dimensions']['task_name'])
 
-                # looking for "statsd-emitter.<some_uuid>"
-                if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
+                # looking for "statsd-emitter"
+                if 'statsd-emitter' == container_response.json()['dimensions']['task_name']:
                     # Test that /app response is responding with expected data
                     app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(c), node=agent.host)
                     assert app_response.status_code == 200
@@ -219,7 +218,7 @@ def test_metrics_containers(dcos_api_session):
 
                     return True
 
-        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_eid)
+        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_task_name)
 
     marathon_config = {
         "id": "/statsd-emitter",
