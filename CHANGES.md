@@ -62,6 +62,8 @@
 
 * Add debug route to metrics API (DCOS-37454)
 
+* Add per-framework metrics to the Mesos master (DCOS_OSS-3991)
+
 ### Security updates
 
 
