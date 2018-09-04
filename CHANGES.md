@@ -15,6 +15,8 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+* Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
+
 * Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
 
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
