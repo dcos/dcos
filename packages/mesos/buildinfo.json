@@ -7,9 +7,9 @@
   ], 
   "single_source": {
     "kind": "git", 
-    "git": "https://github.com/apache/mesos", 
-    "ref": "eacabd70c5d2bdb3269712348cfcebab7fdddbe9", 
-    "ref_origin": "1.5.x"
+    "git": "https://github.com/mesosphere/mesos", 
+    "ref": "a9702cc2fb1b93be58fd0a7506a3ab9f2f76ed8c", 
+    "ref_origin": "gilbert/EBUSY_hotfix"
   }, 
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib", 
