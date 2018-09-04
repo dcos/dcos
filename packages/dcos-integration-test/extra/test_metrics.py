@@ -75,11 +75,6 @@ def test_metrics_node(dcos_api_session):
         assert 'dimensions' in response, '"dimensions" object not found in'
         'response, got {}'.format(response)
 
-        assert 'cluster_id' in response['dimensions'], '"cluster_id" key not'
-        'found in dimensions, got {}'.format(response)
-
-        assert response['dimensions']['cluster_id'] != "", 'expected cluster to contain a value'
-
         return True
 
     # private agents
