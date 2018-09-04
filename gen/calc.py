@@ -944,6 +944,7 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
     ],
     'default': {
@@ -1052,6 +1053,7 @@ entry = {
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',

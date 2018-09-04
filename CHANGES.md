@@ -10,6 +10,8 @@
 
 ### Fixed and improved
 
+* Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
+
 * Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
 
 * Docker-GC will now log to journald. (COPS-4044)

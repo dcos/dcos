@@ -622,13 +622,14 @@ package:
     content: {{ check_config_contents }}
   - path: /etc/dcos-diagnostics.env
     content: |
+      DCOS_DIAGNOSTICS_BUNDLE_DIR={{ diagnostics_bundles_dir }}
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
   - path: /etc_master/dcos-diagnostics-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
+        "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
