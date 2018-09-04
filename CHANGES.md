@@ -1,3 +1,15 @@
+## DC/OS 1.11.6
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
+### Security updates
+
+
 ## DC/OS 1.11.5
 
 ### Notable changes
