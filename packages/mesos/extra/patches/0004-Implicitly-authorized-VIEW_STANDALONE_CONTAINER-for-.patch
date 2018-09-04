@@ -1,0 +1,52 @@
+From a8b360b4c944d2632b77c027791b4a9c91f9801f Mon Sep 17 00:00:00 2001
+From: Chun-Hung Hsiao <chhsiao@apache.org>
+Date: Tue, 4 Sep 2018 14:08:16 +0200
+Subject: [PATCH 4/6] Implicitly authorized `VIEW_STANDALONE_CONTAINER` for
+ SLRPs.
+
+Review: https://reviews.apache.org/r/68614/
+---
+ src/authorizer/local/authorizer.cpp | 6 ++++--
+ src/slave/http.cpp                  | 2 +-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/authorizer/local/authorizer.cpp b/src/authorizer/local/authorizer.cpp
+index 3ab1b3bc8..83944b9a7 100644
+--- a/src/authorizer/local/authorizer.cpp
++++ b/src/authorizer/local/authorizer.cpp
+@@ -1089,7 +1089,8 @@ public:
+           (action == authorization::LAUNCH_STANDALONE_CONTAINER ||
+            action == authorization::WAIT_STANDALONE_CONTAINER ||
+            action == authorization::KILL_STANDALONE_CONTAINER ||
+-           action == authorization::REMOVE_STANDALONE_CONTAINER));
++           action == authorization::REMOVE_STANDALONE_CONTAINER ||
++           action == authorization::VIEW_STANDALONE_CONTAINER));
+ 
+     Option<string> subjectPrefix;
+     foreach (const Label& claim, subject->claims().labels()) {
+@@ -1136,7 +1137,8 @@ public:
+       if (action == authorization::LAUNCH_STANDALONE_CONTAINER ||
+           action == authorization::WAIT_STANDALONE_CONTAINER ||
+           action == authorization::KILL_STANDALONE_CONTAINER ||
+-          action == authorization::REMOVE_STANDALONE_CONTAINER) {
++          action == authorization::REMOVE_STANDALONE_CONTAINER ||
++          action == authorization::VIEW_STANDALONE_CONTAINER) {
+         return getImplicitResourceProviderObjectApprover(subject, action);
+       }
+     }
+diff --git a/src/slave/http.cpp b/src/slave/http.cpp
+index d0f6e1c5f..f8199af50 100644
+--- a/src/slave/http.cpp
++++ b/src/slave/http.cpp
+@@ -2232,7 +2232,7 @@ Future<JSON::Array> Http::__containers(
+         }
+ 
+         if (isRootContainerStandalone &&
+-            !approvers->approved<VIEW_STANDALONE_CONTAINER>()) {
++            !approvers->approved<VIEW_STANDALONE_CONTAINER>(rootContainerId)) {
+           continue;
+         }
+ 
+-- 
+2.18.0
+
