@@ -82,9 +82,16 @@ def test_metrics_node(dcos_api_session):
 
         return True
 
+    # Retry for 30 seconds for for the node metrics content to appear.
+    @retrying.retry(stop_max_delay=30000)
+    def wait_for_node_response(node):
+        response = dcos_api_session.metrics.get('/node', node=node)
+        assert response.status_code == 200
+        return response
+
     # private agents
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -93,7 +100,7 @@ def test_metrics_node(dcos_api_session):
 
     # public agents
     for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -102,7 +109,7 @@ def test_metrics_node(dcos_api_session):
 
     # masters
     for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('/node', node=master)
+        response = wait_for_node_response(master)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -154,11 +161,15 @@ def test_metrics_containers(dcos_api_session):
             for c in response.json():
                 # Test that /containers/<id> responds with expected data
                 container_id_path = '/containers/{}'.format(c)
-                container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
 
-                # /containers/<container_id> should always respond succesfully
-                assert container_response.status_code == 200
+                # Retry for 30 seconds for each container to present its content.
+                @retrying.retry(stop_max_delay=30000)
+                def wait_for_container_response():
+                    response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
+                    assert response.status_code == 200
+                    return response
 
+                container_response = wait_for_container_response()
                 assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
 
                 cid_registry = []
