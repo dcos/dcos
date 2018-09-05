@@ -12,13 +12,15 @@
 # lua-resty-jwt
 
 `evp.lua`, `jwt-validators.lua`, and `jwt.lua` are part of
-[lua-resty-jwt](https://github.com/SkyLothar/lua-resty-jwt) release 0.1.9.
+[lua-resty-jwt](https://github.com/cdbattags/lua-resty-jwt) commit
+f17d7c6e (release 0.2.0 with a little bit on top).
 
 
 # lua-resty-hmac
 
 `hmac.lua` is part of
-[lua-resty-hmac](https://github.com/jkeys089/lua-resty-hmac) commit 6a5b67
+[lua-resty-hmac](https://github.com/jkeys089/lua-resty-hmac) commit
+989f601a.
 
 
 # lua-resty-cookie
