@@ -7,12 +7,18 @@ StartLimitInterval=0
 RestartSec=5
 
 User=dcos_telegraf
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
 PermissionsStartOnly=True
 
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
+
+ExecStartPre=/usr/bin/mkdir -p /run/dcos/telegraf
+ExecStartPre=/usr/bin/chmod 775 /run/dcos/telegraf
+ExecStartPre=/usr/bin/chown root:dcos_telegraf /run/dcos/telegraf
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
