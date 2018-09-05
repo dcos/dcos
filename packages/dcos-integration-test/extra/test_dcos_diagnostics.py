@@ -510,7 +510,6 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                              'binsh_-c_cat etc*-release-6.output.gz', 'systemctl_list-units_dcos*-7.output.gz',
                              'ps_aux_ww-4.output.gz', 'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz']
 
-
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json'
