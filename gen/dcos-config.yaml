@@ -113,6 +113,11 @@ package:
   - path: /etc/navstar.config.d/common.config
     content: |
       [
+        {navstar,
+          [
+            {enable_killer, false}
+          ]
+        },
         {navstar_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
