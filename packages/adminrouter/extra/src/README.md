@@ -1110,7 +1110,7 @@ they follow inheritance tree as below:
   can be inherited from and extended if necessary for the purposes of testing.
 
 Each endpoint has an id, that it basically it's http address (i.e.
-`http://127.0.0.1:8080` or `http:///run/dcos/dcos-metrics-agent.sock`). It's
+`http://127.0.0.1:8080` or `http:///run/dcos/telegraf-dcos-metrics.sock`). It's
 available via the `.id()` method. They are started and stopped via `.start()`
 and `.stop()` methods during the start and stop of mocker instance
 respectively. In the (How to write tests)[#how-to-write-tests] section a rudimentary
