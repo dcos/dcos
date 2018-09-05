@@ -1,3 +1,15 @@
+## DC/OS 1.11.6
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
+### Security updates
+
+
 ## DC/OS 1.11.5
 
 ### Notable changes
@@ -49,6 +61,8 @@
 * CNI module now stores configuration on a tmpfs dir, allocated IP addresses are recycled upon agent reboot. (DCOS_OSS-3750)
 
 * Add debug route to metrics API (DCOS-37454)
+
+* Add per-framework metrics to the Mesos master (DCOS_OSS-3991)
 
 ### Security updates
 
