@@ -27,7 +27,7 @@ backends:
     name: Mesos DNS
     reference: 'https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/'
   metrics:
-    server: 'unix:/run/dcos/dcos-metrics-master.sock'
+    server: 'unix:/run/dcos/telegraf-dcos-metrics.sock'
     name: DC/OS Metrics
     reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
   pkgpanda:

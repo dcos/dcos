@@ -77,7 +77,7 @@ Format of the entries must be.
 
 * Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
 
-* Updated DC/OS UI to master+v2.18.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.18.0)
+* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
@@ -90,3 +90,5 @@ Format of the entries must be.
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
 
 * DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded (DCOS-38953)
+
+* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)

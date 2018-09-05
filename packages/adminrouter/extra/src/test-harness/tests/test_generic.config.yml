@@ -783,7 +783,7 @@ endpoint_tests:
         test_paths:
           - /system/v1/metrics/foo/bar
           - /system/v1/metrics/
-        upstream: http:///run/dcos/dcos-metrics-agent.sock
+        upstream: http:///run/dcos/telegraf-dcos-metrics.sock
     type:
       - agent
   - tests:
@@ -796,7 +796,7 @@ endpoint_tests:
         test_paths:
           - /system/v1/metrics/foo/bar
           - /system/v1/metrics/
-        upstream: http:///run/dcos/dcos-metrics-master.sock
+        upstream: http:///run/dcos/telegraf-dcos-metrics.sock
       is_endpoint_redirecting_properly:
         locations:
           - path: /system/v1/metrics
