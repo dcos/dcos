@@ -16,9 +16,9 @@ EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
 
-ExecStartPre=/usr/bin/mkdir -p /run/dcos/telegraf
-ExecStartPre=/usr/bin/chmod 775 /run/dcos/telegraf
-ExecStartPre=/usr/bin/chown root:dcos_telegraf /run/dcos/telegraf
+ExecStartPre=/bin/bash -c "mkdir -p /run/dcos/telegraf"
+ExecStartPre=/bin/bash -c "chmod 775 /run/dcos/telegraf"
+ExecStartPre=/bin/bash -c "chown root:dcos_telegraf /run/dcos/telegraf"
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
