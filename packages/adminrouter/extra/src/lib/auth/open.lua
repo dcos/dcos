@@ -25,8 +25,6 @@ local function validate_jwt_or_exit()
             return authcommon.exit_401("oauthjwt")
         end
 
-        -- Other error statuses go here...
-
         -- Catch-all, normally not reached:
         ngx.log(ngx.ERR, "Unexpected result from validate_jwt()")
         ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
@@ -37,30 +35,14 @@ end
 
 
 local function do_authn_and_authz_or_exit()
-    local uid = validate_jwt_or_exit()
-
-    -- Authz using authn :)
-    res = ngx.location.capture("/internal/acs/api/v1/users/" .. uid)
-
-    if res.status == ngx.HTTP_NOT_FOUND then
-        ngx.log(ngx.ERR, "User not found: `" .. uid .. "`")
-        return authcommon.exit_401()
-    end
-
-    if res.status == ngx.HTTP_OK then
-        return
-    end
-
-    -- Catch-all, normally not reached:
-    ngx.log(ngx.ERR, "Unexpected response from IAM: " .. res.status)
-    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-    return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    -- Here, only do authentication, i.e. require
+    -- valid authentication token to be presented.
+    -- Downstream, this function can be replaced
+    -- with more complex business logic.
+    validate_jwt_or_exit()
 end
 
 local function do_authn_or_exit(object)
-    -- This function only ensures that the user is authenticated
-    -- Even though it's only calling validate_jwt_or_exit, we put it for the
-    -- sake of completeness/consistency with EE.
     validate_jwt_or_exit()
 end
 
