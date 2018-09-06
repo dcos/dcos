@@ -81,7 +81,9 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
+* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
+
+* Updated DC/OS UI to master+v2.21.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.21.4)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
