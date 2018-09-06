@@ -109,16 +109,13 @@ class MockerBase:
             certfile='/run/dcos/pki/tls/certs/adminrouter-ec.crt',
             keyfile='/run/dcos/pki/tls/private/adminrouter-ec.key'))
         # metrics endpoint
-        res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-metrics-master.sock'))
+        res.append(ReflectingUnixSocketEndpoint('/run/dcos/telegraf-dcos-metrics.sock'))
         # log endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-log.sock'))
         # DC/OS history service
         res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=15055))
         # Mesos DNS
         res.append(MesosDnsEndpoint(ip='127.0.0.1', port=8123))
-        # Metrics(agent):
-        res.append(
-            ReflectingUnixSocketEndpoint(path='/run/dcos/dcos-metrics-agent.sock'))
         # DDDT, two variants:
         # TODO (prozlach): cleanup DDDT sockets
         res.append(

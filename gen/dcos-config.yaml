@@ -3,7 +3,7 @@ package:
     content: |
       producers:
         prometheus:
-          port: 61091
+          port: 61092
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -363,6 +363,22 @@ package:
               ]
            }
         ]
+      }
+  - path: /etc/mesos-slave-modules/metrics.json
+    content: |
+      {
+        "libraries": [ {
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "modules": [ {
+            "name": "com_mesosphere_dcos_MetricsIsolatorModule",
+            "parameters": [
+              {"key": "dcos_metrics_service_scheme", "value": "http"},
+              {"key": "dcos_metrics_service_network", "value": "unix"},
+              {"key": "dcos_metrics_service_address", "value": "/run/dcos/telegraf/dcos_statsd.sock"},
+              {"key": "dcos_metrics_service_endpoint", "value": "/container"}
+            ]
+          } ]
+        } ]
       }
 {% case "false" %}
 {% endswitch %}
@@ -1219,6 +1235,8 @@ package:
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
       TELEGRAF_CONFIG_DIR=/opt/mesosphere/etc/telegraf/telegraf.d/
+      TELEGRAF_CONTAINERS_DIR=/run/dcos/telegraf/dcos_statsd/containers
+      LEGACY_CONTAINERS_DIR=/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers
   - path: /etc/telegraf/telegraf.conf
     content: |
       # Telegraf config for all nodes
@@ -1282,16 +1300,112 @@ package:
         collect_cpu_time = false
         ## If true, compute and report the sum of all non-idle CPU states.
         report_active = false
+      # Read metrics about memory usage
       [[inputs.mem]]
-      # Telegraf refuses to start if no outputs are defined. This will eventually be
-      # replaced with real outputs.
-      [[outputs.discard]]
+      # Read metrics about disk usage by mount point
+      [[inputs.disk]]
+        ## Ignore mount points by filesystem type.
+        # TODO(branden): Do we want to ignore any fs types?
+        #ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
+      # Read metrics about swap memory usage
+      [[inputs.swap]]
+      # Gather metrics about network interfaces
+      [[inputs.net]]
+      # Get the number of processes and group them by status
+      [[inputs.processes]]
+      # Read metrics about system load & uptime
+      [[inputs.system]]
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "master"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+      # Plugin for monitoring statsd metrics from mesos tasks
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The directory in which container information is stored
+        containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
+      # Plugin for adding metadata to dcos-specific metrics
+      [[processors.dcos_metadata]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+        ## The minimum period between requests to the mesos agent
+        rate_limit = "5s"
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+      # Plugin for monitoring statsd metrics from mesos tasks
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The directory in which container information is stored
+        containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
+      # Plugin for adding metadata to dcos-specific metrics
+      [[processors.dcos_metadata]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+        ## The minimum period between requests to the mesos agent
+        rate_limit = "5s"
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"
