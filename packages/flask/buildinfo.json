@@ -13,8 +13,8 @@
     },
     "flask-compress": {
       "kind": "url_extract",
-      "url": "https://github.com/wichitacode/flask-compress/archive/v1.2.0.tar.gz",
-      "sha1": "15acb04e85f86b2ea8ee7bd2b8c3e3cfcf703756"
+      "url": "https://files.pythonhosted.org/packages/0e/2a/378bd072928f6d92fd8c417d66b00c757dc361c0405a46a0134de6fd323d/Flask-Compress-1.4.0.tar.gz",
+      "sha1": "68b5eb124b02993c9466dfb2438e0ba79d2d5809"
     },
     "itsdangerous": {
       "kind": "url_extract",
