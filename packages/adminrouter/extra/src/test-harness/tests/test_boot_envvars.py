@@ -24,7 +24,10 @@ class TestSecretKeyFilePathEnvVarBehaviour:
     def test_if_not_defining_the_var_is_handled(self, nginx_class, role):
         # Scanning for the exact log entry is bad, but in this case - can't be
         # avoided.
-        filter_regexp = {'SECRET_KEY_FILE_PATH not set.': SearchCriteria(1, False)}
+        filter_regexp = {
+            'AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH not set.':
+                SearchCriteria(1, False)
+        }
         ar = nginx_class(role=role, secret_key_file_path=None)
 
         with GuardedSubprocess(ar):
