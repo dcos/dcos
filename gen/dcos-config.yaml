@@ -154,7 +154,8 @@ package:
         {dcos_net,
           [
             {dist_port, 62501},
-            {epmd_port, 61420}
+            {epmd_port, 61420},
+            {killer, {enabled, abort}}
           ]
         },
         {dcos_l4lb,
