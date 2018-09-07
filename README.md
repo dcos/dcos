@@ -155,7 +155,8 @@ dcos-docker create /tmp/dcos_generate_config.sh \
 
 2. Run `dcos-docker wait`
 
-Running wait command allows to make sure that the cluster is set up properly before any other actions that could otherwise cause errors, such as, for example, pytest not finding required test files.
+Wait for DC/OS to start.
+Running wait command allows to make sure that the cluster is set up properly before any other actions that could otherwise cause errors in `pytest` command in the next step.
 
 3. Run `pytest` on a master node.
 
