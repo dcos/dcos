@@ -430,7 +430,7 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
                  'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
-                 'com_mesosphere_MetricsIsolatorModule')
+                 'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',gpu/nvidia'
     return isolators
