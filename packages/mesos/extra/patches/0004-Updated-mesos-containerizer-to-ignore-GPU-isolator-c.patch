@@ -1,4 +1,4 @@
-From f1da678e918ff033a2cb2b2e2c35fa225699e122 Mon Sep 17 00:00:00 2001
+From e35849bfc3125167f1825f493e094c2fd0d2cd7f Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
 Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
@@ -45,5 +45,5 @@ index c0fe435ae..14ae172b0 100644
      }
    }
 -- 
-2.16.3
+2.17.0
 
