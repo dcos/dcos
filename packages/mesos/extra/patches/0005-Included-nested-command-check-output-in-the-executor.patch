@@ -1,4 +1,4 @@
-From d8ebc0de2b2462d6bbffec15b91474cf9ab130e7 Mon Sep 17 00:00:00 2001
+From feb564fec083c6cac37b495705aa9f7675cd02cb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:36 -0700
 Subject: [PATCH] Included nested command check output in the executor logs.

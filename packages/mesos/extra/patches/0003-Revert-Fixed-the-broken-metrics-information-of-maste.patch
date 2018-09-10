@@ -1,4 +1,4 @@
-From 105c40a69b72ab76994c6cc5c83e76454e6a299c Mon Sep 17 00:00:00 2001
+From 20fa9bcd119f14af7770f65254b0620cabd254b1 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
 Subject: [PATCH] Revert "Fixed the broken metrics information of master in
