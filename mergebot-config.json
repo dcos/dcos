@@ -33,6 +33,6 @@
             "1.10": "DC/OS 1.10.9",
             "1.9": "DC/OS 1.9.11"
         },
-        "jira_regex": "((?:DCOS|DCOS_OSS|COPS)-\\d+)"
+        "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON)-\\d+)"
     }
 }
