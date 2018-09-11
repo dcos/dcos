@@ -2,7 +2,7 @@
 
 ### Notable changes
 
-* Updated to [DC/OS UI 1.11+v1.20.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.20.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.21.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.21.0/CHANGELOG.md)
 
 ### Fixed and improved
 
@@ -49,6 +49,8 @@
 * CNI module now stores configuration on a tmpfs dir, allocated IP addresses are recycled upon agent reboot. (DCOS_OSS-3750)
 
 * Add debug route to metrics API (DCOS-37454)
+
+* Add per-framework metrics to the Mesos master (DCOS_OSS-3991)
 
 ### Security updates
 

@@ -1,0 +1,176 @@
+From 93cdc622f7cfd625efe6350f9749401df069fe5d Mon Sep 17 00:00:00 2001
+From: Greg Mann <greg@mesosphere.io>
+Date: Wed, 1 Aug 2018 07:58:22 -0700
+Subject: [PATCH] Added per-framework metrics for scheduler events.
+
+Review: https://reviews.apache.org/r/67809/
+---
+ src/master/master.hpp  | 22 +++++++++++++++++++---
+ src/master/metrics.cpp | 41 ++++++++++++++++++++++++++++++++++++++++-
+ src/master/metrics.hpp |  5 +++++
+ 3 files changed, 64 insertions(+), 4 deletions(-)
+
+diff --git a/src/master/master.hpp b/src/master/master.hpp
+index 6352f7e28..431e8732c 100644
+--- a/src/master/master.hpp
++++ b/src/master/master.hpp
+@@ -346,13 +346,16 @@ public:
+               const Message& _heartbeatMessage,
+               const HttpConnection& _http,
+               const Duration& _interval,
+-              const Option<Duration>& _delay = None())
++              const Option<Duration>& _delay = None(),
++              const Option<lambda::function<void(const Message&)>>&
++                _callback = None())
+     : process::ProcessBase(process::ID::generate("heartbeater")),
+       logMessage(_logMessage),
+       heartbeatMessage(_heartbeatMessage),
+       http(_http),
+       interval(_interval),
+-      delay(_delay) {}
++      delay(_delay),
++      callback(_callback) {}
+ 
+ protected:
+   virtual void initialize() override
+@@ -374,6 +377,10 @@ private:
+     if (http.closed().isPending()) {
+       VLOG(2) << "Sending heartbeat to " << logMessage;
+ 
++      if (callback.isSome()) {
++        callback.get()(heartbeatMessage);
++      }
++
+       Message message(heartbeatMessage);
+       http.send<Message, Event>(message);
+     }
+@@ -386,6 +393,7 @@ private:
+   HttpConnection http;
+   const Duration interval;
+   const Option<Duration> delay;
++  const Option<lambda::function<void(const Message&)>> callback;
+ };
+ 
+ 
+@@ -2324,6 +2332,10 @@ struct Framework
+                    << " framework " << *this;
+     }
+ 
++    // TODO(gilbert): add a helper to transform `SchedulerDriver` API messages
++    // directly to v0 events.
++    metrics.incrementEvent(devolve(evolve(message)));
++
+     if (http.isSome()) {
+       if (!http.get().send(message)) {
+         LOG(WARNING) << "Unable to send event to framework " << *this << ":"
+@@ -2786,7 +2798,11 @@ struct Framework
+           "framework " + stringify(info.id()),
+           event,
+           http.get(),
+-          DEFAULT_HEARTBEAT_INTERVAL);
++          DEFAULT_HEARTBEAT_INTERVAL,
++          None(),
++          [this](const scheduler::Event& event) {
++            this->metrics.incrementEvent(event);
++          });
+ 
+     process::spawn(heartbeater.get().get());
+   }
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 5a32aad6a..bd424ba80 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -519,7 +519,9 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     subscribed(
+         getFrameworkMetricPrefix(frameworkInfo) + "subscribed"),
+     calls(
+-        getFrameworkMetricPrefix(frameworkInfo) + "calls")
++        getFrameworkMetricPrefix(frameworkInfo) + "calls"),
++    events(
++        getFrameworkMetricPrefix(frameworkInfo) + "events")
+ {
+   process::metrics::add(subscribed);
+ 
+@@ -545,6 +547,29 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
+     call_types.put(type, counter);
+     process::metrics::add(counter);
+   }
++
++  // Add metrics for scheduler events.
++  process::metrics::add(events);
++  for (int index = 0;
++       index < scheduler::Event::Type_descriptor()->value_count();
++       index++) {
++    const google::protobuf::EnumValueDescriptor* descriptor =
++      scheduler::Event::Type_descriptor()->value(index);
++
++    const scheduler::Event::Type type =
++      static_cast<scheduler::Event::Type>(descriptor->number());
++
++    if (type == scheduler::Event::UNKNOWN) {
++      continue;
++    }
++
++    Counter counter = Counter(
++        getFrameworkMetricPrefix(frameworkInfo) + "events/" +
++        strings::lower(descriptor->name()));
++
++    event_types.put(type, counter);
++    process::metrics::add(counter);
++  }
+ }
+ 
+ 
+@@ -556,6 +581,11 @@ FrameworkMetrics::~FrameworkMetrics()
+   foreachvalue (const Counter& counter, call_types) {
+     process::metrics::remove(counter);
+   }
++
++  process::metrics::remove(events);
++  foreachvalue (const Counter& counter, event_types) {
++    process::metrics::remove(counter);
++  }
+ }
+ 
+ 
+@@ -575,6 +605,15 @@ string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
+     "/" + stringify(frameworkInfo.id()) + "/";
+ }
+ 
++
++void FrameworkMetrics::incrementEvent(const scheduler::Event& event)
++{
++  CHECK(event_types.contains(event.type()));
++
++  event_types.get(event.type()).get()++;
++  events++;
++}
++
+ } // namespace master {
+ } // namespace internal {
+ } // namespace mesos {
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index 7a7b3a316..fac4440da 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -219,12 +219,17 @@ struct FrameworkMetrics
+ 
+   void incrementCall(const scheduler::Call::Type& callType);
+ 
++  void incrementEvent(const scheduler::Event& event);
++
+   const FrameworkInfo frameworkInfo;
+ 
+   process::metrics::PushGauge subscribed;
+ 
+   process::metrics::Counter calls;
+   hashmap<scheduler::Call::Type, process::metrics::Counter> call_types;
++
++  process::metrics::Counter events;
++  hashmap<scheduler::Event::Type, process::metrics::Counter> event_types;
+ };
+ 
+ 
+-- 
+2.17.0
+
