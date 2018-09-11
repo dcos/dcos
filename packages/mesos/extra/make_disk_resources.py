@@ -1,5 +1,6 @@
 #!/opt/mesosphere/bin/python3
 
+import argparse
 import json
 import os
 import re
@@ -61,7 +62,7 @@ class VolumeDiscoveryException(Exception):
 
 def find_mounts_matching(pattern):
     '''
-    find all matching mounts from the output of the mount command
+    Find all matching mounts from the output of the mount command
     '''
     print('Looking for mounts matching pattern "{}"'.format(pattern.pattern))
     mounts = subprocess.check_output(['mount'], universal_newlines=True)
@@ -92,9 +93,23 @@ def get_disk_free(path):
     return (path, floor(float(shutil.disk_usage(path).free) / MB))
 
 
-def get_mounts_and_freespace(matching_mounts):
+def get_mounts_and_freespace(matching_mounts, cache_mounts):
+    '''
+    We have previously seen, when only using the free disks available,
+    issues when restarting an agent after adding a new volume.
+    This is because Mesos does not tolerate changes in the amount of
+    disk space available for mounted volumes. If the volume was used
+    by a framework before the restart, the Mesos agent would refuse to
+    start due to incompatible agent resources (DCOS_OSS-3921).
+    This is why we keep a cache and use the previous amount of free space.
+    '''
     for mount, free_space in map(get_disk_free, matching_mounts):
-        net_free_space = free_space - TOLERANCE_MB
+
+        if mount in cache_mounts:
+            net_free_space = cache_mounts[mount]
+        else:
+            net_free_space = free_space - TOLERANCE_MB
+
         if net_free_space <= 0:
             # Per @cmaloney and @lingmann, we should hard exit here if volume
             # doesn't have sufficient space.
@@ -106,7 +121,7 @@ def get_mounts_and_freespace(matching_mounts):
 
 def _handle_root_volume(root_volume, role):
     os.makedirs(root_volume, exist_ok=True)
-    for common, _ in make_disk_resources_json(get_mounts_and_freespace([root_volume]), role):
+    for common, _ in make_disk_resources_json(get_mounts_and_freespace([root_volume], {}), role):
         yield common, {}
 
 
@@ -116,11 +131,11 @@ def stitch(parts):
     return common
 
 
-def main(output_env_file):
+def main(output_env_file, cache_env_file):
     '''
     Find mounts and freespace matching MOUNT_PATTERN, create RESOURCES for the
     disks, and merge the list of disk resources with optionally existing
-    MESOS_RESOURCES environment varianble.
+    MESOS_RESOURCES environment variable.
 
     @type output_env_file: str, filename to write resources
     '''
@@ -128,7 +143,27 @@ def main(output_env_file):
         print('Volume discovery assumed to be completed because {} exists'.format(output_env_file))
         return
 
-    mounts_dfree = list(get_mounts_and_freespace(find_mounts_matching(MOUNT_PATTERN)))
+    cache_mounts = {}
+    if os.path.exists(cache_env_file):
+        print('Mesos resources cache used for mount volumes because {} exists'.format(cache_env_file))
+        with open(cache_env_file) as f:
+            data = None
+            # The Mesos resources file is not a clean JSON file, it has comments
+            # and quotation marks that need to be filtered. This is why we
+            # enumerate the file instead of loading it entirely as a JSON file.
+            #
+            # Changing the formatting of the file could break the caching logic
+            # but test_make_disk_resources in DC/OS EE should detect such a bug.
+            for _, line in enumerate(f):
+                if line.startswith('MESOS_RESOURCES'):
+                    data = json.loads(line[len('MESOS_RESOURCES=\''):-2])
+            for item in data:
+                if item["name"] == "disk" and "disk" in item and "source" in item["disk"]:
+                    mount_volume = item["disk"]["source"]["mount"]["root"]
+                    cache_mounts[mount_volume] = item["scalar"]["value"]
+
+    current_mounts = find_mounts_matching(MOUNT_PATTERN)
+    mounts_dfree = list(get_mounts_and_freespace(current_mounts, cache_mounts))
     print('Found matching mounts : {}'.format(mounts_dfree))
 
     role = os.getenv('MESOS_DEFAULT_ROLE', '*')
@@ -169,11 +204,17 @@ def main(output_env_file):
 
 
 if __name__ == '__main__':
+    PARSER = argparse.ArgumentParser()
+    PARSER.add_argument("output", help="file where to write resources")
+    PARSER.add_argument("--cache", help="file containing the Mesos resources cache")
+    ARGS = PARSER.parse_args()
+
+    if not ARGS.cache:
+        # By default, the path of the cache is <ouput_file_path>.cache.
+        ARGS.cache = '{}.cache'.format(ARGS.output)
+
     try:
-        main(sys.argv[1])
-    except KeyError as e:
-        print('ERROR: Missing key {}'.format(e), file=sys.stderr)
-        sys.exit(1)
-    except VolumeDiscoveryException as e:
-        print('ERROR: {}'.format(e), file=sys.stderr)
+        main(ARGS.output, ARGS.cache)
+    except VolumeDiscoveryException as err:
+        print('ERROR: {}'.format(err), file=sys.stderr)
         sys.exit(1)
