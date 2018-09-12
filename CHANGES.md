@@ -18,7 +18,7 @@ Format of the entries must be.
 
 ### Fixed and improved
 
-* Updated to [DC/OS UI 1.10.9-rc2](https://github.com/dcos/dcos-ui/releases/tag/1.10+v1.10.9-rc2)
+* Updated to [DC/OS UI v1.10.9-rc3](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.9-rc3)
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861) 
 
