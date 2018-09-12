@@ -1,8 +1,23 @@
-## DC/OS 1.11.5
+## DC/OS 1.11.6
 
 ### Notable changes
 
 * Updated to [DC/OS UI 1.11+v1.21.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.21.0/CHANGELOG.md)
+
+* Updated to [ZooKeeper 3.4.13](https://zookeeper.apache.org/doc/r3.4.13/releasenotes.html).
+
+### Fixed and improved
+
+### Security updates
+
+ * Updated OpenSSL to version 1.0.2p. (DCOS_OSS-4105)
+
+
+## DC/OS 1.11.5
+
+### Notable changes
+
+* Updated to [DC/OS UI 1.11+v1.19.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.19.0/CHANGELOG.md)
 
 ### Fixed and improved
 
