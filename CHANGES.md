@@ -1,3 +1,9 @@
+## DC/OS 1.11.6
+
+### Notable changes
+
+* Updated to [Marathon 1.6.549](https://github.com/mesosphere/marathon/tree/aabf74302).
+
 ## DC/OS 1.11.5
 
 ### Notable changes
