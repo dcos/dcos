@@ -1,0 +1,7 @@
+[Unit]
+Description=Telegraf Socket: socket for Telegraf
+[Socket]
+ListenStream=/run/dcos/telegraf-dcos-metrics.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660

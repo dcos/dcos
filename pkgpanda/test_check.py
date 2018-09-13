@@ -22,6 +22,7 @@ run_output_stderr = """WARNING: `not_executable.py` is not executable
 """
 
 
+# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_list():
     output = check_output([
@@ -33,6 +34,7 @@ def test_check_target_list():
     assert output.decode() == list_output
 
 
+# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_run():
     cmd = Popen([

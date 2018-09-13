@@ -35,9 +35,6 @@ import schema
 import yaml
 
 import gen.internals
-import pkgpanda.exceptions
-from pkgpanda import PackageId
-from pkgpanda.util import hash_checkout, hash_str
 
 
 DCOS_VERSION = '1.12-dev'
@@ -273,7 +270,7 @@ def calculate_use_mesos_hooks(mesos_hooks):
         return "true"
 
 
-def validate_network_default_name(dcos_overlay_network_default_name, dcos_overlay_network):
+def validate_network_default_name(overlay_network_default_name, dcos_overlay_network):
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
@@ -281,9 +278,9 @@ def validate_network_default_name(dcos_overlay_network_default_name, dcos_overla
 
     overlay_names = map(lambda overlay: overlay['name'], overlay_network['overlays'])
 
-    assert dcos_overlay_network_default_name in overlay_names, (
+    assert overlay_network_default_name in overlay_names, (
         "Default overlay network name does not reference a defined overlay network: {}".format(
-            dcos_overlay_network_default_name))
+            overlay_network_default_name))
 
 
 def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
@@ -320,6 +317,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         assert 'vtep_mac_oui' in overlay_network.keys(), (
             'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
 
+        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+        validate_int_in_range(vtep_mtu, 552, None)
+
         if 'subnet' in overlay:
             # Check the VTEP IP is present in the overlay configuration
             assert 'vtep_subnet' in overlay_network, (
@@ -355,24 +355,6 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                 raise AssertionError(
                     "Incorrect value for overlay subnet6 {}."
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
-
-
-def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
-    if enable_ipv6 == 'true':
-        return dcos_overlay_network
-    if dcos_overlay_network == entry['default']['dcos_overlay_network']:
-        # Remove ipv6 overlays from default overlay networks
-        overlay_network = json.loads(dcos_overlay_network)
-        del overlay_network['vtep_subnet6']
-        overlay_network['overlays'] = \
-            [o for o in overlay_network['overlays'] if 'subnet' in o]
-        return json.dumps(overlay_network)
-    else:
-        overlay_network = json.loads(dcos_overlay_network)
-        overlays = overlay_network['overlays']
-        assert [o['name'] for o in overlays if 'subnet6' in o] == [], \
-            "ipv6 is disabled, only ipv4 networks are allowed"
-        return dcos_overlay_network
 
 
 def validate_num_masters(num_masters):
@@ -415,39 +397,6 @@ def calc_num_masters(master_list):
     return str(len(json.loads(master_list)))
 
 
-def calculate_config_id(dcos_image_commit, template_filenames, sources_id):
-    return hash_checkout({
-        "commit": dcos_image_commit,
-        "template_filenames": json.loads(template_filenames),
-        "sources_id": sources_id})
-
-
-def calculate_config_package_ids(config_package_names, config_id):
-    def get_config_package_id(config_package_name):
-        pkg_id_str = "{}--setup_{}".format(config_package_name, config_id)
-        # validate the pkg_id_str generated is a valid PackageId
-        return pkg_id_str
-
-    return json.dumps(list(sorted(map(get_config_package_id, json.loads(config_package_names)))))
-
-
-def calculate_cluster_packages(config_package_ids, package_ids):
-    return json.dumps(sorted(json.loads(config_package_ids) + json.loads(package_ids)))
-
-
-def calculate_cluster_package_list_id(cluster_packages):
-    return hash_str(cluster_packages)
-
-
-def validate_cluster_packages(cluster_packages):
-    pkg_id_list = json.loads(cluster_packages)
-    for pkg_id in pkg_id_list:
-        try:
-            PackageId(pkg_id)
-        except pkgpanda.exceptions.ValidationError as ex:
-            raise AssertionError(str(ex)) from ex
-
-
 def calculate_no_proxy(no_proxy):
     user_proxy_config = validate_json_list(no_proxy)
     return ",".join(['.mesos,.thisdcos.directory,.dcos.directory,.zk,127.0.0.1,localhost'] + user_proxy_config)
@@ -479,11 +428,11 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 
 
 def calculate_mesos_isolation(enable_gpu_isolation):
-    isolators = ('cgroups/cpu,cgroups/mem,cgroups/blkio,disk/du,network/cni,filesystem/linux,'
-                 'docker/runtime,docker/volume,volume/sandbox_path,volume/secret,posix/rlimits,'
-                 'namespaces/pid,linux/capabilities,com_mesosphere_MetricsIsolatorModule')
+    isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
+                 'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
+                 'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
-        isolators += ',cgroups/devices,gpu/nvidia'
+        isolators += ',gpu/nvidia'
     return isolators
 
 
@@ -763,6 +712,15 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
 
 
 def calculate_check_config(check_time):
+    # We consider only two timeouts:
+    # * 1s for immediate checks (such as checking for the presence of CLI utilities).
+    # * 30s for any check which is expected to take more than 1s.
+    #
+    # The 30s value was chosen arbitrarily. It may be increased in the future as required.
+    # We chose not to use a value greater than 1min, as the checks are automatically executed
+    # in parallel every minute.
+    instant_check_timeout = "1s"
+    normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
             'checks': {
@@ -770,57 +728,62 @@ def calculate_check_config(check_time):
                     'description': 'All DC/OS components are healthy.',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
                             '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
                             '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'xz': {
                     'description': 'The xz utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'tar': {
                     'description': 'The tar utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'curl': {
                     'description': 'The curl utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'unzip': {
                     'description': 'The unzip utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
+                },
+                'ifconfig': {
+                    'description': 'The ifconfig utility is available',
+                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
+                    'timeout': instant_check_timeout
                 },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
                     'description': 'Journald directory has the right owners and permissions',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                 },
             },
             'prestart': [],
@@ -831,6 +794,7 @@ def calculate_check_config(check_time):
                 'tar',
                 'curl',
                 'unzip',
+                'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
@@ -845,7 +809,7 @@ def calculate_check_config(check_time):
         check_config['node_checks']['checks'][clock_sync_check_name] = {
             'description': 'System clock is in sync.',
             'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
-            'timeout': '1s'
+            'timeout': instant_check_timeout
         }
         check_config['node_checks']['poststart'].append(clock_sync_check_name)
 
@@ -942,6 +906,7 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 
 __dcos_overlay_network_default_name = 'dcos'
+__dcos_overlay_network6_default_name = 'dcos6'
 
 
 entry = {
@@ -957,7 +922,6 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
-        validate_cluster_packages,
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -1008,6 +972,7 @@ entry = {
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
+        lambda log_offers: validate_true_false(log_offers),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1019,9 +984,10 @@ entry = {
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
         'adminrouter_tls_1_0_enabled': 'false',
-        'adminrouter_tls_1_1_enabled': 'true',
+        'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
@@ -1037,6 +1003,7 @@ entry = {
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
+        'marathon_java_args': '',
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
@@ -1061,6 +1028,7 @@ entry = {
         'ui_banner_dismissible': 'null',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
+        'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
@@ -1073,12 +1041,14 @@ entry = {
                 'subnet': '9.0.0.0/8',
                 'prefix': 24
             }, {
-                'name': 'dcos6',
+                'name': __dcos_overlay_network6_default_name,
                 'subnet6': 'fd01:b::/64',
                 'prefix6': 80
             }]
         }),
         'dcos_overlay_network_default_name': __dcos_overlay_network_default_name,
+        'dcos_overlay_network6_default_name': __dcos_overlay_network6_default_name,
+        'dcos_ucr_default_bridge_network_name': 'mesos-bridge',
         'dcos_ucr_default_bridge_subnet': '172.31.254.0/24',
         'dcos_remove_dockercfg_enable': "false",
         'dcos_l4lb_min_named_ip': '11.0.0.0',
@@ -1115,7 +1085,8 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
-        'enable_mesos_ipv6_discovery': 'false'
+        'enable_mesos_ipv6_discovery': 'false',
+        'log_offers': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1127,14 +1098,11 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
-        'config_package_ids': calculate_config_package_ids,
-        'cluster_packages': calculate_cluster_packages,
-        'cluster_package_list_id': calculate_cluster_package_list_id,
-        'config_id': calculate_config_id,
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',
@@ -1147,7 +1115,6 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
-        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'mesos_hooks': calculate_mesos_hooks,

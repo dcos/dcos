@@ -1,6 +1,5 @@
 {
   "exclude": [
-    "dcos-installer-ui",
     "dcos-launch",
     "erts",
     "openstackservice",

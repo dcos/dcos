@@ -4,7 +4,7 @@ import sys
 import threading
 
 from flask import Flask, Response
-from flask.ext.compress import Compress
+from flask_compress import Compress
 
 from history.statebuffer import BufferCollection, BufferUpdater
 
@@ -13,6 +13,17 @@ compress = Compress()
 state_buffer = None
 log = logging.getLogger(__name__)
 add_headers_cb = None
+
+# These headers are common to requests to mesos and client responses
+headers = {
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Headers": "accept, accept-charset, accept-encoding, " +
+                                    "accept-language, authorization, content-length, " +
+                                    "content-type, host, origin, proxy-connection, " +
+                                    "referer, user-agent, x-requested-with",
+    "Access-Control-Allow-Methods": "HEAD, GET, PUT, POST, PATCH, DELETE",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Max-Age": "86400"}
 
 
 try:
@@ -30,18 +41,10 @@ def headers_cb():
     defaults in this method. This method can be set by adding a dcos_auth_python package
     with a get_auth_headers method
     """
-    headers = {
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Headers": "accept, accept-charset, accept-encoding, " +
-                                        "accept-language, authorization, content-length, " +
-                                        "content-type, host, origin, proxy-connection, " +
-                                        "referer, user-agent, x-requested-with",
-        "Access-Control-Allow-Methods": "HEAD, GET, PUT, POST, PATCH, DELETE",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Max-Age": "86400"}
+    return_headers = headers.copy()
     if add_headers_cb:
-        headers.update(add_headers_cb())
-    return headers
+        return_headers.update(add_headers_cb())
+    return return_headers
 
 
 def update():
@@ -98,7 +101,7 @@ def _buffer_response_(name):
 
 
 def _response_(content):
-    return Response(response=content, content_type="application/json", headers=headers_cb())
+    return Response(response=content, content_type="application/json", headers=headers)
 
 
 def route(app):

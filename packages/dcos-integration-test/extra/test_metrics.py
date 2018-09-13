@@ -1,3 +1,4 @@
+import pytest
 import retrying
 
 __maintainer__ = 'mnaboka'
@@ -22,6 +23,7 @@ def test_metrics_agents_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
+@pytest.mark.supportedwindows
 def test_metrics_masters_ping(dcos_api_session):
     for master in dcos_api_session.masters:
         response = dcos_api_session.metrics.get('/ping', node=master)
@@ -29,15 +31,17 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-def test_metrics_agents_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_agents_prom(dcos_api_session, prometheus_port):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-def test_metrics_masters_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_masters_prom(dcos_api_session, prometheus_port):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -78,9 +82,16 @@ def test_metrics_node(dcos_api_session):
 
         return True
 
+    # Retry for 30 seconds for for the node metrics content to appear.
+    @retrying.retry(stop_max_delay=30000)
+    def wait_for_node_response(node):
+        response = dcos_api_session.metrics.get('/node', node=node)
+        assert response.status_code == 200
+        return response
+
     # private agents
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -89,7 +100,7 @@ def test_metrics_node(dcos_api_session):
 
     # public agents
     for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -98,7 +109,7 @@ def test_metrics_node(dcos_api_session):
 
     # masters
     for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('/node', node=master)
+        response = wait_for_node_response(master)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -123,10 +134,16 @@ def test_metrics_containers(dcos_api_session):
 
         return True
 
+    def check_tags(tags: dict, expected_tag_names: set):
+        """Assert that tags contains only expected keys with nonempty values."""
+        assert set(tags.keys()) == expected_tag_names
+        for tag_name, tag_val in tags.items():
+            assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+
     @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
-        debug_eid = []
+        debug_task_name = []
 
         for agent in app_endpoints:
 
@@ -144,37 +161,45 @@ def test_metrics_containers(dcos_api_session):
             for c in response.json():
                 # Test that /containers/<id> responds with expected data
                 container_id_path = '/containers/{}'.format(c)
-                container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
 
-                # /containers/<container_id> should always respond succesfully
-                assert container_response.status_code == 200
+                # Retry for 30 seconds for each container to present its content.
+                @retrying.retry(stop_max_delay=30000)
+                def wait_for_container_response():
+                    response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
+                    assert response.status_code == 200
+                    return response
 
+                container_response = wait_for_container_response()
                 assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
 
                 cid_registry = []
                 for dp in container_response.json()['datapoints']:
+                    # Verify expected tags are present.
                     assert 'tags' in dp, 'got {}'.format(dp)
-                    # blkio stats have 'device' tags as well
-                    assert len(dp['tags']) >= 5, 'got {}'.format(
-                        len(dp['tags']))
+                    expected_tag_names = {
+                        'container_id',
+                    }
+                    if 'executor_name' in dp['tags']:
+                        # if present we want to make sure it has a valid value.
+                        expected_tag_names.add('executor_name')
+                    if dp['name'].startswith('blkio.'):
+                        # blkio stats have 'blkio_device' tags.
+                        expected_tag_names.add('blkio_device')
+                    check_tags(dp['tags'], expected_tag_names)
 
                     # Ensure all container ID's in the container/<id> endpoint are
                     # the same.
-                    assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
 
-                    for k, v in dp['tags'].items():
-                        assert len(v) != 0, 'tag values must not be empty'
-
                 assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
-                assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
+                assert 'task_name' in container_response.json()['dimensions'], 'got {}'.format(
                     container_response.json()['dimensions'])
 
-                debug_eid.append(container_response.json()['dimensions']['executor_id'])
+                debug_task_name.append(container_response.json()['dimensions']['task_name'])
 
-                # looking for "statsd-emitter.<some_uuid>"
-                if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
+                # looking for "statsd-emitter"
+                if 'statsd-emitter' == container_response.json()['dimensions']['task_name']:
                     # Test that /app response is responding with expected data
                     app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(c), node=agent.host)
                     assert app_response.status_code == 200
@@ -186,7 +211,7 @@ def test_metrics_containers(dcos_api_session):
                     # We expect three datapoints, could be in any order
                     uptime_dp = None
                     for dp in app_response.json()['datapoints']:
-                        if dp['name'] == 'statsd_tester.time.uptime':
+                        if dp['name'] == 'statsd_tester_time_uptime':
                             uptime_dp = dp
                             break
 
@@ -197,14 +222,20 @@ def test_metrics_containers(dcos_api_session):
                     for k in datapoint_keys:
                         assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                    assert 'test_tag_key' in uptime_dp['tags'], 'got {}'.format(uptime_dp)
+                    expected_tag_names = {
+                        'dcos_cluster_id',
+                        'test_tag_key',
+                        'dcos_cluster_name',
+                        'host'
+                    }
+                    check_tags(uptime_dp['tags'], expected_tag_names)
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
 
                     assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
 
                     return True
 
-        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_eid)
+        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_task_name)
 
     marathon_config = {
         "id": "/statsd-emitter",

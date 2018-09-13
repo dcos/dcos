@@ -13,6 +13,7 @@ def repository():
     return Repository(resources_test_dir("packages"))
 
 
+# TODO: DCOS_OSS-3464 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list(repository):
     packages = repository.list()

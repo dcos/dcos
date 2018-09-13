@@ -19,6 +19,7 @@ Other tickets related to this change:
 
 ## Checklist for all PRs
 
+  - [ ] Added a comprehensible changelog entry to `CHANGES.md` or explain why this is not a user-facing change:
   - [ ] Included a test which will fail if code is reverted but test is not. If there is no test please explain here:
   - [ ] Read the [DC/OS contributing guidelines](https://github.com/dcos/dcos/blob/master/contributing.md)
   - [ ] Followed relevant code rules [Rules for Packages and Systemd](https://github.com/dcos/dcos/tree/master/docs)

@@ -18,23 +18,36 @@ sed -i '/^\s*UseDNS /d' /etc/ssh/sshd_config
 echo -e "\nUseDNS no" >> /etc/ssh/sshd_config
 
 echo ">>> Set up filesystem mounts"
-cat << 'EOF' > /etc/systemd/system/dcos_vol_setup.service
-[Unit]
-Description=Initial setup of volume mounts
-DefaultDependencies=no
-Before=local-fs-pre.target
+mount_pairs=( "/dev/xvde:/var/lib/mesos"
+              "/dev/nvme1n1:/var/lib/mesos"
+              "/dev/xvdf:/var/lib/docker"
+              "/dev/nvme2n1:/var/lib/docker"
+              "/dev/xvdg:/dcos/volume0"
+              "/dev/nvme3n1:/dcos/volume0"
+              "/dev/xvdh:/var/log"
+              "/dev/nvme4n1:/var/log"
+            )
+for mount_pair in ${mount_pairs[@]}; do
+  device=$(echo ${mount_pair} | cut -d':' -f1)
+  mountpoint=$(echo ${mount_pair} | cut -d':' -f2)
+  device_filenamesafe=$(echo ${device} | sed 's/\//-/g')
 
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvde /var/lib/mesos
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdf /var/lib/docker
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdg /dcos/volume0
-ExecStart=/usr/local/sbin/dcos_vol_setup.sh /dev/xvdh /var/log
+  cat << EOF > /etc/systemd/system/dcos_vol_setup${device_filenamesafe}.service
+  [Unit]
+  Description=Initial setup of volume mounts
+  DefaultDependencies=no
+  Before=local-fs-pre.target
 
-[Install]
-RequiredBy=local-fs-pre.target
+  [Service]
+  Type=oneshot
+  TimeoutSec=20
+  ExecStart=/usr/local/sbin/dcos_vol_setup.sh ${device} ${mountpoint}
+
+  [Install]
+  WantedBy=local-fs-pre.target
 EOF
-systemctl enable dcos_vol_setup
+  systemctl enable dcos_vol_setup${device_filenamesafe}
+done
 
 echo ">>> Disable rsyslog"
 systemctl disable rsyslog

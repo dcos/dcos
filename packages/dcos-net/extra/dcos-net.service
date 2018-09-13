@@ -21,6 +21,7 @@ ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ipta
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py mkdir -p /var/lib/dcos/navstar/mnesia
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py mkdir -p /var/lib/dcos/navstar/lashup
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py modprobe dummy
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py networkd add /opt/mesosphere/etc/dcos.network
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link add minuteman type dummy
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link set minuteman up
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip link add spartan type dummy

@@ -11,17 +11,17 @@ if [ ! -d "${ROOTFS}/etc/yum.repos.d" ]; then
     cp -r /etc/yum.repos.d "${ROOTFS}/etc"
 fi
 
-yum --installroot="${ROOTFS}" --nogpgcheck -t -y install \
-	perl \
-	tar \
-	xz \
-	unzip \
-	curl \
-	bind-utils \
-	net-tools \
-	ipset \
-	libtool-ltdl \
-	rsync \
-	nfs-utils \
-    wget \
-    git
+yum --installroot="${ROOTFS}" -t -y install \
+  perl \
+  tar \
+  xz \
+  unzip \
+  curl \
+  bind-utils \
+  net-tools \
+  ipset \
+  libtool-ltdl \
+  rsync \
+  nfs-utils \
+  wget \
+  git

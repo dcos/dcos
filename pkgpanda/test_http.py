@@ -86,6 +86,7 @@ def _set_test_config(app):
     app.config['DCOS_REPO_DIR'] = resources_test_dir('packages')
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list_packages():
     _set_test_config(app)
@@ -98,6 +99,7 @@ def test_list_packages():
     ])
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_get_package():
     _set_test_config(app)
@@ -116,6 +118,7 @@ def test_get_package():
     assert_error(client.get('/repository/!@#*'), 404)
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list_active_packages():
     _set_test_config(app)
@@ -126,6 +129,7 @@ def test_list_active_packages():
         'mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8']
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_get_active_package():
     _set_test_config(app)
@@ -144,6 +148,7 @@ def test_get_active_package():
     assert_error(client.get('/active/!@#*'), 404)
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_activate_packages(tmpdir):
     _set_test_config(app)
@@ -193,6 +198,7 @@ def test_activate_packages(tmpdir):
     )
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_fetch_package(tmpdir):
     _set_test_config(app)
@@ -237,6 +243,7 @@ def test_fetch_package(tmpdir):
     )
 
 
+# TODO: DCOS_OSS-3468 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_remove_package(tmpdir):
     _set_test_config(app)

@@ -13,6 +13,7 @@ def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
     return repo_path
 
 
+# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_setup(tmpdir):
     repo_path = tmp_repository(tmpdir)
@@ -167,6 +168,7 @@ def test_setup(tmpdir):
     expect_fs("{0}".format(tmpdir), {"repository": None})
 
 
+# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_activate(tmpdir):
     repo_path = tmp_repository(tmpdir)
@@ -262,6 +264,7 @@ def test_activate(tmpdir):
     # TODO(cmaloney): Test a full OS setup using http://0pointer.de/blog/projects/changing-roots.html
 
 
+# TODO: DCOS_OSS-3465 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_systemd_unit_files(tmpdir):
     repo_path = tmp_repository(tmpdir)

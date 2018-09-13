@@ -10,6 +10,7 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
+@pytest.mark.supportedwindows
 @pytest.mark.skipif(
     not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'),
     reason='Must be run in an AWS environment!')

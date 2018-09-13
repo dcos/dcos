@@ -254,14 +254,22 @@ function check_version() {
 
 function check_selinux() {
   ENABLED=$(getenforce)
+  RC=0
 
-  if [[ $ENABLED != 'Enforcing' ]]; then
-    RC=0
-  else
-    RC=1
+  if [[ "$ENABLED" == "Enforcing" ]]; then
+    LOADED_POLICY_LINE=$(sestatus | grep "Loaded policy name:")
+    # We expect that the loaded policy name line will look like:
+    # "Loaded policy name:             targeted"
+    # But we do not want to rely on the number of spaces before the policy name.
+    LOADED_POLICY=$(echo "$LOADED_POLICY_LINE" | rev | cut -d ' ' -f1 | rev)
+    ALLOWED_LOADED_POLICY="targeted"
+    if [ "$LOADED_POLICY" != "$ALLOWED_LOADED_POLICY" ]; then
+      RC=1
+    fi
   fi
 
-  print_status $RC "Is SELinux disabled?"
+  MESSAGE="Is SELinux in disabled mode, permissive mode or in enforcing mode with the targeted policy loaded?"
+  print_status $RC "$MESSAGE"
   (( OVERALL_RC += $RC ))
   return $RC
 }
@@ -361,6 +369,49 @@ EOM
     fi
 }
 
+function d_type_enabled_if_xfs()
+{
+    # Return 1 if $1 is a directory on XFS volume with ftype ! = 1
+    # otherwise return 0
+    DIRNAME="$1"
+
+    RC=0
+    # "df", the command being used to get the filesystem device and type,
+    # fails if the directory does not exist, hence we need to iterate up the
+    # directory chain to find a directory that exists before executing the command
+    while [[ ! -d "$DIRNAME" ]]; do
+        DIRNAME="$(dirname "$DIRNAME")"
+    done
+    read -r filesystem_device filesystem_type <<<"$(df --portability --print-type "$DIRNAME" | awk 'END{print $1,$2}')"
+    # -b $filesystem_device check is there prevent this from failing in certain special dcos-docker configs
+    # see https://jira.mesosphere.com/browse/DCOS_OSS-3549
+    if [[ "$filesystem_type" == "xfs" && -b "$filesystem_device" ]]; then
+        echo -n -e "Checking if $DIRNAME is mounted with \"ftype=1\": "
+        ftype_value="$(xfs_info $filesystem_device | grep -oE ftype=[0-9])"
+        if [[ "$ftype_value" != "ftype=1" ]]; then
+            RC=1
+        fi
+        print_status $RC "${NORMAL}(${ftype_value})"
+    fi
+    return $RC
+}
+
+# check node storage has d_type (ftype=1) support enabled if using XFS
+function check_xfs_ftype() {
+    RC=0
+
+    mesos_agent_dir="{{ mesos_agent_work_dir }}"
+    # Check if ftype=1 on the volume, for $mesos_agent_dir, if its on XFS filesystem
+    ( d_type_enabled_if_xfs "$mesos_agent_dir" ) || RC=1
+
+    # Check if ftype=1 on the volume, for docker root dir, if its on XFS filesystem
+    docker_root_dir="$(docker info | grep 'Docker Root Dir' | cut -d ':' -f 2  | tr -d '[[:space:]]')"
+    ( d_type_enabled_if_xfs "$docker_root_dir" ) || RC=1
+
+    (( OVERALL_RC += $RC ))
+    return $RC
+}
+
 function check_all() {
     # Disable errexit because we want the preflight checks to run all the way
     # through and not bail in the middle, which will happen as it relies on
@@ -436,6 +487,7 @@ function check_all() {
     check unzip
     check ipset
     check systemd-notify
+    check ifconfig
 
     # $ systemctl --version ->
     # systemd nnn
@@ -472,7 +524,8 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
-            "61091 dcos-metrics" \
+            "61091 telegraf" \
+            "61092 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
@@ -485,13 +538,15 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
-            "61091 dcos-metrics" \
+            "61091 telegraf" \
+            "61092 dcos-metrics" \
             "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
             check_service $service
         done
+        check_xfs_ftype
     fi
 
     # Check we're not in docker on devicemapper loopback as storage driver.
@@ -654,7 +709,8 @@ def make_bash(gen_out) -> None:
         'dcos_image_commit': util.dcos_image_commit,
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
-        'setup_services': setup_services})
+        'setup_services': setup_services,
+        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir']})
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'

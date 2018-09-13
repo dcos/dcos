@@ -1,12 +1,11 @@
 #!/bin/bash
 set -o nounset -o pipefail
-# Install glide
-apt-get update && \
-  apt-get install -y software-properties-common
 
-add-apt-repository ppa:masterminds/glide && \
-  apt-get update && \
-  apt-get install -y glide
+# install glide
+curl -L -O https://github.com/Masterminds/glide/releases/download/v0.13.0/glide-v0.13.0-linux-amd64.tar.gz && \
+  tar xzvf glide-v0.13.0-linux-amd64.tar.gz && \
+  mv linux-amd64/glide /usr/bin
+
 
 # Build and install DC/OS CNI plugins.
 pushd /pkg/src/dcos-cni/

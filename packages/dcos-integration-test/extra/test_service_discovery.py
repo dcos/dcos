@@ -176,6 +176,13 @@ def get_marathon_addresses_by_service_points(service_points):
     return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
 
 
+def get_dcos_dns_records():
+    response = requests.get('http://127.0.0.1:62080/v1/records')
+    if response.status_code != 200:
+        return None
+    return response.json()
+
+
 def assert_service_discovery(dcos_api_session, app_definition, net_types):
     """
     net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
@@ -195,8 +202,12 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
                         retry_on_exception=lambda x: True)
         def _ensure_dns_converged():
             app_name = app_definition['id']
-            dns_addrs = get_dns_addresses_by_app_name(app_name)
-
+            try:
+                dns_addrs = get_dns_addresses_by_app_name(app_name)
+            except socket.gaierror as err:
+                records = get_dcos_dns_records()
+                logging.info("dcos-dns records: {}".format(records))
+                raise err
             asserted = False
             if len(net_types) == 2:
                 if (DNSOverlay in net_types) and (DNSPortMap in net_types):

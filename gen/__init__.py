@@ -27,6 +27,7 @@ import gen.calc
 import gen.internals
 import gen.template
 import gen.util
+import pkgpanda.exceptions
 from gen.exceptions import ValidationError
 from pkgpanda import PackageId
 from pkgpanda.constants import (
@@ -478,7 +479,14 @@ def get_dcosconfig_source_target_and_templates(
                 "Internal Error: Only know how to merge YAML templates at this point in time. "
                 "Can't merge template {} in template_list {}".format(filename, templates[key]))
 
-    targets = target_from_templates(templates)
+    # Include a base target that references variables we need to calculate cluster_packages.
+    base_target = gen.internals.Target({
+        'config_package_names',
+        'dcos_image_commit',
+        'package_ids',
+        'template_filenames',
+    })
+    targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
     base_source.add_entry(gen.calc.entry, replace_existing=False)
 
@@ -501,16 +509,14 @@ def get_dcosconfig_source_target_and_templates(
     # unset argument errors. The placeholder value with be replaced with the actual value after all other variables are
     # calculated.
     temporary_str = 'DO NOT USE THIS AS AN ARGUMENT TO OTHER ARGUMENTS. IT IS TEMPORARY'
+    add_builtin('cluster_packages', temporary_str)
+    add_builtin('cluster_package_list_id', temporary_str)
     add_builtin('user_arguments_full', temporary_str)
     add_builtin('user_arguments', temporary_str)
     add_builtin('config_yaml_full', temporary_str)
     add_builtin('config_yaml', temporary_str)
     add_builtin('expanded_config', temporary_str)
     add_builtin('expanded_config_full', temporary_str)
-
-    # Note: must come last so the hash of the "base_source" this is beign added to contains all the
-    # variables but this.
-    add_builtin('sources_id', hash_checkout([hash_checkout(source.make_id()) for source in sources]))
 
     return sources, targets, templates
 
@@ -592,6 +598,25 @@ def user_arguments_to_yaml(user_arguments: dict):
     )
 
 
+def validate_cluster_packages(cluster_packages):
+    for pkg_id in cluster_packages:
+        try:
+            PackageId(pkg_id)
+        except pkgpanda.exceptions.ValidationError as ex:
+            raise Exception('Invalid cluster package ID: {}'.format(str(ex))) from ex
+
+
+def get_config_id(argument_dict: dict):
+    """Return a unique ID for the configuration represented by argument_dict."""
+    # dcos_image_commit and template_filenames should be included in argument_dict, but we reference them explicitly to
+    # ensure that the config ID reflects the current commit and config templates.
+    return hash_checkout({
+        'commit': argument_dict['dcos_image_commit'],
+        'template_filenames': argument_dict['template_filenames'],
+        'argument_dict': argument_dict,
+    })
+
+
 def generate(
         arguments,
         extra_templates=list(),
@@ -611,7 +636,20 @@ def generate(
     secret_variables = set(get_secret_variables(sources) + secret_builtins)
     masked_value = '**HIDDEN**'
 
+    # Calculate config ID after all variables are resolved, to make sure any change in config yields a new config ID.
+    config_id = get_config_id(argument_dict)
+
+    # Calculate values that depend on the config ID.
+    config_package_names = json.loads(argument_dict['config_package_names'])
+    package_ids = json.loads(argument_dict['package_ids'])
+    config_package_ids = ['{}--setup_{}'.format(name, config_id) for name in config_package_names]
+    cluster_packages = sorted(config_package_ids + package_ids)
+    validate_cluster_packages(cluster_packages)
+    cluster_package_list_id = hash_checkout(cluster_packages)
+
     # Calculate values for builtin variables.
+    argument_dict['cluster_packages'] = json.dumps(cluster_packages)
+    argument_dict['cluster_package_list_id'] = cluster_package_list_id
     user_arguments_masked = {k: (masked_value if k in secret_variables else v) for k, v in user_arguments.items()}
     argument_dict['user_arguments_full'] = json_prettyprint(user_arguments)
     argument_dict['user_arguments'] = json_prettyprint(user_arguments_masked)
@@ -666,9 +704,7 @@ def generate(
     rendered_templates[dcos_config_yaml] = {'package': regular_files}
 
     # Render cluster package list artifact.
-    cluster_package_list_filename = 'package_lists/{}.package_list.json'.format(
-        argument_dict['cluster_package_list_id']
-    )
+    cluster_package_list_filename = 'package_lists/{}.package_list.json'.format(cluster_package_list_id)
     os.makedirs(os.path.dirname(cluster_package_list_filename), mode=0o755, exist_ok=True)
     write_string(cluster_package_list_filename, argument_dict['cluster_packages'])
     log.info('Cluster package list: {}'.format(cluster_package_list_filename))
@@ -684,7 +720,7 @@ def generate(
     cluster_package_info = {}
 
     # Prepare late binding config, if any.
-    late_package = build_late_package(late_files, argument_dict['config_id'], argument_dict['provider'])
+    late_package = build_late_package(late_files, config_id, argument_dict['provider'])
     if late_variables and late_package:
         # Render the late binding package. This package will be downloaded onto
         # each cluster node during bootstrap and rendered into the final config
@@ -713,7 +749,7 @@ def generate(
             })})
 
     # Collect metadata for cluster packages.
-    for package_id_str in json.loads(argument_dict['cluster_packages']):
+    for package_id_str in cluster_packages:
         package_id = PackageId(package_id_str)
         package_filename = make_package_filename(package_id, '.tar.xz')
 
@@ -723,7 +759,6 @@ def generate(
         }
 
     # Render config packages.
-    config_package_ids = json.loads(argument_dict['config_package_ids'])
     for package_id_str in config_package_ids:
         package_id = PackageId(package_id_str)
         package_filename = cluster_package_info[package_id.name]['filename']

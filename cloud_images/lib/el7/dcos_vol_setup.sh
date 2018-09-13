@@ -7,6 +7,7 @@ trap '' PIPE
 
 export device=${1:-}
 export mount_location=${2:-}
+export label=$(echo ${mount_location:1:12} | sed 's/\//-/g')
 
 function usage {
 cat <<EOUSAGE
@@ -14,7 +15,7 @@ USAGE: $(basename "$0") <device> <mount_location>
 
  This script will format, and persistently mount the device to the specified
  location. It is intended to run as an early systemd unit (local-fs-pre.target)
- on AWS to set up EBS volumes.
+ on AWS to set up EBS volumes. If a device cant be found for 5 secons, it is simple skipped.
 
  If <mount_location> is /var/log the script will migrate existing data to the
  new filesystem.
@@ -63,15 +64,22 @@ function main {
   fi
 
   noncritical echo -n "Waiting for $device to come online"
-  until test -b "$device"; do noncritical sleep 1; noncritical echo -n .; done
+  retry=5
+  until test -b "$device"; do
+    noncritical sleep 1; noncritical echo -n .;
+    let retry=retry-1
+    if [ $retry -eq 0 ]; then
+     noncritical exit 0
+    fi
+  done
   noncritical echo
   local formated
-  mkfs.xfs -n ftype=1 $device > /dev/null 2>&1 && formated=true || formated=false
+  mkfs.xfs -n ftype=1 -L ${label} $device > /dev/null 2>&1 && formated=true || formated=false
   if [ "$formated" = true ]
   then
     noncritical echo "Setting up device mount"
     mkdir -p "$mount_location"
-    fstab="$device $mount_location xfs defaults 0 2"
+    fstab="LABEL=${label} $mount_location xfs defaults 0 2"
     noncritical echo "Adding entry to fstab: $fstab"
     echo "$fstab" >> /etc/fstab
     if [ "$mount_location" = "/var/log" ]; then
@@ -92,7 +100,7 @@ function main {
     fi
   else
     noncritical echo "Device $device contains a filesystem: no action taken"
-    exit
+    noncritical exit 0
   fi
 }
 

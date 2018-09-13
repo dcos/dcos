@@ -901,6 +901,7 @@ def _build(package_store, name, variant, clean_after_build, recursive):
     builder.update('sources', checkout_ids)
     build_script_file = builder.take('build_script')
     # TODO(cmaloney): Change dest name to build_script_sha1
+    builder.replace('build_script', 'build', pkgpanda.util.sha1(src_abs(build_script_file)))
     builder.add('pkgpanda_version', pkgpanda.build.constants.version)
 
     extra_dir = src_abs("extra")
