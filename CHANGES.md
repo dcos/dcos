@@ -1,8 +1,29 @@
+## DC/OS 1.11.6
+
+### Notable changes
+
+* Updated to [Metronome 0.4.4](https://github.com/dcos/metronome/releases/tag/v0.4.4).
+
+* Updated to [DC/OS UI 1.11+v1.21.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.21.0/CHANGELOG.md)
+
+* Updated to [ZooKeeper 3.4.13](https://zookeeper.apache.org/doc/r3.4.13/releasenotes.html).
+
+### Fixed and improved
+
+* Diagnostics bundle: include new information in bundle (container status and usage info, process list, Mesos quota info). (DCOS-38438, COPS-3042)
+
+* Root Marathon: consolidated task_launch_confirm and task_reservation timeouts. (DCOS-39290)
+
+### Security updates
+
+ * Updated OpenSSL to version 1.0.2p. (DCOS_OSS-4105)
+
+
 ## DC/OS 1.11.5
 
 ### Notable changes
 
-* Updated to [DC/OS UI 1.11+v1.21.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.21.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.19.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.19.0/CHANGELOG.md)
 
 ### Fixed and improved
 
