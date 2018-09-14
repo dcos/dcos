@@ -10,6 +10,10 @@
 
 ### Fixed and improved
 
+* Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
+
+* Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
+
 * Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
 
 * Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
