@@ -969,7 +969,7 @@ package:
                   "Command": ["ifconfig", "-a"]
               },
               {
-                  "Command": ["ps", "aux", "ww"]
+                  "Command": ["ps", "aux", "ww", "Z"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
@@ -984,15 +984,18 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
+                  "Command": ["sestatus"]
+              },
+              {
                   "Command": ["iptables-save"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["master"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["master"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["agent", "agent_public"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent", "agent_public"]
               }
           ]
         }
