@@ -153,7 +153,12 @@ dcos-docker create /tmp/dcos_generate_config.sh \
     --cluster-id default
 ```
 
-2. Run `pytest` on a master node.
+2. Run `dcos-docker wait`
+
+Wait for DC/OS to start.
+Running wait command allows to make sure that the cluster is set up properly before any other actions that could otherwise cause errors in `pytest` command in the next step.
+
+3. Run `pytest` on a master node.
 
 For example:
 
@@ -161,7 +166,7 @@ For example:
 dcos-docker run pytest
 ```
 
-3. Destroy the cluster.
+4. Destroy the cluster.
 
 ```
 dcos-docker destroy
