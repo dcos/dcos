@@ -77,8 +77,6 @@ Format of the entries must be.
 
 ### Security Updates
 
-* TLS: Admin Router should be configured with both RSA and EC type certificates. (DCOS-22050)
-
 
 ### Notable changes
 
