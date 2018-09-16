@@ -23,6 +23,18 @@ Format of the entries must be.
 
 * Changed the Admin Router access log format for facilitating debugging and performance analysis. (DCOS_OSS-4129)
 
+* Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
+
+* DC/OS Net: Support Mesos Windows Agent (DCOS_OSS-2073)
+
+* DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
+
+* Admin Router: It is now possible to disable HTTP request buffering for `/service/` endpoint requests through the DCOS_SERVICE_REQUEST_BUFFERING Marathon label. (DCOS_OSS-2420)
+
+* Admin Router: It is now possible to disable upstream request URL rewriting for `/service/` endpoint requests through the DCOS_SERVICE_REWRITE_REQUEST_URLS Marathon label. (DCOS_OSS-2420)
+
+* Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
+
 
 ### Breaking changes
 
@@ -32,6 +44,7 @@ Format of the entries must be.
 
 
 ### Fixed and improved
+
 * Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
 
 * Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
@@ -42,27 +55,13 @@ Format of the entries must be.
 
 * Added an API for checks at /system/checks/ on all cluster nodes. (DCOS_OSS-1406)
 
-* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
-
 * Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
-
-* Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
 
 * DC/OS Metrics: moved the prometheus producer from port 9273 to port 61091. (DCOS_OSS-2368)
 
 * Release cosmos v0.6.0. (DCOS_OSS-2195)
 
-* Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
-
 * A cluster's IP detect script may be changed with a config upgrade (DCOS_OSS-2389)
-
-* DC/OS Net: Support Mesos Windows Agent (DCOS_OSS-2073)
-
-* DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
-
-* Admin Router: It is now possible to disable HTTP request buffering for `/service/` endpoint requests through the DCOS_SERVICE_REQUEST_BUFFERING Marathon label. (DCOS_OSS-2420)
-
-* Admin Router: It is now possible to disable upstream request URL rewriting for `/service/` endpoint requests through the DCOS_SERVICE_REWRITE_REQUEST_URLS Marathon label. (DCOS_OSS-2420)
 
 * Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
 
@@ -79,7 +78,6 @@ Format of the entries must be.
 
 
 ### Notable changes
-
 
 * Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
 
