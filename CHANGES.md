@@ -21,6 +21,8 @@ Format of the entries must be.
 
 * DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded. (DCOS-38953)
 
+* Changed the Admin Router access log format for facilitating debugging and performance analysis. (DCOS_OSS-4129)
+
 
 ### Breaking changes
 
