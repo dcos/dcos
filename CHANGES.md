@@ -13,6 +13,21 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+### What's new
+
+* Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
+
+* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
+
+* DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded. (DCOS-38953)
+
+
+### Breaking changes
+
+* Removed the DC/OS web installer. (DCOS_OSS-2256)
+
+* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
+
 
 ### Fixed and improved
 * Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
@@ -77,20 +92,11 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
 
 * Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
-
-* Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
-
-* Removed the DC/OS web installer. (DCOS_OSS-2256)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
 * Updated OTP version to 20.3.2 (DCOS_OSS-2378)
 
 * Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
-
-* DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded (DCOS-38953)
-
-* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
