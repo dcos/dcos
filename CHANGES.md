@@ -77,19 +77,7 @@ Format of the entries must be.
 
 ### Security Updates
 
-* Update cURL to 7.59. (DCOS_OSS-2367)
-
-* Updated OpenSSL to 1.0.2n. (DCOS_OSS-1903)
-
-* Mesos does not expose ZooKeeper credentials anymore via its state JSON document. (DCOS_OSS-2162)
-
 * TLS: Admin Router should be configured with both RSA and EC type certificates. (DCOS-22050)
-
-* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS-21958)
-
-* Disable the TLS 1.1 protocol for Master Admin Router's TLS. (DCOS-22326)
-
-* Prevent dcos-history leaking auth tokens (DCOS-40373)
 
 
 ### Notable changes
