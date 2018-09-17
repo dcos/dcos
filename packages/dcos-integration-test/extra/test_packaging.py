@@ -141,8 +141,7 @@ def test_packaging_api(dcos_api_session):
     install_response = dcos_api_session.cosmos.install_package('kafka', package_version='1.1.9-0.10.0.0')
     data = install_response.json()
 
-    dcos_api_session.marathon.poll_marathon_for_app_deployment(data['appId'], 1,
-                                                               True, False)
+    dcos_api_session.marathon.wait_for_deployments_complete()
 
     list_response = dcos_api_session.cosmos.list_packages()
     packages = list_response.json()['packages']
