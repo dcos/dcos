@@ -46,6 +46,8 @@ Format of the entries must be.
 
 ### What's new
 
+* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
 * Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)

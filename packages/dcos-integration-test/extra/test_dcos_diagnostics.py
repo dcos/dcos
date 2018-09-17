@@ -414,15 +414,19 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
                              'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz', 'proc/self/mountinfo.gz',
                              'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-5.output.gz',
                              'timedatectl-6.output.gz', 'binsh_-c_cat etc*-release-7.output.gz',
-                             'systemctl_list-units_dcos*-8.output.gz']
+                             'systemctl_list-units_dcos*-8.output.gz', "iptables-save-9.output.gz"]
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
+                             'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
+                             '| cut -d\'=\' -f2`environ-10.output.gz',
                              '5050-overlay-master_state.json.gz'
                              ] + expected_common_files
 
-    expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json']
+    expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json'
+                                   'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
+                                   '| cut -d\'=\' -f2`environ-11.output.gz']
 
     # for agent host
     expected_agent_files = ['dcos-mesos-slave.service.gz'
