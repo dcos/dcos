@@ -1,4 +1,5 @@
 {
+  "bbannier": {"slack": "benjamin", "jira": "benjamin.bannier"},
   "branden": {"slack": "branden", "jira": "branden"},
   "cprovencher": {"slack": "cprovencher", "jira": "charlesprovencher"},
   "dgoel": {"slack": "dgoel", "jira": "dgoel"},
@@ -16,6 +17,7 @@
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "rukletsov": {"slack": "alexr", "jira": "alexr"},
   "sambatyon": {"slack": "alexander", "jira": "alexander"},
+  "tillt": {"slack": "till", "jira": "till"},
   "timaa2k": {"slack": "tweidner", "jira": "timweidner"},
   "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
 }
