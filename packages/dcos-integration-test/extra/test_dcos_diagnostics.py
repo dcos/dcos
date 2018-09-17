@@ -331,11 +331,11 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
     """
-    _create_bundle(dcos_api_session)
+    bundle = _create_bundle(dcos_api_session)
     _check_diagnostics_bundle_status(dcos_api_session)
-    _download_and_extract_bundle(dcos_api_session)
-    _download_and_extract_bundle_from_another_master(dcos_api_session)
-    _delete_bundle(dcos_api_session)
+    _download_and_extract_bundle(dcos_api_session, bundle)
+    _download_and_extract_bundle_from_another_master(dcos_api_session, bundle)
+    _delete_bundle(dcos_api_session, bundle)
 
 
 def _check_diagnostics_bundle_status(dcos_api_session):
@@ -375,39 +375,42 @@ def _create_bundle(dcos_api_session):
     assert len(bundles) == 1, 'bundle file not found'
     assert bundles[0] == create_response['extra']['bundle_name']
 
+    return create_response['extra']['bundle_name']
 
-def _delete_bundle(dcos_api_session):
+
+def _delete_bundle(dcos_api_session, bundle):
     bundles = _get_bundle_list(dcos_api_session)
-    assert bundles, 'no bundles found'
-    for bundle in bundles:
-        dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
+    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
+
+    dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
 
     bundles = _get_bundle_list(dcos_api_session)
-    assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
+    assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def _download_and_extract_bundle(dcos_api_session):
-    _download_bundle_from_master(dcos_api_session, 0)
+def _download_and_extract_bundle(dcos_api_session, bundle):
+    _download_bundle_from_master(dcos_api_session, 0, bundle)
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def _download_and_extract_bundle_from_another_master(dcos_api_session):
+def _download_and_extract_bundle_from_another_master(dcos_api_session, bundle):
     if len(dcos_api_session.masters) > 1:
-        _download_bundle_from_master(dcos_api_session, 1)
+        _download_bundle_from_master(dcos_api_session, 1, bundle)
 
 
-def _download_bundle_from_master(dcos_api_session, master_index):
+def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     """ Download DC/OS diagnostics bundle from a master
 
     :param dcos_api_session: dcos_api_session fixture
     :param master_index: master index from dcos_api_session.masters array
+    :param bundle: bundle name to download from master
     """
     assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
         master_index + 1, len(dcos_api_session.masters))
 
     bundles = _get_bundle_list(dcos_api_session)
-    assert bundles
+    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
     expected_common_files = ['dmesg_-T-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
                              'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
@@ -471,75 +474,74 @@ def _download_bundle_from_master(dcos_api_session, master_index):
         return _health_report
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        for bundle in bundles:
-            bundle_full_location = os.path.join(tmp_dir, bundle)
-            with open(bundle_full_location, 'wb') as f:
-                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
-                                                node=dcos_api_session.masters[master_index])
+        bundle_full_location = os.path.join(tmp_dir, bundle)
+        with open(bundle_full_location, 'wb') as f:
+            r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
+                                            node=dcos_api_session.masters[master_index])
 
-                for chunk in r.iter_content(1024):
-                    f.write(chunk)
+            for chunk in r.iter_content(1024):
+                f.write(chunk)
 
-            # validate bundle zip file.
-            assert zipfile.is_zipfile(bundle_full_location)
-            z = zipfile.ZipFile(bundle_full_location)
+        # validate bundle zip file.
+        assert zipfile.is_zipfile(bundle_full_location)
+        z = zipfile.ZipFile(bundle_full_location)
 
-            # get a list of all files in a zip archive.
-            archived_items = z.namelist()
+        # get a list of all files in a zip archive.
+        archived_items = z.namelist()
 
-            # validate error log is empty
-            if 'summaryErrorsReport.txt' in archived_items:
-                log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
-                raise AssertionError('summaryErrorsReport.txt must be empty. Got {}'.format(log_data))
+        # validate error log is empty
+        if 'summaryErrorsReport.txt' in archived_items:
+            log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
+            raise AssertionError('summaryErrorsReport.txt must be empty. Got {}'.format(log_data))
 
-            # validate all files in zip archive are not empty
-            for item in archived_items:
-                assert z.getinfo(item).file_size, 'item {} is empty'.format(item)
+        # validate all files in zip archive are not empty
+        for item in archived_items:
+            assert z.getinfo(item).file_size, 'item {} is empty'.format(item)
 
-            # make sure all required log files for master node are in place.
-            for master_ip in dcos_api_session.masters:
-                master_folder = master_ip + '_master/'
+        # make sure all required log files for master node are in place.
+        for master_ip in dcos_api_session.masters:
+            master_folder = master_ip + '_master/'
 
-                # try to load dcos-diagnostics health report and validate the report is for this host
-                health_report = _get_dcos_diagnostics_health(z, master_folder + 'dcos-diagnostics-health.json')
-                assert 'ip' in health_report
-                assert health_report['ip'] == master_ip
+            # try to load dcos-diagnostics health report and validate the report is for this host
+            health_report = _get_dcos_diagnostics_health(z, master_folder + 'dcos-diagnostics-health.json')
+            assert 'ip' in health_report
+            assert health_report['ip'] == master_ip
 
-                # make sure systemd unit output is correct and does not contain error message
-                gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
-                verify_unit_response(gzipped_unit_output, 100)
+            # make sure systemd unit output is correct and does not contain error message
+            gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
+            verify_unit_response(gzipped_unit_output, 100)
 
-                verify_archived_items(master_folder, archived_items, expected_master_files)
+            verify_archived_items(master_folder, archived_items, expected_master_files)
 
-            # make sure all required log files for agent node are in place.
-            for slave_ip in dcos_api_session.slaves:
-                agent_folder = slave_ip + '_agent/'
+        # make sure all required log files for agent node are in place.
+        for slave_ip in dcos_api_session.slaves:
+            agent_folder = slave_ip + '_agent/'
 
-                # try to load dcos-diagnostics health report and validate the report is for this host
-                health_report = _get_dcos_diagnostics_health(z, agent_folder + 'dcos-diagnostics-health.json')
-                assert 'ip' in health_report
-                assert health_report['ip'] == slave_ip
+            # try to load dcos-diagnostics health report and validate the report is for this host
+            health_report = _get_dcos_diagnostics_health(z, agent_folder + 'dcos-diagnostics-health.json')
+            assert 'ip' in health_report
+            assert health_report['ip'] == slave_ip
 
-                # make sure systemd unit output is correct and does not contain error message
-                gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
-                verify_unit_response(gzipped_unit_output, 100)
+            # make sure systemd unit output is correct and does not contain error message
+            gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
+            verify_unit_response(gzipped_unit_output, 100)
 
-                verify_archived_items(agent_folder, archived_items, expected_agent_files)
+            verify_archived_items(agent_folder, archived_items, expected_agent_files)
 
-            # make sure all required log files for public agent node are in place.
-            for public_slave_ip in dcos_api_session.public_slaves:
-                agent_public_folder = public_slave_ip + '_agent_public/'
+        # make sure all required log files for public agent node are in place.
+        for public_slave_ip in dcos_api_session.public_slaves:
+            agent_public_folder = public_slave_ip + '_agent_public/'
 
-                # try to load dcos-diagnostics health report and validate the report is for this host
-                health_report = _get_dcos_diagnostics_health(z, agent_public_folder + 'dcos-diagnostics-health.json')
-                assert 'ip' in health_report
-                assert health_report['ip'] == public_slave_ip
+            # try to load dcos-diagnostics health report and validate the report is for this host
+            health_report = _get_dcos_diagnostics_health(z, agent_public_folder + 'dcos-diagnostics-health.json')
+            assert 'ip' in health_report
+            assert health_report['ip'] == public_slave_ip
 
-                # make sure systemd unit output is correct and does not contain error message
-                gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
-                verify_unit_response(gzipped_unit_output, 100)
+            # make sure systemd unit output is correct and does not contain error message
+            gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
+            verify_unit_response(gzipped_unit_output, 100)
 
-                verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
+            verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
 
 
 def _get_bundle_list(dcos_api_session):
