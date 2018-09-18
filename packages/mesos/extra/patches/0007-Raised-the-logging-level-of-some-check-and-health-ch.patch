@@ -1,0 +1,52 @@
+From a63b7fc20d21e695783306f5927f3368c364ec2e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
+Date: Mon, 21 Aug 2017 15:28:39 -0700
+Subject: [PATCH] Raised the logging level of some check and health check
+ messages.
+
+Some users pointed out that always logging the result of checks and
+health checks makes it easier to debug problems.
+
+Review: https://reviews.apache.org/r/61791/
+---
+ src/checks/checker_process.cpp | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
+index d62bdb5d1..47eb21a67 100644
+--- a/src/checks/checker_process.cpp
++++ b/src/checks/checker_process.cpp
+@@ -796,7 +796,7 @@ void CheckerProcess::processCommandCheckResult(
+   // see MESOS-7242.
+   if (future.isReady() && WIFEXITED(future.get())) {
+     const int exitCode = WEXITSTATUS(future.get());
+-    VLOG(1) << name << " for task '" << taskId << "' returned: " << exitCode;
++    LOG(INFO) << name << " for task '" << taskId << "' returned: " << exitCode;
+ 
+     CheckStatusInfo checkStatusInfo;
+     checkStatusInfo.set_type(check.type());
+@@ -957,8 +957,8 @@ void CheckerProcess::processHttpCheckResult(
+   Result<CheckStatusInfo> result = None();
+ 
+   if (future.isReady()) {
+-    VLOG(1) << name << " for task '" << taskId << "'"
+-            << " returned: " << future.get();
++    LOG(INFO) << name << " for task '" << taskId << "'"
++              << " returned: " << future.get();
+ 
+     CheckStatusInfo checkStatusInfo;
+     checkStatusInfo.set_type(check.type());
+@@ -1098,8 +1098,8 @@ void CheckerProcess::processTcpCheckResult(
+   Result<CheckStatusInfo> result = None();
+ 
+   if (future.isReady()) {
+-    VLOG(1) << name << " for task '" << taskId << "'"
+-            << " returned: " << future.get();
++    LOG(INFO) << name << " for task '" << taskId << "'"
++              << " returned: " << future.get();
+ 
+     CheckStatusInfo checkStatusInfo;
+     checkStatusInfo.set_type(check.type());
+-- 
+2.17.1
+

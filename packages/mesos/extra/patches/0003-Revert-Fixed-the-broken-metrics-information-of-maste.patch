@@ -1,0 +1,73 @@
+From 0d6997443afed4caf14dc96cadc1ef9b0cd0c093 Mon Sep 17 00:00:00 2001
+From: Joseph Wu <josephwu@apache.org>
+Date: Thu, 10 Nov 2016 11:29:19 -0800
+Subject: [PATCH] Revert "Fixed the broken metrics information of master in
+ WebUI."
+
+This reverts commit b2fc58883e2cd0ca144fd1b0e10cad4235a50223.
+
+In DC/OS, redirection to the leading master is handled by the
+Adminrouter component.
+---
+ src/webui/master/static/js/controllers.js | 24 +++++++----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
+
+diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
+index ed60f7d40..d69e92017 100644
+--- a/src/webui/master/static/js/controllers.js
++++ b/src/webui/master/static/js/controllers.js
+@@ -264,7 +264,8 @@
+   }
+ 
+   // Update the outermost scope with the metrics/snapshot endpoint.
+-  function updateMetrics($scope, $timeout, metrics) {
++  function updateMetrics($scope, $timeout, data) {
++    var metrics = JSON.parse(data);
+     $scope.staging_tasks = metrics['master/tasks_staging'];
+     $scope.starting_tasks = metrics['master/tasks_starting'];
+     $scope.running_tasks = metrics['master/tasks_running'];
+@@ -362,18 +363,6 @@
+       if (!matched) $scope.navbarActiveTab = null;
+     });
+ 
+-    var leadingMasterURL = function(path) {
+-      // Use current location as address in case we could not find the
+-      // leading master.
+-      var address = location.hostname + ':' + location.port;
+-      if ($scope.state && $scope.state.leader_info) {
+-          address = $scope.state.leader_info.hostname + ':' +
+-                    $scope.state.leader_info.port;
+-      }
+-
+-      return '//' + address + path;
+-    }
+-
+     var popupErrorModal = function() {
+       if ($scope.delay >= 128000) {
+         $scope.delay = 2000;
+@@ -433,7 +422,7 @@
+       // the leading master automatically. This would cause a CORS error if we
+       // use XMLHttpRequest here. To avoid the CORS error, we use JSONP as a
+       // workaround. Please refer to MESOS-5911 for further details.
+-      $http.jsonp(leadingMasterURL('/master/state?jsonp=JSON_CALLBACK'))
++      $http.jsonp('master/state?jsonp=JSON_CALLBACK')
+         .success(function(response) {
+           if (updateState($scope, $timeout, response)) {
+             $scope.delay = updateInterval(_.size($scope.agents));
+@@ -448,9 +437,10 @@
+     };
+ 
+     var pollMetrics = function() {
+-      $http.jsonp(leadingMasterURL('/metrics/snapshot?jsonp=JSON_CALLBACK'))
+-        .success(function(response) {
+-          if (updateMetrics($scope, $timeout, response)) {
++      $http.get('metrics/snapshot',
++                {transformResponse: function(data) { return data; }})
++        .success(function(data) {
++          if (updateMetrics($scope, $timeout, data)) {
+             $scope.delay = updateInterval(_.size($scope.agents));
+             $timeout(pollMetrics, $scope.delay);
+           }
+-- 
+2.17.1
+

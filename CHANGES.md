@@ -1,4 +1,6 @@
-## DC/OS 1.10.5
+## DC/OS 1.10.5.1
+
+* Special Build with Fixes for MESOS-8830
 
 ### Notable changes
 

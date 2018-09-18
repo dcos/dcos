@@ -1,0 +1,49 @@
+From 949808950b35fc775ba3e24691241d2d29f60d96 Mon Sep 17 00:00:00 2001
+From: Kevin Klues <klueska@gmail.com>
+Date: Thu, 9 Feb 2017 19:39:42 -0800
+Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
+ failure.
+
+This cherry-pick will be maintained in DC/OS to avoid the problem of
+requiring NVML to be installed on *every* node in the cluster, even if
+GPUs aren't available on them.
+
+Without this patch, we would need some sort of per-agent configuration
+to only enable the GPU isolator on agents that had NVML intstalled on
+them, and that is currently difficult (or undesirable) to do in DC/OS
+today.
+
+This is a decent compromise.
+---
+ src/slave/containerizer/mesos/containerizer.cpp | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
+index 5f29fe183..dfe88909e 100644
+--- a/src/slave/containerizer/mesos/containerizer.cpp
++++ b/src/slave/containerizer/mesos/containerizer.cpp
+@@ -364,8 +364,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+     {"gpu/nvidia",
+       [&nvidia] (const Flags& flags) -> Try<Isolator*> {
+         if (!nvml::isAvailable()) {
+-          return Error("Cannot create the Nvidia GPU isolator:"
+-                       " NVML is not available");
++          LOG(ERROR) << "Cannot create the Nvidia GPU isolator:"
++                        " NVML is not available";
++
++          return nullptr;
+         }
+ 
+         CHECK_SOME(nvidia)
+@@ -433,7 +435,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+     // prepared filesystem (e.g., any volume mounts are performed).
+     if (strings::contains(isolation, "filesystem/")) {
+       isolators.insert(isolators.begin(), Owned<Isolator>(isolator.get()));
+-    } else {
++    } else if (isolator.get() != nullptr) {
+       isolators.push_back(Owned<Isolator>(isolator.get()));
+     }
+   }
+-- 
+2.17.1
+
