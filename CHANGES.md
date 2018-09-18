@@ -81,7 +81,7 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
+* Updated DC/OS UI to master+v2.21.8 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.21.8)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
