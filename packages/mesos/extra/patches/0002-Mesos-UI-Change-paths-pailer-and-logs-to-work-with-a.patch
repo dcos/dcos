@@ -1,0 +1,290 @@
+From 6094ee5e4ce51204e441b6e79888cd67b0754c72 Mon Sep 17 00:00:00 2001
+From: mlunoe <michael.lunoe@gmail.com>
+Date: Thu, 14 May 2015 15:05:23 -0700
+Subject: [PATCH] Mesos UI: Change paths, pailer, and logs to work with a
+ reverse proxy.
+
+Includes using relative paths.
+Includes correcting routes to be /agent/{id}...
+Redirect from old mesos ui location to new dcos mesos ui location.
+Fixed the broken 'Roles' tab of the webui.
+---
+ src/webui/master/static/browse.html       |  2 +-
+ src/webui/master/static/index.html        | 30 +++++++-------
+ src/webui/master/static/js/controllers.js | 49 +++++++++++------------
+ src/webui/master/static/js/services.js    |  2 +-
+ src/webui/master/static/pailer.html       |  6 +--
+ 5 files changed, 44 insertions(+), 45 deletions(-)
+
+diff --git a/src/webui/master/static/browse.html b/src/webui/master/static/browse.html
+index c586b9050..3f55bfc8e 100644
+--- a/src/webui/master/static/browse.html
++++ b/src/webui/master/static/browse.html
+@@ -73,7 +73,7 @@
+             </td>
+             <td>
+               <a data-ng-show="file.mode[0] != 'd'"
+-                 href="//{{agent_host}}/files/download?path={{encodeURIComponent(file.path)}}">
++                 href="{{agent_host}}/files/download?path={{encodeURIComponent(file.path)}}">
+                 <button class="btn btn-xs btn-default" type="button">
+                   Download
+                 </button>
+diff --git a/src/webui/master/static/index.html b/src/webui/master/static/index.html
+index d657eb3b6..0b977f58f 100644
+--- a/src/webui/master/static/index.html
++++ b/src/webui/master/static/index.html
+@@ -7,15 +7,15 @@
+     <meta name="description" content="">
+     <meta name="author" content="">
+ 
+-    <link href="/static/css/bootstrap-3.3.6.min.css" rel="stylesheet">
+-    <link href="/static/css/mesos.css" rel="stylesheet">
++    <link href="static/css/bootstrap-3.3.6.min.css" rel="stylesheet">
++    <link href="static/css/mesos.css" rel="stylesheet">
+ 
+-    <link rel="shortcut icon" href="/static/ico/favicon.ico">
++    <link rel="shortcut icon" href="static/ico/favicon.ico">
+   </head>
+ 
+   <body>
+     <div data-ng-show="doneLoading" style="width: 75px; margin: 0 auto; text-align: center;">
+-      <img src="/static/img/loading.gif" height="64" width="64" alt="">
++      <img src="static/img/loading.gif" height="64" width="64" alt="">
+     </div>
+ 
+     <div ng-controller="MainCtrl">
+@@ -30,7 +30,7 @@
+               <span class="icon-bar"></span>
+             </button>
+             <a class="navbar-brand" href="#/">
+-              <img src="/static/img/mesos_logo.png" alt="Apache Mesos">
++              <img src="static/img/mesos_logo.png" alt="Apache Mesos">
+             </a>
+           </div>
+ 
+@@ -111,16 +111,16 @@
+       </div>
+     </script>
+ 
+-    <script src="/static/js/jquery-1.7.1.min.js"></script>
+-    <script src="/static/js/underscore-1.4.3.min.js"></script>
+-    <script src="/static/js/clipboard-1.5.16.min.js"></script>
+-    <script src="/static/js/angular-1.2.3.min.js"></script>
+-    <script src="/static/js/angular-route-1.2.3.min.js"></script>
+-    <script src="/static/js/ui-bootstrap-tpls-0.9.0.min.js"></script>
+-    <script src="/static/js/relative-date.js"></script>
++    <script src="static/js/jquery-1.7.1.min.js"></script>
++    <script src="static/js/underscore-1.4.3.min.js"></script>
++    <script src="static/js/clipboard-1.5.16.min.js"></script>
++    <script src="static/js/angular-1.2.3.min.js"></script>
++    <script src="static/js/angular-route-1.2.3.min.js"></script>
++    <script src="static/js/ui-bootstrap-tpls-0.9.0.min.js"></script>
++    <script src="static/js/relative-date.js"></script>
+ 
+-    <script src="/static/js/app.js"></script>
+-    <script src="/static/js/services.js"></script>
+-    <script src="/static/js/controllers.js"></script>
++    <script src="static/js/app.js"></script>
++    <script src="static/js/services.js"></script>
++    <script src="static/js/controllers.js"></script>
+   </body>
+ </html>
+diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
+index 339dfc478..ed60f7d40 100644
+--- a/src/webui/master/static/js/controllers.js
++++ b/src/webui/master/static/js/controllers.js
+@@ -14,7 +14,7 @@
+   // Invokes the pailer for the specified host and path using the
+   // specified window_title.
+   function pailer(host, path, window_title) {
+-    var url = '//' + host + '/files/read?path=' + path;
++    var url = host + 'files/read?path=' + path;
+ 
+     // The randomized `storageKey` is removed from `localStorage` once the
+     // pailer window loads the URL into its `sessionStorage`, therefore
+@@ -26,7 +26,7 @@
+     localStorage.setItem(storageKey, url);
+ 
+     var pailer =
+-      window.open('/static/pailer.html', storageKey, 'width=580px, height=700px');
++      window.open('static/pailer.html', storageKey, 'width=580px, height=700px');
+ 
+     // Need to use window.onload instead of document.ready to make
+     // sure the title doesn't get overwritten.
+@@ -287,6 +287,13 @@
+   mesosApp.controller('MainCtrl', [
+       '$scope', '$http', '$location', '$timeout', '$modal',
+       function($scope, $http, $location, $timeout, $modal) {
++
++    // Redirect from old mesos ui location to new dcos mesos ui location
++    if ($location.port() === 5050) {
++      var url = $location.protocol() + "://" + $location.host() + "/mesos";
++      window.location = url;
++    }
++
+     $scope.doneLoading = true;
+ 
+     // Adding bindings into scope so that they can be used from within
+@@ -474,7 +481,7 @@
+         ).open();
+       } else {
+         pailer(
+-            $scope.$location.host() + ':' + $scope.$location.port(),
++            '/mesos/',
+             '/master/log',
+             'Mesos Master');
+       }
+@@ -487,7 +494,7 @@
+     var update = function() {
+       // TODO(haosdent): Send requests to the leading master directly
+       // once `leadingMasterURL` is public.
+-      $http.jsonp('/master/roles?jsonp=JSON_CALLBACK')
++      $http.jsonp('master/roles?jsonp=JSON_CALLBACK')
+       .success(function(response) {
+         $scope.roles = response;
+       })
+@@ -512,7 +519,7 @@
+     var update = function() {
+       // TODO(haosdent): Send requests to the leading master directly
+       // once `leadingMasterURL` is public.
+-      $http.jsonp('/master/maintenance/schedule?jsonp=JSON_CALLBACK')
++      $http.jsonp('master/maintenance/schedule?jsonp=JSON_CALLBACK')
+       .success(function(response) {
+         $scope.maintenance = response;
+       })
+@@ -572,9 +579,8 @@
+       }
+ 
+       var pid = $scope.agents[$routeParams.agent_id].pid;
+-      var hostname = $scope.agents[$routeParams.agent_id].hostname;
+       var id = pid.substring(0, pid.indexOf('@'));
+-      var host = hostname + ":" + pid.substring(pid.lastIndexOf(':') + 1);
++      var host = '/agent/' + $routeParams.agent_id + '/';
+ 
+       $scope.log = function($event) {
+         if (!$scope.state.external_log_file && !$scope.state.log_dir) {
+@@ -593,7 +599,7 @@
+         $top.start(host, id, $scope);
+       }
+ 
+-      $http.jsonp('//' + host + '/' + id + '/state?jsonp=JSON_CALLBACK')
++      $http.jsonp(host + id + '/state?jsonp=JSON_CALLBACK')
+         .success(function (response) {
+           $scope.state = response;
+ 
+@@ -671,7 +677,7 @@
+           $('#alert').show();
+         });
+ 
+-      $http.jsonp('//' + host + '/metrics/snapshot?jsonp=JSON_CALLBACK')
++      $http.jsonp(host + '/metrics/snapshot?jsonp=JSON_CALLBACK')
+         .success(function (response) {
+           $scope.staging_tasks = response['slave/tasks_staging'];
+           $scope.starting_tasks = response['slave/tasks_starting'];
+@@ -711,16 +717,15 @@
+       }
+ 
+       var pid = $scope.agents[$routeParams.agent_id].pid;
+-      var hostname = $scope.agents[$routeParams.agent_id].hostname;
+       var id = pid.substring(0, pid.indexOf('@'));
+-      var host = hostname + ":" + pid.substring(pid.lastIndexOf(':') + 1);
++      var host = '/agent/' + $routeParams.agent_id + '/';
+ 
+       // Set up polling for the monitor if this is the first update.
+       if (!$top.started()) {
+         $top.start(host, id, $scope);
+       }
+ 
+-      $http.jsonp('//' + host + '/' + id + '/state?jsonp=JSON_CALLBACK')
++      $http.jsonp(host + id + '/state?jsonp=JSON_CALLBACK')
+         .success(function (response) {
+           $scope.state = response;
+ 
+@@ -798,16 +803,15 @@
+       }
+ 
+       var pid = $scope.agents[$routeParams.agent_id].pid;
+-      var hostname = $scope.agents[$routeParams.agent_id].hostname;
+       var id = pid.substring(0, pid.indexOf('@'));
+-      var host = hostname + ":" + pid.substring(pid.lastIndexOf(':') + 1);
++      var host = '/agent/' + $routeParams.agent_id + '/';
+ 
+       // Set up polling for the monitor if this is the first update.
+       if (!$top.started()) {
+         $top.start(host, id, $scope);
+       }
+ 
+-      $http.jsonp('//' + host + '/' + id + '/state?jsonp=JSON_CALLBACK')
++      $http.jsonp(host + id + '/state?jsonp=JSON_CALLBACK')
+         .success(function (response) {
+           $scope.state = response;
+ 
+@@ -919,11 +923,11 @@
+       var hostname = $scope.agents[$routeParams.agent_id].hostname;
+       var id = pid.substring(0, pid.indexOf('@'));
+       var port = pid.substring(pid.lastIndexOf(':') + 1);
+-      var host = hostname + ":" + port;
++      var host = '/agent/' + $routeParams.agent_id;
+ 
+       // Request agent details to get access to the route executor's "directory"
+       // to navigate directly to the executor's sandbox.
+-      $http.jsonp('//' + host + '/' + id + '/state?jsonp=JSON_CALLBACK')
++      $http.jsonp(host + '/' + id + '/state?jsonp=JSON_CALLBACK')
+         .success(function(response) {
+ 
+           function matchFramework(framework) {
+@@ -1030,18 +1034,13 @@
+         $scope.agent_id = $routeParams.agent_id;
+         $scope.path = $routeParams.path;
+ 
+-        var pid = $scope.agents[$routeParams.agent_id].pid;
+-        var hostname = $scope.agents[$routeParams.agent_id].hostname;
+-        var id = pid.substring(0, pid.indexOf('@'));
+-        var host = hostname + ":" + pid.substring(pid.lastIndexOf(':') + 1);
+-        var url = '//' + host + '/files/browse?jsonp=JSON_CALLBACK';
+-
+-        $scope.agent_host = host;
++        var url = '/agent/' + $scope.agent_id + '/files/browse?jsonp=JSON_CALLBACK';
+ 
+         $scope.pail = function($event, path) {
+-          pailer(host, path, decodeURIComponent(path));
++          pailer('/agent/' + $scope.agent_id + '/', path, decodeURIComponent(path));
+         };
+ 
++        $scope.agent_host = '/agent/' + $scope.agent_id + '/';
+         // TODO(bmahler): Try to get the error code / body in the error callback.
+         // This wasn't working with the current version of angular.
+         $http.jsonp(url, {params: {path: $routeParams.path}})
+diff --git a/src/webui/master/static/js/services.js b/src/webui/master/static/js/services.js
+index afd254418..3a5191208 100644
+--- a/src/webui/master/static/js/services.js
++++ b/src/webui/master/static/js/services.js
+@@ -271,7 +271,7 @@
+       return;
+     }
+ 
+-    this.endpoint = '//' + host + '/' + id + '/monitor/statistics?jsonp=JSON_CALLBACK';
++    this.endpoint = host + '/' + id + '/monitor/statistics?jsonp=JSON_CALLBACK';
+     this.scope = scope;
+ 
+     // Initial poll is immediate.
+diff --git a/src/webui/master/static/pailer.html b/src/webui/master/static/pailer.html
+index 759b18023..c8ada4b19 100644
+--- a/src/webui/master/static/pailer.html
++++ b/src/webui/master/static/pailer.html
+@@ -24,9 +24,9 @@
+     <pre id="data"></pre>
+     <div class="indicator" id="indicator"></div>
+ 
+-    <script src="/static/js/jquery-1.7.1.min.js"></script>
+-    <script src="/static/js/underscore-1.4.3.min.js"></script>
+-    <script src="/static/js/jquery.pailer.js"></script>
++    <script src="js/jquery-1.7.1.min.js"></script>
++    <script src="js/underscore-1.4.3.min.js"></script>
++    <script src="js/jquery.pailer.js"></script>
+ 
+     <script>
+       var $body = $('body');
+-- 
+2.17.1
+

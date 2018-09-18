@@ -1,0 +1,73 @@
+From d5a84bda184c30d13149ab4e7b9377ae975f62af Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
+Date: Mon, 21 Aug 2017 15:28:37 -0700
+Subject: [PATCH] Made the log output handling of TCP and HTTP checks
+ consistent.
+
+Review: https://reviews.apache.org/r/61766/
+---
+ src/checks/checker_process.cpp | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
+index 656e9168a..d62bdb5d1 100644
+--- a/src/checks/checker_process.cpp
++++ b/src/checks/checker_process.cpp
+@@ -913,32 +913,35 @@ Future<int> CheckerProcess::_httpCheck(
+ 
+   int exitCode = status->get();
+   if (exitCode != 0) {
+-    const Future<string>& error = std::get<2>(t);
+-    if (!error.isReady()) {
++    const Future<string>& commandError = std::get<2>(t);
++    if (!commandError.isReady()) {
+       return Failure(
+           string(HTTP_CHECK_COMMAND) + " " + WSTRINGIFY(exitCode) +
+           "; reading stderr failed: " +
+-          (error.isFailed() ? error.failure() : "discarded"));
++          (commandError.isFailed() ? commandError.failure() : "discarded"));
+     }
+ 
+     return Failure(
+         string(HTTP_CHECK_COMMAND) + " " + WSTRINGIFY(exitCode) + ": " +
+-        error.get());
++        commandError.get());
+   }
+ 
+-  const Future<string>& output = std::get<1>(t);
+-  if (!output.isReady()) {
++  const Future<string>& commandOutput = std::get<1>(t);
++  if (!commandOutput.isReady()) {
+     return Failure(
+         "Failed to read stdout from " + string(HTTP_CHECK_COMMAND) + ": " +
+-        (output.isFailed() ? output.failure() : "discarded"));
++        (commandOutput.isFailed() ? commandOutput.failure() : "discarded"));
+   }
+ 
++  VLOG(1) << "Output of the " << name << " for task '" << taskId
++          << "': " << commandOutput.get();
++
+   // Parse the output and get the HTTP status code.
+-  Try<int> statusCode = numify<int>(output.get());
++  Try<int> statusCode = numify<int>(commandOutput.get());
+   if (statusCode.isError()) {
+     return Failure(
+         "Unexpected output from " + string(HTTP_CHECK_COMMAND) + ": " +
+-        output.get());
++        commandOutput.get());
+   }
+ 
+   return statusCode.get();
+@@ -1067,7 +1070,8 @@ Future<bool> CheckerProcess::_tcpCheck(
+ 
+   const Future<string>& commandOutput = std::get<1>(t);
+   if (commandOutput.isReady()) {
+-    VLOG(1) << string(TCP_CHECK_COMMAND) << ": " << commandOutput.get();
++    VLOG(1) << "Output of the " << name << " for task '" << taskId
++            << "': " << commandOutput.get();
+   }
+ 
+   if (exitCode != 0) {
+-- 
+2.17.1
+
