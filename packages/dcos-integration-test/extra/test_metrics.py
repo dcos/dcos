@@ -4,6 +4,7 @@ import uuid
 import pytest
 
 import retrying
+import test_helpers
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -411,6 +412,9 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     return app_metrics
 
 
+@pytest.mark.skipif(
+    test_helpers.expanded_config.get('security') == 'strict',
+    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
 def test_standalone_container_metrics(dcos_api_session):
     """
     An operator should be able to launch a standalone container using the
