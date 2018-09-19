@@ -24,7 +24,8 @@ ADD https://github.com/mesos/3rdparty/raw/master/make-3.81.exe c:\temp\make-3.81
 COPY .\setup-make.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-make.ps1
 
-ADD http://erlang.org/download/otp_win64_19.3.exe c:\temp\otp_win64_19.3.exe
+
+ADD https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_20.3~windows_amd64.exe c:\temp\otp_win64_20.3.exe
 COPY .\setup-erlang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-erlang.ps1
 
