@@ -8,6 +8,9 @@
 
 * Updated to [ZooKeeper 3.4.13](https://zookeeper.apache.org/doc/r3.4.13/releasenotes.html).
 
+* Updated to [Marathon 1.6.549](https://github.com/mesosphere/marathon/tree/aabf74302).
+
+
 ### Fixed and improved
 
 * Diagnostics bundle: include new information in bundle (container status and usage info, process list, Mesos quota info). (DCOS-38438, COPS-3042)
