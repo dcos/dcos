@@ -16,6 +16,7 @@ from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree, which
 from subprocess import check_call
+from time import sleep
 from typing import List
 
 import requests
@@ -62,7 +63,16 @@ def remove_directory(path):
         # so calling out to the cmd prompt to do this fixes that.
         path = path.replace('/', '\\')
         if os.path.exists(path):
-            subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
+            for retry in range(1, 10):
+                try:
+                    subprocess.check_call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path], stdout=subprocess.DEVNULL)
+                except subprocess.CalledProcessError:
+                    if retry == 10:
+                        raise
+                    else:
+                        sleep(0.05)
+                        continue
+                break
     else:
         subprocess.check_call(['rm', '-rf', path])
 
