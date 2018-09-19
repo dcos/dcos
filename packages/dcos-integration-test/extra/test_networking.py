@@ -25,7 +25,7 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None, ipv6=False):
+    def __init__(self, container, network, host, vip=None, ipv6=False, app_name_fmt=None):
         self._network = network
         self._container = container
         if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
@@ -35,7 +35,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_name_fmt=app_name_fmt)
         elif network == marathon.Network.USER:
             self.app, self.uuid = test_helpers.marathon_test_app(
                 network=marathon.Network.USER,
@@ -44,7 +45,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_name_fmt=app_name_fmt)
             if vip is not None and container == marathon.Container.DOCKER:
                 del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
@@ -95,7 +97,7 @@ class MarathonApp:
 
 
 class MarathonPod:
-    def __init__(self, network, host, vip=None):
+    def __init__(self, network, host, vip=None, pod_name_fmt='/integration-test-{}'):
         self._network = network
         container_port = 0
         if network is not marathon.Network.HOST:
@@ -106,7 +108,7 @@ class MarathonPod:
         #     src/main/scala/mesosphere/mesos/TaskGroupBuilder.scala#L420-L443
         port = '$ENDPOINT_TEST' if network == marathon.Network.HOST else container_port
         self.uuid = uuid.uuid4().hex
-        self.id = '/integration-test-{}'.format(self.uuid)
+        self.id = pod_name_fmt.format(self.uuid)
         self.app = {
             'id': self.id,
             'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
@@ -238,6 +240,7 @@ def test_ipv6(dcos_api_session, same_host):
     origin_app_info = origin_app.info(dcos_api_session)
     origin_port = origin_app_info['app']['container']['portMappings'][0]['containerPort']
     proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
+    dns_name = '-'.join(reversed(origin_app.id.split('/')[1:]))
     try:
         zones = ["marathon.autoip.dcos.thisdcos.directory",
                  "marathon.containerip.dcos.thisdcos.directory",
@@ -245,7 +248,7 @@ def test_ipv6(dcos_api_session, same_host):
         for zone in zones:
             cmd = '{} --ipv6 http://{}/test_uuid'.format(
                 '/opt/mesosphere/bin/curl -s -f -m 5',
-                '{}.{}:{}'.format(origin_app.id, zone, origin_port))
+                '{}.{}:{}'.format(dns_name, zone, origin_port))
             log.info("Remote command: {}".format(cmd))
             ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
     finally:
@@ -347,12 +350,21 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
         '/opt/mesosphere/bin/curl -s -f -m 5',
         '--ipv6' if ipv6 else '--ipv4',
         vipaddr)
+    path_id = '/integration-tests/{}-{}-{}'.format(
+        enum2str(container),
+        net2str(vip_net, ipv6),
+        net2str(proxy_net, ipv6))
+    test_case_id = '{}-{}'.format(
+        'named' if named_vip else 'vip',
+        'local' if same_host else 'remote')
+    origin_fmt = '{}/app-{}'.format(path_id, test_case_id)
+    proxy_fmt = '{}/proxy-{}'.format(path_id, test_case_id)
     if container == Container.POD:
-        origin_app = MarathonPod(vip_net, origin_host, vip)
-        proxy_app = MarathonPod(proxy_net, proxy_host)
+        origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt)
+        proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt)
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6)
-        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6)
+        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6, app_name_fmt=origin_fmt)
+        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6, app_name_fmt=proxy_fmt)
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
 
@@ -642,3 +654,11 @@ def test_dcos_cni_l4lb(dcos_api_session):
         log.info("Received a response from {}: {}".format(server_vip_addr, response))
     except Exception as ex:
         raise AssertionError("Unable to query VIP: {}".format(server_vip_addr)) from ex
+
+
+def enum2str(value):
+    return str(value).split('.')[-1].lower()
+
+
+def net2str(value, ipv6):
+    return enum2str(value) if not ipv6 else 'ipv6'

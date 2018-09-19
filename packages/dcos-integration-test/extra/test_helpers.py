@@ -38,7 +38,8 @@ def marathon_test_app(
         healthcheck_protocol: marathon.Healthcheck=marathon.Healthcheck.HTTP,
         vip: str=None,
         host_constraint: str=None,
-        network_name: str='dcos'):
+        network_name: str='dcos',
+        app_name_fmt: str=TEST_APP_NAME_FMT):
     """ Creates an app definition for the python test server which will be
     consistent (i.e. deployable with green health checks and desired network
     routability). To learn more about the test server, see in this repo:
@@ -57,6 +58,7 @@ def marathon_test_app(
         vip: either named or unnamed VIP to be applied to the host port
         host_constraint: string representing a hostname for an agent that this
             app should run on
+        app_name_fmt: format string for unique application identifier
 
     Return:
         (dict, str): 2-Tuple of app definition (dict) and app ID (string)
@@ -74,7 +76,7 @@ def marathon_test_app(
 
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
-        'id': TEST_APP_NAME_FMT.format(test_uuid),
+        'id': app_name_fmt.format(test_uuid),
         'cpus': 0.1,
         'mem': 32,
         'instances': 1,
