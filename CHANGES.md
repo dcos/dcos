@@ -63,6 +63,8 @@ Format of the entries must be.
 
 * DC/OS Net: Get rid of epmd (DCOS_OSS-1751)
 
+* Upgrade OTP version (DCOS_OSS-3655)
+
 ### Security Updates
 
 * Update cURL to 7.59. (DCOS_OSS-2367)
