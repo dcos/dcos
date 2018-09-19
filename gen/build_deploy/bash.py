@@ -526,7 +526,6 @@ function check_all() {
             "61053 mesos-dns" \
             "61091 telegraf" \
             "61092 dcos-metrics" \
-            "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -540,7 +539,6 @@ function check_all() {
             "61001 agent-adminrouter" \
             "61091 telegraf" \
             "61092 dcos-metrics" \
-            "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
