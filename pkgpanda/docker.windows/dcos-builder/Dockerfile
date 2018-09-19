@@ -66,5 +66,6 @@ RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --installPath
     || IF "%ERRORLEVEL%"=="3010" EXIT 0
 
 # Start developer command prompt with any other commands specified.
-
-ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat && powershell.exe -file
+# note: vsdevcmd.bat builds for x86 by default, use these options for amd64:
+# -arch=amd64 (-host_arch==amd64 also?)
+ENTRYPOINT C:\BuildTools\vc\Auxiliary\Build\vcvars64.bat &&
