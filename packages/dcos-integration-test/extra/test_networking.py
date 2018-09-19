@@ -25,7 +25,7 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None):
+    def __init__(self, container, network, host, vip=None, app_name_fmt=None):
         self._network = network
         self._container = container
         if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
@@ -35,7 +35,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_name_fmt=app_name_fmt)
         elif network == marathon.Network.USER:
             self.app, self.uuid = test_helpers.marathon_test_app(
                 network=marathon.Network.USER,
@@ -43,7 +44,8 @@ class MarathonApp:
                 host_constraint=host,
                 vip=vip,
                 container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
+                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+                app_name_fmt=app_name_fmt)
             if vip is not None and container == marathon.Container.DOCKER:
                 del self.app['container']['docker']['portMappings'][0]['hostPort']
         # allow this app to run on public slaves
@@ -93,7 +95,7 @@ class MarathonApp:
 
 
 class MarathonPod:
-    def __init__(self, network, host, vip=None):
+    def __init__(self, network, host, vip=None, pod_name_fmt='/integration-test-{}'):
         self._network = network
         container_port = 0
         if network is not marathon.Network.HOST:
@@ -104,7 +106,7 @@ class MarathonPod:
         #     src/main/scala/mesosphere/mesos/TaskGroupBuilder.scala#L420-L443
         port = '$ENDPOINT_TEST' if network == marathon.Network.HOST else container_port
         self.uuid = uuid.uuid4().hex
-        self.id = '/integration-test-{}'.format(self.uuid)
+        self.id = pod_name_fmt.format(self.uuid)
         self.app = {
             'id': self.id,
             'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
@@ -291,12 +293,21 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
     cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(vipaddr)
+    path_id = '/integration-tests/{}-{}-{}'.format(
+        enum2str(container),
+        enum2str(vip_net),
+        enum2str(proxy_net))
+    test_case_id = '{}-{}'.format(
+        'named' if named_vip else 'vip',
+        'local' if same_host else 'remote')
+    origin_fmt = '{}/app-{}'.format(path_id, test_case_id)
+    proxy_fmt = '{}/proxy-{}'.format(path_id, test_case_id)
     if container == Container.POD:
-        origin_app = MarathonPod(vip_net, origin_host, vip)
-        proxy_app = MarathonPod(proxy_net, proxy_host)
+        origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt)
+        proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt)
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip)
-        proxy_app = MarathonApp(container, proxy_net, proxy_host)
+        origin_app = MarathonApp(container, vip_net, origin_host, vip, app_name_fmt=origin_fmt)
+        proxy_app = MarathonApp(container, proxy_net, proxy_host, app_name_fmt=proxy_fmt)
     hosts = list(set([origin_host, proxy_host]))
     return (vip, hosts, cmd, origin_app, proxy_app)
 
@@ -411,3 +422,7 @@ def test_l4lb(dcos_api_session):
     assert len(set(expected_uuids)) == numapps
     assert len(set(received_uuids)) == numapps
     assert set(expected_uuids) == set(received_uuids)
+
+
+def enum2str(value):
+    return str(value).split('.')[-1].lower()
