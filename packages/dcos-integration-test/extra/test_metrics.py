@@ -80,6 +80,8 @@ def test_metrics_node(dcos_api_session):
 
         assert response['dimensions']['cluster_id'] != "", 'expected cluster to contain a value'
 
+        assert response['dimensions']['mesos_id'] == '', 'expected dimensions to include empty "mesos_id"'
+
         return True
 
     # Retry for 30 seconds for for the node metrics content to appear.
@@ -174,6 +176,8 @@ def test_metrics_containers(dcos_api_session):
                 assert 'dimensions' in container_metrics, 'got {}'.format(container_metrics)
                 assert 'task_name' in container_metrics['dimensions'], 'got {}'.format(
                     container_metrics['dimensions'])
+                assert container_metrics['dimensions']['mesos_id'] == '', 'got {}'.format(
+                    container_metrics['dimensions'])
 
                 debug_task_name.append(container_metrics['dimensions']['task_name'])
 
@@ -205,6 +209,9 @@ def test_metrics_containers(dcos_api_session):
                     }
                     check_tags(uptime_dp['tags'], expected_tag_names)
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+
+                    assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
+                    assert app_metrics['dimensions']['mesos_id'] == '', 'got {}'.format(app_metrics)
 
                     return True
 
