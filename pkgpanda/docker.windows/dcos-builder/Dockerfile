@@ -34,13 +34,19 @@ COPY .\setup-golang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-golang.ps1
 ENV GOPATH 'c:\gopath'
 
+ADD https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip c:\temp\ninja.zip
+RUN powershell -command "& new-item -itemtype directory ${env:ProgramFiles(x86)}\ninja"
+RUN powershell -command "& Expand-Archive c:\temp\ninja.zip ${env:ProgramFiles(x86)}\ninja"
+
+
 ENV GOLANG_PATH 'C:\gopath\bin;c:\go\bin'
 ENV GIT_PATH 'C:\Program Files\git\cmd'
 ENV CMAKE_PATH 'C:\Program Files\CMake\bin'
 ENV GNUWIN32_PATH 'C:\Program Files (x86)\GnuWin32\bin'
 ENV ERLANG_PATH 'C:\Program Files\erlang\bin'
+ENV NINJA 'C:\Program Files (x86)\ninja'
 
-RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%GNUWIN32_PATH%;%ZIP_PATH%;%ERLANG_PATH%;%GOLANG_PATH%"
+RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%GNUWIN32_PATH%;%ERLANG_PATH%;%GOLANG_PATH%;%NINJA%"
 
 # Download useful tools to C:\Bin.
 ADD https://dist.nuget.org/win-x86-commandline/v4.1.0/nuget.exe C:\Bin\nuget.exe
