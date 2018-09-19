@@ -1114,20 +1114,19 @@ def _build(package_store, name, variant, clean_after_build, recursive):
 
     # Clean out src, result so later steps can use them freely for building.
     def clean():
-        # Run a docker container to remove src/ and result/
-        cmd = DockerCmd()
-        cmd.volumes = {
-            package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
-        }
         if is_windows:
-            cmd.container = "microsoft/windowsservercore:1709"
-            filename = PKG_DIR + "\\src"
-            cmd.run("package-cleaner",
-                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
-            filename = PKG_DIR + "\\result"
-            cmd.run("package-cleaner",
-                    ["cmd.exe", "/c", "if", "exist", filename, "rmdir", "/s", "/q", filename])
+            # These native calls handle symlinks better than a simple 'rm -rf'
+            # on windows, as well as perform retries when the operating system
+            # does not release the files quick enough for deletion and renaming.
+            remove_dir = package_store.get_package_cache_folder(name)
+            remove_directory(remove_dir + "\\src")
+            remove_directory(remove_dir + "\\result")
         else:
+            # Run a docker container to remove src/ and result/
+            cmd = DockerCmd()
+            cmd.volumes = {
+                package_store.get_package_cache_folder(name): PKG_DIR + "/:rw",
+            }
             cmd.container = "ubuntu:14.04.4"
             cmd.run("package-cleaner", ["rm", "-rf", PKG_DIR + "/src", PKG_DIR + "/result"])
 
