@@ -83,6 +83,8 @@ def test_metrics_node(dcos_api_session):
 
         assert response['dimensions']['cluster_id'] != "", 'expected cluster to contain a value'
 
+        assert response['dimensions']['mesos_id'] == '', 'expected dimensions to include empty "mesos_id"'
+
         return True
 
     # Retry for 30 seconds for for the node metrics content to appear.
