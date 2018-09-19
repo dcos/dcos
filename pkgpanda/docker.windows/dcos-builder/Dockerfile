@@ -40,7 +40,7 @@ RUN powershell -command "& Expand-Archive c:\temp\ninja.zip ${env:ProgramFiles(x
 
 
 ENV GOLANG_PATH 'C:\gopath\bin;c:\go\bin'
-ENV GIT_PATH 'C:\Program Files\git\cmd'
+ENV GIT_PATH 'C:\Program Files\git\cmd;C:\Program Files\git\bin'
 ENV CMAKE_PATH 'C:\Program Files\CMake\bin'
 ENV GNUWIN32_PATH 'C:\Program Files (x86)\GnuWin32\bin'
 ENV ERLANG_PATH 'C:\Program Files\erlang\bin'
