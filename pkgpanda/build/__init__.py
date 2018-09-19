@@ -1243,7 +1243,17 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # TODO(cmaloney): Run a wrapper which sources
         # /opt/mesosphere/environment then runs a build. Also should fix
         # ownership of /opt/mesosphere/packages/{pkg_id} post build.
-        command = [PKG_DIR + "/build/" + build_script_file]
+        if is_windows:
+            command = ["powershell.exe",
+                       "-file",
+                       PKG_DIR + "/build/" + build_script_file]
+        else:
+            command = ["/bin/bash",
+                       "-o", "nounset",
+                       "-o", "pipefail",
+                       "-o", "errexit",
+                       PKG_DIR + "/build/" + build_script_file]
+
         cmd.run("package-builder", command)
     except CalledProcessError as ex:
         raise BuildError("docker exited non-zero: {}\nCommand: {}".format(ex.returncode, ' '.join(ex.cmd)))
