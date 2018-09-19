@@ -1212,21 +1212,10 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         # Getting the result out
         cache_abs("result"): install_root + "/packages/{}:rw".format(pkg_id),
         # The build script directory
-        package_dir: PKG_DIR + "/build:ro"
+        package_dir: PKG_DIR + "/build:ro",
+        # Getting the result out
+        install_dir: install_root + ":ro"
     })
-
-    if is_windows:
-        cmd.volumes.update({
-            # todo: This is a temporary work around until Windows RS4 comes out that has a fix
-            # that allows overlapping mount directories. We should not make this also happen
-            # on Linux as it will probably break a bunch of stuff unnecessarily that will only
-            # need to be undone in the future.
-            install_dir: install_root + "/install_dir:ro"
-        })
-    else:
-        cmd.volumes.update({
-            install_dir: install_root + ":ro"
-        })
 
     if os.path.exists(extra_dir):
         cmd.volumes[extra_dir] = PKG_DIR + "/extra:ro"
