@@ -1321,8 +1321,6 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
@@ -1359,8 +1357,6 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
@@ -1397,7 +1393,5 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
