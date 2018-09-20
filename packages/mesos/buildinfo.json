@@ -7,9 +7,9 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "8419b870c571ac11825c883fa20ea3b7d4348d34",
-    "ref_origin": "1.7.x"
+    "git": "https://github.com/mesosphere/mesos",
+    "ref": "f919509c86bb35cfdd72207b7058b358c8eb6b8c",
+    "ref_origin": "qzhang/dcos/DCOS-OSS-2115"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
