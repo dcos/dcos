@@ -1,4 +1,4 @@
-From 148b02ab7c9d0b6affe8caccbdc5b50def5b8e61 Mon Sep 17 00:00:00 2001
+From 4eb03d2e18cbd8f5238babe6338eff2f7282a964 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston.kleiman@gmail.com>
 Date: Tue, 3 Jul 2018 12:09:16 -0700
 Subject: [PATCH] Improved logging for offers and inverse offers.

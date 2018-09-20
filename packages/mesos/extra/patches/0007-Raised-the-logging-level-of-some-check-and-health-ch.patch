@@ -1,4 +1,4 @@
-From 49aee8a763b9d3b85ff2f6c19193df9340de320d Mon Sep 17 00:00:00 2001
+From 64e2e30b037844475cce8d4283a0cd229722d2c9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:39 -0700
 Subject: [PATCH] Raised the logging level of some check and health check
