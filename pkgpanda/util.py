@@ -1,3 +1,4 @@
+import ctypes
 import hashlib
 import http.server
 import json
@@ -120,6 +121,25 @@ def link_file(src, dst):
 
     else:
         os.symlink(src, dst)
+
+
+def _is_junction(path):
+    if not is_windows:
+        raise Exception("Calls to _is_junction() only supported on Windows")
+
+    # TODO(klueska): Investigate why we need this 'isdir()' check. As far as I
+    # can tell, the check below that relies on 'GetFileAttributesW()' will
+    # return 'True' in cases where the 'path' passed to it is a symbolic link for
+    # either a _file_ or a _directory_. Since a 'junction' is only a directory
+    # level concept, its possible that the 'isdir()' check is required to limit
+    # us to directories only, before we ever make the call to
+    # 'GetFileAttributesW()'. This should be confirmed though.
+    if not os.path.isdir(path):
+        return False
+
+    file_attribute_reparse_point = 0x0400
+    attributes = ctypes.windll.kernel32.GetFileAttributesW(path)
+    return (attributes & file_attribute_reparse_point) > 0
 
 
 def variant_str(variant):
