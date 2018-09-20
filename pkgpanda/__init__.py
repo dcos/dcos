@@ -30,6 +30,7 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
+                                install_root,
                                 RESERVED_UNIT_NAMES,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
@@ -624,7 +625,7 @@ class UserManagement:
         add_user_cmd = [
             'useradd',
             '--system',
-            '--home-dir', '/opt/mesosphere',
+            '--home-dir', install_root,
             '--shell', '/sbin/nologin',
             '-c', 'DCOS System User',
         ]
@@ -800,8 +801,8 @@ class Install:
             symlink_tree(src, dest)
 
         # Set the new LD_LIBRARY_PATH, PATH.
-        env_contents = env_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
-        env_export_contents = env_export_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
+        env_contents = env_header.format(install_root if self.__fake_path else self.__root)
+        env_export_contents = env_export_header.format(install_root if self.__fake_path else self.__root)
 
         active_buildinfo_full = {}
 
