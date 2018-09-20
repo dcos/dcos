@@ -381,7 +381,7 @@ def write_string(filename, data):
     permissions 0o644.
     """
     prefix = os.path.basename(filename)
-    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    tmp_file_dir = os.path.dirname(realpath(filename))
     fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
 
     try:
@@ -483,7 +483,7 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                     new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
                     # Remove the old link and write a new one.
                     os.remove(full_path)
-                    os.symlink(new_target, full_path)
+                    link_file(new_target, full_path)
 
 
 def check_forbidden_services(path, services):

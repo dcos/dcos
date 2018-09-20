@@ -35,8 +35,9 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
-                           load_json, make_directory, remove_directory, write_json, write_string)
+from pkgpanda.util import (copy_file, download, extract_tarball, if_exists, is_windows, islink, link_file,
+                           load_json, make_directory, realpath, remove_directory, remove_file, rename_file,
+                           write_json, write_string)
 
 if not is_windows:
     assert 'grp' in sys.modules
@@ -116,20 +117,25 @@ class Systemd:
         """
         for unit_name in self.unit_names(new_wants_dir):
             wants_symlink_path = os.path.join(new_wants_dir, unit_name)
-            package_file_path = os.path.realpath(wants_symlink_path)
+            package_file_path = realpath(wants_symlink_path)
             systemd_file_path = os.path.join(self.__base_systemd, unit_name)
             tmp_systemd_file_path = systemd_file_path + self.new_unit_suffix
 
             # Copy the unit file to the systemd directory with a suffix added to the filename.
             # This file will be moved to systemd_file_path when the new package set is swapped in.
-            shutil.copyfile(package_file_path, tmp_systemd_file_path)
+            copy_file(package_file_path, tmp_systemd_file_path)
             shutil.copymode(package_file_path, tmp_systemd_file_path)
 
             # Rewrite the symlink to point to the copied unit file's destination.
-            # This symlink won't point to the correct file until the copied unit file is moved to its target location
-            # during activate_new_unit_files().
-            os.remove(wants_symlink_path)
-            os.symlink(systemd_file_path, wants_symlink_path)
+            remove_file(wants_symlink_path)
+            if is_windows:
+                # on windows we use hard links so we link to the temporary name and it will
+                # still be fine after the rename
+                link_file(tmp_systemd_file_path, wants_symlink_path)
+            else:
+                # This link won't point to the correct file until the copied unit file is moved to its
+                # target location during activate_new_unit_files().
+                link_file(systemd_file_path, wants_symlink_path)
 
     def remove_unit_files(self):
         if not os.path.exists(self.__unit_directory):
@@ -489,7 +495,7 @@ class Repository:
         remove_directory(tmp_path)
 
         fetcher(id, tmp_path)
-        os.rename(tmp_path, pkg_path)
+        rename_file(tmp_path, pkg_path)
         return True
 
     def remove(self, id):
@@ -517,12 +523,12 @@ def symlink_tree(src, dest):
         # real directory and symlink everything inside.
         # NOTE: We could relax this and follow symlinks, but then we
         # need to be careful about recursive filesystem layouts.
-        if os.path.isdir(src_path) and not os.path.islink(src_path):
+        if os.path.isdir(src_path) and not islink(src_path):
             if os.path.exists(dest_path):
                 # We can only merge a directory into a directory.
                 # We won't merge into a symlink directory because that could
                 # result in a package editing inside another package.
-                if not os.path.isdir(dest_path) and not os.path.islink(dest_path):
+                if not os.path.isdir(dest_path) and not islink(dest_path):
                     raise ValidationError(
                         "Can't merge a file `{0}` and directory (or symlink) `{1}` with the same name."
                         .format(src_path, dest_path))
@@ -533,7 +539,7 @@ def symlink_tree(src, dest):
             symlink_tree(src_path, dest_path)
         else:
             try:
-                os.symlink(src_path, dest_path)
+                link_file(src_path, dest_path)
             except FileNotFoundError as ex:
                 raise ConflictingFile(src_path, dest_path, ex) from ex
 
@@ -736,7 +742,8 @@ class Install:
 
         ids = set()
         for name in os.listdir(active_dir):
-            package_path = os.path.realpath(os.path.join(active_dir, name))
+            filename = os.path.join(active_dir, name)
+            package_path = realpath(filename)
 
             # NOTE: We don't validate the id here because we want to be able to
             # cope if there is something invalid in the current active dir.
@@ -858,7 +865,7 @@ class Install:
                                                                                     ex.src))
 
             # Add to the active folder
-            os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
+            link_file(package.path, os.path.join(self._make_abs("active.new"), package.name))
 
             # Add to the environment and environment.export contents
 
