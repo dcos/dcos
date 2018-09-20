@@ -101,6 +101,27 @@ def copy_directory(src_path, dst_path):
         subprocess.check_call(['cp', '-r', src_path, dst_path])
 
 
+def link_file(src, dst):
+    """Create file links in an OS independent manner.
+
+    On Linux, this will create symbolic links for both files and directories.
+    On Windows, this will create hard links for files, and junctions (a.k.a symbolic links) for directories.
+
+    """
+    if is_windows:
+        if os.path.isdir(src):
+            # create a junction for directories
+            src = src.replace('/', '\\')
+            dst = dst.replace('/', '\\')
+            subprocess.check_call(['cmd.exe', '/c', 'mklink', '/J', dst, src], stdout=subprocess.DEVNULL)
+        else:
+            # create hard link for files
+            os.link(src, dst)
+
+    else:
+        os.symlink(src, dst)
+
+
 def variant_str(variant):
     """Return a string representation of variant."""
     if variant is None:
