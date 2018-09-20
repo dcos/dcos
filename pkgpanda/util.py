@@ -160,6 +160,19 @@ def islink(path):
         return os.path.islink(path)
 
 
+def realpath(path):
+    """Get the realpath of 'path' in an OS independent manner (following links as necessary)."""
+    if is_windows:
+        if os.path.exists(path) and islink(path):
+            # if 'path' is a link, call powershell to get the target of the link
+            return subprocess.check_output(["powershell", "(get-item " + path + ").target"]).decode().splitlines()[0]
+        else:
+            # regular file so let os.path do its thing
+            return os.path.realpath(path)
+    else:
+        return os.path.realpath(path)
+
+
 def variant_str(variant):
     """Return a string representation of variant."""
     if variant is None:
