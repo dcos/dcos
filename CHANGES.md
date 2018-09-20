@@ -1,4 +1,5 @@
 ## DC/OS 1.11.6
+=======
 
 ### Notable changes
 
@@ -16,6 +17,8 @@
 * Diagnostics bundle: include new information in bundle (container status and usage info, process list, Mesos quota info). (DCOS-38438, COPS-3042)
 
 * Root Marathon: consolidated task_launch_confirm and task_reservation timeouts. (DCOS-39290)
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 ### Security updates
 
