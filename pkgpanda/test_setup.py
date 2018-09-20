@@ -4,7 +4,7 @@ from subprocess import check_call, check_output
 
 import pytest
 
-from pkgpanda.util import expect_fs, is_windows, load_json, resources_test_dir, run
+from pkgpanda.util import expect_fs, is_windows, islink, load_json, realpath, resources_test_dir, run
 
 
 def tmp_repository(temp_dir, repo_dir=resources_test_dir("packages")):
@@ -284,6 +284,12 @@ def test_systemd_unit_files(tmpdir):
     wants_path = '{}/root/dcos.target.wants/{}'.format(tmpdir, unit_file)
 
     # The unit file is copied to the base dir and symlinked from dcos.target.wants.
-    assert os.path.islink(wants_path)
-    assert os.path.isfile(base_path) and not os.path.islink(base_path)
-    assert os.path.realpath(wants_path) == base_path
+    assert islink(wants_path)
+
+    # On Windows we are using hard links, so base_path will report it is a link
+    # therefore this path will be skipped on Windows
+    # TODO(klueska): Follow up on why we use hard links here instead of
+    # copying the file for base_path.
+    if not is_windows:
+        assert os.path.isfile(base_path) and not islink(base_path)
+    assert realpath(wants_path) == os.path.abspath(base_path)
