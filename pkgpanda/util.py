@@ -142,6 +142,24 @@ def _is_junction(path):
     return (attributes & file_attribute_reparse_point) > 0
 
 
+def islink(path):
+    """Check if a file is a link to another file in an OS independent manner.
+
+    On Linux, this will check for symbolic links for both files and directories.
+    On Windows, this will check for hard links for files, and junctions (a.k.a symbolic links) for directories.
+
+    """
+    if is_windows:
+        if os.path.isdir(path):
+            return _is_junction(path)
+        elif os.stat(path).st_nlink > 1:
+            return True
+        else:
+            return False
+    else:
+        return os.path.islink(path)
+
+
 def variant_str(variant):
     """Return a string representation of variant."""
     if variant is None:
