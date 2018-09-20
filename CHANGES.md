@@ -75,6 +75,11 @@ Format of the entries must be.
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
+* DC/OS Net: Logging improvements (DCOS_OSS-3929)
+
+* DC/OS Net: Get rid of epmd (DCOS_OSS-1751)
+
+* Upgrade OTP version (DCOS_OSS-3655)
 
 ### Security Updates
 
