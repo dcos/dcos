@@ -1,7 +1,7 @@
 import abc
 import os.path
 import shutil
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import CalledProcessError, check_call, check_output, DEVNULL
 
 from pkgpanda.exceptions import ValidationError
 from pkgpanda.util import download_atomic, is_windows, logger, sha1
@@ -273,7 +273,7 @@ def extract_archive(archive, dst_dir):
             check_call(["tar", "-xf", archive, "--strip-components=1", "-C", dst_dir])
     elif archive_type == 'zip':
         if is_windows:
-            check_call(["powershell.exe", "-command", "expand-archive", "-path", archive, "-destinationpath", dst_dir])
+            check_call(["powershell.exe", "-command", "expand-archive", "-path", archive, "-destinationpath", dst_dir], stdout=DEVNULL)
         else:
             check_call(["unzip", "-x", archive, "-d", dst_dir])
         # unzip binary does not support '--strip-components=1',
