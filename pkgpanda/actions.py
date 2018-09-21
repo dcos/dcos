@@ -195,9 +195,19 @@ def _start_dcos_target(block_systemd):
 
 def _get_package_list(package_list_id: str, repository_url: str) -> List[str]:
     package_list_url = repository_url + '/package_lists/{}.package_list.json'.format(package_list_id)
-    with tempfile.NamedTemporaryFile() as f:
-        download(f.name, package_list_url, os.getcwd(), rm_on_error=False)
-        package_list = load_json(f.name)
+
+    # TODO(klueska): On Windows there are issues with following a simple
+    # "delete-on-close" semantic, so we instead pass 'delete=False' when we
+    # create the temporary file and then make sure we delete it in all
+    # cases after it is no longer being used. We should wrap this in a
+    # helper function of some sort.
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+    try:
+        download(filename, package_list_url, os.getcwd(), rm_on_error=False)
+        package_list = load_json(filename)
+    finally:
+        os.remove(filename)
 
     if not isinstance(package_list, list):
         raise ValidationError('{} should contain a JSON list of packages. Got a {}'.format(
@@ -240,23 +250,43 @@ def _do_bootstrap(install, repository):
             raise ValidationError("Late package must have the version setup. Bad package: {}".format(pkg_id_str))
 
         # Collect the late config package.
-        with tempfile.NamedTemporaryFile() as f:
+        #
+        # TODO(klueska): On Windows there are issues with following a simple
+        # "delete-on-close" semantic, so we instead pass 'delete=False' when we
+        # create the temporary file and then make sure we delete it in all
+        # cases after it is no longer being used. We should wrap this in a
+        # helper function of some sort.
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            filename = f.name
+        try:
             download(
-                f.name,
+                filename,
                 repository_url + '/packages/{0}/{1}.dcos_config'.format(pkg_id.name, pkg_id_str),
                 os.getcwd(),
                 rm_on_error=False,
             )
-            late_package = load_yaml(f.name)
+            late_package = load_yaml(filename)
+        finally:
+            os.remove(filename)
 
         # Resolve the late package using the bound late config values.
         final_late_package = resolve_late_package(late_package, late_values)
 
         # Render the package onto the filesystem and add it to the package
         # repository.
-        with tempfile.NamedTemporaryFile() as f:
-            do_gen_package(final_late_package, f.name)
-            repository.add(lambda _, target: extract_tarball(f.name, target), pkg_id_str)
+        #
+        # TODO(klueska): On Windows there are issues with following a simple
+        # "delete-on-close" semantic, so we instead pass 'delete=False' when we
+        # create the temporary file and then make sure we delete it in all
+        # cases after it is no longer being used. We should wrap this in a
+        # helper function of some sort.
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            filename = f.name
+        try:
+            do_gen_package(final_late_package, filename)
+            repository.add(lambda _, target: extract_tarball(filename, target), pkg_id_str)
+        finally:
+            os.remove(filename)
         setup_packages_to_activate.append(pkg_id_str)
 
     # If active.json is set on the host, use that as the set of packages to
