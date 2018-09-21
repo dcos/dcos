@@ -53,7 +53,7 @@ def remove_file(path):
         # so calling out to the cmd prompt to do this fixes that.
         path = path.replace('/', '\\')
         if os.path.exists(path):
-            subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
+            subprocess.call(['cmd.exe', '/c', 'del', '/q', path], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['rm', '-f', path])
 
@@ -113,7 +113,7 @@ def copy_file(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['cp', src_path, dst_path])
 
@@ -126,7 +126,7 @@ def copy_directory(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'], stdout=subprocess.DEVNULL)
     else:
         subprocess.check_call(['cp', '-r', src_path, dst_path])
 
@@ -344,7 +344,7 @@ def extract_tarball(path, target):
         # Make this cross-platform via Python's tarfile module once
         # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
+            check_call(['bsdtar', '-xf', path, '-C', target], stdout=subprocess.DEVNULL)
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
