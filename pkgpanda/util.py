@@ -26,6 +26,7 @@ from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, ValidationError
 
+
 is_windows = platform.system() == "Windows"
 
 
