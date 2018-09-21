@@ -220,39 +220,49 @@ def _identify_archive_type(filename):
     return 'unknown'
 
 
-def _check_components_sanity(path):
+def _check_components_sanity(path, allow_extra_files):
     """Check if archive is sane
 
-    Check if there is only one top level component (directory) in the extracted
-    archive's directory.
+    Check if there is only one top level component in the extracted
+    archive, and make sure that component is a directory. If
+    'allow_extra_files' is passed, then we are allowed to have other files at
+    the top level (but we still must have only 1 directory).
 
     Args:
         path: path to the extracted archive's directory
+        allow_extra_files: if True, allow other files next to the top level directory
 
     Raises:
         Raise an exception if there is anything else than a single directory
     """
-    dir_contents = os.listdir(path)
+    files = os.listdir(path)
 
-    if len(dir_contents) != 1 or not os.path.isdir(os.path.join(path, dir_contents[0])):
+    if len(files) == 0:
+        raise ValidationError("Extracted archive is empty")
+
+    dirs = [f for f in files if os.path.isdir(os.path.join(path, f))]
+
+    if len(dirs) > 1 or (len(files) > 1 and not allow_extra_files):
         raise ValidationError("Extracted archive has more than one top level"
                               "component, unable to strip it.")
 
 
-def _strip_first_path_component(path):
+def _strip_first_path_component(path, allow_extra_files=False):
     """Simulate tar's --strip-components=1 behaviour using file operations
 
     Unarchivers like unzip do not support stripping component paths while
     inflating the archive. This function simulates this behaviour by moving
-    files around and then removing the TLD directory.
+    files around and then removing the TLD directory. It assumes a single
+    top-level directory inside the archive, unless 'allow_extra_files' is
+    set to True.
 
     Args:
         path: path where extracted archive contents can be found
+        allow_extra_files: if True, allow other files next to the top level directory
     """
-    _check_components_sanity(path)
+    _check_components_sanity(path, allow_extra_files)
 
-    top_level_dir = os.path.join(path, os.listdir(path)[0])
-
+    top_level_dir = next(os.path.join(path, f) for f in os.listdir(path) if os.path.isdir(os.path.join(path, f)))
     contents = os.listdir(top_level_dir)
 
     for entry in contents:
