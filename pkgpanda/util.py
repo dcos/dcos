@@ -344,7 +344,29 @@ def extract_tarball(path, target):
         # Make this cross-platform via Python's tarfile module once
         # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target], stdout=subprocess.DEVNULL)
+            # need to uncompress if ends with .XZ or .gz
+            archive_filename, compression_type = os.path.splitext(path)
+
+            if compression_type == "":
+                # If we have no extension we probably compressed/tarred into a temporary file
+                compression_type = ".XZ"
+            compression_type = compression_type[1:]
+
+            if compression_type == "tar":
+                # We are just a tarball, so un-tar it
+                check_call(['7z', 'x', path, '-o' + target], stdout=subprocess.DEVNULL)
+            else:
+                # We have compression and tarball
+                _, archive_type = os.path.splitext(archive_filename)
+                if archive_type == "":
+                    archive_type = ".tar"
+                archive_type = archive_type[1:]
+
+            # uncompress sends to stdout
+            uncompress_cmdline = '7z e {} -t{} -so'.format(path, compression_type)
+            # untar pulls input from stdin
+            untar_cmdline = '7z x -si -t{} -o{}'.format(archive_type, target)
+            check_call('{} | {}'.format(uncompress_cmdline, untar_cmdline), stdout=subprocess.DEVNULL, shell=True)
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
@@ -596,6 +618,7 @@ class MessageLogger:
 
     TeamCity docs: https://confluence.jetbrains.com/display/TCD10/Build+Script+Interaction+with+TeamCity
     """
+
     def __init__(self):
         self.loggers = []
         if teamcity.is_running_under_teamcity():
