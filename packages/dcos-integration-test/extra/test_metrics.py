@@ -184,7 +184,7 @@ def test_metrics_containers(dcos_api_session):
                     # We expect three datapoints, could be in any order
                     uptime_dp = None
                     for dp in app_metrics['datapoints']:
-                        if dp['name'] == 'statsd_tester_time_uptime':
+                        if dp['name'] == 'statsd_tester.time.uptime':
                             uptime_dp = dp
                             break
 
