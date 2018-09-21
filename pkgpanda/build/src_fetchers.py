@@ -277,13 +277,37 @@ def extract_archive(archive, dst_dir):
     archive_type = _identify_archive_type(archive)
 
     if archive_type == 'tar':
+        # TODO(klueska): We need to revisit the logic below. It seems very
+        # brittle in how it decides which files to unzip before unarchiving.
+        # It also duplicates alot of logic in 'util.py'. We should probably
+        # look into building a wrapper function for it.
         if is_windows:
-            check_call(["bsdtar", "-xf", archive, "-C", dst_dir])
+            tmp_filename, tmp_extension = os.path.splitext(archive)
+
+            # Decompress before untarring if necessary.
+            if tmp_extension == ".xz" or tmp_extension == ".gz":
+                tar_filename = dst_dir + os.sep + os.path.basename(tmp_filename)
+                # note 'e' means extract without directory so we can find the enclosed tar
+                check_call(['7z', 'e', archive, '-o' + dst_dir], stdout=DEVNULL)
+                delete_intermediate_file = True
+            else:
+                tar_filename = archive
+                delete_intermediate_file = False
+
+            # Now untar and delete the intermediate file (if we needed to decompress first).
+            try:
+                check_call(['7z', 'x', tar_filename, '-o' + dst_dir], stdout=DEVNULL)
+            finally:
+                if delete_intermediate_file:
+                    os.remove(tar_filename)
+
+            # 7zip does not support '--strip-components=1',
+            _strip_first_path_component(dst_dir, True)
         else:
             check_call(["tar", "-xf", archive, "--strip-components=1", "-C", dst_dir])
     elif archive_type == 'zip':
         if is_windows:
-            check_call(["powershell.exe", "-command", "expand-archive", "-path", archive, "-destinationpath", dst_dir], stdout=DEVNULL)
+            check_call(["7z", "x", archive, "-o" + dst_dir], stdout=DEVNULL)
         else:
             check_call(["unzip", "-x", archive, "-d", dst_dir])
         # unzip binary does not support '--strip-components=1',

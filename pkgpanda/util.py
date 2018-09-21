@@ -318,8 +318,34 @@ def extract_tarball(path, target):
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         make_directory(target)
 
+        # TODO(klueska): We need to revisit the logic below. It seems very
+        # brittle in how it decides which files to unzip before unarchiving.
+        # It also duplicates alot of logic in 'src_fetchers.py'. We should
+        # probably look into building a wrapper function for it.
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target], stdout=subprocess.DEVNULL)
+            # need to uncompress if ends with .XZ or .gz
+            archive_filename, compression_type = os.path.splitext(path)
+
+            if compression_type == "":
+                # If we have no extension we probably compressed/tarred into a temporary file
+                compression_type = ".XZ"
+            compression_type = compression_type[1:]
+
+            if compression_type == "tar":
+                # We are just a tarball, so un-tar it
+                check_call(['7z', 'x', path, '-o' + target], stdout=subprocess.DEVNULL)
+            else:
+                # We have compression and tarball
+                _, archive_type = os.path.splitext(archive_filename)
+                if archive_type == "":
+                    archive_type = ".tar"
+                archive_type = archive_type[1:]
+
+            # uncompress sends to stdout
+            uncompress_cmdline = '7z e {} -t{} -so'.format(path, compression_type)
+            # untar pulls input from stdin
+            untar_cmdline = '7z x -si -t{} -o{}'.format(archive_type, target)
+            check_call('{} | {}'.format(uncompress_cmdline, untar_cmdline), stdout=subprocess.DEVNULL, shell=True)
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
@@ -454,19 +480,51 @@ def expect_fs(folder, contents):
 
 
 def make_tar(result_filename, change_folder):
+    # TODO(klueska): We need to revisit the logic below. It seems very
+    # brittle and hard to follow.
     if is_windows:
-        tar_cmd = ["bsdtar"]
+        # on Windows with 7z we need to first tar, then we compress.
+        destination_path = os.path.abspath(change_folder) + os.sep
+        # Create a temporary .tar file
+        tar_filename, compression_type = os.path.splitext(os.path.abspath(result_filename))
+        if compression_type == "":
+            compression_type = ".XZ"
+        compression_type = compression_type[1::]
+        if tar_filename == os.path.abspath(result_filename):
+            tar_filename += ".tar"
+        _, archive_type = os.path.splitext(tar_filename)
+        archive_type = archive_type[1:]
+        delete_file = False
+        try:
+            tar_cmd = ["7z", "a", "-snh", "-snl", "-t" + archive_type, "-sae", tar_filename, "*"]
+            proc = subprocess.Popen(tar_cmd, cwd=destination_path, stdout=subprocess.DEVNULL)
+            proc.wait()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(proc.returncode, tar_cmd)
+
+            # now we can compress the tar file to the final name
+            # We are creating a new archive, so if one already exists we need to delete it
+            delete_file = True
+            if os.path.exists(os.path.abspath(result_filename)):
+                os.remove(result_filename)
+            tar_cmd = ["7z", "a", "-t" + compression_type, "-sae", os.path.abspath(result_filename), tar_filename]
+            proc = subprocess.Popen(tar_cmd, stdout=subprocess.DEVNULL)
+            proc.wait()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(proc.returncode, tar_cmd)
+        finally:
+            # remove the temporary file
+            if delete_file:
+                os.remove(tar_filename)
+
     else:
         tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
-    if which("pxz"):
-        tar_cmd += ["--use-compress-program=pxz", "-cf"]
-    else:
-        if is_windows:
-            tar_cmd += ["-cjf"]
+        if which("pxz"):
+            tar_cmd += ["--use-compress-program=pxz", "-cf"]
         else:
             tar_cmd += ["-cJf"]
-    tar_cmd += [result_filename, "-C", change_folder, "."]
-    check_call(tar_cmd)
+        tar_cmd += [result_filename, "-C", change_folder, "."]
+        check_call(tar_cmd)
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
