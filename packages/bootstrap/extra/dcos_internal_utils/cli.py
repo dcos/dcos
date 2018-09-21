@@ -35,16 +35,6 @@ def dcos_signal(b, opts):
 
 
 @check_root
-def dcos_metrics_master(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
-
-
-@check_root
-def dcos_metrics_agent(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
-
-
-@check_root
 def dcos_telegraf_master(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
@@ -67,8 +57,6 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
-    'dcos-metrics-master': dcos_metrics_master,
-    'dcos-metrics-agent': dcos_metrics_agent,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
