@@ -391,9 +391,19 @@ def requests_fetcher(base_url, id_str, target, work_dir):
     url = base_url + "/packages/{0}/{1}.tar.xz".format(id.name, id_str)
     # TODO(cmaloney): Use a private tmp directory so there is no chance of a user
     # intercepting the tarball + other validation data locally.
-    with tempfile.NamedTemporaryFile(suffix=".tar.xz") as file:
-        download(file.name, url, work_dir, rm_on_error=False)
-        extract_tarball(file.name, target)
+    #
+    # TODO(klueska): On Windows there are issues with following a simple
+    # "delete-on-close" semantic, so we instead pass 'delete=False' when we
+    # create the temporary file and then make sure we delete it in all
+    # cases after it is no longer being used. We should wrap this in a
+    # helper function of some sort.
+    with tempfile.NamedTemporaryFile(suffix=".tar.xz", delete=False) as file:
+        filename = file.name
+    try:
+        download(filename, url, work_dir, rm_on_error=False)
+        extract_tarball(filename, target)
+    finally:
+        os.remove(filename)
 
 
 class Repository:
