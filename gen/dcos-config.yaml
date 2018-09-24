@@ -553,6 +553,7 @@ package:
       MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
       MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_GC_DELAY={{ gc_delay }}
+      MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       MESOS_IMAGE_PROVIDERS=docker
