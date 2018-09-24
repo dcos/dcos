@@ -45,6 +45,16 @@ def dcos_metrics_agent(b, opts):
 
 
 @check_root
+def dcos_telegraf_master(b, opts):
+    b.cluster_id('/var/lib/dcos/cluster-id')
+
+
+@check_root
+def dcos_telegraf_agent(b, opts):
+    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+
+
+@check_root
 def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
@@ -72,8 +82,8 @@ bootstrappers = {
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
     'dcos-net': noop,
-    'dcos-telegraf-master': noop,
-    'dcos-telegraf-agent': noop,
+    'dcos-telegraf-master': dcos_telegraf_master,
+    'dcos-telegraf-agent': dcos_telegraf_agent,
 }
 
 

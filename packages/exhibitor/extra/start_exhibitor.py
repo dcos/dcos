@@ -118,8 +118,32 @@ log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%
 
 # Add backend specific arguments
 exhibitor_backend = get_var_assert_set('EXHIBITOR_BACKEND')
-if zookeeper_cluster_size == 1:
+if exhibitor_backend == 'STATIC':
+    print("Exhibitor configured for static ZK ensemble")
+    # In case of a static Exhibitor backend DC/OS configuration we can check
+    # that the value for the hostname set by invoking the ip-detect script is
+    # indeed included in the master list.
+    # https://jira.mesosphere.com/browse/COPS-3485
+    exhibitor_staticensemble = get_var_assert_set('EXHIBITOR_STATICENSEMBLE')
+    master_ips = [i.split(':')[1] for i in exhibitor_staticensemble.split(',')]
+    if detected_ip not in master_ips:
+        message = (
+            "ERROR: ip-detect returned {master_ip}. "
+            "{master_ip} is not in the configured list of masters."
+        ).format(master_ip=detected_ip)
+        print(message)
+        sys.exit(1)
+    exhibitor_cmdline += [
+        '--configtype=static',
+        '--staticensemble', get_var_assert_set('EXHIBITOR_STATICENSEMBLE')
+    ]
+elif zookeeper_cluster_size == 1:
     print("Exhibitor configured for single master/static backend")
+    # A Zookeeper cluster size of 1 is a special case regarding the Exhibitor backend.
+    # It will always result in a static backend independent of the DC/OS configuration.
+    # This allows for skipping exhibitor.wait() logic that is responsible for waiting
+    # for Exhibitor configuration change from standalone mode to ensemble mode.
+    # https://jira.mesosphere.com/browse/DCOS-6147
     exhibitor_cmdline += [
         '--configtype=static',
         '--staticensemble=1:' + detected_ip
@@ -164,12 +188,6 @@ elif exhibitor_backend == 'SHARED_FS':
     exhibitor_cmdline += [
         '--configtype=file',
         '--fsconfigdir', get_var_assert_set('EXHIBITOR_FSCONFIGDIR')
-    ]
-elif exhibitor_backend == 'STATIC':
-    print("Exhibitor configured for static ZK ensemble")
-    exhibitor_cmdline += [
-        '--configtype=static',
-        '--staticensemble', get_var_assert_set('EXHIBITOR_STATICENSEMBLE')
     ]
 else:
     print("ERROR: No known exhibitor backend:", exhibitor_backend)

@@ -31,10 +31,18 @@ agent_public_unit="$PKG_PATH/dcos.target.wants_slave_public/dcos-telegraf.servic
 
 # Add the master unit file to the package.
 mkdir -p $(dirname $master_unit)
-SERVICE="dcos-telegraf-master" envsubst '${SERVICE}' < $unit_template > $master_unit
+SERVICE="dcos-telegraf-master" envsubst '${SERVICE} ${PKG_PATH}' < $unit_template > $master_unit
 
 # Add the agent unit files to the package.
 for unit in $agent_unit $agent_public_unit; do
   mkdir -p $(dirname $unit)
-  SERVICE="dcos-telegraf-agent" envsubst '${SERVICE}' < $unit_template > $unit
+  SERVICE="dcos-telegraf-agent" envsubst '${SERVICE} ${PKG_PATH}' < $unit_template > $unit
 done
+
+# Add the socket unit to the package for all roles.
+socket_unit="$PKG_PATH/dcos.target.wants/dcos-telegraf.socket"
+mkdir -p $(dirname $socket_unit)
+cp /pkg/extra/dcos-telegraf.socket $socket_unit
+
+# Add tools to the package.
+cp -r /pkg/extra/tools/ "${PKG_PATH}"

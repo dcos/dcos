@@ -3,7 +3,7 @@ package:
     content: |
       producers:
         prometheus:
-          port: 61091
+          port: 61092
   - path: /etc/dcos-metrics.env
     content: |
       DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
@@ -126,6 +126,29 @@ package:
           [
             {agent_polling_enabled, false}
           ]
+        },
+        {telemetry,
+          [
+            {forward_metrics, false}
+          ]
+        }
+      ].
+  - path: /etc_slave/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
+        }
+      ].
+  - path: /etc_slave_public/dcos-net.config.d/slave.config
+    content: |
+      [
+        {telemetry,
+          [
+            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
+          ]
         }
       ].
   - path: /etc/dcos-net.config.d/common.config
@@ -134,7 +157,8 @@ package:
         {dcos_net,
           [
             {dist_port, 62501},
-            {epmd_port, 61420}
+            {epmd_port, 61420},
+            {enable_killer, false}
           ]
         },
         {dcos_l4lb,
@@ -156,11 +180,6 @@ package:
         {dcos_rest,
           [
             {enable_rest, {{ dcos_net_rest_enable }}}
-          ]
-        },
-        {telemetry,
-          [
-            {forward_metrics, {{ dcos_l4lb_forward_metrics }}}
           ]
         }
       ].
@@ -344,6 +363,22 @@ package:
               ]
            }
         ]
+      }
+  - path: /etc/mesos-slave-modules/metrics.json
+    content: |
+      {
+        "libraries": [ {
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "modules": [ {
+            "name": "com_mesosphere_dcos_MetricsIsolatorModule",
+            "parameters": [
+              {"key": "dcos_metrics_service_scheme", "value": "http"},
+              {"key": "dcos_metrics_service_network", "value": "unix"},
+              {"key": "dcos_metrics_service_address", "value": "/run/dcos/telegraf/dcos_statsd.sock"},
+              {"key": "dcos_metrics_service_endpoint", "value": "/container"}
+            ]
+          } ]
+        } ]
       }
 {% case "false" %}
 {% endswitch %}
@@ -617,24 +652,34 @@ package:
       }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
+  - path: /etc/dcos-check-runner.env
+    content: |
+      DCOS_CHECK_RUNNER_CONFIG_PATH=/opt/mesosphere/etc/dcos-check-runner.yaml
   - path: /etc_master/dcos-check-runner.yaml
     content: |
         role: master
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave/dcos-check-runner.yaml
     content: |
         role: agent
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc_slave_public/dcos-check-runner.yaml
     content: |
         role: agent  # Checks don't distinguish between public and private agents.
+        systemd-socket: true
+        base-uri: /system/checks/v1
   - path: /etc/dcos-diagnostics.env
     content: |
+      DCOS_DIAGNOSTICS_BUNDLE_DIR={{ diagnostics_bundles_dir }}
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
   - path: /etc_master/dcos-diagnostics-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
+        "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
@@ -728,43 +773,53 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": 5050,
+                  "Uri": "/quota",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ marathon_port }},
                   "Uri": "/metrics",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/apps",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/deployments",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/info",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/leader",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/queue",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/tasks",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 8080,
+                  "Uri": "/v2/pods",
                   "Role": ["master"]
               },
               {
@@ -836,6 +891,11 @@ package:
                   "Port": 5051,
                   "Uri": "/overlay-agent/overlay",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/containers",
+                  "Role": ["agent", "agent_public"]
               }
           ],
           "LocalFiles": [
@@ -873,11 +933,23 @@ package:
               },
               {
                   "Location": "/proc/net/fib_trie"
+              },
+              {
+                  "Location": "/proc/cmdline"
+              },
+              {
+                  "Location": "/proc/cpuinfo"
+              },
+              {
+                  "Location": "/proc/meminfo"
+              },
+              {
+                  "Location": "/proc/self/mountinfo"
               }
           ],
           "LocalCommands": [
               {
-                  "Command": ["dmesg"]
+                  "Command": ["dmesg", "-T"]
               },
               {
                   "Command": ["ip", "addr"]
@@ -889,7 +961,19 @@ package:
                   "Command": ["ifconfig", "-a"]
               },
               {
+                  "Command": ["ps", "aux", "ww"]
+              },
+              {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
+              },
+              {
+                  "Command": ["timedatectl"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /etc/*-release"]
+              },
+              {
+                  "Command": ["systemctl", "list-units", "dcos*"]
               }
           ]
         }
@@ -995,7 +1079,7 @@ package:
       "oauth":{"enabled":false},
 {% endswitch %}
 {% endswitch %}
-      "tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
+      "intercom":{"enabled":{{ intercom_enabled }}, "appId": "wn4z9z0y"},"tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
   - path: /etc_master/marathon
     content: |
       # This file will be overwritten on DC/OS upgrade.
@@ -1152,6 +1236,8 @@ package:
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
       TELEGRAF_CONFIG_DIR=/opt/mesosphere/etc/telegraf/telegraf.d/
+      TELEGRAF_CONTAINERS_DIR=/run/dcos/telegraf/dcos_statsd/containers
+      LEGACY_CONTAINERS_DIR=/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers
   - path: /etc/telegraf/telegraf.conf
     content: |
       # Telegraf config for all nodes
@@ -1215,16 +1301,112 @@ package:
         collect_cpu_time = false
         ## If true, compute and report the sum of all non-idle CPU states.
         report_active = false
+      # Read metrics about memory usage
       [[inputs.mem]]
-      # Telegraf refuses to start if no outputs are defined. This will eventually be
-      # replaced with real outputs.
-      [[outputs.discard]]
+      # Read metrics about disk usage by mount point
+      [[inputs.disk]]
+        ## Ignore mount points by filesystem type.
+        # TODO(branden): Do we want to ignore any fs types?
+        #ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
+      # Read metrics about swap memory usage
+      [[inputs.swap]]
+      # Gather metrics about network interfaces
+      [[inputs.net]]
+      # Get the number of processes and group them by status
+      [[inputs.processes]]
+      # Read metrics about system load & uptime
+      [[inputs.system]]
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "master"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+      # Plugin for monitoring statsd metrics from mesos tasks
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The directory in which container information is stored
+        containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
+      # Plugin for adding metadata to dcos-specific metrics
+      [[processors.dcos_metadata]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+        ## The minimum period between requests to the mesos agent
+        rate_limit = "5s"
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # Plugin for monitoring mesos container resource consumption
+      [[inputs.dcos_containers]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+      # Plugin for monitoring statsd metrics from mesos tasks
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The directory in which container information is stored
+        containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
+      # Plugin for adding metadata to dcos-specific metrics
+      [[processors.dcos_metadata]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+        ## The minimum period between requests to the mesos agent
+        rate_limit = "5s"
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
+        dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
+        # Local Mesos instance's ID.
+        mesos_id = "$DCOS_MESOS_ID"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "$DCOS_CLUSTER_ID"

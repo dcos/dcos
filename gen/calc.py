@@ -430,7 +430,7 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
                  'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
-                 'com_mesosphere_MetricsIsolatorModule')
+                 'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',gpu/nvidia'
     return isolators
@@ -970,6 +970,7 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
         lambda log_offers: validate_true_false(log_offers),
@@ -987,6 +988,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
@@ -1081,6 +1083,7 @@ entry = {
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
@@ -1097,6 +1100,7 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
