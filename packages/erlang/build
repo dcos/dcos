@@ -6,6 +6,54 @@ export LDFLAGS="-L/opt/mesosphere/lib -L/opt/mesosphere/active/ncurses/lib -L/op
 export CPPFLAGS=${CFLAGS}
 
 pushd /pkg/src/erlang
+
+# ERL-692
+## erts: Delete fd from poll-set when closing fd_driver port
+git cherry-pick --no-commit 1d1f29eb614ce75012f9136d185f4dbcccc8650b
+# ERL-622
+## ssl: Improve error handling
+git cherry-pick --no-commit a06549fbe59333347232c56093791c0075fcd150
+## ssl: Add new sender process for TLS state machine
+git cherry-pick --no-commit d87ac1c55188f5ba5cdf72384125d94d42118c18
+## ssl: Adopt distribution over TLS to use new sender process
+git cherry-pick --no-commit 0078ebf6c5311edc1a07be71fb7a127a175a60fa
+## ssl: Improve close handling
+git cherry-pick --no-commit a508428df8af14437f1a4766ec68294d1d736915
+## kernel: Fix net_kernel:connect_node/1 to local node
+git cherry-pick --no-commit c4759bc60c8e5db27c070b9e826ddc0f9626b094
+
+## Please see https://bugs.erlang.org/browse/ERL-622
+patch -p1 <<EOF
+diff --git a/lib/ssl/src/tls_connection.erl b/lib/ssl/src/tls_connection.erl
+index 6c7511d2b3..2fde17a0fd 100644
+--- a/lib/ssl/src/tls_connection.erl
++++ b/lib/ssl/src/tls_connection.erl
+@@ -118,6 +118,7 @@ start_link(Role, Sender, Host, Port, Socket, Options, User, CbInfo) ->
+
+ init([Role, Sender, Host, Port, Socket, {SslOpts, _, _} = Options,  User, CbInfo]) ->
+     process_flag(trap_exit, true),
++    link(Sender),
+     case SslOpts#ssl_options.erl_dist of
+         true ->
+             process_flag(priority, max);
+diff --git a/lib/ssl/src/tls_sender.erl b/lib/ssl/src/tls_sender.erl
+index 007fd345dd..db67d7ddff 100644
+--- a/lib/ssl/src/tls_sender.erl
++++ b/lib/ssl/src/tls_sender.erl
+@@ -67,9 +67,9 @@
+ %%  same process is sending and receiving
+ %%--------------------------------------------------------------------
+ start() ->
+-    gen_statem:start_link(?MODULE, [], []).
++    gen_statem:start(?MODULE, [], []).
+ start(SpawnOpts) ->
+-    gen_statem:start_link(?MODULE, [], SpawnOpts).
++    gen_statem:start(?MODULE, [], SpawnOpts).
+
+ %%--------------------------------------------------------------------
+ -spec initialize(pid(), map()) -> ok.
+EOF
+
 ./otp_build setup -a --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe --enable-kernel-poll --enable-builtin-zlib
 make -j$NUM_CORES
 make install
