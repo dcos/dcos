@@ -75,13 +75,18 @@ Format of the entries must be.
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
+* DC/OS Net: Logging improvements (DCOS_OSS-3929)
+
+* DC/OS Net: Get rid of epmd (DCOS_OSS-1751)
+
+* Upgrade OTP version (DCOS_OSS-3655)
 
 ### Security Updates
 
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
+* Updated DC/OS UI to master+v2.21.8 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.21.8)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
