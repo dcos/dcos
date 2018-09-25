@@ -3,7 +3,7 @@
         "URLRewrite": {
           "kind": "url",
           "url": "http://download.microsoft.com/download/D/D/E/DDE57C26-C62C-4C59-A1BB-31D58B36ADA2/rewrite_amd64_en-US.msi",
-          "sha1": "eff9901ce6c20f94055488e65d3d2748b4e2be8e"
+          "sha1": "d2542e2d398f0e95981ebf4e729f79eaf96e6691"
         },
         "Application-Request-Routing": {
           "kind": "url",
