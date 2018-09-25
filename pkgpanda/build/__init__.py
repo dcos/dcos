@@ -109,7 +109,7 @@ def get_src_fetcher(src_info, cache_dir, working_directory):
         if kind not in pkgpanda.build.src_fetchers.all_fetchers:
             raise ValidationError("No known way to catch src with kind '{}'. Known kinds: {}".format(
                 kind,
-                pkgpanda.src_fetchers.all_fetchers.keys()))
+                pkgpanda.build.src_fetchers.all_fetchers.keys()))
 
         args = {
             'src_info': src_info,
