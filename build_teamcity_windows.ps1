@@ -30,8 +30,8 @@ function RemoveItemSafely([string]$item){
     }
 }
 
-# If no tree variants are specified, build the default and installer variants.
-If ($args.count -eq 0) { $tree_variants="default installer" }
+# If no tree variants are specified, build the windows and installer variants.
+If ($args.count -eq 0) { $tree_variants=("windows", "windows.installer") }
 Else { $tree_variants = $args }
 
 # Fail quickly if docker daemon is not up
@@ -69,16 +69,16 @@ python.exe -m venv --clear --copies build/env
 . build/env/Scripts/Activate.ps1
 If ( $LASTEXITCODE -ne 0 ) {
      exit -1
- }
+}
 
-If (!$TEAMCITY_BRANCH) { Write-Host "TEAMCITY_BRANCH must be set (determines the tag and testing/ channel)" }
+If (!$env:TEAMCITY_BRANCH) { Write-Host "TEAMCITY_BRANCH must be set (determines the tag and testing/ channel)" }
 
-If ("$TEAMCITY_BRANCH" -eq "<default>") {
+If ("$env:TEAMCITY_BRANCH" -eq "<default>") {
   Write-Host "ERROR: Building with a branch name of <default> is not supported"
   exit 1
 }
 
-$TAG="${TEAMCITY_BRANCH}"
+$TAG="${env:TEAMCITY_BRANCH}"
 $CHANNEL_NAME="testing/${TAG}"
 
 Write-Host tag: "$TAG"
@@ -89,11 +89,14 @@ Write-Host "##teamcity[setParameter name='env.CHANNEL_NAME' value='$CHANNEL_NAME
 Write-Host "##teamcity[setParameter name='env.TAG' value='$TAG']"
 Set-PSDebug -trace 2
 
-cp config/dcos-release.config.yaml dcos-release.config.yaml
+cp config/dcos-release-windows.config.yaml dcos-release.config.yaml
 
 $DIR=$PSScriptRoot
 
-"$DIR"/prep_teamcity_windows.ps1
+& "$DIR\prep_teamcity_windows.ps1"
+If ( $LASTEXITCODE -ne 0 ) {
+     exit -1
+}
 _scope_closed "setup"
 
 release create $TAG $TAG $tree_variants
