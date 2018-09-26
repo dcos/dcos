@@ -2,6 +2,19 @@
 
 ### Notable changes
 
+* Updated to [Marathon 1.6.552](https://github.com/mesosphere/marathon/tree/f56ad6ec8).
+
+### Fixed and improved
+
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
+
+### Security Updates
+
+
+## DC/OS 1.11.6
+
+### Notable changes
+
 * Updated to [Metronome 0.4.4](https://github.com/dcos/metronome/releases/tag/v0.4.4).
 
 * Updated to [DC/OS UI 1.11+v1.23.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.23.0/CHANGELOG.md)
@@ -12,8 +25,6 @@
 
 
 ### Fixed and improved
-
-* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 * Diagnostics bundle: include new information in bundle (container status and usage info, process list, Mesos quota info). (DCOS-38438, COPS-3042)
 
