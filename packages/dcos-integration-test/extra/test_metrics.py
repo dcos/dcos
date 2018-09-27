@@ -217,7 +217,13 @@ def test_metrics_containers(dcos_api_session):
 
     marathon_config = {
         "id": "/statsd-emitter",
-        "cmd": "/opt/mesosphere/bin/./statsd-emitter -debug",
+        "cmd": "./statsd-emitter -debug",
+        "fetch": [
+          {
+            "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
+            "executable": true
+          }
+        ],
         "cpus": 0.5,
         "mem": 128.0,
         "instances": 1
