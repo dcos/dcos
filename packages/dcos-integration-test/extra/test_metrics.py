@@ -219,10 +219,10 @@ def test_metrics_containers(dcos_api_session):
         "id": "/statsd-emitter",
         "cmd": "./statsd-emitter -debug",
         "fetch": [
-          {
-            "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
-            "executable": true
-          }
+        {
+        "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
+        "executable": true
+        }
         ],
         "cpus": 0.5,
         "mem": 128.0,
