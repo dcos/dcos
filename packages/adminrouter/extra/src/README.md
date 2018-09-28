@@ -432,7 +432,7 @@ frameworks that:
 * become disconnected from Mesos for some reason, but *MAY* come back at some
   point
 
-Note that in DC/OS Enterprise  only frameworks that are started by Root 
+Note that in DC/OS Enterprise, only frameworks that are started by Root 
 Marathon can be routed to.
 
 What is more - continuous installation and removal of a framework using the same
