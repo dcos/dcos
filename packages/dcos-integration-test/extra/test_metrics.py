@@ -1,5 +1,10 @@
+import logging
+import uuid
+
 import pytest
+
 import retrying
+import test_helpers
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -405,3 +410,116 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     assert 'datapoints' in app_metrics, 'got {}'.format(app_metrics)
     assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
     return app_metrics
+
+
+@pytest.mark.skipif(
+    test_helpers.expanded_config.get('security') == 'strict',
+    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
+def test_standalone_container_metrics(dcos_api_session):
+    """
+    An operator should be able to launch a standalone container using the
+    LAUNCH_CONTAINER call of the agent operator API. Additionally, if the
+    process running within the standalone container emits statsd metrics, they
+    should be accessible via the DC/OS metrics API.
+    """
+    # Fetch the mesos master state to get an agent ID
+    master_ip = dcos_api_session.masters[0]
+    r = dcos_api_session.get('/state', host=master_ip, port=5050)
+    assert r.status_code == 200
+    state = r.json()
+
+    # Find hostname and ID of an agent
+    assert len(state['slaves']) > 0, 'No agents found in master state'
+    agent_hostname = state['slaves'][0]['hostname']
+    agent_id = state['slaves'][0]['id']
+    logging.debug('Selected agent %s at %s', agent_id, agent_hostname)
+
+    def _post_agent(json):
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+
+        r = dcos_api_session.post(
+            '/api/v1',
+            host=agent_hostname,
+            port=5051,
+            headers=headers,
+            json=json,
+            data=None,
+            stream=False)
+        return r
+
+    # Prepare container ID data
+    container_id = {'value': 'test-standalone-%s' % str(uuid.uuid4())}
+
+    # Launch standalone container. The command for this container executes a
+    # binary installed with DC/OS which will emit statsd metrics.
+    launch_data = {
+        'type': 'LAUNCH_CONTAINER',
+        'launch_container': {
+            'command': {'value': '/opt/mesosphere/bin/statsd-emitter'},
+            'container_id': container_id,
+            'resources': [
+                {
+                    'name': 'cpus',
+                    'scalar': {'value': 0.2},
+                    'type': 'SCALAR'
+                },
+                {
+                    'name': 'mem',
+                    'scalar': {'value': 64.0},
+                    'type': 'SCALAR'
+                },
+                {
+                    'name': 'disk',
+                    'scalar': {'value': 1024.0},
+                    'type': 'SCALAR'
+                }
+            ],
+            'container': {
+                'type': 'MESOS'
+            }
+        }
+    }
+
+    # There is a short delay between the container starting and metrics becoming
+    # available via the metrics service. Because of this, we wait up to 10
+    # seconds for these metrics to appear before throwing an exception.
+    def _should_retry_metrics_fetch(response):
+        return response.status_code == 204
+
+    @retrying.retry(wait_fixed=1000,
+                    stop_max_delay=10000,
+                    retry_on_result=_should_retry_metrics_fetch,
+                    retry_on_exception=lambda x: False)
+    def _get_metrics():
+        master_response = dcos_api_session.get(
+            '/system/v1/agent/%s/metrics/v0/containers/%s/app' % (agent_id, container_id['value']),
+            host=master_ip)
+        return master_response
+
+    r = _post_agent(launch_data)
+    assert r.status_code == 200, 'Received unexpected status code when launching standalone container'
+
+    try:
+        logging.debug('Successfully created standalone container with container ID %s', container_id['value'])
+
+        # Verify that the standalone container's metrics are being collected
+        r = _get_metrics()
+        assert r.status_code == 200, 'Received unexpected status code when fetching standalone container metrics'
+
+        metrics_response = r.json()
+        metric_keys = [datapoint['name'] for datapoint in metrics_response['datapoints']]
+        assert 'statsd_tester_time_uptime' in metric_keys
+        assert metrics_response['dimensions']['container_id'] == container_id['value']
+    finally:
+        # Clean up the standalone container
+        kill_data = {
+            'type': 'KILL_CONTAINER',
+            'kill_container': {
+                'container_id': container_id
+            }
+        }
+
+        _post_agent(kill_data)
