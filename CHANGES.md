@@ -81,6 +81,8 @@ Format of the entries must be.
 
 * Upgrade OTP version (DCOS_OSS-3655)
 
+* Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
+
 ### Security Updates
 
 
