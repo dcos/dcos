@@ -6,5 +6,6 @@
     "ref": "59a36b4410388fb4105d678ea0a76f4271d98da5",
     "ref_origin": "1.7.2-dcos"
   },
-  "username": "dcos_telegraf"
+  "username": "dcos_telegraf",
+  "state_directory": true
 }
