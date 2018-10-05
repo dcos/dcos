@@ -42,6 +42,10 @@ Format of the entries must be.
 
 * Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
 
+* Requests to Marathon's events API (/v2/events when queried directly) for standby instances no longer proxy, but instead respond with a redirect. Clients consuming Marathon's events API should be updated to follow redirects. Component such as updated to versions that follow redirects; for example, Marathon-LB should be updated to at least version v1.12.3. [See more details](https://github.com/mesosphere/marathon/blob/master/changelog.md#non-leaderstandby-marathon-instances-respond-to-v2events-with-a-redirect-rather-than-proxy).
+
+* Marathon will decline offers for agents in maintenance mode now, by default. [See more details](https://github.com/mesosphere/marathon/blob/master/changelog.md#maintenance-mode-support-production-ready-now-default).
+
 
 ### Fixed and improved
 
