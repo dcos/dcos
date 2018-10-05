@@ -24,6 +24,10 @@ mkdir -p "${TELEGRAF_CONTAINERS_DIR}"
 # Migrate old containers dir to new location in case the cluster was upgraded.
 /opt/mesosphere/active/telegraf/tools/migrate_containers_dir.sh "${LEGACY_CONTAINERS_DIR}" "${TELEGRAF_CONTAINERS_DIR}"
 
+mkdir -p "${TELEGRAF_CONFIG_DIR}"
+# Copy the contents of the telegraf.d template files to the config directory
+cp "${TELEGRAF_CONFIG_TPL}/*" "${TELEGRAF_CONFIG_DIR}"
+
 # Ensure that old socket file is removed, if present
 # TODO(philipnrmn): investigate whether moving to a systemd-managed socket
 # would be a better solution than manually creating and removing this file.
