@@ -1,8 +1,35 @@
 {
   "requires": ["python", "teamcity-messages"],
-  "single_source": {
-    "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/a0/2f/076c816e2402c4911ccee4b93ba0475145b7cffd0320ca8efa0add7c469c/pytest-3.0.3.tar.gz",
-    "sha1": "e7fb899ecac031a84e66f991289203d3c1f7c6cb"
+  "sources": {
+    "pytest": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/5f/d2/7f77f406ac505abda02ab4afb50d06ebf304f6ea42fca34f8f37529106b2/pytest-3.8.2.tar.gz",
+      "sha1": "6e28889174cfec8ca42bd470fe6168ca19aa58f9"
+    },
+    "pluggy": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/a1/83/ef7d976c12d67a5c7a5bc2a47f0501c926cabae9d9fcfdc26d72abc9ba15/pluggy-0.7.1.tar.gz",
+      "sha1": "a07fa8187288cc4099b91dd59b0df18ba3dc19b1"
+    },
+    "py": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/4f/38/5f427d1eedae73063ce4da680d2bae72014995f9fdeaa57809df61c968cd/py-1.6.0.tar.gz",
+      "sha1": "b7196e40ff311d5f44e3bed2e0d3477f4f19559b"
+    },
+    "attrs": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/0f/9e/26b1d194aab960063b266170e53c39f73ea0d0d3f5ce23313e0ec8ee9bdf/attrs-18.2.0.tar.gz",
+      "sha1": "51a52e1afdd9e8c174ac0b65c2905a8360788dd2"
+    },
+    "moreitertools": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/88/ff/6d485d7362f39880810278bdc906c13300db05485d9c65971dec1142da6a/more-itertools-4.3.0.tar.gz",
+      "sha1": "3655a5e720e7e684730597c72283a4af401a71da"
+    },
+    "atomicwrites": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/ac/ed/a311712ef6b4355035489f665e63e1a73f9eb371929e3c98e5efd451069e/atomicwrites-1.2.1.tar.gz",
+      "sha1": "fec341b1028177784ac97436c479a397ffeb20d7"
+    }
   }
 }
