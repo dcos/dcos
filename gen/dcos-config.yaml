@@ -693,6 +693,20 @@ package:
     content: |
         {
           "HTTPEndpoints": [
+{% switch dcos_overlay_enable %}
+{% case "true" %}
+              {
+                  "Port": 5050,
+                  "Uri": "/overlay-master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/overlay-agent/overlay",
+                  "Role": ["agent", "agent_public"]
+              },
+{% case "false" %}
+{% endswitch %}
               {
                   "Port": 5050,
                   "Uri": "/__processes__",
@@ -872,16 +886,6 @@ package:
                   "Port": 8123,
                   "Uri": "/v1/version",
                   "Role": ["master"]
-              },
-              {
-                  "Port": 5050,
-                  "Uri": "/overlay-master/state",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 5051,
-                  "Uri": "/overlay-agent/overlay",
-                  "Role": ["agent", "agent_public"]
               },
               {
                   "Port": 5051,
