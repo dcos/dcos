@@ -1,0 +1,14 @@
+[Unit]
+Description=DC/OS UI Update Service: service for DC/OS Update
+[Service]
+Restart=always
+RestartSec=5
+PermissionsStartOnly=True
+User=dcos_ui_update_service
+SupplementaryGroups=dcos_adminrouter
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-ui-update-service.env
+EnvironmentFile=-/run/dcos/etc/dcos-ui-update-service.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-ui-update-service
+ExecStart=/opt/mesosphere/bin/dcos-ui-update-service --verbose=true
+Sockets=dcos-ui-update-service.socket
