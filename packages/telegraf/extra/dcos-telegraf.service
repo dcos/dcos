@@ -19,8 +19,9 @@ LimitNOFILE=16384
 ExecStartPre=/bin/bash -c "mkdir -p /run/dcos/telegraf"
 ExecStartPre=/bin/bash -c "chmod 775 /run/dcos/telegraf"
 ExecStartPre=/bin/bash -c "chown dcos_telegraf:dcos_telegraf /run/dcos/telegraf"
-# Ensure that start_telegraf.sh can move the legacy container
-ExecStartPre=/bin/bash -c "chown -R dcos_telegraf:dcos_telegraf ${LEGACY_CONTAINERS_PARENT_DIR}
+# Ensure that start_telegraf.sh can move the legacy container directory; note that
+# the container directory may not exist; hence we ignore any error.
+ExecStartPre=/bin/bash -c "chown -R dcos_telegraf:dcos_telegraf ${LEGACY_CONTAINERS_PARENT_DIR} || true"
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
