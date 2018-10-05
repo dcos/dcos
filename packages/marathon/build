@@ -30,11 +30,11 @@ cat <<EOF > "$marathon_service"
 Description=Marathon: container orchestration engine
 
 [Service]
-User=dcos_marathon
 Restart=always
 StartLimitInterval=0
 RestartSec=15
 LimitNOFILE=16384
+SyslogIdentifier=dcos-marathon
 PermissionsStartOnly=True
 # The env files in /opt are overwritten on upgrade
 EnvironmentFile=/opt/mesosphere/environment
@@ -43,8 +43,8 @@ EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
 # The env file in /var/lib/dcos is for post-install configuration and persists with upgrades.
 EnvironmentFile=-/var/lib/dcos/marathon/environment
 Environment=JAVA_HOME=${JAVA_HOME}
-ExecStartPre=/bin/ping -c1 leader.mesos
-ExecStartPre=/bin/ping -c1 zk-1.zk
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
-ExecStart=/opt/mesosphere/bin/marathon.sh
+ExecStartPre=/opt/mesosphere/bin/dcos-shell /bin/ping -c1 leader.mesos
+ExecStartPre=/opt/mesosphere/bin/dcos-shell /bin/ping -c1 zk-1.kz
+ExecStartPre=/opt/mesosphere/bin/dcos-shell /opt/mesosphere/bin/bootstrap dcos-marathon
+ExecStart=/opt/mesosphere/bin/dcos-shell -u dcos_marathon /opt/mesosphere/bin/marathon.sh
 EOF
