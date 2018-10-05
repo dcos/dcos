@@ -428,10 +428,10 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
                              'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
-                             '| cut -d\'=\' -f2`environ-10.output.gz'
+                             '| cut -d\'=\' -f2`environ-10.output.gz', '5050-overlay-master_state.json.gz'
                              ] + expected_common_files
 
-    expected_agent_common_files = ['5051-containers.json',
+    expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json',
                                    'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
                                    '| cut -d\'=\' -f2`environ-11.output.gz']
 
