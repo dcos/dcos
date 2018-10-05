@@ -1,8 +1,8 @@
 {
   "single_source" : {
     "kind": "git",
-    "git": "https://git-wip-us.apache.org/repos/asf/mesos.git",
-    "ref": "fa0314cef104eb8d5e2096b662a28617aef1bfec",
+    "git": "https://github.com/apache/mesos", 
+    "ref": "84749967a1c1384f75c3c017bda45a85eea67787",
     "ref_origin" : "master"
   },
   "environment": {

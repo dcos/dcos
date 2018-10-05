@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from setuptools import setup
 
 
@@ -6,6 +8,22 @@ def get_advanced_templates():
     template_names = ['advanced-master', 'advanced-priv-agent', 'advanced-pub-agent', 'infra', 'zen']
 
     return [template_base + name + '.json' for name in template_names]
+
+
+# These files are expected source files to the dcos-builder docker.
+# They need to match the contents of ./pkgpanda/docker/dcos-builder/*
+# exactly otherwise the dcos-builder docker will have a different sha1
+# checksum calculated during when the ./release script is run.
+# That leads to cached packages hashes being different from what
+# is cached in S3 and prevents us from building DC/OS locally.
+expected_dcos_builder_files = [
+    Path('docker/dcos-builder/Dockerfile'),
+    Path('docker/dcos-builder/README.md'),
+]
+dcos_builder_files = [f.relative_to(Path("./pkgpanda")) for f in Path("./pkgpanda").glob('docker/**/*') if f.is_file()]
+if set(expected_dcos_builder_files) != set(dcos_builder_files):
+    raise Exception('Expected ./pkgpanda/docker/dcos-builder to contain {} but it had {}'.format(
+        expected_dcos_builder_files, dcos_builder_files))
 
 
 setup(
@@ -108,9 +126,7 @@ setup(
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
-        'pkgpanda': [
-            'docker/dcos-builder/Dockerfile'
-        ]
+        'pkgpanda': [str(f) for f in expected_dcos_builder_files],
     },
     zip_safe=False
 )

@@ -254,14 +254,22 @@ function check_version() {
 
 function check_selinux() {
   ENABLED=$(getenforce)
+  RC=0
 
-  if [[ $ENABLED != 'Enforcing' ]]; then
-    RC=0
-  else
-    RC=1
+  if [[ "$ENABLED" == "Enforcing" ]]; then
+    LOADED_POLICY_LINE=$(sestatus | grep "Loaded policy name:")
+    # We expect that the loaded policy name line will look like:
+    # "Loaded policy name:             targeted"
+    # But we do not want to rely on the number of spaces before the policy name.
+    LOADED_POLICY=$(echo "$LOADED_POLICY_LINE" | rev | cut -d ' ' -f1 | rev)
+    ALLOWED_LOADED_POLICY="targeted"
+    if [ "$LOADED_POLICY" != "$ALLOWED_LOADED_POLICY" ]; then
+      RC=1
+    fi
   fi
 
-  print_status $RC "Is SELinux disabled?"
+  MESSAGE="Is SELinux in disabled mode, permissive mode or in enforcing mode with the targeted policy loaded?"
+  print_status $RC "$MESSAGE"
   (( OVERALL_RC += $RC ))
   return $RC
 }
@@ -516,8 +524,8 @@ function check_all() {
             "41281 zookeeper" \
             "46839 metronome" \
             "61053 mesos-dns" \
-            "61091 dcos-metrics" \
-            "61420 dcos-net" \
+            "61091 telegraf" \
+            "61092 dcos-metrics" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -529,8 +537,8 @@ function check_all() {
             "53 dcos-net" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
-            "61091 dcos-metrics" \
-            "61420 dcos-net" \
+            "61091 telegraf" \
+            "61092 dcos-metrics" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do

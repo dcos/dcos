@@ -1,5 +1,4 @@
 import pytest
-
 import retrying
 
 __maintainer__ = 'mnaboka'
@@ -32,15 +31,17 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-def test_metrics_agents_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_agents_prom(dcos_api_session, prometheus_port):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-def test_metrics_masters_prom(dcos_api_session):
+@pytest.mark.parametrize("prometheus_port", [61091, 61092])
+def test_metrics_masters_prom(dcos_api_session, prometheus_port):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -81,9 +82,16 @@ def test_metrics_node(dcos_api_session):
 
         return True
 
+    # Retry for 30 seconds for for the node metrics content to appear.
+    @retrying.retry(stop_max_delay=30000)
+    def wait_for_node_response(node):
+        response = dcos_api_session.metrics.get('/node', node=node)
+        assert response.status_code == 200
+        return response
+
     # private agents
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -92,7 +100,7 @@ def test_metrics_node(dcos_api_session):
 
     # public agents
     for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('/node', node=agent)
+        response = wait_for_node_response(agent)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -101,7 +109,7 @@ def test_metrics_node(dcos_api_session):
 
     # masters
     for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('/node', node=master)
+        response = wait_for_node_response(master)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
@@ -126,88 +134,81 @@ def test_metrics_containers(dcos_api_session):
 
         return True
 
+    def check_tags(tags: dict, expected_tag_names: set):
+        """Assert that tags contains only expected keys with nonempty values."""
+        assert set(tags.keys()) == expected_tag_names
+        for tag_name, tag_val in tags.items():
+            assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+
     @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
-        debug_eid = []
+        debug_task_name = []
 
         for agent in app_endpoints:
-
-            # Retry for two and a half minutes since the collector collects
-            # state every 2 minutes to propogate containers to the API
-            @retrying.retry(wait_fixed=2000, stop_max_delay=150000)
-            def wait_for_container_propogation():
-                response = dcos_api_session.metrics.get('/containers', node=agent.host)
-                assert response.status_code == 200
-                assert len(response.json()) > 0, 'must have at least 1 container'
-
-            wait_for_container_propogation()
-
-            response = dcos_api_session.metrics.get('/containers', node=agent.host)
-            for c in response.json():
+            for c in get_container_ids(dcos_api_session, agent.host):
                 # Test that /containers/<id> responds with expected data
-                container_id_path = '/containers/{}'.format(c)
-                container_response = dcos_api_session.metrics.get(container_id_path, node=agent.host)
-
-                # /containers/<container_id> should always respond succesfully
-                assert container_response.status_code == 200
-
-                assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
+                container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
+                assert 'datapoints' in container_metrics, 'got {}'.format(container_metrics)
 
                 cid_registry = []
-                for dp in container_response.json()['datapoints']:
+                for dp in container_metrics['datapoints']:
+                    # Verify expected tags are present.
                     assert 'tags' in dp, 'got {}'.format(dp)
-                    # blkio stats have 'device' tags as well
-                    assert len(dp['tags']) >= 5, 'got {}'.format(
-                        len(dp['tags']))
+                    expected_tag_names = {
+                        'container_id',
+                    }
+                    if 'executor_name' in dp['tags']:
+                        # if present we want to make sure it has a valid value.
+                        expected_tag_names.add('executor_name')
+                    if dp['name'].startswith('blkio.'):
+                        # blkio stats have 'blkio_device' tags.
+                        expected_tag_names.add('blkio_device')
+                    check_tags(dp['tags'], expected_tag_names)
 
                     # Ensure all container ID's in the container/<id> endpoint are
                     # the same.
-                    assert 'container_id' in dp['tags'], 'got {}'.format(dp['tags'])
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
 
-                    for k, v in dp['tags'].items():
-                        assert len(v) != 0, 'tag values must not be empty'
+                assert 'dimensions' in container_metrics, 'got {}'.format(container_metrics)
+                assert 'task_name' in container_metrics['dimensions'], 'got {}'.format(
+                    container_metrics['dimensions'])
 
-                assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
-                assert 'executor_id' in container_response.json()['dimensions'], 'got {}'.format(
-                    container_response.json()['dimensions'])
+                debug_task_name.append(container_metrics['dimensions']['task_name'])
 
-                debug_eid.append(container_response.json()['dimensions']['executor_id'])
-
-                # looking for "statsd-emitter.<some_uuid>"
-                if 'statsd-emitter' in container_response.json()['dimensions']['executor_id'].split('.'):
+                # looking for "statsd-emitter"
+                if 'statsd-emitter' == container_metrics['dimensions']['task_name']:
                     # Test that /app response is responding with expected data
-                    app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(c), node=agent.host)
-                    assert app_response.status_code == 200
-                    'got {}'.format(app_response.status_code)
+                    app_metrics = get_app_metrics(dcos_api_session, agent.host, c)
 
                     # Ensure all /container/<id>/app data is correct
-                    assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
-
                     # We expect three datapoints, could be in any order
                     uptime_dp = None
-                    for dp in app_response.json()['datapoints']:
-                        if dp['name'] == 'statsd_tester.time.uptime':
+                    for dp in app_metrics['datapoints']:
+                        if dp['name'] == 'statsd_tester_time_uptime':
                             uptime_dp = dp
                             break
 
                     # If this metric is missing, statsd-emitter's metrics were not received
-                    assert uptime_dp is not None, 'got {}'.format(app_response.json())
+                    assert uptime_dp is not None, 'got {}'.format(app_metrics)
 
                     datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
                     for k in datapoint_keys:
                         assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                    assert 'test_tag_key' in uptime_dp['tags'], 'got {}'.format(uptime_dp)
+                    expected_tag_names = {
+                        'dcos_cluster_id',
+                        'test_tag_key',
+                        'dcos_cluster_name',
+                        'host'
+                    }
+                    check_tags(uptime_dp['tags'], expected_tag_names)
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
-
-                    assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
 
                     return True
 
-        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_eid)
+        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_task_name)
 
     marathon_config = {
         "id": "/statsd-emitter",
@@ -220,3 +221,103 @@ def test_metrics_containers(dcos_api_session):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
         test_containers(endpoints)
+
+
+def test_metrics_containers_nan(dcos_api_session):
+    """Assert that the metrics API can handle app metric gauges with NaN values."""
+    task_name = 'test-metrics-containers-nan'
+    metric_name = 'test_metrics_containers_nan'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            'echo "Sending gauge with NaN value to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+            'echo "{}:NaN|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name),
+            'echo "Done. Sleeping forever."',
+            'while true; do',
+            '  sleep 1000',
+            'done',
+        ]),
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/alpine'}
+        },
+        'networks': [{'mode': 'host'}],
+    }
+
+    @retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+    def _get_app_metric_datapoint_value_for_task(dcos_api_session, node: str, task_name: str, dp_name: str):
+        app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
+        assert app_metrics is not None, "missing metrics for task {}".format(task_name)
+        dps = [dp for dp in app_metrics['datapoints'] if dp['name'] == dp_name]
+        assert len(dps) == 1, 'expected 1 datapoint for metric {}, got {}'.format(dp_name, len(dps))
+        return dps[0]['value']
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+
+        # NaN should be converted to empty string.
+        metric_value = _get_app_metric_datapoint_value_for_task(dcos_api_session, node, task_name, metric_name)
+        assert metric_value == '', 'unexpected metric value: {}'.format(metric_value)
+
+
+@retrying.retry(retry_on_result=lambda result: result is None, wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
+    """Return container metrics for task_name.
+
+    Returns None if container metrics for task_name can't be found. Retries on
+    error, non-200 status, or missing container metrics for up to 150 seconds.
+
+    """
+    for cid in get_container_ids(dcos_api_session, node):
+        container_metrics = get_container_metrics(dcos_api_session, node, cid)
+        if container_metrics['dimensions'].get('task_name') == task_name:
+            return get_app_metrics(dcos_api_session, node, cid)
+    return None
+
+
+# Retry for two and a half minutes since the collector collects
+# state every 2 minutes to propogate containers to the API
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+def get_container_ids(dcos_api_session, node: str):
+    """Return container IDs reported by the metrics API on node.
+
+    Retries on error, non-200 status, or empty response for up to 150 seconds.
+
+    """
+    response = dcos_api_session.metrics.get('/containers', node=node)
+    assert response.status_code == 200
+    container_ids = response.json()
+    assert len(container_ids) > 0, 'must have at least 1 container'
+    return container_ids
+
+
+@retrying.retry(stop_max_delay=(30 * 1000))
+def get_container_metrics(dcos_api_session, node: str, container_id: str):
+    """Return container_id's metrics from the metrics API on node.
+
+    Retries on error or non-200 status for up to 30 seconds.
+
+    """
+    response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
+    assert response.status_code == 200
+    return response.json()
+
+
+@retrying.retry(stop_max_delay=(30 * 1000))
+def get_app_metrics(dcos_api_session, node: str, container_id: str):
+    """Return app metrics for container_id from the metrics API on node.
+
+    Retries on error or non-200 status for up to 30 seconds.
+
+    """
+    resp = dcos_api_session.metrics.get('/containers/' + container_id + '/app', node=node)
+    assert resp.status_code == 200, 'got {}'.format(resp.status_code)
+    app_metrics = resp.json()
+    assert 'datapoints' in app_metrics, 'got {}'.format(app_metrics)
+    assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
+    return app_metrics

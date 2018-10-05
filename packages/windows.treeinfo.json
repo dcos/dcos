@@ -76,6 +76,7 @@
     "six",
     "strace",
     "teamcity-messages",
+    "telegraf",
     "toybox"
   ]
 }

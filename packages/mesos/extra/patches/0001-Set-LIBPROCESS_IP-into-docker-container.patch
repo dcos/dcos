@@ -1,4 +1,4 @@
-From 0f762c15455900083f7a3f72c6cdc60a418ec12f Mon Sep 17 00:00:00 2001
+From c572e2468545c00ba518ca8f1d773d58a4ba5fca Mon Sep 17 00:00:00 2001
 From: Michael Park <mpark@apache.org>
 Date: Thu, 15 Oct 2015 19:54:02 -0700
 Subject: [PATCH] Set LIBPROCESS_IP into docker container.
@@ -8,10 +8,10 @@ Subject: [PATCH] Set LIBPROCESS_IP into docker container.
  1 file changed, 5 insertions(+)
 
 diff --git a/src/docker/docker.cpp b/src/docker/docker.cpp
-index d000a902f..f639625f3 100644
+index baac70f25..c61dbae70 100644
 --- a/src/docker/docker.cpp
 +++ b/src/docker/docker.cpp
-@@ -658,6 +658,11 @@ Try<Docker::RunOptions> Docker::RunOptions::create(
+@@ -681,6 +681,11 @@ Try<Docker::RunOptions> Docker::RunOptions::create(
    options.env["MESOS_SANDBOX"] = mappedDirectory;
    options.env["MESOS_CONTAINER_NAME"] = name;
  

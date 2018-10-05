@@ -430,7 +430,7 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
 def calculate_mesos_isolation(enable_gpu_isolation):
     isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
                  'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
-                 'com_mesosphere_MetricsIsolatorModule')
+                 'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',gpu/nvidia'
     return isolators
@@ -712,6 +712,15 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
 
 
 def calculate_check_config(check_time):
+    # We consider only two timeouts:
+    # * 1s for immediate checks (such as checking for the presence of CLI utilities).
+    # * 30s for any check which is expected to take more than 1s.
+    #
+    # The 30s value was chosen arbitrarily. It may be increased in the future as required.
+    # We chose not to use a value greater than 1min, as the checks are automatically executed
+    # in parallel every minute.
+    instant_check_timeout = "1s"
+    normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
             'checks': {
@@ -719,45 +728,45 @@ def calculate_check_config(check_time):
                     'description': 'All DC/OS components are healthy.',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'components',
                             '--exclude=dcos-checks-poststart.timer,dcos-checks-poststart.service'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'components_agent': {
                     'description': 'All DC/OS components are healthy',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'components', '--port', '61001',
                             '--exclude=dcos-checks-poststart.service,dcos-checks-poststart.timer'],
-                    'timeout': '3s',
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'xz': {
                     'description': 'The xz utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'xz'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'tar': {
                     'description': 'The tar utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'tar'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'curl': {
                     'description': 'The curl utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'curl'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'unzip': {
                     'description': 'The unzip utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'ifconfig': {
                     'description': 'The ifconfig utility is available',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': '1s'
+                    'timeout': instant_check_timeout
                 },
                 'docker': {
                     'description': 'Docker is installed',
@@ -767,19 +776,19 @@ def calculate_check_config(check_time):
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'master', 'mesos-metrics'],
-                    'timeout': '30s',
+                    'timeout': normal_check_timeout,
                     'roles': ['master']
                 },
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
                     'description': 'Journald directory has the right owners and permissions',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
-                    'timeout': '1s',
+                    'timeout': instant_check_timeout,
                 },
             },
             'prestart': [],
@@ -806,7 +815,7 @@ def calculate_check_config(check_time):
         check_config['node_checks']['checks'][clock_sync_check_name] = {
             'description': 'System clock is in sync.',
             'cmd': ['/opt/mesosphere/bin/dcos-checks', 'time'],
-            'timeout': '1s'
+            'timeout': instant_check_timeout
         }
         check_config['node_checks']['poststart'].append(clock_sync_check_name)
 
@@ -967,8 +976,10 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
+        lambda log_offers: validate_true_false(log_offers),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -983,6 +994,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
         'telemetry_enabled': 'true',
@@ -1077,10 +1089,12 @@ entry = {
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
-        'enable_mesos_ipv6_discovery': 'false'
+        'enable_mesos_ipv6_discovery': 'false',
+        'log_offers': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1092,6 +1106,7 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
