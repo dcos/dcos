@@ -8,6 +8,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 LATENCY = 60
 
 
+@pytest.mark.supportedwindows
 def test_metrics_agents_ping(dcos_api_session):
     """ Test that the metrics service is up on masters.
     """
@@ -38,6 +39,7 @@ def test_metrics_agents_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
+@pytest.mark.supportedwindows
 @pytest.mark.parametrize("prometheus_port", [61091, 61092])
 def test_metrics_masters_prom(dcos_api_session, prometheus_port):
     for master in dcos_api_session.masters:
@@ -45,6 +47,7 @@ def test_metrics_masters_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
+@pytest.mark.supportedwindows
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
