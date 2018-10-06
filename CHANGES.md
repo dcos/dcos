@@ -15,6 +15,8 @@ Format of the entries must be.
 
 ### What's new
 
+* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
 * Node checks verify if Docker is installed. (DCOS_OSS-3845)
