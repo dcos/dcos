@@ -17,7 +17,12 @@ Format of the entries must be.
 
 * Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
 
+* Node checks verify if Docker is installed. (DCOS_OSS-3845)
+
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+
 * Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
+
 
 * DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded. (DCOS-38953)
 
