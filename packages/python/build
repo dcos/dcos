@@ -30,16 +30,17 @@ export LD_LIBRARY_PATH=$PKG_PATH/lib
 export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.6/site-packages"
 $PKG_PATH/bin/python3 -m pip install --upgrade --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/setuptools/*.whl
 
-# Install pip from git checkout, because we need the fix for
+# Upgrade pip. With CPython 3.6.6 comes pip 9.0.3 which contains
+# a bug which was fixed only in pip 10.0.0 and beyond. The bug is
 # https://github.com/pypa/pip/issues/373 i.e. we need the patch
 # https://github.com/pypa/pip/pull/4495 for subsequent pip
 # invocations. For _this_ pip invocation here (for upgrading pip...),
 # however, the bug pip/issues/373 is present and needs to be worked
-# around by manually creating the egg directory as a _relative_ path
-# `opt/mesosphere/active.....pip-10.0.0.dev0-py3.6.egg-info`.
-ABSDIR="$PKG_PATH/lib/python3.6/site-packages/pip-10.0.0.dev0-py3.6.egg-info"
-RELDIR="${ABSDIR:1}"
-mkdir -p $RELDIR
+# around by manually creating the dist directory as a _relative_ path
+# `opt/mesosphere/active.....pip-18.1.dist-info`.
+#ABSDIR="$PKG_PATH/lib/python3.6/site-packages/pip-18.1.dist-info"
+#RELDIR="${ABSDIR:1}"
+#mkdir -p $RELDIR
 $PKG_PATH/bin/python3 -m pip install --upgrade --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/pip
 echo "pip version: $($PKG_PATH/bin/pip3 --version)"
 
