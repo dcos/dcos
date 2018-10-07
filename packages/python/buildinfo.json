@@ -17,8 +17,8 @@
     },
     "setuptools": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/0f/40/b3c98aa32bc91d3d8c573443a29aa482d77268d77132b63f09d8385b21ff/setuptools-37.0.0-py2.py3-none-any.whl",
-      "sha1": "da26335ea77a8680a983a3cfb57f304447c26df5"
+      "url": "https://files.pythonhosted.org/packages/96/06/c8ee69628191285ddddffb277bd5abdf769166e7a14b867c2a172f0175b1/setuptools-40.4.3-py2.py3-none-any.whl",
+      "sha1": "40410299ab3c7b091f9dff4dd7bda7f874c4d1b6"
     },
     "pip": {
       "kind": "url_extract",
