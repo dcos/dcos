@@ -11,7 +11,6 @@ from generic_test_code.common import (
 )
 from generic_test_code.open import assert_iam_queried_for_uid
 from mocker.endpoints.mesos import AGENT1_ID
-from util import SearchCriteria, iam_denies_all_requests
 
 log = logging.getLogger(__name__)
 
@@ -45,20 +44,22 @@ authed_endpoints = [
 
 
 class TestAuthEnforcementOpen:
-    @pytest.mark.parametrize("path", authed_endpoints)
-    def test_if_unknown_user_is_forbidden_access(
-            self, mocker, master_ar_process, path, valid_user_header):
-        log_messages = {
-            'User not found: `bozydar`':
-                SearchCriteria(1, True)}
-        with iam_denies_all_requests(mocker):
-            with assert_iam_queried_for_uid(mocker, 'bozydar'):
-                assert_endpoint_response(
-                    master_ar_process,
-                    path,
-                    401,
-                    headers=valid_user_header,
-                    assert_stderr=log_messages)
+    # Note(JP): this test assumes that the IAM is in the hot path for
+    # authorization. That should not be the case, by design.
+    # @pytest.mark.parametrize("path", authed_endpoints)
+    # def test_if_unknown_user_is_forbidden_access(
+    #         self, mocker, master_ar_process, path, valid_user_header):
+    #     log_messages = {
+    #         'User not found: `bozydar`':
+    #             SearchCriteria(1, True)}
+    #     with iam_denies_all_requests(mocker):
+    #         with assert_iam_queried_for_uid(mocker, 'bozydar'):
+    #             assert_endpoint_response(
+    #                 master_ar_process,
+    #                 path,
+    #                 401,
+    #                 headers=valid_user_header,
+    #                 assert_stderr=log_messages)
 
     @pytest.mark.parametrize("path", authed_endpoints)
     def test_if_known_user_is_permitted_access(

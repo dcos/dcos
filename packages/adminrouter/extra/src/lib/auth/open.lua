@@ -17,6 +17,7 @@ else
         AUTH_TOKEN_VERIFICATION_KEY = nil
         ngx.log(ngx.WARN, "Auth token verification key not set or empty string.")
     end
+    -- Note(JP): by the end of this project set this to RS256 only.
     jwt:set_alg_whitelist({RS256=1,HS256=1})
 end
 

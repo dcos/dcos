@@ -28,7 +28,7 @@ class TestSecretKeyFilePathEnvVarBehaviour:
             'AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH not set.':
                 SearchCriteria(1, False)
         }
-        ar = nginx_class(role=role, secret_key_file_path=None)
+        ar = nginx_class(role=role, auth_token_verification_key_file_path=None)
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp,
@@ -43,7 +43,7 @@ class TestSecretKeyFilePathEnvVarBehaviour:
         # Scanning for the exact log entry is bad, but in this case - can't be
         # avoided.
         filter_regexp = {'Secret key not set or empty string.': SearchCriteria(1, False)}
-        ar = nginx_class(role=role, secret_key_file_path=empty_file)
+        ar = nginx_class(role=role, auth_token_verification_key_file_path=empty_file)
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp,
@@ -61,9 +61,9 @@ class TestSecretKeyFilePathEnvVarBehaviour:
             self, nginx_class, role, use_empty, empty_file, valid_user_header):
 
         if use_empty:
-            ar = nginx_class(role=role, secret_key_file_path=empty_file)
+            ar = nginx_class(role=role, auth_token_verification_key_file_path=empty_file)
         else:
-            ar = nginx_class(role=role, secret_key_file_path=None)
+            ar = nginx_class(role=role, auth_token_verification_key_file_path=None)
         url = ar.make_url_from_path()
 
         with GuardedSubprocess(ar):

@@ -19,7 +19,7 @@ class Nginx(NginxBase):
                  ouath_client_id="3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m",
                  ouath_auth_redirector="https://auth.dcos.io",
                  auth_token_verification_key_file_path=os.environ.get(
-                     "IAM_SHARED_SECRET_FILE_PATH"),
+                     "IAM_PUBKEY_FILE_PATH"),
                  **base_kwargs):
         """Initialize new AR/Nginx instance
 
