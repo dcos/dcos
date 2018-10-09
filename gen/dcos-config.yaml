@@ -273,7 +273,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                        "value" : "{{ mesos_master_log_file }}"
                       }
                     ]
                 }
@@ -296,7 +296,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/log/mesos/mesos-agent.log"
+                        "value" : "{{ mesos_agent_log_file }}"
                       }
                     ]
                 }
@@ -475,13 +475,13 @@ package:
       notifempty
       missingok
       nomail
-      /var/lib/dcos/mesos/log/mesos-master.log {
+      {{ mesos_master_log_file }} {
           olddir /var/lib/dcos/mesos/log/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} {{ mesos_master_log_file }}
           endscript
       }
   - path: /etc/logrotate_agent.config
@@ -491,20 +491,20 @@ package:
       notifempty
       missingok
       nomail
-      /var/log/mesos/mesos-agent.log {
+      {{ mesos_agent_log_file }} {
           olddir /var/log/mesos/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} {{ mesos_agent_log_file }}
           endscript
       }
   - path: /etc/mesos-master
     content: |
       GLOG_drop_log_memory=false
       LIBPROCESS_NUM_WORKER_THREADS=16
-      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
+      MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       MESOS_HOSTNAME_LOOKUP=false
@@ -551,7 +551,7 @@ package:
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
       MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
-      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
+      MESOS_EXTERNAL_LOG_FILE={{ mesos_agent_log_file }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
       MESOS_HOSTNAME_LOOKUP=false
@@ -950,11 +950,11 @@ package:
                   "Location": "/proc/self/mountinfo"
               },
               {
-                  "Location": "/var/log/mesos/mesos-agent.log",
+                  "Location": "{{ mesos_agent_log_file }}",
                   "Role": ["agent", "agent_public"]
               },
               {
-                  "Location": "/var/lib/dcos/mesos/log/mesos-master.log",
+                  "Location": "{{ mesos_master_log_file }}",
                   "Role": ["master"]
               }
           ],
