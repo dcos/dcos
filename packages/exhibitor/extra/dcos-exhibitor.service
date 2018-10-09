@@ -21,6 +21,14 @@ EnvironmentFile=/opt/mesosphere/etc/exhibitor
 EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
 # Execute ExecStartPre directives as root
 PermissionsStartOnly=true
+
+# Assert that the system clock is synced. If it isn't, Exhibitor may fail to join the cluster and require a restart.
+# Use the check-time binary instead of the clock_sync check because it no-ops if clock sync checks have been disabled in
+# cluster config.
+# check_time.env defines the env var that check-time uses to determine whether clock sync checks have been disabled.
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
+ExecStartPre=/opt/mesosphere/bin/check-time
+
 # Execute a python script, as root, that sets file permissions to some exact set if those files exist.
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
