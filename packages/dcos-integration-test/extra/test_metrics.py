@@ -47,7 +47,7 @@ def test_metrics_masters_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.parametrize("prometheus_port", 61091)
+@pytest.mark.parametrize("prometheus_port", [61091])
 def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
     """Assert that mesos metrics on agents are present."""
     for agent in dcos_api_session.slaves:
@@ -55,7 +55,7 @@ def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
         assert 'mesos_slave_uptime_secs' in response.content
 
 
-@pytest.mark.parametrize("prometheus_port", 61091)
+@pytest.mark.parametrize("prometheus_port", [61091])
 def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
     """Assert that mesos metrics on masters are present."""
     for master in dcos_api_session.masters:
