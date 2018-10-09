@@ -59,7 +59,7 @@ def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
 def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
     """Assert that mesos metrics on masters are present."""
     for agent in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
         assert 'mesos_master_uptime_secs' in response.content
 
 
