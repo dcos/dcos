@@ -1354,7 +1354,6 @@ package:
         master_collections = [
           "resources",
           "master",
-          # "system",
           "agents",
           "frameworks",
           "framework_offers",
@@ -1412,7 +1411,6 @@ package:
         slave_collections = [
           "resources",
           "agent",
-          # "system",
           "executors",
           "tasks",
           "messages",
@@ -1465,7 +1463,6 @@ package:
         slave_collections = [
           "resources",
           "agent",
-          # "system",
           "executors",
           "tasks",
           "messages",
