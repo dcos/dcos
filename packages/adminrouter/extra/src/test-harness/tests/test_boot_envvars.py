@@ -42,7 +42,7 @@ class TestSecretKeyFilePathEnvVarBehaviour:
             self, nginx_class, role, empty_file):
         # Scanning for the exact log entry is bad, but in this case - can't be
         # avoided.
-        filter_regexp = {'Secret key not set or empty string.': SearchCriteria(1, False)}
+        filter_regexp = {'Auth token verification key not set': SearchCriteria(1, False)}
         ar = nginx_class(role=role, auth_token_verification_key_file_path=empty_file)
 
         with GuardedSubprocess(ar):

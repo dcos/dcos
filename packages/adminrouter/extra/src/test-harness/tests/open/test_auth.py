@@ -52,7 +52,7 @@ class TestAuthnJWTValidatorOpen:
         # tests - one for open, one for EE, each one having different log
         # message.
         log_messages = {
-            "Invalid token. Reason: signature mismatch":
+            "Invalid token":
                 SearchCriteria(1, True),
             }
 
