@@ -1,0 +1,25 @@
+#!/bin/bash
+libdir="$PKG_PATH/lib"
+
+pushd "/pkg/src/nix"
+
+# Apply patches from packages/mesos/patch directory. All patches are numbered
+# (todo - replace `git am` by raw `patch` when this gets un-commented again)
+#for patch in /pkg/extra/patches/*; do
+#  git -c user.name="Mesosphere CI" -c user.email="mesosphere-ci@users.noreply.github.com" am $patch
+#done
+
+mkdir -p build
+pushd build
+
+LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/nix/configure" \
+  --prefix="$PKG_PATH" \
+  --with-store-dir=/opt/mesosphere/store \
+  CXXFLAGS="-g -O2 -std=c++1y"
+
+make -j$NUM_CORES
+make install
+
+popd
+popd
+
