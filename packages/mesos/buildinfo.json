@@ -7,9 +7,9 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "3e185f14075b827b8ea3b03a48ed2cd136ce8158",
-    "ref_origin": "1.7.x"
+    "git": "https://github.com/chhsia0/mesos",
+    "ref": "6781fdbcdf97ee36ae18573c5d1bc84326c069de",
+    "ref_origin": "slrp-logging"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
