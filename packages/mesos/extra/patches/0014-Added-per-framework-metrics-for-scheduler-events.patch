@@ -1,4 +1,4 @@
-From 93cdc622f7cfd625efe6350f9749401df069fe5d Mon Sep 17 00:00:00 2001
+From 971a5419001bd794c4f05e7f40fc25e7fb2695d0 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:22 -0700
 Subject: [PATCH] Added per-framework metrics for scheduler events.
@@ -172,5 +172,5 @@ index 7a7b3a316..fac4440da 100644
  
  
 -- 
-2.17.0
+2.16.3
 

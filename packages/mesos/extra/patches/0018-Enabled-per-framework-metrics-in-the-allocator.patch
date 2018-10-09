@@ -1,4 +1,4 @@
-From e869c6699a0724409e5f7ad7d3603c430e228a25 Mon Sep 17 00:00:00 2001
+From ca75fb8ec87dfd450451aa79c06ea453570b05c0 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:45 -0700
 Subject: [PATCH] Enabled per-framework metrics in the allocator.
@@ -81,5 +81,5 @@ index 6d386225c..daac93f7e 100644
  } // namespace allocator {
  } // namespace master {
 -- 
-2.17.0
+2.16.3
 

@@ -1,4 +1,4 @@
-From f2333b09a468d213a7f3f0d28be2a25e2de03782 Mon Sep 17 00:00:00 2001
+From 3d475dc17d09358dedbc1659d63e1567f0283cce Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:57:56 -0700
 Subject: [PATCH] Enabled per-framework metrics in the master.
@@ -99,5 +99,5 @@ index 1ef74dedf..9f10aecba 100644
  } // namespace internal {
  } // namespace mesos {
 -- 
-2.17.0
+2.16.3
 

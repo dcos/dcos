@@ -1,31 +1,31 @@
-From 24861367975f9d63906082a92d1d900b89ee782e Mon Sep 17 00:00:00 2001
+From 84e5d04ca3246330be93ae5ea467c502e2adca3e Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
 Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
 
 Review: https://reviews.apache.org/r/66832/
 ---
- src/examples/balloon_framework.cpp            |  8 +--
- src/examples/disk_full_framework.cpp          |  8 +--
- src/examples/long_lived_framework.cpp         |  8 +--
- src/log/log.hpp                               |  2 +-
- src/log/metrics.hpp                           |  6 +--
- src/master/allocator/mesos/metrics.cpp        | 32 +++++------
- src/master/allocator/mesos/metrics.hpp        | 26 ++++-----
- src/master/allocator/sorter/drf/metrics.cpp   |  6 +--
- src/master/allocator/sorter/drf/metrics.hpp   |  4 +-
- src/master/master.hpp                         |  2 +-
- src/master/metrics.cpp                        | 28 +++++-----
- src/master/metrics.hpp                        | 54 +++++++++----------
- src/master/registrar.cpp                      | 10 ++--
- src/sched/sched.cpp                           |  6 +--
- src/scheduler/scheduler.cpp                   |  6 +--
- src/slave/containerizer/fetcher_process.hpp   |  6 +--
- .../mesos/isolators/filesystem/linux.hpp      |  4 +-
- src/slave/gc_process.hpp                      |  4 +-
- src/slave/metrics.cpp                         | 28 +++++-----
- src/slave/metrics.hpp                         | 36 ++++++-------
- src/slave/slave.hpp                           |  2 +-
+ src/examples/balloon_framework.cpp                 |  8 ++--
+ src/examples/disk_full_framework.cpp               |  8 ++--
+ src/examples/long_lived_framework.cpp              |  8 ++--
+ src/log/log.hpp                                    |  2 +-
+ src/log/metrics.hpp                                |  6 +--
+ src/master/allocator/mesos/metrics.cpp             | 32 ++++++-------
+ src/master/allocator/mesos/metrics.hpp             | 26 +++++------
+ src/master/allocator/sorter/drf/metrics.cpp        |  6 +--
+ src/master/allocator/sorter/drf/metrics.hpp        |  4 +-
+ src/master/master.hpp                              |  2 +-
+ src/master/metrics.cpp                             | 28 +++++------
+ src/master/metrics.hpp                             | 54 +++++++++++-----------
+ src/master/registrar.cpp                           | 10 ++--
+ src/sched/sched.cpp                                |  6 +--
+ src/scheduler/scheduler.cpp                        |  6 +--
+ src/slave/containerizer/fetcher_process.hpp        |  6 +--
+ .../mesos/isolators/filesystem/linux.hpp           |  4 +-
+ src/slave/gc_process.hpp                           |  4 +-
+ src/slave/metrics.cpp                              | 28 +++++------
+ src/slave/metrics.hpp                              | 36 +++++++--------
+ src/slave/slave.hpp                                |  2 +-
  21 files changed, 143 insertions(+), 143 deletions(-)
 
 diff --git a/src/examples/balloon_framework.cpp b/src/examples/balloon_framework.cpp
@@ -649,7 +649,7 @@ index ffb458208..f6ce6fd97 100644
    {
      return operations.size();
 diff --git a/src/sched/sched.cpp b/src/sched/sched.cpp
-index 613a33b7d..ea5927cf7 100644
+index e5e82d5d7..bde1cf7bb 100644
 --- a/src/sched/sched.cpp
 +++ b/src/sched/sched.cpp
 @@ -61,7 +61,7 @@
@@ -661,7 +661,7 @@ index 613a33b7d..ea5927cf7 100644
  #include <process/metrics/metrics.hpp>
  
  #include <stout/abort.hpp>
-@@ -1613,8 +1613,8 @@ private:
+@@ -1608,8 +1608,8 @@ private:
      }
  
      // Process metrics.
@@ -941,10 +941,10 @@ index 3fc933ca6..2adff6664 100644
  
  } // namespace slave {
 diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
-index ca8cc65bd..b74e44e92 100644
+index d638b8806..8d42011be 100644
 --- a/src/slave/slave.hpp
 +++ b/src/slave/slave.hpp
-@@ -664,7 +664,7 @@ private:
+@@ -663,7 +663,7 @@ private:
    process::Future<Nothing> publishResources(
        const Option<Resources>& additionalResources = None());
  
@@ -954,5 +954,5 @@ index ca8cc65bd..b74e44e92 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.17.0
+2.16.3
 

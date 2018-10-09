@@ -1,4 +1,4 @@
-From c217ed0a3ae273d7e9fa7cb7573da0f8ff537b64 Mon Sep 17 00:00:00 2001
+From b0714564fede6fb9904ce1b2e9a9c4cd3a595883 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:25 -0700
 Subject: [PATCH] Added per-framework offer metrics.
@@ -11,7 +11,7 @@ Review: https://reviews.apache.org/r/67812/
  3 files changed, 38 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 132eda971..91f907c1f 100644
+index 2244701e1..3a337e7b4 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -4029,6 +4029,8 @@ void Master::accept(
@@ -76,7 +76,7 @@ index 132eda971..91f907c1f 100644
    framework->send(message);
  }
  
-@@ -10839,6 +10852,7 @@ void Master::removeOffer(Offer* offer, bool rescind)
+@@ -10843,6 +10856,7 @@ void Master::removeOffer(Offer* offer, bool rescind)
    if (rescind) {
      RescindResourceOfferMessage message;
      message.mutable_offer_id()->MergeFrom(offer->id());
@@ -142,5 +142,5 @@ index fac4440da..b6fe20fb5 100644
  
  
 -- 
-2.17.0
+2.16.3
 

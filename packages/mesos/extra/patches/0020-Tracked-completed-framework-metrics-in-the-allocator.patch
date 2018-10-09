@@ -1,4 +1,4 @@
-From 7307642eba6d968079e00c35681fd7414d734bbb Mon Sep 17 00:00:00 2001
+From 1d7770d271ea766b36a885d60239f279c0fd7035 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:49 -0700
 Subject: [PATCH] Tracked completed framework metrics in the allocator.
@@ -9,16 +9,16 @@ which are tracked in the master.
 
 Review: https://reviews.apache.org/r/66856/
 ---
- include/mesos/allocator/allocator.hpp       |  3 +-
- src/master/allocator/mesos/allocator.hpp    | 12 ++++---
- src/master/allocator/mesos/hierarchical.cpp | 15 +++++++--
- src/master/allocator/mesos/hierarchical.hpp |  8 ++++-
- src/master/master.cpp                       |  3 +-
- src/tests/allocator.hpp                     | 11 ++++---
- src/tests/api_tests.cpp                     |  4 +--
- src/tests/master_allocator_tests.cpp        | 36 ++++++++++-----------
- src/tests/master_quota_tests.cpp            | 20 ++++++------
- src/tests/reservation_tests.cpp             |  6 ++--
+ include/mesos/allocator/allocator.hpp       |  3 ++-
+ src/master/allocator/mesos/allocator.hpp    | 12 ++++++----
+ src/master/allocator/mesos/hierarchical.cpp | 15 ++++++++++--
+ src/master/allocator/mesos/hierarchical.hpp |  8 ++++++-
+ src/master/master.cpp                       |  3 ++-
+ src/tests/allocator.hpp                     | 11 +++++----
+ src/tests/api_tests.cpp                     |  4 ++--
+ src/tests/master_allocator_tests.cpp        | 36 ++++++++++++++---------------
+ src/tests/master_quota_tests.cpp            | 20 ++++++++--------
+ src/tests/reservation_tests.cpp             |  6 ++---
  src/tests/resource_offers_tests.cpp         |  2 +-
  src/tests/slave_recovery_tests.cpp          |  2 +-
  12 files changed, 73 insertions(+), 49 deletions(-)
@@ -169,7 +169,7 @@ index ff96beea3..b86b01b00 100644
    {
    public:
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 42fce66ed..9a887ae17 100644
+index 184c9e01c..62a248cc7 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -810,7 +810,8 @@ void Master::initialize()
@@ -227,7 +227,7 @@ index 73fc06043..eef876609 100644
    MOCK_METHOD2(recover, void(
        const int expectedAgentCount,
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index bc6ca510b..3f62d676a 100644
+index 5985070f8..742496ba5 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -1060,7 +1060,7 @@ TEST_P(MasterAPITest, ReserveResources)
@@ -566,5 +566,5 @@ index 60efba54b..036b96c65 100644
    Try<Owned<cluster::Master>> master = this->StartMaster(&allocator);
    ASSERT_SOME(master);
 -- 
-2.17.0
+2.16.3
 
