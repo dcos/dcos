@@ -948,6 +948,14 @@ package:
               },
               {
                   "Location": "/proc/self/mountinfo"
+              },
+              {
+                  "Location": "/var/log/mesos/mesos-agent.log",
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Location": "/var/lib/dcos/mesos/log/mesos-master.log",
+                  "Role": ["master"]
               }
           ],
           "LocalCommands": [

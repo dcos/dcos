@@ -11,5 +11,7 @@
 
 ### Fixed and improved
 
+* Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
+
 
 ### Notable changes
