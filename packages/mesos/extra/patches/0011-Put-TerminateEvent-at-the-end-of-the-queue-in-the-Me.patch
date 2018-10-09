@@ -1,0 +1,38 @@
+From 1b6cb1822087fb4313b31cd739dd7f0c114a6201 Mon Sep 17 00:00:00 2001
+From: Alexander Rukletsov <alexr@apache.org>
+Date: Thu, 27 Sep 2018 15:20:01 +0200
+Subject: [PATCH] Put `TerminateEvent` at the end of the queue in the Mesos
+ library.
+
+This is to ensure all pending dispatches are processed. However
+multistage events, e.g., `Call`, might still be dropped, because
+a continuation (stage) of such event can be dispatched after the
+termination event.
+
+Review: https://reviews.apache.org/r/68865
+(cherry picked from commit 8f400c3e5abe0fa1810a6efd56bc3fecabf1bbd3)
+---
+ src/scheduler/scheduler.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/scheduler/scheduler.cpp b/src/scheduler/scheduler.cpp
+index ce6925802..d805d243e 100644
+--- a/src/scheduler/scheduler.cpp
++++ b/src/scheduler/scheduler.cpp
+@@ -864,7 +864,12 @@ void Mesos::reconnect()
+ void Mesos::stop()
+ {
+   if (process != nullptr) {
+-    terminate(process);
++    // We pass 'false' here to add the termination event at the end of the
++    // `MesosProcess` queue. This is to ensure all pending dispatches are
++    // processed. However multistage events, e.g., `Call`, might still be
++    // dropped, because a continuation (stage) of such event can be dispatched
++    // after the termination event, see MESOS-9274.
++    terminate(process, false);
+     wait(process);
+ 
+     delete process;
+-- 
+2.16.3
+
