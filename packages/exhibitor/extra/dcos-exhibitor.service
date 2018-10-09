@@ -19,4 +19,12 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
 EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
+
+# Assert that the system clock is synced. If it isn't, Exhibitor may fail to join the cluster and require a restart.
+# Use the check-time binary instead of the clock_sync check because it no-ops if clock sync checks have been disabled in
+# cluster config.
+# check_time.env defines the env var that check-time uses to determine whether clock sync checks have been disabled.
+EnvironmentFile=/opt/mesosphere/etc/check_time.env
+ExecStartPre=/opt/mesosphere/bin/check-time
+
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
