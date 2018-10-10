@@ -45,6 +45,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Check system clock is synced before starting Exhibitor (DCOS_OSS-4287)
+
 * Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
 
 * Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
