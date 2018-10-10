@@ -36,7 +36,7 @@ from docopt import docopt
 
 from pkgpanda import actions, constants, Install, PackageId, Repository
 from pkgpanda.exceptions import PackageError, PackageNotFound, ValidationError
-from pkgpanda.util import remove_directory, remove_file
+from pkgpanda.util import is_windows, remove_directory, remove_file
 
 
 def print_repo_list(packages):
@@ -97,10 +97,20 @@ def find_checks(install, repository):
         package_check_dir = repository.load(active_package).check_dir
         if not os.path.isdir(package_check_dir):
             continue
+
         for check_file in sorted(os.listdir(package_check_dir)):
-            if not os.access(os.path.join(package_check_dir, check_file), os.X_OK):
-                print('WARNING: `{}` is not executable'.format(check_file), file=sys.stderr)
-                continue
+            full_check_file = os.path.join(package_check_dir, check_file)
+            _, extension = os.path.splitext(full_check_file)
+
+            if is_windows:
+                if extension != ".py" and extension != ".ps1":
+                    print('WARNING: `{}` file-type is not supported'.format(check_file), file=sys.stderr)
+                    continue
+            else:
+                if not os.access(full_check_file, os.X_OK):
+                    print('WARNING: `{}` is not executable'.format(check_file), file=sys.stderr)
+                    continue
+
             tmp_checks[active_package].append(check_file)
         if tmp_checks[active_package]:
             checks.update(tmp_checks)
@@ -120,7 +130,23 @@ def run_checks(checks, install, repository):
         check_dir = repository.load(pkg_id).check_dir
         for check_file in check_files:
             try:
-                check_call([os.path.join(check_dir, check_file)])
+                full_check_file = os.path.join(check_dir, check_file)
+                _, extension = os.path.splitext(full_check_file)
+
+                # If we are on windows, we only support executing '.py' and
+                # '.ps1' files as checks (as collected above in
+                # 'find_checks()'. To execute these checks, we need to invoke
+                # python.exe or powershell.exe and pass these files as
+                # arguments to them instead of executing them directly.
+                if is_windows:
+                    if extension == ".py":
+                        command = ["python.exe", full_check_file]
+                    elif extension == ".ps1":
+                        command = ["powershell.exe", full_check_file]
+                else:
+                    command = [full_check_file]
+
+                check_call(command)
             except CalledProcessError:
                 print('Check failed: {}'.format(check_file), file=sys.stderr)
                 exit_code = 1
