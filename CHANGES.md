@@ -6,6 +6,8 @@
 
 ### Fixed and improved
 
+* Check system clock is synced before starting Exhibitor (DCOS_OSS-4287)
+
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 ### Security Updates
