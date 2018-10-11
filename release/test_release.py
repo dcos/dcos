@@ -78,13 +78,13 @@ def test_strip_locals():
     assert src_list == [{'a': {'local_a': 'foo'}, 'local_b': '/test', 'c': {'d': 'e', 'f': 'g'}}, 'local_h']
 
 
-def exercise_storage_provider(tmpdir, name, config):
+def exercise_storage_provider(tmpdir, name, config, sep='/'):
     store = release.call_matching_arguments(release.get_storage_provider_factory(name), config, True)
 
     # Make a uniquely named test storage location, and try to upload / copy files
     # inside that location.
     test_id = uuid.uuid4().hex
-    test_base_path = 'dcos-image-test-tmp/{}'.format(test_id)
+    test_base_path = 'dcos-image-test-tmp' + sep + test_id
 
     # We want to always disable caching and set content-type so that things work
     # right when debugging the tests.
@@ -113,8 +113,8 @@ def exercise_storage_provider(tmpdir, name, config):
             store.url + path])
 
     def get_path(path):
-        assert not path.startswith('/')
-        return test_base_path + '/' + path
+        assert not path.startswith(sep)
+        return test_base_path + sep + path
 
     def check_file(path, contents):
         # The store should be internally consistent / API return it exists now.
@@ -144,7 +144,7 @@ def exercise_storage_provider(tmpdir, name, config):
         check_file(upload_bytes_path, upload_bytes)
 
         # Test uploading the same bytes to a non-existent subdirectory of a subdirectory
-        upload_bytes_dir_path = get_path("dir1/bar/upload_bytes2.txt")
+        upload_bytes_dir_path = get_path(sep.join(['dir1', 'bar', 'upload_bytes2.txt']))
         store.upload(
             upload_bytes_dir_path,
             blob=upload_bytes,
@@ -167,7 +167,7 @@ def exercise_storage_provider(tmpdir, name, config):
         check_file(copy_dest_path, upload_bytes)
 
         # Test copying an uploaded file to a subdirectory.
-        copy_dest_path = get_path('new_dir/copy_path.txt')
+        copy_dest_path = get_path(sep.join(['new_dir', 'copy_path.txt']))
         store.copy(upload_file_path, copy_dest_path)
         check_file(copy_dest_path, upload_file)
 
@@ -176,8 +176,8 @@ def exercise_storage_provider(tmpdir, name, config):
         assert store.list_recursive(test_base_path) == {
             get_path('upload_file.txt'),
             get_path('upload_bytes.txt'),
-            get_path('dir1/bar/upload_bytes2.txt'),
-            get_path('new_dir/copy_path.txt'),
+            get_path(sep.join(['dir1', 'bar', 'upload_bytes2.txt'])),
+            get_path(sep.join(['new_dir', 'copy_path.txt'])),
             get_path('copy_file.txt')
         }
 
@@ -208,12 +208,14 @@ def test_storage_provider_aws(release_config_aws, tmpdir):
     exercise_storage_provider(tmpdir, 'aws_s3', release_config_aws)
 
 
-# TODO: DCOS_OSS-3460 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_storage_provider_local(tmpdir):
     work_dir = tmpdir.mkdir("work")
     repo_dir = tmpdir.mkdir("repository")
-    exercise_storage_provider(work_dir, 'local_path', {'path': str(repo_dir)})
+    if is_windows:
+        sep_override = '\\'
+    else:
+        sep_override = '/'
+    exercise_storage_provider(work_dir, 'local_path', {'path': str(repo_dir)}, sep_override)
 
 
 copy_make_commands_result = {'stage1': [
