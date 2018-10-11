@@ -10,7 +10,9 @@
   },
   "sysctl": {
     "dcos-net": {
-      "net.ipv4.vs.conntrack": "1"
+      "net.ipv4.vs.conntrack": "1",
+      "net.ipv4.conf.all.secure_redirects": "1",
+      "net.ipv4.conf.default.secure_redirects": "1"
     }
   }
 }
