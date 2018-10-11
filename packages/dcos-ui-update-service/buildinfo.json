@@ -1,0 +1,9 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/dcos-ui.git",
+    "ref": "211986ed6af9de08332adc696ceb20191e1aa36f",
+    "ref_origin": "master"
+  },
+  "username": "dcos_ui_update_service"
+}

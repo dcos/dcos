@@ -1,0 +1,17 @@
+#!/bin/bash -xe
+
+export GOPATH=/pkg:$GOPATH
+export PATH=/pkg/bin:$PATH
+
+mkdir -p /pkg/src/github.com/mesosphere
+mv /pkg/src/ui-update-service /pkg/src/github.com/mesosphere/
+cd /pkg/src/github.com/mesosphere/ui-update-service
+go install -v ./...
+
+mkdir -p $PKG_PATH/bin
+cp -v /pkg/bin/ui-update-service $PKG_PATH/bin
+
+# Create the service file
+service="$PKG_PATH/dcos.target.wants_master/dcos-ui-update-service.service"
+mkdir -p "$(dirname "$service")"
+cp /pkg/extra/dcos-ui-update-service.service "$service"
