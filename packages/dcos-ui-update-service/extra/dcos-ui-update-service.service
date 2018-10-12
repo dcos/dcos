@@ -10,5 +10,5 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-ui-update-service.env
 EnvironmentFile=-/run/dcos/etc/dcos-ui-update-service.env
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-ui-update-service
-ExecStart=/opt/mesosphere/bin/dcos-ui-update-service --verbose=true
+ExecStart=/opt/mesosphere/bin/dcos-ui-update-service --config ${DCOS_UI_UPDATE_SERVICE_CONFIG_PATH}
 Sockets=dcos-ui-update-service.socket

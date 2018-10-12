@@ -629,6 +629,9 @@ package:
       {
         "role": "agent_public"
       }
+  - path: /etc/dcos-ui-update-service.env
+    content: |
+      DCOS_UI_UPDATE_SERVICE_CONFIG_PATH=/opt/mesosphere/etc/dcos-ui-update-service-config.json
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
