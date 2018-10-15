@@ -7,8 +7,8 @@
   "sources": {
     "python": {
       "kind": "url_extract",
-      "url": "https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tar.xz",
-      "sha1": "6c71b14bdbc4d8aa0cfd59d4b6dc356d46abfdf5"
+      "url": "https://www.python.org/ftp/python/3.6.6/Python-3.6.6.tar.xz",
+      "sha1": "5731cf379838023fc8c55491b4068c4404d0e34f"
     },
     "cython": {
       "kind": "url_extract",
@@ -17,14 +17,13 @@
     },
     "setuptools": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/0f/40/b3c98aa32bc91d3d8c573443a29aa482d77268d77132b63f09d8385b21ff/setuptools-37.0.0-py2.py3-none-any.whl",
-      "sha1": "da26335ea77a8680a983a3cfb57f304447c26df5"
+      "url": "https://files.pythonhosted.org/packages/96/06/c8ee69628191285ddddffb277bd5abdf769166e7a14b867c2a172f0175b1/setuptools-40.4.3-py2.py3-none-any.whl",
+      "sha1": "40410299ab3c7b091f9dff4dd7bda7f874c4d1b6"
     },
     "pip": {
-      "kind": "git",
-      "git": "https://github.com/pypa/pip.git",
-      "ref": "8ed4ac1fe6e2a05db41585c10a7b46f16bc60666",
-      "ref_origin": "master"
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/45/ae/8a0ad77defb7cc903f09e551d88b443304a9bd6e6f124e75c0fbbf6de8f7/pip-18.1.tar.gz",
+      "sha1": "1226368a8d39bd8b945517b6f7cb9802b279564e"
     }
   }
 }
