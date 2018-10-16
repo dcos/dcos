@@ -156,9 +156,7 @@ package:
       [
         {dcos_net,
           [
-            {dist_port, 62501},
-            {epmd_port, 61420},
-            {enable_killer, false}
+            {dist_port, 62501}
           ]
         },
         {dcos_l4lb,
@@ -555,6 +553,7 @@ package:
       MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
       MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
       MESOS_GC_DELAY={{ gc_delay }}
+      MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       MESOS_IMAGE_PROVIDERS=docker
@@ -672,13 +671,14 @@ package:
         base-uri: /system/checks/v1
   - path: /etc/dcos-diagnostics.env
     content: |
+      DCOS_DIAGNOSTICS_BUNDLE_DIR={{ diagnostics_bundles_dir }}
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
   - path: /etc_master/dcos-diagnostics-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
+        "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
@@ -973,6 +973,17 @@ package:
               },
               {
                   "Command": ["systemctl", "list-units", "dcos*"]
+              },
+              {
+                  "Command": ["iptables-save"]
+              },
+              {
+               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+               "Role": ["master"]
+              },
+              {
+               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+               "Role": ["agent", "agent_public"]
               }
           ]
         }
@@ -1329,8 +1340,6 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
@@ -1367,8 +1376,6 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
@@ -1405,7 +1412,5 @@ package:
         cache_expiry = "2m"
         # DC/OS node's private IP, as reported by /opt/mesosphere/bin/detect_ip.
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
-        # Local Mesos instance's ID.
-        mesos_id = "$DCOS_MESOS_ID"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
