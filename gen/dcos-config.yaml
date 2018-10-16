@@ -1308,6 +1308,8 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Coerce all metrics that pass through this filter to lowercase.
+      [[processors.lowercase]]
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
