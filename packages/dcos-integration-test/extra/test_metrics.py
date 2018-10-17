@@ -242,7 +242,11 @@ def test_metrics_containers(dcos_api_session):
 def test_metrics_containers_app(dcos_api_session):
     """Assert that app metrics appear in the v0 metrics API."""
     task_name = 'test-metrics-containers-app'
-    metric_name_pfx = 'test_metrics_containers_app'
+    # Mixing case in the metric name allows us to ensure that metrics are
+    # coerced to lowercase: https://jira.mesosphere.com/browse/DCOS-43639
+    metric_name_in_pfx = 'Test_Metrics_Containers_App'
+    metric_name_out_pfx = 'test_metrics_containers_app'
+
     marathon_app = {
         'id': '/' + task_name,
         'instances': 1,
@@ -251,22 +255,22 @@ def test_metrics_containers_app(dcos_api_session):
         'cmd': '\n'.join([
             'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
             'echo "Sending gauge"',
-            'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
 
             'echo "Sending counts"',
-            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
 
             'echo "Sending timings"',
-            'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.timing:2|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.timing:3|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.timing:2|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.timing:3|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
 
             'echo "Sending histograms"',
-            'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.histogram:2|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.histogram:3|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
-            'echo "{}.histogram:4|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.histogram:2|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.histogram:3|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
+            'echo "{}.histogram:4|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_in_pfx),
 
             'echo "Done. Sleeping forever."',
             'while true; do',
@@ -281,10 +285,10 @@ def test_metrics_containers_app(dcos_api_session):
     }
     expected_metrics = [
         # metric_name, metric_value
-        ('.'.join([metric_name_pfx, 'gauge']), 100),
-        ('.'.join([metric_name_pfx, 'count']), 2),
-        ('.'.join([metric_name_pfx, 'timing', 'count']), 3),
-        ('.'.join([metric_name_pfx, 'histogram', 'count']), 4),
+        ('.'.join([metric_name_out_pfx, 'gauge']), 100),
+        ('.'.join([metric_name_out_pfx, 'count']), 2),
+        ('.'.join([metric_name_out_pfx, 'timing', 'count']), 3),
+        ('.'.join([metric_name_out_pfx, 'histogram', 'count']), 4),
     ]
 
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
