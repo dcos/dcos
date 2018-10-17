@@ -63,6 +63,67 @@ def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
         assert 'mesos_master_uptime_secs' in response.text
 
 
+@retrying.retry(wait_fixed=2000, stop_max_delay=30000)
+def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
+    """Assert that expected metrics are present on prometheus port on node.
+
+    Retries on non-200 status or missing expected metrics
+    for up to 30 seconds.
+
+    """
+    response = dcos_api_session.session.request(
+        'GET', 'http://' + node + ':{}/metrics'.format(prometheus_port))
+    assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+    for metric_name in expected_metrics:
+        assert metric_name in response.text
+
+
+@pytest.mark.parametrize("prometheus_port", [61091])
+def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
+    """Assert that statsd metrics on agents are present."""
+    for agent in dcos_api_session.slaves:
+        marathon_config = {
+            'id': '/statsd-emitter',
+            'cmd': '/opt/mesosphere/bin/./statsd-emitter -debug',
+            'env': {
+                'STATSD_UDP_PORT': '61825',
+                'STATSD_UDP_HOST': agent
+            },
+            'cpus': 0.5,
+            'mem': 128.0,
+            'instances': 1
+        }
+        expected_metrics = ['statsd_tester.time.uptime']
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
+            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+            get_metrics_prom(dcos_api_session, prometheus_port, agent, expected_metrics)
+
+
+@pytest.mark.parametrize("prometheus_port", [61091])
+def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
+    """Assert that statsd metrics on masters are present."""
+    for master in dcos_api_session.masters:
+        marathon_config = {
+            'id': '/statsd-emitter',
+            'cmd': '/opt/mesosphere/bin/./statsd-emitter -debug',
+            'env': {
+                'STATSD_UDP_PORT': '61825',
+                'STATSD_UDP_HOST': master
+            },
+            'cpus': 0.5,
+            'mem': 128.0,
+            'instances': 1
+        }
+        expected_metrics = ['statsd_tester.time.uptime']
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
+            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+            get_metrics_prom(dcos_api_session, prometheus_port, master, expected_metrics)
+
+
 @pytest.mark.supportedwindows
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
