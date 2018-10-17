@@ -82,21 +82,52 @@ def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
 def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
     """Assert that statsd metrics on agents are present."""
     for agent in dcos_api_session.slaves:
-        marathon_config = {
-            'id': '/statsd-emitter',
-            'cmd': '/opt/mesosphere/bin/./statsd-emitter -debug',
+        task_name = 'test-metrics-statsd-app'
+        metric_name_pfx = 'test_metrics_statsd_app'
+        marathon_app = {
+            'id': '/' + task_name,
+            'instances': 1,
+            'cpus': 0.1,
+            'mem': 128,
             'env': {
                 'STATSD_UDP_PORT': '61825',
                 'STATSD_UDP_HOST': agent
             },
-            'cpus': 0.5,
-            'mem': 128.0,
-            'instances': 1
-        }
-        expected_metrics = ['statsd_tester.time.uptime']
+            'cmd': '\n'.join([
+                'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+                'echo "Sending gauge"',
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
 
-        with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
-            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
+                'echo "Sending counts"',
+                'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Sending timings"',
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Sending histograms"',
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Done. Sleeping forever."',
+                'while true; do',
+                '  sleep 1000',
+                'done',
+            ]),
+            'container': {
+                'type': 'MESOS',
+                'docker': {'image': 'library/alpine'}
+            },
+            'networks': [{'mode': 'host'}],
+        }
+        expected_metrics = [
+            # metric_name
+            ('.'.join([metric_name_pfx, 'gauge'])),
+            ('.'.join([metric_name_pfx, 'count'])),
+            ('.'.join([metric_name_pfx, 'timing', 'count'])),
+            ('.'.join([metric_name_pfx, 'histogram', 'count'])),
+        ]
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
             assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
             get_metrics_prom(dcos_api_session, prometheus_port, agent, expected_metrics)
 
@@ -105,21 +136,52 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
 def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
     """Assert that statsd metrics on masters are present."""
     for master in dcos_api_session.masters:
-        marathon_config = {
-            'id': '/statsd-emitter',
-            'cmd': '/opt/mesosphere/bin/./statsd-emitter -debug',
+        task_name = 'test-metrics-statsd-app'
+        metric_name_pfx = 'test_metrics_statsd_app'
+        marathon_app = {
+            'id': '/' + task_name,
+            'instances': 1,
+            'cpus': 0.1,
+            'mem': 128,
             'env': {
                 'STATSD_UDP_PORT': '61825',
                 'STATSD_UDP_HOST': master
             },
-            'cpus': 0.5,
-            'mem': 128.0,
-            'instances': 1
-        }
-        expected_metrics = ['statsd_tester.time.uptime']
+            'cmd': '\n'.join([
+                'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+                'echo "Sending gauge"',
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
 
-        with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
-            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
+                'echo "Sending counts"',
+                'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Sending timings"',
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Sending histograms"',
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+                'echo "Done. Sleeping forever."',
+                'while true; do',
+                '  sleep 1000',
+                'done',
+            ]),
+            'container': {
+                'type': 'MESOS',
+                'docker': {'image': 'library/alpine'}
+            },
+            'networks': [{'mode': 'host'}],
+        }
+        expected_metrics = [
+            # metric_name
+            ('.'.join([metric_name_pfx, 'gauge'])),
+            ('.'.join([metric_name_pfx, 'count'])),
+            ('.'.join([metric_name_pfx, 'timing', 'count'])),
+            ('.'.join([metric_name_pfx, 'histogram', 'count'])),
+        ]
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
             assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
             get_metrics_prom(dcos_api_session, prometheus_port, master, expected_metrics)
 
