@@ -35,7 +35,7 @@ mkdir -p /pkg/src/github.com/dcos
 mv /pkg/src/dcos-metrics /pkg/src/github.com/dcos/dcos-metrics
 
 pushd /pkg/src/github.com/dcos/dcos-metrics
-make build
+make rawbuild
 popd
 
 mkdir -p $PKG_PATH/bin
