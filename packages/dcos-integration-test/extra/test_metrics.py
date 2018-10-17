@@ -83,6 +83,8 @@ def test_metrics_node(dcos_api_session):
 
         assert response['dimensions']['cluster_id'] != "", 'expected cluster to contain a value'
 
+        assert response['dimensions']['mesos_id'] == '', 'expected dimensions to include empty "mesos_id"'
+
         return True
 
     # Retry for 30 seconds for for the node metrics content to appear.
@@ -189,7 +191,7 @@ def test_metrics_containers(dcos_api_session):
                     # We expect three datapoints, could be in any order
                     uptime_dp = None
                     for dp in app_metrics['datapoints']:
-                        if dp['name'] == 'statsd_tester_time_uptime':
+                        if dp['name'] == 'statsd_tester.time.uptime':
                             uptime_dp = dp
                             break
 
@@ -226,6 +228,62 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
+def test_metrics_containers_app(dcos_api_session):
+    """Assert that app metrics appear in the v0 metrics API."""
+    task_name = 'test-metrics-containers-app'
+    metric_name_pfx = 'test_metrics_containers_app'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+            'echo "Sending gauge"',
+            'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+            'echo "Sending counts"',
+            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+            'echo "Sending timings"',
+            'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.timing:2|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.timing:3|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+            'echo "Sending histograms"',
+            'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.histogram:2|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.histogram:3|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+            'echo "{}.histogram:4|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+
+            'echo "Done. Sleeping forever."',
+            'while true; do',
+            '  sleep 1000',
+            'done',
+        ]),
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/alpine'}
+        },
+        'networks': [{'mode': 'host'}],
+    }
+    expected_metrics = [
+        # metric_name, metric_value
+        ('.'.join([metric_name_pfx, 'gauge']), 100),
+        ('.'.join([metric_name_pfx, 'count']), 2),
+        ('.'.join([metric_name_pfx, 'timing', 'count']), 3),
+        ('.'.join([metric_name_pfx, 'histogram', 'count']), 4),
+    ]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+        for metric_name, metric_value in expected_metrics:
+            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+
+
 def test_metrics_containers_nan(dcos_api_session):
     """Assert that the metrics API can handle app metric gauges with NaN values."""
     task_name = 'test-metrics-containers-nan'
@@ -249,23 +307,40 @@ def test_metrics_containers_nan(dcos_api_session):
         },
         'networks': [{'mode': 'host'}],
     }
-
-    @retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
-    def _get_app_metric_datapoint_value_for_task(dcos_api_session, node: str, task_name: str, dp_name: str):
-        app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
-        assert app_metrics is not None, "missing metrics for task {}".format(task_name)
-        dps = [dp for dp in app_metrics['datapoints'] if dp['name'] == dp_name]
-        assert len(dps) == 1, 'expected 1 datapoint for metric {}, got {}'.format(dp_name, len(dps))
-        return dps[0]['value']
-
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
         node = endpoints[0].host
 
         # NaN should be converted to empty string.
-        metric_value = _get_app_metric_datapoint_value_for_task(dcos_api_session, node, task_name, metric_name)
+        metric_value = get_app_metric_for_task(dcos_api_session, node, task_name, metric_name)['value']
         assert metric_value == '', 'unexpected metric value: {}'.format(metric_value)
+
+
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+def assert_app_metric_value_for_task(dcos_api_session, node: str, task_name: str, metric_name: str, metric_value):
+    """Assert the value of app metric metric_name for container task_name is metric_value.
+
+    Retries on error, non-200 status, missing container metrics, missing app
+    metric, or unexpected app metric value for up to 150 seconds.
+
+    """
+    assert get_app_metric_for_task(dcos_api_session, node, task_name, metric_name)['value'] == metric_value
+
+
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_name: str):
+    """Return the app metric metric_name for container task_name.
+
+    Retries on error, non-200 status, or missing container metrics, or missing
+    app metric for up to 150 seconds.
+
+    """
+    app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
+    assert app_metrics is not None, "missing metrics for task {}".format(task_name)
+    dps = [dp for dp in app_metrics['datapoints'] if dp['name'] == metric_name]
+    assert len(dps) == 1, 'expected 1 datapoint for metric {}, got {}'.format(metric_name, len(dps))
+    return dps[0]
 
 
 @retrying.retry(retry_on_result=lambda result: result is None, wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
