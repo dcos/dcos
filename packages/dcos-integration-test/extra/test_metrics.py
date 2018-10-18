@@ -120,10 +120,10 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
         }
         expected_metrics = [
             # metric_name
-            ('.'.join([metric_name_pfx, 'gauge'])),
-            ('.'.join([metric_name_pfx, 'count'])),
-            ('.'.join([metric_name_pfx, 'timing', 'count'])),
-            ('.'.join([metric_name_pfx, 'histogram', 'count'])),
+            ('_'.join([metric_name_pfx, 'gauge'])),
+            ('_'.join([metric_name_pfx, 'count'])),
+            ('_'.join([metric_name_pfx, 'timing', 'count'])),
+            ('_'.join([metric_name_pfx, 'histogram', 'count'])),
         ]
 
         with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
@@ -174,10 +174,10 @@ def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
         }
         expected_metrics = [
             # metric_name
-            ('.'.join([metric_name_pfx, 'gauge'])),
-            ('.'.join([metric_name_pfx, 'count'])),
-            ('.'.join([metric_name_pfx, 'timing', 'count'])),
-            ('.'.join([metric_name_pfx, 'histogram', 'count'])),
+            ('_'.join([metric_name_pfx, 'gauge'])),
+            ('_'.join([metric_name_pfx, 'count'])),
+            ('_'.join([metric_name_pfx, 'timing', 'count'])),
+            ('_'.join([metric_name_pfx, 'histogram', 'count'])),
         ]
 
         with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
