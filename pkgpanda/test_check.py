@@ -1,16 +1,23 @@
-from subprocess import check_output, PIPE, Popen, STDOUT
-
-import pytest
+from subprocess import PIPE, Popen
 
 from pkgpanda.util import is_windows, resources_test_dir
 
-list_output = """WARNING: `not_executable.py` is not executable
-pkg1--12345
+
+package_dir = "packages"
+
+if is_windows:
+    package_script = "shell_script_check.ps1"
+    output_stderr = "WARNING: `not_supported.dummy` file-type is not supported\n"
+else:
+    package_script = "shell_script_check.sh"
+    output_stderr = "WARNING: `not_executable.py` is not executable\n"
+
+list_output_stdout = """pkg1--12345
  - hello_world_ok.py
 pkg2--12345
  - failed_check.py
- - shell_script_check.sh
-"""
+ - {}
+""".format(package_script)
 
 run_output_stdout = """Hello World
 I exist to fail...
@@ -18,31 +25,29 @@ Assertion error
 Hello World
 """
 
-run_output_stderr = """WARNING: `not_executable.py` is not executable
-"""
 
-
-# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_list():
-    output = check_output([
+    cmd = Popen([
         'pkgpanda',
         'check',
         '--list',
         '--root', resources_test_dir("opt/mesosphere"),
-        '--repository', resources_test_dir("opt/mesosphere/packages")], stderr=STDOUT)
-    assert output.decode() == list_output
+        '--repository', resources_test_dir("opt/mesosphere/{}".format(package_dir))],
+        universal_newlines=True,
+        stdout=PIPE, stderr=PIPE)
+    stdout, stderr = cmd.communicate()
+    assert stdout == list_output_stdout
+    assert stderr == output_stderr
 
 
-# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_run():
     cmd = Popen([
         'pkgpanda',
         'check',
         '--root', resources_test_dir('opt/mesosphere'),
-        '--repository', resources_test_dir('opt/mesosphere/packages')],
+        '--repository', resources_test_dir('opt/mesosphere/{}'.format(package_dir))],
+        universal_newlines=True,
         stdout=PIPE, stderr=PIPE)
     stdout, stderr = cmd.communicate()
-    assert stdout.decode() == run_output_stdout
-    assert stderr.decode() == run_output_stderr
+    assert stdout == run_output_stdout
+    assert stderr == output_stderr
