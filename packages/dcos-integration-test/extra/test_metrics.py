@@ -80,8 +80,9 @@ def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
 
 @pytest.mark.parametrize("prometheus_port", [61091])
 def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
-    """Assert that statsd metrics on agents are present."""
-    for agent in dcos_api_session.slaves:
+    """Assert that statsd metrics on agent are present."""
+    if len(dcos_api_session.slaves) > 0:
+        agent = dcos_api_session.slaves[0]
         task_name = 'test-metrics-statsd-app'
         metric_name_pfx = 'test_metrics_statsd_app'
         marathon_app = {
@@ -90,22 +91,26 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
             'cpus': 0.1,
             'mem': 128,
             'env': {
-                'STATSD_UDP_PORT': '61825',
-                'STATSD_UDP_HOST': agent
+                'STATIC_STATSD_UDP_PORT': '61825',
+                'STATIC_STATSD_UDP_HOST': 'localhost'
             },
             'cmd': '\n'.join([
-                'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
                 'echo "Sending gauge"',
-                'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending counts"',
-                'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending timings"',
-                'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending histograms"',
-                'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Done. Sleeping forever."',
                 'while true; do',
@@ -133,8 +138,9 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
 
 @pytest.mark.parametrize("prometheus_port", [61091])
 def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
-    """Assert that statsd metrics on masters are present."""
-    for master in dcos_api_session.masters:
+    """Assert that statsd metrics on master are present."""
+    if len(dcos_api_session.masters) > 0:
+        master = dcos_api_session.masters[0]
         task_name = 'test-metrics-statsd-app'
         metric_name_pfx = 'test_metrics_statsd_app'
         marathon_app = {
@@ -143,22 +149,26 @@ def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
             'cpus': 0.1,
             'mem': 128,
             'env': {
-                'STATSD_UDP_PORT': '61825',
-                'STATSD_UDP_HOST': master
+                'STATIC_STATSD_UDP_PORT': '61825',
+                'STATIC_STATSD_UDP_HOST': 'localhost'
             },
             'cmd': '\n'.join([
-                'echo "Sending metrics to $STATSD_UDP_HOST:$STATSD_UDP_PORT"',
+                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
                 'echo "Sending gauge"',
-                'echo "{}.gauge:100|g" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending counts"',
-                'echo "{}.count:1|c" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending timings"',
-                'echo "{}.timing:1|ms" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Sending histograms"',
-                'echo "{}.histogram:1|h" | nc -w 1 -u $STATSD_UDP_HOST $STATSD_UDP_PORT'.format(metric_name_pfx),
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
 
                 'echo "Done. Sleeping forever."',
                 'while true; do',
