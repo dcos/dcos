@@ -14,4 +14,4 @@ exec /opt/mesosphere/bin/gunicorn --worker-class=sync \
     --log-level=info \
     --umask 79 \
     --group dcos_adminrouter \
-    pkgpanda.http:app
+    pkgpanda.http.server:app
