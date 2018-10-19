@@ -29,21 +29,15 @@ def package(resource_dir, name, tmpdir):
     return pkgpanda.build.build_package_variants(package_store, name, True)
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_build(tmpdir):
     package("resources" + sep + "base", "base", tmpdir)
     # TODO(cmaloney): Check the package exists with the right contents.
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_build_bad_sha1(tmpdir):
     package("resources" + sep + "base", "base", tmpdir)
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_hash_build_script(tmpdir):
     # hashcheck1 is the base package we're comparing against.
     pkg_path1 = str(package("resources/buildhash/hashcheck1", "hashcheck", tmpdir.join("hashcheck1")))
@@ -55,8 +49,6 @@ def test_hash_build_script(tmpdir):
     assert os.path.basename(pkg_path1) != os.path.basename(pkg_path2)
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_url_extract_tar(tmpdir):
     package("resources" + sep + "url_extract-tar", "url_extract-tar", tmpdir)
 
@@ -67,8 +59,6 @@ def test_url_extract_zip(tmpdir):
     package("resources" + sep + "url_extract-zip", "url_extract-zip", tmpdir)
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_single_source_with_extra(tmpdir):
     package("resources" + sep + "single_source_extra", "single_source_extra", tmpdir)
 
@@ -111,8 +101,6 @@ def test_restricted_services(tmpdir):
         package("resources-nonbootstrapable" + sep + "restricted_services", "restricted_services", tmpdir)
 
 
-# TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_single_source_corrupt(tmpdir):
     with pytest.raises(CalledProcessError):
         package("resources-nonbootstrapable" + sep + "single_source_corrupt", "single_source", tmpdir)
