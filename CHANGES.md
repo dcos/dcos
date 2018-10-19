@@ -1,4 +1,4 @@
-## DC/OS 1.11.7-dev
+## DC/OS 1.11-dev
 
 ### Notable changes
 
