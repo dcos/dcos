@@ -440,16 +440,22 @@ def check_forbidden_services(path, services):
 
 
 def run(cmd, *args, **kwargs):
-    proc = subprocess.Popen(cmd, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    proc = subprocess.Popen(
+        cmd,
+        *args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+        **kwargs)
     stdout, stderr = proc.communicate()
-    print("STDOUT: ", stdout.decode('utf-8'))
-    print("STDERR: ", stderr.decode('utf-8'))
+    print("STDOUT: ", stdout)
+    print("STDERR: ", stderr)
 
     if proc.returncode != 0:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
     assert len(stderr) == 0
-    return stdout.decode('utf-8')
+    return stdout
 
 
 def launch_server(directory):
