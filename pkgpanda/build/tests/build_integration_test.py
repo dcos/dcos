@@ -1,5 +1,6 @@
 import json
 import os
+from os import sep
 from shutil import copytree
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -31,14 +32,14 @@ def package(resource_dir, name, tmpdir):
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_build(tmpdir):
-    package("resources/base", "base", tmpdir)
+    package("resources" + sep + "base", "base", tmpdir)
     # TODO(cmaloney): Check the package exists with the right contents.
 
 
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_build_bad_sha1(tmpdir):
-    package("resources/base", "base", tmpdir)
+    package("resources" + sep + "base", "base", tmpdir)
 
 
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
@@ -57,22 +58,22 @@ def test_hash_build_script(tmpdir):
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_url_extract_tar(tmpdir):
-    package("resources/url_extract-tar", "url_extract-tar", tmpdir)
+    package("resources" + sep + "url_extract-tar", "url_extract-tar", tmpdir)
 
 
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_url_extract_zip(tmpdir):
-    package("resources/url_extract-zip", "url_extract-zip", tmpdir)
+    package("resources" + sep + "url_extract-zip", "url_extract-zip", tmpdir)
 
 
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_single_source_with_extra(tmpdir):
-    package("resources/single_source_extra", "single_source_extra", tmpdir)
+    package("resources" + sep + "single_source_extra", "single_source_extra", tmpdir)
 
     # remove the built package tarball because that has a variable filename
-    cache_dir = tmpdir.join("cache/packages/single_source_extra/")
+    cache_dir = tmpdir.join("cache" + sep + "packages" + sep + "single_source_extra" + sep)
     packages = [str(x) for x in cache_dir.visit(fil="single_source_extra*.tar.xz")]
     assert len(packages) == 1, "should have built exactly one package: {}".format(packages)
     os.remove(packages[0])
@@ -107,17 +108,18 @@ def test_bad_buildinfo(tmpdir):
 
 def test_restricted_services(tmpdir):
     with pytest.raises(CalledProcessError):
-        package("resources-nonbootstrapable/restricted_services", "restricted_services", tmpdir)
+        package("resources-nonbootstrapable" + sep + "restricted_services", "restricted_services", tmpdir)
 
 
 # TODO: DCOS_OSS-3470 - muted Windows tests requiring investigation
 @pytest.mark.skipif(is_windows, reason="Fails on windows, cause unknown")
 def test_single_source_corrupt(tmpdir):
     with pytest.raises(CalledProcessError):
-        package("resources-nonbootstrapable/single_source_corrupt", "single_source", tmpdir)
+        package("resources-nonbootstrapable" + sep + "single_source_corrupt", "single_source", tmpdir)
 
     # Check the corrupt file got moved to the right place
-    expect_fs(str(tmpdir.join("cache/packages/single_source/single_source")), ["foo.corrupt"])
+    expect_fs(str(tmpdir.join("cache" + sep + "packages" + sep + "single_source" + sep + "single_source")),
+              ["foo.corrupt"])
 
 
 @pytest.mark.skipif(is_windows, reason="Fails on windows, don't have necessary windows build scripts for this test")
