@@ -19,8 +19,6 @@ def install():
 
 
 # Test that the active set is detected correctly.
-# TODO: DCOS_OSS-3471 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_active(install):
     active = install.get_active()
     assert type(active) is set
