@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/bamarni/dcos-test-utils.git",
-    "ref": "fa7a3e4f89951e87827bb1e211d118ddbfb5c01c",
+    "ref": "0ea9d90b3983138fc481851d09c93fea9771fb9a",
     "ref_origin": "DCOS-41483"
   }
 }
