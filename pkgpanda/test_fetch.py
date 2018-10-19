@@ -2,7 +2,7 @@ import pytest
 
 from pkgpanda.util import expect_fs, is_windows, resources_test_dir, run
 
-fetch_output = """\rFetching: mesos--0.22.0\rFetched: mesos--0.22.0\n"""
+fetch_output = """\nFetching: mesos--0.22.0\nFetched: mesos--0.22.0\n"""
 
 
 # TODO: DCOS_OSS-3467 - muted Windows tests requiring investigation
