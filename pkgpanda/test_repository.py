@@ -5,7 +5,7 @@ import pytest
 import pkgpanda.exceptions
 from pkgpanda import Repository
 
-from pkgpanda.util import is_windows, resources_test_dir
+from pkgpanda.util import resources_test_dir
 
 
 @pytest.fixture
@@ -13,8 +13,6 @@ def repository():
     return Repository(resources_test_dir("packages"))
 
 
-# TODO: DCOS_OSS-3464 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_list(repository):
     packages = repository.list()
     assert type(packages) is set
