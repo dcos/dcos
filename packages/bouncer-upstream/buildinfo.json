@@ -3,12 +3,10 @@
     "python",
     "python-future",
     "python-isodate",
-    "python-jwkest",
     "python-jwt",
     "python-jose",
     "python-passlib",
     "python-dateutil",
-    "python-pycryptodomex",
     "python-pycparser",
     "python-retrying",
     "python-pyyaml",
@@ -38,22 +36,6 @@
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/p/python-mimeparse/python-mimeparse-0.1.4.tar.gz",
       "sha1": "bebc26249214c66f8c65e904e8eede8453eb4840"
-    },
-    "python-pyopenssl": {
-      "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/3b/15/a5d90ab1a41075e8f0fae334f13452549528f82142b3b9d0c9d86ab7178c/pyOpenSSL-17.5.0.tar.gz",
-      "sha1": "77bb6a9f5f20834bd9ba5d1bdc4bd82d6b6208be"
-    },
-    "oic": {
-      "kind": "git",
-      "git": "git@github.com:rohe/pyoidc.git",
-      "ref": "640556a67d1deae019ff9574f54154bb66a8d92e",
-      "ref_origin": "master"
-    },
-    "pycryptodome": {
-      "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/b7/fb/5ea74c6dfe6c4937f2ca2e609155c0d97bdf00f8aa306deb25c8f547fdb8/pycryptodome-3.4.6.tar.gz",
-      "sha1": "9e6d984562df9c3781dfefe2eec46c4e36c65902"
     },
     "psycopg2": {
       "kind": "url_extract",
