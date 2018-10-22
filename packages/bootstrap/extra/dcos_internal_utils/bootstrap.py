@@ -1,11 +1,5 @@
 import logging
 import os
-try:
-    import pwd
-except ImportError:
-    pass
-import random
-import string
 import sys
 import uuid
 

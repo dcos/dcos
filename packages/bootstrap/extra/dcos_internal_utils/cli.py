@@ -5,14 +5,16 @@ import json
 import logging
 import os
 import random
+import shutil
 import sys
+import stat
 import tempfile
 
 import requests
-from jwt.utils import base64url_decode, bytes_to_number
 import cryptography.hazmat.backends
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from jwt.utils import base64url_decode, bytes_to_number
 
 from dcos_internal_utils import bootstrap, exhibitor
 from pkgpanda.actions import apply_service_configuration
@@ -83,10 +85,6 @@ def dcos_telegraf_master(b, opts):
 def dcos_telegraf_agent(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
 
-
-@check_root
-def dcos_bouncer(b, opts):
-    pass
 
 def noop(b, opts):
     return
