@@ -19,5 +19,4 @@ Environment=SECRET_KEY_FILE_PATH=/run/dcos/pki/tls/private/bouncer.key
 Environment=BOUNCER_CONFIG_CLASS=DCOSConfig
 Environment=TMPDIR=/var/lib/dcos/bouncer/tmp
 WorkingDirectory=${PKG_PATH}
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-bouncer
 ExecStart=${PKG_PATH}/bouncer/bin/bouncer.sh
