@@ -1,0 +1,10 @@
+{
+  "requires": ["python", "python-future", "python-cryptography", "six"],
+  "sources": {
+    "python-jose": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/d1/c1/ecc8b1229f0e8cdaef93da903d4495579edea529f77eb42e60908879d3b7/python-jose-3.0.1.tar.gz",
+      "sha1": "bc4aaf20a2bb797494d7e51755a8e9a22ace86d0"
+    }
+  }
+}
