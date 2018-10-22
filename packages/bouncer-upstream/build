@@ -24,7 +24,7 @@ for package in \
     alembic \
     cockroachdb-python \
     psycopg2 \
-    pyasn1 \
+    pyasn1
 do
   pip install -v --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package
 done
