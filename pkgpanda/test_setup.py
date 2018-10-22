@@ -46,8 +46,8 @@ def test_setup(tmpdir):
             "include": [],
             "dcos.target.wants": ["dcos-mesos-master.service"],
             "dcos.target": None,
-            "environment": None,
-            "environment.export": None,
+            "environment" + (".ps1" if is_windows else ""): None,
+            "environment.export" + (".ps1" if is_windows else ""): None,
             "dcos-mesos-master.service": None           # rooted_systemd
         })
 
@@ -114,8 +114,8 @@ def test_setup(tmpdir):
             "include": [],
             "dcos.target": None,
             "dcos.target.wants": ["dcos-mesos-master.service"],
-            "environment": None,
-            "environment.export": None,
+            "environment" + (".ps1" if is_windows else ""): None,
+            "environment.export" + (".ps1" if is_windows else ""): None,
             "active.old": ["dcos-provider-abcdef-test", "mesos", "mesos-config"],
             "bin.old": [
                 "mesos",
@@ -126,8 +126,8 @@ def test_setup(tmpdir):
             "etc.old": ["dcos-service-configuration.json", "foobar", "some.json"],
             "include.old": [],
             "dcos.target.wants.old": ["dcos-mesos-master.service"],
-            "environment.old": None,
-            "environment.export.old": None,
+            "environment" + (".ps1" if is_windows else "") + ".old": None,
+            "environment.export" + (".ps1" if is_windows else "") + ".old": None,
             "dcos-mesos-master.service": None       # rooted systemd
         })
 
