@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# libpq is the postgresql client library. It is required to communicate with any
+# database that communicates using the postgresql dialect, for example CockroachDB.
+
+pushd "/pkg/src/libpq"
+
+find /opt/mesosphere/
+
+./configure "--prefix=$PKG_PATH" \
+    --with-includes="/opt/mesosphere/include/:/opt/mesosphere/include/openssl/" \
+    --with-libraries="/opt/mesosphere/lib/" \
+    --with-openssl \
+    --without-readline
+
+make
+
+# Install header files
+pushd "./src/include"
+make install
+popd
+
+# Install libpq client library
+pushd "./src/interfaces/libpq"
+make install
+popd
+
+# Install pg_config binary
+pushd "./src/bin/pg_config"
+make install
+popd
+
+# Remove unnecessary files
+rm -rf "$PKG_PATH/include/server"
+find "$PKG_PATH/lib/" ! -type d -name "*.a"  -delete
+rm -rf "$PKG_PATH/share/"

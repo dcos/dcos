@@ -1,0 +1,10 @@
+{
+  "requires": [
+    "openssl"
+  ],
+  "single_source" : {
+    "kind": "url_extract",
+    "url": "https://ftp.postgresql.org/pub/source/v9.6.3/postgresql-9.6.3.tar.gz",
+    "sha1": "f596ca487e0c4d41ccc628b1d69b180fb23402db"
+  }
+}
