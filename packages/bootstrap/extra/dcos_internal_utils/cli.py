@@ -6,12 +6,12 @@ import logging
 import os
 import random
 import shutil
-import sys
 import stat
+import sys
 import tempfile
 
-import requests
 import cryptography.hazmat.backends
+import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode, bytes_to_number
