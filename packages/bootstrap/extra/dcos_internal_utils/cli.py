@@ -6,10 +6,15 @@ import logging
 import os
 import random
 import sys
+import tempfile
 
-from dcos_internal_utils import bootstrap
-from dcos_internal_utils import exhibitor
+import requests
+from jwt.utils import base64url_decode, bytes_to_number
+import cryptography.hazmat.backends
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
+from dcos_internal_utils import bootstrap, exhibitor
 from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
@@ -28,6 +33,41 @@ def check_root(fun):
 def dcos_adminrouter(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
+    # Require the IAM to already be up and running. The IAM contains logic for
+    # achieving consensus about a key pair, and exposes the public key
+    # information via its JWKS endpoint. Talk directly to the local IAM instance
+    # which is reachable via the local network interface.
+    r = requests.get('http://127.0.0.1:8101/acs/api/v1/auth/jwks')
+
+    if r.status_code != 200:
+        log.info('JWKS retrieval failed. Got %s with body: %s', r, r.text)
+        sys.exit(1)
+
+    jwks = r.json()
+
+    # For now plan with the first key in the JWKS to correspond to the current
+    # private key used for signing authentiction tokens.
+    key = jwks['keys'][0]
+
+    exponent_bytes = base64url_decode(key['e'].encode('ascii'))
+    exponent_int = bytes_to_number(exponent_bytes)
+    modulus_bytes = base64url_decode(key['n'].encode('ascii'))
+    modulus_int = bytes_to_number(modulus_bytes)
+    # Generate a `cryptography` public key object instance from these numbers.
+    public_numbers = rsa.RSAPublicNumbers(n=modulus_int, e=exponent_int)
+    public_key = public_numbers.public_key(
+        backend=cryptography.hazmat.backends.default_backend())
+
+    # Serialize public key into the OpenSSL PEM public key format RFC 5280).
+    pubkey_pem_bytes = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+
+    os.makedirs('/run/dcos/dcos-adminrouter', exist_ok=True)
+    pubkey_path = '/run/dcos/dcos-adminrouter/auth-token-verification-key'
+    _write_file_bytes(pubkey_path, pubkey_pem_bytes, 0o644)
+    shutil.chown(pubkey_path, user='dcos_adminrouter')
+
 
 @check_root
 def dcos_signal(b, opts):
@@ -45,9 +85,8 @@ def dcos_telegraf_agent(b, opts):
 
 
 @check_root
-def dcos_oauth(b, opts):
-    b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
-
+def dcos_bouncer(b, opts):
+    pass
 
 def noop(b, opts):
     return
@@ -147,3 +186,20 @@ def parse_args():
         default='/opt/mesosphere/etc/master_count',
         help='File with number of master servers')
     return parser.parse_args()
+
+
+def _write_file_bytes(path, data, mode):
+    """
+    Open temporary file in target directory in 'w+b' mode and with locked-down
+    file permissions. Write data (byte sequence) to temporary file. Once that
+    has succeeded change the file permissions, and then create a hard link to
+    the temporary file. This retains file permissions (hard link points to the
+    same inode), and remains intact after automatic deletion of the temporary
+    file (which happens upon context manager exit). Works on Linux and Windows.
+    If `f.write(data)` fails the context manager cleans up.
+    """
+    assert isinstance(data, bytes)
+    with tempfile.NamedTemporaryFile(dir=os.path.dirname(path)) as f:
+        f.write(data)
+        os.chmod(f.name, stat.S_IMODE(mode))
+        os.link(f.name, path)
