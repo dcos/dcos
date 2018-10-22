@@ -1142,6 +1142,26 @@ package:
       MASTER_LB_DNSNAME={{ master_external_loadbalancer }}
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/bouncer-config.json
+    # `LDAP_GROUP_IMPORT_LIMIT_SECONDS` must be smaller than `proxy_read_timeout`
+    # for `/acs/api/v1/ldap/importgroup` in the Admin Router configuration.
+    content: |
+      {
+        "LDAP_GROUP_IMPORT_LIMIT_SECONDS": 120,
+        "SUPERUSER_PASSWORD_HASH": "none",
+        "SUPERUSER_USERNAME": "",
+        "LOG_LEVEL_STDERR": "INFO",
+        "LOG_LEVEL_SQLALCHEMY": "WARNING",
+        "AUTH_COOKIE_SECURE_FLAG": false,
+        "EXPIRATION_AUTH_TOKEN_DAYS": 5,
+        "EXPIRATION_AUTH_COOKIE_DAYS": 5,
+        "EXPIRATION_INFO_COOKIE_DAYS": 5,
+        "GUNICORN_WORKER_PROCESSES": 1,
+        "GUNICORN_THREADS_PER_WORKER": 10,
+        "GUNICORN_BIND_ADDRESS": "127.0.0.1:8101",
+        "GUNICORN_WORKER_TIMEOUT_SECONDS": 30,
+        "ALEMBIC_DIR_PATH": "alembic",
+      }
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
