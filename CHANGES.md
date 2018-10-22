@@ -1,14 +1,26 @@
-## DC/OS 1.11.7-dev
+## DC/OS 1.11-dev
 
 ### Notable changes
 
-* Updated to [Marathon 1.6.552](https://github.com/mesosphere/marathon/tree/f56ad6ec8).
+* Updated to [Marathon 1.6.564](https://github.com/mesosphere/marathon/tree/3fa693b32).
+
+* Updated to [DC/OS UI 1.11+v1.24.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.24.0/CHANGELOG.md)
 
 ### Fixed and improved
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 * DC/OS Metrics: Fixed a bug that was crashing the DC/OS agent metrics service (DCOS-39103)
+
+* [DCOS-42753](https://jira.mesosphere.com/browse/DCOS-42753) Bump Akka library to fix memory leak issue.
+* [MARATHON-8453](https://jira.mesosphere.com/browse/MARATHON-8453) TaskOverdueActor now respects `--kill_retry_timeout`.
+* [MARATHON-8452](https://jira.mesosphere.com/browse/MARATHON-8452) Only log zero-value offers for scalar resources.
+* [MARATHON-8461](https://jira.mesosphere.com/browse/MARATHON-8461) Write correct version in Zkid (based on scala timestamp changes)
+* [MARATHON-8413](https://jira.mesosphere.com/browse/MARATHON-8413) Fix versioning for Apps and Pods based on timestamp changes.
+* [MARATHON-8420](https://jira.mesosphere.com/browse/MARATHON-8420) Marathon behavior has changed to fail if service is torn down in mesos but the frameworkid is in zk.
+* [MARATHON-7941](https://jira.mesosphere.com/browse/MARATHON-7941) Default for unreachable strategy on PUT /apps.
+* [MARATHON-8323](https://jira.mesosphere.com/browse/MARATHON-8323) Increase http proxy max-open-connections default.
+
 
 ### Security Updates
 
