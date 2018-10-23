@@ -47,22 +47,6 @@ def test_metrics_masters_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
-    """Assert that mesos metrics on agents are present."""
-    for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_slave_uptime_secs' in response.text
-
-
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
-    """Assert that mesos metrics on masters are present."""
-    for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_master_uptime_secs' in response.text
-
-
 @retrying.retry(wait_fixed=2000, stop_max_delay=30000)
 def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
     """Assert that expected metrics are present on prometheus port on node.
@@ -76,6 +60,20 @@ def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
     for metric_name in expected_metrics:
         assert metric_name in response.text
+
+
+@pytest.mark.parametrize("prometheus_port", [61091])
+def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
+    """Assert that mesos metrics on agents are present."""
+    for agent in dcos_api_session.slaves:
+        get_metrics_prom(dcos_api_session, prometheus_port, agent, ['mesos_slave_uptime_secs'])
+
+
+@pytest.mark.parametrize("prometheus_port", [61091])
+def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
+    """Assert that mesos metrics on masters are present."""
+    for master in dcos_api_session.masters:
+        get_metrics_prom(dcos_api_session, prometheus_port, master, ['mesos_master_uptime_secs'])
 
 
 @pytest.mark.parametrize("prometheus_port", [61091])
