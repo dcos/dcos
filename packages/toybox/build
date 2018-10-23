@@ -9,9 +9,8 @@ mkdir -p $PKG_PATH/bin
 
 pushd /pkg/src/toybox
 make defconfig
-# TODO: do we need to modify generated config?
 # with previous version make fails on: Error in USE_CHRT(chrt (see generated/flags.raw)
-# cp /pkg/extra/config .config
+cp /pkg/extra/config .config
 make
 cp generated/unstripped/toybox $PKG_PATH/bin/toybox_unstripped
 cp toybox $PKG_PATH/bin
