@@ -15,6 +15,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 ### UDP
 
  - 53: dcos-net (dns)
+ - 61825: dcos-telegraf
 
 ## Master
 
@@ -37,7 +38,6 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 15101: dcos-marathon libprocess
  - 15201: dcos-metronome libprocess
  - 61053: dcos-mesos-dns
- - 61825: dcos-telegraf
 
 ### UDP
 
