@@ -5,6 +5,9 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 export PKG_CONFIG_PATH=/opt/mesosphere/lib/pkgconfig
 
+# Work around https://github.com/sybrenstuvel/python-rsa/pull/122
+echo "" > /pkg/src/rsa/README.md
+
 for package in ecdsa rsa python-jose; do
     # ecdsa and rsa are slow Python implementations.
     # We also install cryptography for off-loading
