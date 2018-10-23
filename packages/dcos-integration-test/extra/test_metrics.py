@@ -35,7 +35,7 @@ def test_metrics_masters_ping(dcos_api_session):
 @pytest.mark.parametrize("prometheus_port", [61091, 61092])
 def test_metrics_agents_prom(dcos_api_session, prometheus_port):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://{}:{}/metrics'.format(agent, prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -43,7 +43,7 @@ def test_metrics_agents_prom(dcos_api_session, prometheus_port):
 @pytest.mark.parametrize("prometheus_port", [61091, 61092])
 def test_metrics_masters_prom(dcos_api_session, prometheus_port):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://{}:{}/metrics'.format(master, prometheus_port))
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -56,7 +56,7 @@ def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
 
     """
     response = dcos_api_session.session.request(
-        'GET', 'http://' + node + ':{}/metrics'.format(prometheus_port))
+        'GET', 'http://{}:{}/metrics'.format(node, prometheus_port))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
     for metric_name in expected_metrics:
         assert metric_name in response.text
