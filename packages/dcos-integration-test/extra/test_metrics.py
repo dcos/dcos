@@ -47,12 +47,12 @@ def test_metrics_masters_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=30000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=60000)
 def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
     """Assert that expected metrics are present on prometheus port on node.
 
     Retries on non-200 status or missing expected metrics
-    for up to 30 seconds.
+    for up to 60 seconds.
 
     """
     response = dcos_api_session.session.request(
