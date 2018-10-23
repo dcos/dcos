@@ -86,12 +86,19 @@ def dcos_telegraf_agent(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
 
 
+@check_root
+def dcos_bouncer(b, opts):
+    os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
+    shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
+
+
 def noop(b, opts):
     return
 
 
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
+    'dcos-bouncer': dcos_bouncer,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
     'dcos-diagnostics-master': noop,
