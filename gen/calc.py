@@ -928,6 +928,7 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
+        lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -1022,10 +1023,6 @@ entry = {
         'mesos_container_log_sink': 'logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
-        'oauth_issuer_url': 'https://dcos.auth0.com/',
-        'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
-        'oauth_auth_redirector': 'https://auth.dcos.io',
-        'oauth_auth_host': 'https://dcos.auth0.com',
         'exhibitor_admin_password': '',
         'ui_tracking': 'true',
         'ui_banner': 'false',
@@ -1081,6 +1078,8 @@ entry = {
                 'service': 'vfs'
             }
         }),
+        'superuser_service_account_uid': '',
+        'superuser_service_account_public_key': '',
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,

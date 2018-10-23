@@ -1147,9 +1147,11 @@ package:
     # for `/acs/api/v1/ldap/importgroup` in the Admin Router configuration.
     content: |
       {
+        "SUPERUSER_SERVICE_ACCOUNT_UID": "{{ superuser_service_account_uid }}",
+        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": "{{ superuser_service_account_public_key }}",
         "LOG_LEVEL_STDERR": "INFO",
         "LOG_LEVEL_SQLALCHEMY": "WARNING",
-        "AUTH_COOKIE_SECURE_FLAG": false,
+        "AUTH_COOKIE_SECURE_FLAG": {{ auth_cookie_secure_flag }},
         "EXPIRATION_AUTH_TOKEN_DAYS": 5,
         "EXPIRATION_AUTH_COOKIE_DAYS": 5,
         "EXPIRATION_INFO_COOKIE_DAYS": 5,
