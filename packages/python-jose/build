@@ -5,7 +5,12 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 export PKG_CONFIG_PATH=/opt/mesosphere/lib/pkgconfig
 
-for package in python-jose; do
-  pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
+for package in ecdsa rsa python-jose; do
+    # ecdsa and rsa are slow Python implementations.
+    # We also install cryptography for off-loading
+    # work to OpenSSL. However, python-jose will not
+    # work (as of ImportErrors) w/o rsa and ecdsa
+    # installed.
+    pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
 done
 
