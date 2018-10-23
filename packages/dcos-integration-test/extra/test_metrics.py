@@ -136,64 +136,6 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
             get_metrics_prom(dcos_api_session, prometheus_port, agent, expected_metrics)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_masters_statsd(dcos_api_session, prometheus_port):
-    """Assert that statsd metrics on master are present."""
-    if len(dcos_api_session.masters) > 0:
-        master = dcos_api_session.masters[0]
-        task_name = 'test-metrics-statsd-app'
-        metric_name_pfx = 'test_metrics_statsd_app'
-        marathon_app = {
-            'id': '/' + task_name,
-            'instances': 1,
-            'cpus': 0.1,
-            'mem': 128,
-            'env': {
-                'STATIC_STATSD_UDP_PORT': '61825',
-                'STATIC_STATSD_UDP_HOST': 'localhost'
-            },
-            'cmd': '\n'.join([
-                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
-                'echo "Sending gauge"',
-                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
-
-                'echo "Sending counts"',
-                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
-
-                'echo "Sending timings"',
-                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
-
-                'echo "Sending histograms"',
-                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
-
-                'echo "Done. Sleeping forever."',
-                'while true; do',
-                '  sleep 1000',
-                'done',
-            ]),
-            'container': {
-                'type': 'MESOS',
-                'docker': {'image': 'library/alpine'}
-            },
-            'networks': [{'mode': 'host'}],
-        }
-        expected_metrics = [
-            ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
-        ]
-
-        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
-            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
-            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-            get_metrics_prom(dcos_api_session, prometheus_port, master, expected_metrics)
-
-
 @pytest.mark.supportedwindows
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
