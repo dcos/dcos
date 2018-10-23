@@ -1432,6 +1432,22 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        ## A list of Mesos slaves
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        # Slave metrics groups to be collected.
+        slave_collections = [
+          "resources",
+          "agent",
+          "executors",
+          "tasks",
+          "messages",
+        ]
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1470,6 +1486,22 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        ## A list of Mesos slaves
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        # Slave metrics groups to be collected.
+        slave_collections = [
+          "resources",
+          "agent",
+          "executors",
+          "tasks",
+          "messages",
+        ]
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
