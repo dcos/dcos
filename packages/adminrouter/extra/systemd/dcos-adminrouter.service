@@ -15,6 +15,7 @@ StandardError=journal
 PermissionsStartOnly=True
 Environment=AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH=/run/dcos/dcos-adminrouter/auth-token-verification-key
 Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
+EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
 EnvironmentFile=-/opt/mesosphere/etc/adminrouter.env
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-adminrouter
 ExecStartPre=/bin/ping -c1 ready.spartan
