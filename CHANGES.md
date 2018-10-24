@@ -90,7 +90,7 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Updated DC/OS UI to 1.12+v2.25.1 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.1)
+* Updated DC/OS UI to 1.12+v2.25.2 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.2)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 
