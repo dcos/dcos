@@ -47,12 +47,12 @@ def test_metrics_masters_prom(dcos_api_session, prometheus_port):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=60000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
 def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
     """Assert that expected metrics are present on prometheus port on node.
 
     Retries on non-200 status or missing expected metrics
-    for up to 60 seconds.
+    for up to 150 seconds.
 
     """
     response = dcos_api_session.session.request(
@@ -120,6 +120,7 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
                 'docker': {'image': 'library/alpine'}
             },
             'networks': [{'mode': 'host'}],
+            'constraints': [['hostname', 'LIKE', agent]],
         }
         expected_metrics = [
             ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
