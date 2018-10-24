@@ -207,4 +207,8 @@ def _write_file_bytes(path, data, mode):
     with tempfile.NamedTemporaryFile(dir=os.path.dirname(path)) as f:
         f.write(data)
         os.chmod(f.name, stat.S_IMODE(mode))
+        try:
+            os.remove(path)
+        except OSError:
+            pass
         os.link(f.name, path)
