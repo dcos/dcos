@@ -4,7 +4,7 @@
 
 * Updated to [Marathon 1.6.564](https://github.com/mesosphere/marathon/tree/3fa693b32).
 
-* Updated to [DC/OS UI 1.11+v1.24.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.24.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
 
 ### Fixed and improved
 
