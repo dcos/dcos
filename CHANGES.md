@@ -25,7 +25,7 @@ Format of the entries must be.
 
 ### Security Updates
 
-* Update Java to 8u181. (DCOS_OSS-3933)
+* Update Java to 8u192. (DCOS_OSS-4383)
 
 
 ## DC/OS 1.10.8
