@@ -6,7 +6,6 @@
     "dcos-diagnostics": "windows",
     "dcos-image": "windows",
     "dcos-image-deps": "windows",
-    "dcos-metrics": "windows",
     "dcos-net": "windows",
     "dnspython": "windows",
     "flask": "windows",
@@ -35,6 +34,7 @@
     "python-retrying": "windows",
     "six": "windows",
     "teamcity-messages": "windows",
+    "telegraf": "windows",
     "windows-7zip": "windows",
     "windows-apache": "windows",
     "windows-powershell-core": "windows",
@@ -59,6 +59,7 @@
     "dcos-integration-test",
     "dcos-launch",
     "dcos-log",
+    "dcos-metrics",
     "dcos-oauth",
     "dcos-signal",
     "dcos-test-utils",
@@ -85,7 +86,6 @@
     "python-tox",
     "rexray",
     "strace",
-    "telegraf",
     "toybox"
   ],
   "bootstrap_package_list": ["dcos-image"]

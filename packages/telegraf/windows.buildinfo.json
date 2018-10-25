@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/dcos/telegraf.git",
+    "ref": "20ed71519471608c29e6bf0196ffdd5082baec5c",
+    "ref_origin": "1.7.2-dcos"
+  }
+}

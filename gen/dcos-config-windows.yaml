@@ -4,23 +4,15 @@ package:
       dcos-adminrouter-agent.service
       dcos-diagnostics.service
       dcos-mesos-slave.service
-      dcos-metrics-agent.service
+      dcos-telegraf.service
       dcos-net.service
   - path: \bin_slave_public\servicelist.txt
     content: |
       dcos-adminrouter-agent.service
       dcos-diagnostics.service
       dcos-mesos-slave-public.service
-      dcos-metrics-agent.service
+      dcos-telegraf.service
       dcos-net.service
-  - path: \etc\dcos-metrics-config.yaml
-    content: |
-      collector:
-        mesos_agent:
-          request_timeout: 30s
-  - path: \etc\dcos-metrics.env.ps1
-    content: |
-      $env:DCOS_METRICS_CONFIG_PATH="c:\opt\mesosphere\etc\dcos-metrics-config.yaml"
   - path: \pkginfo.json
     content: |
       {
@@ -563,6 +555,124 @@ package:
 
       # This file MUST have extra new lines at the end
 
+  - path: \etc\telegraf\telegraf.conf.windows
+    content: |
+      # Telegraf config for all nodes
+      [global_tags]
+        # Tags to be applied to all metrics.
+        dcos_cluster_name="{{ cluster_name }}"
+        dcos_cluster_id="DCOS_CURRENT_CLUSTER_ID"
+      [agent]
+        ## Default data collection interval for all inputs
+        interval = "10s"
+        ## Rounds collection interval to 'interval'
+        ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
+        round_interval = true
+        ## Telegraf will send metrics to outputs in batches of at most
+        ## metric_batch_size metrics.
+        ## This controls the size of writes that Telegraf sends to output plugins.
+        metric_batch_size = 1000
+        ## For failed writes, telegraf will cache metric_buffer_limit metrics for each
+        ## output, and will flush this buffer on a successful write. Oldest metrics
+        ## are dropped first when this buffer fills.
+        ## This buffer only fills when writes fail to output plugin(s).
+        metric_buffer_limit = 10000
+        ## Collection jitter is used to jitter the collection by a random amount.
+        ## Each plugin will sleep for a random time within jitter before collecting.
+        ## This can be used to avoid many plugins querying things like sysfs at the
+        ## same time, which can have a measurable effect on the system.
+        collection_jitter = "0s"
+        ## Default flushing interval for all outputs. You shouldn't set this below
+        ## interval. Maximum flush_interval will be flush_interval + flush_jitter
+        flush_interval = "10s"
+        ## Jitter the flush interval by a random amount. This is primarily to avoid
+        ## large write spikes for users running a large number of telegraf instances.
+        ## ie, a jitter of 5s and interval 10s means flushes will happen every 10-15s
+        flush_jitter = "0s"
+        ## By default or when set to "0s", precision will be set to the same
+        ## timestamp order as the collection interval, with the maximum being 1s.
+        ##   ie, when interval = "10s", precision will be "1s"
+        ##       when interval = "250ms", precision will be "1ms"
+        ## Precision will NOT be used for service inputs. It is up to each individual
+        ## service input to set the timestamp at the appropriate precision.
+        ## Valid time units are "ns", "us", "ms", "s".
+        precision = ""
+        ## Logging configuration:
+        ## Run telegraf with debug log messages.
+        debug = false
+        ## Run telegraf in quiet mode (error log messages only).
+        quiet = false
+        ## Specify the log file name. The empty string means to log to stderr.
+        logfile = ""
+        ## Override default hostname, if empty use os.Hostname()
+        hostname = ""
+        ## If set to true, do no set the "host" tag in the telegraf agent.
+        omit_hostname = false
+      # Read metrics about cpu usage
+      [[inputs.cpu]]
+        ## Whether to report per-cpu stats or not
+        percpu = true
+        ## Whether to report total system cpu stats or not
+        totalcpu = true
+        ## If true, collect raw CPU time metrics.
+        collect_cpu_time = false
+        ## If true, compute and report the sum of all non-idle CPU states.
+        report_active = false
+      # Read metrics about memory usage
+      [[inputs.mem]]
+      # Read metrics about disk usage by mount point
+      [[inputs.disk]]
+        ## Ignore mount points by filesystem type.
+        # TODO(branden): Do we want to ignore any fs types?
+        #ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
+      # Read metrics about swap memory usage
+      [[inputs.swap]]
+      # Gather metrics about network interfaces
+      [[inputs.net]]
+      # TODO(ibalutoiu): The following input filter is not implemented on Windows.
+      #                  It will be replaced by a similar input filter using
+      #                  the Windows performance counters.
+      # Get the number of processes and group them by status
+      #[[inputs.processes]]
+      #
+      # Read metrics about system load & uptime
+      [[inputs.system]]
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
+  - path: \etc\telegraf\telegraf.d\agent.conf.windows
+    content: |
+      # Additional Telegraf config for agents
+      # Plugin for monitoring statsd metrics from mesos tasks
+      [[inputs.dcos_statsd]]
+        ## The address on which the command API should listen
+        listen = "localhost:9004"
+        ## The directory in which container information is stored
+        containers_dir = "c:/run/dcos/telegraf/dcos_statsd/containers"
+        ## The period after which requests to the API should time out
+        timeout = "15s"
+        ## The hostname or IP address on which to host statsd servers
+        statsd_host = "198.51.100.1"
+      # Plugin for adding metadata to dcos-specific metrics
+      [[processors.dcos_metadata]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://DCOS_AGENT_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        timeout = "10s"
+        ## The minimum period between requests to the mesos agent
+        rate_limit = "5s"
+      # Expose metrics via the dcos-metrics v0 API.
+      [[outputs.dcos_metrics]]
+        # The address on which the dcos-metrics v0 API should listen
+        listen = "localhost:9000"
+        dcos_node_role = "agent"
+        # Duration to cache metrics in memory.
+        cache_expiry = "2m"
+        # DC/OS node's private IP, as reported by c:/opt/mesosphere/bin/detect_ip.ps1.
+        dcos_node_private_ip = "DCOS_AGENT_PRIVATE_IP"
+        # Global DC/OS Cluster ID.
+        dcos_cluster_id = "DCOS_CURRENT_CLUSTER_ID"
   - path: /etc/check_time.env.ps1
     content: |
       $env:ENABLE_CHECK_TIME="{{ check_time }}"

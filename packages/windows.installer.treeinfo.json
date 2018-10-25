@@ -6,8 +6,8 @@
     "dcos-diagnostics": "windows",
     "dcos-image": "windows",
     "dcos-image-deps": "windows",
-    "dcos-metrics": "windows",
     "dcos-net": "windows",
+    "telegraf": "windows",
     "dnspython": "windows",
     "flask": "windows",
     "libsodium": "windows",
@@ -59,6 +59,7 @@
     "dcos-integration-test",
     "dcos-launch",
     "dcos-log",
+    "dcos-metrics",
     "dcos-oauth",
     "dcos-signal",
     "dcos-test-utils",
@@ -85,7 +86,6 @@
     "python-tox",
     "rexray",
     "strace",
-    "telegraf",
     "toybox"
   ],
   "core_package_list": ["dcos-image"]

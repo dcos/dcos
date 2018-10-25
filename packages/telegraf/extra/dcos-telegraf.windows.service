@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegraf: collects and reports metrics
+
+[Service]
+Restart=always
+RestartSec=5
+KillSignal=SIGKILL
+User=.\LocalSystem
+StandardOutput=file:c:\var\log\dcos-telegraf.log
+StandardError=file:c:\var\log\dcos-telegraf.log
+EnvironmentFile=c:\opt\mesosphere\environment.ps1
+ExecStartPre=c:\opt\mesosphere\bin\python\scripts\bootstrap.exe dcos-telegraf-agent
+ExecStartPre=pwsh.exe -file c:\opt\mesosphere\bin\dcos-telegraf-setup.ps1
+ExecStart=telegraf.exe --config c:\opt\mesosphere\etc\telegraf\telegraf.conf --config-directory c:\opt\mesosphere\etc\telegraf\telegraf.d --console
