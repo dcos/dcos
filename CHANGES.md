@@ -11,5 +11,6 @@
 
 ### Fixed and improved
 
+* Update Java to 8u192. (DCOS_OSS-4380)
 
 ### Notable changes
