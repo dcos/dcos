@@ -35,8 +35,8 @@ class IamHTTPRequestHandler(RecordingHTTPRequestHandler):
 
         reflecting_paths = [
             '/acs/api/v1/reflect/me',
-            '/dcos-metadata/ui-config.json']
-        if base_path in reflecting_paths or base_path.startswith('/acs/api/v1/auth/'):
+            '/acs/api/v1/uiconfig']
+        if base_path.rstrip('/') in reflecting_paths or base_path.startswith('/acs/api/v1/auth/'):
             # A test URI that is used by tests. In some cases it is impossible
             # to reuse /acs/api/v1/users/ path.
             return self._reflect_request(base_path, url_args, body_args)
