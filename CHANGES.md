@@ -13,3 +13,5 @@
 
 
 ### Notable changes
+
+* Updated DC/OS UI to master+v2.34.1 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.34.1)
