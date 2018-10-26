@@ -15,6 +15,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Not a real change
+
 
 ### Fixed and improved
 
