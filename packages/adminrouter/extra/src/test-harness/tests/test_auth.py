@@ -6,30 +6,36 @@ import time
 import pytest
 import requests
 
-from generic_test_code.common import assert_endpoint_response, verify_header
-from util import GuardedSubprocess, SearchCriteria, auth_type_str, jwt_type_str
+from generic_test_code.common import assert_endpoint_response
+from util import GuardedSubprocess, SearchCriteria, auth_type_str
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
 
-class TestAuthzIAMBackendQueryCommon:
-    def test_if_master_ar_sets_correct_useragent_while_quering_iam(
-            self, master_ar_process_pertest, mocker, valid_user_header):
-        mocker.send_command(endpoint_id='http://127.0.0.1:8101',
-                            func_name='record_requests')
+# Note(JP): this test assumes that the IAM is contacted when trying to reach
+# /mesos_dns. This is not a good assumption. TODO: rewrite the test so that
+# setting the User-Agent header is somehow tested differently.
 
-        assert_endpoint_response(
-            master_ar_process_pertest,
-            '/mesos_dns/v1/reflect/me',
-            200,
-            headers=valid_user_header,
-            )
+# class TestAuthzIAMBackendQueryCommon:
 
-        r_reqs = mocker.send_command(endpoint_id='http://127.0.0.1:8101',
-                                     func_name='get_recorded_requests')
 
-        assert len(r_reqs) == 1
-        verify_header(r_reqs[0]['headers'], 'User-Agent', 'Master Admin Router')
+#     def test_if_master_ar_sets_correct_useragent_while_quering_iam(
+#             self, master_ar_process_pertest, mocker, valid_user_header):
+#         mocker.send_command(endpoint_id='http://127.0.0.1:8101',
+#                             func_name='record_requests')
+
+#         assert_endpoint_response(
+#             master_ar_process_pertest,
+#             '/mesos_dns/v1/reflect/me',
+#             200,
+#             headers=valid_user_header,
+#             )
+
+#         r_reqs = mocker.send_command(endpoint_id='http://127.0.0.1:8101',
+#                                      func_name='get_recorded_requests')
+
+#         assert len(r_reqs) == 1
+#         verify_header(r_reqs[0]['headers'], 'User-Agent', 'Master Admin Router')
 
 
 class TestAuthnJWTValidator:
@@ -59,25 +65,27 @@ class TestAuthnJWTValidator:
             cookies={"dcos-acs-auth-cookie": "invalid"},
             )
 
-    def test_missmatched_auth_token_algo_in_cookie(
-            self,
-            master_ar_process_perclass,
-            mismatch_alg_jwt_generator,
-            repo_is_ee,
-            ):
-        log_messages = {
-            ("Invalid token. Reason: whitelist unsupported alg: " +
-             jwt_type_str(not repo_is_ee)): SearchCriteria(1, True),
-            }
+    # Note(JP): in the future we should simply test that only RS256 works, in
+    # both variants.
+    # def test_missmatched_auth_token_algo_in_cookie(
+    #         self,
+    #         master_ar_process_perclass,
+    #         mismatch_alg_jwt_generator,
+    #         repo_is_ee,
+    #         ):
+    #     log_messages = {
+    #         ("Invalid token. Reason: whitelist unsupported alg: " +
+    #          jwt_type_str(not repo_is_ee)): SearchCriteria(1, True),
+    #         }
 
-        token = mismatch_alg_jwt_generator(uid='user')
-        assert_endpoint_response(
-            master_ar_process_perclass,
-            EXHIBITOR_PATH,
-            401,
-            assert_stderr=log_messages,
-            cookies={"dcos-acs-auth-cookie": token},
-            )
+    #     token = mismatch_alg_jwt_generator(uid='user')
+    #     assert_endpoint_response(
+    #         master_ar_process_perclass,
+    #         EXHIBITOR_PATH,
+    #         401,
+    #         assert_stderr=log_messages,
+    #         cookies={"dcos-acs-auth-cookie": token},
+    #         )
 
     def test_valid_auth_token_in_cookie_with_null_uid(
             self,

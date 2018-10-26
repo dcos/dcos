@@ -1,15 +1,22 @@
 # Admin Router
 
-Admin Router is an open-source NGINX configuration created by
-Mesosphere that provides central authentication and proxy to DC/OS services
-within the cluster.
+Admin Router on DC/OS master nodes ("Master Admin Router") proxies HTTP requests
+from outside the DC/OS cluster to the individual DC/OS services inside the
+cluster. It is meant to be used by cluster operators for configuring and
+debugging the DC/OS cluster state, and for starting and configuring services in
+the cluster. It is not meant to proxy heavy web traffic to individual services
+or applications running in the DC/OS cluster.
+
+Admin Router implements acentral authentication mechanism. That is, HTTP
+requests typically need present authentication proof so that Admin Router
+actually proxies them instead of responding with a 401 HTTP response.
 
 <img src="docs/admin-router.png" alt="" width="100%" align="middle">
 
 ## Routes
 
-Admin Router runs on both master and agent nodes, each with different NGINX
-configurations. From these NGINX config files,
+Admin Router runs on both DC/OS master and DC/OS agent nodes, each with
+different NGINX configurations. From these NGINX config files,
 [ngindox](https://github.com/karlkfi/ngindox) is used to generates Swagger-like
 documentation:
 
@@ -28,7 +35,7 @@ documentation:
 - Rendered: <https://rawgit.com/dcos/dcos/master/packages/adminrouter/extra/src/docs/api/nginx.agent.html>
 
 
-## Endpoints documentation
+## Endpoint documentation
 
 All Admin Router endpoints are documented using the
 [ngindox](https://github.com/karlkfi/ngindox) tool, which uses specially
@@ -563,64 +570,55 @@ If a task has `DCOS_SERVICE_REQUEST_BUFFERING` label set to `false` (string) or 
 
 This feature is available only for the tasks launched by the root Marathon.
 
-## Authorization and authentication
+## Authentication and authorization
 
-DC/OS uses DC/OS authentication token at the core of its authentication and
-authorization features and Admin Router performs a vital role in facilitating
-it. Lots of services which constitute DC/OS do not have their own authorizers
-and rely on Admin Router to provide them with authn/authn+authz enforcement.
+DC/OS uses the concept of the _DC/OS authentication token_ at the core of its
+authentication and authorization features. Admin Router can act as a so-called
+DC/OS authenticator but also has extension points to render it into a so-called
+DC/OS authorizer. For most DC/OS services Admin Router is the sole (but
+sufficient) entity which enforces access control based on authentication proof.
 
-Authn and authz code differs considerably between Open Source and Enterprise
-versions of Admin Router. This documentation focuses on describing common and
-Open Source related code. For EE features documentation please consult
-README.md in EE Admin Router repository.
+The authenticator and authorizer implementation in Admin Router differs
+considerably between its upstream and downstream variants. This documentation
+focuses on describing concepts that are common between both variants. For
+downstream-specific documentation please consult the README.md file in the
+downstream Admin Router repository.
 
 ### Authentication
 
-For Admin Router to establish the identity of the subject issuing a request, it
-looks for DC/OS authentication token in the request. It may be present in the
-following places:
-* request headers: client needs to set `Authorization` header with
-  `token=<token payload>` value.
-* client sets `dcos-acs-auth-cookie` cookie with the token payload as a value
+For Admin Router to find the identity of the DC/OS user who issued the request
+it looks for a DC/OS authentication token in the request, and it then performs a
+token verification procedure (for details please see code comments in
+auth/common.lua).
 
-In the case when both request header and the cookie is set, request header
-token takes priority. Admin Router does not issue DC/OS authentication token
-itself as this is the task of the IAM service. Please consult DC/OS
-documentation for more details.
+If the authentication token verification procedure succeeded the `uid`
+corresponding to the DC/OS user who submitted the request is known and logged
+(and used for subsequent processing).
 
-Currently, DC/OS uses/sets the following mandatory claims:
-* `uid` which is ID of the user/subject making the request as defined in IAM
-* `exp` claim as defined in section 4.1.4 of RFC7519
-
-If the DC/OS authentication token signature is valid and token has not expired,
-then uid claim is used while communicating with IAM to make authz decisions.
-
-The way tokens are validated is shared between EE and Open, with the only
-difference being the signing algorithm used by the tokens. In case of Open it's
-`HS256` and in case of EE: `RS256`
-
-In case when authentication was not successful, Admin Router responds with 401
-error page with `WWW-Authenticate` header set to authentication process type
-that is required to finish the authn.
+When an HTTP request path requires authentication but when a corresponding HTTP
+request does not present a token or does not present a valid token then Admin
+Router is specified to respond with an 401 HTTP error response.
 
 ### Authorization
 
-Open Source Admin Router performs authorization basing on the sole fact that
-user identity was transferred to Open Source IAM. This is done in by checking
-if the user with given `uid` extracted from DC/OS authentication token claim is
-present and active in the IAM using the `do_authn_and_authz_or_exit` LUA auth
-module method.
+Upstream Admin Router performs coarse-grained binary authorization purely based
+on the authentication state. That is, those request paths that require
+authentication can be fully accessed when valid authentication proof is shown.
+No other fine-grained privilege control has been implemented.
 
 ### Parameter-less interface
 
-Authz differs significantly between EE and Open Source Admin Router,
-but the location blocks in `nginx.*.conf` files not necessarily. So to
-be able to share as much code as possible between EE and Open, there has to be
-a common interface for EE and Open LUA auth code that location blocks can use.
+Authorization in downstream is done in a fine-grained fashion. That is, its
+implementation differs significantly between the downstream (EE) and upstream
+(Open Source) Admin Router variants. At the same time the NGINX location block
+configuration in `nginx.*.conf` files usually is very similar in both variants.
+To be able to share a lot of code between both variants there is a common
+interface which can be used from within these location configuration blocks for
+entering the authentication and authorization capabilities.
 
-This is the reason why LUA code responsible for auth exposes thin
-parameter-less wrappers around all the functions, for example:
+For that reason Admin Router provides Lua code which implements thin
+parameter-less wrappers which can conveniently be used for implementing
+authentication and/or authorization features across the two variants. Example:
 
 ```
 res.access_lashupkey_endpoint = function()

@@ -5,7 +5,7 @@ local evp = require "resty.evp"
 local hmac = require "resty.hmac"
 local resty_random = require "resty.random"
 
-local _M = {_VERSION="0.1.9"}
+local _M = {_VERSION="0.2.0"}
 local mt = {__index=_M}
 
 local string_match= string.match
@@ -102,7 +102,7 @@ local function is_nil_or_boolean(arg_value)
     return true
 end
 
---@function get the row part
+--@function get the raw part
 --@param part_name
 --@param jwt_obj
 local function get_raw_part(part_name, jwt_obj)
@@ -199,7 +199,7 @@ local function derive_keys(enc, secret_key)
   end
 
   if #secret_key ~= secret_key_len then
-    error({reason="The pre-shared content key must be ".. secret_key_len})
+    error({reason="invalid pre-shared key"})
   end
 
   local mac_key = string_sub(secret_key, 1, mac_key_len)
@@ -485,7 +485,7 @@ function _M.sign(self, secret_key, jwt_obj)
   -- header alg check
   local raw_header = get_raw_part(str_const.header, jwt_obj)
   local raw_payload = get_raw_part(str_const.payload, jwt_obj)
-  local message = string_format(str_const.regex_join_msg, raw_header , raw_payload)
+  local message = string_format(str_const.regex_join_msg, raw_header, raw_payload)
 
   local alg = jwt_obj[str_const.header][str_const.alg]
   local signature = ""
@@ -779,7 +779,7 @@ function _M.verify_jwt_obj(self, secret, jwt_obj, ...)
         cert, err = evp.PublicKey:new(secret)
       end
       if not cert then
-        jwt_obj[str_const.reason] = "Decode secret is not a valid cert/public key: " .. (err and err or secret)
+        jwt_obj[str_const.reason] = "Decode secret is not a valid cert/public key"
         return jwt_obj
       end
     else

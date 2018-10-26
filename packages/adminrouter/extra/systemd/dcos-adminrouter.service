@@ -13,7 +13,7 @@ PrivateDevices=yes
 StandardOutput=journal
 StandardError=journal
 PermissionsStartOnly=True
-Environment=SECRET_KEY_FILE_PATH=/var/lib/dcos/dcos-oauth/auth-token-secret
+Environment=AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH=/var/lib/dcos/dcos-oauth/auth-token-secret
 Environment=AUTH_ERROR_PAGE_DIR_PATH=${PKG_PATH}/nginx/conf/errorpages
 EnvironmentFile=/opt/mesosphere/etc/adminrouter.env
 EnvironmentFile=/opt/mesosphere/etc/dcos-oauth.env
