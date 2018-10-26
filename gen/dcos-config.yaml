@@ -701,6 +701,20 @@ package:
     content: |
         {
           "HTTPEndpoints": [
+{% switch dcos_overlay_enable %}
+{% case "true" %}
+              {
+                  "Port": 5050,
+                  "Uri": "/overlay-master/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": 5051,
+                  "Uri": "/overlay-agent/overlay",
+                  "Role": ["agent", "agent_public"]
+              },
+{% case "false" %}
+{% endswitch %}
               {
                   "Port": 5050,
                   "Uri": "/__processes__",
@@ -880,16 +894,6 @@ package:
                   "Port": 8123,
                   "Uri": "/v1/version",
                   "Role": ["master"]
-              },
-              {
-                  "Port": 5050,
-                  "Uri": "/overlay-master/state",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": 5051,
-                  "Uri": "/overlay-agent/overlay",
-                  "Role": ["agent", "agent_public"]
               },
               {
                   "Port": 5051,
@@ -1333,6 +1337,27 @@ package:
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        # A list of Mesos masters.
+        masters = ["http://$DCOS_NODE_PRIVATE_IP:5050"]
+        # Master metrics groups to be collected.
+        master_collections = [
+          "resources",
+          "master",
+          "agents",
+          "frameworks",
+          "framework_offers",
+          "tasks",
+          "messages",
+          "evqueue",
+          "registrar",
+          "allocator",
+       ]
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
@@ -1347,6 +1372,8 @@ package:
       # Additional Telegraf config for agents
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
+        ## The interval at which to collect metrics
+        interval = "60s"
         ## The URL of the local mesos agent
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
@@ -1361,6 +1388,22 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        ## A list of Mesos slaves
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        # Slave metrics groups to be collected.
+        slave_collections = [
+          "resources",
+          "agent",
+          "executors",
+          "tasks",
+          "messages",
+        ]
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1383,6 +1426,8 @@ package:
       # Additional Telegraf config for agents
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
+        ## The interval at which to collect metrics
+        interval = "60s"
         ## The URL of the local mesos agent
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
@@ -1397,6 +1442,22 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        ## A list of Mesos slaves
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        # Slave metrics groups to be collected.
+        slave_collections = [
+          "resources",
+          "agent",
+          "executors",
+          "tasks",
+          "messages",
+        ]
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent

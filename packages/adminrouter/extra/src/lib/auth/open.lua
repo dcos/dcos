@@ -2,30 +2,32 @@ local authcommon = require "auth.common"
 local jwt = require "resty.jwt"
 local util = require "util"
 
-local SECRET_KEY = nil
 
-local key_file_path = os.getenv("SECRET_KEY_FILE_PATH")
+local AUTH_TOKEN_VERIFICATION_KEY = nil
+
+
+local key_file_path = os.getenv("AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH")
 if key_file_path == nil then
-    ngx.log(ngx.WARN, "SECRET_KEY_FILE_PATH not set.")
+    ngx.log(ngx.WARN, "AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH not set.")
 else
-    ngx.log(ngx.NOTICE, "Reading secret key from `" .. key_file_path .. "`.")
-    SECRET_KEY = util.get_stripped_first_line_from_file(key_file_path)
-    if (SECRET_KEY == nil or SECRET_KEY == '') then
+    ngx.log(ngx.NOTICE, "Reading auth token verification key from `" .. key_file_path .. "`.")
+    AUTH_TOKEN_VERIFICATION_KEY = util.get_file_content(key_file_path)
+    if (AUTH_TOKEN_VERIFICATION_KEY == nil or AUTH_TOKEN_VERIFICATION_KEY == '') then
         -- Normalize to nil, for simplified subsequent per-request check.
-        SECRET_KEY = nil
-        ngx.log(ngx.WARN, "Secret key not set or empty string.")
+        AUTH_TOKEN_VERIFICATION_KEY = nil
+        ngx.log(ngx.WARN, "Auth token verification key not set or empty string.")
     end
-    jwt:set_alg_whitelist({HS256=1})
+    -- Note(JP): by the end of this project set this to RS256 only.
+    jwt:set_alg_whitelist({RS256=1,HS256=1})
 end
 
+
 local function validate_jwt_or_exit()
-    uid, err = authcommon.validate_jwt(SECRET_KEY)
+    uid, err = authcommon.validate_jwt(AUTH_TOKEN_VERIFICATION_KEY)
     if err ~= nil then
         if err == 401 then
             return authcommon.exit_401("oauthjwt")
         end
-
-        -- Other error statuses go here...
 
         -- Catch-all, normally not reached:
         ngx.log(ngx.ERR, "Unexpected result from validate_jwt()")
@@ -37,34 +39,20 @@ end
 
 
 local function do_authn_and_authz_or_exit()
-    local uid = validate_jwt_or_exit()
-
-    -- Authz using authn :)
-    res = ngx.location.capture("/internal/acs/api/v1/users/" .. uid)
-
-    if res.status == ngx.HTTP_NOT_FOUND then
-        ngx.log(ngx.ERR, "User not found: `" .. uid .. "`")
-        return authcommon.exit_401()
-    end
-
-    if res.status == ngx.HTTP_OK then
-        return
-    end
-
-    -- Catch-all, normally not reached:
-    ngx.log(ngx.ERR, "Unexpected response from IAM: " .. res.status)
-    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-    return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-end
-
-local function do_authn_or_exit(object)
-    -- This function only ensures that the user is authenticated
-    -- Even though it's only calling validate_jwt_or_exit, we put it for the
-    -- sake of completeness/consistency with EE.
+    -- Here, only do authentication, i.e. require
+    -- valid authentication token to be presented.
+    -- Downstream, this function can be replaced
+    -- with more complex business logic.
     validate_jwt_or_exit()
 end
 
--- Initialise and return the module:
+
+local function do_authn_or_exit(object)
+    validate_jwt_or_exit()
+end
+
+
+-- Initialise and return the module.
 local _M = {}
 function _M.init(use_auth)
     local res = {}

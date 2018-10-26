@@ -18,7 +18,8 @@ class Nginx(NginxBase):
     def __init__(self,
                  ouath_client_id="3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m",
                  ouath_auth_redirector="https://auth.dcos.io",
-                 secret_key_file_path=os.environ.get("IAM_SHARED_SECRET_FILE_PATH"),
+                 auth_token_verification_key_file_path=os.environ.get(
+                     "IAM_PUBKEY_FILE_PATH"),
                  **base_kwargs):
         """Initialize new AR/Nginx instance
 
@@ -26,11 +27,14 @@ class Nginx(NginxBase):
              ouath_client_id (str): translates to `OUATH_CLIENT_ID` env var
              ouath_auth_redirector (str): translates to `OUATH_AUTH_REDIRECTOR`
                 env var
-             secret_key_file_path (str): translates to `SECRET_KEY_FILE_PATH`
-                env var
+             auth_token_verification_key_file_path (str): translates to
+                `AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH` env var
         """
         NginxBase.__init__(self, **base_kwargs)
 
         self._set_ar_env_from_val("OAUTH_CLIENT_ID", ouath_client_id)
         self._set_ar_env_from_val("OAUTH_AUTH_REDIRECTOR", ouath_auth_redirector)
-        self._set_ar_env_from_val('SECRET_KEY_FILE_PATH', secret_key_file_path)
+        self._set_ar_env_from_val(
+            'AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH',
+            auth_token_verification_key_file_path
+        )
