@@ -1148,7 +1148,7 @@ package:
     content: |
       {
         "SUPERUSER_SERVICE_ACCOUNT_UID": "{{ superuser_service_account_uid }}",
-        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": "{{ superuser_service_account_public_key }}",
+        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": {{ superuser_service_account_public_key }},
         "LOG_LEVEL_STDERR": "INFO",
         "LOG_LEVEL_SQLALCHEMY": "WARNING",
         "AUTH_COOKIE_SECURE_FLAG": {{ auth_cookie_secure_flag }},

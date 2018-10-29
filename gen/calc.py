@@ -711,6 +711,15 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
+def calculate_superuser_service_public_key(superuser_service_account_public_key):
+    """
+    Can we overwrite a value?
+    """
+    assert isinstance(superuser_service_account_public_key, str)
+    # Escape special characters like newlines, and add quotes.
+    return json.dumps(superuser_service_account_public_key)
+
+
 def calculate_check_config(check_time):
     # We consider only two timeouts:
     # * 1s for immediate checks (such as checking for the presence of CLI utilities).
@@ -1083,7 +1092,7 @@ entry = {
             }
         }),
         'superuser_service_account_uid': '',
-        'superuser_service_account_public_key': '',
+        'superuser_service_account_public_key': calculate_superuser_service_public_key,
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
