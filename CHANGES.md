@@ -4,6 +4,10 @@
 
 ### Fixed and improved
 
+* dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
+
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
 * dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
 
 ### Security Updates
