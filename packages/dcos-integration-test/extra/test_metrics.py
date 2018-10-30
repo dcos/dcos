@@ -154,7 +154,6 @@ def test_metrics_containers(dcos_api_session):
             for c in get_container_ids(dcos_api_session, agent.host):
                 # Test that /containers/<id> responds with expected data
                 container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
-                assert 'datapoints' in container_metrics, 'got {}'.format(container_metrics)
 
                 cid_registry = []
                 for dp in container_metrics['datapoints']:
@@ -176,9 +175,6 @@ def test_metrics_containers(dcos_api_session):
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
 
-                assert 'dimensions' in container_metrics, 'got {}'.format(container_metrics)
-                assert 'task_name' in container_metrics['dimensions'], 'got {}'.format(
-                    container_metrics['dimensions'])
                 assert container_metrics['dimensions']['mesos_id'] == '', 'got {}'.format(
                     container_metrics['dimensions'])
 
@@ -368,7 +364,7 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
     """
     for cid in get_container_ids(dcos_api_session, node):
         container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions'].get('task_name') == task_name:
+        if container_metrics['dimensions']['task_name'] == task_name:
             return get_app_metrics(dcos_api_session, node, cid)
     return None
 
@@ -393,12 +389,27 @@ def get_container_ids(dcos_api_session, node: str):
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
-    Retries on error or non-200 status for up to 30 seconds.
+    Retries on error, non-200 status, or missing response fields for up
+    to 30 seconds.
 
     """
     response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
     assert response.status_code == 200
-    return response.json()
+    container_metrics = response.json()
+
+    assert 'datapoints' in container_metrics, (
+        'container metrics must include datapoints. Got: {}'.format(container_metrics)
+    )
+    assert 'dimensions' in container_metrics, (
+        'container metrics must include dimensions. Got: {}'.format(container_metrics)
+    )
+    # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
+    # metrics response.
+    assert 'task_name' in container_metrics['dimensions'], (
+        'task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions'])
+    )
+
+    return container_metrics
 
 
 @retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
