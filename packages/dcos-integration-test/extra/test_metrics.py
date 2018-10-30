@@ -389,7 +389,7 @@ def get_container_ids(dcos_api_session, node: str):
     return container_ids
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
@@ -401,7 +401,7 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
     return response.json()
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
