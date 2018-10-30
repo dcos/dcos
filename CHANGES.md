@@ -4,6 +4,8 @@
 
 ### Fixed and improved
 
+* dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
