@@ -10,6 +10,6 @@
 
 
 ### Fixed and improved
-
+* Docker-GC will now log to journald. (COPS-4044)
 
 ### Notable changes
