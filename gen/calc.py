@@ -711,12 +711,73 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
-def calculate_superuser_service_public_key(superuser_service_account_public_key):
+def calculate__superuser_credentials_given(
+        superuser_service_account_uid, superuser_service_account_public_key):
+    pair = (superuser_service_account_uid, superuser_service_account_public_key)
+
+    if all(pair):
+        return 'true'
+
+    if not any(pair):
+        return 'false'
+
+    # `calculate_` functions are not supposed to error out, but
+    # in this case here (multi-arg input) this check cannot
+    # currently be replaced by a `validate_` function.
+    raise AssertionError(
+        "'superuser_service_account_uid' and "
+        "'superuser_service_account_public_key' "
+        "must both be empty or both be non-empty"
+    )
+
+
+def calculate__superuser_service_account_public_key_json(
+        superuser_service_account_public_key):
     """
-    Can we overwrite a value?
+    This function expects PEM text as input, parses and validates it, and emits
+    JSON-encoded PEM text as output. That includes wrapping the text in double
+    quotes, and escaping newline characters.
     """
+    import cryptography.hazmat.backends
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
     assert isinstance(superuser_service_account_public_key, str)
-    # Escape special characters like newlines, and add quotes.
+
+    def validate_rsa_pubkey(key_pem):
+        """
+        Check if `key_pem` is a string containing an RSA public key encoded
+        using the X.509 SubjectPublicKeyInfo/OpenSSL PEM public key format.
+        Refs:
+            - https://tools.ietf.org/html/rfc5280.html
+            - http://stackoverflow.com/a/29707204/145400
+
+        Args:
+            key_pem (str): serialized public key
+        """
+        # This will raise `ValueError` for invalud input or
+        # `UnsupportedAlgorithm` for exotic unsupported key types.
+        try:
+            key = serialization.load_pem_public_key(
+                data=key_pem.encode('ascii'),
+                backend=cryptography.hazmat.backends.default_backend()
+            )
+        except ValueError as exc:
+            raise AssertionError(
+                'superuser_service_account_public_key has an invalid value. It '
+                'must hold an RSA public key encoded in the OpenSSL PEM '
+                'format. Error: %s' % (exc, )
+            )
+
+        assert isinstance(key, rsa.RSAPublicKey), \
+            'superuser_service_account_public_key must be of type RSA'
+
+    if superuser_service_account_public_key:
+        validate_rsa_pubkey(superuser_service_account_public_key)
+
+    # Escape special characters like newlines, and add quotes (for the common
+    # case of `superuser_service_account_public_key` being empty this returns
+    # '""'.)
     return json.dumps(superuser_service_account_public_key)
 
 
@@ -1092,7 +1153,9 @@ entry = {
             }
         }),
         'superuser_service_account_uid': '',
-        'superuser_service_account_public_key': calculate_superuser_service_public_key,
+        'superuser_service_account_public_key': '',
+        '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
+        '_superuser_credentials_given': calculate__superuser_credentials_given,
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,

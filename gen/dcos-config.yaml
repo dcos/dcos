@@ -1143,12 +1143,10 @@ package:
 {% case "false" %}
 {% endswitch %}
   - path: /etc/bouncer-config.json
-    # `LDAP_GROUP_IMPORT_LIMIT_SECONDS` must be smaller than `proxy_read_timeout`
-    # for `/acs/api/v1/ldap/importgroup` in the Admin Router configuration.
     content: |
       {
         "SUPERUSER_SERVICE_ACCOUNT_UID": "{{ superuser_service_account_uid }}",
-        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": {{ superuser_service_account_public_key }},
+        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": {{ _superuser_service_account_public_key_json }},
         "LOG_LEVEL_STDERR": "INFO",
         "LOG_LEVEL_SQLALCHEMY": "WARNING",
         "AUTH_COOKIE_SECURE_FLAG": {{ auth_cookie_secure_flag }},
