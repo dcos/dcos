@@ -51,6 +51,14 @@ package:
   - path: /etc_master/master_count
     content: |
       {{ num_masters }}
+  - path: /etc/resolv.conf
+    content: |
+      # /opt/mesosphere/etc/resolv.conf
+      options timeout:1
+      options attempts:3
+      nameserver 198.51.100.1
+      nameserver 198.51.100.2
+      nameserver 198.51.100.3
   - path: /etc_slave/dcos-dns.json
     content: |
       {

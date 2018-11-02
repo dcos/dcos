@@ -31,5 +31,6 @@ ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip a
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py ip addr add 198.51.100.3/32 dev spartan
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ipv6 sysctl -w net.ipv6.conf.spartan.disable_ipv6=0
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ipv6 ip -6 addr add fd01:d::c633:6401/128 dev spartan
+ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py mount -o bind,ro /opt/mesosphere/etc/resolv.conf /etc/resolv.conf
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-net
 ExecStart=/opt/mesosphere/bin/dcos-net-env foreground

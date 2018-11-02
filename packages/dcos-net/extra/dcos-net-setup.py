@@ -42,6 +42,15 @@ def main():
             result = subprocess.run(sys.argv)
     elif sys.argv[1:3] == ['networkd', 'add'] and len(sys.argv) == 4:
         result = add_networkd_config(sys.argv[3])
+    elif sys.argv[1] == ['mount']:
+        argv = sys.argv[1] + ['-o', 'remount'] + sys.argv[2:]
+        result = subprocess.run(argv, stderr=subprocess.PIPE)
+        if result.returncode != 0:
+            if not os.path.isfile(sys.argv[-1]):
+                shutil.copyfile(sys.argv[-2], sys.argv[-1])
+            result = subprocess.run(sys.argv[1:])
+        else:
+            sys.stderr.buffer.write(result.stderr)
     else:
         result = subprocess.run(sys.argv[1:])
     sys.exit(result.returncode)

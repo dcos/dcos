@@ -134,8 +134,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-checks-api.socket',
         'dcos-diagnostics.service',
         'dcos-diagnostics.socket',
-        'dcos-gen-resolvconf.service',
-        'dcos-gen-resolvconf.timer',
         'dcos-net.service',
         'dcos-net-watchdog.service',
         'dcos-pkgpanda-api.service',
