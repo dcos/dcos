@@ -1,7 +1,8 @@
-From feb564fec083c6cac37b495705aa9f7675cd02cb Mon Sep 17 00:00:00 2001
+From 1947a51cf92cc41e78bd5df8fcf8eec21e5f9629 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:36 -0700
-Subject: [PATCH] Included nested command check output in the executor logs.
+Subject: [PATCH 05/13] Included nested command check output in the executor
+ logs.
 
 This patch updates the checker and health checker to include the output
 of COMMAND checks and health checks in its logs by default. This has
@@ -10,11 +11,11 @@ debugging.
 
 Review: https://reviews.apache.org/r/61697/
 ---
- src/checks/checker_process.cpp | 68 ++++++++++++++++++++++++++++++++++++++++++
+ src/checks/checker_process.cpp | 68 ++++++++++++++++++++++++++++++++++
  1 file changed, 68 insertions(+)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index 0b6b85b88..656e9168a 100644
+index 8554a85e7..28353840b 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
 @@ -41,11 +41,13 @@
@@ -92,7 +93,7 @@ index 0b6b85b88..656e9168a 100644
    connection.send(request, false)
      .after(checkTimeout,
             defer(self(),
-@@ -584,6 +633,25 @@ void CheckerProcess::___nestedCommandCheck(
+@@ -596,6 +645,25 @@ void CheckerProcess::___nestedCommandCheck(
      return;
    }
  
@@ -119,5 +120,5 @@ index 0b6b85b88..656e9168a 100644
      .onFailed([promise](const string& failure) {
        promise->fail(
 -- 
-2.16.3
+2.17.0
 
