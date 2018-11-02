@@ -1,7 +1,7 @@
-From 40b3167eccc12f5b043fff96ccc79a747b914eec Mon Sep 17 00:00:00 2001
+From 3eb7b20437636bb49d322d800e77040dd4959f96 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:31 -0700
-Subject: [PATCH] Added per-framework metrics for task states.
+Subject: [PATCH 16/22] Added per-framework metrics for task states.
 
 Review: https://reviews.apache.org/r/67813/
 ---
@@ -12,10 +12,10 @@ Review: https://reviews.apache.org/r/67813/
  4 files changed, 79 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 91f907c1f..d341eb2e8 100644
+index 3a337e7b4..fcbfecd42 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -10279,6 +10279,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10283,6 +10283,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
    // task transitioned to a new state.
    bool sendSubscribersUpdate = false;
  
@@ -24,7 +24,7 @@ index 91f907c1f..d341eb2e8 100644
    // Set 'removable' to true if this is the first time the task
    // transitioned to a removable state. Also set the latest state.
    bool removable;
-@@ -10292,6 +10294,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10296,6 +10298,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
          sendSubscribersUpdate = true;
        }
  
@@ -38,7 +38,7 @@ index 91f907c1f..d341eb2e8 100644
        task->set_state(latestState.get());
      }
    } else {
-@@ -10305,6 +10314,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10309,6 +10318,13 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
          sendSubscribersUpdate = true;
        }
  
@@ -52,7 +52,7 @@ index 91f907c1f..d341eb2e8 100644
        task->set_state(status.state());
      }
    }
-@@ -10336,7 +10352,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10340,7 +10356,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
      // transitioned to `TASK_KILLED` by `removeFramework()`, thus
      // `sendSubscribersUpdate` shouldn't have been set to true.
      // TODO(chhsiao): This may be changed after MESOS-6608 is resolved.
@@ -60,7 +60,7 @@ index 91f907c1f..d341eb2e8 100644
      CHECK_NOTNULL(framework);
  
      subscribers.send(
-@@ -10365,7 +10380,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
+@@ -10369,7 +10384,6 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
  
      slave->recoverResources(task);
  
