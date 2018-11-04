@@ -2,8 +2,8 @@
   "requires": ["dcos-image-deps"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "713d27587a898a6b92ab80d2a074518fc930b773",
-    "ref_origin": "master"
+    "git": "https://github.com/ArmandGrillet/dcos-test-utils.git",
+    "ref": "2a4c3dc2ff5ab2ff0ba265ebf96f0f21b06bb59a",
+    "ref_origin": "remove-check-stdout"
   }
 }
