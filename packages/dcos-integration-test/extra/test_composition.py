@@ -114,8 +114,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     master_units = [
         'dcos-adminrouter.service',
         'dcos-cosmos.service',
-        'dcos-metrics-master.service',
-        'dcos-metrics-master.socket',
         'dcos-exhibitor.service',
         'dcos-history.service',
         'dcos-log-master.service',
@@ -151,8 +149,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     all_slave_units = [
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-metrics-agent.service',
-        'dcos-metrics-agent.socket',
         'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
