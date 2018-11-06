@@ -45,36 +45,32 @@ def test_metrics_masters_prom(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
-def get_metrics_prom(dcos_api_session, prometheus_port, node, expected_metrics):
+def get_metrics_prom(dcos_api_session, node, expected_metrics):
     """Assert that expected metrics are present on prometheus port on node.
 
     Retries on non-200 status or missing expected metrics
     for up to 150 seconds.
 
     """
-    response = dcos_api_session.session.request(
-        'GET', 'http://{}:{}/metrics'.format(node, prometheus_port))
+    response = dcos_api_session.session.request('GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
     for metric_name in expected_metrics:
         assert metric_name in response.text
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
+def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     for agent in dcos_api_session.slaves:
-        get_metrics_prom(dcos_api_session, prometheus_port, agent, ['mesos_slave_uptime_secs'])
+        get_metrics_prom(dcos_api_session, agent, ['mesos_slave_uptime_secs'])
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
+def test_metrics_masters_mesos(dcos_api_session):
     """Assert that mesos metrics on masters are present."""
     for master in dcos_api_session.masters:
-        get_metrics_prom(dcos_api_session, prometheus_port, master, ['mesos_master_uptime_secs'])
+        get_metrics_prom(dcos_api_session, master, ['mesos_master_uptime_secs'])
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
+def test_metrics_agents_statsd(dcos_api_session):
     """Assert that statsd metrics on agent are present."""
     if len(dcos_api_session.slaves) > 0:
         agent = dcos_api_session.slaves[0]
@@ -129,7 +125,7 @@ def test_metrics_agents_statsd(dcos_api_session, prometheus_port):
         with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
             endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
             assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-            get_metrics_prom(dcos_api_session, prometheus_port, agent, expected_metrics)
+            get_metrics_prom(dcos_api_session, agent, expected_metrics)
 
 
 @pytest.mark.supportedwindows
