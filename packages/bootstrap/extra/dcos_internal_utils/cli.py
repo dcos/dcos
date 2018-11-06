@@ -100,7 +100,6 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
     'dcos-signal': dcos_signal,
-    'dcos-oauth': dcos_oauth,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
