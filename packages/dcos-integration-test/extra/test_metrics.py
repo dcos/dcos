@@ -32,18 +32,15 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091, 61092])
-def test_metrics_agents_prom(dcos_api_session, prometheus_port):
+def test_metrics_agents_prom(dcos_api_session):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://{}:{}/metrics'.format(agent, prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.supportedwindows
-@pytest.mark.parametrize("prometheus_port", [61091, 61092])
-def test_metrics_masters_prom(dcos_api_session, prometheus_port):
+def test_metrics_masters_prom(dcos_api_session):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://{}:{}/metrics'.format(master, prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -305,7 +302,13 @@ def test_metrics_containers(dcos_api_session):
 
     marathon_config = {
         "id": "/statsd-emitter",
-        "cmd": "/opt/mesosphere/bin/./statsd-emitter -debug",
+        "cmd": "./statsd-emitter -debug",
+        "fetch": [
+            {
+                "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
+                "executable": True
+            }
+        ],
         "cpus": 0.5,
         "mem": 128.0,
         "instances": 1
