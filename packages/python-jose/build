@@ -14,6 +14,8 @@ for package in ecdsa rsa python-jose; do
     # work to OpenSSL. However, python-jose will not
     # work (as of ImportErrors) w/o rsa and ecdsa
     # installed.
+    # Note(JP): this might be a good reason for using pyjwt in
+    # Bouncer for JWKS parsing.
     pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
 done
 
