@@ -23,6 +23,8 @@
 
 * dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
 
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
 
 ### Security Updates
 
