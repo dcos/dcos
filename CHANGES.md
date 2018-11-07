@@ -1,3 +1,14 @@
+## DC/OS 1.12-dev
+
+### Notable changes
+
+### Fixed and improved
+
+### Security Updates
+
+* Update Java to 8u192. (DCOS_OSS-4381)
+
+
 ## DC/OS 1.12.0
 
 ```
