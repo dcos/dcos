@@ -45,6 +45,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Fixed race condition in Telegraf dcos_statsd input plugin. (DCOS_OSS-4096)
+
 * Check system clock is synced before starting Exhibitor (DCOS_OSS-4287)
 
 * Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
