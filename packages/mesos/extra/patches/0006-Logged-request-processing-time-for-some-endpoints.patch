@@ -1,0 +1,117 @@
+From c142ba1a70f1ad36bfa108bb40d2b8576fd2ae04 Mon Sep 17 00:00:00 2001
+From: Alexander Rukletsov <alexr@apache.org>
+Date: Thu, 11 Oct 2018 15:58:41 +0200
+Subject: [PATCH] Logged request processing time for some endpoints.
+
+This patch leverages `logResponse()` function to print response status
+code together with the request processing time for some endpoints on
+the master and agent. Not all endpoints are participating to avoid
+unnecessary log pollution; only these that are know to be "slow" in
+generating the response.
+
+Note that requests are still logged when they are fetched from the
+actor mailbox, i.e., affected endpoints now log twice per request:
+when the processing starts and when the response is ready to be sent.
+
+Review: https://reviews.apache.org/r/68994
+(cherry picked from commit 9203d099da60b3333fa2e2d2a7fcefe8065fa7e1)
+---
+ src/master/master.cpp | 25 ++++++++++++++++++++-----
+ src/slave/slave.cpp   | 10 ++++++++--
+ 2 files changed, 28 insertions(+), 7 deletions(-)
+
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 6237d9246..84f9db047 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -909,7 +909,10 @@ void Master::initialize()
+         [this](const process::http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.frameworks(request, principal);
++          return http.frameworks(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   route("/flags",
+         READONLY_HTTP_AUTHENTICATION_REALM,
+@@ -969,7 +972,10 @@ void Master::initialize()
+         [this](const process::http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.slaves(request, principal);
++          return http.slaves(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   // TODO(ijimenez): Remove this endpoint at the end of the
+   // deprecation cycle on 0.26.
+@@ -987,7 +993,10 @@ void Master::initialize()
+         [this](const process::http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.state(request, principal);
++          return http.state(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   route("/state-summary",
+         READONLY_HTTP_AUTHENTICATION_REALM,
+@@ -995,7 +1004,10 @@ void Master::initialize()
+         [this](const process::http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.stateSummary(request, principal);
++          return http.stateSummary(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   // TODO(ijimenez): Remove this endpoint at the end of the
+   // deprecation cycle.
+@@ -1013,7 +1025,10 @@ void Master::initialize()
+         [this](const process::http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.tasks(request, principal);
++          return http.tasks(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   route("/maintenance/schedule",
+         READWRITE_HTTP_AUTHENTICATION_REALM,
+diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
+index 7425cfbae..01fd4eedf 100644
+--- a/src/slave/slave.cpp
++++ b/src/slave/slave.cpp
+@@ -809,7 +809,10 @@ void Slave::initialize()
+         [this](const http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.state(request, principal);
++          return http.state(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+   route("/flags",
+         READONLY_HTTP_AUTHENTICATION_REALM,
+@@ -848,7 +851,10 @@ void Slave::initialize()
+         [this](const http::Request& request,
+                const Option<Principal>& principal) {
+           logRequest(request);
+-          return http.containers(request, principal);
++          return http.containers(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
+         });
+ 
+   const PID<Slave> slavePid = self();
+-- 
+2.16.3
+
