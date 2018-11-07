@@ -758,11 +758,6 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'unzip'],
                     'timeout': instant_check_timeout
                 },
-                'ifconfig': {
-                    'description': 'The ifconfig utility is available',
-                    'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'ifconfig'],
-                    'timeout': instant_check_timeout
-                },
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
@@ -800,7 +795,6 @@ def calculate_check_config(check_time):
                 'curl',
                 'unzip',
                 'docker',
-                'ifconfig',
                 'ip_detect_script',
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
