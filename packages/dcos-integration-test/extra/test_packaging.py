@@ -142,16 +142,22 @@ def test_packaging_api(dcos_api_session):
     _skipif_insufficient_resources(dcos_api_session, NGINX_PACKAGE_REQUIREMENTS)
     install_response = dcos_api_session.cosmos.install_package('nginx', package_version='1.10.3')
     data = install_response.json()
+    log.info("install_response : ".format(data))
 
     dcos_api_session.marathon.wait_for_deployments_complete()
 
+    log.info("wait_for_deployments_complete done")
+
     list_response = dcos_api_session.cosmos.list_packages()
+    log.info("list_response : ".format(list_response.json()))
     packages = list_response.json()['packages']
     assert len(packages) == 1 and packages[0]['appId'] == data['appId']
 
-    dcos_api_session.cosmos.uninstall_package('nginx', app_id=data['appId'])
+    uninstall_response = dcos_api_session.cosmos.uninstall_package('nginx', app_id=data['appId'])
+    log.info("uninstall_response : ".format(uninstall_response.json()))
 
     list_response = dcos_api_session.cosmos.list_packages()
+    log.info("list_response : ".format(list_response.json()))
     packages = list_response.json()['packages']
     assert len(packages) == 0
 
