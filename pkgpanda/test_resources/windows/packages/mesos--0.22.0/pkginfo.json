@@ -1,0 +1,11 @@
+{
+    "sysctl": {
+        "dcos-mesos-master": {
+            "kernel.watchdog_thresh": "11",
+            "net.netfilter.nf_conntrack_udp_timeout": "30"
+        },
+        "dcos-mesos-slave": {
+            "kperf.debug_level": "1"
+        }
+    }
+}
