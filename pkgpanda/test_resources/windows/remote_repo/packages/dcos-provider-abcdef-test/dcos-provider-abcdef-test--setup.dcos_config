@@ -1,0 +1,10 @@
+package:
+  - path: /etc/some.json
+    content: |
+      {
+        "cluster-specific-stuff": "magic",
+        "foo": "LATE_BIND_PLACEHOLDER_START_foo_LATE_BIND_PLACEHOLDER_END",
+        "baz": "LATE_BIND_PLACEHOLDER_START_baz_LATE_BIND_PLACEHOLDER_END"
+      }
+  - path: /pkginfo.json
+    content: "{}"
