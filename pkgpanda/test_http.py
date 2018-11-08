@@ -152,8 +152,12 @@ def test_get_active_package():
 @pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_activate_packages(tmpdir):
     _set_test_config(app)
+
     install_dir = str(tmpdir.join('install'))
     copytree(resources_test_dir('install'), install_dir, symlinks=True)
+    packages_dir = str(tmpdir.join('packages'))
+    copytree(resources_test_dir('packages'), packages_dir, symlinks=True)
+
     app.config['DCOS_ROOT'] = install_dir
     app.config['DCOS_ROOTED_SYSTEMD'] = True
     client = app.test_client()
