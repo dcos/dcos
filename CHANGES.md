@@ -1,4 +1,4 @@
-## DC/OS 1.10.9
+## DC/OS 1.10.10
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -12,6 +12,16 @@ Format of the entries must be.
 <new-line>
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
+
+### Notable changes
+
+### Fixed and improved
+
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
+### Security Updates
+
+## DC/OS 1.10.9
 
 ### Notable changes
 
