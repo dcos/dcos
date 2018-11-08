@@ -70,6 +70,12 @@ def test_metrics_masters_mesos(dcos_api_session):
         get_metrics_prom(dcos_api_session, master, ['mesos_master_uptime_secs'])
 
 
+def test_metrics_masters_zookeeper(dcos_api_session):
+    """Assert that ZooKeeper metrics on masters are present."""
+    for master in dcos_api_session.masters:
+        get_metrics_prom(dcos_api_session, master, ['zookeeper_'])
+
+
 def test_metrics_agents_statsd(dcos_api_session):
     """Assert that statsd metrics on agent are present."""
     if len(dcos_api_session.slaves) > 0:
