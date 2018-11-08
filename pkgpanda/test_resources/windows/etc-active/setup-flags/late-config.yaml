@@ -1,0 +1,4 @@
+late_bound_package_id: dcos-provider-abcdef-test--setup
+bound_values:
+  foo: bar
+  baz: qux
