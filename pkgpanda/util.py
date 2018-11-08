@@ -475,7 +475,9 @@ class TestRepo:
 
 def resources_test_dir(path):
     assert not path.startswith('/')
-    return "pkgpanda/test_resources/{}".format(path)
+    if is_windows:
+        return "pkgpanda/test_resources/windows/{}".format(path)
+    return "pkgpanda/test_resources/unix/{}".format(path)
 
 
 class MessageLogger:
