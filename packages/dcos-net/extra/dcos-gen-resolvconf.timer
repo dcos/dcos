@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Generate resolv.conf Timer: periodically updates the network name resolution configuration
 [Timer]

@@ -8,6 +8,9 @@ metronome_service="$PKG_PATH/dcos.target.wants_master/dcos-metronome.service"
 mkdir -p $(dirname "$metronome_service")
 
 cat <<EOF > "$metronome_service"
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Jobs (Metronome): job orchestration
 

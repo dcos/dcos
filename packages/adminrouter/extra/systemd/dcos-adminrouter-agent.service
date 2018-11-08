@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Admin Router Agent: exposes a unified control plane proxy for components and services using NGINX
 

@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Signal: reports cluster telemetry and analytics to help improve DC/OS
 [Service]

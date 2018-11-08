@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Logrotate Timer: Timer to trigger every 2 minutes
 [Timer]

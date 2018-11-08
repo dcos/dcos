@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Admin Router Master: Uses NGINX to expose a unified control plane proxy for components and services
 

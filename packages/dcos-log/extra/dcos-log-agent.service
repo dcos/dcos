@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Log Agent: exposes agent node, component, and container (task) logs
 

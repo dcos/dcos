@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DNS Forwarder (Spartan) Watchdog: restarts Spartan when it is unhealthy
 

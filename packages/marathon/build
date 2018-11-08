@@ -26,6 +26,9 @@ marathon_service="$PKG_PATH/dcos.target.wants_master/dcos-marathon.service"
 mkdir -p $(dirname "$marathon_service")
 
 cat <<EOF > "$marathon_service"
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Marathon: container orchestration engine
 

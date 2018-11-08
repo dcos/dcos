@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Mesos DNS: domain name based service discovery
 [Service]

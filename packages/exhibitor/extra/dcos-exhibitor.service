@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Exhibitor: Zookeeper supervisor service
 [Service]

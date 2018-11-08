@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Net: A distributed systems & network overlay orchestration engine
 

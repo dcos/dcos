@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=REX-Ray: A vendor agnostic storage orchestration engine
 

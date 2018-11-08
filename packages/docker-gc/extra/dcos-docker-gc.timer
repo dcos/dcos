@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Docker GC Timer: timer to periodically trigger Docker GC
 [Timer]

@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Diagnostics Agent: exposes component health
 [Service]

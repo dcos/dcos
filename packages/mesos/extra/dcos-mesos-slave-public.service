@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Mesos Agent Public: distributed systems kernel public agent
 

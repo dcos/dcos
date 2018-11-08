@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=DC/OS Checks API Socket: socket for DC/OS Checks API
 

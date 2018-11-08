@@ -1,3 +1,6 @@
+[Install]
+WantedBy=dcos.target
+
 [Unit]
 Description=Logrotate Mesos Master: Rotate Mesos master logs
 [Service]
