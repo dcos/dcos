@@ -7,3 +7,6 @@ StandardOutput=journal
 User=root
 Group=root
 ExecStart=/opt/mesosphere/bin/dcos-check-runner check node-poststart --config ${DCOS_CHECK_RUNNER_CONFIG_PATH}
+
+[Install]
+WantedBy=dcos.target

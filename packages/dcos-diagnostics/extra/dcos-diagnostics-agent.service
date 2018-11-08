@@ -14,3 +14,6 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-diagnostics-agent
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-agent
 ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
 Sockets=dcos-diagnostics.socket
+
+[Install]
+WantedBy=dcos.target

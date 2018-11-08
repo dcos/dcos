@@ -46,4 +46,7 @@ Environment=JAVA_HOME=${JAVA_HOME}
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-marathon
 ExecStart=/opt/mesosphere/bin/marathon.sh
+
+[Install]
+WantedBy=dcos.target
 EOF

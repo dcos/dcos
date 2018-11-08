@@ -25,3 +25,6 @@ ExecStart=$PKG_PATH/nginx/sbin/adminrouter.sh -c $PKG_PATH/nginx/conf/nginx.mast
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
+
+[Install]
+WantedBy=dcos.target
