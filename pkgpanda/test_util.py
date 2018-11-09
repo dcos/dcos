@@ -1,4 +1,5 @@
 import os
+import pathlib
 import tempfile
 from subprocess import CalledProcessError
 
@@ -480,3 +481,19 @@ def test_write_string(tmpdir):
         expected_permission = 0o777
         assert (st_mode & 0o777) == expected_permission
 
+
+def test_download(tmpdir):
+    # Create something to download.
+    remote_file = os.path.join(str(tmpdir), 'download_file')
+    pkgpanda.util.write_string(filename=remote_file, data='file_contents')
+    with open(remote_file) as f:
+        assert f.read() == 'file_contents'
+
+    # Download the file.
+    url = pathlib.Path(remote_file).as_uri()
+    local_file = os.path.join(str(tmpdir), 'local_file')
+    pkgpanda.util.download(local_file, url, str(tmpdir.realpath()))
+
+    # Validate the downloaded file is correct.
+    with open(local_file) as f:
+        assert f.read() == 'file_contents'
