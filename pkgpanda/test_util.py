@@ -1,4 +1,5 @@
 import os
+import pathlib
 import tempfile
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from subprocess import CalledProcessError
