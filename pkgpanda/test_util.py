@@ -260,6 +260,76 @@ def test_remove_directory():
     assert not os.path.isdir(test_dir)
 
 
+def test_islink(tmpdir):
+    # Test file.
+    temp_file = str(tmpdir.join("temp_file"))
+    with open(temp_file, "w") as f:
+        f.write("Test Data\n")
+    assert not pkgpanda.util.islink(temp_file)
+
+    temp_file_link = temp_file + "_link"
+    pkgpanda.util.link_file(temp_file, temp_file_link)
+    assert pkgpanda.util.islink(temp_file_link)
+
+    # Test directory.
+    temp_dir = str(tmpdir.join("temp_dir"))
+    pkgpanda.util.make_directory(temp_dir)
+    assert not pkgpanda.util.islink(temp_dir)
+
+    temp_dir_link = temp_dir + "_link"
+    pkgpanda.util.link_file(temp_dir, temp_dir_link)
+    assert pkgpanda.util.islink(temp_dir_link)
+
+
+def test_realpath(tmpdir):
+    # Test file.
+    temp_file = str(tmpdir.join("temp_file"))
+    with open(temp_file, "w") as f:
+        f.write("Test Data\n")
+    assert pkgpanda.util.realpath(temp_file) == temp_file
+
+    temp_file_link = temp_file + "_link"
+    pkgpanda.util.link_file(temp_file, temp_file_link)
+    assert pkgpanda.util.realpath(temp_file_link) == temp_file
+
+    # Test directory.
+    temp_dir = str(tmpdir.join("temp_dir"))
+    pkgpanda.util.make_directory(temp_dir)
+    assert pkgpanda.util.realpath(temp_dir) == temp_dir
+
+    temp_dir_link = temp_dir + "_link"
+    pkgpanda.util.link_file(temp_dir, temp_dir_link)
+    assert pkgpanda.util.realpath(temp_dir_link) == temp_dir
+
+
+def test_link_file(tmpdir):
+    # Test file.
+    temp_file = str(tmpdir.join("temp_file"))
+    with open(temp_file, "w") as f:
+        f.write("Test Data\n")
+
+    temp_file_link = temp_file + "_link"
+    pkgpanda.util.link_file(temp_file, temp_file_link)
+
+    with open(temp_file_link, "r") as f:
+        assert f.read() == "Test Data\n"
+
+    # Test directory.
+    temp_dir = str(tmpdir.join("temp_dir"))
+    pkgpanda.util.make_directory(temp_dir)
+
+    temp_dir_link = temp_dir + "_link"
+    pkgpanda.util.link_file(temp_dir, temp_dir_link)
+
+    temp_file = temp_dir + os.sep + "temp_file"
+    with open(temp_file, "w") as f:
+        f.write("Test Data\n")
+
+    temp_file_link = temp_dir_link + os.sep + "temp_file"
+    with open(temp_file_link, "r") as f:
+        assert f.read() == "Test Data\n"
+
+
 def test_variant_variations():
     assert pkgpanda.util.variant_str(None) == ''
     assert pkgpanda.util.variant_str('test') == 'test'
