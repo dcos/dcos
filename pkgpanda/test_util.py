@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import tempfile
@@ -572,5 +573,28 @@ def test_download_remote_file_without_content_length(tmpdir, mock_download_serve
 
     assert mock_download_server.requests_received == 1
 
-    with open(out_file, 'rb') as f:
-        assert f.read() == b'fooba'
+    # Validate the downloaded file is correct.
+    with open(local_file) as f:
+        assert f.read() == 'file_contents'
+
+
+def test_load_json(tmpdir):
+    # Create some JSON to load.
+    json_contents = {
+        "requires": [
+            {
+                "name": "test_package",
+                "variant": "test_variant",
+            },
+        ],
+        "sources": {},
+        "username": "test_username",
+    }
+
+    # Write the JSON out to a file.
+    json_filename = os.path.join(str(tmpdir), 'json_file')
+    pkgpanda.util.write_string(filename=json_filename, data=json.dumps(json_contents))
+
+    # Load the JSON from the file and assert its contents are correct.
+    result_json = pkgpanda.util.load_json(json_filename)
+    assert result_json == json_contents
