@@ -1,4 +1,4 @@
-From b1a3c04f557daeb0bfb8a21a8a8a1f80c7a9fbf6 Mon Sep 17 00:00:00 2001
+From 6e0bffb1c1655379da85100e982027258b16612f Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 21 Aug 2018 17:59:27 +0200
 Subject: [PATCH] Revert "Removed long ago deprecated endpoints.".
@@ -13,9 +13,9 @@ The deprecated endpoints are restored in 1.7.x only, Mesos master
 aka 1.8.0-dev will not have deprecated endpoints.
 ---
  src/files/files.cpp   | 19 +++++++++++++++++++
- src/master/master.cpp | 30 ++++++++++++++++++++++++++++++
+ src/master/master.cpp | 33 +++++++++++++++++++++++++++++++++
  src/slave/slave.cpp   | 21 +++++++++++++++++++++
- 3 files changed, 70 insertions(+)
+ 3 files changed, 73 insertions(+)
 
 diff --git a/src/files/files.cpp b/src/files/files.cpp
 index f200d5e79..a64613cf6 100644
@@ -48,10 +48,10 @@ index f200d5e79..a64613cf6 100644
            authenticationRealm,
            FilesProcess::BROWSE_HELP,
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index cec20419c..ba71c6bdc 100644
+index f88c7c1f0..7b63f4023 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -937,6 +937,16 @@ void Master::initialize()
+@@ -947,6 +947,16 @@ void Master::initialize()
            logRequest(request);
            return http.reserve(request, principal);
          });
@@ -68,9 +68,9 @@ index cec20419c..ba71c6bdc 100644
    route("/roles",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::ROLES_HELP(),
-@@ -961,6 +971,16 @@ void Master::initialize()
-           logRequest(request);
-           return http.slaves(request, principal);
+@@ -974,6 +984,19 @@ void Master::initialize()
+               logResponse(request, response);
+             });
          });
 +  // TODO(ijimenez): Remove this endpoint at the end of the
 +  // deprecation cycle on 0.26.
@@ -80,14 +80,17 @@ index cec20419c..ba71c6bdc 100644
 +        [this](const process::http::Request& request,
 +               const Option<Principal>& principal) {
 +          logRequest(request);
-+          return http.state(request, principal);
++          return http.state(request, principal)
++            .onReady([request](const process::http::Response& response) {
++              logResponse(request, response);
++            });
 +        });
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -977,6 +997,16 @@ void Master::initialize()
-           logRequest(request);
-           return http.stateSummary(request, principal);
+@@ -996,6 +1019,16 @@ void Master::initialize()
+               logResponse(request, response);
+             });
          });
 +  // TODO(ijimenez): Remove this endpoint at the end of the
 +  // deprecation cycle.
@@ -103,7 +106,7 @@ index cec20419c..ba71c6bdc 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::TASKS_HELP(),
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index e6c7e686f..b5199124d 100644
+index 74f6fb903..523b271e0 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -792,6 +792,17 @@ void Slave::initialize()
@@ -124,7 +127,7 @@ index e6c7e686f..b5199124d 100644
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -821,6 +832,16 @@ void Slave::initialize()
+@@ -824,6 +835,16 @@ void Slave::initialize()
            logRequest(request);
            return http.statistics(request, principal);
          });

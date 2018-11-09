@@ -32,18 +32,15 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091, 61092])
-def test_metrics_agents_prom(dcos_api_session, prometheus_port):
+def test_metrics_agents_prom(dcos_api_session):
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.supportedwindows
-@pytest.mark.parametrize("prometheus_port", [61091, 61092])
-def test_metrics_masters_prom(dcos_api_session, prometheus_port):
+def test_metrics_masters_prom(dcos_api_session):
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
+        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -170,7 +167,6 @@ def test_metrics_containers(dcos_api_session):
             for c in get_container_ids(dcos_api_session, agent.host):
                 # Test that /containers/<id> responds with expected data
                 container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
-                assert 'datapoints' in container_metrics, 'got {}'.format(container_metrics)
 
                 cid_registry = []
                 for dp in container_metrics['datapoints']:
@@ -191,10 +187,6 @@ def test_metrics_containers(dcos_api_session):
                     # the same.
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
-
-                assert 'dimensions' in container_metrics, 'got {}'.format(container_metrics)
-                assert 'task_name' in container_metrics['dimensions'], 'got {}'.format(
-                    container_metrics['dimensions'])
 
                 debug_task_name.append(container_metrics['dimensions']['task_name'])
 
@@ -233,7 +225,13 @@ def test_metrics_containers(dcos_api_session):
 
     marathon_config = {
         "id": "/statsd-emitter",
-        "cmd": "/opt/mesosphere/bin/./statsd-emitter -debug",
+        "cmd": "./statsd-emitter -debug",
+        "fetch": [
+            {
+                "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
+                "executable": True
+            }
+        ],
         "cpus": 0.5,
         "mem": 128.0,
         "instances": 1
@@ -369,7 +367,7 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
     """
     for cid in get_container_ids(dcos_api_session, node):
         container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions'].get('task_name') == task_name:
+        if container_metrics['dimensions']['task_name'] == task_name:
             return get_app_metrics(dcos_api_session, node, cid)
     return None
 
@@ -390,19 +388,34 @@ def get_container_ids(dcos_api_session, node: str):
     return container_ids
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
-    Retries on error or non-200 status for up to 30 seconds.
+    Retries on error, non-200 status, or missing response fields for up
+    to 30 seconds.
 
     """
     response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
     assert response.status_code == 200
-    return response.json()
+    container_metrics = response.json()
+
+    assert 'datapoints' in container_metrics, (
+        'container metrics must include datapoints. Got: {}'.format(container_metrics)
+    )
+    assert 'dimensions' in container_metrics, (
+        'container metrics must include dimensions. Got: {}'.format(container_metrics)
+    )
+    # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
+    # metrics response.
+    assert 'task_name' in container_metrics['dimensions'], (
+        'task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions'])
+    )
+
+    return container_metrics
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
