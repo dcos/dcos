@@ -100,6 +100,10 @@ If ( $LASTEXITCODE -ne 0 ) {
 _scope_closed "setup"
 
 release create $TAG $TAG $tree_variants
+If ( $LASTEXITCODE -ne 0 ) {
+    Write-Host "ERROR: DC/OS Windows build failed"
+    exit -1
+}
 
 mkdir -p artifacts
 cp -r wheelhouse artifacts/
