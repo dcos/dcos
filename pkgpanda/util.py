@@ -11,6 +11,8 @@ import socketserver
 import stat
 import subprocess
 import tempfile
+import urllib.parse
+import urllib.request
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
@@ -252,7 +254,7 @@ def get_requests_retry_session(max_retries=4, backoff_factor=1, status_forcelist
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
-    work_dir = work_dir.rstrip('/')
+    work_dir = work_dir.rstrip(os.sep)
 
     # Strip off whitespace to make it so scheme matching doesn't fail because
     # of simple user whitespace.
@@ -261,9 +263,16 @@ def download(out_filename, url, work_dir, rm_on_error=True):
     # Handle file:// urls specially since requests doesn't know about them.
     try:
         if url.startswith('file://'):
-            src_filename = url[len('file://'):]
+            # We need to extract the filename in an OS independent manner
+            # (i.e. we need to make sure it works on both Unix and Windows).
+            # https://stackoverflow.com/questions/5977576/is-there-a-convenient-way-to-map-a-file-uri-to-os-path/5977628
+            #
+            # TODO(klueska): We should probably pull this out to its own
+            # pkgpanda utility function and document it more thoroughly.
+            parsed_url = urllib.parse.urlparse(url)
+            src_filename = urllib.request.url2pathname(parsed_url.netloc + parsed_url.path)
             if not os.path.isabs(src_filename):
-                src_filename = work_dir + '/' + src_filename
+                src_filename = work_dir + os.sep + src_filename
             shutil.copyfile(src_filename, out_filename)
         else:
             # Download the file.
