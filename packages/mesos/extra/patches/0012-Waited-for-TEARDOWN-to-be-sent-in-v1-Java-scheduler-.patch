@@ -1,7 +1,8 @@
-From 37dd033b993b7be6920252ca42d6c3474ef0d872 Mon Sep 17 00:00:00 2001
+From c186e2d5e2277652af8104ef3fe851c7dd6685d5 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 9 Oct 2018 18:22:16 +0200
-Subject: [PATCH] Waited for TEARDOWN to be sent in v1 Java scheduler shim.
+Subject: [PATCH 12/13] Waited for TEARDOWN to be sent in v1 Java scheduler
+ shim.
 
 Destruction of the library is not always under our control. For
 example, the JVM can call JNI `finalize()` if the Java scheduler
@@ -9,7 +10,7 @@ nullifies its reference to the V1Mesos library immediately after
 sending `TEARDOWN`. We want to make sure that `TEARDOWN` is sent
 before the Mesos library is destructed.
 ---
- src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp | 17 +++++++++++++++++
+ .../org_apache_mesos_v1_scheduler_V1Mesos.cpp   | 17 +++++++++++++++++
  1 file changed, 17 insertions(+)
 
 diff --git a/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp b/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp
@@ -48,5 +49,5 @@ index 2a5fbd79a..6ec771111 100644
  
  
 -- 
-2.16.3
+2.17.0
 
