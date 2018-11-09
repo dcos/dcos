@@ -443,8 +443,6 @@ def test_split_by_token():
     ]
 
 
-# TODO: DCOS_OSS-3508 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows and Linux permissions parsed differently")
 def test_write_string(tmpdir):
     """
     `pkgpanda.util.write_string` writes or overwrites a file with permissions
@@ -456,6 +454,9 @@ def test_write_string(tmpdir):
     This test was written to make current functionality regression-safe which
     is why no explanation is given for these particular permission
     requirements.
+
+    Note that on Windows we do not have the same permissions so we skip those
+    checks.
     """
     filename = os.path.join(str(tmpdir), 'foo_filename')
     pkgpanda.util.write_string(filename=filename, data='foo_contents')
@@ -465,15 +466,17 @@ def test_write_string(tmpdir):
     pkgpanda.util.write_string(filename=filename, data='foo_contents_2')
     with open(filename) as f:
         assert f.read() == 'foo_contents_2'
+    if not pkgpanda.util.is_windows:
+        st_mode = os.stat(filename).st_mode
+        expected_permission = 0o644
+        assert (st_mode & 0o777) == expected_permission
 
-    st_mode = os.stat(filename).st_mode
-    expected_permission = 0o644
-    assert (st_mode & 0o777) == expected_permission
+    if not pkgpanda.util.is_windows:
+        os.chmod(filename, 0o777)
+        pkgpanda.util.write_string(filename=filename, data='foo_contents_3')
+        with open(filename) as f:
+            assert f.read() == 'foo_contents_3'
+        st_mode = os.stat(filename).st_mode
+        expected_permission = 0o777
+        assert (st_mode & 0o777) == expected_permission
 
-    os.chmod(filename, 0o777)
-    pkgpanda.util.write_string(filename=filename, data='foo_contents_3')
-    with open(filename) as f:
-        assert f.read() == 'foo_contents_3'
-    st_mode = os.stat(filename).st_mode
-    expected_permission = 0o777
-    assert (st_mode & 0o777) == expected_permission
