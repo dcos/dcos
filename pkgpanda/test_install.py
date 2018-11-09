@@ -68,8 +68,6 @@ def test_recovery_archive(tmpdir):
         })
 
 
-# TODO: DCOS_OSS-3471 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_recovery_move_new(tmpdir):
     # From the "move_new" state correctly.
     shutil.copytree(resources_test_dir("install_recovery_move"), str(tmpdir.join("install")), symlinks=True)
@@ -86,8 +84,8 @@ def test_recovery_move_new(tmpdir):
             "active.buildinfo.full.json": None,
             "bin": ["mesos", "mesos-dir"],
             "dcos.target.wants": [".gitignore"],
-            "environment": None,
-            "environment.export": None,
+            "environment" + (".ps1" if is_windows else ""): None,
+            "environment.export" + (".ps1" if is_windows else ""): None,
             "etc": [".gitignore"],
             "include": [".gitignore"],
             "lib": ["libmesos.so"]
