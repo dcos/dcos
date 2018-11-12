@@ -3,12 +3,12 @@ A collection of tests covering user management in DC/OS.
 
 Assume that access control is activated in Master Admin Router (could be
 disabled with `oauth_enabled`) and therefore authenticate individual HTTP
-requests.
+dcos_api_session.
 
 One aspect of DC/OS user management is that once authenticated a user can add
-other users. Unauthenticated HTTP requests are rejected by Master Admin Router
+other users. Unauthenticated HTTP dcos_api_session are rejected by Master Admin Router
 and user management fails (this is the coarse-grained authorization model of
-(open) DC/OS). Here, test that unauthenticated HTTP requests cannot manage
+(open) DC/OS). Here, test that unauthenticated HTTP dcos_api_session cannot manage
 users. However, do not test that newly added users can add other users: in this
 test suite we are limited to having authentication state for just a single user
 available. This is why we can test managing other users only from that first
@@ -89,7 +89,8 @@ def test_user_put_no_email_uid_empty_body(dcos_api_session):
     assert 'Request has bad Content-Type or lacks JSON data' in r.text
 
 
-def test_legacy_user_creation_with_empty_json_doc(self):
+@pytest.mark.usefixtures('remove_users_added_by_test')
+def test_legacy_user_creation_with_empty_json_doc(dcos_api_session):
     # Legacy HTTP clients built for dcos-oauth such as the web UI (up to DC/OS
     # 1.12) might insert users in the following way: uid appears to be an email
     # address, and the JSON document in the request body does not provide a
@@ -98,19 +99,19 @@ def test_legacy_user_creation_with_empty_json_doc(self):
     # legacy OIDC ID Token login method through the 'https://dcos.auth0.com/'
     # provider. This behavior is maintained in Bouncer for backwards
     # compatibility.
-    r = requests.put('/acs/api/v1/users/user@domain.foo', json={})
+    r = dcos_api_session.put('/acs/api/v1/users/user@domain.foo', json={})
     assert r.status_code == 201, r.text
 
     # Bouncer annotates the created user (this is new compared to dcos-oauth).
-    r = requests.get('/acs/api/v1/users/users/user@domain.foo')
+    r = dcos_api_session.get('/acs/api/v1/users/user@domain.foo')
     assert r.json()['provider_type'] == 'oidc'
     assert r.json()['provider_id'] == 'https://dcos.auth0.com/'
-    assert r.json()['is_remote'] == True
+    assert r.json()['is_remote'] is True
 
     # When the uid however does not appear to be an email address the more sane
     # behavior of Bouncer takes effect: an empty (meaningless) JSON body
     # results in a useful error message.
-    r = requests.put('/acs/api/v1/users/user1', json={})
+    r = dcos_api_session.put('/acs/api/v1/users/user1', json={})
     assert r.status_code == 400
     assert 'One of `password` or `public_key` must be provided' in r.text
 
