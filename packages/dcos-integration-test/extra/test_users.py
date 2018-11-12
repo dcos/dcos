@@ -98,11 +98,11 @@ def test_legacy_user_creation_with_empty_json_doc(self):
     # legacy OIDC ID Token login method through the 'https://dcos.auth0.com/'
     # provider. This behavior is maintained in Bouncer for backwards
     # compatibility.
-    r = requests.put('/acs/api/v1/users/user@example.com', json={})
+    r = requests.put('/acs/api/v1/users/user@domain.foo', json={})
     assert r.status_code == 201, r.text
 
     # Bouncer annotates the created user (this is new compared to dcos-oauth).
-    r = requests.get('/acs/api/v1/users/users/user@example.com')
+    r = requests.get('/acs/api/v1/users/users/user@domain.foo')
     assert r.json()['provider_type'] == 'oidc'
     assert r.json()['provider_id'] == 'https://dcos.auth0.com/'
     assert r.json()['is_remote'] == True
@@ -118,14 +118,14 @@ def test_legacy_user_creation_with_empty_json_doc(self):
 @pytest.mark.usefixtures('remove_users_added_by_test')
 def test_user_put_email_uid_and_description(dcos_api_session):
     r = dcos_api_session.put(
-        '/acs/api/v1/users/user1@email.de',
+        '/acs/api/v1/users/user1@domain.foo',
         json={'description': 'integration test user'}
     )
     assert r.status_code == 201, r.text
 
     users = get_users(dcos_api_session)
     assert len(users) > 1
-    assert 'user1@email.de' in users
+    assert 'user1@domain.foo' in users
 
 
 @pytest.mark.usefixtures('remove_users_added_by_test')
@@ -137,7 +137,7 @@ def test_user_put_with_legacy_body(dcos_api_session):
     # the properties from Bouncer's UserCreate JSON schema again, ideally within
     # the 1.13 development cycle.
     r = dcos_api_session.put(
-        '/acs/api/v1/users/user2@email.de',
+        '/acs/api/v1/users/user2@domain.foo',
         json={'creator_uid': 'any@thing.bla', 'cluster_url': 'foobar'}
     )
     assert r.status_code == 201, r.text
@@ -146,29 +146,29 @@ def test_user_put_with_legacy_body(dcos_api_session):
 @pytest.mark.usefixtures('remove_users_added_by_test')
 def test_user_conflict(dcos_api_session):
     # Note: the empty request body is not the decisive criterion here.
-    r = dcos_api_session.put('/acs/api/v1/users/user2@email.de', json={})
+    r = dcos_api_session.put('/acs/api/v1/users/user2@domain.foo', json={})
     assert r.status_code == 201, r.text
 
-    r = dcos_api_session.put('/acs/api/v1/users/user2@email.de', json={})
+    r = dcos_api_session.put('/acs/api/v1/users/user2@domain.foo', json={})
     assert r.status_code == 409, r.text
 
 
 @pytest.mark.usefixtures('remove_users_added_by_test')
 def test_user_delete(dcos_api_session):
-    r = dcos_api_session.put('/acs/api/v1/users/user6@email.de', json={})
+    r = dcos_api_session.put('/acs/api/v1/users/user6@domain.foo', json={})
     r.raise_for_status()
     assert r.status_code == 201
 
-    r = dcos_api_session.delete('/acs/api/v1/users/user6@email.de')
+    r = dcos_api_session.delete('/acs/api/v1/users/user6@domain.foo')
     r.raise_for_status()
     assert r.status_code == 204
 
     users = get_users(dcos_api_session)
-    assert 'user6@email.de' not in users
+    assert 'user6@domain.foo' not in users
 
 
 def test_user_put_requires_authentication(noauth_api_session):
-    r = noauth_api_session.put('/acs/api/v1/users/user7@email.de', json={})
+    r = noauth_api_session.put('/acs/api/v1/users/user7@domain.foo', json={})
     assert r.status_code == 401, r.text
 
 
