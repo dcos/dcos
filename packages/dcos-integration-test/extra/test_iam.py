@@ -5,15 +5,14 @@ Assume that access control is activated in Master Admin Router (could be
 disabled with `oauth_enabled`) and therefore authenticate individual HTTP
 requests by using dcos_api_session.
 """
-import logging
 import json
+import logging
 import time
 
 import cryptography.hazmat.backends
+import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-
-import jwt
 from jwt.utils import base64url_decode
 
 
