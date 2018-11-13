@@ -1,7 +1,7 @@
-From f2333b09a468d213a7f3f0d28be2a25e2de03782 Mon Sep 17 00:00:00 2001
+From 06509932f2c3e844bacf06fa774e24f81f95fc32 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:57:56 -0700
-Subject: [PATCH] Enabled per-framework metrics in the master.
+Subject: [PATCH 11/22] Enabled per-framework metrics in the master.
 
 The `FrameworkMetrics` struct will be used to track per-framework
 metrics in the master.

@@ -1,7 +1,7 @@
-From 93cdc622f7cfd625efe6350f9749401df069fe5d Mon Sep 17 00:00:00 2001
+From 891d74044602feb93b5d87194a3ee33fe8b4e8dd Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:22 -0700
-Subject: [PATCH] Added per-framework metrics for scheduler events.
+Subject: [PATCH 14/22] Added per-framework metrics for scheduler events.
 
 Review: https://reviews.apache.org/r/67809/
 ---

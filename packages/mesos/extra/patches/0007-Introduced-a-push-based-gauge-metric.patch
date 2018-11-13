@@ -1,7 +1,7 @@
-From 163e53494c411baee82effb272473c2eca82a09b Mon Sep 17 00:00:00 2001
+From b5a9836855b75ae10a3de4ccf05c316167520d2b Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:53 -0700
-Subject: [PATCH] Introduced a push-based gauge metric.
+Subject: [PATCH 07/22] Introduced a push-based gauge metric.
 
 A push-based gauge differs from a pull-based gauge in that the
 client is responsible for pushing the latest value into the gauge

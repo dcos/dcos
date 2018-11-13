@@ -1,7 +1,7 @@
-From ab0413838dd9f61a46f481583220ba1b73b6e2ec Mon Sep 17 00:00:00 2001
+From 0eb86c2ddab984e689f29a5f29bd1e32caf27dbb Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:58 -0700
-Subject: [PATCH] Added a test for PushGauge.
+Subject: [PATCH 08/22] Added a test for PushGauge.
 
 Review: https://reviews.apache.org/r/66830/
 ---
