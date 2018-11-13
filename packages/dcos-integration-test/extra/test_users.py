@@ -1,19 +1,22 @@
 """
-A collection of tests covering user management in DC/OS.
+A collection of tests covering legacy user management in DC/OS.
+
+Legacy user management is considered to be the user management API offered by
+`dcos-oauth` up to DC/OS release 1.12.
 
 Assume that access control is activated in Master Admin Router (could be
 disabled with `oauth_enabled`) and therefore authenticate individual HTTP
 dcos_api_session.
 
-One aspect of DC/OS user management is that once authenticated a user can add
-other users. Unauthenticated HTTP dcos_api_session are rejected by Master Admin Router
-and user management fails (this is the coarse-grained authorization model of
-(open) DC/OS). Here, test that unauthenticated HTTP dcos_api_session cannot manage
-users. However, do not test that newly added users can add other users: in this
-test suite we are limited to having authentication state for just a single user
-available. This is why we can test managing other users only from that first
-user's point of view. That is, we can not test that a user (e.g. user2) which
-was added by the first user (user1) can add another user (user3).
+One aspect of legacy DC/OS user management is that once authenticated a user can
+add other users. Unauthenticated HTTP dcos_api_session are rejected by Master
+Admin Router and user management fails (this is the coarse-grained authorization
+model of (open) DC/OS). Here, test that unauthenticated HTTP dcos_api_session
+cannot manage users. However, do not test that newly added users can add other
+users: in this test suite we are limited to having authentication state for just
+a single user available. This is why we can test managing other users only from
+that first user's point of view. That is, we can not test that a user (e.g.
+user2) which was added by the first user (user1) can add another user (user3).
 """
 import logging
 
