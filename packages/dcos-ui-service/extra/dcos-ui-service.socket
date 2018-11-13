@@ -1,0 +1,7 @@
+[Unit]
+Description=DC/OS UI Service: service for DC/OS UI
+[Socket]
+ListenStream=/run/dcos/dcos-ui-service.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660
