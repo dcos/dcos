@@ -6,12 +6,13 @@ disabled with `oauth_enabled`) and therefore authenticate individual HTTP
 requests by using dcos_api_session.
 """
 import logging
-import time
 import json
+import time
 
+import cryptography.hazmat.backends
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-import cryptography.hazmat.backends
+
 import jwt
 from jwt.utils import base64url_decode
 
@@ -23,7 +24,7 @@ __contact__ = 'security-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def _generate_RSA_keypair():
+def _generate_rsa_keypair():
     """
     Generate an RSA keypair. Serialize the public key in the the X.509
     SubjectPublicKeyInfo/OpenSSL PEM public key format (RFC 5280). Serialize the
@@ -51,7 +52,7 @@ def _generate_RSA_keypair():
     return privkey_pem.decode('ascii'), pubkey_pem.decode('ascii')
 
 
-default_rsa_privkey, default_rsa_pubkey = _generate_RSA_keypair()
+default_rsa_privkey, default_rsa_pubkey = _generate_rsa_keypair()
 
 
 def test_service_account_create_login_delete(
