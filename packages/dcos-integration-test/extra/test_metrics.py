@@ -44,20 +44,88 @@ def test_metrics_masters_prom(dcos_api_session):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
+@retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
+def get_metrics_prom(dcos_api_session, node, expected_metrics):
+    """Assert that expected metrics are present on prometheus port on node.
+
+    Retries on non-200 status or missing expected metrics
+    for up to 150 seconds.
+
+    """
+    response = dcos_api_session.session.request('GET', 'http://{}:61091/metrics'.format(node))
+    assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+    for metric_name in expected_metrics:
+        assert metric_name in response.text
+
+
+def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_slave_uptime_secs' in response.text
+        get_metrics_prom(dcos_api_session, agent, ['mesos_slave_uptime_secs'])
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
+def test_metrics_masters_mesos(dcos_api_session):
     """Assert that mesos metrics on masters are present."""
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_master_uptime_secs' in response.text
+        get_metrics_prom(dcos_api_session, master, ['mesos_master_uptime_secs'])
+
+
+def test_metrics_agents_statsd(dcos_api_session):
+    """Assert that statsd metrics on agent are present."""
+    if len(dcos_api_session.slaves) > 0:
+        agent = dcos_api_session.slaves[0]
+        task_name = 'test-metrics-statsd-app'
+        metric_name_pfx = 'test_metrics_statsd_app'
+        marathon_app = {
+            'id': '/' + task_name,
+            'instances': 1,
+            'cpus': 0.1,
+            'mem': 128,
+            'env': {
+                'STATIC_STATSD_UDP_PORT': '61825',
+                'STATIC_STATSD_UDP_HOST': 'localhost'
+            },
+            'cmd': '\n'.join([
+                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
+                'echo "Sending gauge"',
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending counts"',
+                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending timings"',
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending histograms"',
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Done. Sleeping forever."',
+                'while true; do',
+                '  sleep 1000',
+                'done',
+            ]),
+            'container': {
+                'type': 'MESOS',
+                'docker': {'image': 'library/alpine'}
+            },
+            'networks': [{'mode': 'host'}],
+            'constraints': [['hostname', 'LIKE', agent]],
+        }
+        expected_metrics = [
+            ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
+        ]
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+            get_metrics_prom(dcos_api_session, agent, expected_metrics)
 
 
 @pytest.mark.supportedwindows
