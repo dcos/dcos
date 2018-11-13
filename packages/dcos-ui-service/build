@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Directory to keep new downloaded versions of the UI
+mkdir -p "$PKG_PATH"/versions
+
+mkdir -p "$PKG_PATH"/bin
+mv "/pkg/src/dcos-ui-service/dcos-ui-update-service-1976d7e1d41307b71841c555fd08573c63bc80b0" "$PKG_PATH"/bin/dcos-ui-service
+chmod +x "$PKG_PATH"/bin/dcos-ui-service
+
