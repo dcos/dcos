@@ -134,6 +134,7 @@ bootstrappers = {
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
+    'dcos-ui-service': noop,
 }
 
 
