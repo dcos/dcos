@@ -86,8 +86,8 @@ def test_bad_buildinfo(tmpdir):
             pkgpanda.build.build_package_variants(package_store, name, True)
             package(str(pkg_dir), name, tmpdir.join('build'))
 
-    tmp_pkg('unknown_field', {'user': 'dcos_user', 'docker': 'ubuntu:14.04.4'})
-    tmp_pkg('disallowed_field', {'name': 'disallowed_field', 'docker': 'ubuntu:14.04.4'})
+    tmp_pkg('unknown_field', {'user': 'dcos_user'})
+    tmp_pkg('disallowed_field', {'name': 'disallowed_field'})
 
 
 # TODO(cmaloney): Re-enable once we build a dcos-builder docker as part of this test. Currently the
