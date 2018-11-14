@@ -9,3 +9,6 @@ EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos_net
 Environment=HOME=/opt/mesosphere
 ExecStart=/opt/mesosphere/active/dcos-net/bin/dcos-net-watchdog.py
+
+[Install]
+WantedBy=dcos.target

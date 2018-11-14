@@ -15,3 +15,6 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metrics-agent
 ExecStartPre=/usr/bin/test -f /var/lib/dcos/cluster-id
 ExecStart=/opt/mesosphere/bin/dcos-metrics -role agent -config ${DCOS_METRICS_CONFIG_PATH}
 Sockets=dcos-metrics-agent.socket
+
+[Install]
+WantedBy=dcos.target

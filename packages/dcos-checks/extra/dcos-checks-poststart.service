@@ -8,3 +8,6 @@ StandardOutput=journal
 User=root
 Group=root
 ExecStart=/opt/mesosphere/bin/dcos-diagnostics check node-poststart
+
+[Install]
+WantedBy=dcos.target

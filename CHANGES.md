@@ -25,6 +25,8 @@
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
+* Add install section to DC/OS systemd units. (DCOS_OSS-4479)
+
 
 ### Security Updates
 

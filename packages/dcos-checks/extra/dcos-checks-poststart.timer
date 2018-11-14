@@ -3,3 +3,6 @@ Description=DC/OS Checks Timer: timer for DC/OS Checks service
 [Timer]
 OnCalendar=minutely
 AccuracySec=10
+
+[Install]
+WantedBy=dcos.target

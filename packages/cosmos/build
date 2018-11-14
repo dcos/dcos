@@ -31,4 +31,7 @@ ExecStart=/opt/mesosphere/bin/java \\
     com.simontuffs.onejar.Boot \\
     -admin.port=127.0.0.1:9990 \\
     -com.mesosphere.cosmos.httpInterface=127.0.0.1:7070
+
+[Install]
+WantedBy=dcos.target
 EOF
