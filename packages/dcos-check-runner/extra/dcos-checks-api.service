@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Checks API: Provides node and cluster checks
 
@@ -19,3 +16,6 @@ SupplementaryGroups=dcos_adminrouter
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-check-runner.env
 ExecStart=/opt/mesosphere/bin/dcos-check-runner http-server --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
+
+[Install]
+WantedBy=dcos.target

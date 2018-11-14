@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DNS Forwarder (Spartan): forwards DNS requests to multiple DNS servers
 
@@ -26,3 +23,6 @@ ExecStartPre=-/usr/bin/env ip addr add 198.51.100.3/32 dev spartan
 ExecStart=/opt/mesosphere/active/spartan/spartan/bin/spartan-env foreground
 Environment=HOME=/opt/mesosphere
 
+
+[Install]
+WantedBy=dcos.target

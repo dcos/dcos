@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=REX-Ray: A vendor agnostic storage orchestration engine
 
@@ -20,3 +17,6 @@ ExecStartPre=/bin/cp /opt/mesosphere/etc/rexray.conf /etc/rexray/config.yml
 # Prevent startup error: "open /run/docker/plugins/rexray.sock: no such file or directory"
 ExecStartPre=/bin/mkdir -p /run/docker/plugins
 ExecStart=__PKG_PATH__/bin/rexray start -f
+
+[Install]
+WantedBy=dcos.target

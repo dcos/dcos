@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Log Agent: exposes agent node, component, and container (task) logs
 
@@ -17,3 +14,6 @@ User=dcos_log
 SupplementaryGroups=dcos_adminrouter
 ExecStart=/opt/mesosphere/bin/dcos-log -config ${DCOS_LOG_CONFIG_PATH}
 Sockets=dcos-log-agent.socket
+
+[Install]
+WantedBy=dcos.target

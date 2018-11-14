@@ -8,9 +8,6 @@ metronome_service="$PKG_PATH/dcos.target.wants_master/dcos-metronome.service"
 mkdir -p $(dirname "$metronome_service")
 
 cat <<EOF > "$metronome_service"
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Jobs (Metronome): job orchestration
 
@@ -32,4 +29,7 @@ ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/metronome'
 ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
 ExecStart=/opt/mesosphere/bin/metronome
+
+[Install]
+WantedBy=dcos.target
 EOF

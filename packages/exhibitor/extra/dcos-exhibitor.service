@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=Exhibitor: Zookeeper supervisor service
 [Service]
@@ -36,3 +33,6 @@ ExecStartPre=/opt/mesosphere/bin/check-time
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
+
+[Install]
+WantedBy=dcos.target

@@ -24,3 +24,6 @@ ExecStartPre=/bin/bash -c "mkdir -p ${TELEGRAF_USER_CONFIG_DIR}"
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR},${TELEGRAF_USER_CONFIG_DIR}
+
+[Install]
+WantedBy=dcos.target

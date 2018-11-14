@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS History: caches and exposes historical system state
 [Service]
@@ -18,3 +15,6 @@ ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-history
 ExecStart=/opt/mesosphere/bin/gunicorn --bind 127.0.0.1:15055 \
                 history.server:app
+
+[Install]
+WantedBy=dcos.target

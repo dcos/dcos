@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Net: A distributed systems & network overlay orchestration engine
 
@@ -36,3 +33,6 @@ ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ip
 ExecStartPre=/opt/mesosphere/active/dcos-net/dcos-net/bin/dcos-net-setup.py --ipv6 ip -6 addr add fd01:d::c633:6401/128 dev spartan
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-net
 ExecStart=/opt/mesosphere/bin/dcos-net-env foreground
+
+[Install]
+WantedBy=dcos.target

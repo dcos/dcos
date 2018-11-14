@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=Docker GC: periodically garbage collects Docker containers and images
 ConditionPathExists=/opt/mesosphere/etc/docker_gc_enabled
@@ -16,3 +13,6 @@ Environment=STATE_DIR=/var/lib/dcos/docker-gc
 Environment=PID_DIR=/var/lib/dcos/docker-gc
 Environment=LOG_TO_SYSLOG=0
 ExecStart=$PKG_PATH/docker-gc
+
+[Install]
+WantedBy=dcos.target

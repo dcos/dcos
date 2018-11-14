@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Component Package Manager (Pkgpanda): installs and manages DC/OS components
 
@@ -26,3 +23,6 @@ ExecStart=${PKG_PATH}/pkgpanda-api/bin/pkgpanda-api.sh
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
+
+[Install]
+WantedBy=dcos.target

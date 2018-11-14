@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=Admin Router Agent: exposes a unified control plane proxy for components and services using NGINX
 
@@ -23,3 +20,6 @@ ExecStart=$PKG_PATH/nginx/sbin/adminrouter.sh -c $PKG_PATH/nginx/conf/nginx.agen
 ExecReload=/usr/bin/kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed
+
+[Install]
+WantedBy=dcos.target

@@ -84,6 +84,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
 
 * Update Java to 8u192. (DCOS_OSS-4380)
+
 * Add install section to DC/OS systemd units. (DCOS_OSS-4479)
 
 * Docker-GC will now log to journald. (COPS-4044)

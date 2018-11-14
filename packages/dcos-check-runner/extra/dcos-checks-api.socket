@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=DC/OS Checks API Socket: socket for DC/OS Checks API
 
@@ -9,3 +6,6 @@ ListenStream=/run/dcos/dcos-checks-api.sock
 SocketUser=root
 SocketGroup=dcos_adminrouter
 SocketMode=0660
+
+[Install]
+WantedBy=dcos.target

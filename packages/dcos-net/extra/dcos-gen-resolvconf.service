@@ -1,6 +1,3 @@
-[Install]
-WantedBy=dcos.target
-
 [Unit]
 Description=Generate resolv.conf: configures network name resolution
 
@@ -13,3 +10,6 @@ EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/dns_search_config
 EnvironmentFile=-/opt/mesosphere/etc/dns_config_master
 ExecStart=/opt/mesosphere/bin/gen_resolvconf.py /etc/resolv.conf
+
+[Install]
+WantedBy=dcos.target
