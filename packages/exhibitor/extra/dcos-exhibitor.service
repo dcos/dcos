@@ -20,3 +20,6 @@ EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
 EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
+
+[Install]
+WantedBy=dcos.target

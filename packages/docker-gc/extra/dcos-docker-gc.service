@@ -12,3 +12,6 @@ Environment=STATE_DIR=/var/lib/dcos/docker-gc
 Environment=PID_DIR=/var/lib/dcos/docker-gc
 Environment=LOG_TO_SYSLOG=1
 ExecStart=$PKG_PATH/docker-gc
+
+[Install]
+WantedBy=dcos.target

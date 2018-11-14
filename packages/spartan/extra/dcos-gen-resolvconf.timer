@@ -3,3 +3,6 @@ Description=Generate resolv.conf Timer: periodically updates the network name re
 [Timer]
 OnBootSec=5sec
 OnUnitActiveSec=1min
+
+[Install]
+WantedBy=dcos.target

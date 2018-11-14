@@ -25,3 +25,6 @@ ExecStartPre=/usr/bin/env modprobe dummy
 ExecStartPre=-/usr/bin/env ip link add minuteman type dummy
 ExecStartPre=/usr/bin/env ip link set minuteman up
 ExecStart=/opt/mesosphere/active/navstar/navstar/bin/navstar-env foreground
+
+[Install]
+WantedBy=dcos.target

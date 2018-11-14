@@ -6,3 +6,6 @@ ListenStream=/run/dcos/dcos-diagnostics.sock
 SocketUser=root
 SocketGroup=dcos_adminrouter
 SocketMode=0660
+
+[Install]
+WantedBy=dcos.target
