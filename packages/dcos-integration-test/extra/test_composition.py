@@ -143,6 +143,8 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-signal.service',
         'dcos-bouncer.service',
         'dcos-bouncer-migrate-users.service',
+        'dcos-ui-service.service',
+        'dcos-ui-service.socket',
     ]
     all_node_units = [
         'dcos-checks-api.service',

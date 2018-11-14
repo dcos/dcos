@@ -984,6 +984,74 @@
             </table>
           </div>
         </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/net/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:62080</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Net
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-dcos-ui-update-service" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="dcos-ui-update-service" href="#dcos-ui-update-service" aria-hidden="true" class="toggle-route-group" data-id="dcos-ui-update-service">
+            <div class="arrow arrow-right"></div>DC/OS UI Update Service</a>
+        </h2>
+        <span class="options"><a href="#dcos-ui-update-service" class="toggle-route-group" data-id="dcos-ui-update-service">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-dcos-ui-update-service" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/dcos-ui-service/api(?&lt;url&gt;.*)</code></span>
+            </h3>
+            <span class="route-desc">DC/OS UI Update Service API</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>$dcos_ui_service</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
       </ul>
     </li>
     <li id="resource-exhibitor" class="resource">
