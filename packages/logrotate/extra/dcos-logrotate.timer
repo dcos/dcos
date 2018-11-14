@@ -3,3 +3,6 @@ Description=Logrotate Timer: Timer to trigger every 2 minutes
 [Timer]
 OnBootSec=2min
 OnUnitActiveSec=2min
+
+[Install]
+WantedBy=dcos.target

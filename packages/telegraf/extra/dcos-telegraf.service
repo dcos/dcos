@@ -25,3 +25,6 @@ ExecStartPre=/bin/bash -c "chown -R dcos_telegraf:dcos_telegraf ${LEGACY_CONTAIN
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
+
+[Install]
+WantedBy=dcos.target

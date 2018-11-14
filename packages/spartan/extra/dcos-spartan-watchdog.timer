@@ -3,3 +3,6 @@ Description=DNS Forwarder (Spartan) Watchdog Timer: timer to periodically trigge
 [Timer]
 OnBootSec=5sec
 OnUnitActiveSec=2min
+
+[Install]
+WantedBy=dcos.target

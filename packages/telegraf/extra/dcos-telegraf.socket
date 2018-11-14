@@ -5,3 +5,6 @@ ListenStream=/run/dcos/telegraf-dcos-metrics.sock
 SocketUser=root
 SocketGroup=dcos_adminrouter
 SocketMode=0660
+
+[Install]
+WantedBy=dcos.target

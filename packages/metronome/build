@@ -30,4 +30,7 @@ ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_I
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
 ExecStartPre=-/usr/bin/env rm -f /opt/mesosphere/active/metronome/RUNNING_PID
 ExecStart=/opt/mesosphere/bin/metronome
+
+[Install]
+WantedBy=dcos.target
 EOF

@@ -4,6 +4,8 @@
 
 ### Fixed and improved
 
+* Add install section to DC/OS systemd units. (DCOS_OSS-4479)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
