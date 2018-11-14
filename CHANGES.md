@@ -15,4 +15,6 @@
 
 * Docker-GC will now log to journald. (COPS-4044)
 
+* Allow the DC/OS installer to be used when there is a space in its path (DCOS_OSS-4429).
+
 ### Notable changes
