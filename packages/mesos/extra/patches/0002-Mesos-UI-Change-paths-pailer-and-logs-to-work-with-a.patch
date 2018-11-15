@@ -1,7 +1,7 @@
-From 4ad3847b6f56c0224e6b340b555c5111532f40d9 Mon Sep 17 00:00:00 2001
+From c381399b8f7a16a53fda82e8a40b9e82bb375a04 Mon Sep 17 00:00:00 2001
 From: mlunoe <michael.lunoe@gmail.com>
 Date: Thu, 14 May 2015 15:05:23 -0700
-Subject: [PATCH] Mesos UI: Change paths, pailer, and logs to work with a
+Subject: [PATCH 02/13] Mesos UI: Change paths, pailer, and logs to work with a
  reverse proxy.
 
 Includes using relative paths.
@@ -10,10 +10,10 @@ Redirect from old mesos ui location to new dcos mesos ui location.
 Fixed the broken 'Roles' tab of the webui.
 ---
  src/webui/master/static/browse.html       |  2 +-
- src/webui/master/static/index.html        | 30 +++++++++----------
- src/webui/master/static/js/controllers.js | 49 +++++++++++++++----------------
+ src/webui/master/static/index.html        | 30 +++++++-------
+ src/webui/master/static/js/controllers.js | 49 +++++++++++------------
  src/webui/master/static/js/services.js    |  2 +-
- src/webui/master/static/pailer.html       |  6 ++--
+ src/webui/master/static/pailer.html       |  6 +--
  5 files changed, 44 insertions(+), 45 deletions(-)
 
 diff --git a/src/webui/master/static/browse.html b/src/webui/master/static/browse.html
@@ -286,5 +286,5 @@ index 759b18023..c8ada4b19 100644
      <script>
        var $body = $('body');
 -- 
-2.16.3
+2.17.0
 

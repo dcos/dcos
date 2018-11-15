@@ -1,7 +1,7 @@
-From 4eb03d2e18cbd8f5238babe6338eff2f7282a964 Mon Sep 17 00:00:00 2001
+From 8dab68096bcbe5345eecdbd048f3c62f638eb164 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston.kleiman@gmail.com>
 Date: Tue, 3 Jul 2018 12:09:16 -0700
-Subject: [PATCH] Improved logging for offers and inverse offers.
+Subject: [PATCH 08/13] Improved logging for offers and inverse offers.
 
 Log offer IDs and inverse offer IDs when sending out offers and
 inverse offers so it is easier to match them to their ACCEPT or DECLINE
@@ -19,7 +19,7 @@ Review: https://reviews.apache.org/r/67817
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index f654300c2..8208beec3 100644
+index d8dcfc158..16e15bad1 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -7566,6 +7566,9 @@ void Master::offer(
@@ -73,5 +73,5 @@ index f654300c2..8208beec3 100644
    framework->send(message);
  }
 -- 
-2.16.3
+2.17.0
 
