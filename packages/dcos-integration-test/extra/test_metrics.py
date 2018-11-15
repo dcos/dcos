@@ -207,7 +207,7 @@ def test_metrics_metadata(dcos_api_session):
         print("Executor check failed. Response:")
         print(response.text)
         return False
-    check_metrics_prom(dcos_api_session, executor_node, executor_checks)
+    #check_metrics_prom(dcos_api_session, executor_node, executor_checks)
 
     # uninstall and cleanup framework
     dcos_api_session.cosmos.uninstall_package('kafka', app_id=data['appId'])
