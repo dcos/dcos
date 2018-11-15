@@ -144,13 +144,6 @@ def check_metrics_prom(dcos_api_session, node, check_func):
 
 
 def test_metrics_metadata(dcos_api_session):
-    num_containers = 0
-    # get count of all running containers to check against later for complete teardown of kafka
-    for agent_ip in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/containers', node=agent_ip)
-        assert response.status_code == 200
-        num_containers += len(response.json())
-
     # install kafka framework
     install_response = dcos_api_session.cosmos.install_package('kafka', package_version='2.3.0-1.1.0')
     data = install_response.json()
@@ -218,18 +211,6 @@ def test_metrics_metadata(dcos_api_session):
 
     # uninstall and cleanup framework
     dcos_api_session.cosmos.uninstall_package('kafka', app_id=data['appId'])
-
-    # Retry for 150 seconds for kafka teardown completion
-    @retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
-    def wait_for_framework_teardown():
-        num_containers_check = 0
-        for agent_ip in dcos_api_session.slaves:
-            response = dcos_api_session.metrics.get('/containers', node=agent_ip)
-            assert response.status_code == 200
-            num_containers_check += len(response.json())
-        assert num_containers_check <= num_containers
-
-    wait_for_framework_teardown()
 
 
 @pytest.mark.supportedwindows
