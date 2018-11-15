@@ -20,5 +20,6 @@
   "sambatyon": {"slack": "alexander", "jira": "alexander"},
   "tillt": {"slack": "till", "jira": "till"},
   "timaa2k": {"slack": "tweidner", "jira": "timweidner"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
+  "juliangieseke": {"slack": "jgieseke", "jira": "jgieseke"}
 }
