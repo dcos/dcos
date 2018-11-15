@@ -128,7 +128,7 @@ def test_metrics_agents_statsd(dcos_api_session):
             get_metrics_prom(dcos_api_session, agent, expected_metrics)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
+@retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
 def check_metrics_prom(dcos_api_session, node, check_func):
     """Get metrics from prometheus port on node and run check_func function,
     asserting that it returns True.
