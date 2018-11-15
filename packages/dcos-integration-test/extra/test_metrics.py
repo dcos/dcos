@@ -175,6 +175,7 @@ def test_metrics_metadata(dcos_api_session):
                 kafka_task_name = framework['tasks'][0]['name']
                 wait = False
                 break
+    print("Kafka deployed")
 
     for agent in state['slaves']:
         if agent['id'] == executor_mesos_id:
@@ -183,6 +184,7 @@ def test_metrics_metadata(dcos_api_session):
             task_node = agent['hostname']
 
     def task_checks(response):
+        print("Checking tasks")
         # check kafka task metric metadata
         for line in response.text.splitlines():
             if '#' in line:
@@ -192,10 +194,13 @@ def test_metrics_metadata(dcos_api_session):
                 return ('service_name="kafka"' in line and
                         'task_name="{}"'.format(kafka_task_name) in line and
                         'executor_name="kafka"' in line)
+        print("Task check failed. Response:")
+        print(response.text)
         return False
     check_metrics_prom(dcos_api_session, task_node, task_checks)
 
     def executor_checks(response):
+        print("Checking executors")
         # check kafka executor metric metadata
         for line in response.text.splitlines():
             if '#' in line:
@@ -206,6 +211,8 @@ def test_metrics_metadata(dcos_api_session):
                 return ('service_name="kafka"' in line and
                         'task_name=""' in line and  # this is an executor, not a task
                         'executor_name="kafka"' in line)
+        print("Executor check failed. Response:")
+        print(response.text)
         return False
     check_metrics_prom(dcos_api_session, executor_node, executor_checks)
 
