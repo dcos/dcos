@@ -29,9 +29,9 @@
         "interactive": false,
         "fix_version_map": {
             "master": "DC/OS 1.13.0",
-            "1.12": "DC/OS 1.12.0",
-            "1.11": "DC/OS 1.11.7",
-            "1.10": "DC/OS 1.10.9",
+            "1.12": "DC/OS 1.12.1",
+            "1.11": "DC/OS 1.11.8",
+            "1.10": "DC/OS 1.10.10",
             "1.9": "DC/OS 1.9.11"
         },
         "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON)-\\d+)"

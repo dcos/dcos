@@ -44,20 +44,88 @@ def test_metrics_masters_prom(dcos_api_session):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_agents_mesos(dcos_api_session, prometheus_port):
+@retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
+def get_metrics_prom(dcos_api_session, node, expected_metrics):
+    """Assert that expected metrics are present on prometheus port on node.
+
+    Retries on non-200 status or missing expected metrics
+    for up to 150 seconds.
+
+    """
+    response = dcos_api_session.session.request('GET', 'http://{}:61091/metrics'.format(node))
+    assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+    for metric_name in expected_metrics:
+        assert metric_name in response.text
+
+
+def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_slave_uptime_secs' in response.text
+        get_metrics_prom(dcos_api_session, agent, ['mesos_slave_uptime_secs'])
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_masters_mesos(dcos_api_session, prometheus_port):
+def test_metrics_masters_mesos(dcos_api_session):
     """Assert that mesos metrics on masters are present."""
     for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':{}/metrics'.format(prometheus_port))
-        assert 'mesos_master_uptime_secs' in response.text
+        get_metrics_prom(dcos_api_session, master, ['mesos_master_uptime_secs'])
+
+
+def test_metrics_agents_statsd(dcos_api_session):
+    """Assert that statsd metrics on agent are present."""
+    if len(dcos_api_session.slaves) > 0:
+        agent = dcos_api_session.slaves[0]
+        task_name = 'test-metrics-statsd-app'
+        metric_name_pfx = 'test_metrics_statsd_app'
+        marathon_app = {
+            'id': '/' + task_name,
+            'instances': 1,
+            'cpus': 0.1,
+            'mem': 128,
+            'env': {
+                'STATIC_STATSD_UDP_PORT': '61825',
+                'STATIC_STATSD_UDP_HOST': 'localhost'
+            },
+            'cmd': '\n'.join([
+                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
+                'echo "Sending gauge"',
+                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending counts"',
+                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending timings"',
+                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Sending histograms"',
+                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                    metric_name_pfx),
+
+                'echo "Done. Sleeping forever."',
+                'while true; do',
+                '  sleep 1000',
+                'done',
+            ]),
+            'container': {
+                'type': 'MESOS',
+                'docker': {'image': 'library/alpine'}
+            },
+            'networks': [{'mode': 'host'}],
+            'constraints': [['hostname', 'LIKE', agent]],
+        }
+        expected_metrics = [
+            ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
+            ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
+        ]
+
+        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+            get_metrics_prom(dcos_api_session, agent, expected_metrics)
 
 
 @pytest.mark.supportedwindows
@@ -167,7 +235,6 @@ def test_metrics_containers(dcos_api_session):
             for c in get_container_ids(dcos_api_session, agent.host):
                 # Test that /containers/<id> responds with expected data
                 container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
-                assert 'datapoints' in container_metrics, 'got {}'.format(container_metrics)
 
                 cid_registry = []
                 for dp in container_metrics['datapoints']:
@@ -188,10 +255,6 @@ def test_metrics_containers(dcos_api_session):
                     # the same.
                     cid_registry.append(dp['tags']['container_id'])
                     assert(check_cid(cid_registry))
-
-                assert 'dimensions' in container_metrics, 'got {}'.format(container_metrics)
-                assert 'task_name' in container_metrics['dimensions'], 'got {}'.format(
-                    container_metrics['dimensions'])
 
                 debug_task_name.append(container_metrics['dimensions']['task_name'])
 
@@ -372,7 +435,7 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
     """
     for cid in get_container_ids(dcos_api_session, node):
         container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions'].get('task_name') == task_name:
+        if container_metrics['dimensions']['task_name'] == task_name:
             return get_app_metrics(dcos_api_session, node, cid)
     return None
 
@@ -393,19 +456,34 @@ def get_container_ids(dcos_api_session, node: str):
     return container_ids
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
-    Retries on error or non-200 status for up to 30 seconds.
+    Retries on error, non-200 status, or missing response fields for up
+    to 30 seconds.
 
     """
     response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
     assert response.status_code == 200
-    return response.json()
+    container_metrics = response.json()
+
+    assert 'datapoints' in container_metrics, (
+        'container metrics must include datapoints. Got: {}'.format(container_metrics)
+    )
+    assert 'dimensions' in container_metrics, (
+        'container metrics must include dimensions. Got: {}'.format(container_metrics)
+    )
+    # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
+    # metrics response.
+    assert 'task_name' in container_metrics['dimensions'], (
+        'task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions'])
+    )
+
+    return container_metrics
 
 
-@retrying.retry(stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
