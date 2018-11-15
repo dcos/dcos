@@ -56,7 +56,8 @@ def get_metrics_prom(dcos_api_session, node):
     Retries on non-200 status for up to 300 seconds.
 
     """
-    response = dcos_api_session.session.request('GET', 'http://{}:61091/metrics'.format(node))
+    response = dcos_api_session.session.request(
+        'GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
     return response
 
