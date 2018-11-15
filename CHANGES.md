@@ -16,3 +16,5 @@
 * Docker-GC will now log to journald. (COPS-4044)
 
 ### Notable changes
+
+* Updated DC/OS UI to master+v2.37.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.37.0)
