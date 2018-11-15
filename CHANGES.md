@@ -63,6 +63,8 @@ Format of the entries must be.
 
 * Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
 
+* DCOS_METRICS_-prefixed labels are no longer included in metrics metadata by default, but are now configured to be (DCOS-43591)
+
 
 ### Fixed and improved
 
@@ -109,6 +111,9 @@ Format of the entries must be.
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
 
 * Task health check definitions are now included in Mesos master/agent API outputs. [See more](https://issues.apache.org/jira/browse/MESOS-8780) (MESOS-8780)
+
+* Telegraf: Added configurable whitelists for labels to include in metrics metadata (DCOS-43591)
+
 
 ### Security Updates
 

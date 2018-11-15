@@ -48,6 +48,64 @@ def test_metrics_masters_prom(dcos_api_session):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
+@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+def check_metrics_prom(dcos_api_session, node, check_func):
+    """Get metrics from prometheus port on node and run check_func function,
+    asserting that it returns True.
+
+    Retries on non-200 status or failed assertions
+    for up to 300 seconds.
+
+    """
+    response = dcos_api_session.session.request(
+        'GET', 'http://{}:61091/metrics'.format(node))
+    assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+    assert check_func(response) is True
+
+
+def test_metrics_metadata(dcos_api_session):
+    # install marathon on marathon
+    install_response = dcos_api_session.cosmos.install_package('marathon')
+    data = install_response.json()
+    dcos_api_session.marathon.wait_for_deployments_complete()
+
+    wait = True
+    mesos_id = node = ''
+    while wait:
+        master = dcos_api_session.masters[0]
+        state_response = dcos_api_session.get('/state', host=master, port=5050)
+        assert state_response.status_code == 200
+        state = state_response.json()
+        for framework in state['frameworks']:
+            if framework['name'] == 'marathon':
+                for task in framework['tasks']:
+                    if task['name'] == 'marathon-user':
+                        mesos_id = task['slave_id']
+                        wait = False
+                        break
+                break
+
+    for agent in state['slaves']:
+        if agent['id'] == mesos_id:
+            node = agent['hostname']
+            break
+
+    def check_whitelisted_label(response):
+        # check metric metadata
+        for line in response.text.splitlines():
+            if '#' in line:
+                continue
+            if 'marathon-user' in line:
+                return ('service_name="marathon"' in line and
+                        'task_name="marathon-user"' in line and
+                        'DCOS_SERVICE_NAME="marathon-user"' in line)
+        return False
+    check_metrics_prom(dcos_api_session, node, check_whitelisted_label)
+
+    # uninstall and cleanup framework
+    dcos_api_session.cosmos.uninstall_package('marathon', app_id=data['appId'])
+
+
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
