@@ -73,7 +73,7 @@ def _get_cluster_resources(dcos_api_session):
 
 
 def _agent_has_resources(agent, node_requirements):
-    """Check that an agent has at least as much resources as required for one node
+    """Check that an agent has at least as much resources as requried for one node
 
     Args:
         agent: dict Info for one 'slave' from the mesos state summary

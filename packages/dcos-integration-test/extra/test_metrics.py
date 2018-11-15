@@ -129,22 +129,21 @@ def test_metrics_agents_statsd(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
-def check_metrics_prom(dcos_api_session, prometheus_port, node, check_func):
+def check_metrics_prom(dcos_api_session, node, check_func):
     """Get metrics from prometheus port on node and run check_func function,
     asserting that it returns True.
 
     Retries on non-200 status or failed assertions
-    for up to 150 seconds.
+    for up to 300 seconds.
 
     """
     response = dcos_api_session.session.request(
-        'GET', 'http://{}:{}/metrics'.format(node, prometheus_port))
+        'GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
     assert check_func(response) is True
 
 
-@pytest.mark.parametrize("prometheus_port", [61091])
-def test_metrics_metadata(dcos_api_session, prometheus_port):
+def test_metrics_metadata(dcos_api_session):
     num_containers = 0
     # get count of all running containers to check against later for complete teardown of kafka
     for agent_ip in dcos_api_session.slaves:
@@ -153,13 +152,13 @@ def test_metrics_metadata(dcos_api_session, prometheus_port):
         num_containers += len(response.json())
 
     # install kafka framework
-    install_response = dcos_api_session.cosmos.install_package('kafka')
+    install_response = dcos_api_session.cosmos.install_package('kafka', package_version='2.3.0-1.1.0')
     data = install_response.json()
 
     dcos_api_session.marathon.wait_for_deployments_complete()
 
     wait = True
-    executor_mesos_id = task_mesos_id = ''
+    executor_mesos_id = task_mesos_id = kafka_task_name = ''
     while wait:
         master = dcos_api_session.masters[0]
         state_response = dcos_api_session.get('/state', host=master, port=5050)
@@ -170,8 +169,10 @@ def test_metrics_metadata(dcos_api_session, prometheus_port):
                 for task in framework['tasks']:
                     if task['name'] == 'kafka':
                         executor_mesos_id = task['slave_id']
-            if framework['name'] == 'kafka' and len(framework['tasks']) > 0 and executor_mesos_id:
+                        break
+            elif framework['name'] == 'kafka' and len(framework['tasks']) > 0 and executor_mesos_id:
                 task_mesos_id = framework['tasks'][0]['slave_id']
+                kafka_task_name = framework['tasks'][0]['name']
                 wait = False
                 break
 
@@ -181,30 +182,32 @@ def test_metrics_metadata(dcos_api_session, prometheus_port):
         if agent['id'] == task_mesos_id:
             task_node = agent['hostname']
 
-    def executor_checks(response):
-        # check executor metric metadata
-        for line in response.text.splitlines():
-            if '#' in line:
-                continue
-            if 'cpus_nr_periods' in line and 'marathon' in line:
-                assert 'service_name="marathon"' in line
-                assert 'task_name="kafka"' in line
-                return True
-        return False
-    check_metrics_prom(dcos_api_session, prometheus_port, executor_node, executor_checks)
-
     def task_checks(response):
         # check kafka task metric metadata
         for line in response.text.splitlines():
             if '#' in line:
                 continue
-            if 'cpus_nr_periods' in line and 'marathon' not in line:
-                assert 'service_name="kafka"' in line
-                assert 'task_name=""' in line
-                assert 'executor_name="kafka"' in line
-                return True
+            # check that a kafka task's metric is appropriately tagged
+            if kafka_task_name in line:
+                return ('service_name="kafka"' in line and
+                        'task_name="{}"'.format(kafka_task_name) in line and
+                        'executor_name="kafka"' in line)
         return False
-    check_metrics_prom(dcos_api_session, prometheus_port, task_node, task_checks)
+    check_metrics_prom(dcos_api_session, task_node, task_checks)
+
+    def executor_checks(response):
+        # check kafka executor metric metadata
+        for line in response.text.splitlines():
+            if '#' in line:
+                continue
+            # ignore metrics from kafka task started by marathon by checking
+            # for absence of 'marathon' string.
+            if 'cpus_nr_periods' in line and 'marathon' not in line:
+                return ('service_name="kafka"' in line and
+                        'task_name=""' in line and  # this is an executor, not a task
+                        'executor_name="kafka"' in line)
+        return False
+    check_metrics_prom(dcos_api_session, executor_node, executor_checks)
 
     # uninstall and cleanup framework
     dcos_api_session.cosmos.uninstall_package('kafka', app_id=data['appId'])
