@@ -1,12 +1,4 @@
 package:
-  - path: /etc/dcos-metrics-config.yaml
-    content: |
-      producers:
-        prometheus:
-          port: 61092
-  - path: /etc/dcos-metrics.env
-    content: |
-      DCOS_METRICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-metrics-config.yaml
   - path: /pkginfo.json
     content: |
       {
@@ -1330,6 +1322,37 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Statsd UDP/TCP Server
+      [[inputs.statsd]]
+        ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
+        protocol = "udp"
+        ## Address and port to host UDP listener on
+        service_address = "localhost:61825"
+        ## The following configuration options control when telegraf clears it's cache
+        ## of previous values. If set to false, then telegraf will only clear it's
+        ## cache when the daemon is restarted.
+        ## Reset gauges every interval (default=true)
+        delete_gauges = true
+        ## Reset counters every interval (default=true)
+        delete_counters = true
+        ## Reset sets every interval (default=true)
+        delete_sets = true
+        ## Reset timings & histograms every interval (default=true)
+        delete_timings = true
+        ## Percentiles to calculate for timing & histogram stats
+        percentiles = [90]
+        ## separator to use between elements of a statsd metric
+        metric_separator = "_"
+        ## Parses tags in the datadog statsd format
+        ## http://docs.datadoghq.com/guides/dogstatsd/
+        parse_data_dog_tags = false
+        ## Number of UDP messages allowed to queue up, once filled,
+        ## the statsd server will start dropping packets
+        allowed_pending_messages = 10000
+        ## Number of timing/histogram values to track per-measurement in the
+        ## calculation of percentiles. Raising this limit increases the accuracy
+        ## of percentiles but also increases the memory usage and cpu time.
+        percentile_limit = 1000
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -1358,6 +1381,22 @@ package:
           "registrar",
           "allocator",
        ]
+      # Reads 'mntr' health checks from one or many zookeeper servers
+      [[inputs.zookeeper]]
+        ## An array of addresses to gather stats about. Specify an ip or hostname
+        ## with port. ie localhost:2181, 10.0.0.1:2181, etc.
+        ## If no hosts are specified, then localhost is used as the host.
+        ## If no port is specified, 2181 is used
+        servers = [":2181"]
+        ## Timeout for metric collections from all servers.  Minimum timeout is "1s".
+        timeout = "10s"
+        ## Optional TLS Config
+        # enable_tls = true
+        # tls_ca = "/etc/telegraf/ca.pem"
+        # tls_cert = "/etc/telegraf/cert.pem"
+        # tls_key = "/etc/telegraf/key.pem"
+        ## If true while TLS is enabled skip chain & host verification
+        # insecure_skip_verify = true
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
