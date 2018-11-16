@@ -1405,6 +1405,8 @@ package:
         # tls_key = "/etc/telegraf/key.pem"
         ## If true while TLS is enabled skip chain & host verification
         # insecure_skip_verify = true
+        [inputs.zookeeper.tags]
+          dcos-component-name = "ZooKeeper"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
