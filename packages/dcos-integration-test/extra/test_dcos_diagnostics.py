@@ -427,11 +427,13 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
+                             'var/lib/dcos/mesos/log/mesos-master.log.gz',
                              'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
                              '| cut -d\'=\' -f2`environ-10.output.gz', '5050-overlay-master_state.json.gz'
                              ] + expected_common_files
 
     expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json',
+                                   'var/log/mesos/mesos-agent.log.gz',
                                    'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
                                    '| cut -d\'=\' -f2`environ-11.output.gz']
 
