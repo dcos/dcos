@@ -1381,6 +1381,22 @@ package:
           "registrar",
           "allocator",
        ]
+      # Reads 'mntr' health checks from one or many zookeeper servers
+      [[inputs.zookeeper]]
+        ## An array of addresses to gather stats about. Specify an ip or hostname
+        ## with port. ie localhost:2181, 10.0.0.1:2181, etc.
+        ## If no hosts are specified, then localhost is used as the host.
+        ## If no port is specified, 2181 is used
+        servers = [":2181"]
+        ## Timeout for metric collections from all servers.  Minimum timeout is "1s".
+        timeout = "10s"
+        ## Optional TLS Config
+        # enable_tls = true
+        # tls_ca = "/etc/telegraf/ca.pem"
+        # tls_cert = "/etc/telegraf/cert.pem"
+        # tls_key = "/etc/telegraf/key.pem"
+        ## If true while TLS is enabled skip chain & host verification
+        # insecure_skip_verify = true
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
