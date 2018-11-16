@@ -12,6 +12,8 @@
 
 * Lots of CRASH messages in dcos-net logs (DCOS-45161)
 
+* Make push_ops_timeout configurable through config.yaml (DCOS-45196)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
