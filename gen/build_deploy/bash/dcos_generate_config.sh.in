@@ -31,7 +31,7 @@ fi
 # extract payload and load into docker if not extracted
 if [ ! -f "{genconf_tar}" ]; then
     >&2 echo Extracting image from this script and loading into docker daemon, this step can take a few minutes
-    sed '1,/^#EOF#$/d' $0 | tar xv
+    sed '1,/^#EOF#$/d' "$0" | tar xv
     >&2 docker load -i {genconf_tar}
 fi
 trap - INT
