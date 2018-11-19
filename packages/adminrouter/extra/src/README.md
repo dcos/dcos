@@ -319,17 +319,18 @@ order to support the `/service` URL path prefix clients are using.
 
 ### Intended use
 It is important to remember that the `/service` endpoint was designed to work
-with root Marathon only. Tasks launched by Marathon-on-Marathon instances will
+with Root Marathon only. Tasks launched by Marathon-on-Marathon instances will
 not be reachable via it.
 
 In the case of Mesos frameworks, this becomes a bit more complex - all the
 frameworks are visible in Mesos' `/state-summary` endpoint output so in theory
 it is possible to access a framework launched using Marathon-on-Marathon or by
-hand.  Unfortunately, Mesos as of now does not enforce framework name
-uniqueness and thus it is possible to launch multiple frameworks with the same
-name. AR in such case will route in a non-deterministic manner. Root Marathon
-by default enforces unique names for all the tasks and frameworks it has under
-control.
+hand (except in DC/OS Enterprise where only frameworks that are started by Root 
+Marathon can be routed to).  Unfortunately, Mesos as of now does not enforce 
+framework name uniqueness and thus it is possible to launch multiple frameworks 
+with the same name. AR in such case will route in a non-deterministic manner. 
+Root Marathon by default enforces unique names for all the tasks and frameworks 
+it has under control.
 
 Please check the [Limitations](#limitations) section for more details.
 
@@ -437,6 +438,9 @@ frameworks that:
 * have been removed by root Marathon
 * become disconnected from Mesos for some reason, but *MAY* come back at some
   point
+
+Note that in DC/OS Enterprise, only frameworks that are started by Root 
+Marathon can be routed to.
 
 What is more - continuous installation and removal of a framework using the same
 name will cause Mesos to keep entries for them in `/state-summary`. There is no

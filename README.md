@@ -163,7 +163,7 @@ Running wait command allows to make sure that the cluster is set up properly bef
 For example:
 
 ```
-dcos-docker run pytest
+dcos-docker run --test-env pytest
 ```
 
 4. Destroy the cluster.
