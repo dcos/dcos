@@ -755,7 +755,7 @@ def calculate__superuser_service_account_public_key_json(
         Args:
             key_pem (str): serialized public key
         """
-        # This will raise `ValueError` for invalud input or
+        # This will raise `ValueError` for invalid input or
         # `UnsupportedAlgorithm` for exotic unsupported key types.
         try:
             key = serialization.load_pem_public_key(
@@ -983,6 +983,13 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
+
+
+# Note(JP): let us try to distinguish private from public configuration
+# parameters by adding an underscore prefix to private ones. Private
+# configuration parameters are not meant to be set in the DC/OS config yaml
+# document. Only public ones are meant to be set there. Only public
+# configuration parameters are meant to be publicly documented.
 
 
 entry = {
