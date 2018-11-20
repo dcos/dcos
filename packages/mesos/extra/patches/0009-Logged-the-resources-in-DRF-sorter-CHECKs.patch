@@ -1,7 +1,7 @@
-From cdcfbe24186807b5a1c132e5531a4f11f8570181 Mon Sep 17 00:00:00 2001
+From c6467b0c9f1c337204de61431ae3ba5b87669e51 Mon Sep 17 00:00:00 2001
 From: Zhitao Li <zhitaoli.cs@gmail.com>
 Date: Thu, 26 Oct 2017 12:03:47 -0700
-Subject: [PATCH] Logged the resources in DRF sorter CHECKs.
+Subject: [PATCH 09/13] Logged the resources in DRF sorter CHECKs.
 
 If calls to these checks fail, log related resources objects which
 caused the failure.
@@ -55,5 +55,5 @@ index 77e52dec7..1a7681c69 100644
        resources[slaveId] -= oldAllocation;
        resources[slaveId] += newAllocation;
 -- 
-2.16.3
+2.17.0
 

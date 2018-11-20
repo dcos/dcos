@@ -1,7 +1,7 @@
-From de9befba297efd70aac4212bbbc427a52ea6600a Mon Sep 17 00:00:00 2001
+From fc6c2727cfc372c7daadfb50dcf54c94c8dbf653 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:37 -0700
-Subject: [PATCH] Made the log output handling of TCP and HTTP checks
+Subject: [PATCH 06/13] Made the log output handling of TCP and HTTP checks
  consistent.
 
 Review: https://reviews.apache.org/r/61766/
@@ -10,10 +10,10 @@ Review: https://reviews.apache.org/r/61766/
  1 file changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index 656e9168a..d62bdb5d1 100644
+index 28353840b..47d864803 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
-@@ -913,32 +913,35 @@ Future<int> CheckerProcess::_httpCheck(
+@@ -928,32 +928,35 @@ Future<int> CheckerProcess::_httpCheck(
  
    int exitCode = status->get();
    if (exitCode != 0) {
@@ -58,7 +58,7 @@ index 656e9168a..d62bdb5d1 100644
    }
  
    return statusCode.get();
-@@ -1067,7 +1070,8 @@ Future<bool> CheckerProcess::_tcpCheck(
+@@ -1082,7 +1085,8 @@ Future<bool> CheckerProcess::_tcpCheck(
  
    const Future<string>& commandOutput = std::get<1>(t);
    if (commandOutput.isReady()) {
@@ -69,5 +69,5 @@ index 656e9168a..d62bdb5d1 100644
  
    if (exitCode != 0) {
 -- 
-2.16.3
+2.17.0
 
