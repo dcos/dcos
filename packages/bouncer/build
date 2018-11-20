@@ -1,9 +1,12 @@
 #!/bin/bash
+
+set -exu
+
 source /opt/mesosphere/environment.export
 export LIB_INSTALL_DIR="$PKG_PATH/lib/python3.6/site-packages"
 mkdir -p "$LIB_INSTALL_DIR"
 
-# All depdencies shared between upstream and downstream Bouncer
+# All dependencies shared between upstream and downstream Bouncer
 # must be set up via the `bouncer-deps` pkgpanda package so that
 # it can be included in the `ee` variant of the `bouncer` pkgpanda
 # package as well.

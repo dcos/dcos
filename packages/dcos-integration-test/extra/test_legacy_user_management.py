@@ -72,7 +72,7 @@ def test_users_get(dcos_api_session):
     assert users
 
     required_keys = ('uid', 'description')
-    for _, userdict in users.items():
+    for userdict in users.values():
         for k in required_keys:
             assert k in userdict
 
@@ -97,11 +97,11 @@ def test_legacy_user_creation_with_empty_json_doc(dcos_api_session):
     # Legacy HTTP clients built for dcos-oauth such as the web UI (up to DC/OS
     # 1.12) might insert users in the following way: uid appears to be an email
     # address, and the JSON document in the request body does not provide a
-    # `public_key` or a `password` property (indicating local host), or is
-    # empty. The web UI expects those users to be remote users, usable with the
-    # legacy OIDC ID Token login method through the 'https://dcos.auth0.com/'
-    # provider. This behavior is maintained in Bouncer for backwards
-    # compatibility.
+    # `public_key` or a `password` property (indicating local user), or is
+    # empty. The legacy web UI would insert users like that and expect those
+    # users to be remote users, usable with the legacy OIDC ID Token login
+    # method through the 'https://dcos.auth0.com/' provider. This behavior is
+    # maintained in Bouncer for backwards compatibility.
     r = dcos_api_session.put('/acs/api/v1/users/user@domain.foo', json={})
     assert r.status_code == 201, r.text
 

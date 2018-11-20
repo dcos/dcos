@@ -65,7 +65,7 @@ def test_service_account_create_login_delete(
     )
     assert r.status_code == 201, r.text
 
-    # Generate short-lived service login token (RS256 JWT sigend with
+    # Generate short-lived service login token (RS256 JWT signed with
     # the service's private key).
     service_login_token = jwt.encode(
         {'uid': serviceuid, 'exp': time.time() + 30},
