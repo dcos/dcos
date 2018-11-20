@@ -2,6 +2,10 @@
 
 ### Notable changes
 
+### Breaking changes
+
+* DCOS_METRICS_-prefixed labels are now configured to be included in metrics (DCOS-43591)
+
 ### Fixed and improved
 
 * dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
@@ -11,6 +15,8 @@
 * dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
 
 * Lots of CRASH messages in dcos-net logs (DCOS-45161)
+
+* Telegraf: Added configurable whitelists for labels to include in metrics (DCOS-43591)
 
 * Make push_ops_timeout configurable through config.yaml (DCOS-45196)
 
@@ -63,8 +69,6 @@ Format of the entries must be.
 
 * Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
 
-* DCOS_METRICS_-prefixed labels are no longer included in metrics metadata by default, but are now configured to be (DCOS-43591)
-
 
 ### Fixed and improved
 
@@ -109,10 +113,6 @@ Format of the entries must be.
 * Upgrade OTP version (DCOS_OSS-3655)
 
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
-
-* Task health check definitions are now included in Mesos master/agent API outputs. [See more](https://issues.apache.org/jira/browse/MESOS-8780) (MESOS-8780)
-
-* Telegraf: Added configurable whitelists for labels to include in metrics metadata (DCOS-43591)
 
 
 ### Security Updates
