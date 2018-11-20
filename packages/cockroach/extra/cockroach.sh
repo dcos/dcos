@@ -16,6 +16,5 @@ exec /opt/mesosphere/active/cockroach/bin/cockroach start \
      --http-host=127.0.0.1 \
      --http-port=8090 \
      --log-dir= \
-     --extra-1.0-compatibility \
      --pid-file=/run/dcos/cockroach/cockroach.pid \
      --join=${nodes}
