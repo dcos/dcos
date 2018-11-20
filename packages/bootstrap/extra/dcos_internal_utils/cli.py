@@ -47,8 +47,8 @@ def dcos_adminrouter(b, opts):
 
     jwks = r.json()
 
-    # For now plan with the first key in the JWKS to correspond to the current
-    # private key used for signing authentiction tokens.
+    # The first key in the JSON Web Key Set corresponds to the current private
+    # key used for signing authentiction tokens.
     key = jwks['keys'][0]
 
     exponent_bytes = base64url_decode(key['e'].encode('ascii'))
@@ -194,20 +194,33 @@ def parse_args():
 
 def _write_file_bytes(path, data, mode):
     """
-    Open temporary file in target directory in 'w+b' mode and with locked-down
-    file permissions. Write data (byte sequence) to temporary file. Once that
-    has succeeded change the file permissions, and then create a hard link to
-    the temporary file. This retains file permissions (hard link points to the
-    same inode), and remains intact after automatic deletion of the temporary
-    file (which happens upon context manager exit). Works on Linux and Windows.
-    If `f.write(data)` fails the context manager cleans up.
+    Atomically write `data` to `path` using the file permissions
+    `stat.S_IMODE(mode)`.
+
+    File consumers can rely on seeing valid file contents once they are able to
+    open the file. This is achieved by performing all relevant operations on a
+    temporary file followed by a `os.replace()` which, if successful, renames to
+    the desired path (and overwrites upon conflict) in an atomic operation (on
+    both, Windows, and Linux).
+
+    If acting on the temporary file fails (be it writing, closing, chmodding,
+    replacing) an attempt is performed to remove the temporary file; and the
+    original exception is re-raised.
     """
     assert isinstance(data, bytes)
-    with tempfile.NamedTemporaryFile(dir=os.path.dirname(path)) as f:
-        f.write(data)
-        os.chmod(f.name, stat.S_IMODE(mode))
+
+    basename = os.path.basename(path)
+    tmpfile_dir = os.path.dirname(os.path.realpath(path))
+
+    fd, tmpfile_path = tempfile.mkstemp(prefix=basename, dir=tmpfile_dir)
+
+    try:
         try:
-            os.remove(path)
-        except OSError:
-            pass
-        os.link(f.name, path)
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.chmod(tmpfile_path, stat.S_IMODE(mode))
+        os.replace(tmpfile_path, path)
+    except Exception:
+        os.remove(tmpfile_path)
+        raise
