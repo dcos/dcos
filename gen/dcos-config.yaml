@@ -109,6 +109,11 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
+        {dcos_dns,
+          [
+            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
+          ]
+        },
         {dcos_net,
           [
             {is_master, true}
