@@ -173,11 +173,14 @@ def main() -> None:
     args = _parse_args()
     log.info('Backup filepath: {}'.format(args.backup_file_path))
 
+    # Add sub-second timestamp resolution to the suffix so that this script can
+    # be run twice within a second.
+    # See https://jira.mesosphere.com/browse/DCOS-42407
     try:
         recover_database(
             my_internal_ip=my_internal_ip,
             backup_file_path=args.backup_file_path,
-            db_suffix=time.strftime('%Y%m%d_%H%M%S'),
+            db_suffix=time.strftime('%Y%m%d_%H%M%S.%f'),
             )
     except subprocess.CalledProcessError:
         log.error("Failed to restore IAM database.")
