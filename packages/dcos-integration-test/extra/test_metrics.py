@@ -36,71 +36,74 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-def test_metrics_agents_prom(dcos_api_session):
-    for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
-        assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-
-
-def test_metrics_masters_prom(dcos_api_session):
-    for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
-        assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-
-
 @retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
-def check_metrics_prom(dcos_api_session, node, check_func):
-    """Get metrics from prometheus port on node and run check_func function,
-    asserting that it returns True.
+def get_metrics_prom(dcos_api_session, node):
+    """Gets metrics from prometheus port on node and returns the response.
 
-    Retries on non-200 status or failed assertions
-    for up to 300 seconds.
+    Retries on non-200 status for up to 300 seconds.
 
     """
     response = dcos_api_session.session.request(
         'GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-    assert check_func(response) is True
+    return response
 
 
-def test_metrics_metadata(dcos_api_session):
-    # install marathon on marathon
-    install_response = dcos_api_session.cosmos.install_package('marathon')
-    data = install_response.json()
-    dcos_api_session.marathon.wait_for_deployments_complete()
+def test_metrics_agents_prom(dcos_api_session):
+    for agent in dcos_api_session.slaves:
+        get_metrics_prom(dcos_api_session, agent)
 
-    wait = True
+
+def test_metrics_masters_prom(dcos_api_session):
+    for master in dcos_api_session.masters:
+        get_metrics_prom(dcos_api_session, master)
+
+
+@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+def get_task_hostname(dcos_api_session, framework_name, task_name):
+    # helper func that gets a framework's task's hostname
     mesos_id = node = ''
-    while wait:
-        master = dcos_api_session.masters[0]
-        state_response = dcos_api_session.get('/state', host=master, port=5050)
-        assert state_response.status_code == 200
-        state = state_response.json()
-        for framework in state['frameworks']:
-            if framework['name'] == 'marathon':
-                for task in framework['tasks']:
-                    if task['name'] == 'marathon-user':
-                        mesos_id = task['slave_id']
-                        wait = False
-                        break
-                break
+    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+    assert state_response.status_code == 200
+    state = state_response.json()
+
+    for framework in state['frameworks']:
+        if framework['name'] == framework_name:
+            for task in framework['tasks']:
+                if task['name'] == task_name:
+                    mesos_id = task['slave_id']
+                    break
+            break
+
+    assert mesos_id is not None
 
     for agent in state['slaves']:
         if agent['id'] == mesos_id:
             node = agent['hostname']
             break
 
-    def check_whitelisted_label(response):
-        # check metric metadata
+    return node
+
+
+def test_metrics_metadata(dcos_api_session):
+    """Test that metrics have expected metadata/labels"""
+    install_response = dcos_api_session.cosmos.install_package('marathon')
+    data = install_response.json()
+    dcos_api_session.marathon.wait_for_deployments_complete()
+
+    node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
+
+    @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+    def check_metrics_metadata():
+        response = get_metrics_prom(dcos_api_session, node)
         for line in response.text.splitlines():
             if '#' in line:
                 continue
-            if 'marathon-user' in line:
-                return ('service_name="marathon"' in line and
-                        'task_name="marathon-user"' in line and
-                        'DCOS_SERVICE_NAME="marathon-user"' in line)
-        return False
-    check_metrics_prom(dcos_api_session, node, check_whitelisted_label)
+            if 'task_name="marathon-user"' in line:
+                assert 'service_name="marathon"' in line
+                # check for whitelisted label
+                assert 'DCOS_SERVICE_NAME="marathon-user"' in line
+    check_metrics_metadata()
 
     # uninstall and cleanup framework
     dcos_api_session.cosmos.uninstall_package('marathon', app_id=data['appId'])
