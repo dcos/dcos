@@ -10,11 +10,11 @@ This is used by CI to run only a certain set of tests on a particular builder.
 See ``test_groups.yaml`` for details.
 """
 
-import yaml
 from pathlib import Path
 from typing import List
 
 import click
+import yaml
 
 
 def patterns_from_group(group_name: str) -> List[str]:
@@ -26,6 +26,7 @@ def patterns_from_group(group_name: str) -> List[str]:
     test_group_file_contents = test_group_file.read_text()
     test_groups = yaml.load(test_group_file_contents)['groups']
     return test_groups[group_name]
+
 
 @click.command('list-integration-test-patterns')
 @click.argument('group_name')
