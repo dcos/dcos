@@ -20,9 +20,24 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     result = subprocess.run(args=args, stdout=subprocess.PIPE)
     output = result.stdout
     for line in output.splitlines():
-        if line and not line.startswith(b'no tests ran in'):
-            # Some tests are deselected by the ``pytest.ini`` configuration.
-            if b' deselected' not in line:
+        if b'error in' in line:
+            message = (
+                'Error collecting tests for pattern "{ci_pattern}". '
+                'Full output:\n'
+                '{output}'
+            ).format(
+                ci_pattern=ci_pattern,
+                output=output,
+            )
+            raise Exception(message)
+        if (
+                line and
+                # Some tests are skipped on collection.
+                b'skipped in' not in line and
+                # Some tests are deselected by the ``pytest.ini`` configuration.
+                b' deselected' not in line and
+                not line.startswith(b'no tests ran in')
+            ):
                 tests.add(line.decode())
 
     return tests
