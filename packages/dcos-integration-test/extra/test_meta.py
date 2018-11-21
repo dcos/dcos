@@ -21,7 +21,9 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     output = result.stdout
     for line in output.splitlines():
         if line and not line.startswith(b'no tests ran in'):
-            tests.add(line.decode())
+            # Some tests are deselected by the ``pytest.ini`` configuration.
+            if b' deselected' not in line:
+                tests.add(line.decode())
 
     return tests
 
