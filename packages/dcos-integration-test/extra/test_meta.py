@@ -19,6 +19,7 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     tests = set([])  # type: Set[str]
     args = [
         'pytest',
+        '--disable-pytest-warnings',
         '--collect-only',
         ci_pattern,
         '-q',
