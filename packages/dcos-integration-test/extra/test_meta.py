@@ -19,12 +19,15 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     args = [
         'pytest',
         '--collect-only',
-        '--disable-pytest-warnings',
         ci_pattern,
         '-q',
     ]
     # Test names will not be in ``stderr`` so we ignore that.
-    result = subprocess.run(args=args, stdout=subprocess.PIPE)
+    result = subprocess.run(
+        args=args,
+        stdout=subprocess.PIPE,
+        env={'PYTHONIOENCODING': 'UTF-8'},
+    )
     output = result.stdout
     for line in output.splitlines():
         if b'error in' in line:
