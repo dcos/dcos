@@ -38,6 +38,18 @@
 #
 # ``test_meta.py`` includes a test which asserts that the groups defined here
 # account for each test.
+#
+# Changing the number of groups
+# =============================
+#
+# The number of groups here must be reflected in TeamCity.
+# That is, there must be a builder which runs each group.
+#
+# If a group is added or renamed and no change is made to TeamCity, tests in
+# that group will not be run on CI.
+#
+# If a group is removed and no change is made to TeamCity, a CI builder will
+# fail.
 groups:
     group_1:
         - test_applications.py
