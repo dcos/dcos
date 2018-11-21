@@ -40,14 +40,7 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
                 output=output,
             )
             raise Exception(message)
-        if (
-            line and
-            # Some tests are skipped on collection.
-            b'skipped in' not in line and
-            # Some tests are deselected by the ``pytest.ini`` configuration.
-            b' deselected' not in line and
-            not line.startswith(b'no tests ran in')
-        ):
+        if ci_pattern.encode() in line:
             tests.add(line.decode())
 
     return tests
