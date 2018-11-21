@@ -34,7 +34,7 @@ def list_integration_test_patterns(group_name: str) -> None:
     Perform a release.
     """
     test_patterns = patterns_from_group(group_name=group_name)
-    click.echo(' '.join(test_patterns))
+    click.echo(' '.join(test_patterns), nl=False)
 
 
 if __name__ == '__main__':
