@@ -22,7 +22,7 @@ def patterns_from_group(group_name: str) -> List[str]:
     Given a group name, return all the pytest patterns defined for that group
     in ``test_groups.yaml``.
     """
-    test_group_file = Path(__file__).parent / 'test_groups.yaml'
+    test_group_file = Path('test_groups.yaml')
     test_group_file_contents = test_group_file.read_text()
     test_groups = yaml.load(test_group_file_contents)['groups']
     return test_groups[group_name]
