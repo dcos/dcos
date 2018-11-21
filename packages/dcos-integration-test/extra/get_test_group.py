@@ -1,7 +1,7 @@
 """
 Usage:
 
-$ python test_group_name.py group_1
+$ python get_test_group.py group_1
 test_foo.py test_bar.py::TestClass
 $
 
