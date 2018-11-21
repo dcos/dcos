@@ -31,14 +31,14 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
             )
             raise Exception(message)
         if (
-                line and
-                # Some tests are skipped on collection.
-                b'skipped in' not in line and
-                # Some tests are deselected by the ``pytest.ini`` configuration.
-                b' deselected' not in line and
-                not line.startswith(b'no tests ran in')
-            ):
-                tests.add(line.decode())
+            line and
+            # Some tests are skipped on collection.
+            b'skipped in' not in line and
+            # Some tests are deselected by the ``pytest.ini`` configuration.
+            b' deselected' not in line and
+            not line.startswith(b'no tests ran in')
+        ):
+            tests.add(line.decode())
 
     return tests
 
