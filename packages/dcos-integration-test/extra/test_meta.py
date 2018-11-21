@@ -3,6 +3,7 @@ Tests for the integration test suite itself.
 """
 
 import subprocess
+from pathlib import Path
 from typing import Set
 
 from get_test_group import patterns_from_group
@@ -29,9 +30,11 @@ def test_test_groups() -> None:
     This test confirms that the groups together contain all tests, and each
     test is collected only once.
     """
-    groups = {'group_1', 'group_2', 'group_3', 'group_4'}
+    test_group_file = Path('test_groups.yaml')
+    test_group_file_contents = test_group_file.read_text()
+    test_groups = yaml.load(test_group_file_contents)['groups']
     test_patterns = []
-    for group in groups:
+    for group in test_groups:
         test_patterns += patterns_from_group(group_name=group)
 
     tests_to_patterns = {}  # type: Dict[str, Set[str]]
