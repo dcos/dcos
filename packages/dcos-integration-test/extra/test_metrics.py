@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import uuid
 
@@ -61,6 +62,30 @@ def get_metrics_prom(dcos_api_session, node):
     return response
 
 
+@contextlib.contextmanager
+def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_version, framework_name):
+    """Deploys dcos package and waits for package teardown once the context is left"""
+    app_id = dcos_api_session.cosmos.install_package(package_name, package_version=package_version).json()['appId']
+    dcos_api_session.marathon.wait_for_deployments_complete()
+
+    try:
+        yield
+    finally:
+        dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
+
+        # Retry for 150 seconds for teardown completion
+        @retrying.retry(wait_fixed=5000, stop_max_delay=150 * 1000)
+        def wait_for_package_teardown():
+            state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+            assert state_response.status_code == 200
+            state = state_response.json()
+
+            for framework in state['frameworks']:
+                if framework['name'] == framework_name:
+                    raise Exception('Framework {} still running'.format(framework_name))
+        wait_for_package_teardown()
+
+
 @retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
 def get_task_hostname(dcos_api_session, framework_name, task_name):
     # helper func that gets a framework's task's hostname
@@ -89,42 +114,23 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
 
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
-    install_response = dcos_api_session.cosmos.install_package('marathon')
-    data = install_response.json()
-    dcos_api_session.marathon.wait_for_deployments_complete()
+    with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
+        node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
-    node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
-
-    @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
-    def check_metrics_metadata():
-        response = get_metrics_prom(dcos_api_session, node)
-        for line in response.text.splitlines():
-            if '#' in line:
-                continue
-            if 'task_name="marathon-user"' in line:
-                assert 'service_name="marathon"' in line
-    check_metrics_metadata()
-
-    # uninstall and cleanup framework
-    dcos_api_session.cosmos.uninstall_package('marathon', app_id=data['appId'])
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_metrics_metadata():
+            response = get_metrics_prom(dcos_api_session, node)
+            for line in response.text.splitlines():
+                if '#' in line:
+                    continue
+                if 'task_name="marathon-user"' in line:
+                    assert 'service_name="marathon"' in line
+        check_metrics_metadata()
 
 
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
-    # get count of all running containers to check against later for complete teardown
-    num_containers = 0
-    for agent_ip in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/containers', node=agent_ip)
-        assert response.status_code == 200
-        num_containers += len(response.json())
-
-    try:
-        # install hello-world framework
-        install_response = dcos_api_session.cosmos.install_package('hello-world', package_version='2.2.0-0.42.2')
-        data = install_response.json()
-
-        dcos_api_session.marathon.wait_for_deployments_complete()
-
+    with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
         @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
@@ -141,21 +147,6 @@ def test_executor_metrics_metadata(dcos_api_session):
                     # hello-world executors can be named "hello" or "world"
                     assert ('executor_name="hello"' in line or 'executor_name="world"' in line)
         check_executor_metrics_metadata()
-    finally:
-        # uninstall and cleanup framework
-        dcos_api_session.cosmos.uninstall_package('hello-world', app_id=data['appId'])
-
-        # Retry for 150 seconds for teardown completion
-        @retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
-        def wait_for_framework_teardown():
-            num_containers_check = 0
-            for agent_ip in dcos_api_session.slaves:
-                response = dcos_api_session.metrics.get('/containers', node=agent_ip)
-                assert response.status_code == 200
-                num_containers_check += len(response.json())
-            assert num_containers_check <= num_containers
-
-        wait_for_framework_teardown()
 
 
 def test_metrics_node(dcos_api_session):
