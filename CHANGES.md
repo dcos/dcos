@@ -47,6 +47,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Admin Router logs to non-blocking socket. (DCOS-43956)
 
+* Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
+
 
 ### Notable changes
 
