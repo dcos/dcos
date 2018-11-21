@@ -2,6 +2,7 @@
 Tests for the integration test suite itself.
 """
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Set
@@ -26,7 +27,7 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     result = subprocess.run(
         args=args,
         stdout=subprocess.PIPE,
-        env={'PYTHONIOENCODING': 'UTF-8'},
+        env={**os.environ, **{'PYTHONIOENCODING': 'UTF-8'}},
     )
     output = result.stdout
     for line in output.splitlines():
