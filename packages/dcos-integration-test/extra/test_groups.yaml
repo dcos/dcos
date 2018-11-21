@@ -33,7 +33,7 @@
 # group.
 #
 # In conflict with this goal is the cost of moving tests around.
-# Any developer moving a test from one group to the other, to decreate the test
+# Any developer moving a test from one group to the other, to decrease the test
 # suite's run length, must consider this trade-off.
 #
 # ``test_meta.py`` includes a test which asserts that the groups defined here
