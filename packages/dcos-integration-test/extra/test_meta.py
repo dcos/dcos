@@ -16,7 +16,14 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     From a CI pattern, get all tests ``pytest`` would collect.
     """
     tests = set([])  # type: Set[str]
-    args = ['pytest', '--collect-only', ci_pattern, '-q']
+    args = [
+        'pytest',
+        '--collect-only',
+        '--disable-pytest-warnings',
+        ci_pattern,
+        '-q',
+    ]
+    # Test names will not be in ``stderr`` so we ignore that.
     result = subprocess.run(args=args, stdout=subprocess.PIPE)
     output = result.stdout
     for line in output.splitlines():
@@ -32,7 +39,6 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
             raise Exception(message)
         if (
             line and
-            b'PytestWarning' not in line and
             # Some tests are skipped on collection.
             b'skipped in' not in line and
             # Some tests are deselected by the ``pytest.ini`` configuration.
