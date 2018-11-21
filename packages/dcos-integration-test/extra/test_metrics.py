@@ -224,6 +224,8 @@ def test_task_metrics_metadata(dcos_api_session):
                     continue
                 if 'task_name="marathon-user"' in line:
                     assert 'service_name="marathon"' in line
+                    # check for whitelisted label
+                    assert 'DCOS_SERVICE_NAME="marathon-user"' in line
         check_metrics_metadata()
 
 
