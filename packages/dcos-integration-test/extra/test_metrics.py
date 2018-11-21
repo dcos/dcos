@@ -48,64 +48,69 @@ def test_metrics_masters_prom(dcos_api_session):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
-def check_metrics_prom(dcos_api_session, node, check_func):
-    """Get metrics from prometheus port on node and run check_func function,
-    asserting that it returns True.
+@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+def get_metrics_prom(dcos_api_session, node):
+    """Gets metrics from prometheus port on node and returns the response.
 
-    Retries on non-200 status or failed assertions
-    for up to 300 seconds.
+    Retries on non-200 status for up to 300 seconds.
 
     """
     response = dcos_api_session.session.request(
         'GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-    assert check_func(response) is True
+    return response
 
 
-def test_task_metrics_metadata(dcos_api_session):
-    # install marathon on marathon
-    install_response = dcos_api_session.cosmos.install_package('marathon')
-    data = install_response.json()
-
-    dcos_api_session.marathon.wait_for_deployments_complete()
-
-    wait = True
+@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+def get_task_hostname(dcos_api_session, framework_name, task_name):
+    # helper func that gets a framework's task's hostname
     mesos_id = node = ''
-    while wait:
-        master = dcos_api_session.masters[0]
-        state_response = dcos_api_session.get('/state', host=master, port=5050)
-        assert state_response.status_code == 200
-        state = state_response.json()
-        for framework in state['frameworks']:
-            if framework['name'] == 'marathon':
-                for task in framework['tasks']:
-                    if task['name'] == 'marathon-user':
-                        mesos_id = task['slave_id']
-                        wait = False
-                        break
-                break
+    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+    assert state_response.status_code == 200
+    state = state_response.json()
+
+    for framework in state['frameworks']:
+        if framework['name'] == framework_name:
+            for task in framework['tasks']:
+                if task['name'] == task_name:
+                    mesos_id = task['slave_id']
+                    break
+            break
+
+    assert mesos_id is not None
 
     for agent in state['slaves']:
         if agent['id'] == mesos_id:
             node = agent['hostname']
             break
 
-    def check_task_metrics(response):
+    return node
+
+
+def test_task_metrics_metadata(dcos_api_session):
+    """Test that task metrics have expected metadata/labels"""
+    install_response = dcos_api_session.cosmos.install_package('marathon')
+    data = install_response.json()
+    dcos_api_session.marathon.wait_for_deployments_complete()
+
+    node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
+
+    @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+    def check_metrics_metadata():
+        response = get_metrics_prom(dcos_api_session, node)
         for line in response.text.splitlines():
             if '#' in line:
                 continue
-            if 'marathon-user' in line:
-                return ('service_name="marathon"' in line and
-                        'task_name="marathon-user"' in line)
-        return False
-    check_metrics_prom(dcos_api_session, node, check_task_metrics)
+            if 'task_name="marathon-user"' in line:
+                assert 'service_name="marathon"' in line
+    check_metrics_metadata()
 
     # uninstall and cleanup framework
     dcos_api_session.cosmos.uninstall_package('marathon', app_id=data['appId'])
 
 
 def test_executor_metrics_metadata(dcos_api_session):
+    """Test that executor metrics have expected metadata/labels"""
     # get count of all running containers to check against later for complete teardown
     num_containers = 0
     for agent_ip in dcos_api_session.slaves:
@@ -120,39 +125,22 @@ def test_executor_metrics_metadata(dcos_api_session):
 
         dcos_api_session.marathon.wait_for_deployments_complete()
 
-        wait = True
-        mesos_id = ''
-        while wait:
-            master = dcos_api_session.masters[0]
-            state_response = dcos_api_session.get('/state', host=master, port=5050)
-            assert state_response.status_code == 200
-            state = state_response.json()
-            for framework in state['frameworks']:
-                if framework['name'] == 'marathon':
-                    for task in framework['tasks']:
-                        if task['name'] == 'hello-world':
-                            mesos_id = task['slave_id']
-                            wait = False
-                            break
-                    break
+        node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
-        for agent in state['slaves']:
-            if agent['id'] == mesos_id:
-                node = agent['hostname']
-
-        def check_executor_metrics(response):
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_executor_metrics_metadata():
+            response = get_metrics_prom(dcos_api_session, node)
             for line in response.text.splitlines():
                 if '#' in line:
                     continue
                 # ignore metrics from hello-world task started by marathon by checking
                 # for absence of 'marathon' string.
                 if 'cpus_nr_periods' in line and 'marathon' not in line:
-                    return ('service_name="hello-world"' in line and
-                            'task_name=""' in line and  # this is an executor, not a task
-                            # hello-world executors can be named "hello" or "world"
-                            ('executor_name="hello"' in line or 'executor_name="world"' in line))
-            return False
-        check_metrics_prom(dcos_api_session, node, check_executor_metrics)
+                    assert 'service_name="hello-world"' in line
+                    assert 'task_name=""' in line  # this is an executor, not a task
+                    # hello-world executors can be named "hello" or "world"
+                    assert ('executor_name="hello"' in line or 'executor_name="world"' in line)
+        check_executor_metrics_metadata()
     finally:
         # uninstall and cleanup framework
         dcos_api_session.cosmos.uninstall_package('hello-world', app_id=data['appId'])
@@ -167,7 +155,7 @@ def test_executor_metrics_metadata(dcos_api_session):
                 num_containers_check += len(response.json())
             assert num_containers_check <= num_containers
 
-    wait_for_framework_teardown()
+        wait_for_framework_teardown()
 
 
 def test_metrics_node(dcos_api_session):
