@@ -5,8 +5,6 @@ Tests for the integration test suite itself.
 import subprocess
 from typing import Set
 
-import yaml
-
 from get_test_group import patterns_from_group
 
 
