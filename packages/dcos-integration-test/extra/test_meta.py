@@ -2,14 +2,19 @@
 Tests for the integration test suite itself.
 """
 
+import logging
 import os
 import subprocess
+from collections import defaultdict
 from pathlib import Path
 from typing import Set
 
 import yaml
 
 from get_test_group import patterns_from_group
+
+
+log = logging.getLogger(__file__)
 
 
 def _tests_from_pattern(ci_pattern: str) -> Set[str]:
@@ -42,6 +47,10 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
                 output=output,
             )
             raise Exception(message)
+        # Whitespace is important to avoid confusing pytest warning messages
+        # with test names. For example, the pytest output may contain '3 tests
+        # deselected' which would conflict with a test file called
+        # test_agent_deselected.py if we ignored whitespace.
         if (
             line and
             # Some tests are skipped on collection.
@@ -68,15 +77,14 @@ def test_test_groups() -> None:
     for group in test_groups:
         test_patterns += patterns_from_group(group_name=group)
 
-    tests_to_patterns = {}  # type: Dict[str, Set[str]]
+    # Turn this into  a list otherwise we can't cannonically state whether every test was collected _exactly_ once :-)
+    tests_to_patterns = defaultdict(list)  # type: Mapping[str, List]
     for pattern in test_patterns:
         tests = _tests_from_pattern(ci_pattern=pattern)
         for test in tests:
-            if test in tests_to_patterns:
-                tests_to_patterns[test].add(pattern)
-            else:
-                tests_to_patterns[test] = set([pattern])
+            tests_to_patterns[test].append(pattern)
 
+    errs = []
     for test_name, patterns in tests_to_patterns.items():
         message = (
             'Test "{test_name}" will be run once for each pattern in '
@@ -86,7 +94,14 @@ def test_test_groups() -> None:
             test_name=test_name,
             patterns=patterns,
         )
-        assert len(patterns) == 1, message
+        if len(patterns) != 1:
+            assert len(patterns) != 1, message
+            errs.append(message)
+
+    if errs:
+        for message in errs:
+            log.error(message)
+        raise Exception("Some tests are not collected exactly once, see errors.")
 
     all_tests = _tests_from_pattern(ci_pattern='')
     assert tests_to_patterns.keys() - all_tests == set()
