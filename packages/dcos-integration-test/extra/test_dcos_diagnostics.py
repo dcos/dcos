@@ -418,24 +418,25 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     expected_common_files = ['dmesg_-T-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
                              'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
                              'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json',
-                             'var/lib/dcos/cluster-id.gz', 'ps_aux_ww-4.output.gz',
+                             'var/lib/dcos/cluster-id.gz', 'ps_aux_ww_Z-4.output.gz',
                              'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz', 'proc/self/mountinfo.gz',
                              'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-5.output.gz',
                              'timedatectl-6.output.gz', 'binsh_-c_cat etc*-release-7.output.gz',
-                             'systemctl_list-units_dcos*-8.output.gz', "iptables-save-9.output.gz"]
+                             'systemctl_list-units_dcos*-8.output.gz', "sestatus-9.output.gz",
+                             "iptables-save-10.output.gz"]
 
     # these files are expected to be in archive for a master host
     expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
                              'var/lib/dcos/mesos/log/mesos-master.log.gz',
                              'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
-                             '| cut -d\'=\' -f2`environ-10.output.gz', '5050-overlay-master_state.json.gz'
+                             '| cut -d\'=\' -f2`environ-11.output.gz', '5050-overlay-master_state.json.gz'
                              ] + expected_common_files
 
     expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json',
                                    'var/log/mesos/mesos-agent.log.gz',
                                    'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
-                                   '| cut -d\'=\' -f2`environ-11.output.gz']
+                                   '| cut -d\'=\' -f2`environ-12.output.gz']
 
     # for agent host
     expected_agent_files = ['dcos-mesos-slave.service.gz'
