@@ -53,6 +53,8 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
         # test_agent_deselected.py if we ignored whitespace.
         if (
             line and
+            # Some tests show warnings on collection.
+            b' warnings' not in line and
             # Some tests are skipped on collection.
             b'skipped in' not in line and
             # Some tests are deselected by the ``pytest.ini`` configuration.
