@@ -2,9 +2,9 @@
 
 import argparse
 import sys
-import time
 import logging
 import subprocess
+from datetime import datetime
 from subprocess import CalledProcessError
 
 from dcos_internal_utils import utils
@@ -180,7 +180,7 @@ def main() -> None:
         recover_database(
             my_internal_ip=my_internal_ip,
             backup_file_path=args.backup_file_path,
-            db_suffix=time.strftime('%Y%m%d_%H%M%S.%f'),
+            db_suffix=datetime.now().strftime('%Y%m%d_%H%M%S_%f'),
             )
     except subprocess.CalledProcessError:
         log.error("Failed to restore IAM database.")
