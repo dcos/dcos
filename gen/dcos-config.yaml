@@ -109,6 +109,11 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
+        {dcos_dns,
+          [
+            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
+          ]
+        },
         {dcos_net,
           [
             {is_master, true}
@@ -1405,6 +1410,8 @@ package:
         # tls_key = "/etc/telegraf/key.pem"
         ## If true while TLS is enabled skip chain & host verification
         # insecure_skip_verify = true
+        [inputs.zookeeper.tags]
+          dcos-component-name = "ZooKeeper"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
