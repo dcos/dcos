@@ -76,4 +76,5 @@ groups:
         - test_sysctl.py
         - test_ucr.py
         - test_units.py
-        - test_users.py
+        - test_iam.py
+        - test_legacy_user_management.py
