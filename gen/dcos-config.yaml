@@ -109,6 +109,11 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
+        {dcos_dns,
+          [
+            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
+          ]
+        },
         {dcos_net,
           [
             {is_master, true}
@@ -964,7 +969,7 @@ package:
                   "Command": ["ifconfig", "-a"]
               },
               {
-                  "Command": ["ps", "aux", "ww"]
+                  "Command": ["ps", "aux", "ww", "Z"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
@@ -979,15 +984,18 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
+                  "Command": ["sestatus"]
+              },
+              {
                   "Command": ["iptables-save"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["master"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["master"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["agent", "agent_public"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent", "agent_public"]
               }
           ]
         }
@@ -1137,6 +1145,23 @@ package:
       MASTER_LB_DNSNAME={{ master_external_loadbalancer }}
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/bouncer-config.json
+    content: |
+      {
+        "SUPERUSER_SERVICE_ACCOUNT_UID": "{{ superuser_service_account_uid }}",
+        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": {{ _superuser_service_account_public_key_json }},
+        "LOG_LEVEL_STDERR": "INFO",
+        "LOG_LEVEL_SQLALCHEMY": "WARNING",
+        "AUTH_COOKIE_SECURE_FLAG": {{ auth_cookie_secure_flag }},
+        "EXPIRATION_AUTH_TOKEN_DAYS": 5,
+        "EXPIRATION_AUTH_COOKIE_DAYS": 5,
+        "EXPIRATION_INFO_COOKIE_DAYS": 5,
+        "GUNICORN_WORKER_PROCESSES": 1,
+        "GUNICORN_THREADS_PER_WORKER": 10,
+        "GUNICORN_BIND_ADDRESS": "127.0.0.1:8101",
+        "GUNICORN_WORKER_TIMEOUT_SECONDS": 30,
+        "ALEMBIC_DIR_PATH": "alembic"
+      }
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
@@ -1405,6 +1430,8 @@ package:
         # tls_key = "/etc/telegraf/key.pem"
         ## If true while TLS is enabled skip chain & host verification
         # insecure_skip_verify = true
+        [inputs.zookeeper.tags]
+          dcos-component-name = "ZooKeeper"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"

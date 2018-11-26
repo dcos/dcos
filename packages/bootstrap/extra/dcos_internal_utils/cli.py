@@ -5,11 +5,18 @@ import json
 import logging
 import os
 import random
+import shutil
+import stat
 import sys
+import tempfile
 
-from dcos_internal_utils import bootstrap
-from dcos_internal_utils import exhibitor
+import cryptography.hazmat.backends
+import requests
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from jwt.utils import base64url_decode, bytes_to_number
 
+from dcos_internal_utils import bootstrap, exhibitor
 from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
@@ -28,6 +35,41 @@ def check_root(fun):
 def dcos_adminrouter(b, opts):
     b.cluster_id('/var/lib/dcos/cluster-id')
 
+    # Require the IAM to already be up and running. The IAM contains logic for
+    # achieving consensus about a key pair, and exposes the public key
+    # information via its JWKS endpoint. Talk directly to the local IAM instance
+    # which is reachable via the local network interface.
+    r = requests.get('http://127.0.0.1:8101/acs/api/v1/auth/jwks')
+
+    if r.status_code != 200:
+        log.info('JWKS retrieval failed. Got %s with body: %s', r, r.text)
+        sys.exit(1)
+
+    jwks = r.json()
+
+    # The first key in the JSON Web Key Set corresponds to the current private
+    # key used for signing authentiction tokens.
+    key = jwks['keys'][0]
+
+    exponent_bytes = base64url_decode(key['e'].encode('ascii'))
+    exponent_int = bytes_to_number(exponent_bytes)
+    modulus_bytes = base64url_decode(key['n'].encode('ascii'))
+    modulus_int = bytes_to_number(modulus_bytes)
+    # Generate a `cryptography` public key object instance from these numbers.
+    public_numbers = rsa.RSAPublicNumbers(n=modulus_int, e=exponent_int)
+    public_key = public_numbers.public_key(
+        backend=cryptography.hazmat.backends.default_backend())
+
+    # Serialize public key into the OpenSSL PEM public key format RFC 5280).
+    pubkey_pem_bytes = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+
+    os.makedirs('/run/dcos/dcos-adminrouter', exist_ok=True)
+    pubkey_path = '/run/dcos/dcos-adminrouter/auth-token-verification-key'
+    _write_file_bytes(pubkey_path, pubkey_pem_bytes, 0o644)
+    shutil.chown(pubkey_path, user='dcos_adminrouter')
+
 
 @check_root
 def dcos_signal(b, opts):
@@ -45,8 +87,9 @@ def dcos_telegraf_agent(b, opts):
 
 
 @check_root
-def dcos_oauth(b, opts):
-    b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
+def dcos_bouncer(b, opts):
+    os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
+    shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
 
 
 def noop(b, opts):
@@ -55,8 +98,8 @@ def noop(b, opts):
 
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
+    'dcos-bouncer': dcos_bouncer,
     'dcos-signal': dcos_signal,
-    'dcos-oauth': dcos_oauth,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
@@ -147,3 +190,37 @@ def parse_args():
         default='/opt/mesosphere/etc/master_count',
         help='File with number of master servers')
     return parser.parse_args()
+
+
+def _write_file_bytes(path, data, mode):
+    """
+    Atomically write `data` to `path` using the file permissions
+    `stat.S_IMODE(mode)`.
+
+    File consumers can rely on seeing valid file contents once they are able to
+    open the file. This is achieved by performing all relevant operations on a
+    temporary file followed by a `os.replace()` which, if successful, renames to
+    the desired path (and overwrites upon conflict) in an atomic operation (on
+    both, Windows, and Linux).
+
+    If acting on the temporary file fails (be it writing, closing, chmodding,
+    replacing) an attempt is performed to remove the temporary file; and the
+    original exception is re-raised.
+    """
+    assert isinstance(data, bytes)
+
+    basename = os.path.basename(path)
+    tmpfile_dir = os.path.dirname(os.path.realpath(path))
+
+    fd, tmpfile_path = tempfile.mkstemp(prefix=basename, dir=tmpfile_dir)
+
+    try:
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.chmod(tmpfile_path, stat.S_IMODE(mode))
+        os.replace(tmpfile_path, path)
+    except Exception:
+        os.remove(tmpfile_path)
+        raise

@@ -11,6 +11,8 @@
 
 ### Fixed and improved
 
+* Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
+
 * Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
 
 * Update Java to 8u192. (DCOS_OSS-4380)
@@ -21,4 +23,4 @@
 
 ### Notable changes
 
-* Bumped UI version to [2.36.5](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.36.5)
+* Updated DC/OS UI to master+v2.37.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.37.0)

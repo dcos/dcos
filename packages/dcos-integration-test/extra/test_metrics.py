@@ -73,7 +73,7 @@ def test_metrics_masters_mesos(dcos_api_session):
 def test_metrics_masters_zookeeper(dcos_api_session):
     """Assert that ZooKeeper metrics on masters are present."""
     for master in dcos_api_session.masters:
-        get_metrics_prom(dcos_api_session, master, ['zookeeper_'])
+        get_metrics_prom(dcos_api_session, master, ['ZooKeeper', 'zookeeper_avg_latency'])
 
 
 def test_metrics_agents_statsd(dcos_api_session):
