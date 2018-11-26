@@ -1,8 +1,8 @@
-From 6c083a82e4dc2388790800282c8e66caf18d4c7b Mon Sep 17 00:00:00 2001
+From 9c147b86d5b1fa547aae05c6f23dc97219f41d2a Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
-Subject: [PATCH] Revert "Fixed the broken metrics information of master in
- WebUI."
+Subject: [PATCH 03/22] Revert "Fixed the broken metrics information of master
+ in WebUI."
 
 This reverts commit b2fc58883e2cd0ca144fd1b0e10cad4235a50223.
 

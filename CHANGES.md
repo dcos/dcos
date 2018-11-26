@@ -21,8 +21,14 @@
 * [MARATHON-7941](https://jira.mesosphere.com/browse/MARATHON-7941) Default for unreachable strategy on PUT /apps.
 * [MARATHON-8323](https://jira.mesosphere.com/browse/MARATHON-8323) Increase http proxy max-open-connections default.
 
+* dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
+
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
 
 ### Security Updates
+
+* Update Java to 8u192. (DCOS_OSS-4382)
 
 
 ## DC/OS 1.11.6

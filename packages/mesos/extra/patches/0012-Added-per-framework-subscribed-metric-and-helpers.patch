@@ -1,7 +1,7 @@
-From 0b6d72b563bc536b623ac45177f12eb27e6279c8 Mon Sep 17 00:00:00 2001
+From a069435be5c5f4b05cb26581ead4dbde5e263308 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Wed, 1 Aug 2018 07:58:06 -0700
-Subject: [PATCH] Added per-framework 'subscribed' metric and helpers.
+Subject: [PATCH 12/22] Added per-framework 'subscribed' metric and helpers.
 
 Review: https://reviews.apache.org/r/66820/
 ---
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/66820/
  4 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index cc4674ced..e31fd5532 100644
+index 2e676155f..c22ca3405 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -452,6 +452,13 @@ void Framework::untrackUnderRole(const string& role)
@@ -56,7 +56,7 @@ index cc4674ced..e31fd5532 100644
  
    // Tell the allocator to stop allocating resources to this framework.
    allocator->deactivateFramework(framework->id());
-@@ -9418,7 +9425,7 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -9422,7 +9429,7 @@ Try<Nothing> Master::activateRecoveredFramework(
    }
  
    // Activate the framework.
@@ -65,7 +65,7 @@ index cc4674ced..e31fd5532 100644
    allocator->activateFramework(framework->id());
  
    // Export framework metrics if a principal is specified in `FrameworkInfo`.
-@@ -9568,7 +9575,7 @@ void Master::_failoverFramework(Framework* framework)
+@@ -9572,7 +9579,7 @@ void Master::_failoverFramework(Framework* framework)
    // NOTE: We do this after recovering resources (above) so that
    // the allocator has the correct view of the framework's share.
    if (!framework->active()) {
