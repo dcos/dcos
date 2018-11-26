@@ -13,6 +13,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
+* CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
+
+* ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
+
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
 
 
