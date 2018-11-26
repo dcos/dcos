@@ -25,6 +25,8 @@
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
+* Docker container unable to curl its own VIP (DCOS-45115)
+
 
 ### Security Updates
 
