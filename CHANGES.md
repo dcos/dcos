@@ -22,6 +22,8 @@
 
 * Metrics now include executor container information. (DCOS_OSS-4181)
 
+* Docker container unable to curl its own VIP (DCOS-45115)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
