@@ -3,7 +3,9 @@
     "dcos-image",
     "python",
     "python-kazoo",
-    "python-requests"
+    "python-requests",
+    "python-cryptography",
+    "python-jwt"
   ],
   "state_directory": true
 }
