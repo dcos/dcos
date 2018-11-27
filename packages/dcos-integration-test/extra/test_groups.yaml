@@ -76,4 +76,3 @@ groups:
         - test_sysctl.py
         - test_ucr.py
         - test_units.py
-        - test_users.py
