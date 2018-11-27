@@ -1,9 +1,7 @@
 {
-    "docker": "node:8.9.4",
-    "single_source": {
-        "kind": "git",
-        "git": "https://github.com/dcos/dcos-ui.git",
-        "ref": "e4ea7943d1af894c68da5f54d74d82be20145554",
-        "ref_origin": "1.11+v1.24.0"
-    }
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://downloads.mesosphere.io/dcos-ui/1.11%2Bdcos-ui-v1.26.0.tar.gz",
+    "sha1": "83e94eda8bd4415318649ca7dec303aeb2d042c6"
+  }
 }
