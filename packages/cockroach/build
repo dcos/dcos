@@ -1,0 +1,57 @@
+ #!/bin/bash
+
+set -e
+
+# cockroachdb requires gcc 4.9+
+apt-get -y update
+apt-get install -y gcc-4.9 g++-4.9 cpp-4.9
+
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 40
+update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-4.9 40
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 40
+
+GOLANG_VERSION=1.9.4
+GOLANG_DOWNLOAD_URL=https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
+GOLANG_DOWNLOAD_SHA256=15b0937615809f87321a457bb1265f946f9f6e736c563d6c5e0bd2c22e44f779
+
+rm -rf /usr/local/go
+curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz
+echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c -
+tar -C /usr/local -xzf golang.tar.gz
+rm golang.tar.gz
+
+mkdir -p /gopath/src/github.com/cockroachdb
+mv /pkg/src/cockroach /gopath/src/github.com/cockroachdb/
+
+cd /gopath/src/github.com/cockroachdb/cockroach
+
+# Build the cockroach binary.
+make build TYPE=portable
+
+# Copy the cockroach binary to the the package bin directory.
+mkdir -p $PKG_PATH/bin
+install -m 755 /gopath/src/github.com/cockroachdb/cockroach/cockroach $PKG_PATH/bin
+
+# Copy the registration script to the package bin directory.
+install -m 755 /pkg/extra/register.py $PKG_PATH/bin/register.py
+
+# Copy the launch script to the package bin directory.
+install -m 755 /pkg/extra/cockroach.sh $PKG_PATH/bin/cockroach.sh
+
+# Copy the CockroachDB config updater program to the package bin directory.
+install -m 755 /pkg/extra/cockroachdb-change-config.py $PKG_PATH/bin/cockroachdb-change-config.py
+
+# Copy the IAM database backup/restore scripts to the package bin directory.
+install -m 755 /pkg/extra/iam-database-backup $PKG_PATH/bin/iam-database-backup
+install -m 755 /pkg/extra/iam-database-restore $PKG_PATH/bin/iam-database-restore
+
+# Auto-start the dcos-cockroach service on the masters.
+mkdir -p "$PKG_PATH/dcos.target.wants_master"
+cp /pkg/extra/dcos-cockroach.service "$PKG_PATH/dcos.target.wants_master/dcos-cockroach.service"
+
+# Auto-start the service for setting the CockroachDB config.
+# (Important parts of the CockroachDB config cannot be set in the moment
+# when starting a CockroachDB node, but must be set through TCP via
+# CockroachDB's configuration update utility after running a node.)
+cp /pkg/extra/dcos-cockroachdb-config-change.service "$PKG_PATH/dcos.target.wants_master/dcos-cockroachdb-config-change.service"
+cp /pkg/extra/dcos-cockroachdb-config-change.timer "$PKG_PATH/dcos.target.wants_master/dcos-cockroachdb-config-change.timer"

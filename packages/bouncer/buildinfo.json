@@ -1,0 +1,13 @@
+{
+  "requires": ["bouncer-deps"],
+  "sources": {
+    "bouncer": {
+      "kind": "git",
+      "git": "git@github.com:dcos/bouncer.git",
+      "ref": "98989df58a2df0867e6c9414e80375d5ea2f4e43",
+      "ref_origin": "master"
+    }
+  },
+  "username": "dcos_bouncer",
+  "state_directory": true
+}

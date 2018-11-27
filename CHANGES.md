@@ -11,6 +11,8 @@
 
 ### Fixed and improved
 
+* Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
+
 * Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
 
 * Update Java to 8u192. (DCOS_OSS-4380)
