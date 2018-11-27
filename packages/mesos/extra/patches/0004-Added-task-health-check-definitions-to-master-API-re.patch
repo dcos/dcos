@@ -1,0 +1,105 @@
+From 30bd18967971f9a4fb87ed5ab2b6dec6cc6f6e79 Mon Sep 17 00:00:00 2001
+From: Greg Mann <gregorywmann@gmail.com>
+Date: Mon, 29 Oct 2018 11:25:58 -0700
+Subject: [PATCH 4/4] Added task health check definitions to master API
+ responses.
+
+The `Task` protobuf message is updated to include the health check
+definition of a task when it is specified, along with associated
+helper functions.
+
+(cherry-picked from commit d8466a8a0a7d84d997f4c20b5631fadee7110b94)
+
+Review: https://reviews.apache.org/r/69110/
+---
+ include/mesos/mesos.proto     | 8 ++++++--
+ include/mesos/v1/mesos.proto  | 8 ++++++--
+ src/common/http.cpp           | 4 ++++
+ src/common/protobuf_utils.cpp | 4 ++++
+ 4 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/include/mesos/mesos.proto b/include/mesos/mesos.proto
+index 5a985fca3..81029b885 100644
+--- a/include/mesos/mesos.proto
++++ b/include/mesos/mesos.proto
+@@ -2165,8 +2165,8 @@ message TaskGroupInfo {
+  *   1) we need additional IDs, such as a specific
+  *      framework, executor, or agent; or
+  *   2) we do not need the additional data, such as the command run by the
+- *      task or the health checks.  These additional fields may be large and
+- *      unnecessary for some Mesos messages.
++ *      task. These additional fields may be large and unnecessary for some
++ *      Mesos messages.
+  *
+  * `Task` is generally constructed from a `TaskInfo`.  See protobuf::createTask.
+  */
+@@ -2197,6 +2197,10 @@ message Task {
+   // Container information for the task.
+   optional ContainerInfo container = 13;
+ 
++  optional HealthCheck health_check = 15;
++
++  // TODO(greggomann): Add the task's `CheckInfo`. See MESOS-8780.
++
+   // Specific user under which task is running.
+   optional string user = 14;
+ }
+diff --git a/include/mesos/v1/mesos.proto b/include/mesos/v1/mesos.proto
+index a5ebb786a..637552611 100644
+--- a/include/mesos/v1/mesos.proto
++++ b/include/mesos/v1/mesos.proto
+@@ -2158,8 +2158,8 @@ message TaskGroupInfo {
+  *   1) we need additional IDs, such as a specific
+  *      framework, executor, or agent; or
+  *   2) we do not need the additional data, such as the command run by the
+- *      task or the health checks.  These additional fields may be large and
+- *      unnecessary for some Mesos messages.
++ *      task. These additional fields may be large and unnecessary for some
++ *      Mesos messages.
+  *
+  * `Task` is generally constructed from a `TaskInfo`.  See protobuf::createTask.
+  */
+@@ -2190,6 +2190,10 @@ message Task {
+   // Container information for the task.
+   optional ContainerInfo container = 13;
+ 
++  optional HealthCheck health_check = 15;
++
++  // TODO(greggomann): Add the task's `CheckInfo`. See MESOS-8780.
++
+   // Specific user under which task is running.
+   optional string user = 14;
+ }
+diff --git a/src/common/http.cpp b/src/common/http.cpp
+index 932111dde..81102d845 100644
+--- a/src/common/http.cpp
++++ b/src/common/http.cpp
+@@ -733,6 +733,10 @@ void json(JSON::ObjectWriter* writer, const Task& task)
+   if (task.has_container()) {
+     writer->field("container", JSON::Protobuf(task.container()));
+   }
++
++  if (task.has_health_check()) {
++    writer->field("health_check", JSON::Protobuf(task.health_check()));
++  }
+ }
+ 
+ 
+diff --git a/src/common/protobuf_utils.cpp b/src/common/protobuf_utils.cpp
+index 77139d8a3..2ae37ac61 100644
+--- a/src/common/protobuf_utils.cpp
++++ b/src/common/protobuf_utils.cpp
+@@ -341,6 +341,10 @@ Task createTask(
+     t.mutable_container()->CopyFrom(task.container());
+   }
+ 
++  if (task.has_health_check()) {
++    t.mutable_health_check()->CopyFrom(task.health_check());
++  }
++
+   // Copy `user` if set.
+   if (task.has_command() && task.command().has_user()) {
+     t.set_user(task.command().user());
+-- 
+2.17.0
+
