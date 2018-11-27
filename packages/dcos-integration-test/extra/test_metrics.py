@@ -112,6 +112,9 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
+@pytest.mark.skipif(
+    test_helpers.expanded_config.get('security') == 'strict',
+    reason="MoM disabled for strict mode")
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
@@ -128,6 +131,9 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
+@pytest.mark.skipif(
+    test_helpers.expanded_config.get('security') == 'strict',
+    reason="Framework disabled for strict mode")
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
