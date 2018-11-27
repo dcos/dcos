@@ -108,6 +108,8 @@ Format of the entries must be.
 
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
 
+* Task health check definitions are now included in Mesos master/agent API outputs. [See more](https://issues.apache.org/jira/browse/MESOS-8780) (MESOS-8780)
+
 ### Security Updates
 
 
