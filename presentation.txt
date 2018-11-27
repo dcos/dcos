@@ -1,0 +1,200 @@
+Before we started
+=================
+
+What is the total CI runtime in the good case?
+----------------------------------------------
+
+Master: 4 hours.
+1.12: 4 hours.
+1.11: 1h40
+1.10: 1h40
+
+What is our goal?
+------------------
+
+- <= 1h total run time
+- Do not continue on the path of increasing the test run time
+- Be considerate of decreasing test coverage
+
+What are all the jobs which go longer than our goal?
+----------------------------------------------------
+
+All relevant jobs are triggered by the successful build of DC/OS.
+On OSS this takes ~5m, on EE this takes up to 15 minutes.
+This gives us 55 minutes for OSS jobs and 45 minutes for DC/OS EE jobs.
+
+- OSS
+    * AWS Integration tests w Static backend = 1h20
+    * AWS Onprem w/ ZK Backend: 1h35
+    * Docker integration tests: 1h
+
+- EE
+    * EE master AWS strict 3h45
+    * E2E tests 3h
+
+
+Brainstorming
+=============
+
+Ideas we dismissed
+------------------
+
+(see google doc from meeting https://docs.google.com/document/d/1YCmwUGwZqdiI0fNJm2CMwR1V3jDfSZqSibrJ1u-psLU/edit#heading=h.h6nwg8odisfo)
+
+* Disable some non-flaky tests (identify low-value, slow tests and disable them)
+    - No - don’t know what to do, which tests add what value is unclear
+
+* Change test suite to cover as much with fewer tests (or tests in other repos)
+    - No, determining what to do is very hard
+
+* Run integration tests in parallel on the same cluster
+
+    - Too many tests are not suited to this
+    - Categorising "these tests are suited to this" is hard
+
+Ideas we are not doing now but we might like to do
+--------------------------------------------------
+
+* Speed up launching cluster?
+
+    - Docker ~ 7 minutes
+    - AWS ~ 25 minutes
+    - Has benefit of helping all teams in other projects, and our users
+    - We don't want to work on optimising DC/OS Launch which is being deprecated
+
+
+What we decided to do
+----------------------
+
+* Investigate why slow tests are so slow, and maybe make them faster
+
+* Parallelised Integration tests
+
+We run N clusters, each with 1/N of the integration test suite (by time).
+
+Making tests faster
+-------------------
+
+Look at the worst offenders
+Slow tests muchly clustered by file
+
+- Two longest test files were `test_mesos_v1_scheduler_api_authorization.py` (50 minutes) and `test_registry_cli.py` (20 minutes)
+- After that, there is big drop (e.g. 5 minutes for a test file)
+
+Enterprise: TestMesos:
+    - Gustav knew about a Mesos API which lets us drop `test_mesos_v1_scheduler_api_authorization` time by ~45 minutes
+
+Enterprise: Test Registry CLI:
+    - Jon suggested that these could be reduced by downloading files just once to save > 10 minutes
+
+OSS: No individual test (with parameter) takes very long, compared to the EE tests
+
+We have shipped the Mesos changes.
+This meant that we improved the integration tests on AWS from 3h40 to 2h50
+This meant that the longest builder is now the E2E test suite
+
+Parallelising Integration Tests
+-------------------------------
+
+Our limit was an hour total = 45 mins for integration tests.
+We wanted to give some leeway, e.g. if tests grow.
+Therefore, we want each test group to be 30 minutes.
+However, we want the same system for Docker and AWS, and Docker has a much faster cluster start up time.
+
+To keep in mind:
+    - Statistics collection: “integration test part 1: test_vip” is the same as “integration test part 2: test_vip” but TC statistics collection does not work
+
+
+We had a POC which splits the test suite up into quarters (by # tests).
+However:
+    * Doesn't account for long tests being grouped together (= wildly different test group runs)
+    * Ruins stats collection with TeamCity as tests move about
+
+Considered:
+    * Build tooling to use e.g. pytest-xdist and collect reports together of tests run on multiple nodes
+    * Seemed really hard and not worth it for TC stats and simpler reports
+
+
+Decided: Split into 4 groups we specify, see how it goes
+Downside: Confusing on GitHub, 4 reports for 1 test suite
+Downside: Cost - spinning up 4 clusters = wasted 20 mins of AWS
+Downside - I want to look at logs for a particular test - I have to hunt down which build that is in
+Upside: Explicit, fast, simple, test stats stay sane until someone makes a choice to change groups
+
+What the code changes really were
+---------------------------------
+
+A YAML file which specifies test groups mapped to tests
+A "meta" test which checks "are all tests collected exactly once".
+Group the tests into roughly even (in terms of time) groups.
+
+Create 4 TC jobs (x DC/OS Variant x platform [AWS/Docker]), which each run a script which collects groups from that YAML file and runs only the relevant tests
+
+What does it look like now?
+---------------------------
+
+Longest group takes...
+
+* AWS OSS
+* AWS EE
+* Docker OSS
+* Docker EE
+
+Therefore, for the integration tests, we have achieved our goal of <1h.
+We also think it is very easy to modify and add groups, so we hope to not have the problem of test-time-creep
+
+What is left?
+-------------
+
+* Test Registry - a 20 minute test that can be changed to n minutes
+    - Didn't want to change number of groups in 1 week, so we have groups which are a bit too big now
+* E2E tests
+    - Parallelise
+    - Don’t run on every PR?
+    - Run nightly?
+* Stop this growing
+    - We added a framework to stop e2e / integration tests growing
+    - However... other tests can get out of hand - dashboards etc?
+* Takes 5 minutes to add a new group
+* Look at whether we can speed up cluster creation
+    - Try the terraform project, we have one anecdote that it might make it faster to start a cluster ("from my experience so far, on average i'd say between 7 and 15...")
+      If it is faster, switch the CI to use Terraform instead of DC/OS Launch
+
+Parallelising E2E tests
+-----------------------
+
+* Every test spins up its own cluster(s).
+* Longest tests are 25 minutes
+* This means we can do the same task as above
+
+Why our estimates were wildly off
+---------------------------------
+
+So far it has been 8 (EU) working days (x2 people) since we initally met about this
+We initially estimated this would take approximately 2-3 days.
+
+minidcos sync work
+~~~~~~~~~~~~~~~~~~
+
+We wanted test_meta to be a test which exists in the OSS dir but is relevant and different (different test groups) for each of OSS and EE.
+To iterate quickly, we reached for ``minidcos``.
+However, the ``minidcos`` flow for syncing OSS tests to EE clusters was non-existent.
+We added this feature which makes iterating really fast.
+
+You can now do:
+
+```
+XXX
+```
+
+We did not work on this every day - other stuff came up, Gustav travelling etc.
+
+We decided to block parallelising tests on "make tests faster" because the latter massively influenced the grouping.
+The "make tests faster" work was investigation-based, so we didn't have a good grasp on how that would take.
+
+* Initial estimate of 1 day was before we decided to not let tests randomly move from one job to another
+* Really slow iteration time on TC and AWS in particular = a lot of waiting
+* Weird differences between AWS + Docker jobs and how various jobs are set up
+* Docker iteration on Adam's mac and sync is so slooow - we went so much faster when switching to Gustav's laptop
+* hours spent moaning about colleagues
+* Missing features of DC/OS Launch we expected to be there e.g. "run a command"!
