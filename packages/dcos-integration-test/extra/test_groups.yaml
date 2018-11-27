@@ -54,7 +54,6 @@ groups:
     group_1:
         - test_applications.py
         - test_auth.py
-        - test_checks.py
         - test_composition.py
         - test_dcos_diagnostics.py
     group_2:
@@ -65,7 +64,6 @@ groups:
         - test_meta.py
         - test_metrics.py
     group_3:
-        - test_metronome.py
         - test_misc.py
         - test_networking.py
         - test_packaging.py
@@ -76,4 +74,3 @@ groups:
         - test_sysctl.py
         - test_ucr.py
         - test_units.py
-        - test_users.py
