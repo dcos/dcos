@@ -1,0 +1,47 @@
+From 3a4a769488a8e6c01dffcc1dc897266f7b204950 Mon Sep 17 00:00:00 2001
+From: Gilbert Song <songzihao1990@gmail.com>
+Date: Fri, 23 Nov 2018 10:54:58 +0800
+Subject: [PATCH] Changed sandbox mode to 0755 in docker containerizer
+ container launch.
+
+Starting from Mesos 1.6.0, sandbox permission was changed from 0755
+to 0750 to narrow access from non-task users. This is a semantic
+change for docker containerizer launched container which honors a
+default user from the docker image. See MESOS-8332 and DCOS_OSS-4415
+for details.
+
+This commit is used to patch DC/OS and allows DC/OS users to have a
+deprecation cycle for this semantic change. This commit should be
+removed in DC/OS 1.15.
+
+(cherry picked from commit d2ee1b4542232042dd6fa532484f2082f96c0163)
+---
+ src/slave/containerizer/docker.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/slave/containerizer/docker.cpp b/src/slave/containerizer/docker.cpp
+index 192dc29..7c3575a 100644
+--- a/src/slave/containerizer/docker.cpp
++++ b/src/slave/containerizer/docker.cpp
+@@ -1176,6 +1176,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
+     return Containerizer::LaunchResult::NOT_SUPPORTED;
+   }
+ 
++  // TODO(gilbert): This is a patch for DC/OS, in order to work
++  // around the sandbox permission change in Mesos 1.6.0, which
++  // is not backward compatible in DC/OS. Please see MESOS-8332
++  // and DCOS_OSS-4415 for details. Remove this workaround after
++  // a deprecation cycle in DC/OS 1.15.
++  Try<Nothing> chmod = os::chmod(containerConfig.directory(), 0755);
++  if (chmod.isError()) {
++    return Failure(
++        "Failed to chmod directory '" + containerConfig.directory() +
++        "': " + chmod.error());
++  }
++
+   Try<Container*> container = Container::create(
+       containerId,
+       containerConfig,
+-- 
+2.5.1
+
