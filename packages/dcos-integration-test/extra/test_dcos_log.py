@@ -3,7 +3,6 @@ import logging
 import re
 import uuid
 
-import common
 import pytest
 import requests
 import retrying
