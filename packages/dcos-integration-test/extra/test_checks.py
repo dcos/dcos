@@ -2,11 +2,13 @@ import logging
 import random
 import uuid
 
+import common
 
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
+@common.xfailflake(reason="DCOS-45278 - test_checks_cli _wait_for_run_completion")
 def test_checks_cli(dcos_api_session):
     base_cmd = [
         '/opt/mesosphere/bin/dcos-shell',
