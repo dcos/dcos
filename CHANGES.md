@@ -4,6 +4,13 @@
 
 ### Fixed and improved
 
+* [MARATHON-8413](https://jira.mesosphere.com/browse/MARATHON-8413) Fix for broken versioning of Apps and Pods (based on Timestamps).
+* [MARATHON-8461](https://jira.mesosphere.com/browse/MARATHON-8461) Write out correct version in ZkId (based on Timestamps).
+* [MARATHON-8452](https://jira.mesosphere.com/browse/MARATHON-8452) Only log zero-value offers if they have a scalar value set.
+* [MARATHON-8453](https://jira.mesosphere.com/browse/MARATHON-8453) `TaskOverdueActor` now respects `--kill_retry_timeout` parameter.
+* [MARATHON-8493](https://jira.mesosphere.com/browse/MARATHON-8493) Fixed a precision bug when sum-ing doubles which affected Pods.
+* [MARATHON-8498](https://jira.mesosphere.com/browse/MARATHON-8498) Fix for a secrets validator error when we change env without changing secrets.
+
 * dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
