@@ -3,9 +3,9 @@
   "sources": {
     "bouncer": {
       "kind": "git",
-      "git": "git@github.com:dcos/bouncer.git",
-      "ref": "98989df58a2df0867e6c9414e80375d5ea2f4e43",
-      "ref_origin": "master"
+      "git": "git@github.com:timaa2k/bouncer.git",
+      "ref": "24034b0375f90b6355242b44bc737cb4fcbc3e61",
+      "ref_origin": "tweidner/send-statsd-metrics-to-dcos-telegraf"
     }
   },
   "username": "dcos_bouncer",

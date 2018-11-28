@@ -1386,6 +1386,11 @@ package:
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
         percentile_limit = 1000
+        ## Transform Bouncer metrics to generate tag.
+        ## https://github.com/influxdata/telegraf/tree/master/plugins/inputs/statsd
+        templates = [
+          "Bouncer.gunicorn.* dcos-component-name.measurement"
+        ]
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
