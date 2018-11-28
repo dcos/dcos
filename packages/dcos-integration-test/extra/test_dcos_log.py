@@ -3,14 +3,17 @@ import logging
 import re
 import uuid
 
+import common
 import pytest
 import requests
 import retrying
 
-NEW_ENTRY_PATTERN = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
+
+
+NEW_ENTRY_PATTERN = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 
 log = logging.getLogger(__name__)
 
