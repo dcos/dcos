@@ -4,7 +4,7 @@
     "bouncer": {
       "kind": "git",
       "git": "git@github.com:timaa2k/bouncer.git",
-      "ref": "24034b0375f90b6355242b44bc737cb4fcbc3e61",
+      "ref": "ca68ace2942284fb0b15aa82f8822801d02c2c1e",
       "ref_origin": "tweidner/send-statsd-metrics-to-dcos-telegraf"
     }
   },
