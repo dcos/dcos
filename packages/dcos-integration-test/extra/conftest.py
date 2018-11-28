@@ -69,8 +69,16 @@ def pytest_collection_modifyitems(session, config, items):
 @pytest.fixture(autouse=True)
 def clean_marathon_state(dcos_api_session):
     dcos_api_session.marathon.purge()
+    dcos_api_session.marathon.delete(
+        '/v2/groups/',
+        params={'force': True},
+    )
     yield
     dcos_api_session.marathon.purge()
+    dcos_api_session.marathon.delete(
+        '/v2/groups/',
+        params={'force': True},
+    )
 
 
 @pytest.fixture(scope='session')
