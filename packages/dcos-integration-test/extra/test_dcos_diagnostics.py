@@ -6,7 +6,6 @@ import os
 import tempfile
 import zipfile
 
-import common
 import pytest
 import retrying
 
