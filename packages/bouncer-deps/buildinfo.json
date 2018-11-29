@@ -58,8 +58,8 @@
     },
     "pyasn1": {
       "kind": "url_extract",
-      "url": "https://github.com/etingof/pyasn1/archive/v0.3.7.tar.gz",
-      "sha1": "b9aae5b8b37273697ad848d2fdec22233f82b185"
+      "url": "https://files.pythonhosted.org/packages/10/46/059775dc8e50f722d205452bced4b3cc965d27e8c3389156acd3b1123ae3/pyasn1-0.4.4.tar.gz",
+      "sha1": "10f67e61e30c064301c826c6e5e461ff7bf5827d"
     },
     "alembic": {
       "kind": "url_extract",
