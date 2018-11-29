@@ -23,8 +23,8 @@
     },
     "falcon": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/55/3e/9089bad845e1b7cae0707275c36a01353de822710c010f09b8fe07529112/falcon-1.3.0.tar.gz",
-      "sha1": "d3c2b2ac1c535d77e00a5a3c95088c3897f7970c"
+      "url": "https://files.pythonhosted.org/packages/2f/e6/5045da9df509b9259037f065d15608930fd6c997ee930ad230f9fbfecf15/falcon-1.4.1.tar.gz",
+      "sha1": "c29979a1fcb1b3149f1e54cc587d9582a61c947d"
     },
     "python-mimeparse": {
       "kind": "url_extract",
