@@ -4,9 +4,13 @@ except ImportError:
     pass
 import logging
 import os
+import subprocess
 import sys
 
+import gen
+
 from pkgpanda.util import is_windows
+
 
 if not is_windows:
     assert 'fcntl' in sys.modules
@@ -17,6 +21,13 @@ log = logging.getLogger(__name__)
 def read_file_line(filename):
     with open(filename, 'r') as f:
         return f.read().strip()
+
+
+def detect_ip():
+    cmd = ['/opt/mesosphere/bin/detect_ip']
+    machine_ip = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode('ascii').strip()
+    gen.calc.validate_ipv4_addresses([machine_ip])
+    return machine_ip
 
 
 class Directory:

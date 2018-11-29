@@ -6,9 +6,10 @@ import os
 import tempfile
 import zipfile
 
+import common
 import pytest
-
 import retrying
+
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -330,6 +331,8 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
+@common.xfailflake(reason="DCOS-44935 - test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is "
+                          "Flaky")
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
