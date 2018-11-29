@@ -8,13 +8,13 @@
     },
     "asn1crypto": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/5e/85/d9b46c307ff2b5504432425cd99e2d9f13ab7a9835ba45c93da299cb1ec8/asn1crypto-0.23.0-py2.py3-none-any.whl",
-      "sha1": "664233097c6bee3d9ae1802a411ba4f629116406"
+      "url": "https://files.pythonhosted.org/packages/ea/cd/35485615f45f30a510576f1a56d1e0a7ad7bd8ab5ed7cdc600ef7cd06222/asn1crypto-0.24.0-py2.py3-none-any.whl",
+      "sha1": "fff0f73e555ae1b230a95beae1604ce3fbc22646"
     },
     "cffi": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz",
-      "sha1": "16265a4b305d433fb9089b19278502e904b0cb43"
+      "url": "https://files.pythonhosted.org/packages/e7/a7/4cd50e57cc6f436f1cc3a7e8fa700ff9b8b4d471620629074913e3735fb2/cffi-1.11.5.tar.gz",
+      "sha1": "1686e6689a691414d3d22626c837adeee3996dd9"
     }
   }
 }
