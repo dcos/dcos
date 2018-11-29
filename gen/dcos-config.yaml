@@ -109,6 +109,11 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
+        {dcos_dns,
+          [
+            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
+          ]
+        },
         {dcos_net,
           [
             {is_master, true}
@@ -265,7 +270,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                        "value" : "{{ mesos_master_log_file }}"
                       }
                     ]
                 }
@@ -288,7 +293,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/log/mesos/mesos-agent.log"
+                        "value" : "{{ mesos_agent_log_file }}"
                       }
                     ]
                 }
@@ -467,13 +472,13 @@ package:
       notifempty
       missingok
       nomail
-      /var/lib/dcos/mesos/log/mesos-master.log {
+      {{ mesos_master_log_file }} {
           olddir /var/lib/dcos/mesos/log/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} {{ mesos_master_log_file }}
           endscript
       }
   - path: /etc/logrotate_agent.config
@@ -483,20 +488,20 @@ package:
       notifempty
       missingok
       nomail
-      /var/log/mesos/mesos-agent.log {
+      {{ mesos_agent_log_file }} {
           olddir /var/log/mesos/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} {{ mesos_agent_log_file }}
           endscript
       }
   - path: /etc/mesos-master
     content: |
       GLOG_drop_log_memory=false
       LIBPROCESS_NUM_WORKER_THREADS=16
-      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
+      MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       MESOS_HOSTNAME_LOOKUP=false
@@ -543,7 +548,7 @@ package:
       MESOS_EXECUTOR_ENVIRONMENT_VARIABLES=file:///opt/mesosphere/etc/mesos-executor-environment.json
       MESOS_EXECUTOR_REGISTRATION_TIMEOUT=10mins
       MESOS_EXECUTOR_REREGISTRATION_TIMEOUT=10secs
-      MESOS_EXTERNAL_LOG_FILE=/var/log/mesos/mesos-agent.log
+      MESOS_EXTERNAL_LOG_FILE={{ mesos_agent_log_file }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
       MESOS_HOSTNAME_LOOKUP=false
@@ -940,6 +945,14 @@ package:
               },
               {
                   "Location": "/proc/self/mountinfo"
+              },
+              {
+                  "Location": "{{ mesos_agent_log_file }}",
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}",
+                  "Role": ["master"]
               }
           ],
           "LocalCommands": [
@@ -956,7 +969,7 @@ package:
                   "Command": ["ifconfig", "-a"]
               },
               {
-                  "Command": ["ps", "aux", "ww"]
+                  "Command": ["ps", "aux", "ww", "Z"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
@@ -971,15 +984,18 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
+                  "Command": ["sestatus"]
+              },
+              {
                   "Command": ["iptables-save"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["master"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["master"]
               },
               {
-               "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
-               "Role": ["agent", "agent_public"]
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent", "agent_public"]
               }
           ]
         }
@@ -1129,6 +1145,23 @@ package:
       MASTER_LB_DNSNAME={{ master_external_loadbalancer }}
 {% case "false" %}
 {% endswitch %}
+  - path: /etc/bouncer-config.json
+    content: |
+      {
+        "SUPERUSER_SERVICE_ACCOUNT_UID": "{{ superuser_service_account_uid }}",
+        "SUPERUSER_SERVICE_ACCOUNT_PUBLIC_KEY": {{ _superuser_service_account_public_key_json }},
+        "LOG_LEVEL_STDERR": "INFO",
+        "LOG_LEVEL_SQLALCHEMY": "WARNING",
+        "AUTH_COOKIE_SECURE_FLAG": {{ auth_cookie_secure_flag }},
+        "EXPIRATION_AUTH_TOKEN_DAYS": 5,
+        "EXPIRATION_AUTH_COOKIE_DAYS": 5,
+        "EXPIRATION_INFO_COOKIE_DAYS": 5,
+        "GUNICORN_WORKER_PROCESSES": 1,
+        "GUNICORN_THREADS_PER_WORKER": 10,
+        "GUNICORN_BIND_ADDRESS": "127.0.0.1:8101",
+        "GUNICORN_WORKER_TIMEOUT_SECONDS": 30,
+        "ALEMBIC_DIR_PATH": "alembic"
+      }
   - path: /etc/user.config.yaml
     content: |
 {{ config_yaml }}
@@ -1322,6 +1355,37 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Statsd UDP/TCP Server
+      [[inputs.statsd]]
+        ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
+        protocol = "udp"
+        ## Address and port to host UDP listener on
+        service_address = "localhost:61825"
+        ## The following configuration options control when telegraf clears it's cache
+        ## of previous values. If set to false, then telegraf will only clear it's
+        ## cache when the daemon is restarted.
+        ## Reset gauges every interval (default=true)
+        delete_gauges = true
+        ## Reset counters every interval (default=true)
+        delete_counters = true
+        ## Reset sets every interval (default=true)
+        delete_sets = true
+        ## Reset timings & histograms every interval (default=true)
+        delete_timings = true
+        ## Percentiles to calculate for timing & histogram stats
+        percentiles = [90]
+        ## separator to use between elements of a statsd metric
+        metric_separator = "_"
+        ## Parses tags in the datadog statsd format
+        ## http://docs.datadoghq.com/guides/dogstatsd/
+        parse_data_dog_tags = false
+        ## Number of UDP messages allowed to queue up, once filled,
+        ## the statsd server will start dropping packets
+        allowed_pending_messages = 10000
+        ## Number of timing/histogram values to track per-measurement in the
+        ## calculation of percentiles. Raising this limit increases the accuracy
+        ## of percentiles but also increases the memory usage and cpu time.
+        percentile_limit = 1000
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -1350,6 +1414,24 @@ package:
           "registrar",
           "allocator",
        ]
+      # Reads 'mntr' health checks from one or many zookeeper servers
+      [[inputs.zookeeper]]
+        ## An array of addresses to gather stats about. Specify an ip or hostname
+        ## with port. ie localhost:2181, 10.0.0.1:2181, etc.
+        ## If no hosts are specified, then localhost is used as the host.
+        ## If no port is specified, 2181 is used
+        servers = [":2181"]
+        ## Timeout for metric collections from all servers.  Minimum timeout is "1s".
+        timeout = "10s"
+        ## Optional TLS Config
+        # enable_tls = true
+        # tls_ca = "/etc/telegraf/ca.pem"
+        # tls_cert = "/etc/telegraf/cert.pem"
+        # tls_key = "/etc/telegraf/key.pem"
+        ## If true while TLS is enabled skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.zookeeper.tags]
+          dcos-component-name = "ZooKeeper"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"

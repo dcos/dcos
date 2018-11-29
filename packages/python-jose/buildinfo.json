@@ -1,0 +1,20 @@
+{
+  "requires": ["python", "python-future", "python-cryptography", "six"],
+  "sources": {
+    "python-jose": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/d1/c1/ecc8b1229f0e8cdaef93da903d4495579edea529f77eb42e60908879d3b7/python-jose-3.0.1.tar.gz",
+      "sha1": "bc4aaf20a2bb797494d7e51755a8e9a22ace86d0"
+    },
+    "ecdsa": {
+       "kind": "url_extract",
+       "url": "https://files.pythonhosted.org/packages/f9/e5/99ebb176e47f150ac115ffeda5fedb6a3dbb3c00c74a59fd84ddf12f5857/ecdsa-0.13.tar.gz",
+      "sha1": "7bcf6d1773d08bcc4bdd28cd05c545969f5aa162"
+    },
+    "rsa": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/cb/d0/8f99b91432a60ca4b1cd478fd0bdf28c1901c58e3a9f14f4ba3dba86b57f/rsa-4.0.tar.gz",
+      "sha1": "8a68dcee7bd2a7727c253b9ed2820cd1b5b9241a"
+    }
+  }
+}
