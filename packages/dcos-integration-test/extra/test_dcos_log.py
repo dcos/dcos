@@ -9,10 +9,6 @@ import retrying
 
 NEW_ENTRY_PATTERN = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 
-__maintainer__ = 'mnaboka'
-__contact__ = 'dcos-cluster-ops@mesosphere.io'
-
->>>>>>> 34f41166... Change dcos-log text test to expect 10 entries
 log = logging.getLogger(__name__)
 
 
