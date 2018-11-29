@@ -14,6 +14,7 @@ cd $OPENRESTY_DIR
     --without-mail_imap_module \
     --without-mail_smtp_module \
     --with-http_ssl_module \
+    --with-http_v2_module \
     --with-luajit \
     "$@"
 
