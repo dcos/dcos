@@ -43,8 +43,8 @@
     },
     "sqlalchemy-utils": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/6b/8c/bf6539a85705e845e9f83908cc290dd34c352d90d9a86134124bd4b64acd/SQLAlchemy-Utils-0.32.21.tar.gz",
-      "sha1": "07441982ec43186e7ab5fe79d4057e1a104fbeb1"
+      "url": "https://files.pythonhosted.org/packages/fa/cd/cf58d3a95a619262f0f52eedc707d143b6ada636ed24f6765544c049fdf9/SQLAlchemy-Utils-0.33.8.tar.gz",
+      "sha1": "b1e398f693b81506e64109ccb873a263219fb882"
     },
     "mako": {
       "kind": "url_extract",
