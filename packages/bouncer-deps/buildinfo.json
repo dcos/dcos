@@ -63,8 +63,8 @@
     },
     "alembic": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/bf/b3/b28ea715824f8455635ece3c12f59d5d205f98cc378858e414e3aa6ebdbc/alembic-0.9.6.tar.gz",
-      "sha1": "be22df78c2c9d49ebd0c6b7451eb6ca78dc12098"
+      "url": "https://files.pythonhosted.org/packages/1c/65/b8e4f5b2f345bb13b5e0a3fddd892b0b3f0e8ad4880e954fdc6a50d00d84/alembic-1.0.5.tar.gz",
+      "sha1": "2eee5fa2bd3ea7c526950e827824397acb24a531"
     },
     "cockroachdb-python": {
       "kind": "url_extract",
