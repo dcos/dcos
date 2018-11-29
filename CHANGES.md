@@ -4,8 +4,6 @@
 
 ### Breaking changes
 
-* DCOS_METRICS_-prefixed labels are now configured to be included in metrics (DCOS-43591)
-
 ### Fixed and improved
 
 * dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
