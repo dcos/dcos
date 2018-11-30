@@ -2,6 +2,7 @@ import logging
 import os
 
 import pytest
+import requests
 from test_dcos_diagnostics import (
     _get_bundle_list,
     check_json,
@@ -66,19 +67,33 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
-# Note(JP): Attempt to reset Marathon state before and after every
-# test run in this test suite. This is a brute force approach but
-# we found that the problem of side effects as of too careless
-# test isolation and resource cleanup became too large.
+# Note(JP): Attempt to reset Marathon state before and after every test run in
+# this test suite. This is a brute force approach but we found that the problem
+# of side effects as of too careless test isolation and resource cleanup became
+# too large. If this test suite ever introduces a session- or module-scoped
+# fixture providing a Marathon app then the `autouse=True` approach will need to
+# be relaxed.
 @pytest.fixture(autouse=True)
 def clean_marathon_state(dcos_api_session):
-    dcos_api_session.marathon.purge()
+    """
+    Attempt to clean up Marathon state before entering the test and when leaving
+    the test. Especially attempt to clean up when the test code failed. When the
+    cleanup fails do not fail the test but log relevant information.
+    """
+
+    def _purge_nofail():
+        try:
+            dcos_api_session.marathon.purge()
+        except Exception as exc:
+            log.exception('Ignoring exception during marathon.purge(): %s', exc)
+            if isinstance(exc, requests.exceptions.HTTPError)
+                log.error('exc.response.text: %s', exc.response.text)
+
+    _purge_nofail()
     try:
         yield
     finally:
-        # This is in `finally:` so that we attempt to clean up
-        # Marathon state especially when the test code failed.
-        dcos_api_session.marathon.purge()
+        _purge_nofail()
 
 
 @pytest.fixture(scope='session')
