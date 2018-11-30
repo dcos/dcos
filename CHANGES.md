@@ -27,8 +27,12 @@
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
+* Docker container unable to curl its own VIP (DCOS-45115)
+
 * [DCOS_OSS-3616](https://jira.mesosphere.com/browse/DCOS_OSS-3616) Metronome is hoarding offers.
+
 * [DCOS_OSS-2535](https://jira.mesosphere.com/browse/DCOS_OSS-2535) Info endpoint shows incorrect version of Metronome.
+
 
 
 ### Security Updates
