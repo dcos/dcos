@@ -86,7 +86,7 @@ def clean_marathon_state(dcos_api_session):
             dcos_api_session.marathon.purge()
         except Exception as exc:
             log.exception('Ignoring exception during marathon.purge(): %s', exc)
-            if isinstance(exc, requests.exceptions.HTTPError)
+            if isinstance(exc, requests.exceptions.HTTPError):
                 log.error('exc.response.text: %s', exc.response.text)
 
     _purge_nofail()
