@@ -1,6 +1,9 @@
+import contextlib
+
 import common
 import pytest
 import retrying
+from test_helpers import expanded_config
 
 
 __maintainer__ = 'mnaboka'
@@ -46,36 +49,49 @@ def test_metrics_masters_prom(dcos_api_session):
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=150 * 1000)
-def get_metrics_prom(dcos_api_session, node, expected_metrics):
-    """Assert that expected metrics are present on prometheus port on node.
+@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+def get_metrics_prom(dcos_api_session, node):
+    """Gets metrics from prometheus port on node and returns the response.
 
-    Retries on non-200 status or missing expected metrics
-    for up to 150 seconds.
+    Retries on non-200 status for up to 300 seconds.
 
     """
     response = dcos_api_session.session.request('GET', 'http://{}:61091/metrics'.format(node))
     assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-    for metric_name in expected_metrics:
-        assert metric_name in response.text
+    return response
 
 
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     for agent in dcos_api_session.slaves:
-        get_metrics_prom(dcos_api_session, agent, ['mesos_slave_uptime_secs'])
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_mesos_metrics():
+            response = get_metrics_prom(dcos_api_session, agent)
+            assert 'mesos_slave_uptime_secs' in response.text
+        check_mesos_metrics()
 
 
 def test_metrics_masters_mesos(dcos_api_session):
     """Assert that mesos metrics on masters are present."""
     for master in dcos_api_session.masters:
-        get_metrics_prom(dcos_api_session, master, ['mesos_master_uptime_secs'])
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_mesos_metrics():
+            response = get_metrics_prom(dcos_api_session, master)
+            assert 'mesos_master_uptime_secs' in response.text
+        check_mesos_metrics()
 
 
 def test_metrics_masters_zookeeper(dcos_api_session):
     """Assert that ZooKeeper metrics on masters are present."""
     for master in dcos_api_session.masters:
-        get_metrics_prom(dcos_api_session, master, ['ZooKeeper', 'zookeeper_avg_latency'])
+        expected_metrics = ['ZooKeeper', 'zookeeper_avg_latency']
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_zookeeper_metrics():
+            response = get_metrics_prom(dcos_api_session, master)
+            for metric_name in expected_metrics:
+                assert metric_name in response.text
+        check_zookeeper_metrics()
 
 
 def test_metrics_agents_statsd(dcos_api_session):
@@ -133,7 +149,104 @@ def test_metrics_agents_statsd(dcos_api_session):
         with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
             endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
             assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-            get_metrics_prom(dcos_api_session, agent, expected_metrics)
+
+            @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+            def check_statsd_metrics():
+                response = get_metrics_prom(dcos_api_session, agent)
+                for metric_name in expected_metrics:
+                    assert metric_name in response.text
+            check_statsd_metrics()
+
+
+@contextlib.contextmanager
+def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_version, framework_name):
+    """Deploys dcos package and waits for package teardown once the context is left"""
+    app_id = dcos_api_session.cosmos.install_package(package_name, package_version=package_version).json()['appId']
+    dcos_api_session.marathon.wait_for_deployments_complete()
+
+    try:
+        yield
+    finally:
+        dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
+
+        # Retry for 150 seconds for teardown completion
+        @retrying.retry(wait_fixed=5000, stop_max_delay=150 * 1000)
+        def wait_for_package_teardown():
+            state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+            assert state_response.status_code == 200
+            state = state_response.json()
+
+            for framework in state['frameworks']:
+                if framework['name'] == framework_name:
+                    raise Exception('Framework {} still running'.format(framework_name))
+        wait_for_package_teardown()
+
+
+@retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+def get_task_hostname(dcos_api_session, framework_name, task_name):
+    # helper func that gets a framework's task's hostname
+    mesos_id = node = ''
+    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+    assert state_response.status_code == 200
+    state = state_response.json()
+
+    for framework in state['frameworks']:
+        if framework['name'] == framework_name:
+            for task in framework['tasks']:
+                if task['name'] == task_name:
+                    mesos_id = task['slave_id']
+                    break
+            break
+
+    assert mesos_id is not None
+
+    for agent in state['slaves']:
+        if agent['id'] == mesos_id:
+            node = agent['hostname']
+            break
+
+    return node
+
+
+@pytest.mark.skipif(expanded_config.get('security') == 'strict',
+                    reason="MoM disabled for strict mode")
+def test_task_metrics_metadata(dcos_api_session):
+    """Test that task metrics have expected metadata/labels"""
+    with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
+        node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_metrics_metadata():
+            response = get_metrics_prom(dcos_api_session, node)
+            for line in response.text.splitlines():
+                if '#' in line:
+                    continue
+                if 'task_name="marathon-user"' in line:
+                    assert 'service_name="marathon"' in line
+        check_metrics_metadata()
+
+
+@pytest.mark.skipif(expanded_config.get('security') == 'strict',
+                    reason="Framework disabled for strict mode")
+def test_executor_metrics_metadata(dcos_api_session):
+    """Test that executor metrics have expected metadata/labels"""
+    with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
+        node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_executor_metrics_metadata():
+            response = get_metrics_prom(dcos_api_session, node)
+            for line in response.text.splitlines():
+                if '#' in line:
+                    continue
+                # ignore metrics from hello-world task started by marathon by checking
+                # for absence of 'marathon' string.
+                if 'cpus_nr_periods' in line and 'marathon' not in line:
+                    assert 'service_name="hello-world"' in line
+                    assert 'task_name=""' in line  # this is an executor, not a task
+                    # hello-world executors can be named "hello" or "world"
+                    assert ('executor_name="hello"' in line or 'executor_name="world"' in line)
+        check_executor_metrics_metadata()
 
 
 @pytest.mark.supportedwindows
