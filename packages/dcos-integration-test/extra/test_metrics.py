@@ -235,6 +235,7 @@ def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
+
         @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
         def check_executor_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
