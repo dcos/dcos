@@ -50,28 +50,30 @@ SCHEDULER_APP_TEMPLATE = {
         "volumes": [],
         "docker": {
             "image": "bitnami/nginx:1.10.2-r0",
-            "network": "BRIDGE",
-            "portMappings": [
-                {
-                    "containerPort": 80,
-                    "hostPort": 0,
-                    "servicePort": 10000,
-                    "protocol": "tcp",
-                    "labels": {}
-                },
-                {
-                    "containerPort": 443,
-                    "hostPort": 0,
-                    "servicePort": 10001,
-                    "protocol": "tcp",
-                    "labels": {}
-                }
-            ],
             "privileged": False,
             "parameters": [],
             "forcePullImage": False
-        }
+        },
+        "portMappings": [
+            {
+                "containerPort": 80,
+                "hostPort": 0,
+                "servicePort": 10000,
+                "protocol": "tcp",
+                "labels": {}
+            },
+            {
+                "containerPort": 443,
+                "hostPort": 0,
+                "servicePort": 10001,
+                "protocol": "tcp",
+                "labels": {}
+            }
+        ],
     },
+    "networks": [
+        {}
+    ],
     "healthChecks": [
         {
             "gracePeriodSeconds": 300,
@@ -103,7 +105,6 @@ SCHEDULER_APP_TEMPLATE = {
         "DCOS_PACKAGE_NAME": "nginx",
         "DCOS_PACKAGE_IS_FRAMEWORK": "false"
     },
-    "ipAddress": None,
     "version": "2017-01-16T15:48:18.007Z",
     "residency": None,
     "secrets": {},

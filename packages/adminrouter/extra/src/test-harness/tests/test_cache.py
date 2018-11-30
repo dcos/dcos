@@ -948,74 +948,23 @@ class TestCacheMesosLeader:
 
 
 class TestCacheMarathon:
-
-    def test_ip_per_task_app_with_user_networking_and_portmappings(
-            self, nginx_class, mocker, valid_user_header):
+    @pytest.mark.parametrize('host_port', ['12345', '0', None])
+    def test_app_with_container_networking_and_fixed_container_port(
+            self, nginx_class, mocker, valid_user_header, host_port):
+        # Testing the case when a non-zero container port is specified
+        # in Marathon app definition with networking mode 'container'.
+        # It does not matter if the host port is fixed (non-zero),
+        # randomly assigned by Marathon (0) or is not present at all:
+        # Admin Router must route the request to the specified container port.
         app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {'networkName': 'samplenet'}
-        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
-        app['container']['docker']['network'] = "USER"
-        app['container']['docker']['portMappings'][0]['containerPort'] = '80'
-
-        ar = nginx_class()
-
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='set_apps_response',
-                            aux_data={"apps": [app]})
-
-        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
-        with GuardedSubprocess(ar):
-            # Trigger cache update by issuing request:
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-            assert resp.status_code == 200
-            req_data = resp.json()
-            assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
-
-    def test_ip_per_task_app_with_user_networking_and_portdefinitions(
-            self, nginx_class, mocker, valid_user_header):
-        app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {'networkName': 'samplenet'}
-        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
-        app['container']['docker']['network'] = "USER"
-        app['portDefinitions'] = [
-            {
-                "port": 80,
-                "protocol": "tcp",
-                "labels": {}
-            },
-        ]
-
-        ar = nginx_class()
-
-        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
-                            func_name='set_apps_response',
-                            aux_data={"apps": [app]})
-
-        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
-        with GuardedSubprocess(ar):
-            # Trigger cache update by issuing request:
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-            assert resp.status_code == 200
-            req_data = resp.json()
-            assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
-
-    def test_ip_per_task_app_without_user_networking(
-            self, nginx_class, mocker, valid_user_header):
-        app = self._scheduler_alwaysthere_app()
-        app['ipAddress'] = {
-            'networkName': 'samplenet',
-            'discovery': {
-                "ports": [
-                    {"number": 80, "name": "http", "protocol": "tcp"}
-                ]
-            }
-        }
+        app['networks'] = [{
+            'mode': 'container',
+            'name': 'samplenet'
+        }]
+        if host_port:
+            app['container']['portMappings'] = [{'containerPort': 80, 'hostPort': host_port}]
+        else:
+            app['container']['portMappings'] = [{'containerPort': 80}]
         app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.2'
 
         ar = nginx_class()
@@ -1035,16 +984,70 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
-    def test_ip_per_task_app_with_unspecified_ip_address_DCOS_OSS_1366(
-            self, nginx_class, mocker, valid_user_header):
-        """
-        Test that an app that, instead of specifying 'ipAddress: null' does not
-        specify 'ipAddress' at all, is successfully cached.
-        """
+    @pytest.mark.parametrize('host_port', ['12345', '0', None])
+    def test_app_with_container_networking_and_random_container_port(
+            self, nginx_class, mocker, valid_user_header, host_port):
+        # Testing the case when container port is specified as 0
+        # in Marathon app definition with networking mode 'container'.
+        # This means that the Marathon app container port is randomly assigned
+        # by Marathon. The chosen container port number is same as hostPort
+        # and is available through task["ports"] array. We are reusing port
+        # 16000 on 127.0.0.1 exposed by the mock server, as the one randomly
+        # chosen by Marathon.
+        # It does not matter if the host port is fixed (non-zero),
+        # randomly assigned by Marathon (0) or is not present at all:
+        # Admin Router must route the request to the specified container port.
         app = self._scheduler_alwaysthere_app()
+        app['networks'] = [{
+            'mode': 'container',
+            'name': 'samplenet'
+        }]
+        if host_port:
+            app['container']['portMappings'] = [{'containerPort': 0, 'hostPort': host_port}]
+        else:
+            app['container']['portMappings'] = [{'containerPort': 0}]
+        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.1'
+        app['tasks'][0]['ports'][0] = '16000'
 
-        # Remove the 'ipAddress' key completely, thereby triggering DCOS_OSS-1366.
-        del(app["ipAddress"])
+        ar = nginx_class()
+
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data={"apps": [app]})
+
+        url = ar.make_url_from_path('/service/scheduler-alwaysthere/foo/bar/')
+        with GuardedSubprocess(ar):
+            # Trigger cache update by issuing request:
+            resp = requests.get(url,
+                                allow_redirects=False,
+                                headers=valid_user_header)
+
+            assert resp.status_code == 200
+            req_data = resp.json()
+            assert req_data['endpoint_id'] == 'http://127.0.0.1:16000'
+
+    @pytest.mark.parametrize(
+        'networking_mode, container_port',
+        [['container/bridge', '80'], ['container/bridge', '0'], ['host', '80'], ['host', '0']]
+        )
+    def test_app_with_bridge_and_host_networking(
+            self, nginx_class, mocker, valid_user_header, container_port, networking_mode):
+        # Testing the cases when networking mode is either 'container' or 'host'.
+        # The host port can non-zero or 0. In the latter case Marathon will
+        # randomly choose the host port. For simplicity in this test we are
+        # reusing port 16000 on 127.0.0.1 exposed by the mock server, as both
+        # the fixed (non-zero) one and the one randomly chosen by Marathon.
+        # It does not matter if the container port is fixed (non-zero) or
+        # randomly assigned by Marathon (0) or: Admin Router must route the
+        # request to the host port.
+        app = self._scheduler_alwaysthere_app()
+        app['networks'] = [{
+            'mode': networking_mode
+        }]
+
+        app['container']['portMappings'] = [
+            {'containerPort': container_port, 'hostPort': 16000}]
+        app['tasks'][0]['ipAddresses'][0]['ipAddress'] = '127.0.0.1'
 
         ar = nginx_class()
 
