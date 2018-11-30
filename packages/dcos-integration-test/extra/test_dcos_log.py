@@ -3,9 +3,14 @@ import logging
 import re
 import uuid
 
+import common
 import pytest
 import requests
 import retrying
+
+
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 log = logging.getLogger(__name__)
 
