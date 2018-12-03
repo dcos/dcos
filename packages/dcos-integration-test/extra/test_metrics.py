@@ -1,5 +1,8 @@
 import contextlib
 
+import logging
+import uuid
+
 import common
 import pytest
 import retrying
@@ -621,3 +624,314 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     assert 'datapoints' in app_metrics, 'got {}'.format(app_metrics)
     assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
     return app_metrics
+
+
+@pytest.mark.skipif(
+    expanded_config.get('security') == 'strict',
+    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
+def test_standalone_container_metrics(dcos_api_session):
+    """
+    An operator should be able to launch a standalone container using the
+    LAUNCH_CONTAINER call of the agent operator API. Additionally, if the
+    process running within the standalone container emits statsd metrics, they
+    should be accessible via the DC/OS metrics API.
+    """
+    # Fetch the mesos master state to get an agent ID
+    master_ip = dcos_api_session.masters[0]
+    r = dcos_api_session.get('/state', host=master_ip, port=5050)
+    assert r.status_code == 200
+    state = r.json()
+
+    # Find hostname and ID of an agent
+    assert len(state['slaves']) > 0, 'No agents found in master state'
+    agent_hostname = state['slaves'][0]['hostname']
+    agent_id = state['slaves'][0]['id']
+    logging.debug('Selected agent %s at %s', agent_id, agent_hostname)
+
+    def _post_agent(json):
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+
+        r = dcos_api_session.post(
+            '/api/v1',
+            host=agent_hostname,
+            port=5051,
+            headers=headers,
+            json=json,
+            data=None,
+            stream=False)
+        return r
+
+    # Prepare container ID data
+    container_id = {'value': 'test-standalone-%s' % str(uuid.uuid4())}
+
+    # Launch standalone container. The command for this container executes a
+    # binary installed with DC/OS which will emit statsd metrics.
+    launch_data = {
+        'type': 'LAUNCH_CONTAINER',
+        'launch_container': {
+            'command': {
+                'value': './statsd-emitter',
+                'uris': [{
+                    'value': 'https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter',
+                    'executable': True
+                }]
+            },
+            'container_id': container_id,
+            'resources': [
+                {
+                    'name': 'cpus',
+                    'scalar': {'value': 0.2},
+                    'type': 'SCALAR'
+                },
+                {
+                    'name': 'mem',
+                    'scalar': {'value': 64.0},
+                    'type': 'SCALAR'
+                },
+                {
+                    'name': 'disk',
+                    'scalar': {'value': 1024.0},
+                    'type': 'SCALAR'
+                }
+            ],
+            'container': {
+                'type': 'MESOS'
+            }
+        }
+    }
+
+    # There is a short delay between the container starting and metrics becoming
+    # available via the metrics service. Because of this, we wait up to 10
+    # seconds for these metrics to appear before throwing an exception.
+    def _should_retry_metrics_fetch(response):
+        return response.status_code == 204
+
+    @retrying.retry(wait_fixed=1000,
+                    stop_max_delay=10000,
+                    retry_on_result=_should_retry_metrics_fetch,
+                    retry_on_exception=lambda x: False)
+    def _get_metrics():
+        master_response = dcos_api_session.get(
+            '/system/v1/agent/%s/metrics/v0/containers/%s/app' % (agent_id, container_id['value']),
+            host=master_ip)
+        return master_response
+
+    r = _post_agent(launch_data)
+    assert r.status_code == 200, 'Received unexpected status code when launching standalone container'
+
+    try:
+        logging.debug('Successfully created standalone container with container ID %s', container_id['value'])
+
+        # Verify that the standalone container's metrics are being collected
+        r = _get_metrics()
+        assert r.status_code == 200, 'Received unexpected status code when fetching standalone container metrics'
+
+        metrics_response = r.json()
+        metric_keys = [datapoint['name'] for datapoint in metrics_response['datapoints']]
+        assert 'statsd_tester.time.uptime' in metric_keys
+        assert metrics_response['dimensions']['container_id'] == container_id['value']
+    finally:
+        # Clean up the standalone container
+        kill_data = {
+            'type': 'KILL_CONTAINER',
+            'kill_container': {
+                'container_id': container_id
+            }
+        }
+
+        _post_agent(kill_data)
+
+
+def test_pod_application_metrics(dcos_api_session):
+    """Launch a pod, wait for its containers to be added to the metrics service,
+    and then verify that:
+    1) Container statistics metrics are provided for the executor container
+    2) Application metrics are exposed for the task container
+    """
+    # Helper func to check for non-unique CID's in a given /containers/id endpoint
+    def check_cid(registry):
+        if len(registry) <= 1:
+            return True
+
+        cid1 = registry[len(registry) - 1]
+        cid2 = registry[len(registry) - 2]
+        if cid1 != cid2:
+            raise ValueError('{} != {}'.format(cid1, cid2))
+
+        return True
+
+    @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+    def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
+        # Retry for two and a half minutes since the collector collects
+        # state every 2 minutes to propogate containers to the API
+        @retrying.retry(wait_fixed=2000, stop_max_delay=150000)
+        def wait_for_container_metrics_propogation():
+            response = dcos_api_session.metrics.get('/containers', node=agent_ip)
+            assert response.status_code == 200
+            assert len(response.json()) == num_containers, 'Test should create {} containers'.format(num_containers)
+
+        wait_for_container_metrics_propogation()
+
+        get_containers = {
+            "type": "GET_CONTAINERS",
+            "get_containers": {
+                "show_nested": True,
+                "show_standalone": True
+            }
+        }
+
+        r = dcos_api_session.post('/agent/{}/api/v1'.format(agent_id), json=get_containers)
+        r.raise_for_status()
+        mesos_agent_containers = r.json()['get_containers']['containers']
+
+        assert len(mesos_agent_containers) == num_containers, 'Agent operator API should report '\
+            'exactly {} running containers'.format(num_containers)
+
+        def is_nested_container(container):
+            """Helper to check whether or not a container returned in the
+            GET_CONTAINERS response is a nested container.
+            """
+            return 'parent' in container['container_status']['container_id']
+
+        def check_tags(tags: dict, expected_tag_names: set):
+            """Assert that tags contain only expected keys with nonempty values."""
+            assert set(tags.keys()) == expected_tag_names
+            for tag_name, tag_val in tags.items():
+                assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+
+        for container in mesos_agent_containers:
+            container_id = container['container_id']['value']
+
+            # Test that /containers/<id> responds with expected data.
+            container_id_path = '/containers/{}'.format(container_id)
+
+            if (is_nested_container(container)):
+                # Retry for 30 seconds for each nested container to appear.
+                # Since nested containers do not report resource statistics, we
+                # expect the response code to be 204.
+                @retrying.retry(stop_max_delay=30000)
+                def wait_for_container_response():
+                    response = dcos_api_session.metrics.get(container_id_path, node=agent_ip)
+                    assert response.status_code == 204
+                    return response
+
+                # For the nested container, we do not expect any container-level
+                # resource statistics, so this response should be empty.
+                assert not wait_for_container_response().json()
+
+                # Test that expected application metrics are present.
+                app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(container_id), node=agent_ip)
+                assert app_response.status_code == 200, 'got {}'.format(app_response.status_code)
+
+                # Ensure all /container/<id>/app data is correct
+                assert 'datapoints' in app_response.json(), 'got {}'.format(app_response.json())
+
+                # We expect three datapoints, could be in any order
+                uptime_dp = None
+                for dp in app_response.json()['datapoints']:
+                    if dp['name'] == 'statsd_tester.time.uptime':
+                        uptime_dp = dp
+                        break
+
+                # If this metric is missing, statsd-emitter's metrics were not received
+                assert uptime_dp is not None, 'got {}'.format(app_response.json())
+
+                datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
+                for k in datapoint_keys:
+                    assert k in uptime_dp, 'got {}'.format(uptime_dp)
+
+                expected_tag_names = {
+                    'dcos_cluster_id',
+                    'test_tag_key',
+                    'dcos_cluster_name',
+                    'host'
+                }
+                check_tags(uptime_dp['tags'], expected_tag_names)
+                assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+
+                assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
+                assert 'task_name' in app_response.json()['dimensions'], 'got {}'.format(
+                    app_response.json()['dimensions'])
+
+                # Look for the specified task name.
+                assert task_name.strip('/') == app_response.json()['dimensions']['task_name'],\
+                    'Nested container was not tagged with the correct task name'
+            else:
+                # Retry for 30 seconds for each parent container to present its
+                # content.
+                @retrying.retry(stop_max_delay=30000)
+                def wait_for_container_response():
+                    response = dcos_api_session.metrics.get(container_id_path, node=agent_ip)
+                    assert response.status_code == 200
+                    return response
+
+                container_response = wait_for_container_response()
+                assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
+
+                cid_registry = []
+                for dp in container_response.json()['datapoints']:
+                    # Verify expected tags are present.
+                    assert 'tags' in dp, 'got {}'.format(dp)
+                    expected_tag_names = {
+                        'container_id',
+                    }
+                    if dp['name'].startswith('blkio.'):
+                        # blkio stats have 'blkio_device' tags.
+                        expected_tag_names.add('blkio_device')
+                    check_tags(dp['tags'], expected_tag_names)
+
+                    # Ensure all container IDs in the response from the
+                    # containers/<id> endpoint are the same.
+                    cid_registry.append(dp['tags']['container_id'])
+                    assert(check_cid(cid_registry))
+
+                assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
+
+                # The executor container shouldn't expose application metrics.
+                app_response = dcos_api_session.metrics.get('/containers/{}/app'.format(container_id), node=agent_ip)
+                assert app_response.status_code == 204, 'got {}'.format(app_response.status_code)
+
+                return True
+
+    marathon_pod_config = {
+        "id": "/statsd-emitter-task-group",
+        "containers": [{
+            "name": "statsd-emitter-task",
+            "resources": {
+                "cpus": 0.5,
+                "mem": 128.0,
+                "disk": 1024.0
+            },
+            "image": {
+                "kind": "DOCKER",
+                "id": "alpine"
+            },
+            "exec": {
+                "command": {
+                    "shell": "./statsd-emitter"
+                }
+            },
+            "artifacts": [{
+                "uri": "https://downloads.mesosphere.com/dcos-metrics/1.11.0/statsd-emitter",
+                "executable": True
+            }],
+        }],
+        "scheduling": {
+            "instances": 1
+        }
+    }
+
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(marathon_pod_config):
+        r = dcos_api_session.marathon.get('/v2/pods/{}::status'.format(marathon_pod_config['id']))
+        r.raise_for_status()
+        data = r.json()
+
+        assert len(data['instances']) == 1, 'The marathon pod should have been deployed exactly once.'
+
+        test_application_metrics(
+            data['instances'][0]['agentHostname'],
+            data['instances'][0]['agentId'],
+            marathon_pod_config['containers'][0]['name'], 2)
