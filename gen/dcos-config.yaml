@@ -1346,6 +1346,8 @@ package:
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
         ## The address on which the command API should listen
@@ -1370,6 +1372,8 @@ package:
         ## to each metric as tags; the prefix is stripped from the
         ## label when tagging
         whitelist_prefix = ["DCOS_METRICS_"]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-metadata"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"
@@ -1390,6 +1394,8 @@ package:
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
         ## The address on which the command API should listen
@@ -1414,6 +1420,8 @@ package:
         ## to each metric as tags; the prefix is stripped from the
         ## label when tagging
         whitelist_prefix = ["DCOS_METRICS_"]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-metadata"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"
