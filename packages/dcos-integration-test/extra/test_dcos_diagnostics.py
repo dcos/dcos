@@ -7,8 +7,8 @@ import tempfile
 import zipfile
 
 import pytest
-
 import retrying
+
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
