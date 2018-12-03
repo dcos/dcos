@@ -163,6 +163,28 @@ local function request_buffering_required(service_name, marathon_cache)
     return marathon_cache[service_name]['do_request_buffering']
 end
 
+local function long_poll_enabled(service_name, marathon_cache)
+    -- Determine if long-polling is enabled for this service.
+    --
+    -- Arguments:
+    --   service_name (string): service name that should be resolved
+    --   marathon_cache (table): cached root Marathon's apps state
+    --
+    -- Returns:
+    --   duration that nginx should allow the request to proceed.
+    --
+    if service_name == 'marathon' or service_name == 'metronome' then
+      -- These two services should always use the default.
+      return false
+    end
+
+    if marathon_cache[service_name] == nil then
+        return false
+    end
+
+    return marathon_cache[service_name]['long_poll_enabled']
+end
+
 local function resolve_via_mesos_dns(service_name)
     -- Try to resolve upstream for given service name basing on
     -- MesosDNS SRV entries
@@ -375,6 +397,7 @@ function _M.init()
 
     res.recursive_resolve = recursive_resolve
     res.request_buffering_required = request_buffering_required
+    res.long_poll_enabled = long_poll_enabled
 
     return res
 end

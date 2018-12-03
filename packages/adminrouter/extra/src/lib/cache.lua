@@ -291,12 +291,24 @@ local function fetch_and_store_marathon_apps(auth_token)
           do_request_buffering = true
        end
 
+       local long_poll_enabled = labels["DCOS_SERVICE_LONGPOLL_ENABLED"]
+       if long_poll_enabled == 'false' or not long_poll_enabled then
+          long_poll_enabled = false
+       else
+          ngx.log(ngx.INFO, "DCOS_SERVICE_LONGPOLL_ENABLED for app '" .. appId .. "' set to 'true'")
+          -- Treat everything else as true, i.e.:
+          -- * label is set to "true" (string) or true (bool)
+          -- * label is set to some random string
+          long_poll_enabled = true
+       end
+
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
        svcApps[svcId] = {
          scheme=scheme,
          url=url,
          do_rewrite_req_url=do_rewrite_req_url,
          do_request_buffering=do_request_buffering,
+         long_poll_enabled=long_poll_enabled,
          }
 
        ::continue::
