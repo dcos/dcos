@@ -41,4 +41,4 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.37.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.37.0)
+* Updated DC/OS UI to master+v2.40.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.0)
