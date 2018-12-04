@@ -50,6 +50,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
+- [MARATHON-8516](https://jira.mesosphere.com/browse/MARATHON-8516) Race condition when provisioning an instance while changing a goal.
+- [MARATHON-8503](https://jira.mesosphere.com/browse/MARATHON-8503) Marathon should run on Java 9.
+- [MARATHON-8505](https://jira.mesosphere.com/browse/MARATHON-8505) Default backoff changed from 1 hour to 5 mins.
+
 
 ### Notable changes
 
