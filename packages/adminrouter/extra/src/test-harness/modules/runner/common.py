@@ -678,7 +678,9 @@ class NginxBase(ManagedSubprocess):
 
         self._args = [self.binary,
                       '-c', self.config_path,
-                      '-g', 'daemon off;',
+                      # For tests, NGINX must run in foreground and direct
+                      # error_log to stderr.
+                      '-g', 'daemon off;error_log stderr info;',
                       ]
 
     def _set_ar_env(self,
