@@ -145,6 +145,8 @@ class LineBufferFilter:
 
         self._line_buffer_start = len(self._line_buffer)
 
+        return self
+
     def scan_log_buffer(self):
         """Scan for `filter_regexp` since the beginning of the given instance's log
 

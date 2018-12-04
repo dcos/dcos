@@ -192,7 +192,9 @@ def nginx_class(repo_is_ee, dns_server_mock_s, log_catcher, syslog_mock, mocker_
         # fixture would have to be pulled in every time nginx_class is used
         # on its own.
         ar_listen_link_setup(role, repo_is_ee)
-        return Nginx(*args, role=role, log_catcher=log_catcher, **kwargs)
+        return Nginx(
+            *args, role=role, log_catcher=log_catcher, syslog_mock=syslog_mock, **kwargs
+        )
 
     return f
 

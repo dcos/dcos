@@ -727,6 +727,7 @@ class NginxBase(ManagedSubprocess):
                  upstream_marathon="http://127.0.0.1:8080",
                  role="master",
                  log_catcher=None,
+                 syslog_mock=None,
                  cache_first_poll_delay=CACHE_FIRST_POLL_DELAY,
                  cache_poll_period=CACHE_POLL_PERIOD,
                  cache_expiration=CACHE_EXPIRATION,
@@ -773,6 +774,7 @@ class NginxBase(ManagedSubprocess):
         self._role = role
 
         super().__init__(log_catcher)
+        self._syslog_mock = syslog_mock
 
         self._set_ar_env(auth_enabled,
                          default_scheme,
@@ -810,6 +812,11 @@ class NginxBase(ManagedSubprocess):
             return base + path
 
         return base + path[1:]
+
+    @property
+    def syslog_line_buffer(self):
+        """Return line buffer where all syslog output of this object resides"""
+        return self._syslog_mock.stdout_line_buffer
 
 
 class Vegeta(ManagedSubprocess):
