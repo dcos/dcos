@@ -359,6 +359,8 @@ package:
            }
         ]
       }
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-slave-modules/metrics.json
     content: |
       {
@@ -375,8 +377,6 @@ package:
           } ]
         } ]
       }
-{% case "false" %}
-{% endswitch %}
   - path: /etc/mesos-slave-modules/journal_logger_modules.json
     content: |
       {
