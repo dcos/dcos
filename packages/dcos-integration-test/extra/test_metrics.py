@@ -132,69 +132,6 @@ def test_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
-def get_metrics_prom(dcos_api_session, node):
-    """Gets metrics from prometheus port on node and returns the response.
-
-    Retries on non-200 status for up to 300 seconds.
-
-    """
-    response = dcos_api_session.session.request(
-        'GET', 'http://{}:61091/metrics'.format(node))
-    assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
-    return response
-
-
-@contextlib.contextmanager
-def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_version, framework_name):
-    """Deploys dcos package and waits for package teardown once the context is left"""
-    app_id = dcos_api_session.cosmos.install_package(package_name, package_version=package_version).json()['appId']
-    dcos_api_session.marathon.wait_for_deployments_complete()
-
-    try:
-        yield
-    finally:
-        dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
-
-        # Retry for 150 seconds for teardown completion
-        @retrying.retry(wait_fixed=5000, stop_max_delay=150 * 1000)
-        def wait_for_package_teardown():
-            state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
-            assert state_response.status_code == 200
-            state = state_response.json()
-
-            for framework in state['frameworks']:
-                if framework['name'] == framework_name:
-                    raise Exception('Framework {} still running'.format(framework_name))
-        wait_for_package_teardown()
-
-
-@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
-def get_task_hostname(dcos_api_session, framework_name, task_name):
-    # helper func that gets a framework's task's hostname
-    mesos_id = node = ''
-    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
-    assert state_response.status_code == 200
-    state = state_response.json()
-
-    for framework in state['frameworks']:
-        if framework['name'] == framework_name:
-            for task in framework['tasks']:
-                if task['name'] == task_name:
-                    mesos_id = task['slave_id']
-                    break
-            break
-
-    assert mesos_id is not None
-
-    for agent in state['slaves']:
-        if agent['id'] == mesos_id:
-            node = agent['hostname']
-            break
-
-    return node
-
-
 @pytest.mark.skipif(
     test_helpers.expanded_config.get('security') == 'strict',
     reason="MoM disabled for strict mode")
