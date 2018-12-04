@@ -1364,6 +1364,12 @@ package:
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
         rate_limit = "5s"
+        ## List of labels to always add to each metric as tags
+        whitelist = ["DCOS_SERVICE_NAME"]
+        ## List of prefixes a label should have in order to be added
+        ## to each metric as tags; the prefix is stripped from the
+        ## label when tagging
+        whitelist_prefix = ["DCOS_METRICS_"]
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"
@@ -1402,6 +1408,12 @@ package:
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
         rate_limit = "5s"
+        ## List of labels to always add to each metric as tags
+        whitelist = ["DCOS_SERVICE_NAME"]
+        ## List of prefixes a label should have in order to be added
+        ## to each metric as tags; the prefix is stripped from the
+        ## label when tagging
+        whitelist_prefix = ["DCOS_METRICS_"]
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"
