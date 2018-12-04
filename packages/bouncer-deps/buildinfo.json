@@ -23,8 +23,8 @@
     },
     "falcon": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/55/3e/9089bad845e1b7cae0707275c36a01353de822710c010f09b8fe07529112/falcon-1.3.0.tar.gz",
-      "sha1": "d3c2b2ac1c535d77e00a5a3c95088c3897f7970c"
+      "url": "https://files.pythonhosted.org/packages/2f/e6/5045da9df509b9259037f065d15608930fd6c997ee930ad230f9fbfecf15/falcon-1.4.1.tar.gz",
+      "sha1": "c29979a1fcb1b3149f1e54cc587d9582a61c947d"
     },
     "python-mimeparse": {
       "kind": "url_extract",
@@ -33,18 +33,18 @@
     },
     "psycopg2": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/dd/47/000b405d73ca22980684fd7bd3318690cc03cfa3b2ae1c5b7fff8050b28a/psycopg2-2.7.3.2.tar.gz",
-      "sha1": "fe5775fe3fe24ca7662f1e1cce31c57cce7c93e9"
+      "url": "https://files.pythonhosted.org/packages/c0/07/93573b97ed61b6fb907c8439bf58f09957564cf7c39612cef36c547e68c6/psycopg2-2.7.6.1.tar.gz",
+      "sha1": "45e359fb2999c9608fea7832cb37a623151274e4"
     },
     "sqlalchemy": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/c2/f6/11fcc1ce19a7cb81b1c9377f4e27ce3813265611922e355905e57c44d164/SQLAlchemy-1.1.15.tar.gz",
-      "sha1": "3d6ee06301c4be2d191de182cd169aff23c68107"
+      "url": "https://files.pythonhosted.org/packages/e2/0a/05b7d13618ad41c108a6c2b886af83bf9bb7e35f8951227abb18b1330745/SQLAlchemy-1.2.14.tar.gz",
+      "sha1": "7e7260c3886ff633bbf6ffbcee3a394a7e520145"
     },
     "sqlalchemy-utils": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/6b/8c/bf6539a85705e845e9f83908cc290dd34c352d90d9a86134124bd4b64acd/SQLAlchemy-Utils-0.32.21.tar.gz",
-      "sha1": "07441982ec43186e7ab5fe79d4057e1a104fbeb1"
+      "url": "https://files.pythonhosted.org/packages/fa/cd/cf58d3a95a619262f0f52eedc707d143b6ada636ed24f6765544c049fdf9/SQLAlchemy-Utils-0.33.8.tar.gz",
+      "sha1": "b1e398f693b81506e64109ccb873a263219fb882"
     },
     "mako": {
       "kind": "url_extract",
@@ -58,13 +58,13 @@
     },
     "pyasn1": {
       "kind": "url_extract",
-      "url": "https://github.com/etingof/pyasn1/archive/v0.3.7.tar.gz",
-      "sha1": "b9aae5b8b37273697ad848d2fdec22233f82b185"
+      "url": "https://files.pythonhosted.org/packages/10/46/059775dc8e50f722d205452bced4b3cc965d27e8c3389156acd3b1123ae3/pyasn1-0.4.4.tar.gz",
+      "sha1": "10f67e61e30c064301c826c6e5e461ff7bf5827d"
     },
     "alembic": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/bf/b3/b28ea715824f8455635ece3c12f59d5d205f98cc378858e414e3aa6ebdbc/alembic-0.9.6.tar.gz",
-      "sha1": "be22df78c2c9d49ebd0c6b7451eb6ca78dc12098"
+      "url": "https://files.pythonhosted.org/packages/1c/65/b8e4f5b2f345bb13b5e0a3fddd892b0b3f0e8ad4880e954fdc6a50d00d84/alembic-1.0.5.tar.gz",
+      "sha1": "2eee5fa2bd3ea7c526950e827824397acb24a531"
     },
     "cockroachdb-python": {
       "kind": "url_extract",
