@@ -4,6 +4,8 @@
 
 ### Fixed and improved
 
+* Docker-GC will now log to journald. (COPS-4044)
+
 * dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
