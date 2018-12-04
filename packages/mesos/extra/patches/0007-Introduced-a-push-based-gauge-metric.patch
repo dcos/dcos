@@ -1,7 +1,7 @@
-From b5a9836855b75ae10a3de4ccf05c316167520d2b Mon Sep 17 00:00:00 2001
+From e285b706666a65752098cef0feb59546ebfcb2c8 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:53 -0700
-Subject: [PATCH 07/22] Introduced a push-based gauge metric.
+Subject: [PATCH] Introduced a push-based gauge metric.
 
 A push-based gauge differs from a pull-based gauge in that the
 client is responsible for pushing the latest value into the gauge
@@ -144,5 +144,5 @@ index 000000000..5c3984617
 +
 +#endif // __PROCESS_METRICS_PUSH_GAUGE_HPP__
 -- 
-2.17.0
+2.17.1
 

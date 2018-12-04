@@ -1,7 +1,7 @@
-From c8e084b4afe2d8de38433fe46a76cea62db68905 Mon Sep 17 00:00:00 2001
+From 1f73ece29f37ac29610945bec2b5145d0e7cc87f Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:14 -0700
-Subject: [PATCH 13/22] Added per-framework metrics for scheduler calls.
+Subject: [PATCH] Added per-framework metrics for scheduler calls.
 
 Review: https://reviews.apache.org/r/67776/
 ---
@@ -25,7 +25,7 @@ index 1f9aac44f..f4cd2dc68 100644
    // into the authorizer. See MESOS-7399.
    if (principal.isSome() && principal != framework->info.principal()) {
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index c22ca3405..2244701e1 100644
+index 13a0af995..bf1e61eb5 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -2487,6 +2487,8 @@ void Master::receive(
@@ -153,5 +153,5 @@ index d3f093f9d..7a7b3a316 100644
  
  
 -- 
-2.17.0
+2.17.1
 
