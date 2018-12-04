@@ -2,8 +2,9 @@ import logging
 import os
 
 import api_session_fixture
-import requests
 import pytest
+import requests
+
 from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
