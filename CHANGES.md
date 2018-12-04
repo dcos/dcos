@@ -14,6 +14,8 @@
 
 * Make push_ops_timeout configurable through config.yaml (DCOS-45196)
 
+* Metrics now include executor container information. (DCOS_OSS-4181)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
