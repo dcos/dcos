@@ -9,7 +9,7 @@ import retrying
 from test_helpers import expanded_config
 
 
-__maintainer__ = 'mnaboka'
+__maintainer__ = 'philipnrmn'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
@@ -41,12 +41,14 @@ def test_metrics_masters_ping(dcos_api_session):
 
 
 def test_metrics_agents_prom(dcos_api_session):
+    """Telegraf Prometheus endpoint is reachable on all agents."""
     for agent in dcos_api_session.slaves:
         response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
 def test_metrics_masters_prom(dcos_api_session):
+    """Telegraf Prometheus endpoint is reachable on all masters."""
     for master in dcos_api_session.masters:
         response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
@@ -96,6 +98,19 @@ def test_metrics_masters_zookeeper(dcos_api_session):
             for metric_name in expected_metrics:
                 assert metric_name in response.text
         check_zookeeper_metrics()
+
+
+def test_metrics_masters_cockroachdb(dcos_api_session):
+    """Assert that CockroachDB metrics on masters are present."""
+    for master in dcos_api_session.masters:
+        expected_metrics = ['CockroachDB', 'ranges_underreplicated']
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_cockroachdb_metrics():
+            response = get_metrics_prom(dcos_api_session, master)
+            for metric_name in expected_metrics:
+                assert metric_name in response.text
+        check_cockroachdb_metrics()
 
 
 def test_metrics_agents_statsd(dcos_api_session):
