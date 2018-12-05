@@ -1,4 +1,4 @@
-From c142ba1a70f1ad36bfa108bb40d2b8576fd2ae04 Mon Sep 17 00:00:00 2001
+From e6093638d6db2bd478d1c574b5a8c150fce69de6 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
 Subject: [PATCH] Logged request processing time for some endpoints.
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/68994
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 6237d9246..84f9db047 100644
+index 84add3e..5d13d89 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -909,7 +909,10 @@ void Master::initialize()
@@ -85,7 +85,7 @@ index 6237d9246..84f9db047 100644
    route("/maintenance/schedule",
          READWRITE_HTTP_AUTHENTICATION_REALM,
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 7425cfbae..01fd4eedf 100644
+index 7425cfb..01fd4ee 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -809,7 +809,10 @@ void Slave::initialize()
@@ -113,5 +113,5 @@ index 7425cfbae..01fd4eedf 100644
  
    const PID<Slave> slavePid = self();
 -- 
-2.16.3
+2.5.1
 

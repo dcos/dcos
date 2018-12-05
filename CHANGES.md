@@ -2,7 +2,11 @@
 
 ### Notable changes
 
+### Breaking changes
+
 ### Fixed and improved
+
+* Docker-GC will now log to journald. (COPS-4044)
 
 * dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
 
@@ -12,7 +16,11 @@
 
 * Lots of CRASH messages in dcos-net logs (DCOS-45161)
 
+* Telegraf: Added configurable whitelists for labels to include in metrics (DCOS-43591)
+
 * Make push_ops_timeout configurable through config.yaml (DCOS-45196)
+
+* Metrics now include executor container information. (DCOS_OSS-4181)
 
 ### Security Updates
 
@@ -108,7 +116,6 @@ Format of the entries must be.
 
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
 
-* Task health check definitions are now included in Mesos master/agent API outputs. [See more](https://issues.apache.org/jira/browse/MESOS-8780) (MESOS-8780)
 
 ### Security Updates
 
