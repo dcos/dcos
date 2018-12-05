@@ -711,6 +711,76 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
+def calculate__superuser_credentials_given(
+        superuser_service_account_uid, superuser_service_account_public_key):
+    pair = (superuser_service_account_uid, superuser_service_account_public_key)
+
+    if all(pair):
+        return 'true'
+
+    if not any(pair):
+        return 'false'
+
+    # `calculate_` functions are not supposed to error out, but
+    # in this case here (multi-arg input) this check cannot
+    # currently be replaced by a `validate_` function.
+    raise AssertionError(
+        "'superuser_service_account_uid' and "
+        "'superuser_service_account_public_key' "
+        "must both be empty or both be non-empty"
+    )
+
+
+def calculate__superuser_service_account_public_key_json(
+        superuser_service_account_public_key):
+    """
+    This function expects PEM text as input, parses and validates it, and emits
+    JSON-encoded PEM text as output. That includes wrapping the text in double
+    quotes, and escaping newline characters.
+    """
+    import cryptography.hazmat.backends
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    assert isinstance(superuser_service_account_public_key, str)
+
+    def validate_rsa_pubkey(key_pem):
+        """
+        Check if `key_pem` is a string containing an RSA public key encoded
+        using the X.509 SubjectPublicKeyInfo/OpenSSL PEM public key format.
+        Refs:
+            - https://tools.ietf.org/html/rfc5280.html
+            - http://stackoverflow.com/a/29707204/145400
+
+        Args:
+            key_pem (str): serialized public key
+        """
+        # This will raise `ValueError` for invalid input or
+        # `UnsupportedAlgorithm` for exotic unsupported key types.
+        try:
+            key = serialization.load_pem_public_key(
+                data=key_pem.encode('ascii'),
+                backend=cryptography.hazmat.backends.default_backend()
+            )
+        except ValueError as exc:
+            raise AssertionError(
+                'superuser_service_account_public_key has an invalid value. It '
+                'must hold an RSA public key encoded in the OpenSSL PEM '
+                'format. Error: %s' % (exc, )
+            )
+
+        assert isinstance(key, rsa.RSAPublicKey), \
+            'superuser_service_account_public_key must be of type RSA'
+
+    if superuser_service_account_public_key:
+        validate_rsa_pubkey(superuser_service_account_public_key)
+
+    # Escape special characters like newlines, and add quotes (for the common
+    # case of `superuser_service_account_public_key` being empty this returns
+    # '""'.)
+    return json.dumps(superuser_service_account_public_key)
+
+
 def calculate_check_config(check_time):
     # We consider only two timeouts:
     # * 1s for immediate checks (such as checking for the presence of CLI utilities).
@@ -909,6 +979,13 @@ __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
 
+# Note(JP): let us try to distinguish private from public configuration
+# parameters by adding an underscore prefix to private ones. Private
+# configuration parameters are not meant to be set in the DC/OS config yaml
+# document. Only public ones are meant to be set there. Only public
+# configuration parameters are meant to be publicly documented.
+
+
 entry = {
     'validate': [
         validate_s3_prefix,
@@ -922,6 +999,7 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
+        lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
         validate_mesos_dns_ip_sources,
@@ -948,6 +1026,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -970,6 +1049,8 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda mesos_agent_log_file: validate_absolute_path(mesos_agent_log_file),
+        lambda mesos_master_log_file: validate_absolute_path(mesos_master_log_file),
         lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
@@ -1057,6 +1138,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1071,6 +1153,10 @@ entry = {
                 'service': 'vfs'
             }
         }),
+        'superuser_service_account_uid': '',
+        'superuser_service_account_public_key': '',
+        '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
+        '_superuser_credentials_given': calculate__superuser_credentials_given,
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
@@ -1100,6 +1186,8 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
+        'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
         'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',

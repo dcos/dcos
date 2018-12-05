@@ -14,6 +14,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 ### UDP
 
  - 53: dcos-net (dns)
+ - 61825: dcos-telegraf
 
 ## Master
 

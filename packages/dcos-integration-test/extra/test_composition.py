@@ -113,6 +113,9 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     # Insert all the diagnostics data programmatically
     master_units = [
         'dcos-adminrouter.service',
+        'dcos-cockroach.service',
+        'dcos-cockroachdb-config-change.service',
+        'dcos-cockroachdb-config-change.timer',
         'dcos-cosmos.service',
         'dcos-exhibitor.service',
         'dcos-history.service',
@@ -125,7 +128,7 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-mesos-master.service',
         'dcos-metronome.service',
         'dcos-signal.service',
-        'dcos-oauth.service',
+        'dcos-bouncer.service',
     ]
     all_node_units = [
         'dcos-checks-api.service',

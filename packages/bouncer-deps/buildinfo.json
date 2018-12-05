@@ -1,0 +1,77 @@
+{
+  "requires": [
+    "python",
+    "python-future",
+    "python-isodate",
+    "python-jwt",
+    "python-jose",
+    "python-passlib",
+    "python-dateutil",
+    "python-pycparser",
+    "python-retrying",
+    "python-pyyaml",
+    "python-cryptography",
+    "python-gunicorn",
+    "six",
+    "libpq"
+  ],
+  "sources": {
+    "jsonschema": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/77/de/47e35a97b2b05c2fadbec67d44cfcdcd09b8086951b331d82de90d2912da/jsonschema-2.6.0-py2.py3-none-any.whl",
+      "sha1": "a1ea439871d83b355767cf32d224041d4be64d8f"
+    },
+    "falcon": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/2f/e6/5045da9df509b9259037f065d15608930fd6c997ee930ad230f9fbfecf15/falcon-1.4.1.tar.gz",
+      "sha1": "c29979a1fcb1b3149f1e54cc587d9582a61c947d"
+    },
+    "python-mimeparse": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/p/python-mimeparse/python-mimeparse-0.1.4.tar.gz",
+      "sha1": "bebc26249214c66f8c65e904e8eede8453eb4840"
+    },
+    "psycopg2": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/c0/07/93573b97ed61b6fb907c8439bf58f09957564cf7c39612cef36c547e68c6/psycopg2-2.7.6.1.tar.gz",
+      "sha1": "45e359fb2999c9608fea7832cb37a623151274e4"
+    },
+    "sqlalchemy": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/e2/0a/05b7d13618ad41c108a6c2b886af83bf9bb7e35f8951227abb18b1330745/SQLAlchemy-1.2.14.tar.gz",
+      "sha1": "7e7260c3886ff633bbf6ffbcee3a394a7e520145"
+    },
+    "sqlalchemy-utils": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/fa/cd/cf58d3a95a619262f0f52eedc707d143b6ada636ed24f6765544c049fdf9/SQLAlchemy-Utils-0.33.8.tar.gz",
+      "sha1": "b1e398f693b81506e64109ccb873a263219fb882"
+    },
+    "mako": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/eb/f3/67579bb486517c0d49547f9697e36582cd19dafb5df9e687ed8e22de57fa/Mako-1.0.7.tar.gz",
+      "sha1": "bf0c1f4cdfca4dd37bc0c9f83e984a0558268b42"
+    },
+    "python-editor": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/65/1e/adf6e000ea5dc909aa420352d6ba37f16434c8a3c2fa030445411a1ed545/python-editor-1.0.3.tar.gz",
+      "sha1": "018e3c55a09ce6ac6531e9337bfa29a252aacdc2"
+    },
+    "pyasn1": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/10/46/059775dc8e50f722d205452bced4b3cc965d27e8c3389156acd3b1123ae3/pyasn1-0.4.4.tar.gz",
+      "sha1": "10f67e61e30c064301c826c6e5e461ff7bf5827d"
+    },
+    "alembic": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/1c/65/b8e4f5b2f345bb13b5e0a3fddd892b0b3f0e8ad4880e954fdc6a50d00d84/alembic-1.0.5.tar.gz",
+      "sha1": "2eee5fa2bd3ea7c526950e827824397acb24a531"
+    },
+    "cockroachdb-python": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/00/1c/cbbeab7ecdd5ecf1213785bacf9cec05b8b5b49f2a1a84954a3deaf0acf2/cockroachdb-0.1.0.tar.gz",
+      "sha1": "679408a97802e9a4c8c79c6866eee8074f63eab0"
+    }
+  },
+  "username": "dcos_bouncer",
+  "state_directory": true
+}
