@@ -20,6 +20,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
+* Metronome supports UCR
+* Metronome supports file based secrets
+* Metronome supports hybrid cloud
 
 
 ### Breaking changes
