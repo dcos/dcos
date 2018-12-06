@@ -69,7 +69,7 @@ update-devkit: clean-devkit-container
 	@docker run \
 		$(DEVKIT_BASE_DOCKER_OPTS) \
 		mesosphere/$(DEVKIT_NAME):noresty \
-			/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT" && \
+			/bin/bash -c "\$$OPENRESTY_COMPILE_SCRIPT --add-module=\$$VTS_MODULE_DIR" && \
 	docker commit $$(docker ps -a -q -f name=$(DEVKIT_NAME)) \
 		mesosphere/$(DEVKIT_NAME):full
 	@docker rm -f $(DEVKIT_NAME)
