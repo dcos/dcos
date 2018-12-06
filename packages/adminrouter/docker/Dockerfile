@@ -8,6 +8,9 @@ ENV OPENRESTY_VERSION=1.13.6.1 \
     OPENRESTY_COMPILE_OPTS="" \
     VENV_DIR=/usr/local/venv \
     AR_BIN_DIR=/usr/local/adminrouter/ \
+    VTS_MODULE_DIR=/usr/local/src/nginx-vts-module-v0.1.18 \
+    VTS_MODULE_DOWNLOAD_SHASUM=8887748e0ef76e459aa2c86244baf382d4f7d4e5 \
+    VTS_MODULE_DOWNLOAD_URL=https://github.com/vozlt/nginx-module-vts/archive/v0.1.18.tar.gz \
     VEGETA_DOWNLOAD_SHA256=2f0a69d0ae6f0bf268b7f655bd37c0104d5568d5b2bc45bbb2c405266f74e33d \
     VEGETA_DOWNLOAD_URL=https://github.com/tsenart/vegeta/releases/download/v6.1.1/vegeta-v6.1.1-linux-amd64.tar.gz \
     IAM_PUBKEY_FILE_PATH=/usr/local/iam.jwt-key.pub \
@@ -91,6 +94,13 @@ RUN curl -fsSL "$VEGETA_DOWNLOAD_URL" -o vegeta.tar.gz \
     && echo "$VEGETA_DOWNLOAD_SHA256  vegeta.tar.gz" | sha256sum -c - \
         && tar -C /usr/local/bin -xzf vegeta.tar.gz \
         && rm vegeta.tar.gz
+
+# Download VTS module for metrics
+RUN curl -fsSL "$VTS_MODULE_DOWNLOAD_URL" -o vts-module.tar.gz \
+    && echo "$VTS_MODULE_DOWNLOAD_SHASUM  vts-module.tar.gz" | shasum -c - \
+    && mkdir -pv $VTS_MODULE_DIR \
+    && tar --strip-components=1 -C $VTS_MODULE_DIR -xzf vts-module.tar.gz \
+    && rm vts-module.tar.gz
 
 # Prepare Openresty. Compilation is done in Makefile itself so that
 # this container can be reused during DC/OS build.
