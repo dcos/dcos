@@ -10,6 +10,8 @@
 
 ### Fixed and improved
 
+* Docker-GC will now log to journald. (COPS-4044)
+
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 * DC/OS Metrics: Fixed a bug that was crashing the DC/OS agent metrics service (DCOS-39103)
