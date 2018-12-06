@@ -47,6 +47,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Fixed `iam-database-restore` script to not leave old database after restore. (DCOS-42407)
 
+* Admin Router logs to non-blocking socket. (DCOS-43956)
+
 
 ### Notable changes
 
