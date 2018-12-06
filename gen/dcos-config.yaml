@@ -1446,6 +1446,21 @@ package:
         # insecure_skip_verify = true
         [inputs.prometheus.tags]
           dcos-component-name = "CockroachDB"
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["https://localhost/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
