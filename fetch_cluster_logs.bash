@@ -158,14 +158,20 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     # get mesos logs
     ./dcos-cli $debug_options node log --leader > mesos_master.log
   else
-    # remove unnecessary, bulky artifacts
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo cp -a /var/lib/mesos/slave/ mesos_sandbox
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox/store
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo find mesos_sandbox -name "*tar.gz" -type f -delete -o -name "*.jar" -type f -delete -o -name "*.so" -type f -delete
+    mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du -s /var/lib/mesos/slave/ | grep -Po "\d+")
+    free_space=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo df --block-size=1 | grep -Po "\d+\s+\d+%\ /$" | grep -Po "\d+" | head -1)
+    if (( $free_space > $mesos_sandbox_size )); then
+      # remove unnecessary, bulky artifacts
+      ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo cp -a /var/lib/mesos/slave/ mesos_sandbox
+      ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox/store
+      ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo find mesos_sandbox -name "*tar.gz" -type f -delete -o -name "*.jar" -type f -delete -o -name "*.so" -type f -delete
 
-    # get sandbox logs
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo tar --exclude=provisioner -zc mesos_sandbox > sandbox_${ip_underscores}.tar.gz
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox
+      # get sandbox logs
+      ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo tar --exclude=provisioner -zc mesos_sandbox > sandbox_${ip_underscores}.tar.gz
+      ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox
+    else
+      echo "Cannot copy and collect mesos sandbox: insufficient disk space."
+    fi 
 
     # get journald logs
     ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x -b --no-pager > agent_${ip_underscores}_journald.log
