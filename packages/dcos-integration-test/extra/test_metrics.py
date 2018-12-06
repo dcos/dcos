@@ -129,6 +129,22 @@ def test_metrics_masters_adminrouter(dcos_api_session):
         check_adminrouter_metrics()
 
 
+def test_metrics_agents_adminrouter(dcos_api_session):
+    """Assert that Admin Router metrics on agents are present."""
+    for master in dcos_api_session.slaves:
+        expected_metrics = [
+            'dcos_component_name="Admin Router Agent"',
+            'nginx_vts',
+        ]
+
+        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        def check_adminrouter_metrics():
+            response = get_metrics_prom(dcos_api_session, master)
+            for metric_name in expected_metrics:
+                assert metric_name in response.text
+        check_adminrouter_metrics()
+
+
 def test_metrics_agents_statsd(dcos_api_session):
     """Assert that statsd metrics on agent are present."""
     if len(dcos_api_session.slaves) > 0:

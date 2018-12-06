@@ -38,6 +38,11 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
+  /nginx/metrics:
+    group: Status
+    matcher: path
+    description: Virtual host traffic Prometheus output (unauthenticated)
+    path: /nginx/metrics
   /system/checks/v1:
     group: System
     matcher: path

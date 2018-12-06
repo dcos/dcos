@@ -1449,7 +1449,7 @@ package:
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
-        urls = ["https://localhost/nginx/metrics"]
+        urls = ["https://127.0.0.1/nginx/metrics"]
         ## Specify timeout duration for slower prometheus clients (default is 3s)
         response_timeout = "10s"
         ## Optional TLS Config
@@ -1538,6 +1538,21 @@ package:
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
         percentile_limit = 1000
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:61001/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1629,6 +1644,21 @@ package:
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
         percentile_limit = 1000
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:61001/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
