@@ -17,6 +17,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Docker-GC will now log to journald. (COPS-4044)
+
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
 ### Security Updates
