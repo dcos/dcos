@@ -13,6 +13,12 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
+* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Ningx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
+
+* CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
+
+* ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
+
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
 
 
@@ -35,6 +41,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Docker-GC will now log to journald. (COPS-4044)
 
 * Allow the DC/OS installer to be used when there is a space in its path (DCOS_OSS-4429).
+
+* Fixed `iam-database-restore` script to not leave old database after restore. (DCOS-42407)
 
 
 ### Notable changes

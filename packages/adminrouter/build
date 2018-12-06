@@ -8,7 +8,7 @@ set -u  # Undefined variables
 export CXXFLAGS=-I/opt/mesosphere/include
 export AR_BIN_DIR=$PKG_PATH
 
-$OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-opt="-L /opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib"
+$OPENRESTY_COMPILE_SCRIPT --with-cc-opt="-I /opt/mesosphere/include" --with-ld-opt="-L /opt/mesosphere/lib -Wl,-rpath=/opt/mesosphere/lib" --add-module=$VTS_MODULE_DIR
 
 # Incorporate Admin Router components.
 rm -vfR $PKG_PATH/nginx/conf/*

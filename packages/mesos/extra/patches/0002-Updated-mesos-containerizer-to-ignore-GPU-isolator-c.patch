@@ -1,4 +1,4 @@
-From 437fb8a083f0f83770b4ee3e5f8040f8050c9579 Mon Sep 17 00:00:00 2001
+From 49e7e73427c924804d20bba31039ba70310bcc1e Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
 Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
@@ -23,7 +23,7 @@ by https://reviews.apache.org/r/62472/
  1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
-index 03a4e0f15..7fc27ba5f 100644
+index a5cf2da..4b2e8a9 100644
 --- a/src/slave/containerizer/mesos/containerizer.cpp
 +++ b/src/slave/containerizer/mesos/containerizer.cpp
 @@ -449,8 +449,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
@@ -51,5 +51,5 @@ index 03a4e0f15..7fc27ba5f 100644
  
    // Next, apply any custom isolators in the order given by the flags.
 -- 
-2.16.3
+2.5.1
 
