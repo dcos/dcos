@@ -1491,7 +1491,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>http://$backend/dcos-metadata/ui-config.json</code>
+                  <code>http://$backend/acs/api/v1/uiconfig/</code>
                 </td>
               </tr>
               <tr>
@@ -1540,6 +1540,26 @@
                 </td>
               </tr>
             </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-metrics" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="metrics" href="#metrics" aria-hidden="true" class="toggle-route-group" data-id="metrics">
+            <div class="arrow arrow-right"></div>Metrics</a>
+        </h2>
+        <span class="options"><a href="#metrics" class="toggle-route-group" data-id="metrics">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-metrics" class="routes">
+        <li class="route route-type-unknown">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Unknown</span>
+              <span class="route-path"><code>/nginx/status</code></span>
+            </h3>
+            <span class="route-desc">Virtual Host Traffic Module Status</span>
           </div>
         </li>
       </ul>
@@ -1595,6 +1615,14 @@
                 </td>
               </tr>
             </table>
+          </div>
+        </li>
+        <li class="route route-type-unknown">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Unknown</span>
+              <span class="route-path"><code>/nginx/metrics</code></span>
+            </h3>
           </div>
         </li>
         <li class="route route-type-proxy">

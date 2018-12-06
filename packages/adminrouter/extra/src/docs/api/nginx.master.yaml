@@ -245,7 +245,7 @@ routes:
     matcher: path
     description: DC/OS GUI configuration (unauthenticated)
     proxy:
-      path: 'http://$backend/dcos-metadata/ui-config.json'
+      path: 'http://$backend/acs/api/v1/uiconfig/'
       backend: iam
     path: /dcos-metadata/ui-config.json
   /metadata:
@@ -255,6 +255,11 @@ routes:
     lua:
       file: conf/lib/metadata.lua
     path: /metadata
+  /nginx/status:
+    group: Metrics
+    matcher: path
+    description: Virtual Host Traffic Module Status
+    path: /nginx/status
   /internal/mesos_dns/:
     group: Other
     matcher: path
@@ -262,6 +267,10 @@ routes:
       path: 'http://$backend/'
       backend: mesos_dns
     path: /internal/mesos_dns/
+  /nginx/metrics:
+    group: Other
+    matcher: path
+    path: /nginx/metrics
   '@service_default':
     group: Other
     matcher: path
