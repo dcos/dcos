@@ -1,0 +1,61 @@
+From da74bfc404f40e385058ac64e7d517977d705300 Mon Sep 17 00:00:00 2001
+From: Benjamin Bannier <benjamin.bannier@mesosphere.io>
+Date: Wed, 5 Dec 2018 13:02:59 -0800
+Subject: [PATCH] Made agent state consistent with forwarded updates.
+
+When the agent handles an `UpdateOperationStatusMessage` from a resource
+provider, it injects its own ID which is (at least conceptually) unknown
+to the resource provider before forwarding the message to the master,
+and also updates its own tracking for the operation.
+
+This patch makes sure that we first mutate the message before handing it
+on for updating the internal operation tracking, while previously we
+used the unmodified message. Always using the same message reduces error
+potential if in future changes we e.g., introduce agent operation status
+update managers.
+
+Review: https://reviews.apache.org/r/69458/
+(cherry picked from commit 93373344dab0ba0966871ae1470b8ba95a48e320)
+---
+ src/slave/slave.cpp | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
+index d32f74b4e..7f32868f0 100644
+--- a/src/slave/slave.cpp
++++ b/src/slave/slave.cpp
+@@ -7799,9 +7799,14 @@ void Slave::handleResourceProviderMessage(
+     case ResourceProviderMessage::Type::UPDATE_OPERATION_STATUS: {
+       CHECK_SOME(message->updateOperationStatus);
+ 
+-      const UpdateOperationStatusMessage& update =
++      // The status update from the resource provider didn't provide
++      // the agent ID (because the resource provider doesn't know it),
++      // hence we inject it here.
++      UpdateOperationStatusMessage update =
+         message->updateOperationStatus->update;
+ 
++      update.mutable_slave_id()->CopyFrom(info.id());
++
+       const UUID& operationUUID = update.operation_uuid();
+ 
+       Operation* operation = getOperation(operationUUID);
+@@ -7862,14 +7867,7 @@ void Slave::handleResourceProviderMessage(
+                  ? " for framework " + stringify(update.framework_id())
+                  : " for an operator API call");
+ 
+-          // The status update from the resource provider didn't
+-          // provide the agent ID (because the resource provider
+-          // doesn't know it), hence we inject it here.
+-          UpdateOperationStatusMessage _update;
+-          _update.CopyFrom(update);
+-          _update.mutable_slave_id()->CopyFrom(info.id());
+-
+-          send(master.get(), _update);
++          send(master.get(), update);
+           break;
+         }
+       }
+-- 
+2.19.2
+
