@@ -5,12 +5,22 @@ endpoint_tests:
         expect_http_status: 200
         nocaching_headers_are_sent: skip
         test_paths:
-          - /nginx/status
           - /nginx/metrics
       is_unauthed_access_permitted:
         locations:
-          - /nginx/status
           - /nginx/metrics
+    type:
+      - master
+      - agent
+  - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /nginx/status
+      is_unauthed_access_permitted:
+        locations:
+          - /nginx/status
     type:
       - master
 ######### /exhibitor endpoint
@@ -354,6 +364,8 @@ endpoint_tests:
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0/
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/logs
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/dcos-metadata/dcos-version.json
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/nginx/metrics
         upstream: http://127.0.0.2:61001
       is_upstream_req_ok:
         expected_http_ver: HTTP/1.1
@@ -372,6 +384,8 @@ endpoint_tests:
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/metrics/v0
           - expected: /dcos-metadata/dcos-version.json
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/dcos-metadata/dcos-version.json
+          - expected: /nginx/metrics
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S1/nginx/metrics
     type:
       - master
 # Agent B
@@ -390,6 +404,8 @@ endpoint_tests:
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0/
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs
           - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/dcos-metadata/dcos-version.json
+          - /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/nginx/metrics
         upstream: http://127.0.0.3:61001
       is_upstream_req_ok:
         expected_http_ver: HTTP/1.1
@@ -408,6 +424,8 @@ endpoint_tests:
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/metrics/v0
           - expected: /dcos-metadata/dcos-version.json
             sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/dcos-metadata/dcos-version.json
+          - expected: /nginx/metrics
+            sent: /system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/nginx/metrics
     type:
       - master
 

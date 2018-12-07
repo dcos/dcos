@@ -113,6 +113,10 @@ minuteman
 Nginx
 - http://nginx.org/LICENSE
 
+nginx-module-vts
+- BSD 2-Clause License
+- https://github.com/vozlt/nginx-module-vts/blob/master/LICENSE
+
 ncurses
 - MIT License
 - http://invisible-island.net/ncurses/ncurses-license.html
