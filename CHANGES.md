@@ -20,6 +20,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
+* Metronome supports UCR
+* Metronome supports file based secrets
+* Metronome supports hybrid cloud
 
 
 ### Breaking changes
@@ -44,7 +47,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Fixed `iam-database-restore` script to not leave old database after restore. (DCOS-42407)
 
+* Admin Router logs to non-blocking socket. (DCOS-43956)
+
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.37.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.37.0)
+* Updated DC/OS UI to master+v2.40.0 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.0)
