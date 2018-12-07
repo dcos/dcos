@@ -37,7 +37,7 @@ EXHIBITOR_PATH = "/exhibitor/foo/bar"
 #             master_ar_process_perclass,
 #             EXHIBITOR_PATH,
 #             500,
-#             assert_stderr=log_messages,
+#             assert_error_log=log_messages,
 #             headers=valid_user_header,
 #             )
 
@@ -60,7 +60,7 @@ class TestAuthnJWTValidatorOpen:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             headers=forged_user_header,
             )
 

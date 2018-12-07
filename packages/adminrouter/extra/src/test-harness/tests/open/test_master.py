@@ -57,7 +57,7 @@ authed_endpoints = [
 #                     path,
 #                     401,
 #                     headers=valid_user_header,
-#                     assert_stderr=log_messages)
+#                     assert_error_log=log_messages)
 
 #     @pytest.mark.parametrize("path", authed_endpoints)
 #     def test_if_known_user_is_permitted_access(

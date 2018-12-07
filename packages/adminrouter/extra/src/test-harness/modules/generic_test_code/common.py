@@ -376,7 +376,7 @@ def assert_endpoint_response(
         ar,
         path,
         code,
-        assert_stderr=None,
+        assert_error_log=None,
         headers=None,
         cookies=None,
         assertions=None
@@ -387,7 +387,7 @@ def assert_endpoint_response(
     Arguments:
         ar (Nginx): Running instance of the AR
         code (int): Expected response code
-        assert_stderr (dict): LineBufferFilter compatible definition of messages
+        assert_error_log (dict): LineBufferFilter compatible definition of messages
             to assert
         cookies (dict): Optionally provide request cookies
         headers (dict): Optionally provide request headers
@@ -405,11 +405,17 @@ def assert_endpoint_response(
             for func in assertions:
                 assert func(r)
 
-    if assert_stderr is not None:
-        lbf = LineBufferFilter(assert_stderr, line_buffer=ar.stderr_line_buffer)
-        with lbf:
-            body()
-        assert lbf.extra_matches == {}
+    if assert_error_log is not None:
+        # for testing, log messages go to both stderr and to /dev/log
+        with LineBufferFilter(
+            copy.deepcopy(assert_error_log), line_buffer=ar.stderr_line_buffer
+        ) as stderr:
+            with LineBufferFilter(
+                assert_error_log, line_buffer=ar.syslog_line_buffer
+            ) as syslog:
+                body()
+        assert stderr.extra_matches == {}
+        assert syslog.extra_matches == {}
     else:
         body()
 
