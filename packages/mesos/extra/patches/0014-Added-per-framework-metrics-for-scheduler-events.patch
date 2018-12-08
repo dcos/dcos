@@ -1,4 +1,4 @@
-From fea04ca41860fc3713c272d3e8d66a8bae56c247 Mon Sep 17 00:00:00 2001
+From 83950c1f97f5708ed49a99b1a9fde68aae336bdd Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:22 -0700
 Subject: [PATCH] Added per-framework metrics for scheduler events.
@@ -11,7 +11,7 @@ Review: https://reviews.apache.org/r/67809/
  3 files changed, 64 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 332033e9c..5dd1ffa0a 100644
+index f3641936f..05e530cfa 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -349,13 +349,16 @@ public:
@@ -52,8 +52,8 @@ index 332033e9c..5dd1ffa0a 100644
  };
  
  
-@@ -2339,6 +2347,10 @@ struct Framework
-                    << " framework " << *this;
+@@ -2352,6 +2360,10 @@ struct Framework
+       // check that one of `http` or `pid` is set if the framework is connected.
      }
  
 +    // TODO(gilbert): add a helper to transform `SchedulerDriver` API messages
@@ -63,7 +63,7 @@ index 332033e9c..5dd1ffa0a 100644
      if (http.isSome()) {
        if (!http.get().send(message)) {
          LOG(WARNING) << "Unable to send event to framework " << *this << ":"
-@@ -2801,7 +2813,11 @@ struct Framework
+@@ -2816,7 +2828,11 @@ struct Framework
            "framework " + stringify(info.id()),
            event,
            http.get(),
@@ -172,5 +172,5 @@ index 7a7b3a316..fac4440da 100644
  
  
 -- 
-2.17.1
+2.13.6 (Apple Git-96)
 
