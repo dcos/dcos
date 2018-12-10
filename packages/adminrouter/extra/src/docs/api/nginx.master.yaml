@@ -255,11 +255,6 @@ routes:
     lua:
       file: conf/lib/metadata.lua
     path: /metadata
-  /nginx/status:
-    group: Metrics
-    matcher: path
-    description: Virtual Host Traffic Module Status
-    path: /nginx/status
   /internal/mesos_dns/:
     group: Other
     matcher: path
@@ -267,10 +262,6 @@ routes:
       path: 'http://$backend/'
       backend: mesos_dns
     path: /internal/mesos_dns/
-  /nginx/metrics:
-    group: Other
-    matcher: path
-    path: /nginx/metrics
   '@service_default':
     group: Other
     matcher: path
@@ -319,6 +310,16 @@ routes:
         replacement: /service/$1/
         type: permanent
     path: '/service/(?<serviceid>[0-9a-zA-Z-.]+)'
+  /nginx/metrics:
+    group: Status
+    matcher: path
+    description: Virtual host traffic Prometheus output (unauthenticated)
+    path: /nginx/metrics
+  /nginx/status:
+    group: Status
+    matcher: path
+    description: Virtual host traffic JavaScript output
+    path: /nginx/status
   /system/checks/v1:
     group: System
     matcher: path
@@ -335,7 +336,7 @@ routes:
       path: 'http://$backend/system/health/v1'
       backend: dcos_diagnostics
     path: /system/health/v1
-  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json)':
+  '/system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json|/nginx/metrics)':
     group: System
     matcher: regex
     description: System proxy to a specific agent node
@@ -348,8 +349,11 @@ routes:
       - regex: '^/system/v1/agent/[0-9a-zA-Z-]+/dcos-metadata/dcos-version.json'
         replacement: /dcos-metadata/dcos-version.json
         type: break
+      - regex: '^/system/v1/agent/[0-9a-zA-Z-]+/nginx/metrics'
+        replacement: /nginx/metrics
+        type: break
     path: >-
-      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json)
+      /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<url>/logs.*|/metrics/v0.*|/dcos-metadata/dcos-version.json|/nginx/metrics)
   /system/v1/leader/marathon(?<url>.*):
     group: System
     matcher: regex
