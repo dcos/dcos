@@ -108,7 +108,7 @@ fi
 
 # download the DC/OS CLI
 if [ ! -f dcos-cli ]; then
-  wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.12/dcos --output-document=dcos-cli
+  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.1/dcos --output-document=dcos-cli
   chmod +x dcos-cli
 fi
 
@@ -171,7 +171,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
       ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox
     else
       echo "Cannot copy and collect mesos sandbox: insufficient disk space."
-    fi 
+    fi
 
     # get journald logs
     ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x -b --no-pager > agent_${ip_underscores}_journald.log
