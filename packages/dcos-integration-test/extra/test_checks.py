@@ -96,7 +96,10 @@ def test_checks_api(dcos_api_session):
             results = r.json()
             assert isinstance(results, dict)
 
-            logging.info("returned checks: {}".format(checks))
-            logging.info("run checks     : {}".format(results['checks'].keys()))
-            # Make sure we ran all the listed checks.
-            assert set(checks.keys()) == set(results['checks'].keys())
+            # check that the returned statuses of each check is 0
+            expected_status = {c: 0 for c in checks.keys()}
+            response_status = {c: v['status'] for c, v in results['checks'].items()}
+            assert expected_status == response_status
+
+            # check that overall status is also 0
+            assert results['status'] == 0
