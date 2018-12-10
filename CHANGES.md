@@ -2,8 +2,6 @@
 
 ### Notable changes
 
-* Telegraf plugins now send unique User-Agent header values (DCOS_OSS-4168)
-
 ### Breaking changes
 
 ### Fixed and improved
