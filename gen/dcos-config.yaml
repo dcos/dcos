@@ -359,6 +359,8 @@ package:
            }
         ]
       }
+{% case "false" %}
+{% endswitch %}
   - path: /etc/mesos-slave-modules/metrics.json
     content: |
       {
@@ -375,8 +377,6 @@ package:
           } ]
         } ]
       }
-{% case "false" %}
-{% endswitch %}
   - path: /etc/mesos-slave-modules/journal_logger_modules.json
     content: |
       {
@@ -1355,6 +1355,34 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Configuration for the Prometheus client to spawn
+      [[outputs.prometheus_client]]
+        ## Address to listen on
+        listen = ":61091"
+  - path: /etc_master/telegraf/telegraf.d/master.conf
+    content: |
+      # Additional Telegraf config for masters
+      # Telegraf plugin for gathering metrics from mesos
+      [[inputs.mesos]]
+        # The interval at which to collect metrics
+        interval = "60s"
+        # Timeout, in ms.
+        timeout = 30000
+        # A list of Mesos masters.
+        masters = ["http://$DCOS_NODE_PRIVATE_IP:5050"]
+        # Master metrics groups to be collected.
+        master_collections = [
+          "resources",
+          "master",
+          "agents",
+          "frameworks",
+          "framework_offers",
+          "tasks",
+          "messages",
+          "evqueue",
+          "registrar",
+          "allocator",
+       ]
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1413,7 +1441,9 @@ package:
           "evqueue",
           "registrar",
           "allocator",
-       ]
+        ]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-mesos"
       # Reads 'mntr' health checks from one or many zookeeper servers
       [[inputs.zookeeper]]
         ## An array of addresses to gather stats about. Specify an ip or hostname
@@ -1432,6 +1462,35 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+      # Reads metrics from CockroachDB's prometheus client
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:8090/_status/vars"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.prometheus.tags]
+          dcos-component-name = "CockroachDB"
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["https://127.0.0.1/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
@@ -1452,6 +1511,8 @@ package:
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
         ## The address on which the command API should listen
@@ -1478,6 +1539,54 @@ package:
           "tasks",
           "messages",
         ]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-mesos"
+      # Statsd UDP/TCP Server
+      [[inputs.statsd]]
+        ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
+        protocol = "udp"
+        ## Address and port to host UDP listener on
+        service_address = "localhost:61825"
+        ## The following configuration options control when telegraf clears it's cache
+        ## of previous values. If set to false, then telegraf will only clear it's
+        ## cache when the daemon is restarted.
+        ## Reset gauges every interval (default=true)
+        delete_gauges = true
+        ## Reset counters every interval (default=true)
+        delete_counters = true
+        ## Reset sets every interval (default=true)
+        delete_sets = true
+        ## Reset timings & histograms every interval (default=true)
+        delete_timings = true
+        ## Percentiles to calculate for timing & histogram stats
+        percentiles = [90]
+        ## separator to use between elements of a statsd metric
+        metric_separator = "_"
+        ## Parses tags in the datadog statsd format
+        ## http://docs.datadoghq.com/guides/dogstatsd/
+        parse_data_dog_tags = false
+        ## Number of UDP messages allowed to queue up, once filled,
+        ## the statsd server will start dropping packets
+        allowed_pending_messages = 10000
+        ## Number of timing/histogram values to track per-measurement in the
+        ## calculation of percentiles. Raising this limit increases the accuracy
+        ## of percentiles but also increases the memory usage and cpu time.
+        percentile_limit = 1000
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:61001/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1486,6 +1595,14 @@ package:
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
         rate_limit = "5s"
+        ## List of labels to always add to each metric as tags
+        whitelist = ["DCOS_SERVICE_NAME"]
+        ## List of prefixes a label should have in order to be added
+        ## to each metric as tags; the prefix is stripped from the
+        ## label when tagging
+        whitelist_prefix = ["DCOS_METRICS_"]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-metadata"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"
@@ -1506,6 +1623,8 @@ package:
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
         ## The address on which the command API should listen
@@ -1532,6 +1651,54 @@ package:
           "tasks",
           "messages",
         ]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-mesos"
+      # Statsd UDP/TCP Server
+      [[inputs.statsd]]
+        ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
+        protocol = "udp"
+        ## Address and port to host UDP listener on
+        service_address = "localhost:61825"
+        ## The following configuration options control when telegraf clears it's cache
+        ## of previous values. If set to false, then telegraf will only clear it's
+        ## cache when the daemon is restarted.
+        ## Reset gauges every interval (default=true)
+        delete_gauges = true
+        ## Reset counters every interval (default=true)
+        delete_counters = true
+        ## Reset sets every interval (default=true)
+        delete_sets = true
+        ## Reset timings & histograms every interval (default=true)
+        delete_timings = true
+        ## Percentiles to calculate for timing & histogram stats
+        percentiles = [90]
+        ## separator to use between elements of a statsd metric
+        metric_separator = "_"
+        ## Parses tags in the datadog statsd format
+        ## http://docs.datadoghq.com/guides/dogstatsd/
+        parse_data_dog_tags = false
+        ## Number of UDP messages allowed to queue up, once filled,
+        ## the statsd server will start dropping packets
+        allowed_pending_messages = 10000
+        ## Number of timing/histogram values to track per-measurement in the
+        ## calculation of percentiles. Raising this limit increases the accuracy
+        ## of percentiles but also increases the memory usage and cpu time.
+        percentile_limit = 1000
+      # Read metrics from Admin Router Nginx Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:61001/nginx/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1540,6 +1707,14 @@ package:
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
         rate_limit = "5s"
+        ## List of labels to always add to each metric as tags
+        whitelist = ["DCOS_SERVICE_NAME"]
+        ## List of prefixes a label should have in order to be added
+        ## to each metric as tags; the prefix is stripped from the
+        ## label when tagging
+        whitelist_prefix = ["DCOS_METRICS_"]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-dcos-metadata"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "agent"

@@ -152,8 +152,15 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
         # Renaming the new database failed, so rename the old one back and
         # remove the 'iam_new' database
         _rename_database(oldname=olddbname, newname=curdbname)
-        _drop_database('iam_new')
+        _drop_database(newdbname)
         raise
+
+    # 5. Remove the original (old) database that isn't used anymore
+    try:
+        _drop_database(olddbname)
+    except CalledProcessError:
+        # Don't fail on failure here as the restore was successful
+        log.error('Failed to remove original (old) database `%s`', olddbname)
 
 
 def _parse_args() -> argparse.Namespace:

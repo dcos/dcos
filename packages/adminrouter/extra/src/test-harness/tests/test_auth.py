@@ -48,7 +48,7 @@ class TestAuthnJWTValidator:
             }
 
         assert_endpoint_response(
-            master_ar_process_perclass, EXHIBITOR_PATH, 401, assert_stderr=log_messages)
+            master_ar_process_perclass, EXHIBITOR_PATH, 401, assert_error_log=log_messages)
 
     def test_invalid_auth_token_in_cookie(self, master_ar_process_perclass):
         log_messages = {
@@ -61,7 +61,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             cookies={"dcos-acs-auth-cookie": "invalid"},
             )
 
@@ -83,7 +83,7 @@ class TestAuthnJWTValidator:
     #         master_ar_process_perclass,
     #         EXHIBITOR_PATH,
     #         401,
-    #         assert_stderr=log_messages,
+    #         assert_error_log=log_messages,
     #         cookies={"dcos-acs-auth-cookie": token},
     #         )
 
@@ -105,7 +105,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             cookies={"dcos-acs-auth-cookie": token},
             )
 
@@ -125,7 +125,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             200,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             cookies={"dcos-acs-auth-cookie": token},
             )
 
@@ -138,7 +138,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             200,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             headers=valid_user_header,
             )
 
@@ -160,7 +160,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             200,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             headers=valid_user_header,
             cookies={"dcos-acs-auth-cookie": token},
             )
@@ -181,7 +181,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             headers=auth_header,
             )
 
@@ -216,7 +216,7 @@ class TestAuthnJWTValidator:
             master_ar_process_perclass,
             EXHIBITOR_PATH,
             401,
-            assert_stderr=log_messages,
+            assert_error_log=log_messages,
             headers=auth_header,
             )
 
