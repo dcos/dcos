@@ -131,6 +131,13 @@ package:
           ]
         }
       ].
+  - path: /etc/dcos.network
+    content: |
+      [Match]
+      Name=docker* m-* d-* vtep* spartan minuteman
+
+      [Link]
+      Unmanaged=yes
   - path: /etc/dcos-cni-networks
     content: |
       {
