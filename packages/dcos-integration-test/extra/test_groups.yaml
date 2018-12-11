@@ -64,12 +64,12 @@ groups:
         - test_meta.py
         - test_metrics.py
     group_3:
-        - test_metronome.py
         - test_misc.py
         - test_networking.py
-        - test_packaging.py
         - test_rexray.py
     group_4:
+        - test_metronome.py
+        - test_packaging.py
         - test_rlimit.py
         - test_service_discovery.py
         - test_sysctl.py
