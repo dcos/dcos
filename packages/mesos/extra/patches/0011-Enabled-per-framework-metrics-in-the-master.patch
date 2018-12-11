@@ -1,4 +1,4 @@
-From f2333b09a468d213a7f3f0d28be2a25e2de03782 Mon Sep 17 00:00:00 2001
+From e687b38ee1045d14b59ca84e8c850126119149a8 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:57:56 -0700
 Subject: [PATCH] Enabled per-framework metrics in the master.
@@ -14,10 +14,10 @@ Review: https://reviews.apache.org/r/67962/
  3 files changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 61809de88..367060738 100644
+index 282925da5..c8a4b7621 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -2894,6 +2894,9 @@ struct Framework
+@@ -2909,6 +2909,9 @@ struct Framework
    Option<process::Owned<Heartbeater<scheduler::Event, v1::scheduler::Event>>>
      heartbeater;
  
@@ -27,7 +27,7 @@ index 61809de88..367060738 100644
  private:
    Framework(Master* const _master,
              const Flags& masterFlags,
-@@ -2908,8 +2911,11 @@ private:
+@@ -2923,8 +2926,11 @@ private:
        registeredTime(time),
        reregisteredTime(time),
        completedTasks(masterFlags.max_completed_tasks_per_framework),
@@ -99,5 +99,5 @@ index 1ef74dedf..9f10aecba 100644
  } // namespace internal {
  } // namespace mesos {
 -- 
-2.17.0
+2.17.1
 

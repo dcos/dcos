@@ -1,4 +1,4 @@
-From 163e53494c411baee82effb272473c2eca82a09b Mon Sep 17 00:00:00 2001
+From e285b706666a65752098cef0feb59546ebfcb2c8 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:53 -0700
 Subject: [PATCH] Introduced a push-based gauge metric.
@@ -144,5 +144,5 @@ index 000000000..5c3984617
 +
 +#endif // __PROCESS_METRICS_PUSH_GAUGE_HPP__
 -- 
-2.17.0
+2.17.1
 

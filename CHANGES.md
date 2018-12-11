@@ -1,14 +1,45 @@
-## DC/OS 1.11.7-dev
+## DC/OS 1.11-dev
 
 ### Notable changes
 
-* Updated to [Marathon 1.6.552](https://github.com/mesosphere/marathon/tree/f56ad6ec8).
+* Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
+
+* Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
+
+* Update to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
 
 ### Fixed and improved
 
+* Docker-GC will now log to journald. (COPS-4044)
+
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
+* DC/OS Metrics: Fixed a bug that was crashing the DC/OS agent metrics service (DCOS-39103)
+
+* [DCOS-42753](https://jira.mesosphere.com/browse/DCOS-42753) Bump Akka library to fix memory leak issue.
+* [MARATHON-8453](https://jira.mesosphere.com/browse/MARATHON-8453) TaskOverdueActor now respects `--kill_retry_timeout`.
+* [MARATHON-8452](https://jira.mesosphere.com/browse/MARATHON-8452) Only log zero-value offers for scalar resources.
+* [MARATHON-8461](https://jira.mesosphere.com/browse/MARATHON-8461) Write correct version in Zkid (based on scala timestamp changes)
+* [MARATHON-8413](https://jira.mesosphere.com/browse/MARATHON-8413) Fix versioning for Apps and Pods based on timestamp changes.
+* [MARATHON-8420](https://jira.mesosphere.com/browse/MARATHON-8420) Marathon behavior has changed to fail if service is torn down in mesos but the frameworkid is in zk.
+* [MARATHON-7941](https://jira.mesosphere.com/browse/MARATHON-7941) Default for unreachable strategy on PUT /apps.
+* [MARATHON-8323](https://jira.mesosphere.com/browse/MARATHON-8323) Increase http proxy max-open-connections default.
+
+* dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
+
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
+* Docker container unable to curl its own VIP (DCOS-45115)
+
+* [DCOS_OSS-3616](https://jira.mesosphere.com/browse/DCOS_OSS-3616) Metronome is hoarding offers.
+
+* [DCOS_OSS-2535](https://jira.mesosphere.com/browse/DCOS_OSS-2535) Info endpoint shows incorrect version of Metronome.
+
+
+
 ### Security Updates
+
+* Update Java to 8u192. (DCOS_OSS-4382)
 
 
 ## DC/OS 1.11.6

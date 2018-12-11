@@ -3,6 +3,8 @@ import os
 
 import api_session_fixture
 import pytest
+import requests
+
 from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
@@ -34,11 +36,33 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
+# Note(JP): Attempt to reset Marathon state before and after every test run in
+# this test suite. This is a brute force approach but we found that the problem
+# of side effects as of too careless test isolation and resource cleanup became
+# too large. If this test suite ever introduces a session- or module-scoped
+# fixture providing a Marathon app then the `autouse=True` approach will need to
+# be relaxed.
 @pytest.fixture(autouse=True)
 def clean_marathon_state(dcos_api_session):
-    dcos_api_session.marathon.purge()
-    yield
-    dcos_api_session.marathon.purge()
+    """
+    Attempt to clean up Marathon state before entering the test and when leaving
+    the test. Especially attempt to clean up when the test code failed. When the
+    cleanup fails do not fail the test but log relevant information.
+    """
+
+    def _purge_nofail():
+        try:
+            dcos_api_session.marathon.purge()
+        except Exception as exc:
+            log.exception('Ignoring exception during marathon.purge(): %s', exc)
+            if isinstance(exc, requests.exceptions.HTTPError):
+                log.error('exc.response.text: %s', exc.response.text)
+
+    _purge_nofail()
+    try:
+        yield
+    finally:
+        _purge_nofail()
 
 
 @pytest.fixture(scope='session')
@@ -67,7 +91,7 @@ def _dump_diagnostics(request, dcos_api_session):
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
+        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
 
         last_datapoint = {
             'time': None,
@@ -84,7 +108,7 @@ def _dump_diagnostics(request, dcos_api_session):
         bundles = _get_bundle_list(dcos_api_session)
         for bundle in bundles:
             for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('report/diagnostics/serve', bundle), stream=True,
+                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
                                                 node=master_node)
                 bundle_path = os.path.join(os.path.expanduser('~'), bundle)
                 with open(bundle_path, 'wb') as f:

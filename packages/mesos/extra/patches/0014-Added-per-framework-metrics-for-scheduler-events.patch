@@ -1,4 +1,4 @@
-From 93cdc622f7cfd625efe6350f9749401df069fe5d Mon Sep 17 00:00:00 2001
+From 83950c1f97f5708ed49a99b1a9fde68aae336bdd Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:22 -0700
 Subject: [PATCH] Added per-framework metrics for scheduler events.
@@ -11,10 +11,10 @@ Review: https://reviews.apache.org/r/67809/
  3 files changed, 64 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 6352f7e28..431e8732c 100644
+index f3641936f..05e530cfa 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -346,13 +346,16 @@ public:
+@@ -349,13 +349,16 @@ public:
                const Message& _heartbeatMessage,
                const HttpConnection& _http,
                const Duration& _interval,
@@ -33,7 +33,7 @@ index 6352f7e28..431e8732c 100644
  
  protected:
    virtual void initialize() override
-@@ -374,6 +377,10 @@ private:
+@@ -377,6 +380,10 @@ private:
      if (http.closed().isPending()) {
        VLOG(2) << "Sending heartbeat to " << logMessage;
  
@@ -44,7 +44,7 @@ index 6352f7e28..431e8732c 100644
        Message message(heartbeatMessage);
        http.send<Message, Event>(message);
      }
-@@ -386,6 +393,7 @@ private:
+@@ -389,6 +396,7 @@ private:
    HttpConnection http;
    const Duration interval;
    const Option<Duration> delay;
@@ -52,8 +52,8 @@ index 6352f7e28..431e8732c 100644
  };
  
  
-@@ -2324,6 +2332,10 @@ struct Framework
-                    << " framework " << *this;
+@@ -2352,6 +2360,10 @@ struct Framework
+       // check that one of `http` or `pid` is set if the framework is connected.
      }
  
 +    // TODO(gilbert): add a helper to transform `SchedulerDriver` API messages
@@ -63,7 +63,7 @@ index 6352f7e28..431e8732c 100644
      if (http.isSome()) {
        if (!http.get().send(message)) {
          LOG(WARNING) << "Unable to send event to framework " << *this << ":"
-@@ -2786,7 +2798,11 @@ struct Framework
+@@ -2816,7 +2828,11 @@ struct Framework
            "framework " + stringify(info.id()),
            event,
            http.get(),
@@ -172,5 +172,5 @@ index 7a7b3a316..fac4440da 100644
  
  
 -- 
-2.17.0
+2.13.6 (Apple Git-96)
 

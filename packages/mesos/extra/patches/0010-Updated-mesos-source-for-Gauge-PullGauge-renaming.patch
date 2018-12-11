@@ -1,4 +1,4 @@
-From 24861367975f9d63906082a92d1d900b89ee782e Mon Sep 17 00:00:00 2001
+From eab69da63d2b20ad28e0e508dfc9fdc0ed38427f Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
 Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
@@ -404,10 +404,10 @@ index 61568cb52..1ff7489ee 100644
  
  } // namespace allocator {
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 43676bd55..61809de88 100644
+index c1db276b4..282925da5 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -2094,7 +2094,7 @@ private:
+@@ -2097,7 +2097,7 @@ private:
    // copyable metric types only.
    std::shared_ptr<Metrics> metrics;
  
@@ -649,7 +649,7 @@ index ffb458208..f6ce6fd97 100644
    {
      return operations.size();
 diff --git a/src/sched/sched.cpp b/src/sched/sched.cpp
-index 613a33b7d..ea5927cf7 100644
+index e5e82d5d7..bde1cf7bb 100644
 --- a/src/sched/sched.cpp
 +++ b/src/sched/sched.cpp
 @@ -61,7 +61,7 @@
@@ -661,7 +661,7 @@ index 613a33b7d..ea5927cf7 100644
  #include <process/metrics/metrics.hpp>
  
  #include <stout/abort.hpp>
-@@ -1613,8 +1613,8 @@ private:
+@@ -1608,8 +1608,8 @@ private:
      }
  
      // Process metrics.
@@ -697,7 +697,7 @@ index 07d2b37e0..c04cfbc42 100644
  
    double _event_queue_messages()
 diff --git a/src/slave/containerizer/fetcher_process.hpp b/src/slave/containerizer/fetcher_process.hpp
-index 034fe34fe..56fecf237 100644
+index 5b7c1b5a3..faa5ac858 100644
 --- a/src/slave/containerizer/fetcher_process.hpp
 +++ b/src/slave/containerizer/fetcher_process.hpp
 @@ -28,7 +28,7 @@
@@ -709,7 +709,7 @@ index 034fe34fe..56fecf237 100644
  
  #include <stout/hashmap.hpp>
  
-@@ -258,8 +258,8 @@ private:
+@@ -261,8 +261,8 @@ private:
      process::metrics::Counter task_fetches_succeeded;
      process::metrics::Counter task_fetches_failed;
  
@@ -941,10 +941,10 @@ index 3fc933ca6..2adff6664 100644
  
  } // namespace slave {
 diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
-index ca8cc65bd..b74e44e92 100644
+index d638b8806..8d42011be 100644
 --- a/src/slave/slave.hpp
 +++ b/src/slave/slave.hpp
-@@ -664,7 +664,7 @@ private:
+@@ -663,7 +663,7 @@ private:
    process::Future<Nothing> publishResources(
        const Option<Resources>& additionalResources = None());
  
@@ -954,5 +954,5 @@ index ca8cc65bd..b74e44e92 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.17.0
+2.17.1
 
