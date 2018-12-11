@@ -65,11 +65,9 @@ def test_checks_cli(dcos_api_session):
 def test_checks_api(dcos_api_session):
     """
     Test the checks API at /system/checks/
-    This will only test the checks API can be successfully reached on a real
-    cluster and that the checks it returns when running GET will match those it
-    reports when running the checks with POST. It does not check the results
-    status as `dcos_api_session` will wait while being built for the cluster to
-    be running so we won't expect any checks here to fail anyway.
+    This will test that all checks run on all agents return a normal status. A
+    failure in this test may be an indicator that some unrelated component
+    failed and dcos-checks functioned properly.
     """
     checks_uri = '/system/checks/v1/'
     # Test that we can list and run node and cluster checks on a master, agent, and public agent.
