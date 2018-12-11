@@ -24,6 +24,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Metronome supports file based secrets
 * Metronome supports hybrid cloud
 
+* Expose Public IP (DCOS_OSS-4514)
 
 ### Breaking changes
 
