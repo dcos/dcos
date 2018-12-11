@@ -2,26 +2,26 @@
 
 set -e
 
-# Helper to configure `networkd` on CoreOS to ignore all DC/OS overlay interfaces.
-function coreos_networkd_config() {
- network_config="/etc/systemd/network/dcos.network"
- sudo tee $network_config > /dev/null<<'EOF'
- [Match]
-  Type=bridge
-  Name=docker* m-* d-* vtep*
+SRC="/opt/mesosphere/etc/dcos.network"
+DST="/etc/systemd/network/dcos.network"
 
- [Link]
-  Unmanaged=yes
-EOF
+function cmp_and_update {
+    cmp --silent $1 $2 || (cp $1 $2 && false)
 }
 
 distro="$(source /etc/os-release && echo "${ID}")"
 if [[ "${distro}" == 'coreos' ]]; then
      if systemctl list-unit-files | grep systemd-networkd.service > /dev/null; then
        echo "Configuring systemd-networkd to ignore docker bridge and DC/OS overlay interfaces..."
-       coreos_networkd_config
+       if [ ! -f $SRC ]; then
+           echo "Quiting.. $SRC file not found"
+           exit 1
+       fi
 
-       if systemctl is-enabled systemd-networkd > /dev/null; then
+       if cmp_and_update $SRC $DST; then
+           echo "Skipping restart of systemd-networkd..."
+       elif systemctl is-active systemd-networkd > /dev/null; then
+          echo "Restarting systemd-networkd"
           sudo systemctl restart systemd-networkd
        fi
     fi

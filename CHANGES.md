@@ -21,12 +21,14 @@ Format of the entries must be.
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
+* Added support CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865) 
+
 ### Security Updates
+
 
 ## DC/OS 1.10.9
 
 ### Notable changes
-
 
 ### Fixed and improved
 
