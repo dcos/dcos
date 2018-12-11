@@ -7,6 +7,7 @@ import uuid
 from collections import deque
 from subprocess import check_output
 
+import common
 import pytest
 import requests
 import retrying
@@ -218,6 +219,7 @@ def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_ho
     return (hosts, origin_app, proxy_app)
 
 
+@common.xfailflake(reason="DCOS-46146 Upgrade docker to version 17.12.x.")
 @pytest.mark.slow
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
@@ -355,6 +357,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
+@common.xfailflake(reason="DCOS-46146 Upgrade docker to version 17.12.x.")
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
