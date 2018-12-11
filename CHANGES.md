@@ -2,11 +2,15 @@
 
 ### Notable changes
 
-* Updated to [Marathon 1.6.564](https://github.com/mesosphere/marathon/tree/3fa693b32).
+* Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
 
-* Updated to [DC/OS UI 1.11+v1.24.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.24.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
+
+* Update to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
 
 ### Fixed and improved
+
+* Docker-GC will now log to journald. (COPS-4044)
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
@@ -24,6 +28,13 @@
 * dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
+* Docker container unable to curl its own VIP (DCOS-45115)
+
+* [DCOS_OSS-3616](https://jira.mesosphere.com/browse/DCOS_OSS-3616) Metronome is hoarding offers.
+
+* [DCOS_OSS-2535](https://jira.mesosphere.com/browse/DCOS_OSS-2535) Info endpoint shows incorrect version of Metronome.
+
 
 
 ### Security Updates

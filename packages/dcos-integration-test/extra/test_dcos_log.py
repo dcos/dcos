@@ -3,9 +3,17 @@ import logging
 import re
 import uuid
 
+import common
 import pytest
 import requests
 import retrying
+
+
+__maintainer__ = 'mnaboka'
+__contact__ = 'dcos-cluster-ops@mesosphere.io'
+
+
+NEW_ENTRY_PATTERN = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 
 log = logging.getLogger(__name__)
 
@@ -43,14 +51,16 @@ def check_response_ok(response: requests.models.Response, headers: dict):
             'Request {} header {} must be {}. All headers {}'.format(response.url, name, value, response.headers))
 
 
+@common.xfailflake(reason="DCOS_OSS-4416 - dcos-log returns more lines than requested limit")
 def test_log_text(dcos_api_session):
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v1/range/?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
-        # expect 10 lines
-        lines = list(filter(lambda x: x != '', response.content.decode().split('\n')))
-        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+        # expect 10 entries
+        logs = response.content.decode()
+        entries_count = len(re.findall(NEW_ENTRY_PATTERN, logs))
+        assert entries_count == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(entries_count, logs)
 
 
 def test_log_json(dcos_api_session):
@@ -253,9 +263,10 @@ def test_log_v2_text(dcos_api_session):
         response = dcos_api_session.logs.get('/v2/component?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
 
-        # expect 10 lines
-        lines = list(filter(lambda x: x != '', response.content.decode().split('\n')))
-        assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
+        # expect 10 entries
+        logs = response.content.decode()
+        entries_count = len(re.findall(NEW_ENTRY_PATTERN, logs))
+        assert entries_count == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(entries_count, logs)
 
 
 def test_log_v2_server_sent_events(dcos_api_session):

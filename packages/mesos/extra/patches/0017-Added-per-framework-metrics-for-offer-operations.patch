@@ -1,7 +1,7 @@
-From 2f7b5f705423f12d8dd2867a54d5b7f60187cd69 Mon Sep 17 00:00:00 2001
+From 759cb104e9b4406239cc6815774f934e8d485048 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:39 -0700
-Subject: [PATCH 17/22] Added per-framework metrics for offer operations.
+Subject: [PATCH] Added per-framework metrics for offer operations.
 
 Review: https://reviews.apache.org/r/67814/
 ---
@@ -11,10 +11,10 @@ Review: https://reviews.apache.org/r/67814/
  3 files changed, 59 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index fcbfecd42..184c9e01c 100644
+index 40f8bec29..7bb2062fc 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -5112,6 +5112,10 @@ void Master::_accept(
+@@ -5072,6 +5072,10 @@ void Master::_accept(
                        << (launchExecutor ?
                            " new executor" : " existing executor");
  
@@ -25,7 +25,7 @@ index fcbfecd42..184c9e01c 100644
              send(slave->pid, message);
            }
          }
-@@ -5319,6 +5323,10 @@ void Master::_accept(
+@@ -5279,6 +5283,10 @@ void Master::_accept(
                    << *slave << " on "
                    << (launchExecutor ? " new executor" : " existing executor");
  
@@ -36,7 +36,7 @@ index fcbfecd42..184c9e01c 100644
          send(slave->pid, message);
  
          break;
-@@ -10832,6 +10840,12 @@ void Master::_apply(
+@@ -10792,6 +10800,12 @@ void Master::_apply(
  
      send(slave->pid, message);
    }
@@ -146,5 +146,5 @@ index 071246b71..7ce3941b2 100644
  
  
 -- 
-2.17.0
+2.17.1
 
