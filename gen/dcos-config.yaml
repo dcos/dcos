@@ -1236,6 +1236,7 @@ package:
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
       TELEGRAF_CONFIG_DIR=/opt/mesosphere/etc/telegraf/telegraf.d/
+      TELEGRAF_EXTRA_CONFIG_DIR=/var/lib/dcos/telegraf/telegraf.d/
       TELEGRAF_CONTAINERS_DIR=/run/dcos/telegraf/dcos_statsd/containers
       LEGACY_CONTAINERS_PARENT_DIR=/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule
       LEGACY_CONTAINERS_DIR=/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers
