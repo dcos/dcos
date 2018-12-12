@@ -128,7 +128,7 @@ fi
 
 # download the DC/OS CLI
 if [ ! -f dcos-cli ]; then
-  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.4/dcos --output-document=dcos-cli
+  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.5/dcos --output-document=dcos-cli
   chmod +x dcos-cli
 fi
 
