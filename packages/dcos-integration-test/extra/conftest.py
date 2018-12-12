@@ -155,6 +155,7 @@ def _dump_diagnostics(request, dcos_api_session):
     if make_diagnostics_report:
         last_datapoint = {
             'time': None,
+            'start': None,
             'value': 0
         }
 
@@ -175,6 +176,9 @@ def _dump_diagnostics(request, dcos_api_session):
 
         log.info('\nWait for diagnostics job to complete')
         diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
+
+        duration = last_datapoint['time'] - last_datapoint['start']
+        log.info('\nDiagnostis bundle took {} to generate'.format(duration))
 
         log.info('\nWait for diagnostics report to become available')
         diagnostics.wait_for_diagnostics_reports()
