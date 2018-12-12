@@ -12,7 +12,7 @@ fi
 
 get_defaultish_ip()
 {
-    ipv4=$(ip route get 8.8.8.8 | awk '{print $7; exit}')
+    local ipv4=$(ip route get 8.8.8.8 | awk '{ for(i=1; i<NF; i++) { if($i == "src") {print $(i+1); exit} } }')
     echo $ipv4
 }
 
