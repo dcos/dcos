@@ -50,6 +50,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 
