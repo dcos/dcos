@@ -134,7 +134,7 @@ fi
 
 # link the CLI with the cluster
 if [[ $dcos_variant == "open" ]]; then
-  bash -c "./dcos-cli $debug_options cluster setup $master_public_ip --insecure $dcos_login_token_input"
+  bash -c "./dcos-cli $debug_options cluster setup $master_public_ip --provider=dcos-oidc-auth0 --insecure $dcos_login_token_input"
 else
   ./dcos-cli $debug_options cluster setup $master_public_ip $dcos_username $dcos_password --insecure
 fi
