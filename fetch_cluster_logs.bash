@@ -63,7 +63,7 @@ if [[ $dcos_variant == "open" ]]; then
   do
   case $i in
     --debug)
-      debug_options="--debug --log-level=debug"
+      debug_options="-vv"
       shift
     ;;
     --login-token=*)
@@ -89,7 +89,7 @@ else
   do
   case $i in
     --debug)
-      debug_options="--debug --log-level=debug"
+      debug_options="-vv"
       shift
     ;;
     --username=*)
@@ -128,7 +128,7 @@ fi
 
 # download the DC/OS CLI
 if [ ! -f dcos-cli ]; then
-  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.1/dcos --output-document=dcos-cli
+  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.4/dcos --output-document=dcos-cli
   chmod +x dcos-cli
 fi
 
