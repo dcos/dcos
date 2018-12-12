@@ -1,5 +1,15 @@
 ## DC/OS 1.12-dev
 
+### Notable changes
+
+### Breaking changes
+
+### Fixed and improved
+
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+### Security Updates
+
 ## DC/OS 1.12.1
 
 ### Notable changes
@@ -127,6 +137,7 @@ Format of the entries must be.
 
 ### Security Updates
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 

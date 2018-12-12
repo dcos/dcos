@@ -356,6 +356,20 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                     "Incorrect value for overlay subnet6 {}."
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
 
+        if 'enabled' in overlay:
+            gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
+    overlay_network = json.loads(dcos_overlay_network)
+    overlays = []
+    for overlay in overlay_network['overlays']:
+        if enable_ipv6 == 'false' and 'subnet' not in overlay:
+            overlay['enabled'] = False
+        overlays.append(overlay)
+    overlay_network['overlays'] = overlays
+    return json.dumps(overlay_network)
+
 
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
@@ -931,6 +945,7 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
         validate_dcos_ucr_default_bridge_subnet,
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
@@ -1034,6 +1049,7 @@ entry = {
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
+        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
             'vtep_subnet6': 'fd01:a::/64',
