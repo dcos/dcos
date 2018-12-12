@@ -1,9 +1,9 @@
 {
-  "single_source" : {
+  "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos", 
-    "ref": "84749967a1c1384f75c3c017bda45a85eea67787",
-    "ref_origin" : "master"
+    "git": "https://github.com/apache/mesos",
+    "ref": "ce10fa8ab525054d4152d0273972bc7b2b5cb782",
+    "ref_origin": "1.7.x"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",

@@ -12,6 +12,8 @@ PermissionsStartOnly=True
 User=dcos_diagnostics
 # Allow r/w access to the socket file
 SupplementaryGroups=dcos_adminrouter
+ExecStartPre=/bin/bash -c "mkdir -p ${DCOS_DIAGNOSTICS_BUNDLE_DIR}"
+ExecStartPre=/bin/bash -c "chown dcos_diagnostics ${DCOS_DIAGNOSTICS_BUNDLE_DIR}"
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-diagnostics-master
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-master
 ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
