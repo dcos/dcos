@@ -24,6 +24,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Metronome supports file based secrets
 * Metronome supports hybrid cloud
 
+* Expose Public IP (DCOS_OSS-4514)
 
 ### Breaking changes
 
@@ -45,9 +46,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Allow the DC/OS installer to be used when there is a space in its path (DCOS_OSS-4429).
 
-* Fixed `iam-database-restore` script to not leave old database after restore. (DCOS-42407)
-
 * Admin Router logs to non-blocking socket. (DCOS-43956)
+
+* Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
 
 ### Notable changes

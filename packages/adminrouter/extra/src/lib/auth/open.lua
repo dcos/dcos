@@ -91,6 +91,11 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
+    -- /net/
+    res.access_net_endpoint = function()
+        return res.do_authn_and_authz_or_exit()
+    end
+
     -- /service/.+
     res.access_service_endpoint = function(service_path)
         -- service_path is unused here, kept just for compatibility with EE
