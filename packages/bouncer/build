@@ -26,3 +26,9 @@ SERVICE_FILE_NAME="dcos-bouncer.service"
 SERVICE_FILE_PATH="$PKG_PATH/dcos.target.wants_master/${SERVICE_FILE_NAME}"
 mkdir -p "$(dirname "$SERVICE_FILE_PATH")"
 envsubst '$PKG_PATH' < "/pkg/extra/${SERVICE_FILE_NAME}" > "${SERVICE_FILE_PATH}"
+
+# Copy the IAM users migration script to the package bin directory.
+mkdir -p $PKG_PATH/bin
+install -m 755 /pkg/extra/iam-migrate-users-from-1.12.py $PKG_PATH/bin/iam-migrate-users-from-1.12.py
+
+cp /pkg/extra/dcos-bouncer-migrate-users.service "$PKG_PATH/dcos.target.wants_master/dcos-bouncer-migrate-users.service"
