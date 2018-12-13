@@ -21,7 +21,7 @@
 #   --username=<username>       Username to log in to your enterprise DC/OS cluster. If omitted, you will be prompted for it during the DC/OS CLI cluster setup.
 #   --password=<password>       Password to log in to your DC/OS enterprise cluster. If omitted, you will be prompted for it during the DC/OS CLI cluster setup.
 #   --identity-file=<path>      Path to the private ssh key that will be used to ssh into the nodes. If omitted, that key must be added to your ssh-agent.
-#   --max-artifact-size=<size>  Maximum size (in bytes) of artifacts produced by this script. Any artifact exceeding that limit will be deleted.
+#   --max-artifact-size=<size>  Maximum size (in megabytes) of artifacts produced by this script. Any artifact exceeding that limit will be deleted.
 #   --debug                     Turn on debug logging for the DC/OS CLI.
 
 set +e
@@ -30,10 +30,10 @@ set -x
 check_max_artifact_size() {
   # checks that a given artifact is under the maximum allowed size. If it exceeds that limit, delete it.
   artifact_name=$1
-  artifact_size=$(du -s ${artifact_name} | grep -Po "\d+" | head -1)
+  artifact_size=$(du --summarize --block-size=1M ${artifact_name} | grep -Po "\d+" | head -1)
   if (( $artifact_size > $max_artifact_size )); then
     sudo rm -rf $artifact_name
-    echo "Deleting artifact ${artifact_name}. Size of ${artifact_size} bytes is exceeding limit of ${max_artifact_size} bytes."
+    echo "Deleting artifact ${artifact_name}. Size of ${artifact_size}MB is exceeding limit of ${max_artifact_size}MB."
   fi
 }
 
@@ -118,7 +118,7 @@ fi
 
 if [[ -z $max_artifact_size ]]; then
   # default to 2GB
-  max_artifact_size=2000000000
+  max_artifact_size=2000
 fi
 
 ssh_options="-A -T -l $ssh_user -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -181,7 +181,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     ./dcos-cli $debug_options node log --leader > mesos_master.log
     check_max_artifact_size "mesos_master.log"
   else
-    mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du -s /var/lib/mesos/slave/ | grep -Po "\d+")
+    mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du --summarize /var/lib/mesos/slave/ | grep -Po "\d+")
     free_space=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo df --block-size=1 | grep -Po "\d+\s+\d+%\ /$" | grep -Po "\d+" | head -1)
     if (( $free_space > $mesos_sandbox_size )); then
       # remove unnecessary, bulky artifacts
