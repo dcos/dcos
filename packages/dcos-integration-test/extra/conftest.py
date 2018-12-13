@@ -46,6 +46,31 @@ def pytest_runtest_setup(item):
     elif item.get_marker('supportedwindowsonly') is not None:
         pytest.skip("skipping windows only test")
 
+    # Mute flaky Integration Tests with custom pytest marker.
+    # Rationale for doing this is mentioned at DCOS-45308.
+    xfailflake_marker = item.get_closest_marker(name='xfailflake')
+    if xfailflake_marker:
+        date_text = xfailflake_marker.kwargs['date_marked']
+        try:
+            datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        except ValueError:
+            message = (
+                'Incorrect date format for "date_marked", should be YYYY-MM-DD'
+            )
+            raise ValueError(message)
+
+        # The marker is not "strict" unless that is explicitly stated.
+        # That means that by default, no error is raised if the test passes or
+        # fails.
+        strict = xfailflake_marker.kwargs.get('strict', False)
+        xfailflake_marker.kwargs['strict'] = strict
+        xfail_marker = pytest.mark.xfail(
+            *xfailflake_marker.args,
+            **xfailflake_marker.kwargs,
+        )
+        item.add_marker(xfail_marker)
+
+
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
