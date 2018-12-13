@@ -35,7 +35,7 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
         resp = None
         try:
             resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
-        except azure.common.AzureConflictHttpError:
+        except (azure.common.AzureConflictHttpError, azure.common.AzureException):
             # Cancel the past copy, make a new copy
             properties = self.blob_service.get_blob_properties(self.container, destination_path)
             assert properties.id
@@ -48,7 +48,7 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
         # synchronous and successful.
         assert resp.status == 'success'
 
-    @retry(stop_max_attempt_number=3)
+    @retry(stop_max_attempt_number=5)
     def upload(self,
                destination_path: str,
                blob: Optional[bytes]=None,
