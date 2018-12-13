@@ -49,8 +49,10 @@ def pytest_runtest_setup(item):
 
     # Mute flaky Integration Tests with custom pytest marker.
     # Rationale for doing this is mentioned at DCOS-45308.
-    xfailflake_marker = item.get_closest_marker(name='xfailflake')
-    if xfailflake_marker:
+    xfailflake_markers = [
+        marker for marker in item.iter_markers() if marker.name == 'xfailflake'
+    ]
+    for xfailflake_marker in xfailflake_markers:
         reason_text = xfailflake_marker.kwargs['reason']
         assert reason_text.startswith('DCOS-')
         date_text = xfailflake_marker.kwargs['date_marked']
