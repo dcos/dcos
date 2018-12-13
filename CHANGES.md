@@ -13,15 +13,18 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
-* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Ningx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
+* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
 * CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
 
 * ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
+
 * Metronome supports UCR
+
 * Metronome supports file based secrets
+
 * Metronome supports hybrid cloud
 
 * Expose Public IP (DCOS_OSS-4514)
