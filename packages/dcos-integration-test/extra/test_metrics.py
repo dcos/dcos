@@ -482,10 +482,10 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
-def test_metrics_containers_app(dcos_api_session):
-    """Assert that app metrics appear in the v0 metrics API."""
-    task_name = 'test-metrics-containers-app'
-    metric_name_pfx = 'test_metrics_containers_app'
+def test_statsd_metrics_containers_app(dcos_api_session):
+    """Assert that statsd app metrics appear in the v0 metrics API."""
+    task_name = 'test-statsd-metrics-containers-app'
+    metric_name_pfx = 'test_statsd_metrics_containers_app'
     marathon_app = {
         'id': '/' + task_name,
         'instances': 1,
