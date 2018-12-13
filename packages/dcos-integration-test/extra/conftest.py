@@ -40,15 +40,11 @@ def pytest_addoption(parser):
                      help="run only Windows tests")
 
 
-def pytest_runtest_setup(item):
-    if pytest.config.getoption('--windows-only'):
-        if item.get_marker('supportedwindows') is None:
-            pytest.skip("skipping not supported windows test")
-    elif item.get_marker('supportedwindowsonly') is not None:
-        pytest.skip("skipping windows only test")
-
-    # Mute flaky Integration Tests with custom pytest marker.
-    # Rationale for doing this is mentioned at DCOS-45308.
+def _add_xfail_markers(item):
+    """
+    Mute flaky Integration Tests with custom pytest marker.
+    Rationale for doing this is mentioned at DCOS-45308.
+    """
     xfailflake_markers = [
         marker for marker in item.iter_markers() if marker.name == 'xfailflake'
     ]
@@ -74,6 +70,16 @@ def pytest_runtest_setup(item):
             **xfailflake_marker.kwargs,
         )
         item.add_marker(xfail_marker)
+
+
+def pytest_runtest_setup(item):
+    if pytest.config.getoption('--windows-only'):
+        if item.get_marker('supportedwindows') is None:
+            pytest.skip("skipping not supported windows test")
+    elif item.get_marker('supportedwindowsonly') is not None:
+        pytest.skip("skipping windows only test")
+
+    _add_xfail_markers(item)
 
 
 def pytest_configure(config):
