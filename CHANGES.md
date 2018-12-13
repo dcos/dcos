@@ -26,6 +26,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Expose Public IP (DCOS_OSS-4514)
 
+* Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
+
 ### Breaking changes
 
 
