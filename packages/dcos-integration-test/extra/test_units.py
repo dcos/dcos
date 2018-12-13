@@ -72,6 +72,15 @@ def test_verify_units():
     _check_units("/etc/systemd/system/dcos-*.socket")
 
 
+<<<<<<< HEAD
+=======
+@pytest.mark.xfailflake(
+    jira='DCOS-41819',
+    reason='Fails on dcos-e2e/docker/static/strict.',
+    since='2018-11-20',
+)
+@pytest.mark.supportedwindows
+>>>>>>> 1cb17e41... Expand xfailflake marker to allow specifying more fields
 def test_socket_units():
     """Test that socket units configure socket files in /run/dcos
     that are owned by 'dcos_adminrouter'.
