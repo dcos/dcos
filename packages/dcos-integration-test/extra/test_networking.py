@@ -9,7 +9,6 @@ import uuid
 from collections import deque
 from subprocess import check_output
 
-import common
 import pytest
 import requests
 import retrying

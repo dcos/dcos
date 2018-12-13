@@ -3,7 +3,6 @@ import contextlib
 import logging
 import uuid
 
-import common
 import pytest
 import retrying
 from test_helpers import expanded_config
@@ -377,7 +376,8 @@ def test_metrics_node(dcos_api_session):
         assert expected_dimension_response(response.json())
 
 
-@common.xfailflake(reason="DCOS_OSS-4486 - tgest_metrics_containers fails with container metrics response status 204")
+@pytest.mark.xfailflake(reason="DCOS_OSS-4486 - test_metrics_containers fails "
+                               "with container metrics response status 204")
 def test_metrics_containers(dcos_api_session):
     """If there's a deployed container on the slave, iterate through them to check for
     the statsd-emitter executor. When found, query it's /app endpoint to test that
