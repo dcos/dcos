@@ -6,7 +6,6 @@ import os
 import tempfile
 import zipfile
 
-import common
 import pytest
 import retrying
 
@@ -331,8 +330,11 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@common.xfailflake(reason="DCOS-44935 - test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is "
-                          "Flaky")
+@pytest.mark.xfailflake(
+    jira='DCOS-45278',
+    reason='test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is Flaky',
+    since='2018-11-20',
+)
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
