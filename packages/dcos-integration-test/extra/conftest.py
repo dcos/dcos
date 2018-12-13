@@ -51,6 +51,8 @@ def pytest_runtest_setup(item):
     # Rationale for doing this is mentioned at DCOS-45308.
     xfailflake_marker = item.get_closest_marker(name='xfailflake')
     if xfailflake_marker:
+        reason_text = xfailflake_marker.kwargs['reason']
+        assert reason_text.startswith('DCOS-')
         date_text = xfailflake_marker.kwargs['date_marked']
         try:
             datetime.datetime.strptime(date_text, '%Y-%m-%d')
