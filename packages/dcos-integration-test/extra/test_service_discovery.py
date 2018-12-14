@@ -247,7 +247,6 @@ def test_service_discovery_mesos_host(dcos_api_session):
 def test_service_discovery_mesos_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS,
-        host_port=9080,
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER)
 
@@ -273,15 +272,14 @@ def test_service_discovery_docker_bridge(dcos_api_session):
 def test_service_discovery_docker_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
-        network=marathon.Network.USER,
-        host_port=9080)
-    del app_definition['container']['docker']['portMappings'][0]['hostPort']
+        network=marathon.Network.USER)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
 def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER,
         host_port=9080)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay, DNSPortMap])
