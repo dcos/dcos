@@ -278,6 +278,12 @@ def test_vip_ipv6(dcos_api_session):
 @pytest.mark.parametrize(
     'container,vip_net,proxy_net',
     generate_vip_app_permutations())
+@common.xfailflake(
+    reason=(
+        "DCOS-46220 Constraints for run spec [xxx] not satisfied / "
+        "DCOS-45799 - container stuck in PROVISIONING"
+    ),
+)
 def test_vip(dcos_api_session,
              container: marathon.Container,
              vip_net: marathon.Network,
