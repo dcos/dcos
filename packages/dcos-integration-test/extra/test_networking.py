@@ -26,28 +26,20 @@ class Container(enum.Enum):
 
 class MarathonApp:
     def __init__(self, container, network, host, vip=None, app_name_fmt=None):
-        self._network = network
-        self._container = container
-        if network in [marathon.Network.HOST, marathon.Network.BRIDGE]:
-            # both of these cases will rely on marathon to assign ports
-            self.app, self.uuid = test_helpers.marathon_test_app(
-                network=network,
-                host_constraint=host,
-                vip=vip,
-                container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
-                app_name_fmt=app_name_fmt)
-        elif network == marathon.Network.USER:
-            self.app, self.uuid = test_helpers.marathon_test_app(
-                network=marathon.Network.USER,
-                host_port=unused_port(),
-                host_constraint=host,
-                vip=vip,
-                container_type=container,
-                healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
-                app_name_fmt=app_name_fmt)
-            if vip is not None and container == marathon.Container.DOCKER:
-                del self.app['container']['docker']['portMappings'][0]['hostPort']
+        args = {
+            'app_name_fmt': app_name_fmt,
+            'network': network,
+            'host_port': unused_port(),
+            'host_constraint': host,
+            'vip': vip,
+            'container_type': container,
+            'healthcheck_protocol': marathon.Healthcheck.MESOS_HTTP
+        }
+        if network == marathon.Network.USER:
+            args['container_port'] = unused_port()
+            if vip is not None:
+                del args['host_port']
+        self.app, self.uuid = test_helpers.marathon_test_app(**args)
         # allow this app to run on public slaves
         self.app['acceptedResourceRoles'] = ['*', 'slave_public']
         self.id = self.app['id']
@@ -79,12 +71,10 @@ class MarathonApp:
     def hostport(self, dcos_api_session):
         info = self.info(dcos_api_session)
         task = info['app']['tasks'][0]
-        if self._network == marathon.Network.USER:
+        if 'networks' in self.app and \
+                self.app['networks'][0]['mode'] == 'container':
             host = task['ipAddresses'][0]['ipAddress']
-            if self._container == marathon.Container.DOCKER:
-                port = task['ports'][0]
-            else:
-                port = self.app['ipAddress']['discovery']['ports'][0]['number']
+            port = self.app['container']['portMappings'][0]['containerPort']
         else:
             host = task['host']
             port = task['ports'][0]
@@ -120,7 +110,7 @@ class MarathonPod:
                              '{}'.format(port)
                 }},
                 'volumeMounts': [{'name': 'opt', 'mountPath': '/opt/mesosphere'}],
-                'endpoints': [{'name': 'test', 'protocol': ['tcp'], 'hostPort': 0}],
+                'endpoints': [{'name': 'test', 'protocol': ['tcp'], 'hostPort': unused_port()}],
                 'environment': {'DCOS_TEST_UUID': self.uuid, 'HOME': '/'}
             }],
             'networks': [{'mode': 'host'}],
