@@ -439,7 +439,7 @@ def test_ip_per_container(dcos_api_session):
 
     with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=True):
         service_points = dcos_api_session.marathon.get_app_service_endpoints(app_definition['id'])
-        app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
+        app_port = app_definition['container']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
 
@@ -590,6 +590,7 @@ def test_dcos_cni_l4lb(dcos_api_session):
     # but that doesn't seem to be the case here.
     cni_config_app['cmd'] = 'echo \'{}\' > /opt/mesosphere/etc/dcos/network/cni/spartan.cni && sleep 10000'.format(
         json.dumps(spartan_net))
+    del cni_config_app['healthChecks']
 
     log.info("App for setting CNI config: {}".format(json.dumps(cni_config_app)))
 
@@ -622,50 +623,25 @@ def test_dcos_cni_l4lb(dcos_api_session):
         vip=server_vip)
 
     # Launch the server on the DC/OS overlay
-    server['ipAddress']['networkName'] = 'dcos'
-
-    log.info("Launching server with VIP:{} on network {}".format(server_vip_addr, server['ipAddress']['networkName']))
+    log.info("Launching server with VIP:{} on network {}".format(server_vip_addr, server['networks'][0]['name']))
 
     try:
         dcos_api_session.marathon.deploy_app(server, check_health=False)
     except Exception as ex:
         raise AssertionError(
-            "Couldn't launch server on 'dcos':{}".format(server['ipAddress']['networkName'])) from ex
+            "Couldn't launch server on 'dcos':{}".format(server['networks'][0]['name'])) from ex
 
     # Get the client app on the 'spartan-net' network.
-    #
-    # NOTE: Currently, we are creating the app-def by hand instead of relying
-    # on the harness to create this app-def since the marathon harness does not
-    # allow any port-mapping for CNI networks at this point.
     client_port = 9081
     client, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS,
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER,
         host_port=client_port,
+        container_port=client_port,
         vip=server_vip,
-        host_constraint=spartan_net_host)
-
-    client["container"]["portMappings"] = [
-        {
-            'containerPort': client_port,
-            'hostPort': client_port,
-            'protocol': 'tcp',
-            'name': 'http'
-        }
-    ]
-
-    # Remove the `ipAddress` entry for DC/OS overlay.
-    del client["ipAddress"]
-
-    # Attach this container to the `spartan-net` network. We are using the v2
-    # network API here.
-    client["networks"] = [
-        {
-            "mode": "container",
-            "name": "spartan-net"
-        }
-    ]
+        host_constraint=spartan_net_host,
+        network_name='spartan-net')
 
     try:
         dcos_api_session.marathon.deploy_app(client, check_health=False)
