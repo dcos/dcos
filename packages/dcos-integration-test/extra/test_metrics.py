@@ -569,12 +569,14 @@ def test_prom_metrics_containers_app(dcos_api_session):
             'type': 'MESOS',
             'docker': {'image': 'library/python:3'}
         },
-        'portDefinitions': {
+        'portDefinitions': [{
             'protocol': 'tcp',
             'port': 0,
             'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
-        },
+        }],
     }
+
+    logging.debug('Starting marathon app with config: %s', marathon_app)
     expected_metrics = [
         # metric_name, metric_value
         ('_'.join([metric_name_pfx, 'gauge']), 100),
