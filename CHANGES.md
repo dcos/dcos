@@ -1,5 +1,7 @@
 ## DC/OS 1.12-dev
 
+## DC/OS 1.12.1
+
 ### Notable changes
 
 ### Breaking changes
