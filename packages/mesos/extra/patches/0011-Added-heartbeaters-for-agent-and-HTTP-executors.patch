@@ -1,0 +1,208 @@
+From b76b0e2497243ec3c5c910da483c01cf8615fb9e Mon Sep 17 00:00:00 2001
+From: Joseph Wu <joseph@mesosphere.io>
+Date: Thu, 13 Dec 2018 16:34:36 -0800
+Subject: [PATCH 11/12] Added heartbeaters for agent and HTTP executors.
+
+This implements two separate heartbeaters for Executor Events (agent
+to executor) and Executor Calls (executor to agent).  Both are set to
+non-configurable intervals of 30 minutes, which should be sufficient
+to keep the connections alive while not flooding logs with warnings
+if the executor/agent does not have this patch.
+
+Review: https://reviews.apache.org/r/69473/
+---
+ src/common/validation.cpp         |  4 ++++
+ src/executor/executor.cpp         | 20 ++++++++++++++++++++
+ src/executor/v0_v1executor.cpp    |  6 ++++++
+ src/launcher/default_executor.cpp |  4 ++++
+ src/launcher/executor.cpp         |  4 ++++
+ src/slave/constants.hpp           |  3 +++
+ src/slave/http.cpp                |  4 ++++
+ src/slave/slave.cpp               | 12 ++++++++++++
+ src/slave/slave.hpp               |  4 ++++
+ 9 files changed, 61 insertions(+)
+
+diff --git a/src/common/validation.cpp b/src/common/validation.cpp
+index 5f8f2889f..4a64fc8ac 100644
+--- a/src/common/validation.cpp
++++ b/src/common/validation.cpp
+@@ -602,6 +602,10 @@ Option<Error> validateExecutorCall(const mesos::executor::Call& call)
+       return None();
+     }
+ 
++    case mesos::executor::Call::HEARTBEAT: {
++      return None();
++    }
++
+     case mesos::executor::Call::UNKNOWN: {
+       return None();
+     }
+diff --git a/src/executor/executor.cpp b/src/executor/executor.cpp
+index d00ea32f0..e9439da2a 100644
+--- a/src/executor/executor.cpp
++++ b/src/executor/executor.cpp
+@@ -90,6 +90,11 @@ namespace mesos {
+ namespace v1 {
+ namespace executor {
+ 
++// TODO(josephw): Move this default into a header which can be loaded
++// by tests. Also, consider making this heartbeat interval configurable.
++extern const Duration DEFAULT_HEARTBEAT_CALL_INTERVAL = Minutes(30);
++
++
+ class ShutdownProcess : public process::Process<ShutdownProcess>
+ {
+ public:
+@@ -363,6 +368,7 @@ protected:
+   void initialize() override
+   {
+     connect();
++    heartbeat();
+   }
+ 
+   void connect()
+@@ -781,6 +787,20 @@ protected:
+     LOG(WARNING) << "Dropping " << call.type() << ": " << message;
+   }
+ 
++  void heartbeat()
++  {
++    if (connections.isSome()) {
++      Call call;
++      call.set_type(Call::HEARTBEAT);
++      call.mutable_executor_id()->set_value("unused");
++      call.mutable_framework_id()->set_value("unused");
++
++      send(call);
++    }
++
++    delay(DEFAULT_HEARTBEAT_CALL_INTERVAL, self(), &Self::heartbeat);
++  }
++
+ private:
+   struct Callbacks
+   {
+diff --git a/src/executor/v0_v1executor.cpp b/src/executor/v0_v1executor.cpp
+index aebdbe705..de73f0ec1 100644
+--- a/src/executor/v0_v1executor.cpp
++++ b/src/executor/v0_v1executor.cpp
+@@ -229,6 +229,12 @@ public:
+         break;
+       }
+ 
++      case Call::HEARTBEAT: {
++        // NOTE: Heartbeat calls were added to HTTP executors only.
++        // There is no equivalent method for PID-based executors.
++        break;
++      }
++
+       case Call::UNKNOWN: {
+         EXIT(EXIT_FAILURE) << "Received an unexpected " << call.type()
+                            << " call";
+diff --git a/src/launcher/default_executor.cpp b/src/launcher/default_executor.cpp
+index b89b0363d..d32931fba 100644
+--- a/src/launcher/default_executor.cpp
++++ b/src/launcher/default_executor.cpp
+@@ -295,6 +295,10 @@ public:
+         break;
+       }
+ 
++      case Event::HEARTBEAT: {
++        break;
++      }
++
+       case Event::UNKNOWN: {
+         LOG(WARNING) << "Received an UNKNOWN event and ignored";
+         break;
+diff --git a/src/launcher/executor.cpp b/src/launcher/executor.cpp
+index 6b1204dc5..f962e800f 100644
+--- a/src/launcher/executor.cpp
++++ b/src/launcher/executor.cpp
+@@ -258,6 +258,10 @@ public:
+         break;
+       }
+ 
++      case Event::HEARTBEAT: {
++        break;
++      }
++
+       case Event::UNKNOWN: {
+         LOG(WARNING) << "Received an UNKNOWN event and ignored";
+         break;
+diff --git a/src/slave/constants.hpp b/src/slave/constants.hpp
+index fdc21a35b..1a201138e 100644
+--- a/src/slave/constants.hpp
++++ b/src/slave/constants.hpp
+@@ -48,6 +48,9 @@ constexpr Duration MAX_EXECUTOR_REREGISTRATION_TIMEOUT = Seconds(15);
+ // shut down before destroying the container.
+ constexpr Duration DEFAULT_EXECUTOR_SHUTDOWN_GRACE_PERIOD = Seconds(5);
+ 
++// The default amount of time between heartbeats sent to HTTP executors.
++constexpr Duration DEFAULT_EXECUTOR_HEARTBEAT_INTERVAL = Minutes(30);
++
+ constexpr Duration RECOVERY_TIMEOUT = Minutes(15);
+ 
+ // TODO(gkleiman): Move this to a different file once `TaskStatusUpdateManager`
+diff --git a/src/slave/http.cpp b/src/slave/http.cpp
+index 94aabba17..aae030469 100644
+--- a/src/slave/http.cpp
++++ b/src/slave/http.cpp
+@@ -865,6 +865,10 @@ Future<Response> Http::executor(
+       return Accepted();
+     }
+ 
++    case executor::Call::HEARTBEAT: {
++      return Accepted();
++    }
++
+     case executor::Call::UNKNOWN: {
+       LOG(WARNING) << "Received 'UNKNOWN' call";
+       return NotImplemented();
+diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
+index ca7d0aa45..b39294ad6 100644
+--- a/src/slave/slave.cpp
++++ b/src/slave/slave.cpp
+@@ -4705,6 +4705,18 @@ void Slave::subscribe(
+       executor->http = http;
+       executor->pid = None();
+ 
++      // Create a heartbeater for HTTP executors.
++      executor::Event heartbeatEvent;
++      heartbeatEvent.set_type(executor::Event::HEARTBEAT);
++
++      executor->heartbeater.reset(
++          new ResponseHeartbeater<executor::Event, v1::executor::Event>(
++              "executor " + stringify(executor->id),
++              heartbeatEvent,
++              http,
++              DEFAULT_EXECUTOR_HEARTBEAT_INTERVAL,
++              DEFAULT_EXECUTOR_HEARTBEAT_INTERVAL));
++
+       if (framework->info.checkpoint()) {
+         // Write a marker file to indicate that this executor
+         // is HTTP based.
+diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
+index 344e1b2c7..13d63872a 100644
+--- a/src/slave/slave.hpp
++++ b/src/slave/slave.hpp
+@@ -69,6 +69,7 @@
+ #include <stout/recordio.hpp>
+ #include <stout/uuid.hpp>
+ 
++#include "common/heartbeater.hpp"
+ #include "common/http.hpp"
+ #include "common/protobuf_utils.hpp"
+ #include "common/recordio.hpp"
+@@ -984,6 +985,9 @@ public:
+   //           *                 *       None       Some      Libprocess
+   //           *                 *       Some       None            HTTP
+   Option<StreamingHttpConnection<v1::executor::Event>> http;
++  process::Owned<ResponseHeartbeater<executor::Event, v1::executor::Event>>
++    heartbeater;
++
+   Option<process::UPID> pid;
+ 
+   // Tasks can be found in one of the following four data structures:
+-- 
+2.17.0
+

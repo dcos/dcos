@@ -1,7 +1,7 @@
-From e6093638d6db2bd478d1c574b5a8c150fce69de6 Mon Sep 17 00:00:00 2001
+From ba39f2842446eb238ebfea99e84e99b25efb48c1 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
-Subject: [PATCH] Logged request processing time for some endpoints.
+Subject: [PATCH 07/12] Logged request processing time for some endpoints.
 
 This patch leverages `logResponse()` function to print response status
 code together with the request processing time for some endpoints on
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/68994
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 84add3e..5d13d89 100644
+index fc29781ed..5ebdcb1ff 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -909,7 +909,10 @@ void Master::initialize()
@@ -85,7 +85,7 @@ index 84add3e..5d13d89 100644
    route("/maintenance/schedule",
          READWRITE_HTTP_AUTHENTICATION_REALM,
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 7425cfb..01fd4ee 100644
+index 1d5dad528..07066a79f 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -809,7 +809,10 @@ void Slave::initialize()
@@ -113,5 +113,5 @@ index 7425cfb..01fd4ee 100644
  
    const PID<Slave> slavePid = self();
 -- 
-2.5.1
+2.17.0
 
