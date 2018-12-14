@@ -355,7 +355,7 @@ def test_ip_per_container(dcos_api_session):
 
     with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=True):
         service_points = dcos_api_session.marathon.get_app_service_endpoints(app_definition['id'])
-        app_port = app_definition['container']['docker']['portMappings'][0]['containerPort']
+        app_port = app_definition['container']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
 
