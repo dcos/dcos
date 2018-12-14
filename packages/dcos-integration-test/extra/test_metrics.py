@@ -219,8 +219,8 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
     finally:
         dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
 
-        # Retry for 150 seconds for teardown completion
-        @retrying.retry(wait_fixed=5000, stop_max_delay=150 * 1000)
+        # Retry for 15min for teardown completion
+        @retrying.retry(wait_fixed=5000, stop_max_delay=15 * 60 * 1000)
         def wait_for_package_teardown():
             state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
             assert state_response.status_code == 200
