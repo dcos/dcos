@@ -13,6 +13,10 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 LATENCY = 60
+METRICS_WAITTIME = 5 * 60 * 1000
+METRICS_INTERVAL = 2 * 1000
+STD_WAITTIME = 15 * 60 * 1000
+STD_INTERVAL = 5 * 1000
 
 
 def test_metrics_agents_ping(dcos_api_session):
@@ -38,7 +42,7 @@ def test_metrics_masters_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+@retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def get_metrics_prom(dcos_api_session, node):
     """Gets metrics from prometheus port on node and returns the response.
 
@@ -72,8 +76,8 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
     finally:
         dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
 
-        # Retry for 150 seconds for teardown completion
-        @retrying.retry(wait_fixed=5000, stop_max_delay=150 * 1000)
+        # Retry for 15 minutes for teardown completion
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=STD_WAITTIME)
         def wait_for_package_teardown():
             state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
             assert state_response.status_code == 200
@@ -85,7 +89,7 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
         wait_for_package_teardown()
 
 
-@retrying.retry(wait_fixed=5000, stop_max_delay=300 * 1000)
+@retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def get_task_hostname(dcos_api_session, framework_name, task_name):
     # helper func that gets a framework's task's hostname
     mesos_id = node = ''
@@ -119,7 +123,7 @@ def test_task_metrics_metadata(dcos_api_session):
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
-        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
             for line in response.text.splitlines():
@@ -140,7 +144,7 @@ def test_executor_metrics_metadata(dcos_api_session):
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
-        @retrying.retry(wait_fixed=2000, stop_max_delay=300 * 1000)
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_executor_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
             for line in response.text.splitlines():
@@ -254,7 +258,7 @@ def test_metrics_containers(dcos_api_session):
         for tag_name, tag_val in tags.items():
             assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
 
-    @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
         debug_task_name = []
@@ -437,23 +441,23 @@ def test_metrics_containers_nan(dcos_api_session):
         assert metric_value == '', 'unexpected metric value: {}'.format(metric_value)
 
 
-@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def assert_app_metric_value_for_task(dcos_api_session, node: str, task_name: str, metric_name: str, metric_value):
     """Assert the value of app metric metric_name for container task_name is metric_value.
 
     Retries on error, non-200 status, missing container metrics, missing app
-    metric, or unexpected app metric value for up to 150 seconds.
+    metric, or unexpected app metric value for up to 5 minutes.
 
     """
     assert get_app_metric_for_task(dcos_api_session, node, task_name, metric_name)['value'] == metric_value
 
 
-@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_name: str):
     """Return the app metric metric_name for container task_name.
 
     Retries on error, non-200 status, or missing container metrics, or missing
-    app metric for up to 150 seconds.
+    app metric for up to 5 minutes.
 
     """
     app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
@@ -463,12 +467,15 @@ def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_
     return dps[0]
 
 
-@retrying.retry(retry_on_result=lambda result: result is None, wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+@retrying.retry(
+    retry_on_result=lambda result: result is None,
+    wait_fixed=METRICS_INTERVAL,
+    stop_max_delay=METRICS_WAITTIME)
 def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
     """Return container metrics for task_name.
 
     Returns None if container metrics for task_name can't be found. Retries on
-    error, non-200 status, or missing container metrics for up to 150 seconds.
+    error, non-200 status, or missing container metrics for up to 5 minutes.
 
     """
     for cid in get_container_ids(dcos_api_session, node):
@@ -480,11 +487,11 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
 
 # Retry for two and a half minutes since the collector collects
 # state every 2 minutes to propogate containers to the API
-@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(150 * 1000))
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def get_container_ids(dcos_api_session, node: str):
     """Return container IDs reported by the metrics API on node.
 
-    Retries on error, non-200 status, or empty response for up to 150 seconds.
+    Retries on error, non-200 status, or empty response for up to 5 minutes.
 
     """
     response = dcos_api_session.metrics.get('/containers', node=node)
@@ -494,7 +501,7 @@ def get_container_ids(dcos_api_session, node: str):
     return container_ids
 
 
-@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=(30 * 1000))
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
@@ -521,7 +528,7 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
     return container_metrics
 
 
-@retrying.retry(wait_fixed=(2 * 1000), stop_max_delay=(30 * 1000))
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=(30 * 1000))
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
@@ -661,11 +668,11 @@ def test_pod_application_metrics(dcos_api_session):
     1) Container statistics metrics are provided for the executor container
     2) Application metrics are exposed for the task container
     """
-    @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
         # Retry for two and a half minutes since the collector collects
         # state every minute to propagate containers to the API
-        @retrying.retry(wait_fixed=2000, stop_max_delay=150000)
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=150000)
         def wait_for_container_metrics_propagation():
             response = dcos_api_session.metrics.get('/containers', node=agent_ip)
             assert response.status_code == 200
