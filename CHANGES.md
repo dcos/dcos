@@ -10,6 +10,8 @@
 
 ### Fixed and improved
 
+* Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
+
 * Docker-GC will now log to journald. (COPS-4044)
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
