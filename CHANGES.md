@@ -2,6 +2,8 @@
 
 ### Notable changes
 
+* Users can now supply additional Telegraf settings (DCOS-42214)
+
 ### Breaking changes
 
 ### Fixed and improved
