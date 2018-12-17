@@ -20,5 +20,7 @@ ExecStartPre=/bin/bash -c "mkdir -p /run/dcos/telegraf"
 ExecStartPre=/bin/bash -c "chmod 775 /run/dcos/telegraf"
 ExecStartPre=/bin/bash -c "chown root:dcos_telegraf /run/dcos/telegraf"
 
+ExecStartPre=/bin/bash -c "mkdir -p ${TELEGRAF_USER_CONFIG_DIR}"
+
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
-ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR}
+ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR},${TELEGRAF_USER_CONFIG_DIR}
