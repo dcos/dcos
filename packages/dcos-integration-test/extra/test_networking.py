@@ -20,6 +20,21 @@ log = logging.getLogger(__name__)
 GLOBAL_PORT_POOL = iter(range(10000, 32000))
 
 
+pytestmark = [pytest.mark.usefixtures('marathon_groups_reset')]
+
+
+@pytest.fixture()
+def marathon_groups_reset(dcos_api_session):
+    """
+    After the decorated test is run, remove all Marathon groups.
+    """
+    yield
+    dcos_api_session.marathon.delete(
+        '/v2/groups/',
+        params={'force': True},
+    )
+
+
 class Container(enum.Enum):
     POD = 'POD'
 
