@@ -2,7 +2,6 @@ import contextlib
 import logging
 import uuid
 
-import common
 import pytest
 
 import retrying
@@ -135,6 +134,11 @@ def test_task_metrics_metadata(dcos_api_session):
 @pytest.mark.skipif(
     test_helpers.expanded_config.get('security') == 'strict',
     reason="Framework disabled for strict mode")
+@pytest.mark.xfailflake(
+    jira='DCOS_OSS-4568',
+    reason='Framework hello-world still running',
+    since='2018-12-14',
+)
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
@@ -230,7 +234,11 @@ def test_metrics_node(dcos_api_session):
         assert expected_dimension_response(response.json())
 
 
-@common.xfailflake(reason="DCOS_OSS-4486 - test_metrics_containers fails with container metrics response status 204")
+@pytest.mark.xfailflake(
+    jira='DCOS_OSS-4486',
+    reason='test_metrics_containers fails with container metrics response status 204',
+    since='2018-11-20',
+)
 def test_metrics_containers(dcos_api_session):
     """If there's a deployed container on the slave, iterate through them to check for
     the statsd-emitter executor. When found, query it's /app endpoint to test that
