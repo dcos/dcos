@@ -125,6 +125,23 @@ routes:
       path: 'http://$backend/lashup/key'
       backend: dcos_net
     path: /navstar/lashup/key
+  /net:
+    group: DC/OS Net
+    matcher: exact
+    description: Redirect to add trailing slash
+    visibility: hidden
+    redirects:
+      - regex: ^/net$
+        replacement: '$scheme://$http_host/net/'
+        type: permanent
+    path: /net
+  /net/:
+    group: DC/OS Net
+    matcher: path
+    proxy:
+      path: 'http://$backend/'
+      backend: dcos_net
+    path: /net/
   /exhibitor:
     group: Exhibitor
     matcher: exact

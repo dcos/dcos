@@ -638,6 +638,34 @@ endpoint_tests:
     type:
       - master
 
+######### /net
+  - tests:
+      is_response_correct:
+        expect_http_status: 200
+        nocaching_headers_are_sent: skip
+        test_paths:
+          - /net/v1/vips
+      are_upstream_req_headers_ok:
+        skip_authcookie_filtering_test: false
+        auth_token_is_forwarded: false
+        test_paths:
+          - /net/v1/records
+      is_upstream_correct:
+        test_paths:
+          - /net/v1/nodes
+        upstream: http://127.0.0.1:62080
+      is_upstream_req_ok:
+        expected_http_ver: HTTP/1.0
+        test_paths:
+          - expected: /v1/records
+            sent: /net/v1/records
+      is_endpoint_redirecting_properly:
+        locations:
+          - path: /net
+            code: 301
+    type:
+      - master
+
 ######### /dcos-history-service/foo/bar
   - tests:
       is_response_correct:

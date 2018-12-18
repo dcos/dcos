@@ -109,6 +109,7 @@ bootstrappers = {
     'dcos-mesos-slave': noop,
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
+    'dcos-cockroach': noop,
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,

@@ -6,7 +6,6 @@ import os
 import tempfile
 import zipfile
 
-import common
 import pytest
 import retrying
 
@@ -331,8 +330,11 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@common.xfailflake(reason="DCOS-44935 - test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is "
-                          "Flaky")
+@pytest.mark.xfailflake(
+    jira='DCOS-44935',
+    reason='test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is Flaky',
+    since='2018-11-20',
+)
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
@@ -418,28 +420,47 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     bundles = _get_bundle_list(dcos_api_session)
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
-    expected_common_files = ['dmesg_-T-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
-                             'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
-                             'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json',
-                             'var/lib/dcos/cluster-id.gz', 'ps_aux_ww_Z-4.output.gz',
-                             'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz', 'proc/self/mountinfo.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-5.output.gz',
-                             'timedatectl-6.output.gz', 'binsh_-c_cat etc*-release-7.output.gz',
-                             'systemctl_list-units_dcos*-8.output.gz', "sestatus-9.output.gz",
-                             "iptables-save-10.output.gz"]
+    expected_common_files = ['dmesg_-T-0.output.gz',
+                             'ip_addr-1.output.gz',
+                             'ip_route-2.output.gz',
+                             'ps_aux_ww_Z-3.output.gz'
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-4.output.gz',
+                             'timedatectl-5.output.gz',
+                             'binsh_-c_cat etc*-release-6.output.gz',
+                             'systemctl_list-units_dcos*-7.output.gz',
+                             'sestatus-8.output.gz',
+                             'iptables-save-9.output.gz',
+                             'opt/mesosphere/active.buildinfo.full.json.gz',
+                             'opt/mesosphere/etc/dcos-version.json.gz',
+                             'opt/mesosphere/etc/expanded.config.json.gz',
+                             'opt/mesosphere/etc/user.config.yaml.gz',
+                             'dcos-diagnostics-health.json',
+                             'var/lib/dcos/cluster-id.gz',
+                             'proc/cmdline.gz',
+                             'proc/cpuinfo.gz',
+                             'proc/meminfo.gz',
+                             'proc/self/mountinfo.gz'
+                             ]
 
     # these files are expected to be in archive for a master host
-    expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
-                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
-                             'var/lib/dcos/mesos/log/mesos-master.log.gz',
-                             'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
-                             '| cut -d\'=\' -f2`environ-11.output.gz', '5050-overlay-master_state.json.gz'
-                             ] + expected_common_files
+    expected_master_files = [
+        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
+        '| cut -d\'=\' -f2`environ-10.output.gz',
+        '5050-quota.json',
+        '5050-overlay-master_state.json.gz'
+        'dcos-mesos-master.service.gz',
+        'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
+        'var/lib/dcos/exhibitor/conf/zoo.cfg.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.gz'
+    ] + expected_common_files
 
-    expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json',
-                                   'var/log/mesos/mesos-agent.log.gz',
-                                   'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
-                                   '| cut -d\'=\' -f2`environ-12.output.gz']
+    expected_agent_common_files = [
+        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID'
+        '| cut -d\'=\' -f2`environ-11.output.gz',
+        '5051-containers.json',
+        '5051-overlay-agent_overlay.json',
+        'var/log/mesos/mesos-agent.log.gz'
+    ]
 
     # for agent host
     expected_agent_files = ['dcos-mesos-slave.service.gz'
