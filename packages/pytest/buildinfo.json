@@ -30,6 +30,11 @@
       "kind": "url_extract",
       "url": "https://files.pythonhosted.org/packages/ac/ed/a311712ef6b4355035489f665e63e1a73f9eb371929e3c98e5efd451069e/atomicwrites-1.2.1.tar.gz",
       "sha1": "fec341b1028177784ac97436c479a397ffeb20d7"
+    },
+    "pathlib2": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/bf/d7/a2568f4596b75d2c6e2b4094a7e64f620decc7887f69a1f2811931ea15b9/pathlib2-2.3.3.tar.gz",
+      "sha1": "3a902176bb4b5b7f1f112e501409b84c21c7f50c"
     }
   }
 }

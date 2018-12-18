@@ -5,6 +5,6 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 pip list
 
-for package in pluggy py attrs moreitertools atomicwrites pytest; do
+for package in pluggy py attrs moreitertools atomicwrites pathlib2 pytest; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
 done
