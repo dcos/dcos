@@ -1,0 +1,82 @@
+From 905a122a103f4c0c168d0f1101a7632010c57d50 Mon Sep 17 00:00:00 2001
+From: Joseph Wu <joseph@mesosphere.io>
+Date: Thu, 13 Dec 2018 16:34:21 -0800
+Subject: [PATCH 09/12] Added HEARTBEAT events and calls for the executor HTTP
+ API.
+
+These new messages are meant to be backwards compatible, in that
+they won't cause crashes when new executors send heartbeats to old
+agents, or new agents send heartbeats to old executors.  All recipients
+of these heartbeats are currently expected to ignore them, as their
+only purpose is to keep certain connections from being marked "stale"
+by network intermediaries.
+
+Review: https://reviews.apache.org/r/69463/
+---
+ include/mesos/executor/executor.proto    | 12 ++++++++++++
+ include/mesos/v1/executor/executor.proto | 12 ++++++++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/include/mesos/executor/executor.proto b/include/mesos/executor/executor.proto
+index 1b5fa5dab..ce724c098 100644
+--- a/include/mesos/executor/executor.proto
++++ b/include/mesos/executor/executor.proto
+@@ -66,6 +66,11 @@ message Event {
+     // message so that the agent can communicate when a shorter period
+     // has been allotted.
+     SHUTDOWN = 7;
++
++    // Received periodically to make sure the connection is alive and to
++    // prevent any possible network intermediaries from marking the
++    // connection as stale (when there are no other messages being sent).
++    HEARTBEAT = 9;
+   }
+ 
+   // First event received when the executor subscribes.
+@@ -165,6 +170,13 @@ message Call {
+     SUBSCRIBE = 1;    // See 'Subscribe' below.
+     UPDATE = 2;       // See 'Update' below.
+     MESSAGE = 3;      // See 'Message' below.
++
++    // Optional message that can be used to make sure the executor's
++    // connection is still alive and to prevent any possible network
++    // intermediaries from marking the connection as stale (when there
++    // are no other messages being sent). Heartbeats are only necessary
++    // if the executor uses a persistent connection to send calls.
++    HEARTBEAT = 4;
+   }
+ 
+   // Request to subscribe with the slave. If subscribing after a disconnection,
+diff --git a/include/mesos/v1/executor/executor.proto b/include/mesos/v1/executor/executor.proto
+index b2ef325cf..51fa66d42 100644
+--- a/include/mesos/v1/executor/executor.proto
++++ b/include/mesos/v1/executor/executor.proto
+@@ -66,6 +66,11 @@ message Event {
+     // message so that the agent can communicate when a shorter period
+     // has been allotted.
+     SHUTDOWN = 7;
++
++    // Received periodically to make sure the connection is alive and to
++    // prevent any possible network intermediaries from marking the
++    // connection as stale (when there are no other messages being sent).
++    HEARTBEAT = 9;
+   }
+ 
+   // First event received when the executor subscribes.
+@@ -166,6 +171,13 @@ message Event {
+     SUBSCRIBE = 1;    // See 'Subscribe' below.
+     UPDATE = 2;       // See 'Update' below.
+     MESSAGE = 3;      // See 'Message' below.
++
++    // Optional message that can be used to make sure the executor's
++    // connection is still alive and to prevent any possible network
++    // intermediaries from marking the connection as stale (when there
++    // are no other messages being sent). Heartbeats are only necessary
++    // if the executor uses a persistent connection to send calls.
++    HEARTBEAT = 4;
+   }
+ 
+   // Request to subscribe with the agent. If subscribing after a disconnection,
+-- 
+2.17.0
+
