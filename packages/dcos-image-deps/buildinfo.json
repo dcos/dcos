@@ -18,6 +18,11 @@
     "teamcity-messages"
   ],
   "sources": {
+    "adal": {
+      "kind": "url",
+      "url": "https://pypi.python.org/packages/24/e9/35e48db18de35310ea3ba17c7f401e7c2099ad7ce31a0dbc881411ea7c16/adal-0.4.7-py2.py3-none-any.whl",
+      "sha1": "bb158afaf52a2cc7f6c25b86fefe1e5344d7b21d"
+    },
     "aiohttp": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/55/9d/38fb3cb174f4723b50a3f0593e18a51418c9a73a7857fdcaee46b83ff1c4/aiohttp-0.22.5.tar.gz",
