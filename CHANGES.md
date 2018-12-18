@@ -126,8 +126,6 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Bumped DC/OS UI to [1.12+v2.25.11](https://github.com/dcos/dcos-ui/releases/tag/1.12%2Bv2.25.11)
-
 * Updated DC/OS UI to 1.12+v2.25.10 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.10)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
