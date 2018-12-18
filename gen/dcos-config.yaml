@@ -1572,6 +1572,12 @@ package:
         percentile_limit = 1000
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
+        ## The URL of the local mesos agent
+		mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+	    mesos_timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "telegraf-prometheus"
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:61001/nginx/metrics"]
         ## Specify timeout duration for slower prometheus clients (default is 3s)
@@ -1684,6 +1690,13 @@ package:
         percentile_limit = 1000
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
+        ## The URL of the local mesos agent
+		mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+	    mesos_timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "telegraf-prometheus"
+
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:61001/nginx/metrics"]
         ## Specify timeout duration for slower prometheus clients (default is 3s)
