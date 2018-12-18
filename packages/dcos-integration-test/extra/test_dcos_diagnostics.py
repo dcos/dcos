@@ -323,7 +323,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 
 @pytest.mark.supportedwindows
 @pytest.mark.xfailflake(
-    jira='DCOS-45278',
+    jira='DCOS-44935',
     reason='test_dcos_diagnostics.test_dcos_diagnostics_bundle_create_download_delete is Flaky',
     since='2018-11-20',
 )
