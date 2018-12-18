@@ -11,7 +11,6 @@ RestartSec=30
 LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=/opt/mesosphere/active/bouncer/bin/iam-migrate-users-from-1.12.py
-RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
