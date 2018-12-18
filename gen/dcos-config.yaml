@@ -1573,9 +1573,9 @@ package:
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
         ## The URL of the local mesos agent
-		mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
-	    mesos_timeout = "10s"
+        mesos_timeout = "10s"
         ## The user agent to send with requests
         user_agent = "telegraf-prometheus"
         ## An array of urls to scrape metrics from.
@@ -1691,9 +1691,9 @@ package:
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
         ## The URL of the local mesos agent
-		mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
         ## The period after which requests to mesos agent should time out
-	    mesos_timeout = "10s"
+        mesos_timeout = "10s"
         ## The user agent to send with requests
         user_agent = "telegraf-prometheus"
 
