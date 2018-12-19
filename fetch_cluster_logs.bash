@@ -128,13 +128,13 @@ fi
 
 # download the DC/OS CLI
 if [ ! -f dcos-cli ]; then
-  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.4/dcos --output-document=dcos-cli
+  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.5/dcos --output-document=dcos-cli
   chmod +x dcos-cli
 fi
 
 # link the CLI with the cluster
 if [[ $dcos_variant == "open" ]]; then
-  bash -c "./dcos-cli $debug_options cluster setup http://$master_public_ip --provider=dcos-oidc-auth0 --insecure $dcos_login_token_input"
+  bash -c "./dcos-cli $debug_options cluster setup $master_public_ip --provider=dcos-oidc-auth0 --insecure $dcos_login_token_input"
 else
   ./dcos-cli $debug_options cluster setup $master_public_ip $dcos_username $dcos_password --insecure
 fi
