@@ -20,5 +20,7 @@
   "rukletsov": {"slack": "alexr", "jira": "alex"},
   "tillt": {"slack": "till", "jira": "till"},
   "timaa2k": {"slack": "tweidner", "jira": "timweidner"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
+  "lhambley": {"slack": "lee", "jira": "leehambley"},
+  "juliangieseke": {"slack": "Julian", "jira": "juliangieseke"}
 }
