@@ -4,6 +4,8 @@
 
 * Users can now supply additional Telegraf settings (DCOS-42214)
 
+* Bumped DC/OS UI to [1.12+v2.25.11](https://github.com/dcos/dcos-ui/releases/tag/1.12%2Bv2.25.11)
+
 ### Breaking changes
 
 ### Fixed and improved
