@@ -15,7 +15,7 @@ def test_pkgpanda_api(dcos_api_session):
             'Will not work on advanced CF templates, see: '
             'https://jira.mesosphere.com/browse/DCOS_OSS-1375'
         )
-        pytest.skip(reason=reason)
+        pytest.skip(reason)
 
     def get_and_validate_package_ids(path, node):
         r = dcos_api_session.get(path, node=node)
