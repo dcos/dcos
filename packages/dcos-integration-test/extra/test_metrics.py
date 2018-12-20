@@ -5,7 +5,6 @@ import uuid
 import pytest
 
 import retrying
-import test_helpers
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
