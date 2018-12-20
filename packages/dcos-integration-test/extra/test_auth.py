@@ -15,9 +15,10 @@ def auth_enabled():
     return out == 'true'
 
 
-@pytest.mark.skipif(not auth_enabled(),
-                    reason='Can only test adminrouter enforcement if auth is enabled')
 def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_session):
+    reason = 'Can only test adminrouter enforcement if auth is enabled'
+    if not auth_enabled():
+        pytest.skip(reason=reason)
     r = noauth_api_session.get('/acs/api/v1')
     assert r.status_code == 401
     assert r.headers['WWW-Authenticate'] in ('acsjwt', 'oauthjwt')
