@@ -460,7 +460,7 @@ def test_min_allocatable_resources(reserved_disk):
     """Test that the Mesos master creates offers for just `disk` resources."""
     # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
     # offers.
-    expanded_config = get_expanded_config()
+    expanded_config = test_helpers.get_expanded_config()
     if expanded_config.get('security') == 'strict':
         pytest.skip(reason='Missing framework authentication for mesos-execute')
 

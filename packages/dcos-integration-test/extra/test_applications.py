@@ -24,7 +24,7 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
     is the default, root
     """
     expanded_config = test_helpers.get_expanded_config()
-    default_os_user = 'nobody' if test_helpers.get('security') == 'strict' else 'root'
+    default_os_user = 'nobody' if expanded_config.get('security') == 'strict' else 'root'
 
     if 'container' in app and app['container']['type'] == 'DOCKER':
         marathon_user = 'root'
