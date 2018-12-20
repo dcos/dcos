@@ -10,7 +10,7 @@ Restart=on-failure
 RestartSec=30
 LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
-ExecStart=/opt/mesosphere/active/bouncer/bin/iam-migrate-users-from-1.12.py
+ExecStart=/opt/mesosphere/active/bouncer/bin/iam-migrate-users-from-zk.py
 
 [Install]
 WantedBy=multi-user.target

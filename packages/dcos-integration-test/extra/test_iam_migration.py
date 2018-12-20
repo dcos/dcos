@@ -58,7 +58,7 @@ def create_dcos_oauth_users(zk: KazooClient) -> None:
 
 
 @pytest.mark.usefixtures('create_dcos_oauth_users')
-def test_iam_migration(zk: KazooClient, dcos_api_session: DcosApiSession) -> None:
+def test_iam_migration(dcos_api_session: DcosApiSession) -> None:
     check_call(['sudo', 'systemctl', 'stop', 'dcos-bouncer-migrate-users.service'])
 
     def _filter_test_uids(r):

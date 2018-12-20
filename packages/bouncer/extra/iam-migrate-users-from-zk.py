@@ -70,7 +70,10 @@ def migrate_user(uid: str) -> None:
 
     # The 409 response code means that user already exists in the DC/OS IAM
     # service
-    if r.status_code != 409:
+    if r.status_code == 409:
+        log.info('Skipping existing IAM user `%s`', uid)
+        return
+    else:
         r.raise_for_status()
 
     log.info('Created IAM user `%s`', uid)
@@ -109,19 +112,18 @@ def main() -> None:
             log.info('Deleting ZK path `%s`', zk_uid_path)
             zk.delete(zk_uid_path)
         except kazoo.exceptions.NoNodeError:
-            # Is it possible that it was migrated in other instance of this
-            # script.
-            log.warn('ZK node `%s` no loger exists.', zk_uid_path)
-            pass
+            # It is possible that the user was removed by another master running
+            # this script.
+            log.warn('ZK node `%s` no longer exists.', zk_uid_path)
 
     # Finally we can remove /dcos/users which should be empty at this point
     try:
         log.info('Removing legacy ZK path `%s`.', ZK_USERS_PATH)
         zk.delete(ZK_USERS_PATH)
     except kazoo.exceptions.NoNodeError:
-        # Is it possible that it was migrated in other instance of this
-        # script.
-        log.warn('ZK node `%s` no loger exists.', zk_uid_path)
+        # It is possible that the user was removed by another master running
+        # this script.
+        log.warn('ZK node `%s` no longer exists.', ZK_USERS_PATH)
 
     zk.stop()
     log.info('Migration completed.')
