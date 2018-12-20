@@ -300,7 +300,7 @@ def test_vip(dcos_api_session,
     that the expected origin app UUID was returned
     '''
     if not lb_enabled():
-        pytest.skip(reason='Load Balancer disabled')
+        pytest.skip('Load Balancer disabled')
 
     errors = []
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
@@ -404,7 +404,7 @@ def test_if_overlay_ok(dcos_api_session):
 def test_if_dcos_l4lb_disabled(dcos_api_session):
     '''Test to make sure dcos_l4lb is disabled'''
     if lb_enabled():
-        pytest.skip(reason='Load Balancer enabled')
+        pytest.skip('Load Balancer enabled')
     data = check_output(['/usr/bin/env', 'ip', 'rule'])
     # dcos-net creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
     # We check it doesn't exist
@@ -453,7 +453,7 @@ def test_l4lb(dcos_api_session):
        * only testing if all 5 are hit at least once
     '''
     if not lb_enabled():
-        pytest.skip(reason='Load Balancer disabled')
+        pytest.skip('Load Balancer disabled')
     numapps = 5
     numthreads = numapps * 4
     apps = []
@@ -531,11 +531,11 @@ def test_dcos_cni_l4lb(dcos_api_session):
     test-case to PASS.
     '''
     if not lb_enabled():
-        pytest.skip(reason='Load Balancer disabled')
+        pytest.skip('Load Balancer disabled')
 
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='Cannot setup CNI config with EE strict mode enabled')
+        pytest.skip('Cannot setup CNI config with EE strict mode enabled')
 
     # CNI configuration of `spartan-net`.
     spartan_net = {

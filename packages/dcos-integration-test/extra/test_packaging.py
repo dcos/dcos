@@ -18,7 +18,7 @@ def test_pkgpanda_api(dcos_api_session):
             'Will not work on advanced CF templates, see: '
             'https://jira.mesosphere.com/browse/DCOS_OSS-1375'
         )
-        pytest.skip(reason=reason)
+        pytest.skip(reason)
 
     def get_and_validate_package_ids(path, node):
         r = dcos_api_session.get(path, node=node)
@@ -166,7 +166,7 @@ def test_mom_installation(dcos_api_session):
     """
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='MoM disabled for strict mode')
+        pytest.skip('MoM disabled for strict mode')
 
     install_response = dcos_api_session.cosmos.install_package('marathon')
     data = install_response.json()

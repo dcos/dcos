@@ -316,7 +316,7 @@ def get_region_zone(domain):
 def test_fault_domain(dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config['fault_domain_enabled'] == 'false':
-        pytest.skip(reason='fault domain is not set')
+        pytest.skip('fault domain is not set')
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
     assert r.status_code == 200
@@ -462,7 +462,7 @@ def test_min_allocatable_resources(reserved_disk):
     # offers.
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='Missing framework authentication for mesos-execute')
+        pytest.skip('Missing framework authentication for mesos-execute')
 
     name = \
         'test-min-test_min-allocatable-resources-{}'.format(uuid.uuid4().hex)
