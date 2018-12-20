@@ -2,7 +2,7 @@
 import logging
 
 import pytest
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'branden'
 __contact__ = 'marathon-team@mesosphere.io'
@@ -10,10 +10,15 @@ __contact__ = 'marathon-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(
-    'advanced' in expanded_config['template_filenames'],
-    reason='Will not work on advanced CF templates, see: https://jira.mesosphere.com/browse/DCOS_OSS-1375')
 def test_pkgpanda_api(dcos_api_session):
+
+    expanded_config = get_expanded_config()
+    if 'advanced' in expanded_config['template_filenames']:
+        reason = (
+            'Will not work on advanced CF templates, see: '
+            'https://jira.mesosphere.com/browse/DCOS_OSS-1375'
+        )
+        pytest.skip(reason=reason)
 
     def get_and_validate_package_ids(path, node):
         r = dcos_api_session.get(path, node=node)
@@ -156,11 +161,12 @@ def test_packaging_api(dcos_api_session):
     assert len(packages) == 0
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="MoM disabled for strict mode")
 def test_mom_installation(dcos_api_session):
     """Test the Cosmos installation of marathon on marathon (MoM)
     """
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip(reason='MoM disabled for strict mode')
 
     install_response = dcos_api_session.cosmos.install_package('marathon')
     data = install_response.json()
