@@ -193,7 +193,8 @@ def unused_port():
 
 
 def lb_enabled():
-    return test_helpers.expanded_config['enable_lb'] == 'true'
+    expanded_config = test_helpers.get_expanded_config()
+    return expanded_config['enable_lb'] == 'true'
 
 
 @retrying.retry(wait_fixed=2000,
@@ -275,9 +276,6 @@ def test_vip_ipv6(dcos_api_session):
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not lb_enabled(),
-    reason='Load Balancer disabled')
 @pytest.mark.parametrize(
     'container,vip_net,proxy_net',
     generate_vip_app_permutations())
@@ -298,6 +296,9 @@ def test_vip(dcos_api_session,
     proxy container that will ping the origin container VIP and then assert
     that the expected origin app UUID was returned
     '''
+    if not lb_enabled():
+        pytest.skip(reason='Load Balancer disabled')
+
     errors = []
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
     for vip, hosts, cmd, origin_app, proxy_app in tests:
@@ -397,9 +398,10 @@ def test_if_overlay_ok(dcos_api_session):
         _check_overlay(slave, 5051)
 
 
-@pytest.mark.skipif(lb_enabled(), reason='Load Balancer enabled')
 def test_if_dcos_l4lb_disabled(dcos_api_session):
     '''Test to make sure dcos_l4lb is disabled'''
+    if lb_enabled():
+        pytest.skip(reason='Load Balancer enabled')
     data = check_output(['/usr/bin/env', 'ip', 'rule'])
     # dcos-net creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
     # We check it doesn't exist
@@ -440,7 +442,6 @@ def geturl(url):
     return r
 
 
-@pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
 def test_l4lb(dcos_api_session):
     '''Test l4lb is load balancing between all the backends
        * create 5 apps using the same VIP
@@ -448,6 +449,8 @@ def test_l4lb(dcos_api_session):
        * verify that 5 uuids have been returned
        * only testing if all 5 are hit at least once
     '''
+    if not lb_enabled():
+        pytest.skip(reason='Load Balancer disabled')
     numapps = 5
     numthreads = numapps * 4
     apps = []
@@ -493,9 +496,6 @@ def test_l4lb(dcos_api_session):
     assert set(expected_uuids) == set(received_uuids)
 
 
-@pytest.mark.skipif(not lb_enabled(), reason='Load Balancer disabled')
-@pytest.mark.xfail(test_helpers.expanded_config.get('security') == 'strict',
-                   reason='Cannot setup CNI config with EE strict mode enabled', strict=True)
 def test_dcos_cni_l4lb(dcos_api_session):
     '''
     This tests the `dcos - l4lb` CNI plugins:
@@ -527,6 +527,12 @@ def test_dcos_cni_l4lb(dcos_api_session):
     would fail, with a successful `curl` execution on the VIP allowing the
     test-case to PASS.
     '''
+    if not lb_enabled():
+        pytest.skip(reason='Load Balancer disabled')
+
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip(reason='Cannot setup CNI config with EE strict mode enabled')
 
     # CNI configuration of `spartan-net`.
     spartan_net = {

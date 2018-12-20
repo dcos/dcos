@@ -1,15 +1,20 @@
 import logging
 
 import pytest
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(
-    'advanced' in expanded_config['template_filenames'],
-    reason='Will not work on advanced CF templates, see: https://jira.mesosphere.com/browse/DCOS_OSS-1375')
 def test_pkgpanda_api(dcos_api_session):
+
+    expanded_config = get_expanded_config()
+    if 'advanced' in expanded_config['template_filenames']:
+        reason = (
+            'Will not work on advanced CF templates, see: '
+            'https://jira.mesosphere.com/browse/DCOS_OSS-1375'
+        )
+        pytest.skip(reason=reason)
 
     def get_and_validate_package_ids(path, node):
         r = dcos_api_session.get(path, node=node)
