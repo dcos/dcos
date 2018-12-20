@@ -1,8 +1,6 @@
 import pytest
 import retrying
 
-from test_helpers import get_expanded_config
-
 
 LATENCY = 60
 
