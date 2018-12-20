@@ -189,7 +189,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
 def test_octarine(dcos_api_session, timeout=30):
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='See: https://jira.mesosphere.com/browse/DCOS-14760')
+        pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-14760')
     # This app binds to port 80. This is only required by the http (not srv)
     # transparent mode test. In transparent mode, we use ".mydcos.directory"
     # to go to localhost, the port attached there is only used to

@@ -273,7 +273,7 @@ def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='MoM disabled for strict mode')
+        pytest.skip('MoM disabled for strict mode')
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
@@ -299,7 +299,7 @@ def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
-        pytest.skip(reason='Framework disabled for strict mode')
+        pytest.skip('Framework disabled for strict mode')
 
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
@@ -695,7 +695,7 @@ def test_standalone_container_metrics(dcos_api_session):
             'Only resource providers are authorized to launch standalone '
             'containers in strict mode. See DCOS-42325.'
         )
-        pytest.skip(reason=reason)
+        pytest.skip(reason)
     # Fetch the mesos master state to get an agent ID
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
