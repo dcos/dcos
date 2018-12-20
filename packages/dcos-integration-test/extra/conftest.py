@@ -10,7 +10,7 @@ from test_dcos_diagnostics import (
     wait_for_diagnostics_job,
     wait_for_diagnostics_list
 )
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ def dcos_api_session(dcos_api_session_factory):
     args = dcos_api_session_factory.get_args_from_env()
 
     exhibitor_admin_password = None
+    expanded_config = get_expanded_config()
     if expanded_config['exhibitor_admin_password_enabled'] == 'true':
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
