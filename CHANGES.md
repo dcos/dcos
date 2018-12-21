@@ -47,6 +47,8 @@
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
+* Number of concurrent subscribers to Mesos master operator API is now capped to 1000 by default, with a Mesos master flag to configure (DCOS_OSS-4164)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
