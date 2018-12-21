@@ -1,7 +1,7 @@
-From ba39f2842446eb238ebfea99e84e99b25efb48c1 Mon Sep 17 00:00:00 2001
+From 2382c03e496f3f647905628df49efec6474e45e8 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
-Subject: [PATCH 07/12] Logged request processing time for some endpoints.
+Subject: [PATCH 07/14] Logged request processing time for some endpoints.
 
 This patch leverages `logResponse()` function to print response status
 code together with the request processing time for some endpoints on
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/68994
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index fc29781ed..5ebdcb1ff 100644
+index f33a5aa79..423bbe533 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -909,7 +909,10 @@ void Master::initialize()

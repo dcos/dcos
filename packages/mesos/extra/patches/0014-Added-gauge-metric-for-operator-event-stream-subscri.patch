@@ -1,0 +1,172 @@
+From 2810ae2801f8a32aaa80f24af496a51e4c66de48 Mon Sep 17 00:00:00 2001
+From: Joseph Wu <joseph@mesosphere.io>
+Date: Thu, 13 Dec 2018 16:35:12 -0800
+Subject: [PATCH 14/14] Added gauge metric for operator event stream
+ subscribers.
+
+This metric "master/operator_event_stream_subscribers" returns
+the total number of subscribers to the master's operator event stream.
+
+Review: https://reviews.apache.org/r/69514/
+---
+ docs/monitoring.md         | 7 +++++++
+ docs/operator-http-api.md  | 4 ++++
+ src/master/master.cpp      | 6 ++++++
+ src/master/metrics.cpp     | 6 ++++++
+ src/master/metrics.hpp     | 2 ++
+ src/tests/api_tests.cpp    | 9 +++++++++
+ src/tests/master_tests.cpp | 3 +++
+ 7 files changed, 37 insertions(+)
+
+diff --git a/docs/monitoring.md b/docs/monitoring.md
+index 00c6ea94b..2c2320ad0 100644
+--- a/docs/monitoring.md
++++ b/docs/monitoring.md
+@@ -979,6 +979,13 @@ event queue.
+   <td>Number of messages in the event queue</td>
+   <td>Gauge</td>
+ </tr>
++<tr>
++  <td>
++  <code>master/operator_event_stream_subscribers</code>
++  </td>
++  <td>Number of subscribers to the operator event stream</td>
++  <td>Gauge</td>
++</tr>
+ </table>
+ 
+ #### Registrar
+diff --git a/docs/operator-http-api.md b/docs/operator-http-api.md
+index 6edf36104..2d4a9b66e 100644
+--- a/docs/operator-http-api.md
++++ b/docs/operator-http-api.md
+@@ -716,6 +716,10 @@ Content-Type: application/json
+         "name": "master/outstanding_offers",
+         "value": 0.0
+       },
++      {
++        "name": "master/operator_event_stream_subscribers",
++        "value": 0.0
++      },
+       {
+         "name": "master/frameworks_active",
+         "value": 0.0
+diff --git a/src/master/master.cpp b/src/master/master.cpp
+index 56189807e..13ba4a42e 100644
+--- a/src/master/master.cpp
++++ b/src/master/master.cpp
+@@ -12157,6 +12157,9 @@ void Master::exited(const id::UUID& id)
+             << " from the list of active subscribers";
+ 
+   subscribers.subscribed.erase(id);
++
++  metrics->operator_event_stream_subscribers =
++    subscribers.subscribed.size();
+ }
+ 
+ 
+@@ -12186,6 +12189,9 @@ void Master::subscribe(
+       http.streamId,
+       Owned<Subscribers::Subscriber>(
+           new Subscribers::Subscriber{http, principal}));
++
++  metrics->operator_event_stream_subscribers =
++    subscribers.subscribed.size();
+ }
+ 
+ 
+diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
+index 56a7eef2d..3ed0827ad 100644
+--- a/src/master/metrics.cpp
++++ b/src/master/metrics.cpp
+@@ -80,6 +80,8 @@ Metrics::Metrics(const Master& master)
+     outstanding_offers(
+         "master/outstanding_offers",
+         defer(master, &Master::_outstanding_offers)),
++    operator_event_stream_subscribers(
++        "master/operator_event_stream_subscribers"),
+     tasks_staging(
+         "master/tasks_staging",
+         defer(master, &Master::_tasks_staging)),
+@@ -232,6 +234,8 @@ Metrics::Metrics(const Master& master)
+ 
+   process::metrics::add(outstanding_offers);
+ 
++  process::metrics::add(operator_event_stream_subscribers);
++
+   process::metrics::add(tasks_staging);
+   process::metrics::add(tasks_starting);
+   process::metrics::add(tasks_running);
+@@ -383,6 +387,8 @@ Metrics::~Metrics()
+ 
+   process::metrics::remove(outstanding_offers);
+ 
++  process::metrics::remove(operator_event_stream_subscribers);
++
+   process::metrics::remove(tasks_staging);
+   process::metrics::remove(tasks_starting);
+   process::metrics::remove(tasks_running);
+diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
+index a8055159b..1cf03301e 100644
+--- a/src/master/metrics.hpp
++++ b/src/master/metrics.hpp
+@@ -60,6 +60,8 @@ struct Metrics
+ 
+   process::metrics::PullGauge outstanding_offers;
+ 
++  process::metrics::PushGauge operator_event_stream_subscribers;
++
+   // Task state metrics.
+   process::metrics::PullGauge tasks_staging;
+   process::metrics::PullGauge tasks_starting;
+diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
+index 9d61ff59d..00c2ce77f 100644
+--- a/src/tests/api_tests.cpp
++++ b/src/tests/api_tests.cpp
+@@ -3527,6 +3527,7 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+   Clock::pause();
+ 
+   ContentType contentType = GetParam();
++  const string METRIC_NAME("master/operator_event_stream_subscribers");
+ 
+   // Lower the max number of connections for this test.
+   master::Flags masterFlags = CreateMasterFlags();
+@@ -3592,6 +3593,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+   AWAIT_READY(event);
+   ASSERT_EQ(v1::master::Event::HEARTBEAT, event->get().type());
+ 
++  // Check the relevant metric for total active subscribers.
++  JSON::Object metrics = Metrics();
++  EXPECT_EQ(2, metrics.values.at(METRIC_NAME));
++
+   // Start a third connection.
+   {
+     // This is basically `http::streaming::post` unwrapped inside the
+@@ -3651,6 +3656,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+   ASSERT_TRUE(event->isSome());
+   ASSERT_EQ(v1::master::Event::HEARTBEAT, event->get().type());
+ 
++  // Check the metric again.
++  metrics = Metrics();
++  EXPECT_EQ(1, metrics.values.at(METRIC_NAME));
++
+   // Start a fourth connection. This should be under the maximum
+   // and should not cause any disconnections.
+   Future<http::Response> response4 = http::streaming::post(
+diff --git a/src/tests/master_tests.cpp b/src/tests/master_tests.cpp
+index 9d5d5a3bd..1e840c478 100644
+--- a/src/tests/master_tests.cpp
++++ b/src/tests/master_tests.cpp
+@@ -2265,6 +2265,9 @@ TEST_F(MasterTest, MetricsInMetricsEndpoint)
+ 
+   EXPECT_EQ(1u, snapshot.values.count("master/outstanding_offers"));
+ 
++  EXPECT_EQ(1u, snapshot.values.count(
++      "master/operator_event_stream_subscribers"));
++
+   EXPECT_EQ(1u, snapshot.values.count("master/tasks_staging"));
+   EXPECT_EQ(1u, snapshot.values.count("master/tasks_starting"));
+   EXPECT_EQ(1u, snapshot.values.count("master/tasks_running"));
+-- 
+2.17.0
+
