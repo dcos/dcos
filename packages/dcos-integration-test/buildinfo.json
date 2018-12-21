@@ -4,5 +4,6 @@
       "dcos-test-utils",
       "pytest",
       "python",
+      "python-kazoo",
       "python-requests"]
 }

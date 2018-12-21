@@ -12,6 +12,7 @@
     "python-pyyaml",
     "python-cryptography",
     "python-gunicorn",
+    "python-kazoo",
     "six",
     "libpq"
   ],
