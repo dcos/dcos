@@ -77,4 +77,5 @@ groups:
         - test_ucr.py
         - test_units.py
         - test_iam.py
+        - test_iam_migration.py
         - test_legacy_user_management.py

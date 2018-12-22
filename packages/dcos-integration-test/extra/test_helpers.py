@@ -66,16 +66,9 @@ def marathon_test_app_linux(
     Return:
         (dict, str): 2-Tuple of app definition (dict) and app ID (string)
     """
-    if network == marathon.Network.BRIDGE:
-        if container_port is None:
-            # provide a dummy value for the bridged container port if user is indifferent
-            container_port = 8080
-    else:
-        assert container_port is None or container_port == host_port, 'Cannot declare a different host and '\
-            'container port outside of BRIDGE network'
-        container_port = host_port
-    if network == marathon.Network.USER:
-        assert host_port != 0, 'Cannot auto-assign a port on USER network!'
+    if network != marathon.Network.HOST and container_port is None:
+        # provide a dummy value for the bridged container port if user is indifferent
+        container_port = 8080
 
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
@@ -85,9 +78,9 @@ def marathon_test_app_linux(
         'instances': 1,
         'cmd': '/opt/mesosphere/bin/dcos-shell python '
                '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(
-                   # If network is host and host port is zero, then the port is auto-assigned
-                   # and the commandline should reference the port with the marathon built-in
-                   '$PORT0' if host_port == 0 and network == marathon.Network.HOST else container_port),
+                   # If container port is not defined, then the port is auto-assigned and
+                   # the commandline should reference the port with the marathon built-in
+                   '$PORT0' if container_port is None else container_port),
         'env': {
             'DCOS_TEST_UUID': test_uuid,
             # required for python_test_server.py to run as nobody
@@ -106,15 +99,16 @@ def marathon_test_app_linux(
             }
         ],
     })
-    if host_port == 0:
+    if container_port is not None and \
+            healthcheck_protocol == marathon.Healthcheck.MESOS_HTTP:
+        app['healthChecks'][0]['port'] = container_port
+    elif host_port == 0:
         # port is being assigned by marathon so refer to this port by index
         app['healthChecks'][0]['portIndex'] = 0
-    elif network == marathon.Network.BRIDGE:
-        app['healthChecks'][0]['port'] = container_port if \
-            healthcheck_protocol == marathon.Healthcheck.MESOS_HTTP else host_port
     else:
         # HOST or USER network with non-zero host port
         app['healthChecks'][0]['port'] = host_port
+
     if container_type != marathon.Container.NONE:
         app['container'] = {
             'type': container_type.value,
@@ -122,46 +116,42 @@ def marathon_test_app_linux(
             'volumes': [{
                 'containerPath': '/opt/mesosphere',
                 'hostPath': '/opt/mesosphere',
-                'mode': 'RO'}]}
-        if container_type == marathon.Container.DOCKER:
-            app['container']['docker']['network'] = network.value
-            if network != marathon.Network.HOST:
-                app['container']['docker']['portMappings'] = [{
-                    'hostPort': host_port,
-                    'containerPort': container_port,
-                    'protocol': 'tcp',
-                    'name': 'test'}]
-                if vip is not None:
-                    app['container']['docker']['portMappings'][0]['labels'] = {'VIP_0': vip}
+                'mode': 'RO'
+            }]
+        }
+    else:
+        app['container'] = {'type': 'MESOS'}
+
+    if host_port != 0:
+        app['requirePorts'] = True
     if network == marathon.Network.HOST:
         app['portDefinitions'] = [{
             'protocol': 'tcp',
             'port': host_port,
-            'name': 'test'}]
+            'name': 'test'
+        }]
         if vip is not None:
             app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
-    elif network == marathon.Network.USER:
-        app['ipAddress'] = {'networkName': network_name}
-        if container_type != marathon.Container.DOCKER:
-            app['ipAddress']['discovery'] = {
-                'ports': [{
-                    'protocol': 'tcp',
-                    'name': 'test',
-                    'number': host_port,
-                }]
-            }
-            if vip is not None:
-                app['ipAddress']['discovery']['ports'][0]['labels'] = {'VIP_0': vip}
-    elif network == marathon.Network.BRIDGE:
-        if container_type == marathon.Container.MESOS:
-            app['networks'] = [{'mode': 'container/bridge'}]
-            app['container']['portMappings'] = [{
-                'hostPort': host_port,
-                'containerPort': container_port,
-                'protocol': 'tcp',
-                'name': 'test'}]
-            if vip is not None:
-                app['container']['portMappings'][0]['labels'] = {'VIP_0': vip}
+    else:
+        app['container']['portMappings'] = [{
+            'hostPort': host_port,
+            'containerPort': container_port,
+            'protocol': 'tcp',
+            'name': 'test'}]
+        if vip is not None:
+            app['container']['portMappings'][0]['labels'] = {'VIP_0': vip}
+        if network == marathon.Network.USER:
+            if host_port == 0:
+                del app['container']['portMappings'][0]['hostPort']
+            app['networks'] = [{
+                'mode': 'container',
+                'name': network_name
+            }]
+        elif network == marathon.Network.BRIDGE:
+            app['networks'] = [{
+                'mode': 'container/bridge'
+            }]
+
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     return app, test_uuid
