@@ -1,5 +1,7 @@
 ## DC/OS 1.12-dev
 
+## DC/OS 1.12.1
+
 ### Notable changes
 
 * Users can now supply additional Telegraf settings (DCOS-42214)
