@@ -19,6 +19,13 @@ STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
 
 
+def check_tags(tags: dict, expected_tag_names: set):
+    """Assert that tags contains only expected keys with nonempty values."""
+    assert set(tags.keys()) == expected_tag_names
+    for tag_name, tag_val in tags.items():
+        assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+
+
 @pytest.mark.supportedwindows
 def test_metrics_agents_ping(dcos_api_session):
     """ Test that the metrics service is up on masters.
@@ -395,24 +402,6 @@ def test_metrics_containers(dcos_api_session):
     the statsd-emitter executor. When found, query it's /app endpoint to test that
     it's sending the statsd metrics as expected.
     """
-    # Helper func to check for non-unique CID's in a given /containers/id endpoint
-    def check_cid(registry):
-        if len(registry) <= 1:
-            return True
-
-        cid1 = registry[len(registry) - 1]
-        cid2 = registry[len(registry) - 2]
-        if cid1 != cid2:
-            raise ValueError('{} != {}'.format(cid1, cid2))
-
-        return True
-
-    def check_tags(tags: dict, expected_tag_names: set):
-        """Assert that tags contains only expected keys with nonempty values."""
-        assert set(tags.keys()) == expected_tag_names
-        for tag_name, tag_val in tags.items():
-            assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
-
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_containers(app_endpoints):
 
@@ -423,7 +412,7 @@ def test_metrics_containers(dcos_api_session):
                 # Test that /containers/<id> responds with expected data
                 container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
 
-                cid_registry = []
+                cid_registry = set()
                 for dp in container_metrics['datapoints']:
                     # Verify expected tags are present.
                     assert 'tags' in dp, 'got {}'.format(dp)
@@ -440,8 +429,9 @@ def test_metrics_containers(dcos_api_session):
 
                     # Ensure all container ID's in the container/<id> endpoint are
                     # the same.
-                    cid_registry.append(dp['tags']['container_id'])
-                    assert(check_cid(cid_registry))
+                    cid_registry.add(dp['tags']['container_id'])
+
+                assert len(cid_registry) == 1, 'Not all container IDs in the metrics response are equal'
 
                 debug_task_name.append(container_metrics['dimensions']['task_name'])
 
@@ -473,6 +463,7 @@ def test_metrics_containers(dcos_api_session):
                     }
                     check_tags(uptime_dp['tags'], expected_tag_names)
                     assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+                    assert uptime_dp['value'] > 0
 
                     return True
 
@@ -631,7 +622,7 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
 
 
 # Retry for two and a half minutes since the collector collects
-# state every 2 minutes to propogate containers to the API
+# state every 2 minutes to propagate containers to the API
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
 def get_container_ids(dcos_api_session, node: str):
     """Return container IDs reported by the metrics API on node.
@@ -792,8 +783,33 @@ def test_standalone_container_metrics(dcos_api_session):
         assert r.status_code == 200, 'Received unexpected status code when fetching standalone container metrics'
 
         metrics_response = r.json()
-        metric_keys = [datapoint['name'] for datapoint in metrics_response['datapoints']]
-        assert 'statsd_tester.time.uptime' in metric_keys
+
+        assert 'datapoints' in metrics_response, 'got {}'.format(metrics_response)
+
+        uptime_dp = None
+        for dp in metrics_response['datapoints']:
+            if dp['name'] == 'statsd_tester.time.uptime':
+                uptime_dp = dp
+                break
+
+        # If this metric is missing, statsd-emitter's metrics were not received
+        assert uptime_dp is not None, 'got {}'.format(metrics_response)
+
+        datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
+        for k in datapoint_keys:
+            assert k in uptime_dp, 'got {}'.format(uptime_dp)
+
+        expected_tag_names = {
+            'dcos_cluster_id',
+            'test_tag_key',
+            'dcos_cluster_name',
+            'host'
+        }
+        check_tags(uptime_dp['tags'], expected_tag_names)
+        assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+        assert uptime_dp['value'] > 0
+
+        assert 'dimensions' in metrics_response, 'got {}'.format(metrics_response)
         assert metrics_response['dimensions']['container_id'] == container_id['value']
     finally:
         # Clean up the standalone container
@@ -813,29 +829,17 @@ def test_pod_application_metrics(dcos_api_session):
     1) Container statistics metrics are provided for the executor container
     2) Application metrics are exposed for the task container
     """
-    # Helper func to check for non-unique CID's in a given /containers/id endpoint
-    def check_cid(registry):
-        if len(registry) <= 1:
-            return True
-
-        cid1 = registry[len(registry) - 1]
-        cid2 = registry[len(registry) - 2]
-        if cid1 != cid2:
-            raise ValueError('{} != {}'.format(cid1, cid2))
-
-        return True
-
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
         # Retry for two and a half minutes since the collector collects
-        # state every 2 minutes to propogate containers to the API
+        # state every 2 minutes to propagate containers to the API
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=150000)
-        def wait_for_container_metrics_propogation():
+        def wait_for_container_metrics_propagation():
             response = dcos_api_session.metrics.get('/containers', node=agent_ip)
             assert response.status_code == 200
             assert len(response.json()) == num_containers, 'Test should create {} containers'.format(num_containers)
 
-        wait_for_container_metrics_propogation()
+        wait_for_container_metrics_propagation()
 
         get_containers = {
             "type": "GET_CONTAINERS",
@@ -857,12 +861,6 @@ def test_pod_application_metrics(dcos_api_session):
             GET_CONTAINERS response is a nested container.
             """
             return 'parent' in container['container_status']['container_id']
-
-        def check_tags(tags: dict, expected_tag_names: set):
-            """Assert that tags contain only expected keys with nonempty values."""
-            assert set(tags.keys()) == expected_tag_names
-            for tag_name, tag_val in tags.items():
-                assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
 
         for container in mesos_agent_containers:
             container_id = container['container_id']['value']
@@ -913,6 +911,7 @@ def test_pod_application_metrics(dcos_api_session):
                 }
                 check_tags(uptime_dp['tags'], expected_tag_names)
                 assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+                assert uptime_dp['value'] > 0
 
                 assert 'dimensions' in app_response.json(), 'got {}'.format(app_response.json())
                 assert 'task_name' in app_response.json()['dimensions'], 'got {}'.format(
@@ -933,7 +932,7 @@ def test_pod_application_metrics(dcos_api_session):
                 container_response = wait_for_container_response()
                 assert 'datapoints' in container_response.json(), 'got {}'.format(container_response.json())
 
-                cid_registry = []
+                cid_registry = set()
                 for dp in container_response.json()['datapoints']:
                     # Verify expected tags are present.
                     assert 'tags' in dp, 'got {}'.format(dp)
@@ -947,8 +946,9 @@ def test_pod_application_metrics(dcos_api_session):
 
                     # Ensure all container IDs in the response from the
                     # containers/<id> endpoint are the same.
-                    cid_registry.append(dp['tags']['container_id'])
-                    assert(check_cid(cid_registry))
+                    cid_registry.add(dp['tags']['container_id'])
+
+                assert len(cid_registry) == 1, 'Not all container IDs in the metrics response are equal'
 
                 assert 'dimensions' in container_response.json(), 'got {}'.format(container_response.json())
 
