@@ -26,22 +26,40 @@ def check_root(fun):
 
 @check_root
 def dcos_adminrouter(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_signal(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_metrics_master(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_metrics_agent(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+    b.cluster_id(readonly=True)
+
+
+@check_root
+def dcos_net(b, opts):
+    if 'master' in get_roles():
+        dcos_net_master(b, opts)
+    else:
+        dcos_net_agent(b, opts)
+
+
+@check_root
+def dcos_net_master(b, opts):
+    b.cluster_id()
+
+
+@check_root
+def dcos_net_agent(b, opts):
+    b.cluster_id(readonly=True)
 
 
 @check_root
@@ -71,7 +89,7 @@ bootstrappers = {
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
-    'dcos-net': noop,
+    'dcos-net': dcos_net
 }
 
 
