@@ -111,6 +111,7 @@ package:
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
       DCOS_NET_IPV6={{ enable_ipv6 }}
+      DCOS_NET_CLUSTER_IDENTITY={{ dcos_net_cluster_identity }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
