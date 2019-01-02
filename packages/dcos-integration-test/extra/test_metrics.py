@@ -138,11 +138,6 @@ def test_task_metrics_metadata(dcos_api_session):
 @pytest.mark.skipif(
     test_helpers.expanded_config.get('security') == 'strict',
     reason="Framework disabled for strict mode")
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4568',
-    reason='Framework hello-world still running',
-    since='2018-12-14',
-)
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
