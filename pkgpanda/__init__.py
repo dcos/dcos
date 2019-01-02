@@ -244,6 +244,10 @@ class Package:
         return self.__path
 
     @property
+    def pkginfo(self):
+        return self.__pkginfo
+
+    @property
     def variant(self):
         return self.__pkginfo.get('variant', None)
 

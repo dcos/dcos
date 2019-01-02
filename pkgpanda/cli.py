@@ -1,6 +1,7 @@
 """Panda package management
 
 Usage:
+  pkgpanda show <package-id>
   pkgpanda activate <id>... [options]
   pkgpanda swap <package-id> [options]
   pkgpanda active [options]
@@ -26,6 +27,7 @@ Options:
                                 rather than /etc/systemd/system/dcos.target.wants
 """
 
+import json
 import os
 import sys
 from itertools import groupby
@@ -165,6 +167,18 @@ def main():
             for pkg in sorted(install.get_active()):
                 print(pkg)
             sys.exit(0)
+
+        if arguments['show']:
+            package_id = arguments['<package-id>']
+            try:
+                pkginfo = repository.load(package_id).pkginfo
+                print(json.dumps(pkginfo, indent=4))
+                sys.exit(0)
+            except PackageNotFound:
+                print(
+                    "Package not found: {}".format(package_id),
+                    file=sys.stderr)
+                sys.exit(1)
 
         if arguments['add']:
             actions.add_package_file(repository, arguments['<package-tarball>'])
