@@ -559,8 +559,8 @@ def test_prom_metrics_containers_app(dcos_api_session):
 
             'echo "# TYPE {}_histogram histogram" >> metrics'.format(metric_name_pfx),
             'echo "{}_histogram_bucket{{le=\"+Inf\"}} 4" >> metrics'.format(metric_name_pfx),
-            'echo "{}_histogram_sum 4" >> metrics"'.format(metric_name_pfx),
-            'echo "{}_histogram_seconds_count 4" >> metrics"'.format(metric_name_pfx),
+            'echo "{}_histogram_sum 4" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_seconds_count 4" >> metrics'.format(metric_name_pfx),
 
             'echo "Serving prometheus metrics on http://localhost:$PORT0"',
             'python3 -m http.server $PORT0',
