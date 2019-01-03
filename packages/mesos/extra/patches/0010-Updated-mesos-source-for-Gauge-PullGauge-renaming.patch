@@ -1,7 +1,7 @@
-From f88598b7a157ef012052247a4e29ad09783505f5 Mon Sep 17 00:00:00 2001
+From eab69da63d2b20ad28e0e508dfc9fdc0ed38427f Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
-Subject: [PATCH 10/22] Updated mesos source for Gauge -> PullGauge renaming.
+Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
 
 Review: https://reviews.apache.org/r/66832/
 ---
@@ -404,10 +404,10 @@ index 61568cb52..1ff7489ee 100644
  
  } // namespace allocator {
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 43676bd55..61809de88 100644
+index c1db276b4..282925da5 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -2094,7 +2094,7 @@ private:
+@@ -2097,7 +2097,7 @@ private:
    // copyable metric types only.
    std::shared_ptr<Metrics> metrics;
  
@@ -697,7 +697,7 @@ index 07d2b37e0..c04cfbc42 100644
  
    double _event_queue_messages()
 diff --git a/src/slave/containerizer/fetcher_process.hpp b/src/slave/containerizer/fetcher_process.hpp
-index 034fe34fe..56fecf237 100644
+index 5b7c1b5a3..faa5ac858 100644
 --- a/src/slave/containerizer/fetcher_process.hpp
 +++ b/src/slave/containerizer/fetcher_process.hpp
 @@ -28,7 +28,7 @@
@@ -709,7 +709,7 @@ index 034fe34fe..56fecf237 100644
  
  #include <stout/hashmap.hpp>
  
-@@ -258,8 +258,8 @@ private:
+@@ -261,8 +261,8 @@ private:
      process::metrics::Counter task_fetches_succeeded;
      process::metrics::Counter task_fetches_failed;
  
@@ -954,5 +954,5 @@ index d638b8806..8d42011be 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.17.0
+2.17.1
 

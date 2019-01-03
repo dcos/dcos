@@ -1,8 +1,8 @@
-From 8fa301f129d89a56c727d03e3ebd32ee55d8063f Mon Sep 17 00:00:00 2001
+From f32bc063f2352e5d342c138fb22a093d87e11933 Mon Sep 17 00:00:00 2001
 From: Gaston Kleiman <gaston.kleiman@gmail.com>
 Date: Mon, 9 Oct 2017 15:19:08 -0700
-Subject: [PATCH 02/22] Mesos UI: updated the URL generation to make it work
- with adminrouter.
+Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
+ adminrouter.
 
 - Use /mesos/agent/{agent_id}/{process_name} as the agent URL prefix.
 - Redirect from Mesos webui location (host:5050) to adminrouter
@@ -47,5 +47,5 @@ index 59665869d..6e0a40f93 100644
              'Mesos Master (' + $scope.$location.host() + ':' + $scope.$location.port() + ')');
        }
 -- 
-2.17.0
+2.17.1
 

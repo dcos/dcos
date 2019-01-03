@@ -1,8 +1,11 @@
+import datetime
 import logging
 import os
 
 import api_session_fixture
 import pytest
+import requests
+
 from dcos_test_utils import logger
 from test_dcos_diagnostics import (
     _get_bundle_list,
@@ -12,6 +15,48 @@ from test_dcos_diagnostics import (
 )
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 log = logging.getLogger(__name__)
+
+
+def _add_xfail_markers(item):
+    """
+    Mute flaky Integration Tests with custom pytest marker.
+    Rationale for doing this is mentioned at DCOS-45308.
+    """
+    xfailflake_markers = [
+        marker for marker in item.iter_markers() if marker.name == 'xfailflake'
+    ]
+    for xfailflake_marker in xfailflake_markers:
+        assert 'reason' in xfailflake_marker.kwargs
+        assert 'jira' in xfailflake_marker.kwargs
+        assert xfailflake_marker.kwargs['jira'].startswith('DCOS')
+        # Show the JIRA in the printed reason.
+        xfailflake_marker.kwargs['reason'] = '{jira} - {reason}'.format(
+            jira=xfailflake_marker.kwargs['jira'],
+            reason=xfailflake_marker.kwargs['reason'],
+        )
+        date_text = xfailflake_marker.kwargs['since']
+        try:
+            datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        except ValueError:
+            message = (
+                'Incorrect date format for "since", should be YYYY-MM-DD'
+            )
+            raise ValueError(message)
+
+        # The marker is not "strict" unless that is explicitly stated.
+        # That means that by default, no error is raised if the test passes or
+        # fails.
+        strict = xfailflake_marker.kwargs.get('strict', False)
+        xfailflake_marker.kwargs['strict'] = strict
+        xfail_marker = pytest.mark.xfail(
+            *xfailflake_marker.args,
+            **xfailflake_marker.kwargs,
+        )
+        item.add_marker(xfail_marker)
+
+
+def pytest_runtest_setup(item):
+    _add_xfail_markers(item)
 
 
 def pytest_configure(config):
@@ -34,11 +79,33 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
+# Note(JP): Attempt to reset Marathon state before and after every test run in
+# this test suite. This is a brute force approach but we found that the problem
+# of side effects as of too careless test isolation and resource cleanup became
+# too large. If this test suite ever introduces a session- or module-scoped
+# fixture providing a Marathon app then the `autouse=True` approach will need to
+# be relaxed.
 @pytest.fixture(autouse=True)
 def clean_marathon_state(dcos_api_session):
-    dcos_api_session.marathon.purge()
-    yield
-    dcos_api_session.marathon.purge()
+    """
+    Attempt to clean up Marathon state before entering the test and when leaving
+    the test. Especially attempt to clean up when the test code failed. When the
+    cleanup fails do not fail the test but log relevant information.
+    """
+
+    def _purge_nofail():
+        try:
+            dcos_api_session.marathon.purge()
+        except Exception as exc:
+            log.exception('Ignoring exception during marathon.purge(): %s', exc)
+            if isinstance(exc, requests.exceptions.HTTPError):
+                log.error('exc.response.text: %s', exc.response.text)
+
+    _purge_nofail()
+    try:
+        yield
+    finally:
+        _purge_nofail()
 
 
 @pytest.fixture(scope='session')
