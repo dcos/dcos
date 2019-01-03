@@ -579,9 +579,9 @@ def test_prom_metrics_containers_app(dcos_api_session):
     logging.debug('Starting marathon app with config: %s', marathon_app)
     expected_metrics = [
         # metric_name, metric_value
-        ('_'.join([metric_name_pfx, 'gauge']), 100),
-        ('_'.join([metric_name_pfx, 'count']), 2),
-        ('_'.join([metric_name_pfx, 'histogram', 'count']), 4),
+        ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
+        ('_'.join([metric_name_pfx, 'count.counter']), 2),
+        ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
     ]
 
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
