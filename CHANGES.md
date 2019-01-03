@@ -31,6 +31,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
 
+
 ### Breaking changes
 
 
