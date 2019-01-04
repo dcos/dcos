@@ -313,10 +313,10 @@ def get_region_zone(domain):
 
 
 @pytest.mark.supportedwindows
-@pytest.mark.skipif(
-    test_helpers.expanded_config['fault_domain_enabled'] == 'false',
-    reason='fault domain is not set')
 def test_fault_domain(dcos_api_session):
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config['fault_domain_enabled'] == 'false':
+        pytest.skip('fault domain is not set')
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
     assert r.status_code == 200
@@ -456,13 +456,14 @@ def reserved_disk(dcos_api_session):
             assert r.status_code == 202, r.text
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') == 'strict',
-    reason='Missing framework authentication for mesos-execute')
 def test_min_allocatable_resources(reserved_disk):
     """Test that the Mesos master creates offers for just `disk` resources."""
     # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
     # offers.
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Missing framework authentication for mesos-execute')
+
     name = \
         'test-min-test_min-allocatable-resources-{}'.format(uuid.uuid4().hex)
 

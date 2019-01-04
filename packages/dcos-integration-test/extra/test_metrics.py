@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 import retrying
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 __maintainer__ = 'philipnrmn'
@@ -269,10 +269,11 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="MoM disabled for strict mode")
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('MoM disabled for strict mode')
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
@@ -289,8 +290,6 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="Framework disabled for strict mode")
 @pytest.mark.xfailflake(
     jira='DCOS_OSS-4568',
     reason='Framework hello-world still running',
@@ -298,6 +297,10 @@ def test_task_metrics_metadata(dcos_api_session):
 )
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Framework disabled for strict mode')
+
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
@@ -679,9 +682,6 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     return app_metrics
 
 
-@pytest.mark.skipif(
-    expanded_config.get('security') == 'strict',
-    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
 def test_standalone_container_metrics(dcos_api_session):
     """
     An operator should be able to launch a standalone container using the
@@ -689,6 +689,13 @@ def test_standalone_container_metrics(dcos_api_session):
     process running within the standalone container emits statsd metrics, they
     should be accessible via the DC/OS metrics API.
     """
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        reason = (
+            'Only resource providers are authorized to launch standalone '
+            'containers in strict mode. See DCOS-42325.'
+        )
+        pytest.skip(reason)
     # Fetch the mesos master state to get an agent ID
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
@@ -831,15 +838,41 @@ def test_pod_application_metrics(dcos_api_session):
     """
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
+        # Get expected 2 container ids from mesos state endpoint
+        # (one container + its parent container)
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def get_container_ids_from_state(dcos_api_session, num_containers):
+            state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+            assert state_response.status_code == 200
+            state = state_response.json()
+
+            cids = set()
+            for framework in state['frameworks']:
+                if framework['name'] == 'marathon':
+                    for task in framework['tasks']:
+                        if task['name'] == 'statsd-emitter-task':
+                            container = task['statuses'][0]['container_status']['container_id']
+                            cids.add(container['value'])
+                            if 'parent' in container:
+                                cids.add(container['parent']['value'])
+                            break
+                    break
+
+            assert len(cids) == num_containers, 'Test should create {} containers'.format(num_containers)
+            return cids
+
+        container_ids = get_container_ids_from_state(dcos_api_session, num_containers)
+
         # Retry for two and a half minutes since the collector collects
         # state every 2 minutes to propagate containers to the API
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=150000)
-        def wait_for_container_metrics_propagation():
+        def wait_for_container_metrics_propagation(container_ids):
             response = dcos_api_session.metrics.get('/containers', node=agent_ip)
             assert response.status_code == 200
-            assert len(response.json()) == num_containers, 'Test should create {} containers'.format(num_containers)
+            assert container_ids.issubset(
+                response.json()), "Containers {} should have been propagated".format(container_ids)
 
-        wait_for_container_metrics_propagation()
+        wait_for_container_metrics_propagation(container_ids)
 
         get_containers = {
             "type": "GET_CONTAINERS",
@@ -852,9 +885,8 @@ def test_pod_application_metrics(dcos_api_session):
         r = dcos_api_session.post('/agent/{}/api/v1'.format(agent_id), json=get_containers)
         r.raise_for_status()
         mesos_agent_containers = r.json()['get_containers']['containers']
-
-        assert len(mesos_agent_containers) == num_containers, 'Agent operator API should report '\
-            'exactly {} running containers'.format(num_containers)
+        mesos_agent_cids = [container['container_id']['value'] for container in mesos_agent_containers]
+        assert container_ids.issubset(mesos_agent_cids), "Missing expected containers {}".format(container_ids)
 
         def is_nested_container(container):
             """Helper to check whether or not a container returned in the
