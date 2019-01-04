@@ -9,7 +9,7 @@ import kazoo.client
 import pytest
 import requests
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 @pytest.mark.first
@@ -113,6 +113,7 @@ def test_signal_service(dcos_api_session):
         }
     }
 
+    expanded_config = get_expanded_config()
     # Generic properties which are the same between all tracks
     generic_properties = {
         'platform': expanded_config['platform'],

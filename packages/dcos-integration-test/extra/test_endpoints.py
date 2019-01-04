@@ -6,7 +6,7 @@ import pytest
 from requests.exceptions import ConnectionError
 from retrying import retry
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 def test_if_dcos_ui_is_up(dcos_api_session):
@@ -174,6 +174,7 @@ def test_cosmos_package_add(dcos_api_session):
         }
     )
 
+    expanded_config = get_expanded_config()
     if (expanded_config['cosmos_staged_package_storage_uri_flag'] and
             expanded_config['cosmos_package_storage_uri_flag']):
         # if the config is enabled then Cosmos should accept the request and

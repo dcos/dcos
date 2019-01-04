@@ -309,7 +309,8 @@ def test_if_search_is_working(dcos_api_session):
         expected_error = {'error': '[Errno -2] Name or service not known'}
 
         # Check that result matches expectations for this dcos_api_session
-        if test_helpers.expanded_config['dns_search']:
+        expanded_config = test_helpers.get_expanded_config()
+        if expanded_config['dns_search']:
             assert r_data['search_hit_leader'] in dcos_api_session.masters
             assert r_data['always_hit_leader'] in dcos_api_session.masters
             assert r_data['always_miss'] == expected_error
