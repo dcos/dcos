@@ -21,7 +21,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
-        return subprocess.check_output(['sudo', 'docker', 'version', '-f', component]).decode('utf-8').rstrip()
+        return subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=120).decode('utf-8').rstrip()
 
     cluster_environment = {
         "docker_client_version": _docker_info('{{.Client.Version}}'),
