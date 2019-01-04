@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 import retrying
-import test_helpers
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -114,11 +114,11 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') == 'strict',
-    reason="MoM disabled for strict mode")
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('MoM disabled for strict mode')
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
@@ -135,11 +135,12 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') == 'strict',
-    reason="Framework disabled for strict mode")
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Framework disabled for strict mode')
+
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
@@ -546,9 +547,6 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     return app_metrics
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') == 'strict',
-    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
 def test_standalone_container_metrics(dcos_api_session):
     """
     An operator should be able to launch a standalone container using the
@@ -556,6 +554,13 @@ def test_standalone_container_metrics(dcos_api_session):
     process running within the standalone container emits statsd metrics, they
     should be accessible via the DC/OS metrics API.
     """
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        reason = (
+            'Only resource providers are authorized to launch standalone '
+            'containers in strict mode. See DCOS-42325.'
+        )
+        pytest.skip(reason)
     # Fetch the mesos master state to get an agent ID
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
