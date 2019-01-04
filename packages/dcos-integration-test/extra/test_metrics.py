@@ -673,15 +673,41 @@ def test_pod_application_metrics(dcos_api_session):
     """
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=LATENCY * 1000)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
-        # Retry for two and a half minutes since the collector collects
-        # state every minute to propagate containers to the API
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=150000)
-        def wait_for_container_metrics_propagation():
+        # Get expected 2 container ids from mesos state endpoint
+        # (one container + its parent container)
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def get_container_ids_from_state(dcos_api_session, num_containers):
+            state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+            assert state_response.status_code == 200
+            state = state_response.json()
+
+            cids = set()
+            for framework in state['frameworks']:
+                if framework['name'] == 'marathon':
+                    for task in framework['tasks']:
+                        if task['name'] == 'statsd-emitter-task':
+                            container = task['statuses'][0]['container_status']['container_id']
+                            cids.add(container['value'])
+                            if 'parent' in container:
+                                cids.add(container['parent']['value'])
+                            break
+                    break
+
+            assert len(cids) == num_containers, 'Test should create {} containers'.format(num_containers)
+            return cids
+
+        container_ids = get_container_ids_from_state(dcos_api_session, num_containers)
+
+        # Retry for 5 minutes since the collector collects state
+        # every 2 minutes to propagate containers to the API
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def wait_for_container_metrics_propagation(container_ids):
             response = dcos_api_session.metrics.get('/containers', node=agent_ip)
             assert response.status_code == 200
-            assert len(response.json()) == num_containers, 'Test should create {} containers'.format(num_containers)
+            assert container_ids.issubset(
+                response.json()), "Containers {} should have been propagated".format(container_ids)
 
-        wait_for_container_metrics_propagation()
+        wait_for_container_metrics_propagation(container_ids)
 
         get_containers = {
             "type": "GET_CONTAINERS",
@@ -694,9 +720,8 @@ def test_pod_application_metrics(dcos_api_session):
         r = dcos_api_session.post('/agent/{}/api/v1'.format(agent_id), json=get_containers)
         r.raise_for_status()
         mesos_agent_containers = r.json()['get_containers']['containers']
-
-        assert len(mesos_agent_containers) == num_containers, 'Agent operator API should report '\
-            'exactly {} running containers'.format(num_containers)
+        mesos_agent_cids = [container['container_id']['value'] for container in mesos_agent_containers]
+        assert container_ids.issubset(mesos_agent_cids), "Missing expected containers {}".format(container_ids)
 
         def is_nested_container(container):
             """Helper to check whether or not a container returned in the
