@@ -793,6 +793,11 @@ package:
                   "Port": 5051,
                   "Uri": "/containers",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 9000,
+                  "Uri": "/v1/jobs",
+                  "Role": ["master"]
               }
           ],
           "LocalFiles": [
