@@ -22,7 +22,7 @@ import logging
 
 import pytest
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 __maintainer__ = 'jgehrcke'
@@ -33,11 +33,14 @@ log = logging.getLogger(__name__)
 
 
 # Skip entire module in downstream integration tests.
-if 'security' in expanded_config:
-    pytest.skip(
-        'Skip upstream-specific user management tests',
-        allow_module_level=True
-    )
+@pytest.fixture(autouse=True)
+def skip_in_downstream():
+    expanded_config = get_expanded_config()
+    if 'security' in expanded_config:
+        pytest.skip(
+            'Skip upstream-specific user management tests',
+            allow_module_level=True
+        )
 
 
 def get_users(apisession):
