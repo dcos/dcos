@@ -1,5 +1,5 @@
 {
-  "requires": ["python", "libffi"],
+  "requires": ["python", "libffi", "python-idna"],
   "sources": {
     "cryptography": {
       "kind": "url_extract",
