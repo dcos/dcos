@@ -290,11 +290,6 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4568',
-    reason='Framework hello-world still running',
-    since='2018-12-14',
-)
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
