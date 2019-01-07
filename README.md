@@ -187,11 +187,13 @@ DC/OS builds are packaged as a self-extracting Docker image wrapped in a bash sc
 ./build_local.sh
 ```
 
-That will run a simple local build, and output the resulting DC/OS installers to $HOME/dcos-artifacts. You can run the created `dcos_generate_config.sh like so:
+That will run a simple local build, and output the resulting DC/OS installers to `./packages/cache/dcos_generate_config.sh`:
 
 ```
-$ $HOME/dcos-artifacts/testing/`whoami`/dcos_generate_config.sh
+$ ./packages/cache/dcos_generate_config.sh
 ```
+
+See the section on [running in Docker](#using-a-docker-cluster-with-minidcos) to test the installer.
 
 ## Build Details
 
