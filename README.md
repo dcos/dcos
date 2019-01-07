@@ -134,26 +134,27 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     dcos-shell pytest
     ```
 
-## Using a Docker Cluster with DC/OS E2E
+## Using a Docker Cluster with miniDC/OS
 
-One way to run the integration tests is to use the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
+One way to run the integration tests is to use the [miniDC/OS CLI](https://minidcos.readthedocs.io/en/latest/).
 
 This lets you create, run and manage clusters in test environments.
 Each DC/OS node is represented by a Docker container.
 
-1. Setup DC/OS in containers using the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
+1. Setup DC/OS in containers using the [miniDC/OS CLI](http://minidcos.readthedocs.io/en/latest/).
 
-For example, after [installing the DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html#installation), create a cluster:
+For example, after [installing the DC/OS E2E CLI](http://minidcos.readthedocs.io/en/latest/#installation), create a cluster:
 
 ```
-dcos-docker create /tmp/dcos_generate_config.sh \
+minidcos docker download-installer
+minidcos docker create /tmp/dcos_generate_config.sh \
     --masters 1 \
     --agents 2 \
     --public-agents 1 \
     --cluster-id default
 ```
 
-2. Run `dcos-docker wait`
+2. Run `minidcos docker wait`
 
 Wait for DC/OS to start.
 Running wait command allows to make sure that the cluster is set up properly before any other actions that could otherwise cause errors in `pytest` command in the next step.
@@ -163,13 +164,13 @@ Running wait command allows to make sure that the cluster is set up properly bef
 For example:
 
 ```
-dcos-docker run --test-env pytest
+minidcos docker run --test-env pytest
 ```
 
 4. Destroy the cluster.
 
 ```
-dcos-docker destroy
+minidcos docker destroy
 ```
 
 # Build
