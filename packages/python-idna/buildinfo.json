@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url",
+    "url": "https://pypi.python.org/packages/71/02/dee75fc3e6f7455bf69221164f94586ee13552c5f33c8002335667a3d122/idna-2.1-py2.py3-none-any.whl",
+    "sha1": "ef95a0f1627b85fbfb74eaba4fbb82f0c1b9d6d6"
+  }
+}
