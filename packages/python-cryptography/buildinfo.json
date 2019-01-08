@@ -18,8 +18,8 @@
     },
     "idna": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/71/02/dee75fc3e6f7455bf69221164f94586ee13552c5f33c8002335667a3d122/idna-2.1-py2.py3-none-any.whl",
-      "sha1": "ef95a0f1627b85fbfb74eaba4fbb82f0c1b9d6d6"
+      "url": "https://pypi.python.org/packages/27/cc/6dd9a3869f15c2edfab863b992838277279ce92663d334df9ecf5106f5c6/idna-2.6-py2.py3-none-any.whl",
+      "sha1": "a75f31778ea0bbf218d7ae085f4f961d004d6ff2"
     }
   }
 }
