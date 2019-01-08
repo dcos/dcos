@@ -13,8 +13,8 @@
     },
     "chardet": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/7e/5c/605ca2daa5cf21c87690d8fe6ab05a6f2278c451f4ede6456dd26453f4bd/chardet-2.3.0-py2.py3-none-any.whl",
-      "sha1": "bc2a800718b1ef8a30a6cf54e34d7aaf61eb98ea"
+      "url": "https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+      "sha1": "96faab7de7e9a71b37f22adb64daf2898e967e3e"
     }
   }
 }
