@@ -143,7 +143,7 @@ Each DC/OS node is represented by a Docker container.
 
 1. Setup DC/OS in containers using the [miniDC/OS CLI](http://minidcos.readthedocs.io/en/latest/).
 
-For example, after [installing the DC/OS E2E CLI](http://minidcos.readthedocs.io/en/latest/#installation), create a cluster:
+For example, after [installing the miniDC/OS CLI](http://minidcos.readthedocs.io/en/latest/#installation), create a cluster:
 
 ```
 minidcos docker download-installer
