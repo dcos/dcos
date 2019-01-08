@@ -51,7 +51,7 @@ Rules for declaring sources in `buildinfo.json`:
 
 ### Customized Docker Build Images
 
-By default, all packages are built with the [dcos-builder Dockerfile](../pkgpanda/docker/dcos-builder). A different docker image can be specified. There are two ways to specify a different docker image:
+By default, all packages are built with the [dcos-builder Dockerfile](../docker/dcos-builder). A different docker image can be specified. There are two ways to specify a different docker image:
 * include a directory called `docker` alongside the `build` and `buildinfo.json`. This file must contain a Dockerfile and any necessary data to be included with the image. This docker image will be built as part of the package building process and will be named as `dcos/dcos-builder:<<package_name>>_dockerdir-latest` where `<<package_name>>` is the package being built.
 * reference a public DockerHub image in the `buildinfo.json`
 
