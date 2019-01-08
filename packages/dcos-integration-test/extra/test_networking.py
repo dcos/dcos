@@ -270,11 +270,6 @@ def test_vip_ipv6(dcos_api_session):
 @pytest.mark.parametrize(
     'container,vip_net,proxy_net',
     generate_vip_app_permutations())
-@pytest.mark.xfailflake(
-    jira='DCOS-45799',
-    reason='[Container_MESOS-Network_HOST-Network_HOST] (container stuck in PROVISIONING)',
-    since='2018-12-13',
-)
 def test_vip(dcos_api_session,
              container: marathon.Container,
              vip_net: marathon.Network,
