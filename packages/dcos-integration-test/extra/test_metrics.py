@@ -1,10 +1,11 @@
 import contextlib
 import logging
+import pprint
 import uuid
 
 import pytest
-
 import retrying
+
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
@@ -233,11 +234,6 @@ def test_metrics_node(dcos_api_session):
         assert expected_dimension_response(response.json())
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4486',
-    reason='test_metrics_containers fails with container metrics response status 204',
-    since='2018-11-20',
-)
 def test_metrics_containers(dcos_api_session):
     """If there's a deployed container on the slave, iterate through them to check for
     the statsd-emitter executor. When found, query it's /app endpoint to test that
@@ -522,11 +518,13 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
     assert 'dimensions' in container_metrics, (
         'container metrics must include dimensions. Got: {}'.format(container_metrics)
     )
+
     # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
     # metrics response.
-    assert 'task_name' in container_metrics['dimensions'], (
-        'task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions'])
-    )
+    if 'task_name' not in container_metrics['dimensions']:
+        print("Missing task_name. Container metrics:")
+        pprint.pprint(container_metrics)
+        raise Exception('task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions']))
 
     return container_metrics
 
