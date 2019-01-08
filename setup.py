@@ -41,6 +41,8 @@ setup(
         'coloredlogs',
         'Flask',
         'flask-compress',
+        'urllib3==1.24.1',
+        'chardet',
         # Pins taken from 'azure==2.0.0rc4'
         'msrest==0.4.0',
         'msrestazure==0.4.1',
@@ -56,7 +58,7 @@ setup(
         'py',
         'pytest',
         'pyyaml',
-        'requests==2.10.0',
+        'requests==2.20.1',
         'retrying',
         'schema',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
