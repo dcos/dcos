@@ -449,7 +449,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     ] + expected_common_files
 
     expected_agent_common_files = [
-        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID| cut -d\'=\' -f2`environ.output.gz',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output.gz',
         '5051-containers.json',
         '5051-overlay-agent_overlay.json',
         'var/log/mesos/mesos-agent.log.gz',
