@@ -315,26 +315,25 @@ def _validate_overlay_subnet(agent_subnet, overlay_subnet, prefixlen):
 def _validate_overlay_backend(overlay_name, backend):
     try:
         # Make sure the backend has the right VNI.
-        vxlan = backend.pop('vxlan')
+        vxlan = backend['vxlan']
 
         # Verify the VTEP IP is allocated from the right subnet.
-        vtep_ip = vxlan.pop('vtep_ip')
-        assert vtep_ip.startswith('44.128')
-        assert vtep_ip.endswith('/20')
+        if overlay_name == 'dcos':
+            vtep_ip = vxlan['vtep_ip']
+            assert vtep_ip.startswith('44.128')
+            assert vtep_ip.endswith('/20')
 
-        vtep_ip6 = vxlan.pop('vtep_ip6')
-        assert vtep_ip6.startswith('fd01:a')
-        assert vtep_ip6.endswith('/64')
+        if overlay_name == 'dcos6':
+            vtep_ip6 = vxlan['vtep_ip6']
+            assert vtep_ip6.startswith('fd01:a')
+            assert vtep_ip6.endswith('/64')
 
-        # Verify OUI of the VTEP MAC.
-        vtep_mac = vxlan.pop('vtep_mac')
+        # Verify VTEP configuration.
+        vtep_mac = vxlan['vtep_mac']
         assert vtep_mac.startswith('70:b3:d5:')
 
-        expected_vxlan = {
-            'vni': 1024,
-            'vtep_name': 'vtep1024'
-        }
-        assert vxlan == expected_vxlan
+        assert vxlan['vni'] == 1024
+        assert vxlan['vtep_name'] == 'vtep1024'
 
     except KeyError as ex:
         raise AssertionError("Could not find key :" + str(ex)) from ex
