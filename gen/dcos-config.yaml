@@ -996,7 +996,7 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["agent", "agent_public"]
               }
           ]
