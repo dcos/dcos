@@ -1,4 +1,3 @@
-import datetime
 import gzip
 import json
 import logging
@@ -8,6 +7,8 @@ import zipfile
 
 import pytest
 import retrying
+from dcos_test_utils.diagnostics import Diagnostics
+from dcos_test_utils.helpers import check_json
 
 
 __maintainer__ = 'mnaboka'
@@ -359,22 +360,27 @@ def _check_diagnostics_bundle_status(dcos_api_session):
 
 
 def _create_bundle(dcos_api_session):
-    # start the diagnostics bundle job
-    create_response = check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
-
-    # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
-
     last_datapoint = {
         'time': None,
         'value': 0
     }
 
-    wait_for_diagnostics_job(dcos_api_session, last_datapoint)
-    wait_for_diagnostics_list(dcos_api_session)
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
 
-    # the job should be complete at this point.
-    # check the listing for a zip file
-    bundles = _get_bundle_list(dcos_api_session)
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
+
+    create_response = diagnostics.start_diagnostics_job().json()
+    diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
+    diagnostics.wait_for_diagnostics_reports()
+    bundles = diagnostics.get_diagnostics_reports()
     assert len(bundles) == 1, 'bundle file not found'
     assert bundles[0] == create_response['extra']['bundle_name']
 
@@ -382,12 +388,32 @@ def _create_bundle(dcos_api_session):
 
 
 def _delete_bundle(dcos_api_session, bundle):
+<<<<<<< HEAD
     bundles = _get_bundle_list(dcos_api_session)
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
     dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
 
     bundles = _get_bundle_list(dcos_api_session)
+=======
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
+
+    bundles = diagnostics.get_diagnostics_reports()
+    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
+
+    dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
+
+    bundles = diagnostics.get_diagnostics_reports()
+>>>>>>> a8e31664... Use helpers from DC/OS Test Utils for creating and managing diagnostics bundles
     assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
@@ -412,8 +438,20 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
         master_index + 1, len(dcos_api_session.masters))
 
-    bundles = _get_bundle_list(dcos_api_session)
-    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
+
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
+
+    bundles = diagnostics.get_diagnostics_reports()
+    assert bundles
 
     expected_common_files = ['dmesg_-T-0.output.gz',
                              'ip_addr-1.output.gz',
@@ -570,28 +608,6 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
             verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
 
 
-def _get_bundle_list(dcos_api_session):
-    response = check_json(dcos_api_session.health.get('/report/diagnostics/list/all'))
-    bundles = []
-    for _, bundle_list in response.items():
-        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
-            # append bundles and get just the filename.
-            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
-    return bundles
-
-
-def check_json(response):
-    response.raise_for_status()
-    try:
-        json_response = response.json()
-        logging.debug('Response: {}'.format(json_response))
-    except ValueError:
-        logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
-        raise
-    assert len(json_response) > 0, 'Empty JSON returned from dcos-diagnostics request'
-    return json_response
-
-
 def make_nodes_ip_map(dcos_api_session):
     """
     a helper function to make a map detected_ip -> external_ip
@@ -606,41 +622,6 @@ def make_nodes_ip_map(dcos_api_session):
         node_private_public_ip_map[detected_ip] = node
 
     return node_private_public_ip_map
-
-
-@retrying.retry(wait_fixed=2000, stop_max_delay=120000,
-                retry_on_result=lambda x: x is False)
-def wait_for_diagnostics_job(dcos_api_session, last_datapoint):
-    response = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
-    # find if the job is still running
-    job_running = False
-    percent_done = 0
-    for _, attributes in response.items():
-        assert 'is_running' in attributes, '`is_running` field is missing in response'
-        assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
-
-        if attributes['is_running']:
-            percent_done = attributes['job_progress_percentage']
-            logging.info("Job is running. Progress: {}".format(percent_done))
-            job_running = True
-            break
-
-    # if we ran this bit previously compare the current datapoint with the one we saved
-    if last_datapoint['time'] and last_datapoint['value']:
-        if percent_done <= last_datapoint['value']:
-            assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
-                "Job is not progressing"
-            )
-    last_datapoint['value'] = percent_done
-    last_datapoint['time'] = datetime.datetime.now()
-
-    return not job_running
-
-
-# sometimes it may take extra few seconds to list bundles after the job is finished.
-@retrying.retry(stop_max_delay=5000)
-def wait_for_diagnostics_list(dcos_api_session):
-    assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
 
 
 def validate_node(nodes):
