@@ -1,8 +1,20 @@
 {
-  "requires": ["python"],
-  "single_source": {
-    "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/49/6f/183063f01aae1e025cf0130772b55848750a2f3a89bfa11b385b35d7329d/requests-2.10.0.tar.gz",
-    "sha1": "1b9a2395402692262fc61fa15bedbc3e112b1029"
+  "requires": ["python", "python-idna"],
+  "sources": {
+    "requests": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/ff/17/5cbb026005115301a8fb2f9b0e3e8d32313142fe8b617070e7baad20554f/requests-2.20.1-py2.py3-none-any.whl",
+      "sha1": "a38551c5a3baa3bfdaa89edb5f0f3e15b298ee6a"
+    },
+    "urllib3": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/62/00/ee1d7de624db8ba7090d1226aebefab96a2c71cd5cfa7629d6ad3f61b79e/urllib3-1.24.1-py2.py3-none-any.whl",
+      "sha1": "5386c8d6788f5d3f2f91556ef77f99af10435b17"
+    },
+    "chardet": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+      "sha1": "96faab7de7e9a71b37f22adb64daf2898e967e3e"
+    }
   }
 }
