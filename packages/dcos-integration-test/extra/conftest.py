@@ -4,12 +4,7 @@ import os
 
 import pytest
 import requests
-from test_dcos_diagnostics import (
-    _get_bundle_list,
-    check_json,
-    wait_for_diagnostics_job,
-    wait_for_diagnostics_list
-)
+from dcos_test_utils.diagnostics import Diagnostics
 from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
@@ -158,29 +153,34 @@ def _dump_diagnostics(request, dcos_api_session):
 
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
-        log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
-
         last_datapoint = {
             'time': None,
             'value': 0
         }
 
+        health_url = dcos_api_session.default_url.copy(
+            query='cache=0',
+            path='system/health/v1',
+        )
+
+        diagnostics = Diagnostics(
+            default_url=health_url,
+            masters=dcos_api_session.masters,
+            all_slaves=dcos_api_session.all_slaves,
+            session=dcos_api_session.copy().session,
+        )
+
+        log.info('Create diagnostics report for all nodes')
+        diagnostics.start_diagnostics_job()
+
         log.info('\nWait for diagnostics job to complete')
-        wait_for_diagnostics_job(dcos_api_session, last_datapoint)
+        diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
 
         log.info('\nWait for diagnostics report to become available')
-        wait_for_diagnostics_list(dcos_api_session)
+        diagnostics.wait_for_diagnostics_reports()
 
         log.info('\nDownload zipped diagnostics reports')
-        bundles = _get_bundle_list(dcos_api_session)
-        for bundle in bundles:
-            for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
-                                                node=master_node)
-                bundle_path = os.path.join(os.path.expanduser('~'), bundle)
-                with open(bundle_path, 'wb') as f:
-                    for chunk in r.iter_content(1024):
-                        f.write(chunk)
+        bundles = diagnostics.get_diagnostics_reports()
+        diagnostics.download_diagnostics_reports(diagnostics_bundles=bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')
