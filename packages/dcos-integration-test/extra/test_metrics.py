@@ -1,11 +1,12 @@
 import contextlib
-
 import logging
+import pprint
 import uuid
 
 import pytest
 import retrying
-from test_helpers import expanded_config
+
+from test_helpers import get_expanded_config
 
 
 __maintainer__ = 'philipnrmn'
@@ -268,10 +269,11 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="MoM disabled for strict mode")
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('MoM disabled for strict mode')
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'marathon', '1.6.535', 'marathon-user'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
@@ -288,15 +290,12 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="Framework disabled for strict mode")
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4568',
-    reason='Framework hello-world still running',
-    since='2018-12-14',
-)
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Framework disabled for strict mode')
+
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
@@ -391,11 +390,6 @@ def test_metrics_node(dcos_api_session):
         assert expected_dimension_response(response.json())
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4486',
-    reason='test_metrics_containers fails with container metrics response status 204',
-    since='2018-11-20',
-)
 def test_metrics_containers(dcos_api_session):
     """If there's a deployed container on the slave, iterate through them to check for
     the statsd-emitter executor. When found, query it's /app endpoint to test that
@@ -654,11 +648,13 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
     assert 'dimensions' in container_metrics, (
         'container metrics must include dimensions. Got: {}'.format(container_metrics)
     )
+
     # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
     # metrics response.
-    assert 'task_name' in container_metrics['dimensions'], (
-        'task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions'])
-    )
+    if 'task_name' not in container_metrics['dimensions']:
+        print("Missing task_name. Container metrics:")
+        pprint.pprint(container_metrics)
+        raise Exception('task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions']))
 
     return container_metrics
 
@@ -678,9 +674,6 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
     return app_metrics
 
 
-@pytest.mark.skipif(
-    expanded_config.get('security') == 'strict',
-    reason='Only resource providers are authorized to launch standalone containers in strict mode. See DCOS-42325.')
 def test_standalone_container_metrics(dcos_api_session):
     """
     An operator should be able to launch a standalone container using the
@@ -688,6 +681,13 @@ def test_standalone_container_metrics(dcos_api_session):
     process running within the standalone container emits statsd metrics, they
     should be accessible via the DC/OS metrics API.
     """
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        reason = (
+            'Only resource providers are authorized to launch standalone '
+            'containers in strict mode. See DCOS-42325.'
+        )
+        pytest.skip(reason)
     # Fetch the mesos master state to get an agent ID
     master_ip = dcos_api_session.masters[0]
     r = dcos_api_session.get('/state', host=master_ip, port=5050)
