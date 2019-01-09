@@ -18,6 +18,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 LATENCY = 120
 
 
+@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_health(dcos_api_session):
     """
@@ -83,6 +84,7 @@ def test_dcos_diagnostics_health(dcos_api_session):
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
 
+@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
@@ -101,6 +103,7 @@ def test_dcos_diagnostics_nodes(dcos_api_session):
         validate_node(response['nodes'])
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node(dcos_api_session):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
@@ -115,6 +118,7 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -132,6 +136,7 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -148,6 +153,7 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
                     check_json(dcos_api_session.health.get('/nodes/{}/units/{}'.format(node, unit_id), node=master)))
 
 
+@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_units(dcos_api_session):
     """
@@ -177,6 +183,7 @@ def test_dcos_diagnostics_units(dcos_api_session):
                                                 'puller, missing: {}'.format(diff))
 
 
+@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(dcos_api_session):
     """
@@ -208,6 +215,7 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -264,6 +272,7 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
+@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
@@ -406,22 +415,45 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     bundles = _get_bundle_list(dcos_api_session)
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
-    expected_common_files = ['dmesg_-T-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
-                             'opt/mesosphere/etc/dcos-version.json.gz', 'opt/mesosphere/etc/expanded.config.json.gz',
-                             'opt/mesosphere/etc/user.config.yaml.gz', 'dcos-diagnostics-health.json',
-                             'var/lib/dcos/cluster-id.gz', 'ps_aux_ww-4.output.gz',
-                             'proc/cmdline.gz', 'proc/cpuinfo.gz', 'proc/meminfo.gz', 'proc/self/mountinfo.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-5.output.gz',
-                             'timedatectl-6.output.gz', 'binsh_-c_cat etc*-release-7.output.gz',
-                             'systemctl_list-units_dcos*-8.output.gz']
+    expected_common_files = ['dmesg_-T-0.output.gz',
+                             'ip_addr-1.output.gz',
+                             'ip_route-2.output.gz',
+                             'ps_aux_ww_Z-3.output.gz',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips-4.output.gz',
+                             'timedatectl-5.output.gz',
+                             'binsh_-c_cat etc*-release-6.output.gz',
+                             'systemctl_list-units_dcos*-7.output.gz',
+                             'sestatus-8.output.gz',
+                             'iptables-save-9.output.gz',
+                             'opt/mesosphere/active.buildinfo.full.json.gz',
+                             'opt/mesosphere/etc/dcos-version.json.gz',
+                             'opt/mesosphere/etc/expanded.config.json.gz',
+                             'opt/mesosphere/etc/user.config.yaml.gz',
+                             'dcos-diagnostics-health.json',
+                             'var/lib/dcos/cluster-id.gz',
+                             'proc/cmdline.gz',
+                             'proc/cpuinfo.gz',
+                             'proc/meminfo.gz',
+                             'proc/self/mountinfo.gz',
+                             ]
 
     # these files are expected to be in archive for a master host
-    expected_master_files = ['dcos-mesos-master.service.gz', 'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
-                             'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json',
-                             '5050-overlay-master_state.json.gz'
-                             ] + expected_common_files
+    expected_master_files = [
+        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID| cut -d\'=\' -f2`environ-10.output.gz',
+        '5050-quota.json',
+        '5050-overlay-master_state.json.gz',
+        'dcos-mesos-master.service.gz',
+        'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
+        'var/lib/dcos/exhibitor/conf/zoo.cfg.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.gz',
+    ] + expected_common_files
 
-    expected_agent_common_files = ['5051-containers.json', '5051-overlay-agent_overlay.json']
+    expected_agent_common_files = [
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ-11.output.gz',
+        '5051-containers.json',
+        '5051-overlay-agent_overlay.json',
+        'var/log/mesos/mesos-agent.log.gz',
+    ]
 
     # for agent host
     expected_agent_files = ['dcos-mesos-slave.service.gz'
