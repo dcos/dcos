@@ -3,7 +3,7 @@ import os
 
 import yaml
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 # Test that user config is loadable
@@ -20,6 +20,7 @@ def test_load_user_config():
 
 
 def test_expanded_config():
+    expanded_config = get_expanded_config()
     # Caluclated parameters should be present
     assert 'master_quorum' in expanded_config
 
@@ -29,6 +30,7 @@ def test_expanded_config():
 
 def test_profile_symlink():
     """Assert the DC/OS profile script is symlinked from the correct source."""
+    expanded_config = get_expanded_config()
     symlink_target = expanded_config['profile_symlink_target']
     expected_symlink_source = expanded_config['profile_symlink_source']
     assert expected_symlink_source == os.readlink(symlink_target)
