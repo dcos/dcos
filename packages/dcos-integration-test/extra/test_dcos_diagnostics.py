@@ -1,4 +1,3 @@
-import datetime
 import gzip
 import json
 import logging
@@ -8,8 +7,9 @@ import uuid
 import zipfile
 
 import pytest
-
 import retrying
+from dcos_test_utils.diagnostics import Diagnostics
+from dcos_test_utils.helpers import check_json
 
 # Expected latency for all dcos-diagnostics units to refresh after postflight plus
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
@@ -411,60 +411,27 @@ def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
     """
-    # start the diagnostics bundle job
-    create_response = check_json(dcos_api_session.health.post('report/diagnostics/create', json={"nodes": ["all"]}))
-
-    # make sure the job is done, timeout is 5 sec, wait between retying is 1 sec
-
-    class NotCriticalException(Exception):
-        """Exception should be raised to continue retry loop"""
-
     last_datapoint = {
         'time': None,
         'value': 0
     }
 
-    @retrying.retry(wait_fixed=2000, stop_max_delay=120000,
-                    retry_on_exception=lambda e: isinstance(e, NotCriticalException))
-    def wait_for_job():
-        response = check_json(dcos_api_session.health.get('report/diagnostics/status/all'))
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
 
-        # find if the job is still running
-        job_running = False
-        percent_done = 0
-        for _, attributes in response.items():
-            assert 'is_running' in attributes, '`is_running` field is missing in response'
-            assert 'job_progress_percentage' in attributes, '`job_progress_percentage` field is missing in response'
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
 
-            if attributes['is_running']:
-                percent_done = attributes['job_progress_percentage']
-                logging.info("Job is running. Progress: {}".format(percent_done))
-                job_running = True
-                break
-
-        # if we ran this bit previously compare the current datapoint with the one we saved
-        if last_datapoint['time'] and last_datapoint['value']:
-            if percent_done <= last_datapoint['value']:
-                assert (datetime.datetime.now() - last_datapoint['time']) < datetime.timedelta(seconds=15), (
-                    "Job is not progressing"
-                )
-        last_datapoint['value'] = percent_done
-        last_datapoint['time'] = datetime.datetime.now()
-
-        if job_running:
-            raise NotCriticalException('Job is still running')
-
-    # sometimes it may take extra few seconds to list bundles after the job is finished.
-    @retrying.retry(stop_max_delay=5000)
-    def wait_for_list():
-        assert _get_bundle_list(dcos_api_session), 'get a list of bundles timeout'
-
-    wait_for_job()
-    wait_for_list()
-
-    # the job should be complete at this point.
-    # check the listing for a zip file
-    bundles = _get_bundle_list(dcos_api_session)
+    create_response = diagnostics.start_diagnostics_job().json()
+    diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
+    diagnostics.wait_for_diagnostics_reports()
+    bundles = diagnostics.get_diagnostics_reports()
     assert len(bundles) == 1, 'bundle file not found'
     assert bundles[0] == create_response['extra']['bundle_name']
 
@@ -503,7 +470,19 @@ def _download_bundle_from_master(dcos_api_session, master_index):
     assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
         master_index + 1, len(dcos_api_session.masters))
 
-    bundles = _get_bundle_list(dcos_api_session)
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
+
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
+
+    bundles = diagnostics.get_diagnostics_reports()
     assert bundles
 
     expected_common_files = ['dmesg_-T-0.output.gz', 'opt/mesosphere/active.buildinfo.full.json.gz',
