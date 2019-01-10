@@ -39,6 +39,8 @@
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4382)
