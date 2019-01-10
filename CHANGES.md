@@ -2,6 +2,8 @@
 
 ### Notable changes
 
+* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+
 * Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
 
 * Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
@@ -54,7 +56,7 @@
 
 ### Notable changes
 
-* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+* Updated to [Metronome 0.4.4](https://github.com/dcos/metronome/releases/tag/v0.4.4).
 
 * Updated to [DC/OS UI 1.11+v1.23.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.23.0/CHANGELOG.md)
 
