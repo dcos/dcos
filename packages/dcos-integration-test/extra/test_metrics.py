@@ -1,6 +1,5 @@
 import contextlib
 import logging
-import pprint
 import uuid
 
 import pytest
@@ -406,6 +405,13 @@ def test_metrics_containers(dcos_api_session):
                 # Test that /containers/<id> responds with expected data
                 container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
 
+                # Skip this container if it's not statsd-emitter.
+                if container_metrics['dimensions'].get('task_name') != 'statsd-emitter':
+                    # Store the task_name from this response for a debug message in case we can't find statsd-emitter.
+                    debug_task_name.append(container_metrics['dimensions']['task_name'])
+                    continue
+
+                # Check tags on each datapoint.
                 cid_registry = set()
                 for dp in container_metrics['datapoints']:
                     # Verify expected tags are present.
@@ -427,39 +433,35 @@ def test_metrics_containers(dcos_api_session):
 
                 assert len(cid_registry) == 1, 'Not all container IDs in the metrics response are equal'
 
-                debug_task_name.append(container_metrics['dimensions']['task_name'])
+                # Test that /app response is responding with expected data
+                app_metrics = get_app_metrics(dcos_api_session, agent.host, c)
 
-                # looking for "statsd-emitter"
-                if 'statsd-emitter' == container_metrics['dimensions']['task_name']:
-                    # Test that /app response is responding with expected data
-                    app_metrics = get_app_metrics(dcos_api_session, agent.host, c)
+                # Ensure all /container/<id>/app data is correct
+                # We expect three datapoints, could be in any order
+                uptime_dp = None
+                for dp in app_metrics['datapoints']:
+                    if dp['name'] == 'statsd_tester.time.uptime':
+                        uptime_dp = dp
+                        break
 
-                    # Ensure all /container/<id>/app data is correct
-                    # We expect three datapoints, could be in any order
-                    uptime_dp = None
-                    for dp in app_metrics['datapoints']:
-                        if dp['name'] == 'statsd_tester.time.uptime':
-                            uptime_dp = dp
-                            break
+                # If this metric is missing, statsd-emitter's metrics were not received
+                assert uptime_dp is not None, 'got {}'.format(app_metrics)
 
-                    # If this metric is missing, statsd-emitter's metrics were not received
-                    assert uptime_dp is not None, 'got {}'.format(app_metrics)
+                datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
+                for k in datapoint_keys:
+                    assert k in uptime_dp, 'got {}'.format(uptime_dp)
 
-                    datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
-                    for k in datapoint_keys:
-                        assert k in uptime_dp, 'got {}'.format(uptime_dp)
+                expected_tag_names = {
+                    'dcos_cluster_id',
+                    'test_tag_key',
+                    'dcos_cluster_name',
+                    'host'
+                }
+                check_tags(uptime_dp['tags'], expected_tag_names)
+                assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+                assert uptime_dp['value'] > 0
 
-                    expected_tag_names = {
-                        'dcos_cluster_id',
-                        'test_tag_key',
-                        'dcos_cluster_name',
-                        'host'
-                    }
-                    check_tags(uptime_dp['tags'], expected_tag_names)
-                    assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
-                    assert uptime_dp['value'] > 0
-
-                    return True
+                return True
 
         assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_task_name)
 
@@ -649,13 +651,6 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
     assert 'dimensions' in container_metrics, (
         'container metrics must include dimensions. Got: {}'.format(container_metrics)
     )
-
-    # task_name is an important dimension for identifying metrics, but it may take some time to appear in the container
-    # metrics response.
-    if 'task_name' not in container_metrics['dimensions']:
-        print("Missing task_name. Container metrics:")
-        pprint.pprint(container_metrics)
-        raise Exception('task_name missing in dimensions. Got: {}'.format(container_metrics['dimensions']))
 
     return container_metrics
 
