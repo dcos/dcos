@@ -481,7 +481,7 @@ def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
     """
     for cid in get_container_ids(dcos_api_session, node):
         container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions']['task_name'] == task_name:
+        if container_metrics['dimensions'].get('task_name') == task_name:
             return get_app_metrics(dcos_api_session, node, cid)
     return None
 
