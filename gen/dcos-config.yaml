@@ -559,6 +559,7 @@ package:
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
+      MESOS_NETWORK_CNI_ROOT_DIR_PERSIST={{ mesos_cni_root_dir_persist }}
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_RECONFIGURATION_POLICY=additive

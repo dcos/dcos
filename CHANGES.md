@@ -1,5 +1,13 @@
 ## DC/OS 1.12-dev
 
+### Notable changes
+
+### Breaking changes
+
+### Fixed and improved
+
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
+
 ## DC/OS 1.12.1
 
 ### Notable changes
