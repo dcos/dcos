@@ -482,10 +482,10 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
-def test_metrics_containers_app(dcos_api_session):
-    """Assert that app metrics appear in the v0 metrics API."""
-    task_name = 'test-metrics-containers-app'
-    metric_name_pfx = 'test_metrics_containers_app'
+def test_statsd_metrics_containers_app(dcos_api_session):
+    """Assert that statsd app metrics appear in the v0 metrics API."""
+    task_name = 'test-statsd-metrics-containers-app'
+    metric_name_pfx = 'test_statsd_metrics_containers_app'
     marathon_app = {
         'id': '/' + task_name,
         'instances': 1,
@@ -528,6 +528,60 @@ def test_metrics_containers_app(dcos_api_session):
         ('.'.join([metric_name_pfx, 'count']), 2),
         ('.'.join([metric_name_pfx, 'timing', 'count']), 3),
         ('.'.join([metric_name_pfx, 'histogram', 'count']), 4),
+    ]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+        for metric_name, metric_value in expected_metrics:
+            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+
+
+def test_prom_metrics_containers_app(dcos_api_session):
+    """Assert that prometheus app metrics appear in the v0 metrics API."""
+    task_name = 'test-prom-metrics-containers-app'
+    metric_name_pfx = 'test_prom_metrics_containers_app'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            'echo "Creating metrics file..."',
+            'touch metrics',
+
+            'echo "# TYPE {}_gauge gauge" >> metrics'.format(metric_name_pfx),
+            'echo "{}_gauge 100" >> metrics'.format(metric_name_pfx),
+
+            'echo "# TYPE {}_count counter" >> metrics'.format(metric_name_pfx),
+            'echo "{}_count 2" >> metrics'.format(metric_name_pfx),
+
+            'echo "# TYPE {}_histogram histogram" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_bucket{{le=\\"+Inf\\"}} 4" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_sum 4" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_seconds_count 4" >> metrics'.format(metric_name_pfx),
+
+            'echo "Serving prometheus metrics on http://localhost:$PORT0"',
+            'python3 -m http.server $PORT0',
+        ]),
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/python:3'}
+        },
+        'portDefinitions': [{
+            'protocol': 'tcp',
+            'port': 0,
+            'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
+        }],
+    }
+
+    logging.debug('Starting marathon app with config: %s', marathon_app)
+    expected_metrics = [
+        # metric_name, metric_value
+        ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
+        ('_'.join([metric_name_pfx, 'count.counter']), 2),
+        ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
     ]
 
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
