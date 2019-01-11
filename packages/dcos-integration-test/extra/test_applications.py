@@ -20,7 +20,8 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
     from the app's Dockerfile, which, for the test application
     is the default, root
     """
-    default_os_user = 'nobody' if test_helpers.expanded_config.get('security') == 'strict' else 'root'
+    expanded_config = test_helpers.get_expanded_config()
+    default_os_user = 'nobody' if expanded_config.get('security') == 'strict' else 'root'
 
     if 'container' in app and app['container']['type'] == 'DOCKER':
         marathon_user = 'root'
@@ -157,17 +158,16 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
         pass
 
 
-@pytest.mark.skipif(
-    test_helpers.expanded_config.get('security') == 'strict',
-    reason='See: https://jira.mesosphere.com/browse/DCOS-14760')
 def test_octarine(dcos_api_session, timeout=30):
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-14760')
     # This app binds to port 80. This is only required by the http (not srv)
     # transparent mode test. In transparent mode, we use ".mydcos.directory"
     # to go to localhost, the port attached there is only used to
     # determine which port to send traffic to on localhost. When it
     # reaches the proxy, the port is not used, and a request is made
     # to port 80.
-
     app, uuid = test_helpers.marathon_test_app(host_port=80)
     app['acceptedResourceRoles'] = ["slave_public"]
     app['requirePorts'] = True
