@@ -23,6 +23,8 @@ Format of the entries must be.
 
 * Added support CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865) 
 
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
+
 ### Security Updates
 
 
