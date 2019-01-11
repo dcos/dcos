@@ -63,7 +63,12 @@ def test_checks_cli(dcos_api_session):
 
 
 def test_checks_api(dcos_api_session):
-    """Test the checks API at /system/checks/"""
+    """
+    Test the checks API at /system/checks/
+    This will test that all checks run on all agents return a normal status. A
+    failure in this test may be an indicator that some unrelated component
+    failed and dcos-checks functioned properly.
+    """
     checks_uri = '/system/checks/v1/'
     # Test that we can list and run node and cluster checks on a master, agent, and public agent.
     check_nodes = []
@@ -88,7 +93,11 @@ def test_checks_api(dcos_api_session):
             assert r.status_code == 200
             results = r.json()
             assert isinstance(results, dict)
-            assert results['status'] == 0
 
-            # Make sure we ran all the listed checks.
-            assert set(checks.keys()) == set(results['checks'].keys())
+            # check that the returned statuses of each check is 0
+            expected_status = {c: 0 for c in checks.keys()}
+            response_status = {c: v['status'] for c, v in results['checks'].items()}
+            assert expected_status == response_status
+
+            # check that overall status is also 0
+            assert results['status'] == 0
