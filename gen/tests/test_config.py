@@ -793,6 +793,14 @@ def test_validate_mesos_work_dir():
     )
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_invalid_mesos_cni_root_dir_persist():
+    validate_error(
+        {'mesos_cni_root_dir_persist': 'foo'},
+        'mesos_cni_root_dir_persist',
+        true_false_msg)
+
+
 # TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_fault_domain_disabled():

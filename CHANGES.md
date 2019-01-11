@@ -26,6 +26,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Expose Public IP (DCOS_OSS-4514)
 
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667) 
+
 ### Breaking changes
 
 
