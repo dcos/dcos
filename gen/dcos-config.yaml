@@ -920,9 +920,6 @@ package:
                   "Command": ["ip", "route"]
               },
               {
-                  "Command": ["ifconfig", "-a"]
-              },
-              {
                   "Command": ["ps", "aux", "ww", "Z"]
               },
               {
