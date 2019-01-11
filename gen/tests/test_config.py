@@ -709,6 +709,13 @@ def test_validate_custom_checks():
     )
 
 
+def test_invalid_mesos_cni_root_dir_persist():
+    validate_error(
+        {'mesos_cni_root_dir_persist': 'foo'},
+        'mesos_cni_root_dir_persist',
+        true_false_msg)
+
+
 def test_exhibitor_admin_password_obscured():
     var_name = 'exhibitor_admin_password'
     var_value = 'secret'
