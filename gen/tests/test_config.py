@@ -767,6 +767,13 @@ def test_validate_mesos_work_dir():
     )
 
 
+def test_invalid_mesos_cni_root_dir_persist():
+    validate_error(
+        {'mesos_cni_root_dir_persist': 'foo'},
+        'mesos_cni_root_dir_persist',
+        true_false_msg)
+
+
 def test_fault_domain_disabled():
     arguments = make_arguments(new_arguments={
         'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
