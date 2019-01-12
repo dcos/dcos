@@ -1,20 +1,20 @@
-From 3a4d8a406830260ed29b763053e82de58f5e533f Mon Sep 17 00:00:00 2001
+From 1304a0d3b5d18c9a5590b0cf0003e8e251982d9e Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:59:04 -0700
 Subject: [PATCH] Added per-framework metrics for suppressed roles.
 
 Review: https://reviews.apache.org/r/66870/
 ---
- src/master/allocator/mesos/hierarchical.cpp | 17 ++++++
- src/master/allocator/mesos/metrics.cpp      | 66 ++++++++++++++++++++-
- src/master/allocator/mesos/metrics.hpp      | 12 ++++
+ src/master/allocator/mesos/hierarchical.cpp | 17 ++++++++
+ src/master/allocator/mesos/metrics.cpp      | 66 ++++++++++++++++++++++++++++-
+ src/master/allocator/mesos/metrics.hpp      | 12 ++++++
  3 files changed, 93 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index c39685bcc..c77cd497f 100644
+index 2af633c5c..27fa561c8 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
-@@ -283,8 +283,10 @@ void HierarchicalAllocatorProcess::addFramework(
+@@ -285,8 +285,10 @@ void HierarchicalAllocatorProcess::addFramework(
  
      if (suppressedRoles.count(role)) {
        frameworkSorters.at(role)->deactivate(frameworkId.value());
@@ -25,7 +25,7 @@ index c39685bcc..c77cd497f 100644
      }
    }
  
-@@ -452,6 +454,10 @@ void HierarchicalAllocatorProcess::updateFramework(
+@@ -454,6 +456,10 @@ void HierarchicalAllocatorProcess::updateFramework(
      return result;
    }();
  
@@ -36,7 +36,7 @@ index c39685bcc..c77cd497f 100644
    foreach (const string& role, removedRoles | newSuppressedRoles) {
      CHECK(frameworkSorters.contains(role));
      frameworkSorters.at(role)->deactivate(frameworkId.value());
-@@ -467,6 +473,8 @@ void HierarchicalAllocatorProcess::updateFramework(
+@@ -469,6 +475,8 @@ void HierarchicalAllocatorProcess::updateFramework(
      if (framework.offerFilters.contains(role)) {
        framework.offerFilters.erase(role);
      }
@@ -45,7 +45,7 @@ index c39685bcc..c77cd497f 100644
    }
  
    const set<string> addedRoles = [&]() {
-@@ -485,7 +493,13 @@ void HierarchicalAllocatorProcess::updateFramework(
+@@ -487,7 +495,13 @@ void HierarchicalAllocatorProcess::updateFramework(
      return result;
    }();
  
@@ -59,7 +59,7 @@ index c39685bcc..c77cd497f 100644
      // NOTE: It's possible that we're already tracking this framework
      // under the role because a framework can unsubscribe from a role
      // while it still has resources allocated to the role.
-@@ -750,6 +764,7 @@ void HierarchicalAllocatorProcess::removeFilters(const SlaveID& slaveId)
+@@ -752,6 +766,7 @@ void HierarchicalAllocatorProcess::removeFilters(const SlaveID& slaveId)
        if (erased) {
          frameworkSorters.at(role)->activate(id.value());
          framework.suppressedRoles.erase(role);
@@ -67,7 +67,7 @@ index c39685bcc..c77cd497f 100644
        }
      }
    }
-@@ -1314,6 +1329,7 @@ void HierarchicalAllocatorProcess::suppressOffers(
+@@ -1316,6 +1331,7 @@ void HierarchicalAllocatorProcess::suppressOffers(
  
      frameworkSorters.at(role)->deactivate(frameworkId.value());
      framework.suppressedRoles.insert(role);
@@ -75,7 +75,7 @@ index c39685bcc..c77cd497f 100644
    }
  
    LOG(INFO) << "Suppressed offers for roles " << stringify(roles)
-@@ -1342,6 +1358,7 @@ void HierarchicalAllocatorProcess::reviveOffers(
+@@ -1344,6 +1360,7 @@ void HierarchicalAllocatorProcess::reviveOffers(
  
      frameworkSorters.at(role)->activate(frameworkId.value());
      framework.suppressedRoles.erase(role);
@@ -210,5 +210,5 @@ index daac93f7e..34cc16b3a 100644
  
  } // namespace internal {
 -- 
-2.17.1
+2.14.3
 
