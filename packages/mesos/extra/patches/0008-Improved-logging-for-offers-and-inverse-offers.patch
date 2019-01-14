@@ -1,7 +1,7 @@
-From 8dab68096bcbe5345eecdbd048f3c62f638eb164 Mon Sep 17 00:00:00 2001
+From 0047b30d6d971c91f46b3c2ecd0a347e1a01ca0f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston.kleiman@gmail.com>
 Date: Tue, 3 Jul 2018 12:09:16 -0700
-Subject: [PATCH 08/13] Improved logging for offers and inverse offers.
+Subject: [PATCH] Improved logging for offers and inverse offers.
 
 Log offer IDs and inverse offer IDs when sending out offers and
 inverse offers so it is easier to match them to their ACCEPT or DECLINE
@@ -19,10 +19,10 @@ Review: https://reviews.apache.org/r/67817
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index d8dcfc158..16e15bad1 100644
+index 91e5feef7..6896b6e1e 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -7566,6 +7566,9 @@ void Master::offer(
+@@ -7577,6 +7577,9 @@ void Master::offer(
    // and a single allocation role.
    ResourceOffersMessage message;
  
@@ -32,7 +32,7 @@ index d8dcfc158..16e15bad1 100644
    foreachkey (const string& role, resources) {
      foreachpair (const SlaveID& slaveId,
                   const Resources& offered,
-@@ -7710,6 +7713,13 @@ void Master::offer(
+@@ -7721,6 +7724,13 @@ void Master::offer(
        // Add the offer *AND* the corresponding slave's PID.
        message.add_offers()->MergeFrom(offer_);
        message.add_pids(slave->pid);
@@ -46,7 +46,7 @@ index d8dcfc158..16e15bad1 100644
      }
    }
  
-@@ -7717,8 +7727,7 @@ void Master::offer(
+@@ -7728,8 +7738,7 @@ void Master::offer(
      return;
    }
  
@@ -56,7 +56,7 @@ index d8dcfc158..16e15bad1 100644
  
    framework->send(message);
  }
-@@ -7806,8 +7815,13 @@ void Master::inverseOffer(
+@@ -7817,8 +7826,13 @@ void Master::inverseOffer(
      return;
    }
  
@@ -73,5 +73,5 @@ index d8dcfc158..16e15bad1 100644
    framework->send(message);
  }
 -- 
-2.17.0
+2.14.3
 

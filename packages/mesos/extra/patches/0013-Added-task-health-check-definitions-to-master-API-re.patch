@@ -1,8 +1,7 @@
-From 16f4779b71a17c600da0d282555dba92ad912240 Mon Sep 17 00:00:00 2001
+From c3275809c664459449daa95944a806e7b410e4fb Mon Sep 17 00:00:00 2001
 From: Greg Mann <gregorywmann@gmail.com>
 Date: Fri, 2 Nov 2018 16:13:01 -0700
-Subject: [PATCH 13/13] Added task health check definitions to master API
- responses.
+Subject: [PATCH] Added task health check definitions to master API responses.
 
 The `Task` protobuf message is updated to include the health check
 definition of a task when it is specified. Associated helpers are
@@ -102,5 +101,5 @@ index 3ae68e93a..d8996c9cd 100644
    if (task.has_command() && task.command().has_user()) {
      t.set_user(task.command().user());
 -- 
-2.17.0
+2.14.3
 
