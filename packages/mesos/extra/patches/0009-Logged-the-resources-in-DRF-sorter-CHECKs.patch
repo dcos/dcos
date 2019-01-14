@@ -1,7 +1,7 @@
-From c6467b0c9f1c337204de61431ae3ba5b87669e51 Mon Sep 17 00:00:00 2001
+From 4c74330cff4319fe938cfa46211fe2752a98c83d Mon Sep 17 00:00:00 2001
 From: Zhitao Li <zhitaoli.cs@gmail.com>
 Date: Thu, 26 Oct 2017 12:03:47 -0700
-Subject: [PATCH 09/13] Logged the resources in DRF sorter CHECKs.
+Subject: [PATCH] Logged the resources in DRF sorter CHECKs.
 
 If calls to these checks fail, log related resources objects which
 caused the failure.
@@ -13,10 +13,10 @@ Review: https://reviews.apache.org/r/63332/
  1 file changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/allocator/sorter/drf/sorter.hpp b/src/master/allocator/sorter/drf/sorter.hpp
-index 77e52dec7..1a7681c69 100644
+index d10f34824..fea4b779f 100644
 --- a/src/master/allocator/sorter/drf/sorter.hpp
 +++ b/src/master/allocator/sorter/drf/sorter.hpp
-@@ -346,7 +346,9 @@ struct DRFSorter::Node
+@@ -348,7 +348,9 @@ struct DRFSorter::Node
      void subtract(const SlaveID& slaveId, const Resources& toRemove)
      {
        CHECK(resources.contains(slaveId));
@@ -27,7 +27,7 @@ index 77e52dec7..1a7681c69 100644
  
        resources[slaveId] -= toRemove;
  
-@@ -364,7 +366,9 @@ struct DRFSorter::Node
+@@ -366,7 +368,9 @@ struct DRFSorter::Node
          totals[resource.name()] -= resource.scalar();
        }
  
@@ -38,7 +38,7 @@ index 77e52dec7..1a7681c69 100644
        scalarQuantities -= quantitiesToRemove;
  
        if (resources[slaveId].empty()) {
-@@ -382,8 +386,13 @@ struct DRFSorter::Node
+@@ -384,8 +388,13 @@ struct DRFSorter::Node
        const Resources newAllocationQuantity =
          newAllocation.createStrippedScalarQuantity();
  
@@ -55,5 +55,5 @@ index 77e52dec7..1a7681c69 100644
        resources[slaveId] -= oldAllocation;
        resources[slaveId] += newAllocation;
 -- 
-2.17.0
+2.14.3
 

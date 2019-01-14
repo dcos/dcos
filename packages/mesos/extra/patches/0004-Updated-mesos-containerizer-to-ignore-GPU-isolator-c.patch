@@ -1,8 +1,8 @@
-From 44058e434d96c241290d689e6b97c794574e6192 Mon Sep 17 00:00:00 2001
+From caac3277a84e0c7193f58ede5ebcfe6f21f6b0aa Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
-Subject: [PATCH 04/13] Updated mesos containerizer to ignore GPU isolator
- creation failure.
+Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
+ failure.
 
 This cherry-pick will be maintained in DC/OS to avoid the problem of
 requiring NVML to be installed on *every* node in the cluster, even if
@@ -19,7 +19,7 @@ This is a decent compromise.
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
-index 73334ffce..48dd16d64 100644
+index 3fdd14558..63182cda4 100644
 --- a/src/slave/containerizer/mesos/containerizer.cpp
 +++ b/src/slave/containerizer/mesos/containerizer.cpp
 @@ -364,8 +364,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
@@ -45,5 +45,5 @@ index 73334ffce..48dd16d64 100644
      }
    }
 -- 
-2.17.0
+2.14.3
 

@@ -1,7 +1,7 @@
-From fc6c2727cfc372c7daadfb50dcf54c94c8dbf653 Mon Sep 17 00:00:00 2001
+From d809caaf6ed11df9fbce378265c10c4dbd31514e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:37 -0700
-Subject: [PATCH 06/13] Made the log output handling of TCP and HTTP checks
+Subject: [PATCH] Made the log output handling of TCP and HTTP checks
  consistent.
 
 Review: https://reviews.apache.org/r/61766/
@@ -69,5 +69,5 @@ index 28353840b..47d864803 100644
  
    if (exitCode != 0) {
 -- 
-2.17.0
+2.14.3
 
