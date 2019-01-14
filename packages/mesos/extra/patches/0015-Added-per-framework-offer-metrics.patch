@@ -1,4 +1,4 @@
-From f914709f1f1d881bdab02a1826c3d51912fe0f2b Mon Sep 17 00:00:00 2001
+From af2c2800eba96a4a7fbfbb8fedf78301286ffd71 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:25 -0700
 Subject: [PATCH] Added per-framework offer metrics.
@@ -11,10 +11,10 @@ Review: https://reviews.apache.org/r/67812/
  3 files changed, 38 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index bf1e61eb5..a743a6c9c 100644
+index ed827c1b2..bb39b48e8 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -3989,6 +3989,8 @@ void Master::accept(
+@@ -3984,6 +3984,8 @@ void Master::accept(
      // Validate the offers.
      error = validation::offer::validate(accept.offer_ids(), this, framework);
  
@@ -23,7 +23,7 @@ index bf1e61eb5..a743a6c9c 100644
      // Compute offered resources and remove the offers. If the
      // validation failed, return resources to the allocator.
      foreach (const OfferID& offerId, accept.offer_ids()) {
-@@ -4006,6 +4008,8 @@ void Master::accept(
+@@ -4001,6 +4003,8 @@ void Master::accept(
            slaveId = offer->slave_id();
            allocationInfo = offer->allocation_info();
            offeredResources += offer->resources();
@@ -32,7 +32,7 @@ index bf1e61eb5..a743a6c9c 100644
          }
  
          removeOffer(offer);
-@@ -4017,6 +4021,8 @@ void Master::accept(
+@@ -4012,6 +4016,8 @@ void Master::accept(
        LOG(WARNING) << "Ignoring accept of offer " << offerId
                     << " since it is no longer valid";
      }
@@ -41,7 +41,7 @@ index bf1e61eb5..a743a6c9c 100644
    }
  
    // If invalid, send TASK_DROPPED for the launch attempts. If the
-@@ -5530,6 +5536,8 @@ void Master::decline(
+@@ -5534,6 +5540,8 @@ void Master::decline(
  
    ++metrics->messages_decline_offers;
  
@@ -50,7 +50,7 @@ index bf1e61eb5..a743a6c9c 100644
    //  Return resources to the allocator.
    foreach (const OfferID& offerId, decline.offer_ids()) {
      Offer* offer = getOffer(offerId);
-@@ -5541,6 +5549,8 @@ void Master::decline(
+@@ -5545,6 +5553,8 @@ void Master::decline(
            decline.filters());
  
        removeOffer(offer);
@@ -59,7 +59,7 @@ index bf1e61eb5..a743a6c9c 100644
        continue;
      }
  
-@@ -5549,6 +5559,8 @@ void Master::decline(
+@@ -5553,6 +5563,8 @@ void Master::decline(
      LOG(WARNING) << "Ignoring decline of offer " << offerId
                   << " since it is no longer valid";
    }
@@ -68,7 +68,7 @@ index bf1e61eb5..a743a6c9c 100644
  }
  
  
-@@ -8875,6 +8887,7 @@ void Master::offer(
+@@ -8889,6 +8901,7 @@ void Master::offer(
  
    LOG(INFO) << "Sending offers " << offerIds << " to framework " << *framework;
  
@@ -76,7 +76,7 @@ index bf1e61eb5..a743a6c9c 100644
    framework->send(message);
  }
  
-@@ -10803,6 +10816,7 @@ void Master::removeOffer(Offer* offer, bool rescind)
+@@ -10817,6 +10830,7 @@ void Master::removeOffer(Offer* offer, bool rescind)
    if (rescind) {
      RescindResourceOfferMessage message;
      message.mutable_offer_id()->MergeFrom(offer->id());
@@ -142,5 +142,5 @@ index fac4440da..b6fe20fb5 100644
  
  
 -- 
-2.17.1
+2.14.3
 
