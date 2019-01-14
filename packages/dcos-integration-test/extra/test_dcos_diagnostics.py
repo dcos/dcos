@@ -397,16 +397,6 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-def _get_bundle_list(dcos_api_session):
-    response = check_json(dcos_api_session.health.get('report/diagnostics/list/all'))
-    bundles = []
-    for _, bundle_list in response.items():
-        if bundle_list is not None and isinstance(bundle_list, list) and len(bundle_list) > 0:
-            # append bundles and get just the filename.
-            bundles += map(lambda s: os.path.basename(s['file_name']), bundle_list)
-    return bundles
-
-
 def test_dcos_diagnostics_bundle_create(dcos_api_session):
     """
     test bundle create functionality
@@ -615,12 +605,24 @@ def _download_bundle_from_master(dcos_api_session, master_index):
 
 
 def test_bundle_delete(dcos_api_session):
-    bundles = _get_bundle_list(dcos_api_session)
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
+
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+    )
+
+    bundles = diagnostics.get_diagnostics_reports()
     assert bundles, 'no bundles found'
     for bundle in bundles:
         dcos_api_session.health.post(os.path.join('report/diagnostics/delete', bundle))
 
-    bundles = _get_bundle_list(dcos_api_session)
+    bundles = diagnostics.get_diagnostics_reports()
     assert len(bundles) == 0, 'Could not remove bundles {}'.format(bundles)
 
 

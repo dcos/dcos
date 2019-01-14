@@ -4,7 +4,6 @@ import os
 import api_session_fixture
 import pytest
 from dcos_test_utils import logger
-from dcos_test_utils.diagnostics import Diagnostics
 
 logger.setup(os.getenv('TEST_LOG_LEVEL', 'INFO'))
 
