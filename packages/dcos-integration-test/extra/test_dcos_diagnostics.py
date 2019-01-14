@@ -388,14 +388,6 @@ def _create_bundle(dcos_api_session):
 
 
 def _delete_bundle(dcos_api_session, bundle):
-<<<<<<< HEAD
-    bundles = _get_bundle_list(dcos_api_session)
-    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
-
-    dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
-
-    bundles = _get_bundle_list(dcos_api_session)
-=======
     health_url = dcos_api_session.default_url.copy(
         query='cache=0',
         path='system/health/v1',
@@ -408,12 +400,11 @@ def _delete_bundle(dcos_api_session, bundle):
     )
 
     bundles = diagnostics.get_diagnostics_reports()
-    assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
+    assert bundles, 'no bundles found'
 
     dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
 
     bundles = diagnostics.get_diagnostics_reports()
->>>>>>> a8e31664... Use helpers from DC/OS Test Utils for creating and managing diagnostics bundles
     assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
