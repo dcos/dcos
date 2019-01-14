@@ -13,6 +13,8 @@ import yaml
 
 from get_test_group import patterns_from_group
 
+__maintainer__ = 'adam'
+__contact__ = 'tools-infra-team@mesosphere.io'
 
 log = logging.getLogger(__file__)
 

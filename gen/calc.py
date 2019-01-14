@@ -960,6 +960,7 @@ entry = {
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
+        lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1071,6 +1072,7 @@ entry = {
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
+        'mesos_cni_root_dir_persist': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
