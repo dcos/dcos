@@ -16,18 +16,6 @@ from dcos_test_utils.helpers import check_json
 LATENCY = 120
 
 
-def check_json(response):
-    response.raise_for_status()
-    try:
-        json_response = response.json()
-        logging.debug('Response: {}'.format(json_response))
-    except ValueError:
-        logging.exception('Could not deserialize response contents:{}'.format(response.content.decode()))
-        raise
-    assert len(json_response) > 0, 'Empty JSON returned from dcos-diagnostics request'
-    return json_response
-
-
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_health(dcos_api_session):
     """
