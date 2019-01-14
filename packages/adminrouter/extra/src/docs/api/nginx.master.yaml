@@ -115,6 +115,13 @@ routes:
         replacement: /$1
         type: break
     path: /cosmos/service/
+  /navstar/lashup/key:
+    group: DC/OS Net
+    matcher: path
+    proxy:
+      path: 'http://$backend/lashup/key'
+      backend: dcos_net
+    path: /navstar/lashup/key
   /exhibitor:
     group: Exhibitor
     matcher: exact
@@ -149,7 +156,7 @@ routes:
     group: History
     matcher: path
     proxy:
-      path: $historyservice_upstream
+      path: $leader_host
     path: /dcos-history-service/
   /marathon:
     group: Marathon
@@ -245,13 +252,6 @@ routes:
     lua:
       file: conf/lib/metadata.lua
     path: /metadata
-  /navstar/lashup/key:
-    group: DC/OS Net
-    matcher: path
-    proxy:
-      path: 'http://$backend/lashup/key'
-      backend: dcos_net
-    path: /navstar/lashup/key
   /internal/mesos_dns/:
     group: Other
     matcher: path
@@ -325,7 +325,7 @@ routes:
     matcher: regex
     description: System proxy to the master node with the Marathon leader
     proxy:
-      path: $mleader_host/system/v1$url$is_args$query_string
+      path: $leader_host/system/v1$url$is_args$query_string
     path: /system/v1/leader/marathon(?<url>.*)
   /system/v1/leader/mesos(?<url>.*):
     group: System

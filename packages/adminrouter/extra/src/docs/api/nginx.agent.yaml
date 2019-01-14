@@ -17,6 +17,10 @@ backends:
     name: DC/OS Component Package Manager (Pkgpanda)
     reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
 routes:
+  /:
+    group: Other
+    matcher: path
+    path: /
   /dcos-metadata/dcos-version.json:
     group: Metadata
     matcher: path
