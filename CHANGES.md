@@ -12,8 +12,9 @@
 
 * Add config option to enable/disable the Mesos input plugin in Telegraf. (DCOS_OSS-4667)
 
-### Security Updates
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
+### Security Updates
 
 ## DC/OS 1.12.1
 
