@@ -178,7 +178,7 @@ def test_if_overlay_master_is_up(dcos_api_session):
         }]
     }
 
-    assert json['network'] == dcos_overlay_network
+    assert nested_match(dcos_overlay_network, json['network'])
 
 
 def test_if_overlay_master_agent_is_up(dcos_api_session):
@@ -275,7 +275,7 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
             }
         }
 
-    assert expected == agent_overlay
+    assert nested_match(expected, agent_overlay)
 
 
 def _validate_overlay_subnet(agent_subnet, overlay_subnet, prefixlen):
@@ -336,3 +336,22 @@ def test_if_cosmos_is_only_available_locally(dcos_api_session):
     # we expect a 200
     r = dcos_api_session.get('/', host="127.0.0.1", port=9990, scheme='http')
     assert r.status_code == 200
+
+
+def nested_match(expect, value):
+    if expect == value:
+        return True
+    if isinstance(expect, dict) and isinstance(value, dict):
+        for k, v in expect.items():
+            if k in value:
+                if not nested_match(v, value[k]):
+                    return False
+            else:
+                return False
+        return True
+    if isinstance(expect, list) and isinstance(value, list):
+        for x, y in zip(expect, value):
+            if not nested_match(x, y):
+                return False
+        return True
+    return False
