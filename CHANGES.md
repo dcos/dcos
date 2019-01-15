@@ -6,7 +6,12 @@
 
 ### Fixed and improved
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
+
+### Security Updates
+
 
 ## DC/OS 1.12.1
 
@@ -137,6 +142,7 @@ Format of the entries must be.
 
 ### Security Updates
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 
