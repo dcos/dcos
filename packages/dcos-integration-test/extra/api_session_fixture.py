@@ -4,7 +4,7 @@ via the make_session_fixture() method
 """
 
 from dcos_test_utils import dcos_api
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 def make_session_fixture():
