@@ -482,11 +482,17 @@ def get_container_ids(dcos_api_session, node: str):
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
+    Returns None on 204.
+
     Retries on error, non-200 status, or missing response fields for up
     to 5 minutes.
 
     """
     response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
+
+    if response.status_code == 204:
+        return None
+
     assert response.status_code == 200
     container_metrics = response.json()
 
@@ -504,14 +510,22 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
+    Returns None on 204.
+
     Retries on error or non-200 status for up to 5 minutes.
 
     """
     resp = dcos_api_session.metrics.get('/containers/' + container_id + '/app', node=node)
+
+    if resp.status_code == 204:
+        return None
+
     assert resp.status_code == 200, 'got {}'.format(resp.status_code)
     app_metrics = resp.json()
+
     assert 'datapoints' in app_metrics, 'got {}'.format(app_metrics)
     assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
+
     return app_metrics
 
 
