@@ -26,40 +26,31 @@ def check_tags(tags: dict, expected_tag_names: set):
 
 
 @pytest.mark.supportedwindows
-def test_metrics_agents_ping(dcos_api_session):
-    """ Test that the metrics service is up on masters.
+def test_metrics_ping(dcos_api_session):
+    """ Test that the metrics service is up on master and agents.
     """
-    for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/ping', node=agent)
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        'agent.'
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-    for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('/ping', node=agent)
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
-
-
-@pytest.mark.supportedwindows
-def test_metrics_masters_ping(dcos_api_session):
-    for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('/ping', node=master)
+    for node in nodes:
+        response = dcos_api_session.metrics.get('/ping', node=node)
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
 def test_metrics_agents_prom(dcos_api_session):
-    """Telegraf Prometheus endpoint is reachable on all agents."""
-    for agent in dcos_api_session.slaves:
-        response = dcos_api_session.session.request('GET', 'http://' + agent + ':61091/metrics')
-        assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
+    """Telegraf Prometheus endpoint is reachable on master and agents."""
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-
-def test_metrics_masters_prom(dcos_api_session):
-    """Telegraf Prometheus endpoint is reachable on all masters."""
-    for master in dcos_api_session.masters:
-        response = dcos_api_session.session.request('GET', 'http://' + master + ':61091/metrics')
+    for node in nodes:
+        response = dcos_api_session.session.request('GET', 'http://' + node + ':61091/metrics')
         assert response.status_code == 200, 'Status code: {}'.format(response.status_code)
 
 
@@ -78,144 +69,159 @@ def get_metrics_prom(dcos_api_session, node):
 
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
-    for agent in dcos_api_session.slaves:
+    nodes = []
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
+
+    for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_mesos_metrics():
-            response = get_metrics_prom(dcos_api_session, agent)
+            response = get_metrics_prom(dcos_api_session, node)
             assert 'mesos_slave_uptime_secs' in response.text
         check_mesos_metrics()
 
 
-def test_metrics_masters_mesos(dcos_api_session):
-    """Assert that mesos metrics on masters are present."""
-    for master in dcos_api_session.masters:
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_mesos_metrics():
-            response = get_metrics_prom(dcos_api_session, master)
-            assert 'mesos_master_uptime_secs' in response.text
-        check_mesos_metrics()
+def test_metrics_master_mesos(dcos_api_session):
+    """Assert that mesos metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_mesos_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        assert 'mesos_master_uptime_secs' in response.text
+    check_mesos_metrics()
 
 
-def test_metrics_masters_zookeeper(dcos_api_session):
-    """Assert that ZooKeeper metrics on masters are present."""
-    for master in dcos_api_session.masters:
-        expected_metrics = ['ZooKeeper', 'zookeeper_avg_latency']
+def test_metrics_master_zookeeper(dcos_api_session):
+    """Assert that ZooKeeper metrics on master are present."""
+    expected_metrics = ['ZooKeeper', 'zookeeper_avg_latency']
 
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_zookeeper_metrics():
-            response = get_metrics_prom(dcos_api_session, master)
-            for metric_name in expected_metrics:
-                assert metric_name in response.text
-        check_zookeeper_metrics()
-
-
-def test_metrics_masters_cockroachdb(dcos_api_session):
-    """Assert that CockroachDB metrics on masters are present."""
-    for master in dcos_api_session.masters:
-        expected_metrics = ['CockroachDB', 'ranges_underreplicated']
-
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_cockroachdb_metrics():
-            response = get_metrics_prom(dcos_api_session, master)
-            for metric_name in expected_metrics:
-                assert metric_name in response.text
-        check_cockroachdb_metrics()
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_zookeeper_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for metric_name in expected_metrics:
+            assert metric_name in response.text
+    check_zookeeper_metrics()
 
 
-def test_metrics_masters_adminrouter(dcos_api_session):
-    """Assert that Admin Router metrics on masters are present."""
-    for master in dcos_api_session.masters:
-        expected_metrics = [
-            'dcos_component_name="Admin Router"',
-            'nginx_vts',
-        ]
+def test_metrics_master_cockroachdb(dcos_api_session):
+    """Assert that CockroachDB metrics on master are present."""
+    expected_metrics = ['CockroachDB', 'ranges_underreplicated']
 
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_adminrouter_metrics():
-            response = get_metrics_prom(dcos_api_session, master)
-            for metric_name in expected_metrics:
-                assert metric_name in response.text
-        check_adminrouter_metrics()
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_cockroachdb_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for metric_name in expected_metrics:
+            assert metric_name in response.text
+    check_cockroachdb_metrics()
+
+
+def test_metrics_master_adminrouter(dcos_api_session):
+    """Assert that Admin Router metrics on master are present."""
+    expected_metrics = [
+        'dcos_component_name="Admin Router"',
+        'nginx_vts',
+    ]
+
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_adminrouter_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for metric_name in expected_metrics:
+            assert metric_name in response.text
+    check_adminrouter_metrics()
 
 
 def test_metrics_agents_adminrouter(dcos_api_session):
     """Assert that Admin Router metrics on agents are present."""
-    for master in dcos_api_session.slaves:
-        expected_metrics = [
-            'dcos_component_name="Admin Router Agent"',
-            'nginx_vts',
-        ]
+    nodes = []
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
+    expected_metrics = [
+        'dcos_component_name="Admin Router Agent"',
+        'nginx_vts',
+    ]
+    for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_adminrouter_metrics():
-            response = get_metrics_prom(dcos_api_session, master)
+            response = get_metrics_prom(dcos_api_session, node)
             for metric_name in expected_metrics:
                 assert metric_name in response.text
         check_adminrouter_metrics()
 
 
-def test_metrics_agents_statsd(dcos_api_session):
-    """Assert that statsd metrics on agent are present."""
-    if len(dcos_api_session.slaves) > 0:
-        agent = dcos_api_session.slaves[0]
-        task_name = 'test-metrics-statsd-app'
-        metric_name_pfx = 'test_metrics_statsd_app'
-        marathon_app = {
-            'id': '/' + task_name,
-            'instances': 1,
-            'cpus': 0.1,
-            'mem': 128,
-            'env': {
-                'STATIC_STATSD_UDP_PORT': '61825',
-                'STATIC_STATSD_UDP_HOST': 'localhost'
-            },
-            'cmd': '\n'.join([
-                'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
-                'echo "Sending gauge"',
-                'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
+def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
 
-                'echo "Sending counts"',
-                'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_statsd_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for metric_name in expected_metrics:
+                assert metric_name in response.text
+        check_statsd_metrics()
 
-                'echo "Sending timings"',
-                'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
 
-                'echo "Sending histograms"',
-                'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
-                    metric_name_pfx),
+def test_metrics_agent_statsd(dcos_api_session):
+    """Assert that statsd metrics on private agent are present."""
+    task_name = 'test-metrics-statsd-app'
+    metric_name_pfx = 'test_metrics_statsd_app'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'env': {
+            'STATIC_STATSD_UDP_PORT': '61825',
+            'STATIC_STATSD_UDP_HOST': 'localhost'
+        },
+        'cmd': '\n'.join([
+            'echo "Sending metrics to $STATIC_STATSD_UDP_HOST:$STATIC_STATSD_UDP_PORT"',
+            'echo "Sending gauge"',
+            'echo "{}.gauge:100|g" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                metric_name_pfx),
 
-                'echo "Done. Sleeping forever."',
-                'while true; do',
-                '  sleep 1000',
-                'done',
-            ]),
-            'container': {
-                'type': 'MESOS',
-                'docker': {'image': 'library/alpine'}
-            },
-            'networks': [{'mode': 'host'}],
-            'constraints': [['hostname', 'LIKE', agent]],
-        }
-        expected_metrics = [
-            ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
-            ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
-        ]
+            'echo "Sending counts"',
+            'echo "{}.count:1|c" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                metric_name_pfx),
 
-        with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
-            endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
-            assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+            'echo "Sending timings"',
+            'echo "{}.timing:1|ms" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                metric_name_pfx),
 
-            @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-            def check_statsd_metrics():
-                response = get_metrics_prom(dcos_api_session, agent)
-                for metric_name in expected_metrics:
-                    assert metric_name in response.text
-            check_statsd_metrics()
+            'echo "Sending histograms"',
+            'echo "{}.histogram:1|h" | nc -w 1 -u $STATIC_STATSD_UDP_HOST $STATIC_STATSD_UDP_PORT'.format(
+                metric_name_pfx),
+
+            'echo "Done. Sleeping forever."',
+            'while true; do',
+            '  sleep 1000',
+            'done',
+        ]),
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/alpine'}
+        },
+        'networks': [{'mode': 'host'}],
+    }
+    expected_metrics = [
+        ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
+        ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
+        ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
+        ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
+    ]
+
+    if dcos_api_session.slaves:
+        marathon_app['constraints'] = [['hostname', 'LIKE', dcos_api_session.slaves[0]]]
+        check_statsd_app_metrics(dcos_api_session, marathon_app, dcos_api_session.slaves[0], expected_metrics)
+
+    if dcos_api_session.public_slaves:
+        marathon_app['acceptedResourceRoles'] = ["slave_public"]
+        marathon_app['constraints'] = [['hostname', 'LIKE', dcos_api_session.public_slaves[0]]]
+        check_statsd_app_metrics(dcos_api_session, marathon_app, dcos_api_session.public_slaves[0], expected_metrics)
 
 
 @contextlib.contextmanager
@@ -361,27 +367,14 @@ def test_metrics_node(dcos_api_session):
         assert response.status_code == 200
         return response
 
-    # private agents
-    for agent in dcos_api_session.slaves:
-        response = wait_for_node_response(agent)
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
-            response.status_code, response.content)
-        assert expected_datapoint_response(response.json())
-        assert expected_dimension_response(response.json())
-
-    # public agents
-    for agent in dcos_api_session.public_slaves:
-        response = wait_for_node_response(agent)
-
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
-            response.status_code, response.content)
-        assert expected_datapoint_response(response.json())
-        assert expected_dimension_response(response.json())
-
-    # masters
-    for master in dcos_api_session.masters:
-        response = wait_for_node_response(master)
+    for node in nodes:
+        response = wait_for_node_response(node)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
