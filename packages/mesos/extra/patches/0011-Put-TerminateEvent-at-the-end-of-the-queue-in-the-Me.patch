@@ -1,8 +1,8 @@
-From 12dab2f9f91835d2966d73849c444d953108193d Mon Sep 17 00:00:00 2001
+From 39efc9425bd9d866fc02d9d4a85a93ddeacd779a Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 27 Sep 2018 15:20:01 +0200
-Subject: [PATCH 11/13] Put `TerminateEvent` at the end of the queue in the
- Mesos library.
+Subject: [PATCH] Put `TerminateEvent` at the end of the queue in the Mesos
+ library.
 
 This is to ensure all pending dispatches are processed. However
 multistage events, e.g., `Call`, might still be dropped, because
@@ -34,5 +34,5 @@ index ce6925802..d805d243e 100644
  
      delete process;
 -- 
-2.17.0
+2.14.3
 

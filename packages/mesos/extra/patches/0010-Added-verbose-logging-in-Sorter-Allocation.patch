@@ -1,17 +1,17 @@
-From 16d40b86b5ae982b7bb8b87efb57624d2a24f7d0 Mon Sep 17 00:00:00 2001
+From c1a8c833db1fb9e3b525072677ec3797d56325e2 Mon Sep 17 00:00:00 2001
 From: Meng Zhu <mzhu@mesosphere.io>
 Date: Mon, 10 Sep 2018 17:52:39 -0700
-Subject: [PATCH 10/13] Added verbose logging in `Sorter::Allocation`.
+Subject: [PATCH] Added verbose logging in `Sorter::Allocation`.
 
 See summary.
 
 (cherry picked from commit cd3efb6a2d6bb387c828fd2536660282fbff5e9e)
 ---
- src/master/allocator/sorter/drf/sorter.hpp | 67 ++++++++++++++++++----
- 1 file changed, 56 insertions(+), 11 deletions(-)
+ src/master/allocator/sorter/drf/sorter.hpp | 66 +++++++++++++++++++++++++-----
+ 1 file changed, 55 insertions(+), 11 deletions(-)
 
 diff --git a/src/master/allocator/sorter/drf/sorter.hpp b/src/master/allocator/sorter/drf/sorter.hpp
-index 1a7681c69..3b9008728 100644
+index fea4b779f..ed93690a4 100644
 --- a/src/master/allocator/sorter/drf/sorter.hpp
 +++ b/src/master/allocator/sorter/drf/sorter.hpp
 @@ -29,6 +29,7 @@
@@ -20,9 +20,9 @@ index 1a7681c69..3b9008728 100644
  #include <stout/option.hpp>
 +#include <stout/stringify.hpp>
  
- #include "master/allocator/sorter/drf/metrics.hpp"
+ #include "common/resource_quantities.hpp"
  
-@@ -323,6 +324,10 @@ struct DRFSorter::Node
+@@ -325,6 +326,10 @@ struct DRFSorter::Node
  
      void add(const SlaveID& slaveId, const Resources& toAdd)
      {
@@ -33,11 +33,10 @@ index 1a7681c69..3b9008728 100644
        // Add shared resources to the allocated quantities when the same
        // resources don't already exist in the allocation.
        const Resources sharedToAdd = toAdd.shared()
-@@ -341,16 +346,19 @@ struct DRFSorter::Node
+@@ -343,16 +348,18 @@ struct DRFSorter::Node
        }
  
        count++;
-+
 +      VLOG(2) << "Added allocation on " << slaveId << " resources "
 +              << stringify(resources) << " scalarQuantities "
 +              << scalarQuantities;
@@ -58,7 +57,7 @@ index 1a7681c69..3b9008728 100644
  
        // Remove shared resources from the allocated quantities when there
        // are no instances of same resources left in the allocation.
-@@ -362,18 +370,35 @@ struct DRFSorter::Node
+@@ -364,18 +371,35 @@ struct DRFSorter::Node
        const Resources quantitiesToRemove =
          (toRemove.nonShared() + sharedToRemove).createStrippedScalarQuantity();
  
@@ -97,7 +96,7 @@ index 1a7681c69..3b9008728 100644
      }
  
      void update(
-@@ -381,6 +406,11 @@ struct DRFSorter::Node
+@@ -383,6 +407,11 @@ struct DRFSorter::Node
          const Resources& oldAllocation,
          const Resources& newAllocation)
      {
@@ -109,7 +108,7 @@ index 1a7681c69..3b9008728 100644
        const Resources oldAllocationQuantity =
          oldAllocation.createStrippedScalarQuantity();
        const Resources newAllocationQuantity =
-@@ -388,11 +418,22 @@ struct DRFSorter::Node
+@@ -390,11 +419,22 @@ struct DRFSorter::Node
  
        CHECK(resources.contains(slaveId));
        CHECK(resources[slaveId].contains(oldAllocation))
@@ -135,7 +134,7 @@ index 1a7681c69..3b9008728 100644
  
        resources[slaveId] -= oldAllocation;
        resources[slaveId] += newAllocation;
-@@ -407,6 +448,10 @@ struct DRFSorter::Node
+@@ -409,6 +449,10 @@ struct DRFSorter::Node
        foreach (const Resource& resource, newAllocationQuantity) {
          totals[resource.name()] += resource.scalar();
        }
@@ -147,5 +146,5 @@ index 1a7681c69..3b9008728 100644
  
      // We store the number of times this client has been chosen for
 -- 
-2.17.0
+2.14.3
 
