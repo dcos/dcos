@@ -625,29 +625,11 @@ def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_
     app metric for up to 5 minutes.
 
     """
-    app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
+    _, app_metrics = get_metrics_for_task(dcos_api_session, node, task_name)
     assert app_metrics is not None, "missing metrics for task {}".format(task_name)
     dps = [dp for dp in app_metrics['datapoints'] if dp['name'] == metric_name]
     assert len(dps) == 1, 'expected 1 datapoint for metric {}, got {}'.format(metric_name, len(dps))
     return dps[0]
-
-
-@retrying.retry(
-    retry_on_result=lambda result: result is None,
-    wait_fixed=METRICS_INTERVAL,
-    stop_max_delay=METRICS_WAITTIME)
-def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
-    """Return container metrics for task_name.
-
-    Returns None if container metrics for task_name can't be found. Retries on
-    error, non-200 status, or missing container metrics for up to 5 minutes.
-
-    """
-    for cid in get_container_ids(dcos_api_session, node):
-        container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions'].get('task_name') == task_name:
-            return get_app_metrics(dcos_api_session, node, cid)
-    return None
 
 
 # Retry for 5 minutes since the collector collects state
