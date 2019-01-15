@@ -8,6 +8,7 @@ NODE_NAME=navstar
 # Export
 for ENV_FILE in \
         "/opt/mesosphere/environment" \
+        "/opt/mesosphere/etc/dcos_net" \
         "/opt/mesosphere/etc/dns_config" ; \
     do
     source "${ENV_FILE}"
@@ -63,6 +64,18 @@ EOM
     echo "${IP}"
 }
 
+function cookie() {
+    FILE="/var/lib/dcos/cluster-id"
+    if [ "${DCOS_NET_CLUSTER_IDENTITY}" == "false" ]; then
+        echo 'minuteman'
+    elif [ ! -f ${FILE} ]; then
+        echo "ERROR: required file ${FILE} does not exists" >&2
+        exit 1
+    else
+        cat ${FILE}
+    fi
+}
+
 APP_DIR="/opt/mesosphere/active/${APP_NAME}/${APP_NAME}"
 
 ### dcos-net ebin directory
@@ -106,6 +119,7 @@ export EXHIBITOR_ADDRESS
 ### Node configuration
 IP=$(detect_ip)
 export NAME="${NODE_NAME}@${IP}"
+export COOKIE=$(cookie)
 
 ### Set application name
 export ESCRIPT_NAME="${APP_DIR}"
