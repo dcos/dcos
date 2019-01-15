@@ -10,6 +10,8 @@
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
+* Add config option to enable/disable the Mesos input plugin in Telegraf. (DCOS_OSS-4667)
+
 ### Security Updates
 
 
