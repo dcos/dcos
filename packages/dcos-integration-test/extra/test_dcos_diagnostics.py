@@ -670,7 +670,24 @@ def validate_unit(unit):
 def verify_archived_items(folder, archived_items, expected_files):
     for expected_file in expected_files:
         expected_file = folder + expected_file
-        assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
+
+        # We don't know in advance whether the file will be gzipped or not,
+        # because that depends on the size of the diagnostics file, which can
+        # be influenced by multiple factors that are not under our control
+        # here.
+        # Since we only want to check whether the file _exists_ and don't care
+        # about whether it's gzipped or not, we check for an optional `.gz`
+        # file type in case it wasn't explicitly specified in the assertion.
+        # For more context, see: https://jira.mesosphere.com/browse/DCOS_OSS-4531
+        if expected_file.endswith('.gz'):
+            assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
+        else:
+            expected_gzipped_file = (expected_file + '.gz')
+            unzipped_exists = expected_file in archived_items
+            gzipped_exists = expected_gzipped_file in archived_items
+
+            message = ('expecting {} or {} in {}'.format(expected_file, expected_gzipped_file, archived_items))
+            assert (unzipped_exists or gzipped_exists), message
 
 
 def verify_unit_response(zip_ext_file, min_lines):
