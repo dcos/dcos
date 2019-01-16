@@ -234,10 +234,7 @@ def test_metrics_node(dcos_api_session):
 
 
 def test_metrics_containers(dcos_api_session):
-    """If there's a deployed container on the slave, iterate through them to check for
-    the statsd-emitter executor. When found, query it's /app endpoint to test that
-    it's sending the statsd metrics as expected.
-    """
+    """Assert that a Marathon app's container and app metrics can be retrieved."""
     # Helper func to check for non-unique CID's in a given /containers/id endpoint
     def check_cid(registry):
         if len(registry) <= 1:
@@ -258,77 +255,56 @@ def test_metrics_containers(dcos_api_session):
 
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def test_containers(app_endpoints):
-
-        debug_task_name = []
-
         for agent in app_endpoints:
-            for c in get_container_ids(dcos_api_session, agent.host):
-                # Test that /containers/<id> responds with expected data
-                container_metrics = get_container_metrics(dcos_api_session, agent.host, c)
+            container_metrics, app_metrics = get_metrics_for_task(dcos_api_session, agent.host, 'statsd-emitter')
 
-                # Skip this container if it's not statsd-emitter.
-                if container_metrics['dimensions'].get('task_name') != 'statsd-emitter':
-                    # Store the task_name from this response for a debug message in case we can't find statsd-emitter.
-                    debug_task_name.append(container_metrics['dimensions']['task_name'])
-                    continue
-
-                # Check tags on each datapoint.
-                cid_registry = []
-                for dp in container_metrics['datapoints']:
-                    # Verify expected tags are present.
-                    assert 'tags' in dp, 'got {}'.format(dp)
-                    expected_tag_names = {
-                        'container_id',
-                    }
-                    if 'executor_name' in dp['tags']:
-                        # if present we want to make sure it has a valid value.
-                        expected_tag_names.add('executor_name')
-                    if dp['name'].startswith('blkio.'):
-                        # blkio stats have 'blkio_device' tags.
-                        expected_tag_names.add('blkio_device')
-                    check_tags(dp['tags'], expected_tag_names)
-
-                    # Ensure all container ID's in the container/<id> endpoint are
-                    # the same.
-                    cid_registry.append(dp['tags']['container_id'])
-                    assert(check_cid(cid_registry))
-
-                assert container_metrics['dimensions']['mesos_id'] == '', 'got {}'.format(
-                    container_metrics['dimensions'])
-
-                # Test that /app response is responding with expected data
-                app_metrics = get_app_metrics(dcos_api_session, agent.host, c)
-
-                # Ensure all /container/<id>/app data is correct
-                # We expect three datapoints, could be in any order
-                uptime_dp = None
-                for dp in app_metrics['datapoints']:
-                    if dp['name'] == 'statsd_tester.time.uptime':
-                        uptime_dp = dp
-                        break
-
-                # If this metric is missing, statsd-emitter's metrics were not received
-                assert uptime_dp is not None, 'got {}'.format(app_metrics)
-
-                datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
-                for k in datapoint_keys:
-                    assert k in uptime_dp, 'got {}'.format(uptime_dp)
-
+            # Check container metrics.
+            # Check tags on each datapoint.
+            cid_registry = []
+            for dp in container_metrics['datapoints']:
+                # Verify expected tags are present.
+                assert 'tags' in dp, 'got {}'.format(dp)
                 expected_tag_names = {
-                    'dcos_cluster_id',
-                    'test_tag_key',
-                    'dcos_cluster_name',
-                    'host'
+                    'container_id',
                 }
-                check_tags(uptime_dp['tags'], expected_tag_names)
-                assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
-                assert uptime_dp['value'] > 0
-                assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
-                assert app_metrics['dimensions']['mesos_id'] == '', 'got {}'.format(app_metrics)
+                if 'executor_name' in dp['tags']:
+                    # if present we want to make sure it has a valid value.
+                    expected_tag_names.add('executor_name')
+                if dp['name'].startswith('blkio.'):
+                    # blkio stats have 'blkio_device' tags.
+                    expected_tag_names.add('blkio_device')
+                check_tags(dp['tags'], expected_tag_names)
 
-                return True
+                # Ensure all container ID's in the container/<id> endpoint are
+                # the same.
+                cid_registry.append(dp['tags']['container_id'])
 
-        assert False, 'Did not find statsd-emitter container, executor IDs found: {}'.format(debug_task_name)
+            assert check_cid(cid_registry)
+
+            # Check app metrics.
+            # We expect three datapoints, could be in any order
+            uptime_dp = None
+            for dp in app_metrics['datapoints']:
+                if dp['name'] == 'statsd_tester.time.uptime':
+                    uptime_dp = dp
+                    break
+
+            # If this metric is missing, statsd-emitter's metrics were not received
+            assert uptime_dp is not None, 'got {}'.format(app_metrics)
+
+            datapoint_keys = ['name', 'value', 'unit', 'timestamp', 'tags']
+            for k in datapoint_keys:
+                assert k in uptime_dp, 'got {}'.format(uptime_dp)
+
+            expected_tag_names = {
+                'dcos_cluster_id',
+                'test_tag_key',
+                'dcos_cluster_name',
+                'host'
+            }
+            check_tags(uptime_dp['tags'], expected_tag_names)
+            assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
+            assert uptime_dp['value'] > 0
 
     marathon_config = {
         "id": "/statsd-emitter",
@@ -461,29 +437,11 @@ def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_
     app metric for up to 5 minutes.
 
     """
-    app_metrics = get_app_metrics_for_task(dcos_api_session, node, task_name)
+    _, app_metrics = get_metrics_for_task(dcos_api_session, node, task_name)
     assert app_metrics is not None, "missing metrics for task {}".format(task_name)
     dps = [dp for dp in app_metrics['datapoints'] if dp['name'] == metric_name]
     assert len(dps) == 1, 'expected 1 datapoint for metric {}, got {}'.format(metric_name, len(dps))
     return dps[0]
-
-
-@retrying.retry(
-    retry_on_result=lambda result: result is None,
-    wait_fixed=METRICS_INTERVAL,
-    stop_max_delay=METRICS_WAITTIME)
-def get_app_metrics_for_task(dcos_api_session, node: str, task_name: str):
-    """Return container metrics for task_name.
-
-    Returns None if container metrics for task_name can't be found. Retries on
-    error, non-200 status, or missing container metrics for up to 5 minutes.
-
-    """
-    for cid in get_container_ids(dcos_api_session, node):
-        container_metrics = get_container_metrics(dcos_api_session, node, cid)
-        if container_metrics['dimensions'].get('task_name') == task_name:
-            return get_app_metrics(dcos_api_session, node, cid)
-    return None
 
 
 # Retry for two and a half minutes since the collector collects
@@ -506,11 +464,17 @@ def get_container_ids(dcos_api_session, node: str):
 def get_container_metrics(dcos_api_session, node: str, container_id: str):
     """Return container_id's metrics from the metrics API on node.
 
+    Returns None on 204.
+
     Retries on error, non-200 status, or missing response fields for up
     to 5 minutes.
 
     """
     response = dcos_api_session.metrics.get('/containers/' + container_id, node=node)
+
+    if response.status_code == 204:
+        return None
+
     assert response.status_code == 200
     container_metrics = response.json()
 
@@ -528,15 +492,52 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
 def get_app_metrics(dcos_api_session, node: str, container_id: str):
     """Return app metrics for container_id from the metrics API on node.
 
+    Returns None on 204.
+
     Retries on error or non-200 status for up to 5 minutes.
 
     """
     resp = dcos_api_session.metrics.get('/containers/' + container_id + '/app', node=node)
+
+    if resp.status_code == 204:
+        return None
+
     assert resp.status_code == 200, 'got {}'.format(resp.status_code)
     app_metrics = resp.json()
+
     assert 'datapoints' in app_metrics, 'got {}'.format(app_metrics)
     assert 'dimensions' in app_metrics, 'got {}'.format(app_metrics)
+
     return app_metrics
+
+
+@retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+def get_metrics_for_task(dcos_api_session, node: str, task_name: str):
+    """Return (container_metrics, app_metrics) for task_name on node.
+
+    Retries on error, non-200 responses, or missing metrics for task_name for
+    up to 5 minutes.
+
+    """
+    task_names_seen = []  # Used for exception message if task_name can't be found.
+
+    for cid in get_container_ids(dcos_api_session, node):
+        container_metrics = get_container_metrics(dcos_api_session, node, cid)
+
+        if container_metrics is None:
+            task_names_seen.append((cid, None))
+            continue
+
+        if container_metrics['dimensions'].get('task_name') != task_name:
+            task_names_seen.append((cid, container_metrics['dimensions'].get('task_name')))
+            continue
+
+        app_metrics = get_app_metrics(dcos_api_session, node, cid)
+        return container_metrics, app_metrics
+
+    raise Exception(
+        'No metrics found for task {} on host {}. Task names seen: {}'.format(task_name, node, task_names_seen)
+    )
 
 
 def test_standalone_container_metrics(dcos_api_session):
