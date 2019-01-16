@@ -45,6 +45,8 @@
 
 * Docker container unable to curl its own VIP (DCOS-45115)
 
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
