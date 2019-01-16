@@ -1,4 +1,4 @@
-From 5e56ee627019b035e736ffa166a8473eeabdc5f0 Mon Sep 17 00:00:00 2001
+From 4554a4fca4b1280bcb0d8c2ab858cd294aba69f1 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 27 Sep 2018 15:20:01 +0200
 Subject: [PATCH] Put `TerminateEvent` at the end of the queue in the Mesos
@@ -34,5 +34,5 @@ index c04cfbc42..7ca306702 100644
  
      delete process;
 -- 
-2.17.1
+2.14.3
 

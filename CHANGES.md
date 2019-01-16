@@ -2,6 +2,8 @@
 
 ### Notable changes
 
+* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+
 * Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
 
 * Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
@@ -9,6 +11,12 @@
 * Update to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
 
 ### Fixed and improved
+
+* Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
+
+* Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
+
+* Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
 
 * Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
 
@@ -37,9 +45,12 @@
 
 * [DCOS_OSS-2535](https://jira.mesosphere.com/browse/DCOS_OSS-2535) Info endpoint shows incorrect version of Metronome.
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
 
 ### Security Updates
 
@@ -129,6 +140,7 @@
 
 ## DC/OS 1.11.3
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 

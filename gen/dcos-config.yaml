@@ -195,7 +195,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
+        "network": {{ dcos_overlay_network_json }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -273,7 +273,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/lib/dcos/mesos/log/mesos-master.log"
+                        "value" : "{{ mesos_master_log_file }}"
                       }
                     ]
                 }
@@ -296,7 +296,7 @@ package:
                     [
                       {
                         "key": "output_file",
-                        "value" : "/var/log/mesos/mesos-agent.log"
+                        "value" : "{{ mesos_agent_log_file }}"
                       }
                     ]
                 }
@@ -459,13 +459,13 @@ package:
       notifempty
       missingok
       nomail
-      /var/lib/dcos/mesos/log/mesos-master.log {
+      {{ mesos_master_log_file }} {
           olddir /var/lib/dcos/mesos/log/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} /var/lib/dcos/mesos/log/mesos-master.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/lib/dcos/mesos/log/ {{ mesos_log_directory_max_files }} {{ mesos_master_log_file }}
           endscript
       }
   - path: /etc/logrotate_agent.config
@@ -475,18 +475,18 @@ package:
       notifempty
       missingok
       nomail
-      /var/log/mesos/mesos-agent.log {
+      {{ mesos_agent_log_file }} {
           olddir /var/log/mesos/archive
           size 256M
           rotate {{ mesos_log_retention_count }}
           copytruncate
           postrotate
-              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} /var/log/mesos/mesos-agent.log
+              /opt/mesosphere/bin/delete-oldest-unmanaged-files.py /var/log/mesos/ {{ mesos_log_directory_max_files }} {{ mesos_agent_log_file }}
           endscript
       }
   - path: /etc/mesos-master
     content: |
-      MESOS_EXTERNAL_LOG_FILE=/var/lib/dcos/mesos/log/mesos-master.log
+      MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
@@ -624,13 +624,14 @@ package:
     content: {{ check_config_contents }}
   - path: /etc/dcos-diagnostics.env
     content: |
+      DCOS_DIAGNOSTICS_BUNDLE_DIR={{ diagnostics_bundles_dir }}
       DCOS_DIAGNOSTICS_CONFIG_PATH=/opt/mesosphere/etc/dcos-diagnostics-config.json
   - path: /etc_master/dcos-diagnostics-config.json
     content: |
       {
         "role": "master",
         "pull": true,
-        "diagnostics-bundle-dir": "/var/lib/dcos/dcos-diagnostics/diag-bundles",
+        "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
         "agent-port": 61001
@@ -743,42 +744,42 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/metrics",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/apps",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/deployments",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/groups",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/info",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/leader",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/queue",
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/tasks",
                   "Role": ["master"]
               },
@@ -897,6 +898,17 @@ package:
               },
               {
                   "Location": "/proc/meminfo"
+              },
+              {
+                  "Location": "/proc/self/mountinfo"
+              },
+              {
+                  "Location": "{{ mesos_agent_log_file }}",
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}",
+                  "Role": ["master"]
               }
           ],
           "LocalCommands": [
@@ -910,10 +922,7 @@ package:
                   "Command": ["ip", "route"]
               },
               {
-                  "Command": ["ifconfig", "-a"]
-              },
-              {
-                  "Command": ["ps", "aux", "ww"]
+                  "Command": ["ps", "aux", "ww", "Z"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
@@ -926,6 +935,20 @@ package:
               },
               {
                   "Command": ["systemctl", "list-units", "dcos*"]
+              },
+              {
+                  "Command": ["sestatus"]
+              },
+              {
+                  "Command": ["iptables-save"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent", "agent_public"]
               }
           ]
         }

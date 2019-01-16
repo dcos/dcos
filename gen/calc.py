@@ -345,6 +345,20 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                     "Incorrect value for overlay subnet6 {}."
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
 
+        if 'enabled' in overlay:
+            gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
+    overlay_network = json.loads(dcos_overlay_network)
+    overlays = []
+    for overlay in overlay_network['overlays']:
+        if enable_ipv6 == 'false' and 'subnet' not in overlay:
+            overlay['enabled'] = False
+        overlays.append(overlay)
+    overlay_network['overlays'] = overlays
+    return json.dumps(overlay_network)
+
 
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
@@ -905,6 +919,7 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
         validate_dcos_ucr_default_bridge_subnet,
         lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
@@ -945,6 +960,9 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda mesos_agent_log_file: validate_absolute_path(mesos_agent_log_file),
+        lambda mesos_master_log_file: validate_absolute_path(mesos_master_log_file),
+        lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
     ],
@@ -1005,6 +1023,7 @@ entry = {
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
+        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
             'vtep_subnet6': 'fd01:a::/64',
@@ -1055,6 +1074,7 @@ entry = {
         'check_search_path': CHECK_SEARCH_PATH,
         'mesos_master_work_dir': '/var/lib/dcos/mesos/master',
         'mesos_agent_work_dir': '/var/lib/mesos/slave',
+        'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
@@ -1070,6 +1090,9 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
+        'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
+        'marathon_port': '8080',
         'dcos_version': '1.11.8',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
