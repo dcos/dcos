@@ -44,7 +44,7 @@ class Bootstrapper(object):
     def __exit__(self, type, value, tb):
         self.close()
 
-    def cluster_id(self, path, readonly=False):
+    def cluster_id(self, path='/var/lib/dcos/cluster-id', readonly=False):
         dirpath = os.path.dirname(os.path.abspath(path))
         log.info('Opening {} for locking'.format(dirpath))
         with utils.Directory(dirpath) as d:
