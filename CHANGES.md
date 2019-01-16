@@ -1,16 +1,20 @@
 ## DC/OS 1.11-dev
 
+## DC/OS 1.11.10
+
+* [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
+
+* [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
+
+* [Mesos 1.5.x](https://github.com/apache/mesos/tree/5f6225bd6e039c633b7758f02d2b5fbabc8e0169)
+
 ### Notable changes
 
 * Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
 
-* Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
+### Fixed and improved
 
 * Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
-
-* Update to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
-
-### Fixed and improved
 
 * Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
 
@@ -21,6 +25,33 @@
 * Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
 
 * Docker-GC will now log to journald. (COPS-4044)
+
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
+
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+### Security Updates
+
+* Upgraded the requests library used i DC/OS to 2.21.0 to address CVE-2018-18074,  CVE-2018-18074, 
+  both of which were Moderate severity reports. (DCOS_OSS-4418)
+
+
+## DC/OS 1.11.8
+
+
+### Notable changes
+
+* Updated to [Marathon 1.6.567](https://github.com/mesosphere/marathon/tree/2d8b3e438ffcc536ccf8b1ea9cb0b39bb3ef4e10).
+
+* Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
+
+* Update to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
+
+### Fixed and improved
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
@@ -45,18 +76,13 @@
 
 * [DCOS_OSS-2535](https://jira.mesosphere.com/browse/DCOS_OSS-2535) Info endpoint shows incorrect version of Metronome.
 
-* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
-
-* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
-
-* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
-
+### Security Updates
 
 ### Security Updates
 
 * Update Java to 8u192. (DCOS_OSS-4382)
 
-
+## DC/OS 1.11.6
 ## DC/OS 1.11.6
 
 ### Notable changes
@@ -140,7 +166,6 @@
 
 ## DC/OS 1.11.3
 
-* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 
