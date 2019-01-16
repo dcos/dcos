@@ -28,6 +28,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Metronome supports hybrid cloud
 
 * Expose Public IP (DCOS_OSS-4514)
+
+* Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
+
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
 * Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
