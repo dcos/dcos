@@ -1,7 +1,7 @@
-From b7e74be95cb8fe540340ba8087196ef08b1ab834 Mon Sep 17 00:00:00 2001
+From 57962673f67209f1449495f5879e9da6baf343a6 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:40:37 +0200
-Subject: [PATCH 06/12] Introduced `logResponse` for http handlers.
+Subject: [PATCH 06/14] Introduced `logResponse` for http handlers.
 
 Currently we use `logRequest` function to log requests to endpoints
 in Mesos `MasterProcess`, `SlaveProcess`, and `FilesProcess`. Each
