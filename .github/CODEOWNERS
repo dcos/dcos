@@ -13,3 +13,10 @@
 # tests owner
 
 /packages/dcos-integration-test/ @orsenthil, skumaran@mesosphere.io, @mellenburg
+
+# Cluster Ops Foundation
+/pkgpanda/ @janisz, @br-lewis, @mrnugget, @drewvanstone
+/packages/dcos-diagnostics/ @janisz, @br-lewis, @mrnugget, @drewvanstone
+/packages/dcos-checks/ @janisz, @br-lewis, @mrnugget, @drewvanstone
+/packages/dcos-check-runner/ @janisz, @br-lewis, @mrnugget, @drewvanstone
+/packages/dcos-integration-test/extra/test_dcos_diagnostics.py @janisz, @br-lewis, @mrnugget, @drewvanstone
