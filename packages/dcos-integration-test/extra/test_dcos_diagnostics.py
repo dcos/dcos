@@ -400,7 +400,6 @@ def _delete_bundle(dcos_api_session, bundle):
     )
 
     bundles = diagnostics.get_diagnostics_reports()
-    assert bundles, 'no bundles found'
 
     dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
 
