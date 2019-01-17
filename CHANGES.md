@@ -32,7 +32,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
 
-* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667) 
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667)
+
+* Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
+
 
 ### Breaking changes
 
