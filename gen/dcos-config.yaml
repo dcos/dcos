@@ -1360,6 +1360,10 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Collect statistics about itself
+      [[inputs.internal]]
+        ## If true, collect telegraf memory stats.
+        collect_memstats = true
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
