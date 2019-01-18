@@ -27,6 +27,15 @@ def test_invalid_telemetry_enabled():
         err_msg)
 
 
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_invalid_enable_mesos_input_plugin():
+    err_msg = "Must be one of 'true', 'false'. Got 'foo'."
+    validate_error(
+        {'enable_mesos_input_plugin': 'foo'},
+        'enable_mesos_input_plugin',
+        err_msg)
+
+
 # TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ports():
