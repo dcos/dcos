@@ -1,18 +1,34 @@
  #!/bin/bash
 
-set -e
+set -ex
 
-# cockroachdb requires gcc 4.9+
+# Support https sources in apt
 apt-get -y update
-apt-get install -y gcc-4.9 g++-4.9 cpp-4.9
+apt-get -y install apt-transport-https software-properties-common
 
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 40
-update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-4.9 40
-update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 40
+# CockroachDB requires node and yarn to build UI
+# https://github.com/cockroachdb/cockroach/blob/v2.0.7/build/bootstrap/bootstrap-debian.sh#L8-L12
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
+echo "deb https://deb.nodesource.com/node_6.x xenial main" | tee /etc/apt/sources.list.d/nodesource.list
 
-GOLANG_VERSION=1.9.4
+curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+
+add-apt-repository ppa:ubuntu-toolchain-r/test
+
+# cockroachdb requires gcc 6.0+
+apt-get -y update
+apt-get install -y gcc-6 g++-6 cpp-6 \
+    libncurses-dev \
+    nodejs yarn
+
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
+update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-6 40
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 40
+
+GOLANG_VERSION=1.11.4
 GOLANG_DOWNLOAD_URL=https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-GOLANG_DOWNLOAD_SHA256=15b0937615809f87321a457bb1265f946f9f6e736c563d6c5e0bd2c22e44f779
+GOLANG_DOWNLOAD_SHA256=fb26c30e6a04ad937bbc657a1b5bba92f80096af1e8ee6da6430c045a8db3a5b
 
 rm -rf /usr/local/go
 curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz
@@ -20,17 +36,18 @@ echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c -
 tar -C /usr/local -xzf golang.tar.gz
 rm golang.tar.gz
 
-mkdir -p /gopath/src/github.com/cockroachdb
-mv /pkg/src/cockroach /gopath/src/github.com/cockroachdb/
-
-cd /gopath/src/github.com/cockroachdb/cockroach
+cd /pkg/src/cockroach
 
 # Build the cockroach binary.
-make build TYPE=portable
+# We need to set CC_PATH and CXX_PATH becuase the build in the teamcity is not
+# recognizing paths correctly
+export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
+make build TYPE=release-linux-gnu CC_PATH=/usr/bin/gcc  CXX_PATH=/usr/bin/g++
 
 # Copy the cockroach binary to the the package bin directory.
 mkdir -p $PKG_PATH/bin
-install -m 755 /gopath/src/github.com/cockroachdb/cockroach/cockroach $PKG_PATH/bin
+install -m 755 /pkg/src/cockroach/src/github.com/cockroachdb/cockroach/cockroach-linux-2.6.32-gnu-amd64 $PKG_PATH/bin/cockroach
 
 # Copy the registration script to the package bin directory.
 install -m 755 /pkg/extra/register.py $PKG_PATH/bin/register.py

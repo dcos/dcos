@@ -101,8 +101,8 @@ def main() -> None:
 
     set_num_replicas(my_internal_ip, master_node_count)
 
-    # We are running CockroachDB v1.1.x so pass '1.1'.
-    set_cluster_version(my_internal_ip, '1.1')
+    # We are running CockroachDB v2.0.x so pass '2.0'.
+    set_cluster_version(my_internal_ip, '2.0')
 
 
 if __name__ == '__main__':
