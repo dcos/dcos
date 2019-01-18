@@ -1,0 +1,7 @@
+dnspython
+pytest==3.3.2
+PyYAML
+webtest
+webtest-aiohttp==1.1.0
+schema
+pytest-catchlog==1.2.2
