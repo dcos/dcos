@@ -1,0 +1,78 @@
+From 57962673f67209f1449495f5879e9da6baf343a6 Mon Sep 17 00:00:00 2001
+From: Alexander Rukletsov <alexr@apache.org>
+Date: Thu, 11 Oct 2018 15:40:37 +0200
+Subject: [PATCH 06/14] Introduced `logResponse` for http handlers.
+
+Currently we use `logRequest` function to log requests to endpoints
+in Mesos `MasterProcess`, `SlaveProcess`, and `FilesProcess`. Each
+request is logged when it is first fetched from the actor mailbox.
+However this obviously does not allow for logging the request
+processing time.
+
+This patch introduces a `logResponse` function which logs the request
+together with the corresponding response status and the time spent
+generating the response.
+
+Review: https://reviews.apache.org/r/68993
+(cherry picked from commit 7df7e4d35ec1c6cce87c629fac0b32149a4830d2)
+---
+ src/common/http.cpp | 15 +++++++++++++++
+ src/common/http.hpp | 11 +++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/src/common/http.cpp b/src/common/http.cpp
+index 81102d845..50c9b558b 100644
+--- a/src/common/http.cpp
++++ b/src/common/http.cpp
+@@ -32,6 +32,7 @@
+ #include <mesos/quota/quota.hpp>
+ 
+ #include <process/authenticator.hpp>
++#include <process/clock.hpp>
+ #include <process/collect.hpp>
+ #include <process/dispatch.hpp>
+ #include <process/future.hpp>
+@@ -1130,4 +1131,18 @@ void logRequest(const process::http::Request& request)
+                 : "");
+ }
+ 
++
++void logResponse(
++    const process::http::Request& request,
++    const process::http::Response& response)
++{
++  LOG(INFO) << "HTTP " << request.method << " for " << request.url
++            << (request.client.isSome()
++                ? " from " + stringify(request.client.get())
++                : "")
++            << ": '" << response.status << "'"
++            << " after " << (process::Clock::now() - request.received).ms()
++            << Milliseconds::units();
++}
++
+ }  // namespace mesos {
+diff --git a/src/common/http.hpp b/src/common/http.hpp
+index 0901a5528..cc7f747d1 100644
+--- a/src/common/http.hpp
++++ b/src/common/http.hpp
+@@ -338,6 +338,17 @@ Try<Nothing> initializeHttpAuthenticators(
+ // desired request handler to get consistent request logging.
+ void logRequest(const process::http::Request& request);
+ 
++
++// Log the response for the corresponding request together with the request
++// processing time. Route handlers can compose this with the desired request
++// handler to get consistent request/response logging.
++//
++// TODO(alexr): Consider taking `response` as a future to allow logging for
++// cases when response has not been generated.
++void logResponse(
++    const process::http::Request& request,
++    const process::http::Response& response);
++
+ } // namespace mesos {
+ 
+ #endif // __COMMON_HTTP_HPP__
+-- 
+2.17.0
+

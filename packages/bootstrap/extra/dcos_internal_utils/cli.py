@@ -26,32 +26,40 @@ def check_root(fun):
 
 @check_root
 def dcos_adminrouter(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_signal(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
-
-
-@check_root
-def dcos_metrics_master(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
-
-
-@check_root
-def dcos_metrics_agent(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+    b.cluster_id()
 
 
 @check_root
 def dcos_telegraf_master(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_telegraf_agent(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+    b.cluster_id(readonly=True)
+
+
+@check_root
+def dcos_net(b, opts):
+    if 'master' in get_roles():
+        dcos_net_master(b, opts)
+    else:
+        dcos_net_agent(b, opts)
+
+
+@check_root
+def dcos_net_master(b, opts):
+    b.cluster_id()
+
+
+@check_root
+def dcos_net_agent(b, opts):
+    b.cluster_id(readonly=True)
 
 
 @check_root
@@ -67,8 +75,6 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-signal': dcos_signal,
     'dcos-oauth': dcos_oauth,
-    'dcos-metrics-master': dcos_metrics_master,
-    'dcos-metrics-agent': dcos_metrics_agent,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
@@ -81,7 +87,7 @@ bootstrappers = {
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
-    'dcos-net': noop,
+    'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
 }

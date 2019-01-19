@@ -247,7 +247,6 @@ def test_service_discovery_mesos_host(dcos_api_session):
 def test_service_discovery_mesos_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS,
-        host_port=9080,
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER)
 
@@ -273,15 +272,14 @@ def test_service_discovery_docker_bridge(dcos_api_session):
 def test_service_discovery_docker_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
-        network=marathon.Network.USER,
-        host_port=9080)
-    del app_definition['container']['docker']['portMappings'][0]['hostPort']
+        network=marathon.Network.USER)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
 def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         network=marathon.Network.USER,
         host_port=9080)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay, DNSPortMap])
@@ -326,7 +324,8 @@ def test_if_search_is_working(dcos_api_session):
         expected_error = {'error': '[Errno -2] Name or service not known'}
 
         # Check that result matches expectations for this dcos_api_session
-        if test_helpers.expanded_config['dns_search']:
+        expanded_config = test_helpers.get_expanded_config()
+        if expanded_config['dns_search']:
             assert r_data['search_hit_leader'] in dcos_api_session.masters
             assert r_data['always_hit_leader'] in dcos_api_session.masters
             assert r_data['always_miss'] == expected_error

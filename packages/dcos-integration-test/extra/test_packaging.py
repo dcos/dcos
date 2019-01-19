@@ -2,7 +2,7 @@
 import logging
 
 import pytest
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'branden'
 __contact__ = 'marathon-team@mesosphere.io'
@@ -10,10 +10,15 @@ __contact__ = 'marathon-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(
-    'advanced' in expanded_config['template_filenames'],
-    reason='Will not work on advanced CF templates, see: https://jira.mesosphere.com/browse/DCOS_OSS-1375')
 def test_pkgpanda_api(dcos_api_session):
+
+    expanded_config = get_expanded_config()
+    if 'advanced' in expanded_config['template_filenames']:
+        reason = (
+            'Will not work on advanced CF templates, see: '
+            'https://jira.mesosphere.com/browse/DCOS_OSS-1375'
+        )
+        pytest.skip(reason)
 
     def get_and_validate_package_ids(path, node):
         r = dcos_api_session.get(path, node=node)
@@ -54,19 +59,13 @@ def test_pkgpanda_api(dcos_api_session):
 
 # There is no standardized way of getting package requirements from the package description json,
 # e.g. nodes could be called 'brokers' or 'nodes' or something else. This was created by looking at
-# https://github.com/mesosphere/universe/blob/version-3.x/repo/packages/K/kafka/39/config.json
-# 1.1.9-0.10.0.0
-KAFKA_PACKAGE_REQUIREMENTS = {
-    'number_of_nodes': 3,
+# https://github.com/mesosphere/universe/blob/version-3.x/repo/packages/N/nginx/6/config.json
+# Nginx package version 1.10.3
+NGINX_PACKAGE_REQUIREMENTS = {
+    'number_of_nodes': 1,
     'node': {
-        'disk': 5000,
-        'mem': 2304,
-        'cpus': 1
-    },
-    'executor': {
-        'disk': 0,
-        'mem': 256,
-        'cpus': 0.5
+        'cpus': 1,
+        'mem': 1024
     }
 }
 
@@ -79,14 +78,14 @@ def _get_cluster_resources(dcos_api_session):
 
 
 def _agent_has_resources(agent, node_requirements):
-    """Check that an agent has at least as much resources as requried for one node
+    """Check that an agent has at least as much resources as required for one node
 
     Args:
         agent: dict Info for one 'slave' from the mesos state summary
         node_requirements: dict Resource requirements per agent
     """
     unreserved = agent['unreserved_resources']
-    resources = ['mem', 'disk', 'cpus']
+    resources = ['mem', 'cpus']
     for resource in resources:
         log.debug('{resource}: unreserved {unreserved}, required {required}'.format(
             resource=resource,
@@ -135,14 +134,18 @@ def _skipif_insufficient_resources(dcos_api_session, requirements):
     """Can't access dcos_api_session from through the pytest.mark.skipif decorator, so call this in each test instead
     """
     if not _enough_resources_for_package(_get_cluster_resources(dcos_api_session), requirements):
-        return pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
+        pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
 
 
 def test_packaging_api(dcos_api_session):
-    """Test the Cosmos API (/package) wrapper
     """
-    _skipif_insufficient_resources(dcos_api_session, KAFKA_PACKAGE_REQUIREMENTS)
-    install_response = dcos_api_session.cosmos.install_package('kafka', package_version='1.1.9-0.10.0.0')
+    Test the Cosmos API (/package) wrapper by installing nginx from
+    https://github.com/mesosphere/universe/blob/version-3.x/repo/packages/N/nginx/6
+    The default configuration of ngnix needs only one agent and no service secrets are
+    required even when running in a strict cluster.
+    """
+    _skipif_insufficient_resources(dcos_api_session, NGINX_PACKAGE_REQUIREMENTS)
+    install_response = dcos_api_session.cosmos.install_package('nginx', package_version='1.10.3')
     data = install_response.json()
 
     dcos_api_session.marathon.wait_for_deployments_complete()
@@ -151,18 +154,19 @@ def test_packaging_api(dcos_api_session):
     packages = list_response.json()['packages']
     assert len(packages) == 1 and packages[0]['appId'] == data['appId']
 
-    dcos_api_session.cosmos.uninstall_package('kafka', app_id=data['appId'])
+    dcos_api_session.cosmos.uninstall_package('nginx', app_id=data['appId'])
 
     list_response = dcos_api_session.cosmos.list_packages()
     packages = list_response.json()['packages']
     assert len(packages) == 0
 
 
-@pytest.mark.skipif(expanded_config.get('security') == 'strict',
-                    reason="MoM disabled for strict mode")
 def test_mom_installation(dcos_api_session):
     """Test the Cosmos installation of marathon on marathon (MoM)
     """
+    expanded_config = get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('MoM disabled for strict mode')
 
     install_response = dcos_api_session.cosmos.install_package('marathon')
     data = install_response.json()

@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.12.0-beta2'
+DCOS_VERSION = '1.12.1'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -355,6 +355,20 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                 raise AssertionError(
                     "Incorrect value for overlay subnet6 {}."
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
+
+        if 'enabled' in overlay:
+            gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
+    overlay_network = json.loads(dcos_overlay_network)
+    overlays = []
+    for overlay in overlay_network['overlays']:
+        if enable_ipv6 == 'false' and 'subnet' not in overlay:
+            overlay['enabled'] = False
+        overlays.append(overlay)
+    overlay_network['overlays'] = overlays
+    return json.dumps(overlay_network)
 
 
 def validate_num_masters(num_masters):
@@ -931,7 +945,9 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
         validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
@@ -948,6 +964,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -970,10 +987,14 @@ entry = {
         lambda fault_domain_enabled: validate_true_false(fault_domain_enabled),
         lambda mesos_master_work_dir: validate_absolute_path(mesos_master_work_dir),
         lambda mesos_agent_work_dir: validate_absolute_path(mesos_agent_work_dir),
+        lambda mesos_agent_log_file: validate_absolute_path(mesos_agent_log_file),
+        lambda mesos_master_log_file: validate_absolute_path(mesos_master_log_file),
         lambda diagnostics_bundles_dir: validate_absolute_path(diagnostics_bundles_dir),
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
         lambda log_offers: validate_true_false(log_offers),
+        lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
+        lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1027,12 +1048,14 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
         'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
+        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
             'vtep_subnet6': 'fd01:a::/64',
@@ -1057,6 +1080,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1088,7 +1112,9 @@ entry = {
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
-        'log_offers': 'true'
+        'log_offers': 'true',
+        'mesos_cni_root_dir_persist': 'false',
+        'enable_mesos_input_plugin': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1100,6 +1126,8 @@ entry = {
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
+        'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
         'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',

@@ -18,7 +18,6 @@ node_private_ip=$(/opt/mesosphere/bin/detect_ip)
 # Export values to env vars so Telegraf config can reference them.
 export DCOS_CLUSTER_ID="${cluster_id}"
 export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
-export DCOS_MESOS_ID="fake_mesos_id" # TODO(branden)
 
 # Create containers dir for dcos_statsd input.
 mkdir -p "${TELEGRAF_CONTAINERS_DIR}"

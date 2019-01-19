@@ -1,3 +1,62 @@
+## DC/OS 1.12-dev
+
+### Notable changes
+
+### Breaking changes
+
+### Fixed and improved
+
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
+
+* Add config option to enable/disable the Mesos input plugin in Telegraf. (DCOS_OSS-4667)
+
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
+
+### Security Updates
+
+## DC/OS 1.12.1
+
+### Notable changes
+
+* Run dcos-diagnostics as the `root` user (DCOS_OSS_3877)
+
+* Users can now supply additional Telegraf settings (DCOS-42214)
+
+* Bumped DC/OS UI to [1.12+v2.25.11](https://github.com/dcos/dcos-ui/releases/tag/1.12%2Bv2.25.11)
+
+### Breaking changes
+
+### Fixed and improved
+
+* Docker-GC will now log to journald. (COPS-4044)
+
+* dcos-net ignores some tcp/udp discovery ports for tasks on host network (DCOS_OSS-4395)
+
+* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
+
+* dcos-net continously restarting systemd-networkd on a bare-metal server with bond interfaces (DCOS_OSS-4398)
+
+* Lots of CRASH messages in dcos-net logs (DCOS-45161)
+
+* Telegraf: Added configurable whitelists for labels to include in metrics (DCOS-43591)
+
+* Make push_ops_timeout configurable through config.yaml (DCOS-45196)
+
+* Metrics now include executor container information. (DCOS_OSS-4181)
+
+* Docker container unable to curl its own VIP (DCOS-45115)
+
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
+* Number of concurrent subscribers to Mesos master operator API is now capped to 1000 by default, with a Mesos master flag to configure (DCOS_OSS-4164)
+
+### Security Updates
+
+* Update Java to 8u192. (DCOS_OSS-4381)
+
+
 ## DC/OS 1.12.0
 
 ```
@@ -45,6 +104,10 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Fixed race condition in Telegraf dcos_statsd input plugin. (DCOS_OSS-4096)
+
+* Check system clock is synced before starting Exhibitor (DCOS_OSS-4287)
+
 * Allow dcos-diagnostics bundles location to be configured (DCOS_OSS-4040)
 
 * Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
@@ -75,13 +138,22 @@ Format of the entries must be.
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
+* DC/OS Net: Logging improvements (DCOS_OSS-3929)
+
+* DC/OS Net: Get rid of epmd (DCOS_OSS-1751)
+
+* Upgrade OTP version (DCOS_OSS-3655)
+
+* Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
+
 
 ### Security Updates
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 ### Notable changes
 
-* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
+* Updated DC/OS UI to 1.12+v2.25.10 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.10)
 
 * Updated Metronome to 0.5.0. (DCOS_OSS-2338)
 

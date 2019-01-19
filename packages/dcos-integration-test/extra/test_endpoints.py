@@ -201,7 +201,7 @@ def test_if_overlay_master_is_up(dcos_api_session):
         }]
     }
 
-    assert json['network'] == dcos_overlay_network
+    assert nested_match(dcos_overlay_network, json['network'])
 
 
 def test_if_overlay_master_agent_is_up(dcos_api_session):
@@ -298,7 +298,7 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
             }
         }
 
-    assert expected == agent_overlay
+    assert nested_match(expected, agent_overlay)
 
 
 def _validate_overlay_subnet(agent_subnet, overlay_subnet, prefixlen):
@@ -315,26 +315,25 @@ def _validate_overlay_subnet(agent_subnet, overlay_subnet, prefixlen):
 def _validate_overlay_backend(overlay_name, backend):
     try:
         # Make sure the backend has the right VNI.
-        vxlan = backend.pop('vxlan')
+        vxlan = backend['vxlan']
 
         # Verify the VTEP IP is allocated from the right subnet.
-        vtep_ip = vxlan.pop('vtep_ip')
-        assert vtep_ip.startswith('44.128')
-        assert vtep_ip.endswith('/20')
+        if overlay_name == 'dcos':
+            vtep_ip = vxlan['vtep_ip']
+            assert vtep_ip.startswith('44.128')
+            assert vtep_ip.endswith('/20')
 
-        vtep_ip6 = vxlan.pop('vtep_ip6')
-        assert vtep_ip6.startswith('fd01:a')
-        assert vtep_ip6.endswith('/64')
+        if overlay_name == 'dcos6':
+            vtep_ip6 = vxlan['vtep_ip6']
+            assert vtep_ip6.startswith('fd01:a')
+            assert vtep_ip6.endswith('/64')
 
-        # Verify OUI of the VTEP MAC.
-        vtep_mac = vxlan.pop('vtep_mac')
+        # Verify VTEP configuration.
+        vtep_mac = vxlan['vtep_mac']
         assert vtep_mac.startswith('70:b3:d5:')
 
-        expected_vxlan = {
-            'vni': 1024,
-            'vtep_name': 'vtep1024'
-        }
-        assert vxlan == expected_vxlan
+        assert vxlan['vni'] == 1024
+        assert vxlan['vtep_name'] == 'vtep1024'
 
     except KeyError as ex:
         raise AssertionError("Could not find key :" + str(ex)) from ex
@@ -361,3 +360,22 @@ def test_if_cosmos_is_only_available_locally(dcos_api_session):
     # we expect a 200
     r = dcos_api_session.get('/', host="127.0.0.1", port=9990, scheme='http')
     assert r.status_code == 200
+
+
+def nested_match(expect, value):
+    if expect == value:
+        return True
+    if isinstance(expect, dict) and isinstance(value, dict):
+        for k, v in expect.items():
+            if k in value:
+                if not nested_match(v, value[k]):
+                    return False
+            else:
+                return False
+        return True
+    if isinstance(expect, list) and isinstance(value, list):
+        for x, y in zip(expect, value):
+            if not nested_match(x, y):
+                return False
+        return True
+    return False

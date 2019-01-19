@@ -10,7 +10,7 @@ import kazoo.client
 import pytest
 import requests
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -114,8 +114,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     master_units = [
         'dcos-adminrouter.service',
         'dcos-cosmos.service',
-        'dcos-metrics-master.service',
-        'dcos-metrics-master.socket',
         'dcos-exhibitor.service',
         'dcos-history.service',
         'dcos-log-master.service',
@@ -151,8 +149,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     all_slave_units = [
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-metrics-agent.service',
-        'dcos-metrics-agent.socket',
         'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
@@ -288,6 +284,7 @@ def test_signal_service(dcos_api_session):
         }
     }
 
+    expanded_config = get_expanded_config()
     # Generic properties which are the same between all tracks
     generic_properties = {
         'platform': expanded_config['platform'],
