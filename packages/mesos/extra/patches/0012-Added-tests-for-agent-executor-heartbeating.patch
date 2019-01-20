@@ -1,7 +1,7 @@
-From 29ffa1c0ebdd6da6f8b3ba3a48cba666275cbd56 Mon Sep 17 00:00:00 2001
+From d02bfbc8a2964c8222a3bd06237aa3264a43ae30 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:43 -0800
-Subject: [PATCH 12/12] Added tests for agent/executor heartbeating.
+Subject: [PATCH 12/14] Added tests for agent/executor heartbeating.
 
 This adds two separate tests which check if the Agent sends heartbeats
 to HTTP executors, and if the HTTP executor driver sends heartbeats

@@ -14,6 +14,10 @@
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
+* Add config option to enable/disable the Mesos input plugin in Telegraf. (DCOS_OSS-4667)
+
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
+
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
 ### Security Updates
@@ -52,6 +56,8 @@
 * Docker container unable to curl its own VIP (DCOS-45115)
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
+* Number of concurrent subscribers to Mesos master operator API is now capped to 1000 by default, with a Mesos master flag to configure (DCOS_OSS-4164)
 
 ### Security Updates
 

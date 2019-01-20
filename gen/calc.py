@@ -994,6 +994,7 @@ entry = {
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
         lambda log_offers: validate_true_false(log_offers),
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
+        lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1112,7 +1113,8 @@ entry = {
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
-        'mesos_cni_root_dir_persist': 'false'
+        'mesos_cni_root_dir_persist': 'false',
+        'enable_mesos_input_plugin': 'false'
     },
     'must': {
         'fault_domain_enabled': 'false',
