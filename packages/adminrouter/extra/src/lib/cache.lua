@@ -7,7 +7,7 @@ local util = require "util"
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
 --
--- Values assigned to these variable need to fufil following condition:
+-- Values assigned to these variable need to fulfil following condition:
 --
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
