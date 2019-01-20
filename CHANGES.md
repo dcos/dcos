@@ -2,6 +2,10 @@
 
 ### Notable changes
 
+* Expose Public IP (DCOS_OSS-4514)
+
+* Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
+
 ### Breaking changes
 
 ### Fixed and improved
@@ -14,7 +18,10 @@
 
 * Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
 ### Security Updates
+
 
 ## DC/OS 1.12.1
 
