@@ -1,5 +1,7 @@
 import uuid
 
+import test_helpers
+
 __maintainer__ = 'Gilbert88'
 __contact__ = 'core-team@mesosphere.io'
 
@@ -287,6 +289,45 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
                                  'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 307'
                     }
                 }
+            },
+            {
+                'name': 'container2',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}]
+    }
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
+
+
+def test_if_ucr_pods_can_be_deployed_with_non_root_user(dcos_api_session):
+    """Marathon pods inside ucr deployment integration test.
+
+    This test verifies that a marathon ucr pod can be launched with a
+    non-root user. We do not need to run this test for strict mode since
+    pod is launched with non-root user (i.e., nobody) by default for
+    strict mode.
+    """
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('No need to test non-root pod for strict mode')
+
+    test_uuid = uuid.uuid4().hex
+    pod_definition = {
+        'id': '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'container1',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
+                'exec': {'command': {'shell': 'test `id -un` = nobody'}},
+                'user': 'nobody'
             },
             {
                 'name': 'container2',
