@@ -153,9 +153,9 @@ def _dump_diagnostics(request, dcos_api_session):
 
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
+        creation_start = datetime.datetime.now()
         last_datapoint = {
             'time': None,
-            'start': None,
             'value': 0
         }
 
@@ -177,7 +177,7 @@ def _dump_diagnostics(request, dcos_api_session):
         log.info('\nWait for diagnostics job to complete')
         diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
 
-        duration = last_datapoint['time'] - last_datapoint['start']
+        duration = last_datapoint['time'] - creation_start
         log.info('\nDiagnostis bundle took {} to generate'.format(duration))
 
         log.info('\nWait for diagnostics report to become available')
