@@ -1,4 +1,5 @@
 {
+  "requires": ["ncurses"],
   "single_source" : {
       "kind": "url_extract",
       "url": "https://binaries.cockroachdb.com/cockroach-v2.0.7.src.tgz",

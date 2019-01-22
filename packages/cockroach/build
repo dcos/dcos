@@ -19,7 +19,6 @@ add-apt-repository ppa:ubuntu-toolchain-r/test
 # cockroachdb requires gcc 6.0+
 apt-get -y update
 apt-get install -y gcc-6 g++-6 cpp-6 \
-    libncurses-dev \
     nodejs yarn
 
 update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
@@ -37,6 +36,11 @@ tar -C /usr/local -xzf golang.tar.gz
 rm golang.tar.gz
 
 cd /pkg/src/cockroach
+
+# go-libedit requries `ncurses` library. We need to replace `cgo` flags so that
+# go compiler passes path to DCOS included ncurses library.
+sed -i 's/LDFLAGS: -lncurses/LDFLAGS: -L\/opt\/mesosphere\/active\/ncurses\/lib -ltinfo -lncurses/g' src/github.com/cockroachdb/cockroach/vendor/github.com/knz/go-libedit/unix/editline_unix.go
+sed -i 's/CFLAGS: -Wno-unused-result/CFLAGS: -Wno-unused-result -I\/opt\/mesosphere\/active\/ncurses\/include -I\/opt\/mesosphere\/active\/ncurses\/include\/ncurses/g' src/github.com/cockroachdb/cockroach/vendor/github.com/knz/go-libedit/unix/editline_unix.go
 
 # Build the cockroach binary.
 # We need to set CC_PATH and CXX_PATH becuase the build in the teamcity is not
