@@ -3,7 +3,7 @@ DcosApiSession object that will be injected into the pytest 'dcos_api_session' f
 via the make_session_fixture() method
 """
 
-from dcos_test_utils import dcos_api, helpers
+from dcos_test_utils import dcos_api
 from test_helpers import get_expanded_config
 
 
@@ -16,7 +16,6 @@ def make_session_fixture():
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
     dcos_api_session = dcos_api.DcosApiSession(
-        auth_user=dcos_api.DcosUser(helpers.CI_CREDENTIALS),
         exhibitor_admin_password=exhibitor_admin_password,
         **args)
     dcos_api_session.wait_for_dcos()
