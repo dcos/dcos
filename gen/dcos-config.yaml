@@ -106,6 +106,7 @@ package:
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
       DCOS_NET_IPV6={{ enable_ipv6 }}
+      DCOS_NET_CLUSTER_IDENTITY={{ dcos_net_cluster_identity }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -1359,6 +1360,10 @@ package:
       [[inputs.processes]]
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Collect statistics about itself
+      [[inputs.internal]]
+        ## If true, collect telegraf memory stats.
+        collect_memstats = true
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -1386,7 +1391,9 @@ package:
           "evqueue",
           "registrar",
           "allocator",
-       ]
+        ]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-mesos"
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1422,32 +1429,6 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
-  - path: /etc_master/telegraf/telegraf.d/master.conf
-    content: |
-      # Additional Telegraf config for masters
-      # Telegraf plugin for gathering metrics from mesos
-      [[inputs.mesos]]
-        # The interval at which to collect metrics
-        interval = "60s"
-        # Timeout, in ms.
-        timeout = 30000
-        # A list of Mesos masters.
-        masters = ["http://$DCOS_NODE_PRIVATE_IP:5050"]
-        # Master metrics groups to be collected.
-        master_collections = [
-          "resources",
-          "master",
-          "agents",
-          "frameworks",
-          "framework_offers",
-          "tasks",
-          "messages",
-          "evqueue",
-          "registrar",
-          "allocator",
-        ]
-        ## The user agent to send with requests
-        user_agent = "Telegraf-mesos"
       # Reads 'mntr' health checks from one or many zookeeper servers
       [[inputs.zookeeper]]
         ## An array of addresses to gather stats about. Specify an ip or hostname

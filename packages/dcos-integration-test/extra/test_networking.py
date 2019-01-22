@@ -4,10 +4,10 @@ import contextlib
 import enum
 import json
 import logging
+import subprocess
 import threading
 import uuid
 from collections import deque
-from subprocess import check_output
 
 import pytest
 import requests
@@ -393,7 +393,7 @@ def test_if_dcos_l4lb_disabled(dcos_api_session):
     '''Test to make sure dcos_l4lb is disabled'''
     if lb_enabled():
         pytest.skip('Load Balancer enabled')
-    data = check_output(['/usr/bin/env', 'ip', 'rule'])
+    data = subprocess.check_output(['/usr/bin/env', 'ip', 'rule'])
     # dcos-net creates this ip rule: `9999: from 9.0.0.0/8 lookup 42`
     # We check it doesn't exist
     assert str(data).find('9999') == -1
@@ -646,3 +646,17 @@ def enum2str(value):
 
 def net2str(value, ipv6):
     return enum2str(value) if not ipv6 else 'ipv6'
+
+
+def test_dcos_net_cluster_identity(dcos_api_session):
+    cluster_id = 'minuteman'  # default
+
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config['dcos_net_cluster_identity'] == 'true':
+        with open('/var/lib/dcos/cluster-id') as f:
+            cluster_id = "'{}'".format(f.readline().rstrip())
+
+    argv = ['sudo', '/opt/mesosphere/bin/dcos-net-env', 'eval', 'erlang:get_cookie().']
+    cookie = subprocess.check_output(argv, stderr=subprocess.STDOUT).decode('utf-8').rstrip()
+
+    assert cluster_id == cookie, "cluster_id: {}, cookie: {}".format(cluster_id, cookie)

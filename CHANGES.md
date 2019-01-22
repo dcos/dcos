@@ -43,9 +43,16 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Expose Public IP (DCOS_OSS-4514)
 
+* Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
+
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
 * Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
 
-* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667) 
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667)
+
+* Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
+
 
 ### Breaking changes
 
@@ -72,6 +79,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
 * Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
 ### Notable changes
 
