@@ -17,25 +17,17 @@ STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
 
 
-def test_metrics_agents_ping(dcos_api_session):
-    """ Test that the metrics service is up on masters.
+def test_metrics_ping(dcos_api_session):
+    """ Test that the metrics service is up on master and agents.
     """
-    for agent in dcos_api_session.slaves:
-        response = dcos_api_session.metrics.get('/ping', node=agent)
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        'agent.'
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-    for agent in dcos_api_session.public_slaves:
-        response = dcos_api_session.metrics.get('/ping', node=agent)
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
-        assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
-
-
-@pytest.mark.supportedwindows
-def test_metrics_masters_ping(dcos_api_session):
-    for master in dcos_api_session.masters:
-        response = dcos_api_session.metrics.get('/ping', node=master)
+    for node in nodes:
+        response = dcos_api_session.metrics.get('/ping', node=node)
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
@@ -54,13 +46,14 @@ def get_metrics_prom(dcos_api_session, node):
 
 
 def test_metrics_agents_prom(dcos_api_session):
-    for agent in dcos_api_session.slaves:
-        get_metrics_prom(dcos_api_session, agent)
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-
-def test_metrics_masters_prom(dcos_api_session):
-    for master in dcos_api_session.masters:
-        get_metrics_prom(dcos_api_session, master)
+    for node in nodes:
+        get_metrics_prom(dcos_api_session, node)
 
 
 @contextlib.contextmanager
@@ -205,27 +198,14 @@ def test_metrics_node(dcos_api_session):
         assert response.status_code == 200
         return response
 
-    # private agents
-    for agent in dcos_api_session.slaves:
-        response = wait_for_node_response(agent)
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
 
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
-            response.status_code, response.content)
-        assert expected_datapoint_response(response.json())
-        assert expected_dimension_response(response.json())
-
-    # public agents
-    for agent in dcos_api_session.public_slaves:
-        response = wait_for_node_response(agent)
-
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
-            response.status_code, response.content)
-        assert expected_datapoint_response(response.json())
-        assert expected_dimension_response(response.json())
-
-    # masters
-    for master in dcos_api_session.masters:
-        response = wait_for_node_response(master)
+    for node in nodes:
+        response = wait_for_node_response(node)
 
         assert response.status_code == 200, 'Status code: {}, Content {}'.format(
             response.status_code, response.content)
