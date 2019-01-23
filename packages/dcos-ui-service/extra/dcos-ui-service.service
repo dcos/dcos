@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS UI Update Service
+Description=DC/OS UI Update Service: dcos ui service for updating the ui
 
 [Service]
 Restart=always
