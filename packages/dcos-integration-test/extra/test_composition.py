@@ -21,11 +21,24 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
-        return subprocess.check_output(['sudo', 'docker', 'version', '-f', component]).decode('utf-8').rstrip()
+        return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
+                .decode('utf-8')
+                .rstrip()
+                )
+
+    try:
+        docker_client = _docker_info('{{.Client.Version}}')
+    except subprocess.TimeoutExpired:
+        docker_client = "Error: docker call timed out"
+
+    try:
+        docker_server = _docker_info('{{.Server.Version}}')
+    except subprocess.TimeoutExpired:
+        docker_server = "Error: docker call timed out"
 
     cluster_environment = {
-        "docker_client_version": _docker_info('{{.Client.Version}}'),
-        "docker_server_version": _docker_info('{{.Server.Version}}'),
+        "docker_client_version": docker_client,
+        "docker_server_version": docker_server,
         "system_platform": platform.platform(),
         "system_platform_system": platform.system(),
         "system_platform_release": platform.release(),
