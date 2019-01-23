@@ -391,6 +391,36 @@ class TestServiceStateful:
         assert len(r_reqs) == 1
         header_is_absent(r_reqs[0]['headers'], 'Authorization')
 
+    def test_if_service_request_does_not_pass_auth_header_to_service(
+        self, master_ar_process_pertest, mocker, valid_user_header
+    ):
+        # Remove the data from Mesos and Marathon mocks w.r.t. resolved service
+        mocker.send_command(endpoint_id='http://127.0.0.1:8080',
+                            func_name='set_apps_response',
+                            aux_data={"apps": []})
+        mocker.send_command(endpoint_id='http://127.0.0.2:5050',
+                            func_name='set_frameworks_response',
+                            aux_data=[SCHEDULER_FWRK_ALWAYSTHERE_NOWEBUI])
+        mocker.send_command(endpoint_id='http://127.0.0.1:8123',
+                            func_name='set_srv_response',
+                            aux_data=SCHEDULER_SRV_ALWAYSTHERE_DIFFERENTPORT)
+
+        mocker.send_command(endpoint_id='http://127.0.0.15:16001',
+                            func_name='record_requests')
+
+        generic_correct_upstream_dest_test(
+            master_ar_process_pertest,
+            valid_user_header,
+            '/service/scheduler-alwaysthere/foo/bar/',
+            "http://127.0.0.15:16001"
+            )
+
+        r_reqs = mocker.send_command(endpoint_id='http://127.0.0.15:16001',
+                                     func_name='get_recorded_requests')
+
+        assert len(r_reqs) == 1
+        header_is_absent(r_reqs[0]['headers'], 'Authorization')
+
     def test_if_no_services_in_cluster_case_is_handled(
             self, master_ar_process_pertest, mocker, valid_user_header):
         # Remove the data from ALL backends:
