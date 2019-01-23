@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS UI Service: service for DC/OS UI
+Description=DC/OS UI Update Service
 
 [Service]
 Restart=always
