@@ -21,6 +21,7 @@ export JAVA_HOME="$(find /opt/mesosphere/packages -type d -name java--*)/usr/jav
 # during the Maven packaging step.
 cd /pkg/src/exhibitor
 ./gradlew install
+./gradlew :exhibitor-core:install
 ./gradlew :exhibitor-standalone:install
 ./gradlew :exhibitor-standalone:publishToMavenLocal
 ./gradlew -b exhibitor-standalone/src/main/resources/buildscripts/standalone/gradle/build.gradle shadowJar
