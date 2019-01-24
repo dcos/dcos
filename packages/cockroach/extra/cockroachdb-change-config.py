@@ -57,20 +57,26 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
 
     Relevant JIRA ticket: https://jira.mesosphere.com/browse/DCOS-20352
     """
-    command = [
-        '/opt/mesosphere/active/cockroach/bin/cockroach',
-        'zone',
-        'set',
-        '.default',
-        '--insecure',
-        '--host={}'.format(my_internal_ip),
-        '-f',
-        '-'
-        ]
-    config_text = 'num_replicas: %s' % (num_replicas, )
-    log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
-    subprocess.run(command, input=config_text.encode('ascii'))
-    log.info('Command returned')
+
+    def _set_replicas_for_zone(zone: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'zone',
+            'set',
+            zone,
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-f',
+            '-'
+            ]
+        config_text = 'num_replicas: %s' % (num_replicas, )
+        log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
+        subprocess.run(command, input=config_text.encode('ascii'))
+        log.info('Command returned')
+
+    zones = ['.default', '.liveness', '.meta']
+    for zone in zones:
+        _set_replicas_for_zone(zone=zone)
 
 
 def get_expected_master_node_count() -> int:
