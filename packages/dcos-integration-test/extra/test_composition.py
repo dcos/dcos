@@ -16,9 +16,15 @@ __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-45174',
+    reason='test',
+    since='2018-11-20',
+)
 @pytest.mark.first
 @pytest.mark.supportedwindows
 def test_dcos_cluster_is_up(dcos_api_session):
+    assert False
     def _docker_info(component):
         # sudo is required for non-coreOS installs
         return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
