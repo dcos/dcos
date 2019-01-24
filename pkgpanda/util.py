@@ -197,7 +197,7 @@ def download_atomic(out_filename, url, work_dir):
     tmp_filename = out_filename + '.tmp'
     try:
         download(tmp_filename, url, work_dir)
-        os.rename(tmp_filename, out_filename)
+        shutil.move(tmp_filename, out_filename)
     except FetchError:
         try:
             os.remove(tmp_filename)
