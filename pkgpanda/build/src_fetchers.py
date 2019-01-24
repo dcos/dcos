@@ -258,7 +258,7 @@ def _strip_first_path_component(path):
     for entry in contents:
         old_path = os.path.join(top_level_dir, entry)
         new_path = os.path.join(path, entry)
-        os.rename(old_path, new_path)
+        shutil.move(old_path, new_path)
 
     os.rmdir(top_level_dir)
 
