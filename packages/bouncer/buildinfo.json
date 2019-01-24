@@ -4,7 +4,7 @@
     "bouncer": {
       "kind": "git",
       "git": "git@github.com:dcos/bouncer.git",
-      "ref": "325c4a68c2d241aa066726217a04df48266f6dfb",
+      "ref": "c2a2ac589c89c8139761e9194cc7b773d7fd8b7a",
       "ref_origin": "mh/cockroach-2.0"
     }
   },
