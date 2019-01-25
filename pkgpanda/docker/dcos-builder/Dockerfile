@@ -4,6 +4,7 @@ MAINTAINER help@dcos.io
 RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
+  autopoint \
   cmake \
   cpp \
   curl \

@@ -9,12 +9,12 @@ import shutil
 import socketserver
 import stat
 import subprocess
+import tarfile
 import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
-from shutil import rmtree, which
-from subprocess import check_call
+from shutil import rmtree
 from typing import List
 
 import requests
@@ -218,10 +218,8 @@ def extract_tarball(path, target):
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         make_directory(target)
 
-        if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
-        else:
-            check_call(['tar', '-xf', path, '-C', target])
+        with tarfile.open(name=str(path), mode='r') as tar:
+            tar.extractall(path=str(target), numeric_owner=True)
 
     except:
         # If there are errors, we can't really cope since we are already in an error state.
@@ -353,20 +351,19 @@ def expect_fs(folder, contents):
         raise ValueError("Invalid type {0} passed to expect_fs".format(type(contents)))
 
 
+def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
+    tar_info.uid = 0
+    tar_info.gid = 0
+    return tar_info
+
+
 def make_tar(result_filename, change_folder):
-    if is_windows:
-        tar_cmd = ["bsdtar"]
-    else:
-        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
-    if which("pxz"):
-        tar_cmd += ["--use-compress-program=pxz", "-cf"]
-    else:
-        if is_windows:
-            tar_cmd += ["-cjf"]
-        else:
-            tar_cmd += ["-cJf"]
-    tar_cmd += [result_filename, "-C", change_folder, "."]
-    check_call(tar_cmd)
+    # In the past we used bzip2 on Windows here. At the time of writing there is no
+    # test which fails on Windows. If this fails due to lzma not being
+    # available check liblzma linking on the DC/OS python package or consider
+    # using bzip2 instead.
+    with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
+        tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
