@@ -149,7 +149,7 @@ class Systemd:
 
         for unit_name in self.unit_names(self.__unit_directory):
             systemd_file_path = os.path.join(self.__base_systemd, unit_name)
-            os.rename(systemd_file_path + self.new_unit_suffix, systemd_file_path)
+            shutil.move(systemd_file_path + self.new_unit_suffix, systemd_file_path)
 
     @staticmethod
     def unit_names(unit_dir):
@@ -488,7 +488,7 @@ class Repository:
         remove_directory(tmp_path)
 
         fetcher(id, tmp_path)
-        os.rename(tmp_path, pkg_path)
+        shutil.move(tmp_path, pkg_path)
         return True
 
     def remove(self, id):
@@ -983,7 +983,7 @@ class Install:
             for active in active_names:
                 old_path = active + ".old"
                 if os.path.exists(active):
-                    os.rename(active, old_path)
+                    shutil.move(active, old_path)
 
         record_state({"stage": "move_new"})
 
@@ -992,7 +992,7 @@ class Install:
         # TODO(cmaloney): Alert for any failures here.
         for active in active_names:
             new_path = active + extension
-            os.rename(new_path, active)
+            shutil.move(new_path, active)
 
         if not self.__skip_systemd_dirs:
             self.systemd.activate_new_unit_files()

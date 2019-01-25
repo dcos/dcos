@@ -505,6 +505,14 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
+      # from the IP address (which is currently determined by an IP detect command set
+      # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
+      # that the hostname is set to the IP address as reported by the IP detect script.
+      # There are environments where hostname lookup and DNS are unavailable (Azure,
+      # on-prem environments, etc.), which apparently used to cause problems with a
+      # number of our frameworks in the past, since they often depend on the Mesos
+      # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
       MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32|disk:32
@@ -552,6 +560,14 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_agent_log_file }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
+      # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
+      # from the IP address (which is currently determined by an IP detect command set
+      # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
+      # that the hostname is set to the IP address as reported by the IP detect script.
+      # There are environments where hostname lookup and DNS are unavailable (Azure,
+      # on-prem environments, etc.), which apparently used to cause problems with a
+      # number of our frameworks in the past, since they often depend on the Mesos
+      # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       MESOS_IMAGE_PROVIDERS=docker
@@ -1371,6 +1387,8 @@ package:
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1394,6 +1412,8 @@ package:
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1508,6 +1528,8 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1526,6 +1548,8 @@ package:
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1626,6 +1650,8 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1644,6 +1670,8 @@ package:
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)

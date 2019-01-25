@@ -19,7 +19,7 @@ Packages are declared in the [package store](../../packages) where they can be o
 
 ## Building the Package
 ### Developing Packages
-When building a release, `pkgpanda` is only called through its library. However, there is a CLI which is very helpful for developing and debugging packages. To setup pkgpanda locally, be sure docker is installed and able to run without sudo, then run the `./prep_local` script in the root directory (python virtualenv will be required). Finally, make sure the dcos-builder image has been prepped locally by doing `cd pkgpanda/build/docker/dcos-builder/ && docker build -t dcos/dcos-builder:dcos-builder_dockerdir-latest .` Right now, this is handled apart of the release scripting, not pkgpanda.
+When building a release, `pkgpanda` is only called through its library. However, there is a CLI which is very helpful for developing and debugging packages. To setup pkgpanda locally, be sure docker is installed and able to run without sudo, then run the `./prep_local` script in the root directory (python virtualenv will be required). Finally, make sure the dcos-builder image has been prepped locally by doing `cd pkgpanda/docker/dcos-builder/ && docker build -t dcos/dcos-builder:dcos-builder_dockerdir-latest .` Right now, this is handled apart of the release scripting, not pkgpanda.
 
 As soon as `./prep_local` finishes, the `mkpanda` command will be available to use. With this, you can navigate to a specific package directory and simply run `mkpanda`. This will instruct pkgpanda to look at the given package, evaluate its dependency list, build those if necessary, and then finally build the chosen package.
 
