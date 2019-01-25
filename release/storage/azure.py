@@ -35,9 +35,7 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
         resp = None
         try:
             resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
-        except (azure.common.AzureConflictHttpError,
-                azure.common.AzureException,
-                azure.common.AzureMissingResourceHttpError):
+        except (azure.common.AzureException, azure.common.AzureMissingResourceHttpError):
             # Cancel the past copy, make a new copy
             properties = self.blob_service.get_blob_properties(self.container, destination_path)
             assert properties.id
@@ -45,6 +43,9 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
 
             # Try the copy again
             resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
+        except azure.common.AzureConflictHttpError:
+            pass
+
         # Since we're copying inside of one bucket the copy should always be
         # synchronous and successful.
         assert resp.status == 'success'
