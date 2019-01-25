@@ -1,8 +1,7 @@
-From b4b363a7f9ea76b98a6fad1f486f2d873563b9a8 Mon Sep 17 00:00:00 2001
+From 406baa060b5d5f7e1e703f9c20705b2a7bea72d8 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:03 -0800
-Subject: [PATCH 13/14] Changed master to hold subscribers in a circular
- buffer.
+Subject: [PATCH] Changed master to hold subscribers in a circular buffer.
 
 This adds a flag (--max_operator_event_stream_subscribers) to the
 master which controls how many active subscribers on the Master's
@@ -15,20 +14,20 @@ option of lowering this flag.
 
 Review: https://reviews.apache.org/r/69307/
 ---
- docs/configuration/master.md |  16 ++++
- src/master/constants.hpp     |   4 +
+ docs/configuration/master.md |  16 +++++
+ src/master/constants.hpp     |   4 ++
  src/master/flags.cpp         |  11 +++
  src/master/flags.hpp         |   1 +
- src/master/master.cpp        |  17 +++-
+ src/master/master.cpp        |  17 ++++-
  src/master/master.hpp        |   6 +-
- src/tests/api_tests.cpp      | 167 +++++++++++++++++++++++++++++++++++
+ src/tests/api_tests.cpp      | 167 +++++++++++++++++++++++++++++++++++++++++++
  7 files changed, 217 insertions(+), 5 deletions(-)
 
 diff --git a/docs/configuration/master.md b/docs/configuration/master.md
-index f290e377b..48ffe3822 100644
+index 883bc61..5319f7f 100644
 --- a/docs/configuration/master.md
 +++ b/docs/configuration/master.md
-@@ -444,6 +444,22 @@ Maximum number of completed tasks per framework to store in memory. (default: 10
+@@ -448,6 +448,22 @@ Maximum number of completed tasks per framework to store in memory. (default: 10
    </td>
  </tr>
  
@@ -52,7 +51,7 @@ index f290e377b..48ffe3822 100644
    <td>
      --max_unreachable_tasks_per_framework=VALUE
 diff --git a/src/master/constants.hpp b/src/master/constants.hpp
-index 76ad0c3b1..b0ab9187b 100644
+index 76ad0c3..b0ab918 100644
 --- a/src/master/constants.hpp
 +++ b/src/master/constants.hpp
 @@ -91,6 +91,10 @@ constexpr double RECOVERY_AGENT_REMOVAL_PERCENT_LIMIT = 1.0; // 100%.
@@ -67,10 +66,10 @@ index 76ad0c3b1..b0ab9187b 100644
  constexpr size_t DEFAULT_MAX_COMPLETED_FRAMEWORKS = 50;
  
 diff --git a/src/master/flags.cpp b/src/master/flags.cpp
-index 6ad53ed44..96ba3c59a 100644
+index 38ba888..e76acd6 100644
 --- a/src/master/flags.cpp
 +++ b/src/master/flags.cpp
-@@ -572,6 +572,17 @@ mesos::internal::master::Flags::Flags()
+@@ -578,6 +578,17 @@ mesos::internal::master::Flags::Flags()
        "Currently there is no support for multiple HTTP framework\n"
        "authenticators.");
  
@@ -89,7 +88,7 @@ index 6ad53ed44..96ba3c59a 100644
        "max_completed_frameworks",
        "Maximum number of completed frameworks to store in memory.",
 diff --git a/src/master/flags.hpp b/src/master/flags.hpp
-index 4a260155b..c29cebf7b 100644
+index 4a26015..c29cebf 100644
 --- a/src/master/flags.hpp
 +++ b/src/master/flags.hpp
 @@ -90,6 +90,7 @@ public:
@@ -101,10 +100,10 @@ index 4a260155b..c29cebf7b 100644
    size_t max_completed_tasks_per_framework;
    size_t max_unreachable_tasks_per_framework;
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 51ad910d7..56189807e 100644
+index 1ec273b..0f7a84b 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -324,7 +324,7 @@ Master::Master(
+@@ -326,7 +326,7 @@ Master::Master(
      detector(_detector),
      authorizer(_authorizer),
      frameworks(flags),
@@ -113,7 +112,7 @@ index 51ad910d7..56189807e 100644
      authenticator(None()),
      metrics(new Metrics(*this)),
      electedTime(None())
-@@ -12147,7 +12147,9 @@ void Master::Subscribers::Subscriber::send(
+@@ -12141,7 +12141,9 @@ void Master::Subscribers::Subscriber::send(
  void Master::exited(const id::UUID& id)
  {
    if (!subscribers.subscribed.contains(id)) {
@@ -124,7 +123,7 @@ index 51ad910d7..56189807e 100644
      return;
    }
  
-@@ -12171,7 +12173,16 @@ void Master::subscribe(
+@@ -12165,7 +12167,16 @@ void Master::subscribe(
               exited(http.streamId);
             }));
  
@@ -143,7 +142,7 @@ index 51ad910d7..56189807e 100644
        Owned<Subscribers::Subscriber>(
            new Subscribers::Subscriber{http, principal}));
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 4118502a4..150e791de 100644
+index 4118502..150e791 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -1999,7 +1999,9 @@ private:
@@ -167,7 +166,7 @@ index 4118502a4..150e791de 100644
  
    Subscribers subscribers;
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index b42628ac9..9d61ff59d 100644
+index b42628a..9d61ff5 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -36,6 +36,7 @@
@@ -352,5 +351,5 @@ index b42628ac9..9d61ff59d 100644
  // `GET_QUOTA` call, after we set quota resources through `SET_QUOTA` call.
  TEST_P(MasterAPITest, GetQuota)
 -- 
-2.17.0
+2.5.1
 
