@@ -51,4 +51,5 @@ exec $PKG_PATH/marathon/bin/marathon \
     -J-XX:+PrintGCTimeStamps \
     --master zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos \
     --mesos_leader_ui_url "/mesos" \
+    --metrics_statsd --metrics_statsd_host "$STATSD_UDP_HOST" --metrics_statsd_port "$STATSD_UDP_PORT" \
     --default_accepted_resource_roles "${MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES}"
