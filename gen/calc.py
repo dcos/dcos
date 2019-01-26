@@ -1025,6 +1025,7 @@ entry = {
         validate_dcos_overlay_network,
         lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
         validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
@@ -1071,6 +1072,7 @@ entry = {
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
         lambda log_offers: validate_true_false(log_offers),
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
+        lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1124,6 +1126,7 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
         'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
@@ -1192,7 +1195,8 @@ entry = {
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
-        'mesos_cni_root_dir_persist': 'false'
+        'mesos_cni_root_dir_persist': 'false',
+        'enable_mesos_input_plugin': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',
