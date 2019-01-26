@@ -34,6 +34,8 @@ Format of the entries must be.
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
+* Include additional container metrics if provided (DCOS_OSS-4624)
+
 ### Security Updates
 
 
