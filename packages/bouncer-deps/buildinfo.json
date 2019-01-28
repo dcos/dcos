@@ -39,13 +39,13 @@
     },
     "sqlalchemy": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/e2/0a/05b7d13618ad41c108a6c2b886af83bf9bb7e35f8951227abb18b1330745/SQLAlchemy-1.2.14.tar.gz",
-      "sha1": "7e7260c3886ff633bbf6ffbcee3a394a7e520145"
+      "url": "https://files.pythonhosted.org/packages/c6/52/73d1c92944cd294a5b165097038418abb6a235f5956d43d06f97254f73bf/SQLAlchemy-1.2.17.tar.gz",
+      "sha1": "0aa3388617a876f8b8e22eda7d347455a44973ee"
     },
     "sqlalchemy-utils": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/fa/cd/cf58d3a95a619262f0f52eedc707d143b6ada636ed24f6765544c049fdf9/SQLAlchemy-Utils-0.33.8.tar.gz",
-      "sha1": "b1e398f693b81506e64109ccb873a263219fb882"
+      "url": "https://files.pythonhosted.org/packages/fe/8b/a68f81076e9a2729675253228f43986914f0510078c86f14f6cd51dd3f01/SQLAlchemy-Utils-0.33.11.tar.gz",
+      "sha1": "e10ac4957637a67d433afde01032654a914c00a8"
     },
     "mako": {
       "kind": "url_extract",
@@ -69,8 +69,8 @@
     },
     "cockroachdb-python": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/00/1c/cbbeab7ecdd5ecf1213785bacf9cec05b8b5b49f2a1a84954a3deaf0acf2/cockroachdb-0.1.0.tar.gz",
-      "sha1": "679408a97802e9a4c8c79c6866eee8074f63eab0"
+      "url": "https://files.pythonhosted.org/packages/3b/9a/2d73ea47a3c276a41ddd21d3b607320bdbc95575b483a7276f63aba08acd/cockroachdb-0.3.0.tar.gz",
+      "sha1": "7a5e14930eaaf974b5382c00d59e7f420eb893bd"
     }
   },
   "username": "dcos_bouncer",
