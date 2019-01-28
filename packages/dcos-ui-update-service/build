@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p "$PKG_PATH"/bin
-mv "/pkg/src/dcos-ui-update-service/dcos-ui-update-service-1976d7e1d41307b71841c555fd08573c63bc80b0" "$PKG_PATH"/bin/dcos-ui-update-service
+mv "/pkg/src/dcos-ui-update-service/dcos-ui-update-service-a9427251c1c87483779810c64eaa7dd4b17b7510" "$PKG_PATH"/bin/dcos-ui-update-service
 chmod +x "$PKG_PATH"/bin/dcos-ui-update-service
 
 # Create the service file
@@ -13,3 +13,7 @@ cp /pkg/extra/dcos-ui-update-service.service  "$service"
 socket="$PKG_PATH/dcos.target.wants_master/dcos-ui-update-service.socket"
 mkdir -p "$(dirname "$socket")"
 cp /pkg/extra/dcos-ui-update-service.socket "$socket"
+
+# Create service pre-start file
+cp /pkg/extra/dcos-ui-update-service-pre-start.sh "$PKG_PATH"/dcos-ui-update-service-pre-start.sh
+chmod +x "$PKG_PATH"/dcos-ui-update-service-pre-start.sh
