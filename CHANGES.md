@@ -36,6 +36,8 @@ Format of the entries must be.
 
 * Include additional container metrics if provided (DCOS_OSS-4624)
 
+* Tighten permissions on ZooKeeper directories (DCOS-47687)
+
 ### Security Updates
 
 
