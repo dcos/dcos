@@ -1186,19 +1186,6 @@ class TestCacheMarathon:
         self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
-    def test_app_without_task_ports(
-            self, nginx_class, mocker, valid_user_header):
-        app = self._scheduler_alwaysthere_app()
-        app["tasks"][0].pop("ports", None)
-
-        filter_regexp = {
-            "Cannot find ports for app '{}'".format(app["id"]):
-                SearchCriteria(1, True),
-        }
-
-        self._assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, valid_user_header)
-
     def test_app_without_task_specified_port_idx(
             self, nginx_class, mocker, valid_user_header):
         app = self._scheduler_alwaysthere_app()

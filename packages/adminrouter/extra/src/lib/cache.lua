@@ -137,6 +137,8 @@ local function request(url, accept_404_reply, auth_token)
 end
 
 local function is_container_network(app)
+  -- Networking mode for a Marathon application is defined in
+  -- app["container"]["networks"][1]["mode"].
     local container = app["container"]
     local network = app["networks"][1]
     return container and network and (network["mode"] == "container")
@@ -217,6 +219,16 @@ local function fetch_and_store_marathon_apps(auth_token)
           )
 
        local host_or_ip = task["host"] --take host  by default
+       -- In "container" networking mode the task/container will get its own IP
+       -- (ip-per-container).
+       -- The task will be reachable:
+       -- 1) through the container port defined in portMappings.
+       -- If the app is using DC/OS overlay network
+       -- it will be also reachable on
+       -- 2) task["host"]:task["ports"][portIdx] (<private agent IP>:<hostPort>).
+       -- However, in case of CNI networks (e.g. Calico), the task might not be
+       -- reachable on task["host"]:task["ports"][portIdx], so we choose option 2)
+       -- for routing.
        if is_container_network(app) then
           ngx.log(ngx.NOTICE, "app '" .. appId .. "' is in a container network")
           -- override with the ip of the task
@@ -234,10 +246,6 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
-       -- task["ports"] will contain the host ports made available to the task:
-       -- see https://mesosphere.github.io/marathon/docs/ports.html#definitions,
-       -- note on the hostPort definitions.
-       -- AR, however, needs the container port to route the request to.
        -- In "container" mode we find the container port out from portMappings array
        -- for the case when container port is fixed (non-zero value specified).
        -- When container port is specified as 0 it will be set the same as the host port:
@@ -282,8 +290,6 @@ local function fetch_and_store_marathon_apps(auth_token)
        end
 
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
-       ngx.log(ngx.INFO, "Routing app " .. appId .. " to " .. url)
-
        svcApps[svcId] = {
          scheme=scheme,
          url=url,
