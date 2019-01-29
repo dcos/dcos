@@ -356,6 +356,36 @@ def expect_fs(folder, contents):
 def make_tar(result_filename, change_folder):
     if is_windows:
         tar_cmd = ["bsdtar"]
+    elif platform.system() == "Darwin":
+        # macOS is not a supported platform.
+        # However, it is useful to have this here to allow developers who use
+        # macOS to be able to run unit tests.
+        #
+        # By default, tests which call this function fail on macOS.
+        # This is because the "tar" which ships with macOS is not compatible
+        # with GNU tar.
+        # GNU tar flags are used here.
+        #
+        # macOS ships with bsdtar.
+        # This means that we could use the Windows path with no installation
+        # required.
+        #
+        # GNU tar is also available on macOS if users install it.
+        # In particular "brew install gnu-tar" installs GNU tar as gtar.
+        # It is also possible to set
+        # PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" so that tar points
+        # to gtar.
+        # However, that is considered to be an unfriendly requirement on
+        # developers.
+        #
+        # In the future, it may be best to support all platforms with one code
+        # path.
+        # This might be possible using Python's tarfile module.
+        # However, at the time of writing, the compression mechanisms used here
+        # (e.g. lzma) require packages which are not installed on clusters.
+        #
+        # For now, we require GNU tar to be available on macOS.
+        tar_cmd = ["gtar", "--numeric-owner", "--owner=0", "--group=0"]
     else:
         tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
     if which("pxz"):
