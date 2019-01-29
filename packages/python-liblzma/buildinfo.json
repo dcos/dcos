@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://files.pythonhosted.org/packages/17/48/5292ade507dafe573360560ba53783395587dc42eb32b347feb2ac70fc6b/pyliblzma-0.5.3.tar.bz2",
+    "sha1": "6240ec6f830f35f4087b8926a95c2074320b7ed5"
+  }
+}
