@@ -432,7 +432,7 @@ def test_ip_per_container(dcos_api_session):
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
 
 
-@pytest.mark.parametrize('host_port', [9080, 0, None])
+@pytest.mark.parametrize('host_port', [9080, 0])
 def test_app_with_container_mode(dcos_api_session, host_port):
     '''Testing the case when a non-zero container port is specified
        in Marathon app definition with networking mode 'container'.
@@ -464,7 +464,9 @@ def test_app_with_container_mode(dcos_api_session, host_port):
     #  packages/adminrouter/extra/src/includes/http/master.conf#L21
     adminrouter_default_refresh = 25 + 5 + buffer_time
     app_id = app_definition['id']
+
     app_instances = app_definition['instances']
+    app_definition['constraints'] = [['hostname', 'UNIQUE']]
 
     # For the routing check to work, two conditions must be true:
     #
@@ -483,7 +485,7 @@ def test_app_with_container_mode(dcos_api_session, host_port):
         dcos_api_session.marathon.wait_for_app_deployment(
             app_id=app_id,
             app_instances=app_instances,
-            check_health=True,
+            check_health=False,
             ignore_failed_tasks=False,
             timeout=1200,
         )
