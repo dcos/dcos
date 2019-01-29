@@ -234,34 +234,24 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
-       local ports = task["ports"] --task host port mapping by default
        -- task["ports"] will contain the host ports made available to the task:
        -- see https://mesosphere.github.io/marathon/docs/ports.html#definitions,
        -- note on the hostPort definitions.
        -- AR, however, needs the container port to route the request to.
        -- In "container" mode we find the container port out from portMappings array
        -- for the case when container port is fixed (non-zero value specified).
-       -- When container port is specified as 0 it will be randomly assigned
-       -- by Marathon and the actual container port will be the same as the host port:
+       -- When container port is specified as 0 it will be set the same as the host port:
        -- https://mesosphere.github.io/marathon/docs/ports.html#random-port-assignment
        -- We do not override it with container port from the portMappings array
        -- in that case.
        -- In "container/bridge" and "host" networking modes we need to use the
        -- host port for routing (available via task's ports array)
        if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
-         ports = {}
-         local port_mappings = app["container"]["portMappings"] or {}
-          for _, port_mapping in ipairs(port_mappings) do
-             table.insert(ports, port_mapping["containerPort"])
-          end
-        end
-
-       if not ports then
-          ngx.log(ngx.NOTICE, "Cannot find ports for app '" .. appId .. "'")
-          goto continue
+         port = app["container"]["portMappings"][portIdx]["containerPort"]
+       else
+         port = task["ports"][portIdx]
        end
 
-       local port = ports[portIdx]
        if not port then
           ngx.log(ngx.NOTICE, "Cannot find port at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
           goto continue
@@ -292,6 +282,8 @@ local function fetch_and_store_marathon_apps(auth_token)
        end
 
        local url = scheme .. "://" .. host_or_ip .. ":" .. port
+       ngx.log(ngx.INFO, "Routing app " .. appId .. " to " .. url)
+
        svcApps[svcId] = {
          scheme=scheme,
          url=url,

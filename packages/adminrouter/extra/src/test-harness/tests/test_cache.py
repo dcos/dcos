@@ -948,7 +948,7 @@ class TestCacheMesosLeader:
 
 
 class TestCacheMarathon:
-    @pytest.mark.parametrize('host_port', ['12345', '0', None])
+    @pytest.mark.parametrize('host_port', [12345, 0, None])
     def test_app_with_container_networking_and_fixed_container_port(
             self, nginx_class, mocker, valid_user_header, host_port):
         # Testing the case when a non-zero container port is specified
@@ -961,7 +961,7 @@ class TestCacheMarathon:
             'mode': 'container',
             'name': 'samplenet'
         }]
-        if host_port:
+        if host_port is not None:
             app['container']['portMappings'] = [{'containerPort': 80, 'hostPort': host_port}]
         else:
             app['container']['portMappings'] = [{'containerPort': 80}]
@@ -984,7 +984,7 @@ class TestCacheMarathon:
             req_data = resp.json()
             assert req_data['endpoint_id'] == 'http://127.0.0.2:80'
 
-    @pytest.mark.parametrize('host_port', ['12345', '0', None])
+    @pytest.mark.parametrize('host_port', [12345, 0, None])
     def test_app_with_container_networking_and_random_container_port(
             self, nginx_class, mocker, valid_user_header, host_port):
         # Testing the case when container port is specified as 0
@@ -1002,7 +1002,7 @@ class TestCacheMarathon:
             'mode': 'container',
             'name': 'samplenet'
         }]
-        if host_port:
+        if host_port is not None:
             app['container']['portMappings'] = [{'containerPort': 0, 'hostPort': host_port}]
         else:
             app['container']['portMappings'] = [{'containerPort': 0}]
@@ -1033,7 +1033,7 @@ class TestCacheMarathon:
     def test_app_with_bridge_and_host_networking(
             self, nginx_class, mocker, valid_user_header, container_port, networking_mode):
         # Testing the cases when networking mode is either 'container' or 'host'.
-        # The host port can non-zero or 0. In the latter case Marathon will
+        # The host port can be non-zero or 0. In the latter case Marathon will
         # randomly choose the host port. For simplicity in this test we are
         # reusing port 16000 on 127.0.0.1 exposed by the mock server, as both
         # the fixed (non-zero) one and the one randomly chosen by Marathon.

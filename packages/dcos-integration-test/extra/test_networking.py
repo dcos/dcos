@@ -432,13 +432,13 @@ def test_ip_per_container(dcos_api_session):
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
 
 
-@pytest.mark.parametrize('host_port', [9080, 0])
-def test_app_with_container_mode(dcos_api_session, host_port):
+@pytest.mark.parametrize('host_port', [9999, 0])
+def test_app_with_container_mode_with_defined_container_port(dcos_api_session, host_port):
     '''Testing the case when a non-zero container port is specified
        in Marathon app definition with networking mode 'container'.
        It does not matter if the host port is fixed (non-zero),
-       randomly assigned by Marathon (0) or is not present at all:
-       Admin Router must route the request to the specified container port.
+       randomly assigned by Marathon (0): Admin Router must route the request
+       to the specified container port.
     '''
 
     app_definition, test_uuid = test_helpers.marathon_test_app(
