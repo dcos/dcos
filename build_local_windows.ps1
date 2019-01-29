@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 
 # Fail quickly if docker isn't working / up
-docker ps 2>&1 > $null
+docker ps 2>&1
 if ( $LASTEXITCODE -ne 0 ) {
     Write-Output "ERROR: Docker is not installed or not present in the PATH"
     exit -1
