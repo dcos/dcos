@@ -56,6 +56,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
 
 * Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
+* CockroachDB has been updated to version 2.0.7
 
 
 ### Breaking changes
