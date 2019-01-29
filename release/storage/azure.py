@@ -35,15 +35,29 @@ class AzureBlockBlobStorageProvider(AbstractStorageProvider):
         resp = None
         try:
             resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
-        except (azure.common.AzureConflictHttpError, azure.common.AzureException):
+        except (azure.common.AzureException, azure.common.AzureMissingResourceHttpError):
             # Cancel the past copy, make a new copy
-            properties = self.blob_service.get_blob_properties(self.container, destination_path)
-            assert properties.id
-            self.blob_service.abort_copy_blob(self.container, destination_path, properties.id)
+            # copy_blob returns a returns a copy operation properties object, including a copy ID can be used to check
+            # or abort the  copy operation.
 
-            # Try the copy again
-            resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
+            # copy_blob as per Azure is a best effort operation.
 
+            # If the previous copy failed due to HTTP Connection Error, we can abort it using copy.id and retry.
+            # Otherwise, we simply retry again.
+
+            try:
+                assert resp.id
+                self.blob_service.abort_copy_blob(self.container, destination_path, resp.id)
+            except AttributeError:
+                pass
+
+            try:
+                resp = self.blob_service.copy_blob(self.container, destination_path, az_blob_url)
+            except azure.common.AzureConflictHttpError:
+                # the resource name was already present,
+                # Our assumption is the initial error was due to HTTP connection hanging, and we ignore the
+                # AzureConflictHttpError
+                pass
         # Since we're copying inside of one bucket the copy should always be
         # synchronous and successful.
         assert resp.status == 'success'

@@ -7,15 +7,7 @@ import yaml
 
 import gen
 import pkgpanda.util
-from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
-
-
-def validate_error_multikey(new_arguments, keys, message, unset=None):
-    assert gen.validate(arguments=make_arguments(new_arguments)) == {
-        'status': 'errors',
-        'errors': {key: {'message': message} for key in keys},
-        'unset': set() if unset is None else unset,
-    }
+from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
