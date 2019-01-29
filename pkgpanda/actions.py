@@ -196,11 +196,12 @@ def _start_dcos_target(block_systemd):
 def _get_package_list(package_list_id: str, repository_url: str) -> List[str]:
     package_list_url = repository_url + '/package_lists/{}.package_list.json'.format(package_list_id)
 
-    # TODO(klueska): On Windows there are issues with following a simple
-    # "delete-on-close" semantic, so we instead pass 'delete=False' when we
-    # create the temporary file and then make sure we delete it in all
-    # cases after it is no longer being used. We should wrap this in a
-    # helper function of some sort.
+    # TODO(klueska): On Windows, attempting to open a file that's already open
+    # will raise an exception. Since we must close a file after writing it
+    # before it can be read, `delete=True` renders the tempfile useless. We
+    # instead pass 'delete=False' when we create the temporary file and then
+    # make sure we delete it in all cases after it is no longer being used. We
+    # should wrap this in a helper function of some sort.
     with tempfile.NamedTemporaryFile(delete=False) as f:
         filename = f.name
     try:

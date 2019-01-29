@@ -25,7 +25,7 @@ $env:PYTHONUNBUFFERED="notempty"
 
 # Write a DC/OS Release tool configuration file which specifies where the build
 # should be published to. This default config makes the release tool push the
-# release to a folder in the current user's home directory.
+# release to c:/dcos-artifacts.
 if ( ! (Test-Path "dcos-release.config.yaml") ) {
 $config_yaml = 
 "storage: `
