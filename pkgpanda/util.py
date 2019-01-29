@@ -385,6 +385,8 @@ def make_tar(result_filename, change_folder):
         # (e.g. lzma) require packages which are not installed on clusters.
         #
         # For now, we require GNU tar to be available on macOS.
+        assert which('gtar'), 'Run "brew install gtar"'
+        assert which('xz'), 'Run "brew install xz"'
         tar_cmd = ["gtar", "--numeric-owner", "--owner=0", "--group=0"]
     else:
         tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
