@@ -13,6 +13,27 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+## DC/OS 1.12.3 (Next Release. Please Update News Entries in this Section).
+
+### Notable changes
+
+
+### Breaking changes
+
+
+### Fixed and improved
+
+* Include additional container metrics if provided (DCOS_OSS-4624)
+
+* Tighten permissions on ZooKeeper directories (DCOS-47687)
+
+
+
+### Security Updates
+
+
+
+## DC/OS 1.12.2
 
 ### Notable changes
 
@@ -33,10 +54,6 @@ Format of the entries must be.
 * Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
-
-* Include additional container metrics if provided (DCOS_OSS-4624)
-
-* Tighten permissions on ZooKeeper directories (DCOS-47687)
 
 ### Security Updates
 
