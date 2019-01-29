@@ -12,6 +12,7 @@
     "python-isodate",
     "python-jinja2",
     "python-jwt",
+    "python-lzma",
     "python-markupsafe",
     "python-passlib",
     "python-pyyaml",
