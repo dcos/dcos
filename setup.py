@@ -75,6 +75,7 @@ setup(
         'coloredlogs',
         'docopt',
         'passlib',
+        'prometheus_client',
         'py',
         'pytest',
         'pyyaml',
