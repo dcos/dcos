@@ -12,6 +12,7 @@ environment variables from the package.
 try:
     import grp
 except ImportError:
+    # It is not possible to import grp on Windows.
     pass
 import json
 import os
