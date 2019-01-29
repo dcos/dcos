@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 import retrying
+from prometheus_client.parser import text_string_to_metric_families
 
 from test_helpers import get_expanded_config
 
@@ -117,13 +118,14 @@ def test_task_metrics_metadata(dcos_api_session):
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
-            for line in response.text.splitlines():
-                if '#' in line:
-                    continue
-                if 'task_name="marathon-user"' in line:
-                    assert 'service_name="marathon"' in line
-                    # check for whitelisted label
-                    assert 'DCOS_SERVICE_NAME="marathon-user"' in line
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[1].get('task_name') == 'marathon-user':
+                        assert sample[1].get('service_name') == 'marathon'
+                        # check for whitelisted label
+                        assert sample[1].get('DCOS_SERVICE_NAME') == 'marathon-user'
+                        return
+            raise Exception('Expected metrics not found')
         check_metrics_metadata()
 
 
@@ -132,23 +134,20 @@ def test_executor_metrics_metadata(dcos_api_session):
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
         pytest.skip('Framework disabled for strict mode')
-
     with deploy_and_cleanup_dcos_package(dcos_api_session, 'hello-world', '2.2.0-0.42.2', 'hello-world'):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_executor_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
-            for line in response.text.splitlines():
-                if '#' in line:
-                    continue
-                # ignore metrics from hello-world task started by marathon by checking
-                # for absence of 'marathon' string.
-                if 'cpus_nr_periods' in line and 'marathon' not in line:
-                    assert 'service_name="hello-world"' in line
-                    assert 'task_name=""' in line  # this is an executor, not a task
-                    # hello-world executors can be named "hello" or "world"
-                    assert ('executor_name="hello"' in line or 'executor_name="world"' in line)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'cpus_nr_periods' and sample[1].get('service_name') == 'hello-world':
+                        assert sample[1].get('task_name') == ''
+                        # hello-world executors can be named "hello" or "world"
+                        assert (sample[1].get('executor_name') == 'hello' or sample[1].get('executor_name') == 'world')
+                        return
+            raise Exception('Expected metrics not found')
         check_executor_metrics_metadata()
 
 
