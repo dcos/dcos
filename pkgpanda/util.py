@@ -438,8 +438,8 @@ def write_string(filename, data):
     It also prevents us from creating or truncating a file before we fail to
     write data to it because of low disk space.
 
-    If no file already exists at ``filename``, the new file is created with
-    permissions 0o644.
+    If no file already exists at ``filename``, the new file is created and
+    made world-readable.
     """
     prefix = os.path.basename(filename)
     tmp_file_dir = os.path.dirname(realpath(filename))
