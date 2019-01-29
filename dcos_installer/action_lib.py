@@ -528,6 +528,7 @@ yum_install curl
 yum_install git
 yum_install unzip
 yum_install xz
+yum_install xz-devel
 yum_install ipset
 
 if [[ "${install_docker}" == 'true' ]]; then

@@ -358,7 +358,7 @@ def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
 
 
 def make_tar(result_filename, change_folder):
-    with tarfile.open(name=str(result_filename), mode='w:gz') as tar:
+    with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
         tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
 
 
