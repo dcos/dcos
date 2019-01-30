@@ -18,6 +18,7 @@ RUN apt-get -qq update && apt-get -y install \
   libapr1-dev \
   libc6-dev \
   libcurl4-openssl-dev \
+  liblzma-dev \
   libnl-3-dev \
   libnl-genl-3-dev \
   libpcre++-dev \

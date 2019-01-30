@@ -725,24 +725,16 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
-def calculate__superuser_credentials_given(
+def validate_superuser_credentials_not_partially_given(
         superuser_service_account_uid, superuser_service_account_public_key):
     pair = (superuser_service_account_uid, superuser_service_account_public_key)
 
-    if all(pair):
-        return 'true'
-
-    if not any(pair):
-        return 'false'
-
-    # `calculate_` functions are not supposed to error out, but
-    # in this case here (multi-arg input) this check cannot
-    # currently be replaced by a `validate_` function.
-    raise AssertionError(
-        "'superuser_service_account_uid' and "
-        "'superuser_service_account_public_key' "
-        "must both be empty or both be non-empty"
-    )
+    if any(pair) and not all(pair):
+        raise AssertionError(
+            "'superuser_service_account_uid' and "
+            "'superuser_service_account_public_key' "
+            "must both be empty or both be non-empty"
+        )
 
 
 def calculate__superuser_service_account_public_key_json(
@@ -1013,6 +1005,7 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
+        validate_superuser_credentials_not_partially_given,
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
@@ -1176,7 +1169,6 @@ entry = {
         'superuser_service_account_uid': '',
         'superuser_service_account_public_key': '',
         '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
-        '_superuser_credentials_given': calculate__superuser_credentials_given,
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,

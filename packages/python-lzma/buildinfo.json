@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://files.pythonhosted.org/packages/03/d8/10ef072c3cd4301a65a1b762b09eefa02baf8da23b9ea77ebe9546499975/pylzma-0.5.0.tar.gz",
+    "sha1": "c5812542e7d08a5d7d64d9cf416e6158a28f5e2f"
+  }
+}
