@@ -35,7 +35,7 @@ mkdir -p /pkg/src/github.com/dcos
 mv /pkg/src/dcos-metrics /pkg/src/github.com/dcos/dcos-metrics
 
 pushd /pkg/src/github.com/dcos/dcos-metrics
-make build
+make rawbuild
 popd
 
 mkdir -p $PKG_PATH/bin
@@ -44,7 +44,7 @@ mv /pkg/src/github.com/dcos/dcos-metrics/build/collector/dcos-metrics-collector-
 # We build this for integration tests
 mv /pkg/src/github.com/dcos/dcos-metrics/build/statsd-emitter/dcos-metrics-statsd-emitter-* $PKG_PATH/bin/statsd-emitter
 
-# Create the service file for all roles 
+# Create the service file for all roles
 agent_service="$PKG_PATH/dcos.target.wants_slave/dcos-metrics-agent.service"
 mkdir -p "$(dirname "$agent_service")"
 cp /pkg/extra/dcos-metrics-agent.service "$agent_service"
