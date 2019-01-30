@@ -19,7 +19,7 @@ setup(
         'pycodestyle==2.2.0',
         'flake8==3.3.0',
         'flake8-import-order==0.9.2',
-        'pep8-naming'
+        'pep8-naming==0.7.0'
     ],
     entry_points={
         'flake8.extension': [
