@@ -1,7 +1,7 @@
 {
   "requires": ["openssl"],
   "environment": {
-    "PYTHONPATH": "/opt/mesosphere/lib/python3.6/site-packages",
+    "PYTHONPATH": "/opt/mesosphere/lib/python3.6/lib-dynload:/opt/mesosphere/lib/python3.6/site-packages",
     "PYTHONUNBUFFERED": "true"
   },
   "sources": {
