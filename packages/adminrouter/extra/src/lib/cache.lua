@@ -265,6 +265,8 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
+       -- Details on how Admin Router interprets DCOS_SERVICE_REWRITE_REQUEST_URLS label:
+       -- https://github.com/dcos/dcos/blob/master/packages/adminrouter/extra/src/README.md#disabling-url-path-rewriting-for-selected-applications
        local do_rewrite_req_url = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
        if do_rewrite_req_url == false or do_rewrite_req_url == 'false' then
           ngx.log(ngx.INFO, "DCOS_SERVICE_REWRITE_REQUEST_URLS for app '" .. appId .. "' set to 'false'")
@@ -277,6 +279,8 @@ local function fetch_and_store_marathon_apps(auth_token)
           do_rewrite_req_url = true
        end
 
+       -- Details on how Admin Router interprets DCOS_SERVICE_REQUEST_BUFFERING label:
+       -- https://github.com/dcos/dcos/blob/master/packages/adminrouter/extra/src/README.md#disabling-request-buffering-for-selected-applications
        local do_request_buffering = labels["DCOS_SERVICE_REQUEST_BUFFERING"]
        if do_request_buffering == false or do_request_buffering == 'false' then
           ngx.log(ngx.INFO, "DCOS_SERVICE_REQUEST_BUFFERING for app '" .. appId .. "' set to 'false'")

@@ -949,7 +949,7 @@ class TestCacheMesosLeader:
 
 class TestCacheMarathon:
     @pytest.mark.parametrize('host_port', [12345, 0, None])
-    def test_app_with_container_networking_and_fixed_container_port(
+    def test_app_with_container_networking_and_defined_container_port(
             self, nginx_class, mocker, valid_user_header, host_port):
         # Testing the case when a non-zero container port is specified
         # in Marathon app definition with networking mode 'container'.
@@ -990,10 +990,8 @@ class TestCacheMarathon:
         # Testing the case when container port is specified as 0
         # in Marathon app definition with networking mode 'container'.
         # This means that the Marathon app container port is randomly assigned
-        # by Marathon. The chosen container port number is same as hostPort
-        # and is available through task["ports"] array. We are reusing port
-        # 16000 on 127.0.0.1 exposed by the mock server, as the one randomly
-        # chosen by Marathon.
+        # by Marathon. We are reusing port 16000 on 127.0.0.1 exposed by the
+        # mock server, as the one randomly chosen by Marathon.
         # It does not matter if the host port is fixed (non-zero),
         # randomly assigned by Marathon (0) or is not present at all:
         # Admin Router must route the request to the specified container port.
