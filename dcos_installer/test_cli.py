@@ -24,12 +24,6 @@ def test_set_arg_parser():
     assert parser.action == 'web'
     parser = parse_args(['--genconf'])
     assert parser.action == 'genconf'
-    parser = parse_args(['--preflight'])
-    assert parser.action == 'preflight'
-    parser = parse_args(['--postflight'])
-    assert parser.action == 'postflight'
-    parser = parse_args(['--deploy'])
-    assert parser.action == 'deploy'
     parser = parse_args(['--validate-config'])
     assert parser.action == 'validate-config'
     parser = parse_args(['--hash-password', 'foo'])

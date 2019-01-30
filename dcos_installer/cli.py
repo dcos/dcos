@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import json
 import logging
 import os
@@ -11,15 +10,10 @@ from passlib.hash import sha512_crypt
 import dcos_installer.config
 import dcos_installer.constants
 import gen.calc
-from dcos_installer import action_lib, backend
+from dcos_installer import backend
 from dcos_installer.config import Config
-from dcos_installer.installer_analytics import InstallerAnalytics
-from dcos_installer.prettyprint import PrettyPrint, print_header
-
-from ssh.utils import AbstractSSHLibDelegate
 
 log = logging.getLogger(__name__)
-installer_analytics = InstallerAnalytics()
 
 
 def setup_logger(options):
@@ -43,45 +37,6 @@ def setup_logger(options):
     log.debug("Logger set to DEBUG")
 
 
-class CliDelegate(AbstractSSHLibDelegate):
-    def on_update(self, future, callback_called):
-        chain_name, result_object, host = future.result()
-        callback_called.set_result(True)
-        log.debug('on_update executed for {}'.format(chain_name))
-
-    def on_done(self, name, result, host_status=None):
-        print_header('STAGE {}'.format(name))
-
-    def prepare_status(self, name, nodes):
-        pass
-
-
-def run_loop(action, options):
-    assert callable(action)
-    loop = asyncio.get_event_loop()
-
-    print_header('START {}'.format(action.__name__))
-    try:
-        config = dcos_installer.config.Config(dcos_installer.constants.CONFIG_PATH)
-        cli_delegate = CliDelegate()
-        result = loop.run_until_complete(action(config, block=True, async_delegate=cli_delegate, options=options))
-        pp = PrettyPrint(result)
-        pp.stage_name = action.__name__
-        pp.beautify('print_data')
-
-    finally:
-        loop.close()
-    exitcode = 0
-    for host_result in result:
-        for command_result in host_result:
-            for host, process_result in command_result.items():
-                if process_result['returncode'] != 0:
-                    exitcode += 1
-    print_header('ACTION {} COMPLETE'.format(action.__name__))
-    pp.print_summary()
-    return exitcode
-
-
 def log_warn_only():
     """Drop to warning level and down to get around gen.generate() log.info
     output"""
@@ -99,6 +54,11 @@ def log_warn_only():
         fmt='%(message)s',
         isatty=True
     )
+
+
+def print_header(string):
+    delimiter = '====>'
+    log.warning('{:5s} {:6s}'.format(delimiter, string))
 
 
 def print_validation_errors(messages):
@@ -152,25 +112,6 @@ dispatch_dict_simple = {
         'Generate AWS Advanced AWS CloudFormation templates using the provided config')
 }
 
-dispatch_dict_aio = {
-    'preflight': (
-        action_lib.run_preflight,
-        'EXECUTING_PREFLIGHT',
-        'Execute the preflight checks on a series of nodes.'),
-    'install-prereqs': (
-        action_lib.install_prereqs,
-        'EXECUTING INSTALL PREREQUISITES',
-        'Install the cluster prerequisites.'),
-    'deploy': (
-        action_lib.install_dcos,
-        'EXECUTING DC/OS INSTALLATION',
-        'Execute a deploy.'),
-    'postflight': (
-        action_lib.run_postflight,
-        'EXECUTING POSTFLIGHT',
-        'Execute postflight checks on a series of nodes.')
-}
-
 
 # TODO(cmaloney): This should only be in enterprise / isn't useful in open currently.
 def do_hash_password(password):
@@ -216,22 +157,6 @@ def dispatch(args):
         if action[1] is not None:
             print_header(action[1])
         sys.exit(action[0](args))
-
-    # Dispatches CLI options which are installer actions ran through AIO event loop
-    if args.action in dispatch_dict_aio:
-        action = dispatch_dict_aio[args.action]
-        if do_validate_config(args) != 0:
-            sys.exit(1)
-        if action[1] is not None:
-            print_header(action[1])
-        errors = run_loop(action[0], args)
-        if not args.cli_telemetry_disabled:
-            installer_analytics.send(
-                action=args.action,
-                install_method="cli",
-                num_errors=errors,
-            )
-        sys.exit(1 if errors > 0 else 0)
 
     print("Internal Error: No known way to dispatch {}".format(args.action))
     sys.exit(1)
@@ -293,12 +218,6 @@ def get_argument_parser():
         help=argparse.SUPPRESS)
 
     parser.add_argument(
-        '--offline',
-        action='store_true',
-        help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
-    )
-
-    parser.add_argument(
         '--cli-telemetry-disabled',
         action='store_true',
         help='Disable the CLI telemetry gathering for SegmentIO')
@@ -313,9 +232,6 @@ def get_argument_parser():
 
     # Add all arg modes
     for name, value in dispatch_dict_simple.items():
-        add_mode(name, value[2])
-
-    for name, value in dispatch_dict_aio.items():
         add_mode(name, value[2])
 
     parser.set_defaults(action='genconf')
