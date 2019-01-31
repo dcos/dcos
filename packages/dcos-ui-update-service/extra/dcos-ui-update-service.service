@@ -1,0 +1,23 @@
+[Unit]
+Description=DC/OS UI Update Service: dcos ui update service for updating the ui
+
+[Service]
+Restart=always
+RestartSec=5
+
+PermissionsStartOnly=True
+
+User=dcos_ui_update_service
+
+SupplementaryGroups=dcos_adminrouter
+
+EnvironmentFile=/opt/mesosphere/environment
+
+ExecStartPre=/bin/bash -c "mkdir -p /opt/mesosphere/active/dcos-ui-update-service/versions"
+ExecStartPre=/bin/bash -c "chmod 775 /opt/mesosphere/active/dcos-ui-update-service/versions"
+ExecStartPre=/bin/bash -c "chown root:dcos_ui_update_service /opt/mesosphere/active/dcos-ui-update-service/versions"
+
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-ui-update-service
+ExecStart=/opt/mesosphere/bin/dcos-ui-update-service -listen-addr="/run/dcos/dcos-ui-update-service.sock" -default-ui-path="/opt/mesosphere/active/dcos-ui/usr" -asset-prefix="/" -versions-root="/opt/mesosphere/active/dcos-ui-update-service/versions"
+
+Sockets=dcos-ui-update-service.socket
