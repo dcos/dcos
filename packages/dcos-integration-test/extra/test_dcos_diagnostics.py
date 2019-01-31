@@ -477,7 +477,11 @@ def _download_bundle_from_master(dcos_api_session, master_index):
                              'var/lib/dcos/exhibitor/conf/zoo.cfg.gz', '5050-quota.json'
                              ] + expected_common_files
 
-    expected_agent_common_files = ['5051-containers.json']
+    expected_agent_common_files = [
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ-12.output.gz',
+        '5051-containers.json',
+        'docker_--version-13.output.gz',
+    ]
 
     # for agent host
     expected_agent_files = ['dcos-mesos-slave.service.gz'
