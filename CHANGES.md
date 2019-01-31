@@ -86,6 +86,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
