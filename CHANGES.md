@@ -19,6 +19,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
+
 ### Security Updates
 
 
