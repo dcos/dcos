@@ -464,6 +464,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
                              'proc/cpuinfo.gz',
                              'proc/meminfo.gz',
                              'proc/self/mountinfo.gz',
+                             'optmesospherebindetect_ip.output.gz',
                              ]
 
     # these files are expected to be in archive for a master host
