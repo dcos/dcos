@@ -27,6 +27,8 @@ Format of the entries must be.
 
 * Tighten permissions on ZooKeeper directories (DCOS-47687)
 
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
+
 
 
 ### Security Updates
