@@ -41,6 +41,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Metronome supports hybrid cloud
 
+* Marathon metrics are now collected by Telegraf (DCOS-47693)
+
 * Expose Public IP (DCOS_OSS-4514)
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
@@ -83,6 +85,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
 * Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
+
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
 
 ### Notable changes
 
