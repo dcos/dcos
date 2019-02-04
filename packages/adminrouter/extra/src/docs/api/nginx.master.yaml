@@ -44,7 +44,7 @@ routes:
     group: Root
     matcher: path
     description: DC/OS GUI
-    file: /var/lib/dcos/ui-update-service/dist/ui
+    file: /var/lib/dcos/dcos-ui-update-service/dist/ui
     path: /
   '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)':
     group: Agent

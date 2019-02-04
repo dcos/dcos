@@ -1772,8 +1772,8 @@ package:
     content: |
       DCOS_UI_UPDATE_LISTEN_ADDR=/run/dcos/dcos-ui-update-service.sock
       DCOS_UI_UPDATE_DEFAULT_UI_PATH=/opt/mesosphere/active/dcos-ui/usr
-      DCOS_UI_UPDATE_STATE_PATH=/var/lib/dcos/ui-update-service/dist
-      DCOS_UI_UPDATE_VERSIONS_ROOT=/var/lib/dcos/ui-update-service/versions
-      DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/ui-update-service/dist
-      DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/ui-update-service/dist/ui
-      DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/ui-update-service/dist/new-ui
+      DCOS_UI_UPDATE_STATE_PATH=/var/lib/dcos/dcos-ui-update-service
+      DCOS_UI_UPDATE_VERSIONS_ROOT=/var/lib/dcos/dcos-ui-update-service/versions
+      DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
+      DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
+      DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
