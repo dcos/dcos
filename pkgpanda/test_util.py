@@ -302,10 +302,15 @@ def test_validate_username():
     bad('dcos3_foobar')
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not have a root group")
+@pytest.mark.skipif(
+    pkgpanda.util.is_windows,
+    reason="Windows does not have Unix groups",
+)
 def test_validate_group():
-    # assuming linux distributions have `root` group.
-    UserManagement.validate_group('root')
+    # We import grp here so that this module can be imported on Windows.
+    import grp
+    group_name_which_exists = grp.getgrall()[0].gr_name
+    UserManagement.validate_group(group_name_which_exists)
 
     with pytest.raises(ValidationError):
         UserManagement.validate_group('group-should-not-exist')

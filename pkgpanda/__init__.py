@@ -9,20 +9,11 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-try:
-    import grp
-except ImportError:
-    pass
 import json
 import os
 import os.path
-try:
-    import pwd
-except ImportError:
-    pass
 import re
 import shutil
-import sys
 import tempfile
 from collections import Iterable
 from itertools import chain
@@ -38,8 +29,8 @@ from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory, write_json, write_string)
 
 if not is_windows:
-    assert 'grp' in sys.modules
-    assert 'pwd' in sys.modules
+    import grp
+    import pwd
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
