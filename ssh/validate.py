@@ -45,6 +45,7 @@ source = Source({
         'ssh_key_path': 'genconf/ssh_key',
         'agent_list': '[]',
         'public_agent_list': '[]',
+        'ssh_user': 'centos',
         'ssh_port': '22',
         'process_timeout': '120',
         'ssh_parallelism': '20'
