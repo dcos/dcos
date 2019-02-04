@@ -67,6 +67,7 @@
     "python-kazoo",
     "python-markupsafe",
     "python-passlib",
+    "python-prometheus_client",
     "python-pycparser",
     "python-pyyaml",
     "python-requests",
