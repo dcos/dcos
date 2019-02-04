@@ -16,6 +16,11 @@ export BOOTSTRAP_VARIANT={variant}
 # ash exec inside busybox doesn't have an equivalent to `-a` letting us set argv0
 # directly, and python also doesn't have a way of setting it, so we pass argv0
 # out of line and have it picked up by the installer
-export INSTALLER_ARGV0="dcos_generate_config.sh"
+if [[ -z $BOOTSTRAP_VARIANT ]];
+then
+  export INSTALLER_ARGV0="dcos_generate_config.sh"
+else
+  export INSTALLER_ARGV0="dcos_generate_config.${{BOOTSTRAP_VARIANT}}.sh"
+fi
 
 exec /opt/mesosphere/bin/python3 /opt/mesosphere/bin/dcos_installer "$@"
