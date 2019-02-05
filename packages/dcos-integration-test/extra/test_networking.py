@@ -5,6 +5,7 @@ import json
 import logging
 import subprocess
 import threading
+import time
 import uuid
 from collections import deque
 
@@ -419,6 +420,65 @@ def test_ip_per_container(dcos_api_session):
         app_port = app_definition['container']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
+
+
+@pytest.mark.parametrize('host_port', [9999, 0])
+def test_app_with_container_mode_with_defined_container_port(dcos_api_session, host_port):
+    '''Testing the case when a non-zero container port is specified
+       in Marathon app definition with networking mode 'container'.
+       It does not matter if the host port is fixed (non-zero),
+       randomly assigned by Marathon (0): Admin Router must route the request
+       to the specified container port.
+    '''
+
+    app_definition, test_uuid = test_helpers.marathon_test_app(
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+        container_type=marathon.Container.DOCKER,
+        network=marathon.Network.USER,
+        host_port=host_port)
+
+    dcos_service_name = uuid.uuid4().hex
+
+    app_definition['labels'] = {
+        'DCOS_SERVICE_NAME': dcos_service_name,
+        'DCOS_SERVICE_PORT_INDEX': '0',
+        'DCOS_SERVICE_SCHEME': 'http',
+    }
+
+    #  Arbitrary buffer time, accounting for propagation/processing delay.
+    buffer_time = 5
+
+    #  Cache refresh in Adminrouter takes 30 seconds at most.
+    #  CACHE_POLL_PERIOD=25s + valid=5s Nginx resolver DNS entry TTL
+    #  https://github.com/dcos/dcos/blob/cb9105ee537cc44cbe63cc7c53b3b01b764703a0/
+    #  packages/adminrouter/extra/src/includes/http/master.conf#L21
+    adminrouter_default_refresh = 25 + 5 + buffer_time
+    app_id = app_definition['id']
+    app_instances = app_definition['instances']
+    app_definition['constraints'] = [['hostname', 'UNIQUE']]
+
+    # For the routing check to work, two conditions must be true:
+    #
+    # 1. The application must be deployed, so that `/ping` responds with 200.
+    # 2. The Admin Router routing layer must not be using an outdated
+    #    version of the Nginx resolver cache.
+    #
+    # We therefore wait until these conditions have certainly been met.
+    # We wait for the Admin Router cache refresh first so that there is
+    # unlikely to be much double-waiting. That is, we do not want to be waiting
+    # for the cache to refresh when it already refreshed while we were waiting
+    # for the app to become healthy.
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=False):
+        time.sleep(adminrouter_default_refresh)
+        dcos_api_session.marathon.wait_for_app_deployment(
+            app_id=app_id,
+            app_instances=app_instances,
+            check_health=False,
+            ignore_failed_tasks=False,
+            timeout=1200,
+        )
+        r = dcos_api_session.get('/service/' + dcos_service_name + '/ping')
+    assert r.status_code == 200
 
 
 @retrying.retry(wait_fixed=2000,

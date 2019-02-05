@@ -50,7 +50,6 @@ SCHEDULER_APP_TEMPLATE = {
         "volumes": [],
         "docker": {
             "image": "bitnami/nginx:1.10.2-r0",
-            "network": "BRIDGE",
             "portMappings": [
                 {
                     "containerPort": 80,
@@ -72,6 +71,11 @@ SCHEDULER_APP_TEMPLATE = {
             "forcePullImage": False
         }
     },
+    "networks": [
+        {
+            "mode": "container/bridge"
+        }
+    ],
     "healthChecks": [
         {
             "gracePeriodSeconds": 300,
