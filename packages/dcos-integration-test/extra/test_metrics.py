@@ -1072,3 +1072,22 @@ def test_pod_application_metrics(dcos_api_session):
             data['instances'][0]['agentHostname'],
             data['instances'][0]['agentId'],
             marathon_pod_config['containers'][0]['name'], 2)
+
+
+def test_fault_domain(dcos_api_session):
+    """Check that fault domain tags are present in metrics on each node type.
+    Skip if no fault domain is set in this test scenario."""
+    expanded_config = get_expanded_config()
+    if expanded_config['fault_domain_enabled'] == 'false':
+        pytest.skip('fault domain is not set')
+
+    nodes = [dcos_api_session.masters[0]]
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
+
+    for node in nodes:
+        response = get_metrics_prom(dcos_api_session, node)
+        assert 'fault_domain_zone' in response.text, 'Fault domain zone tag was not set.'
+        assert 'fault_domain_region' in response.text, 'Fault domain region tag was not set.'
