@@ -138,8 +138,9 @@ end
 
 local function is_container_network(app)
   -- Networking mode for a Marathon application is defined in
-  -- app["container"]["networks"][1]["mode"].
+  -- app["networks"][1]["mode"].
     local container = app["container"]
+    ngx.log(ngx.NOTICE, "APP: " .. cjson_safe.encode(app))
     local network = app["networks"][1]
     return container and network and (network["mode"] == "container")
 end
