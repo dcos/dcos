@@ -57,8 +57,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
 
-* CockroachDB has been updated to version 2.0.7
-
 
 ### Breaking changes
 
