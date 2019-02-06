@@ -301,13 +301,13 @@ routes:
     proxy:
       path: $upstream_url
     path: '@service_requnbuffered'
-  /package/:
+  /package/(?<package_path>.*):
     group: Package
-    matcher: path
+    matcher: regex
     description: Package Management
     proxy:
       path: $upstream_cosmos
-    path: /package/
+    path: /package/(?<package_path>.*)
   /pkgpanda/:
     group: Pkgpanda
     matcher: path
