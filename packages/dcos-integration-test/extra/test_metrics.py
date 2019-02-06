@@ -18,7 +18,8 @@ STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
 
 # tags added if a fault domain is present
-FAULT_DOMAIN_TAGS={'fault_domain_zone', 'fault_domain_region',}
+FAULT_DOMAIN_TAGS = {'fault_domain_zone', 'fault_domain_region'}
+
 
 def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set()):
     """Assert that tags contains only expected keys with nonempty values."""
@@ -441,7 +442,13 @@ def test_metrics_containers(dcos_api_session):
                 'dcos_cluster_name',
                 'host'
             }
-            check_tags(uptime_dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
+
+            # If fault domain is enabled, ensure that fault domain tags are present
+            expanded_config = get_expanded_config()
+            if expanded_config.get('fault_domain_enabled') == 'true':
+                expected_tag_names |= FAULT_DOMAIN_TAGS
+
+            check_tags(uptime_dp['tags'], expected_tag_names)
             assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
             assert uptime_dp['value'] > 0
 
@@ -1076,22 +1083,3 @@ def test_pod_application_metrics(dcos_api_session):
             data['instances'][0]['agentHostname'],
             data['instances'][0]['agentId'],
             marathon_pod_config['containers'][0]['name'], 2)
-
-
-def test_fault_domain(dcos_api_session):
-    """Check that fault domain tags are present in metrics on each node type.
-    Skip if no fault domain is set in this test scenario."""
-    expanded_config = get_expanded_config()
-    if expanded_config['fault_domain_enabled'] == 'false':
-        pytest.skip('fault domain is not set')
-
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
-
-    for node in nodes:
-        response = get_metrics_prom(dcos_api_session, node)
-        assert 'fault_domain_zone' in response.text, 'Fault domain zone tag was not set.'
-        assert 'fault_domain_region' in response.text, 'Fault domain region tag was not set.'
