@@ -18,9 +18,11 @@ STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
 
 
-def check_tags(tags: dict, expected_tag_names: set):
+def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set()):
     """Assert that tags contains only expected keys with nonempty values."""
-    assert set(tags.keys()) == expected_tag_names
+    keys = set(tags.keys())
+    assert keys & required_tag_names == required_tag_names, 'Not all required tags were set'
+    assert keys - required_tag_names - optional_tag_names == set(), 'Encountered unexpected tags'
     for tag_name, tag_val in tags.items():
         assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
 
