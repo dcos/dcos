@@ -17,6 +17,8 @@ METRICS_INTERVAL = 2 * 1000
 STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
 
+# tags added if a fault domain is present
+FAULT_DOMAIN_TAGS={'fault_domain_zone', 'fault_domain_region',}
 
 def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set()):
     """Assert that tags contains only expected keys with nonempty values."""
@@ -410,7 +412,7 @@ def test_metrics_containers(dcos_api_session):
                 if dp['name'].startswith('blkio.'):
                     # blkio stats have 'blkio_device' tags.
                     expected_tag_names.add('blkio_device')
-                check_tags(dp['tags'], expected_tag_names)
+                check_tags(dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
 
                 # Ensure all container ID's in the container/<id> endpoint are
                 # the same.
@@ -439,7 +441,7 @@ def test_metrics_containers(dcos_api_session):
                 'dcos_cluster_name',
                 'host'
             }
-            check_tags(uptime_dp['tags'], expected_tag_names)
+            check_tags(uptime_dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
             assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
             assert uptime_dp['value'] > 0
 
@@ -857,7 +859,7 @@ def test_standalone_container_metrics(dcos_api_session):
             'dcos_cluster_name',
             'host'
         }
-        check_tags(uptime_dp['tags'], expected_tag_names)
+        check_tags(uptime_dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
         assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
         assert uptime_dp['value'] > 0
 
@@ -986,7 +988,7 @@ def test_pod_application_metrics(dcos_api_session):
                     'dcos_cluster_name',
                     'host'
                 }
-                check_tags(uptime_dp['tags'], expected_tag_names)
+                check_tags(uptime_dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
                 assert uptime_dp['tags']['test_tag_key'] == 'test_tag_value', 'got {}'.format(uptime_dp)
                 assert uptime_dp['value'] > 0
 
@@ -1019,7 +1021,7 @@ def test_pod_application_metrics(dcos_api_session):
                     if dp['name'].startswith('blkio.'):
                         # blkio stats have 'blkio_device' tags.
                         expected_tag_names.add('blkio_device')
-                    check_tags(dp['tags'], expected_tag_names)
+                    check_tags(dp['tags'], expected_tag_names, FAULT_DOMAIN_TAGS)
 
                     # Ensure all container IDs in the response from the
                     # containers/<id> endpoint are the same.
