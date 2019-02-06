@@ -82,22 +82,32 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
                 log.error('Failed to load data into database `{}`.'.format(dbname))
                 raise
 
-    def _rename_database(oldname: str, newname: str) -> None:
+    def _replace_database(source: str, existing: str, backup: str) -> None:
+        transaction = '; '.join([
+            'BEGIN',
+            'SAVEPOINT cockroach_restart',
+            # iam -> iam_old
+            'ALTER DATABASE {} RENAME TO {}'.format(existing, backup),
+            # iam_new -> iam
+            'ALTER DATABASE {} RENAME TO {}'.format(source, existing),
+            'RELEASE SAVEPOINT cockroach_restart',
+            'COMMIT',
+        ])
         command = [
             '/opt/mesosphere/active/cockroach/bin/cockroach',
             'sql',
             '--insecure',
             '--host={}'.format(my_internal_ip),
             '-e',
-            'ALTER DATABASE {} RENAME to {}'.format(oldname, newname),
+            transaction,
             ]
-        msg = 'Rename database `{}` to `{}` via command `{}`'.format(
-            oldname, newname, ' '.join(command))
+        msg = 'Replace database `{}` to `{}` via command `{}`'.format(
+            source, existing, ' '.join(command))
         log.info(msg)
         try:
             subprocess.run(command, check=True)
         except CalledProcessError:
-            log.error('Failed to rename database `{}` -> `{}`.'.format(oldname, newname))
+            log.error('Failed to replace database `{}` -> `{}`.'.format(source, existing))
             raise
 
     def _drop_database(dbname: str) -> None:
@@ -137,25 +147,15 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
         _drop_database(newdbname)
         raise
 
-    # 3. Then rename the active `iam` database to `iam_old`.
+    # 3. In a single transaction replace original `iam` database with `iam_new`
+    #    and keep original `iam` as `iam_old`.
     try:
-        _rename_database(oldname=curdbname, newname=olddbname)
+        _replace_database(source=newdbname, existing=curdbname, backup=olddbname)
     except CalledProcessError:
-        # Renaming the existing database failed, so remove the 'iam_new' database
         _drop_database(newdbname)
         raise
 
-    # 4. Finally, rename the `iam_new` database to `iam`.
-    try:
-        _rename_database(oldname=newdbname, newname=curdbname)
-    except CalledProcessError:
-        # Renaming the new database failed, so rename the old one back and
-        # remove the 'iam_new' database
-        _rename_database(oldname=olddbname, newname=curdbname)
-        _drop_database(newdbname)
-        raise
-
-    # 5. Remove the original (old) database that isn't used anymore
+    # 4. Remove the original (old) database that isn't used anymore
     try:
         _drop_database(olddbname)
     except CalledProcessError:

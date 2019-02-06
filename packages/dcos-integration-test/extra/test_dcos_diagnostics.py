@@ -464,6 +464,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
                              'proc/cpuinfo.gz',
                              'proc/meminfo.gz',
                              'proc/self/mountinfo.gz',
+                             'optmesospherebindetect_ip.output.gz',
                              ]
 
     # these files are expected to be in archive for a master host
@@ -482,6 +483,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
         '5051-containers.json',
         '5051-overlay-agent_overlay.json',
         'var/log/mesos/mesos-agent.log.gz',
+        'docker_--version.output.gz',
     ]
 
     # for agent host

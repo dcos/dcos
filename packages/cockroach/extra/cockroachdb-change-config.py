@@ -57,20 +57,26 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
 
     Relevant JIRA ticket: https://jira.mesosphere.com/browse/DCOS-20352
     """
-    command = [
-        '/opt/mesosphere/active/cockroach/bin/cockroach',
-        'zone',
-        'set',
-        '.default',
-        '--insecure',
-        '--host={}'.format(my_internal_ip),
-        '-f',
-        '-'
-        ]
-    config_text = 'num_replicas: %s' % (num_replicas, )
-    log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
-    subprocess.run(command, input=config_text.encode('ascii'))
-    log.info('Command returned')
+
+    def _set_replicas_for_zone(zone: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'zone',
+            'set',
+            zone,
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-f',
+            '-'
+            ]
+        config_text = 'num_replicas: %s' % (num_replicas, )
+        log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
+        subprocess.run(command, input=config_text.encode('ascii'))
+        log.info('Command returned')
+
+    zones = ['.default', '.liveness', '.meta']
+    for zone in zones:
+        _set_replicas_for_zone(zone=zone)
 
 
 def get_expected_master_node_count() -> int:
@@ -101,8 +107,8 @@ def main() -> None:
 
     set_num_replicas(my_internal_ip, master_node_count)
 
-    # We are running CockroachDB v1.1.x so pass '1.1'.
-    set_cluster_version(my_internal_ip, '1.1')
+    # We are running CockroachDB v2.0.x so pass '2.0'.
+    set_cluster_version(my_internal_ip, '2.0')
 
 
 if __name__ == '__main__':

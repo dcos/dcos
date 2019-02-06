@@ -57,6 +57,7 @@ groups:
         - test_checks.py
         - test_composition.py
         - test_dcos_diagnostics.py
+        - test_exhibitor.py
     group_2:
         - test_dcos_log.py
         - test_endpoints.py
@@ -79,3 +80,4 @@ groups:
         - test_iam.py
         - test_iam_migration.py
         - test_legacy_user_management.py
+        - test_ui_update_service.py
