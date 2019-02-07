@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p "$PKG_PATH"/bin
-mv "/pkg/src/dcos-ui-update-service/dcos-ui-update-service-5907de00ebd741892ba676ae847bfb1c9de27357" "$PKG_PATH"/bin/dcos-ui-update-service
+mv "/pkg/src/dcos-ui-update-service/dcos-ui-update-service-afde1262ebf60aeb3b8431ad00d478d63633ae70" "$PKG_PATH"/bin/dcos-ui-update-service
 chmod +x "$PKG_PATH"/bin/dcos-ui-update-service
 
 # Create the service file
