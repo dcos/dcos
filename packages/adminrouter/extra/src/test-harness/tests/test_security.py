@@ -27,6 +27,5 @@ class TestRedirect:
 
         if resp.status_code in (301, 302, 303, 307):
             assert 'bad.host' not in resp.headers['Location']
-            assert resp.headers['Location'] == '//'
         else:
             assert resp.status_code == 200

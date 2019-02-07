@@ -5,6 +5,7 @@ import logging
 import os
 from contextlib import contextmanager
 from http import cookies
+from urllib.parse import urlparse
 
 import requests
 
@@ -65,7 +66,10 @@ def generic_no_slash_redirect_test(ar, path, code=301, headers=None):
     r = requests.get(url, allow_redirects=False, headers=headers)
 
     assert r.status_code == code
-    assert r.headers['Location'] == url + '/'
+    # Redirect has trailing slash added and can be absolute or relative
+    absolute = url + '/'
+    relative = urlparse(absolute).path
+    assert r.headers['Location'] in (absolute, relative)
 
 
 def generic_verify_response_test(
