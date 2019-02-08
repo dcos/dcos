@@ -75,9 +75,13 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
             assert state_response.status_code == 200
             state = state_response.json()
 
-            for framework in state['frameworks']:
-                if framework['name'] == framework_name:
-                    raise Exception('Framework {} still running'.format(framework_name))
+            # Rarely, the framework will continue to show up in 'frameworks' instead of
+            # 'completed_frameworks', even after teardown. To avoid this causing a test
+            # failure, if the framework continues to show up in 'frameworks', we instead
+            # check if there are any running tasks.
+            frameworks = {f['name']: f for f in state['frameworks']}
+            assert framework_name not in frameworks or len(
+                frameworks[framework_name]['tasks']) == 0, 'Framework {} still running'.format(framework_name)
         wait_for_package_teardown()
 
 
