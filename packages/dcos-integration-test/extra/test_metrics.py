@@ -235,16 +235,20 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
     finally:
         dcos_api_session.cosmos.uninstall_package(package_name, app_id=app_id)
 
-        # Retry for 15min for teardown completion
+        # Retry for 15 minutes for teardown completion
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=STD_WAITTIME)
         def wait_for_package_teardown():
             state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
             assert state_response.status_code == 200
             state = state_response.json()
 
-            for framework in state['frameworks']:
-                if framework['name'] == framework_name:
-                    raise Exception('Framework {} still running'.format(framework_name))
+            # Rarely, the framework will continue to show up in 'frameworks' instead of
+            # 'completed_frameworks', even after teardown. To avoid this causing a test
+            # failure, if the framework continues to show up in 'frameworks', we instead
+            # check if there are any running tasks.
+            frameworks = {f['name']: f for f in state['frameworks']}
+            assert framework_name not in frameworks or len(
+                frameworks[framework_name]['tasks']) == 0, 'Framework {} still running'.format(framework_name)
         wait_for_package_teardown()
 
 
