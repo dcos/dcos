@@ -128,16 +128,6 @@ routes:
       path: 'http://$backend/lashup/key'
       backend: dcos_net
     path: /navstar/lashup/key
-  /net:
-    group: DC/OS Net
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/net$
-        replacement: '$scheme://$http_host/net/'
-        type: permanent
-    path: /net
   /net/:
     group: DC/OS Net
     matcher: path
@@ -152,16 +142,6 @@ routes:
     proxy:
       path: $dcos_ui_update_service
     path: /dcos-ui-update-service/api(?<url>.*)
-  /exhibitor:
-    group: Exhibitor
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/exhibitor$
-        replacement: '$scheme://$http_host/exhibitor/'
-        type: permanent
-    path: /exhibitor
   /exhibitor/:
     group: Exhibitor
     matcher: path
@@ -216,16 +196,6 @@ routes:
         replacement: /$1
         type: break
     path: /cache/master/
-  /mesos:
-    group: Mesos
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/mesos$
-        replacement: '$scheme://$http_host/mesos/'
-        type: permanent
-    path: /mesos
   /mesos/:
     group: Mesos
     matcher: path
@@ -237,16 +207,6 @@ routes:
         replacement: /$1
         type: break
     path: /mesos/
-  /mesos_dns:
-    group: Mesos DNS
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/mesos_dns$
-        replacement: '$scheme://$http_host/mesos_dns/'
-        type: permanent
-    path: /mesos_dns
   /mesos_dns/:
     group: Mesos DNS
     matcher: path
