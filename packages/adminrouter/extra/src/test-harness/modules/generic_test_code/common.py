@@ -5,7 +5,7 @@ import logging
 import os
 from contextlib import contextmanager
 from http import cookies
-from urllib.parse import urlparse
+from urllib.parse import urljoin
 
 import requests
 
@@ -67,9 +67,8 @@ def generic_no_slash_redirect_test(ar, path, code=301, headers=None):
 
     assert r.status_code == code
     # Redirect has trailing slash added and can be absolute or relative
-    absolute = url + '/'
-    relative = urlparse(absolute).path
-    assert r.headers['Location'] in (absolute, relative)
+    absolute = urljoin(url, r.headers['Location'])
+    assert absolute == url + '/'
 
 
 def generic_verify_response_test(
@@ -318,7 +317,9 @@ def generic_location_header_during_redirect_is_adjusted_test(
     r = requests.get(url, allow_redirects=False, headers=headers)
 
     assert r.status_code == 307
-    assert r.headers['Location'] == location_expected
+    # if Location is relative, make it absolute
+    absolute = urljoin(url, r.headers['Location'])
+    assert absolute == location_expected
 
 
 def header_is_absent(headers, header_name):
