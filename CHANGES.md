@@ -29,7 +29,7 @@ Format of the entries must be.
 
 * Improve error message in case Docker is not running at start of installation (DCOS-15890)
 
-* * Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
+* Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
 
 * Telegraf: Fix a bug in the Mesos input plugin that could cause metrics to be mis-tagged (DCOS_OSS-4760)
 
