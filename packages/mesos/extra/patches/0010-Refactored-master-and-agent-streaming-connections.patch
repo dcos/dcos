@@ -1,4 +1,4 @@
-From 2ae174526cbcf02136acccccc8e278d96bd33b20 Mon Sep 17 00:00:00 2001
+From 6dcfe3fd2cbf2034883db2bc639c1b6b1c61f786 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:24 -0800
 Subject: [PATCH] Refactored master and agent streaming connections.

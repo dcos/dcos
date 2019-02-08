@@ -1,4 +1,4 @@
-From c2666e429be69bf34fe62acbf3bab813211c8d5a Mon Sep 17 00:00:00 2001
+From 6501c0b650f95e7ec6193d087d37d1e33fee1df8 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
 Subject: [PATCH] Logged request processing time for some endpoints.

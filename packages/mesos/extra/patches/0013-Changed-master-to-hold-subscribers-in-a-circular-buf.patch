@@ -1,4 +1,4 @@
-From 406baa060b5d5f7e1e703f9c20705b2a7bea72d8 Mon Sep 17 00:00:00 2001
+From 058932e3c9dc8fb129bf92dea1ccc5d6ba2104a3 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:03 -0800
 Subject: [PATCH] Changed master to hold subscribers in a circular buffer.

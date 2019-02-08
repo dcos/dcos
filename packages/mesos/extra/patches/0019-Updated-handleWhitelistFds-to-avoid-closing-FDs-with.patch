@@ -1,0 +1,46 @@
+From 72cabd1e945cb14359c78bd137e38730b6360a48 Mon Sep 17 00:00:00 2001
+From: Gilbert Song <songzihao1990@gmail.com>
+Date: Tue, 5 Feb 2019 23:05:52 -0800
+Subject: [PATCH] Updated handleWhitelistFds() to avoid closing FDs with
+ FD_CLOEXEC bit.
+
+Since this helper is only called right before exec in child process,
+and for those open FDs that is set with FD_CLOEXEC flag, they will
+be closed during exec, so that we could skip closing these FDs in
+the helper. The motivation of this change is to avoid whitelisting
+those FDs that have to survive until exec while we do not want to
+expose these FDs to user applications.
+
+(cherry picked from commit b757935037e962ebcd4329f6a567f93d666c2151)
+---
+ 3rdparty/libprocess/src/posix/subprocess.hpp | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/3rdparty/libprocess/src/posix/subprocess.hpp b/3rdparty/libprocess/src/posix/subprocess.hpp
+index 719bdf3..f2a0237 100644
+--- a/3rdparty/libprocess/src/posix/subprocess.hpp
++++ b/3rdparty/libprocess/src/posix/subprocess.hpp
+@@ -130,7 +130,19 @@ static void handleWhitelistFds(const std::vector<int_fd>& whitelist_fds)
+         }
+ 
+         if (!found) {
+-          ::close(fd);
++          int flags = ::fcntl(fd, F_GETFD);
++          if (flags == -1) {
++            ABORT(
++                "Failed to get file descriptor flags: " + os::strerror(errno));
++          }
++
++          // Close the FD which does not have the FD_CLOEXEC bit.
++          // We need to avoid whitelisting those FDs that have to survive
++          // until exec while we do not want to expose these FDs to user
++          // applications.
++          if ((flags & FD_CLOEXEC) == 0){
++            ::close(fd);
++          }
+         }
+       }
+     }
+-- 
+2.5.1
+

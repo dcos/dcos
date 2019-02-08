@@ -1,4 +1,4 @@
-From 936ef7f80b52a5a54c1b24b8858117da61a5f842 Mon Sep 17 00:00:00 2001
+From 4d27845f50cffad18500525984c80d66fe1d1ce9 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:21 -0800
 Subject: [PATCH] Added HEARTBEAT events and calls for the executor HTTP API.

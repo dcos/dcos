@@ -1,4 +1,4 @@
-From c048f4c6450d0dbf5d6370fabfa81c1e2bcd0370 Mon Sep 17 00:00:00 2001
+From 6ad85e5dcc786d04c434e0618d709816e0b42afd Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 23 Nov 2018 10:54:58 +0800
 Subject: [PATCH] Changed sandbox mode to 0755 in docker containerizer
