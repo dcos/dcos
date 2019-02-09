@@ -1,4 +1,4 @@
-From d809caaf6ed11df9fbce378265c10c4dbd31514e Mon Sep 17 00:00:00 2001
+From fe20a86884702649d77865f886afd27389c78a22 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:37 -0700
 Subject: [PATCH] Made the log output handling of TCP and HTTP checks
@@ -10,7 +10,7 @@ Review: https://reviews.apache.org/r/61766/
  1 file changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index 28353840b..47d864803 100644
+index 2835384..47d8648 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
 @@ -928,32 +928,35 @@ Future<int> CheckerProcess::_httpCheck(
@@ -69,5 +69,5 @@ index 28353840b..47d864803 100644
  
    if (exitCode != 0) {
 -- 
-2.14.3
+2.5.1
 

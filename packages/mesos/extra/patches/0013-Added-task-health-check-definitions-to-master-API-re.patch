@@ -1,4 +1,4 @@
-From c3275809c664459449daa95944a806e7b410e4fb Mon Sep 17 00:00:00 2001
+From 87fe0de27d219d8cb565e863409fd777f08fd52e Mon Sep 17 00:00:00 2001
 From: Greg Mann <gregorywmann@gmail.com>
 Date: Fri, 2 Nov 2018 16:13:01 -0700
 Subject: [PATCH] Added task health check definitions to master API responses.
@@ -19,7 +19,7 @@ Review: https://reviews.apache.org/r/69110/
  4 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/include/mesos/mesos.proto b/include/mesos/mesos.proto
-index c60250179..72520634a 100644
+index c602501..7252063 100644
 --- a/include/mesos/mesos.proto
 +++ b/include/mesos/mesos.proto
 @@ -1975,8 +1975,8 @@ message TaskGroupInfo {
@@ -45,7 +45,7 @@ index c60250179..72520634a 100644
    optional string user = 14;
  }
 diff --git a/include/mesos/v1/mesos.proto b/include/mesos/v1/mesos.proto
-index 4612b4060..d1b12a6d8 100644
+index 4612b40..d1b12a6 100644
 --- a/include/mesos/v1/mesos.proto
 +++ b/include/mesos/v1/mesos.proto
 @@ -1958,8 +1958,8 @@ message TaskGroupInfo {
@@ -71,7 +71,7 @@ index 4612b4060..d1b12a6d8 100644
    optional string user = 14;
  }
 diff --git a/src/common/http.cpp b/src/common/http.cpp
-index 226fed440..6f6edb4c6 100644
+index 226fed4..6f6edb4 100644
 --- a/src/common/http.cpp
 +++ b/src/common/http.cpp
 @@ -714,6 +714,10 @@ void json(JSON::ObjectWriter* writer, const Task& task)
@@ -86,7 +86,7 @@ index 226fed440..6f6edb4c6 100644
  
  
 diff --git a/src/common/protobuf_utils.cpp b/src/common/protobuf_utils.cpp
-index 3ae68e93a..d8996c9cd 100644
+index 3ae68e9..d8996c9 100644
 --- a/src/common/protobuf_utils.cpp
 +++ b/src/common/protobuf_utils.cpp
 @@ -319,6 +319,10 @@ Task createTask(
@@ -101,5 +101,5 @@ index 3ae68e93a..d8996c9cd 100644
    if (task.has_command() && task.command().has_user()) {
      t.set_user(task.command().user());
 -- 
-2.14.3
+2.5.1
 

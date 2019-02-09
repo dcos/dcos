@@ -1,0 +1,139 @@
+From 91e3b339c6ae9e5d77230c71e26fccc048e36ffe Mon Sep 17 00:00:00 2001
+From: Andrei Budnik <abudnik@mesosphere.com>
+Date: Wed, 6 Feb 2019 14:20:54 +0100
+Subject: [PATCH] Added `--enable-launcher-sealing` compiler flag.
+
+This flag enables sealing of launcher binary during initialization of
+Mesos containerizer. It's disabled by default because sealing requires
+Linux kernel 3.17+.
+
+(cherry picked from commit 1cf318feabd33a3f1cab1f0b73ddae2a1ee7d8b2)
+(cherry picked from commit 5dfe1fcb6940479a25607e39af4a5b2ab299b0e0)
+---
+ configure.ac             | 31 +++++++++++++++++++++++++++++++
+ src/CMakeLists.txt       |  1 -
+ src/Makefile.am          | 13 +++++++++++--
+ src/tests/CMakeLists.txt |  1 -
+ 4 files changed, 42 insertions(+), 4 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 96bff94..a3fe760 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -220,6 +220,17 @@ AC_ARG_ENABLE([java],
+                              [don't build Java bindings]),
+               [], [enable_java=yes])
+ 
++AC_ARG_ENABLE([launcher_sealing],
++              AS_HELP_STRING([--enable-launcher-sealing],
++                             [Enables sealing of launcher binary during
++                              initialization of Mesos containerizer.
++                              A copy of launcher's binary is cloned into
++                              memory and sealed to prevent overwriting of
++                              launcher's executable by containers.
++                              This is a Linux-specific feature and requires
++                              the support of memfd by the kernel.]),
++                             [], [enable_launcher_sealing=no])
++
+ AC_ARG_ENABLE([libevent],
+               AS_HELP_STRING([--enable-libevent],
+                              [use libevent instead of libev]),
+@@ -1304,6 +1315,26 @@ AM_CONDITIONAL([WITH_BUNDLED_LEVELDB],
+                [test "x$with_bundled_leveldb" = "xyes"])
+ 
+ 
++# Check if we should use containerizer launcher sealing.
++AC_MSG_CHECKING([whether to enable launcher sealing])
++AC_MSG_RESULT([$enable_launcher_sealing])
++
++AS_IF([test "x$enable_launcher_sealing" = "xyes"], [
++  # We only support launcher sealing on Linux.
++  AS_IF([test "$OS_NAME" = "linux"],
++        [],
++        [AC_MSG_ERROR([no launcher sealing support on $OS_NAME
++-------------------------------------------------------------------
++Launcher sealing is only supported on Linux.
++-------------------------------------------------------------------
++  ])])
++
++  AC_DEFINE([ENABLE_LAUNCHER_SEALING])
++])
++
++AM_CONDITIONAL([ENABLE_LAUNCHER_SEALING], [test "x$enable_launcher_sealing" = "xyes"])
++
++
+ # Check if libevent prefix path was provided, and if so, add it to
+ # the CPPFLAGS and LDFLAGS with respective /include and /lib path
+ # suffixes.
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 5d76dd6..4c3dea9 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -293,7 +293,6 @@ set(LINUX_SRC
+   linux/fs.cpp
+   linux/ldcache.cpp
+   linux/ldd.cpp
+-  linux/memfd.cpp
+   linux/perf.cpp
+   linux/systemd.cpp
+   slave/containerizer/mesos/linux_launcher.cpp
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 588883f..d63e3dd 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1239,7 +1239,6 @@ MESOS_LINUX_FILES =									\
+   linux/fs.cpp										\
+   linux/ldcache.cpp									\
+   linux/ldd.cpp										\
+-  linux/memfd.cpp									\
+   linux/perf.cpp									\
+   linux/systemd.cpp									\
+   slave/containerizer/mesos/linux_launcher.cpp						\
+@@ -1332,6 +1331,12 @@ MESOS_LINUX_FILES +=							\
+   slave/containerizer/mesos/isolators/xfs/disk.hpp
+ endif
+ 
++if ENABLE_LAUNCHER_SEALING
++MESOS_LINUX_FILES +=							\
++  linux/memfd.cpp							\
++  linux/memfd.hpp
++endif
++
+ MESOS_NETWORK_ISOLATOR_FILES =						\
+   linux/routing/handle.cpp						\
+   linux/routing/route.cpp						\
+@@ -2451,7 +2456,6 @@ mesos_tests_SOURCES +=						\
+   tests/containerizer/cni_isolator_tests.cpp			\
+   tests/containerizer/docker_volume_isolator_tests.cpp		\
+   tests/containerizer/linux_filesystem_isolator_tests.cpp	\
+-  tests/containerizer/linux_memfd_tests.cpp			\
+   tests/containerizer/fs_tests.cpp				\
+   tests/containerizer/memory_pressure_tests.cpp			\
+   tests/containerizer/nested_mesos_containerizer_tests.cpp	\
+@@ -2466,6 +2470,11 @@ mesos_tests_SOURCES +=						\
+   tests/containerizer/volume_secret_isolator_tests.cpp
+ endif
+ 
++if ENABLE_LAUNCHER_SEALING
++mesos_tests_SOURCES +=						\
++  tests/containerizer/linux_memfd_tests.cpp
++endif
++
+ if ENABLE_PORT_MAPPING_ISOLATOR
+ mesos_tests_SOURCES +=						\
+   tests/containerizer/port_mapping_tests.cpp			\
+diff --git a/src/tests/CMakeLists.txt b/src/tests/CMakeLists.txt
+index 46438d0..6dd2716 100644
+--- a/src/tests/CMakeLists.txt
++++ b/src/tests/CMakeLists.txt
+@@ -230,7 +230,6 @@ if (LINUX)
+     containerizer/fs_tests.cpp
+     containerizer/linux_capabilities_isolator_tests.cpp
+     containerizer/linux_filesystem_isolator_tests.cpp
+-    containerizer/linux_memfd_tests.cpp
+     containerizer/memory_pressure_tests.cpp
+     containerizer/nested_mesos_containerizer_tests.cpp
+     containerizer/ns_tests.cpp
+-- 
+2.5.1
+

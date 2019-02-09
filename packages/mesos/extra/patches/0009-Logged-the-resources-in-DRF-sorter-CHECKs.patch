@@ -1,4 +1,4 @@
-From 4c74330cff4319fe938cfa46211fe2752a98c83d Mon Sep 17 00:00:00 2001
+From c308ade4a4d64e98cf7c774a40818ed4e5ebd975 Mon Sep 17 00:00:00 2001
 From: Zhitao Li <zhitaoli.cs@gmail.com>
 Date: Thu, 26 Oct 2017 12:03:47 -0700
 Subject: [PATCH] Logged the resources in DRF sorter CHECKs.
@@ -13,7 +13,7 @@ Review: https://reviews.apache.org/r/63332/
  1 file changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/allocator/sorter/drf/sorter.hpp b/src/master/allocator/sorter/drf/sorter.hpp
-index d10f34824..fea4b779f 100644
+index d10f348..fea4b77 100644
 --- a/src/master/allocator/sorter/drf/sorter.hpp
 +++ b/src/master/allocator/sorter/drf/sorter.hpp
 @@ -348,7 +348,9 @@ struct DRFSorter::Node
@@ -55,5 +55,5 @@ index d10f34824..fea4b779f 100644
        resources[slaveId] -= oldAllocation;
        resources[slaveId] += newAllocation;
 -- 
-2.14.3
+2.5.1
 

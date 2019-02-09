@@ -1,0 +1,185 @@
+From 273de6b03684ca79f71628dd4cc3b550b645bc68 Mon Sep 17 00:00:00 2001
+From: Gilbert Song <songzihao1990@gmail.com>
+Date: Sat, 2 Feb 2019 23:54:12 -0800
+Subject: [PATCH] Cloned a sealed file of launcher binary.
+
+Cloned this binary during mesos containerizer create and command
+executor launch.
+
+This change would copy the mesos-containerizer binary in memory,
+which helps avoid the binary being overwritten.
+
+(cherry picked from commit a20b27875e8f26be1bbee94f236ddd709bad5b39)
+(cherry picked from commit a23b6720cb252c51ec7575b4d46f9cabb06f934b)
+---
+ src/launcher/executor.cpp                       | 23 +++++++++++++++++--
+ src/slave/containerizer/mesos/containerizer.cpp | 30 +++++++++++++++++++++++--
+ src/slave/containerizer/mesos/containerizer.hpp | 18 ++++++++++++---
+ 3 files changed, 64 insertions(+), 7 deletions(-)
+
+diff --git a/src/launcher/executor.cpp b/src/launcher/executor.cpp
+index b518030..81935eb 100644
+--- a/src/launcher/executor.cpp
++++ b/src/launcher/executor.cpp
+@@ -76,6 +76,10 @@
+ #include "internal/devolve.hpp"
+ #include "internal/evolve.hpp"
+ 
++#ifdef __linux__
++#include "linux/memfd.hpp"
++#endif // __linux__
++
+ #include "logging/logging.hpp"
+ 
+ #include "messages/messages.hpp"
+@@ -467,11 +471,26 @@ protected:
+ 
+     launchFlags.launch_info = JSON::protobuf(launchInfo);
+ 
++    // Determine the mesos containerizer binary depends on whether we
++    // need to clone and seal it on linux.
++    string initPath = path::join(launcherDir, MESOS_CONTAINERIZER);
++#ifdef __linux__
++    // Clone the launcher binary in memory for security concerns.
++    Try<int_fd> memFd = memfd::cloneSealedFile(initPath);
++    if (memFd.isError()) {
++      ABORT(
++          "Failed to clone a sealed file '" + initPath + "' in memory: " +
++          memFd.error());
++    }
++
++    initPath = "/proc/self/fd/" + stringify(memFd.get());
++#endif // __linux__
++
+     // TODO(tillt): Consider using a flag allowing / disallowing the
+     // log output of possibly sensitive data. See MESOS-7292.
+     string commandString = strings::format(
+         "%s %s <POSSIBLY-SENSITIVE-DATA>",
+-        path::join(launcherDir, MESOS_CONTAINERIZER),
++        initPath,
+         MesosContainerizerLaunch::NAME).get();
+ 
+     LOG(INFO) << "Running '" << commandString << "'";
+@@ -487,7 +506,7 @@ protected:
+ #endif // __WINDOWS__
+ 
+     Try<Subprocess> s = subprocess(
+-        path::join(launcherDir, MESOS_CONTAINERIZER),
++        initPath,
+         argv,
+         Subprocess::FD(STDIN_FILENO),
+         Subprocess::FD(STDOUT_FILENO),
+diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
+index 63182cd..685f692 100644
+--- a/src/slave/containerizer/mesos/containerizer.cpp
++++ b/src/slave/containerizer/mesos/containerizer.cpp
+@@ -48,6 +48,10 @@
+ 
+ #include "hook/manager.hpp"
+ 
++#ifdef __linux__
++#include "linux/memfd.hpp"
++#endif // __linux__
++
+ #include "module/manager.hpp"
+ 
+ #include "slave/paths.hpp"
+@@ -474,6 +478,23 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+   _isolators.push_back(Owned<Isolator>(new MesosIsolator(
+       Owned<MesosIsolatorProcess>(ioSwitchboard.get()))));
+ 
++  Option<int_fd> initMemFd;
++
++#ifdef __linux__
++  // Clone the launcher binary in memory for security concerns.
++  Try<int_fd> memFd = memfd::cloneSealedFile(
++      path::join(flags.launcher_dir, MESOS_CONTAINERIZER));
++
++  if (memFd.isError()) {
++    return Error(
++        "Failed to clone a sealed file '" +
++        path::join(flags.launcher_dir, MESOS_CONTAINERIZER) + "' in memory: " +
++        memFd.error());
++  }
++
++  initMemFd = memFd.get();
++#endif // __linux__
++
+   return new MesosContainerizer(Owned<MesosContainerizerProcess>(
+       new MesosContainerizerProcess(
+           flags,
+@@ -481,7 +502,8 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+           ioSwitchboard.get(),
+           launcher,
+           provisioner,
+-          _isolators)));
++          _isolators,
++          initMemFd)));
+ }
+ 
+ 
+@@ -1748,13 +1770,17 @@ Future<bool> MesosContainerizerProcess::_launch(
+       launchFlagsEnvironment.end());
+ 
+   // Fork the child using launcher.
++  string initPath = initMemFd.isSome()
++    ? ("/proc/self/fd/" + stringify(initMemFd.get()))
++    : path::join(flags.launcher_dir, MESOS_CONTAINERIZER);
++
+   vector<string> argv(2);
+   argv[0] = path::join(flags.launcher_dir, MESOS_CONTAINERIZER);
+   argv[1] = MesosContainerizerLaunch::NAME;
+ 
+   Try<pid_t> forked = launcher->fork(
+       containerId,
+-      argv[0],
++      initPath,
+       argv,
+       containerIO.get(),
+       nullptr,
+diff --git a/src/slave/containerizer/mesos/containerizer.hpp b/src/slave/containerizer/mesos/containerizer.hpp
+index cc23b4d..7f5066d 100644
+--- a/src/slave/containerizer/mesos/containerizer.hpp
++++ b/src/slave/containerizer/mesos/containerizer.hpp
+@@ -129,16 +129,27 @@ public:
+       IOSwitchboard* _ioSwitchboard,
+       const process::Owned<Launcher>& _launcher,
+       const process::Shared<Provisioner>& _provisioner,
+-      const std::vector<process::Owned<mesos::slave::Isolator>>& _isolators)
++      const std::vector<process::Owned<mesos::slave::Isolator>>& _isolators,
++      const Option<int_fd>& _initMemFd)
+     : ProcessBase(process::ID::generate("mesos-containerizer")),
+       flags(_flags),
+       fetcher(_fetcher),
+       ioSwitchboard(_ioSwitchboard),
+       launcher(_launcher),
+       provisioner(_provisioner),
+-      isolators(_isolators) {}
++      isolators(_isolators),
++      initMemFd(_initMemFd) {}
+ 
+-  virtual ~MesosContainerizerProcess() {}
++  virtual ~MesosContainerizerProcess()
++  {
++    if (initMemFd.isSome()) {
++      Try<Nothing> close = os::close(initMemFd.get());
++      if (close.isError()) {
++        LOG(WARNING) << "Failed to close memfd '" << stringify(initMemFd.get())
++                     << "': " << close.error();
++      }
++    }
++  }
+ 
+   virtual process::Future<Nothing> recover(
+       const Option<state::SlaveState>& state);
+@@ -281,6 +292,7 @@ private:
+   const process::Owned<Launcher> launcher;
+   const process::Shared<Provisioner> provisioner;
+   const std::vector<process::Owned<mesos::slave::Isolator>> isolators;
++  const Option<int_fd> initMemFd;
+ 
+   struct Container
+   {
+-- 
+2.5.1
+

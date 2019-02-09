@@ -1,4 +1,4 @@
-From 694b86b3ae16ff9428658b4558c445db28abd7f6 Mon Sep 17 00:00:00 2001
+From 15f02b0b4476c597197394d32ac8b681af416571 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Mon, 21 Aug 2017 15:28:39 -0700
 Subject: [PATCH] Raised the logging level of some check and health check
@@ -13,7 +13,7 @@ Review: https://reviews.apache.org/r/61791/
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/src/checks/checker_process.cpp b/src/checks/checker_process.cpp
-index 47d864803..204510660 100644
+index 47d8648..2045106 100644
 --- a/src/checks/checker_process.cpp
 +++ b/src/checks/checker_process.cpp
 @@ -811,7 +811,7 @@ void CheckerProcess::processCommandCheckResult(
@@ -48,5 +48,5 @@ index 47d864803..204510660 100644
      CheckStatusInfo checkStatusInfo;
      checkStatusInfo.set_type(check.type());
 -- 
-2.14.3
+2.5.1
 
