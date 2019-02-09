@@ -1,4 +1,4 @@
-From d12b7703893796c8d19d1ae6e89cc9e8c90bd466 Mon Sep 17 00:00:00 2001
+From 92909248df7526dd27b96ab42fa39e5c748a3e7a Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:57:56 -0700
 Subject: [PATCH] Enabled per-framework metrics in the master.
@@ -14,7 +14,7 @@ Review: https://reviews.apache.org/r/67962/
  3 files changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 5f2590e01..197d03af4 100644
+index 5f2590e..197d03a 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -2924,6 +2924,9 @@ struct Framework
@@ -41,7 +41,7 @@ index 5f2590e01..197d03af4 100644
        // NOTE: It's possible that we're already being tracked under the role
        // because a framework can unsubscribe from a role while it still has
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index 5c1d08664..beeb700df 100644
+index 5c1d086..beeb700 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -16,6 +16,8 @@
@@ -75,7 +75,7 @@ index 5c1d08664..beeb700df 100644
  } // namespace internal {
  } // namespace mesos {
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index 1ef74dedf..9f10aecba 100644
+index 1ef74de..9f10aec 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -207,6 +207,19 @@ struct Metrics
@@ -99,5 +99,5 @@ index 1ef74dedf..9f10aecba 100644
  } // namespace internal {
  } // namespace mesos {
 -- 
-2.14.3
+2.5.1
 

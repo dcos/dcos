@@ -1,4 +1,4 @@
-From 4cdfdb1b6a432298daaf1a34300c9e1f2d014ffe Mon Sep 17 00:00:00 2001
+From 73b4c79ce46b4728845f9fb9670ffa86ea392424 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Wed, 1 Aug 2018 07:58:06 -0700
 Subject: [PATCH] Added per-framework 'subscribed' metric and helpers.
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/66820/
  4 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 1e9775122..075c6ad2d 100644
+index 1e97751..075c6ad 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -455,6 +455,13 @@ void Framework::untrackUnderRole(const string& role)
@@ -75,7 +75,7 @@ index 1e9775122..075c6ad2d 100644
    }
  
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 197d03af4..f3641936f 100644
+index 197d03a..f364193 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -1740,6 +1740,7 @@ private:
@@ -113,7 +113,7 @@ index 197d03af4..f3641936f 100644
        // NOTE: It's possible that we're already being tracked under the role
        // because a framework can unsubscribe from a role while it still has
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index beeb700df..af687f749 100644
+index beeb700..af687f7 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -513,10 +513,18 @@ void Metrics::incrementTasksStates(
@@ -138,7 +138,7 @@ index beeb700df..af687f749 100644
  
  string getFrameworkMetricPrefix(const FrameworkInfo& frameworkInfo)
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index 9f10aecba..d3f093f9d 100644
+index 9f10aec..d3f093f 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -22,6 +22,7 @@
@@ -159,5 +159,5 @@ index 9f10aecba..d3f093f9d 100644
  
  
 -- 
-2.14.3
+2.5.1
 

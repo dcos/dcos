@@ -1,0 +1,87 @@
+From eb0e6ca429ffd7c438dbb39c87be290786c708fd Mon Sep 17 00:00:00 2001
+From: Andrei Budnik <abudnik@mesosphere.com>
+Date: Wed, 6 Feb 2019 15:13:17 +0100
+Subject: [PATCH] Enabled launcher sealing depending on corresponding compiler
+ flag.
+
+This patch enables containerizer launcher sealing when
+`--enable-launcher-sealing` compiler flag is enabled. By default,
+this compiler flag is disabled, hence launcher sealing is disabled.
+
+(cherry picked from commit 88c265fbf00bcb63963c3643db18a3284123ece7)
+---
+ src/launcher/executor.cpp                       | 8 ++++----
+ src/slave/containerizer/mesos/containerizer.cpp | 8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/launcher/executor.cpp b/src/launcher/executor.cpp
+index 0e16b96..a130dc6 100644
+--- a/src/launcher/executor.cpp
++++ b/src/launcher/executor.cpp
+@@ -76,9 +76,9 @@
+ #include "internal/devolve.hpp"
+ #include "internal/evolve.hpp"
+ 
+-#ifdef __linux__
++#ifdef ENABLE_LAUNCHER_SEALING
+ #include "linux/memfd.hpp"
+-#endif // __linux__
++#endif // ENABLE_LAUNCHER_SEALING
+ 
+ #include "logging/logging.hpp"
+ 
+@@ -478,7 +478,7 @@ protected:
+     // Determine the mesos containerizer binary depends on whether we
+     // need to clone and seal it on linux.
+     string initPath = path::join(launcherDir, MESOS_CONTAINERIZER);
+-#ifdef __linux__
++#ifdef ENABLE_LAUNCHER_SEALING
+     // Clone the launcher binary in memory for security concerns.
+     Try<int_fd> memFd = memfd::cloneSealedFile(initPath);
+     if (memFd.isError()) {
+@@ -488,7 +488,7 @@ protected:
+     }
+ 
+     initPath = "/proc/self/fd/" + stringify(memFd.get());
+-#endif // __linux__
++#endif // ENABLE_LAUNCHER_SEALING
+ 
+     // Fork the child using launcher.
+     vector<string> argv(2);
+diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
+index 3db6060..c859c1b 100644
+--- a/src/slave/containerizer/mesos/containerizer.cpp
++++ b/src/slave/containerizer/mesos/containerizer.cpp
+@@ -49,9 +49,9 @@
+ 
+ #include "hook/manager.hpp"
+ 
+-#ifdef __linux__
++#ifdef ENABLE_LAUNCHER_SEALING
+ #include "linux/memfd.hpp"
+-#endif // __linux__
++#endif // ENABLE_LAUNCHER_SEALING
+ 
+ #include "module/manager.hpp"
+ 
+@@ -536,7 +536,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+ 
+   Option<int_fd> initMemFd;
+ 
+-#ifdef __linux__
++#ifdef ENABLE_LAUNCHER_SEALING
+   // Clone the launcher binary in memory for security concerns.
+   Try<int_fd> memFd = memfd::cloneSealedFile(
+       path::join(flags.launcher_dir, MESOS_CONTAINERIZER));
+@@ -549,7 +549,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+   }
+ 
+   initMemFd = memFd.get();
+-#endif // __linux__
++#endif // ENABLE_LAUNCHER_SEALING
+ 
+   return new MesosContainerizer(Owned<MesosContainerizerProcess>(
+       new MesosContainerizerProcess(
+-- 
+2.5.1
+

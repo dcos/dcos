@@ -1,4 +1,4 @@
-From 4d88c19345bc6f50f66c5c7114e592cc22460a94 Mon Sep 17 00:00:00 2001
+From 8487e29ada7da04fcb59e68adc0f86f9bd824da6 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:31 -0700
 Subject: [PATCH] Added per-framework metrics for task states.
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/67813/
  4 files changed, 79 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index bb39b48e8..c9d8d4a84 100644
+index bb39b48..c9d8d4a 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -10257,6 +10257,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
@@ -69,7 +69,7 @@ index bb39b48e8..c9d8d4a84 100644
        framework->recoverResources(task);
      }
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 05e530cfa..ac5048d9a 100644
+index 05e530c..ac5048d 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -2295,6 +2295,8 @@ struct Framework
@@ -82,7 +82,7 @@ index 05e530cfa..ac5048d9a 100644
        master->subscribers.send(
            protobuf::master::event::createTaskAdded(*task),
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index d62514c0e..91c5ed167 100644
+index d62514c..91c5ed1 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -22,6 +22,7 @@
@@ -175,7 +175,7 @@ index d62514c0e..91c5ed167 100644
  {
    // Percent-encode the framework name to avoid characters like '/' and ' '.
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index b6fe20fb5..071246b71 100644
+index b6fe20f..071246b 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -221,6 +221,9 @@ struct FrameworkMetrics
@@ -200,5 +200,5 @@ index b6fe20fb5..071246b71 100644
  
  
 -- 
-2.14.3
+2.5.1
 

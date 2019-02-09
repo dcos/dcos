@@ -1,4 +1,4 @@
-From 4f8f62199b35f97617a3095618b6fc8c0141f07b Mon Sep 17 00:00:00 2001
+From cdab4927b2027edfa1eed36ecb228814506d5184 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
 Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
@@ -29,7 +29,7 @@ Review: https://reviews.apache.org/r/66832/
  21 files changed, 143 insertions(+), 143 deletions(-)
 
 diff --git a/src/examples/balloon_framework.cpp b/src/examples/balloon_framework.cpp
-index 817d71322..4e74a9fac 100644
+index 817d713..4e74a9f 100644
 --- a/src/examples/balloon_framework.cpp
 +++ b/src/examples/balloon_framework.cpp
 @@ -30,7 +30,7 @@
@@ -62,7 +62,7 @@ index 817d71322..4e74a9fac 100644
      process::metrics::Counter tasks_finished;
      process::metrics::Counter tasks_oomed;
 diff --git a/src/examples/disk_full_framework.cpp b/src/examples/disk_full_framework.cpp
-index d75f76953..3819b2114 100644
+index d75f769..3819b21 100644
 --- a/src/examples/disk_full_framework.cpp
 +++ b/src/examples/disk_full_framework.cpp
 @@ -28,7 +28,7 @@
@@ -95,7 +95,7 @@ index d75f76953..3819b2114 100644
      process::metrics::Counter tasks_finished;
      process::metrics::Counter tasks_disk_full;
 diff --git a/src/examples/long_lived_framework.cpp b/src/examples/long_lived_framework.cpp
-index 943160d5a..920dc9477 100644
+index 943160d..920dc94 100644
 --- a/src/examples/long_lived_framework.cpp
 +++ b/src/examples/long_lived_framework.cpp
 @@ -34,7 +34,7 @@
@@ -128,7 +128,7 @@ index 943160d5a..920dc9477 100644
      process::metrics::Counter offers_received;
      process::metrics::Counter tasks_launched;
 diff --git a/src/log/log.hpp b/src/log/log.hpp
-index be038d19d..7cba0b1c8 100644
+index be038d1..7cba0b1 100644
 --- a/src/log/log.hpp
 +++ b/src/log/log.hpp
 @@ -26,7 +26,7 @@
@@ -141,7 +141,7 @@ index be038d19d..7cba0b1c8 100644
  #include <stout/nothing.hpp>
  
 diff --git a/src/log/metrics.hpp b/src/log/metrics.hpp
-index b537e0a78..4a9efcef9 100644
+index b537e0a..4a9efce 100644
 --- a/src/log/metrics.hpp
 +++ b/src/log/metrics.hpp
 @@ -19,7 +19,7 @@
@@ -166,7 +166,7 @@ index b537e0a78..4a9efcef9 100644
  
  } // namespace log {
 diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
-index 4892dbce6..5194f5b3b 100644
+index 4892dbc..5194f5b 100644
 --- a/src/master/allocator/mesos/metrics.cpp
 +++ b/src/master/allocator/mesos/metrics.cpp
 @@ -20,7 +20,7 @@
@@ -290,7 +290,7 @@ index 4892dbce6..5194f5b3b 100644
    CHECK_SOME(gauge);
  
 diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
-index d56a10b2d..6d386225c 100644
+index d56a10b..6d38622 100644
 --- a/src/master/allocator/mesos/metrics.hpp
 +++ b/src/master/allocator/mesos/metrics.hpp
 @@ -23,7 +23,7 @@
@@ -351,7 +351,7 @@ index d56a10b2d..6d386225c 100644
  
  } // namespace internal {
 diff --git a/src/master/allocator/sorter/drf/metrics.cpp b/src/master/allocator/sorter/drf/metrics.cpp
-index ff63fbac5..ece151c79 100644
+index ff63fba..ece151c 100644
 --- a/src/master/allocator/sorter/drf/metrics.cpp
 +++ b/src/master/allocator/sorter/drf/metrics.cpp
 @@ -30,7 +30,7 @@ using std::string;
@@ -382,7 +382,7 @@ index ff63fbac5..ece151c79 100644
        defer(context, [this, client]() {
          // The client may have been removed if the dispatch
 diff --git a/src/master/allocator/sorter/drf/metrics.hpp b/src/master/allocator/sorter/drf/metrics.hpp
-index 61568cb52..1ff7489ee 100644
+index 61568cb..1ff7489 100644
 --- a/src/master/allocator/sorter/drf/metrics.hpp
 +++ b/src/master/allocator/sorter/drf/metrics.hpp
 @@ -21,7 +21,7 @@
@@ -404,7 +404,7 @@ index 61568cb52..1ff7489ee 100644
  
  } // namespace allocator {
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 0705fcdb5..5f2590e01 100644
+index 0705fcd..5f2590e 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
 @@ -2097,7 +2097,7 @@ private:
@@ -417,7 +417,7 @@ index 0705fcdb5..5f2590e01 100644
    {
      return (process::Clock::now() - startTime).secs();
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index 64fc829ac..5c1d08664 100644
+index 64fc829..5c1d086 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -17,7 +17,7 @@
@@ -516,7 +516,7 @@ index 64fc829ac..5c1d08664 100644
    }
    resources_revocable_percent.clear();
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index f701efec0..1ef74dedf 100644
+index f701efe..1ef74de 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -21,7 +21,7 @@
@@ -609,7 +609,7 @@ index f701efec0..1ef74dedf 100644
    void incrementTasksStates(
        const TaskState& state,
 diff --git a/src/master/registrar.cpp b/src/master/registrar.cpp
-index ffb458208..f6ce6fd97 100644
+index ffb4582..f6ce6fd 100644
 --- a/src/master/registrar.cpp
 +++ b/src/master/registrar.cpp
 @@ -30,7 +30,7 @@
@@ -649,7 +649,7 @@ index ffb458208..f6ce6fd97 100644
    {
      return operations.size();
 diff --git a/src/sched/sched.cpp b/src/sched/sched.cpp
-index e5e82d5d7..bde1cf7bb 100644
+index e5e82d5..bde1cf7 100644
 --- a/src/sched/sched.cpp
 +++ b/src/sched/sched.cpp
 @@ -61,7 +61,7 @@
@@ -673,7 +673,7 @@ index e5e82d5d7..bde1cf7bb 100644
  
    double _event_queue_messages()
 diff --git a/src/scheduler/scheduler.cpp b/src/scheduler/scheduler.cpp
-index 07d2b37e0..c04cfbc42 100644
+index 07d2b37..c04cfbc 100644
 --- a/src/scheduler/scheduler.cpp
 +++ b/src/scheduler/scheduler.cpp
 @@ -56,7 +56,7 @@
@@ -697,7 +697,7 @@ index 07d2b37e0..c04cfbc42 100644
  
    double _event_queue_messages()
 diff --git a/src/slave/containerizer/fetcher_process.hpp b/src/slave/containerizer/fetcher_process.hpp
-index 5b7c1b5a3..faa5ac858 100644
+index 5b7c1b5..faa5ac8 100644
 --- a/src/slave/containerizer/fetcher_process.hpp
 +++ b/src/slave/containerizer/fetcher_process.hpp
 @@ -28,7 +28,7 @@
@@ -721,7 +721,7 @@ index 5b7c1b5a3..faa5ac858 100644
  
    const Flags flags;
 diff --git a/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp b/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
-index d933af4e5..99a6f0daa 100644
+index d933af4..99a6f0d 100644
 --- a/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
 +++ b/src/slave/containerizer/mesos/isolators/filesystem/linux.hpp
 @@ -23,7 +23,7 @@
@@ -743,7 +743,7 @@ index d933af4e5..99a6f0daa 100644
  
    double _containers_new_rootfs();
 diff --git a/src/slave/gc_process.hpp b/src/slave/gc_process.hpp
-index 920c6ba1f..84c83d36a 100644
+index 920c6ba..84c83d3 100644
 --- a/src/slave/gc_process.hpp
 +++ b/src/slave/gc_process.hpp
 @@ -29,7 +29,7 @@
@@ -765,7 +765,7 @@ index 920c6ba1f..84c83d36a 100644
  
    const std::string workDir;
 diff --git a/src/slave/metrics.cpp b/src/slave/metrics.cpp
-index 0eb2b59ed..3dc2bc0cd 100644
+index 0eb2b59..3dc2bc0 100644
 --- a/src/slave/metrics.cpp
 +++ b/src/slave/metrics.cpp
 @@ -16,7 +16,7 @@
@@ -864,7 +864,7 @@ index 0eb2b59ed..3dc2bc0cd 100644
    }
    resources_revocable_percent.clear();
 diff --git a/src/slave/metrics.hpp b/src/slave/metrics.hpp
-index 3fc933ca6..2adff6664 100644
+index 3fc933c..2adff66 100644
 --- a/src/slave/metrics.hpp
 +++ b/src/slave/metrics.hpp
 @@ -20,7 +20,7 @@
@@ -941,7 +941,7 @@ index 3fc933ca6..2adff6664 100644
  
  } // namespace slave {
 diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
-index d638b8806..8d42011be 100644
+index d638b88..8d42011 100644
 --- a/src/slave/slave.hpp
 +++ b/src/slave/slave.hpp
 @@ -663,7 +663,7 @@ private:
@@ -954,5 +954,5 @@ index d638b8806..8d42011be 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.14.3
+2.5.1
 

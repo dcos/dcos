@@ -1,4 +1,4 @@
-From 95b4a13df1d37dc8903bc138d3f05f277ebe8239 Mon Sep 17 00:00:00 2001
+From 40b0cb983a80936f02a6f6ea4a75aa4e8413fb0a Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:01 -0700
 Subject: [PATCH] Renamed Gauge to PullGauge and documented differences to
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/66831/
  create mode 100644 3rdparty/libprocess/include/process/metrics/pull_gauge.hpp
 
 diff --git a/3rdparty/libprocess/include/Makefile.am b/3rdparty/libprocess/include/Makefile.am
-index 94e6d153f..e1605df86 100644
+index 94e6d15..e1605df 100644
 --- a/3rdparty/libprocess/include/Makefile.am
 +++ b/3rdparty/libprocess/include/Makefile.am
 @@ -45,7 +45,7 @@ nobase_include_HEADERS =		\
@@ -35,7 +35,7 @@ index 94e6d153f..e1605df86 100644
    process/metrics/metrics.hpp		\
 diff --git a/3rdparty/libprocess/include/process/metrics/gauge.hpp b/3rdparty/libprocess/include/process/metrics/gauge.hpp
 deleted file mode 100644
-index 474f8e80b..000000000
+index 474f8e8..0000000
 --- a/3rdparty/libprocess/include/process/metrics/gauge.hpp
 +++ /dev/null
 @@ -1,58 +0,0 @@
@@ -98,7 +98,7 @@ index 474f8e80b..000000000
 -
 -#endif // __PROCESS_METRICS_GAUGE_HPP__
 diff --git a/3rdparty/libprocess/include/process/metrics/metric.hpp b/3rdparty/libprocess/include/process/metrics/metric.hpp
-index 21f162d5b..2c4a154bb 100644
+index 21f162d..2c4a154 100644
 --- a/3rdparty/libprocess/include/process/metrics/metric.hpp
 +++ b/3rdparty/libprocess/include/process/metrics/metric.hpp
 @@ -29,7 +29,7 @@
@@ -112,7 +112,7 @@ index 21f162d5b..2c4a154bb 100644
    virtual ~Metric() {}
 diff --git a/3rdparty/libprocess/include/process/metrics/pull_gauge.hpp b/3rdparty/libprocess/include/process/metrics/pull_gauge.hpp
 new file mode 100644
-index 000000000..5c2a22742
+index 0000000..5c2a227
 --- /dev/null
 +++ b/3rdparty/libprocess/include/process/metrics/pull_gauge.hpp
 @@ -0,0 +1,77 @@
@@ -194,7 +194,7 @@ index 000000000..5c2a22742
 +
 +#endif // __PROCESS_METRICS_PULL_GAUGE_HPP__
 diff --git a/3rdparty/libprocess/include/process/system.hpp b/3rdparty/libprocess/include/process/system.hpp
-index 21bd3300b..ab6455fe6 100644
+index 21bd330..ab6455f 100644
 --- a/3rdparty/libprocess/include/process/system.hpp
 +++ b/3rdparty/libprocess/include/process/system.hpp
 @@ -20,7 +20,7 @@
@@ -228,7 +228,7 @@ index 21bd3300b..ab6455fe6 100644
  
  } // namespace process {
 diff --git a/3rdparty/libprocess/src/tests/metrics_tests.cpp b/3rdparty/libprocess/src/tests/metrics_tests.cpp
-index d394a42bf..41fd737b0 100644
+index d394a42..41fd737 100644
 --- a/3rdparty/libprocess/src/tests/metrics_tests.cpp
 +++ b/3rdparty/libprocess/src/tests/metrics_tests.cpp
 @@ -29,8 +29,8 @@
@@ -340,7 +340,7 @@ index d394a42bf..41fd737b0 100644
    AWAIT_READY(metrics::add(gauge));
    AWAIT_READY(metrics::add(gaugeFail));
 diff --git a/3rdparty/libprocess/src/tests/system_tests.cpp b/3rdparty/libprocess/src/tests/system_tests.cpp
-index 6beb973e0..4a193d778 100644
+index 6beb973..4a193d7 100644
 --- a/3rdparty/libprocess/src/tests/system_tests.cpp
 +++ b/3rdparty/libprocess/src/tests/system_tests.cpp
 @@ -30,7 +30,7 @@ namespace http = process::http;
@@ -353,5 +353,5 @@ index 6beb973e0..4a193d778 100644
  // endpoint. This has been observed specifically for the memory
  // metrics. If in the future we put the error message from the Failure
 -- 
-2.14.3
+2.5.1
 

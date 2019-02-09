@@ -1,4 +1,4 @@
-From 796760ed0fc41693a790e326377834d9af2c82a5 Mon Sep 17 00:00:00 2001
+From 0e6fa1609a0bd96fa623239389e014310c90dca9 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:14 -0700
 Subject: [PATCH] Added per-framework metrics for scheduler calls.
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/67776/
  4 files changed, 57 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/http.cpp b/src/master/http.cpp
-index 1f9aac44f..f4cd2dc68 100644
+index 1f9aac4..f4cd2dc 100644
 --- a/src/master/http.cpp
 +++ b/src/master/http.cpp
 @@ -1056,6 +1056,8 @@ Future<Response> Master::Http::scheduler(
@@ -25,7 +25,7 @@ index 1f9aac44f..f4cd2dc68 100644
    // into the authorizer. See MESOS-7399.
    if (principal.isSome() && principal != framework->info.principal()) {
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 075c6ad2d..ed827c1b2 100644
+index 075c6ad..ed827c1 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -2482,6 +2482,8 @@ void Master::receive(
@@ -56,7 +56,7 @@ index 075c6ad2d..ed827c1b2 100644
      // The framework has previously been registered with this master;
      // it may or may not currently be connected.
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index af687f749..5a32aad6a 100644
+index af687f7..5a32aad 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -16,6 +16,8 @@
@@ -125,7 +125,7 @@ index af687f749..5a32aad6a 100644
  
  
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index d3f093f9d..7a7b3a316 100644
+index d3f093f..7a7b3a3 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -20,6 +20,8 @@
@@ -153,5 +153,5 @@ index d3f093f9d..7a7b3a316 100644
  
  
 -- 
-2.14.3
+2.5.1
 

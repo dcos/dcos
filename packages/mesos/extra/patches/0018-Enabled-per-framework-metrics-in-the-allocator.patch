@@ -1,4 +1,4 @@
-From d1e5c97a1f2a4674e63e2d20332097fe1ad9aeab Mon Sep 17 00:00:00 2001
+From 8c45c301d6efd62537ec890e22197aeb36f1bce6 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:45 -0700
 Subject: [PATCH] Enabled per-framework metrics in the allocator.
@@ -15,7 +15,7 @@ Review: https://reviews.apache.org/r/66843/
  4 files changed, 21 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index 87e7d536e..96671033b 100644
+index 87e7d53..9667103 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
 @@ -141,7 +141,8 @@ HierarchicalAllocatorProcess::Framework::Framework(
@@ -29,7 +29,7 @@ index 87e7d536e..96671033b 100644
  
  void HierarchicalAllocatorProcess::initialize(
 diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
-index 4da109709..ec4d445f5 100644
+index 4da1097..ec4d445 100644
 --- a/src/master/allocator/mesos/hierarchical.hpp
 +++ b/src/master/allocator/mesos/hierarchical.hpp
 @@ -332,6 +332,8 @@ protected:
@@ -42,7 +42,7 @@ index 4da109709..ec4d445f5 100644
  
    double _event_queue_dispatches()
 diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
-index 5194f5b3b..7a4b153db 100644
+index 5194f5b..7a4b153 100644
 --- a/src/master/allocator/mesos/metrics.cpp
 +++ b/src/master/allocator/mesos/metrics.cpp
 @@ -201,6 +201,13 @@ void Metrics::removeRole(const string& role)
@@ -60,7 +60,7 @@ index 5194f5b3b..7a4b153db 100644
  } // namespace allocator {
  } // namespace master {
 diff --git a/src/master/allocator/mesos/metrics.hpp b/src/master/allocator/mesos/metrics.hpp
-index 6d386225c..daac93f7e 100644
+index 6d38622..daac93f 100644
 --- a/src/master/allocator/mesos/metrics.hpp
 +++ b/src/master/allocator/mesos/metrics.hpp
 @@ -90,6 +90,16 @@ struct Metrics
@@ -81,5 +81,5 @@ index 6d386225c..daac93f7e 100644
  } // namespace allocator {
  } // namespace master {
 -- 
-2.14.3
+2.5.1
 

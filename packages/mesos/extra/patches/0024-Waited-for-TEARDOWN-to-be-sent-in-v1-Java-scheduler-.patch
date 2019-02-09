@@ -1,4 +1,4 @@
-From dd75a794b9cbcfcd675f5b01d5824b62ec09fa5b Mon Sep 17 00:00:00 2001
+From e64acc2151b9cf8fa9fca3248dd7e427bf3a38eb Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 9 Oct 2018 18:22:16 +0200
 Subject: [PATCH] Waited for TEARDOWN to be sent in v1 Java scheduler shim.
@@ -13,7 +13,7 @@ before the Mesos library is destructed.
  1 file changed, 17 insertions(+)
 
 diff --git a/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp b/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp
-index 2a5fbd79a..6ec771111 100644
+index 2a5fbd7..6ec7711 100644
 --- a/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp
 +++ b/src/java/jni/org_apache_mesos_v1_scheduler_V1Mesos.cpp
 @@ -28,6 +28,7 @@
@@ -48,5 +48,5 @@ index 2a5fbd79a..6ec771111 100644
  
  
 -- 
-2.14.3
+2.5.1
 
