@@ -7,8 +7,8 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/Gilbert88/mesos",
-    "ref": "9f9e1331131be305838baabfa22780ee0dcb11c2",
+    "git": "https://github.com/jieyu/mesos",
+    "ref": "9f9e7d94f1ffec56a4a002bd48b7e47150af943f",
     "ref_origin": "memfd"
   },
   "environment": {
