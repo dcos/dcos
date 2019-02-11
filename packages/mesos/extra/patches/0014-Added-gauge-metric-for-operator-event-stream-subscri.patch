@@ -1,4 +1,4 @@
-From f42ad4abfbe7542106f9a164950072fe6104c022 Mon Sep 17 00:00:00 2001
+From 41d0be75b1ce29cf091f6c3b6ed8f9e48660ea7d Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:12 -0800
 Subject: [PATCH] Added gauge metric for operator event stream subscribers.

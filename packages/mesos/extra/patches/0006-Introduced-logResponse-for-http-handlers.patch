@@ -1,4 +1,4 @@
-From 52ba2fe898c2e749ad1992dbc62dc988c2996326 Mon Sep 17 00:00:00 2001
+From 0be660c63be98c9025c9af2b93acda19e8f5d426 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:40:37 +0200
 Subject: [PATCH] Introduced `logResponse` for http handlers.

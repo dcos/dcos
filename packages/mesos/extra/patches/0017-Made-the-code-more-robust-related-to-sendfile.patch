@@ -1,0 +1,56 @@
+From ad66a95bc77f10d4e1a3045f155609064fb34e81 Mon Sep 17 00:00:00 2001
+From: Jie Yu <yujie.jay@gmail.com>
+Date: Wed, 6 Feb 2019 14:01:43 -0800
+Subject: [PATCH] Made the code more robust related to sendfile.
+
+It's possible that sendfile returns less bytes written than requested.
+Previously, we simply return an error in that case. This patch makes it
+more robust by retrying sendfile if less bytes were written than
+requested.
+
+(cherry picked from commit 8f33758a21b8fd3b07d1f12dd05345abaab2a69d)
+---
+ src/linux/memfd.cpp | 27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/src/linux/memfd.cpp b/src/linux/memfd.cpp
+index 706dc0c..348d0ce 100644
+--- a/src/linux/memfd.cpp
++++ b/src/linux/memfd.cpp
+@@ -101,18 +101,21 @@ Try<int_fd> cloneSealedFile(const std::string& filePath)
+     return Error("Failed to open memfd file: " + memFd.error());
+   }
+ 
+-  ssize_t written = sendfile(memFd.get(), fileFd.get(), nullptr, size->bytes());
+-  if (written == -1) {
+-    ErrnoError error("Failed to copy file");
+-    os::close(fileFd.get());
+-    os::close(memFd.get());
+-    return error;
+-  } else if (static_cast<uint64_t>(written) != size->bytes()) {
+-    os::close(fileFd.get());
+-    os::close(memFd.get());
+-    return Error(
+-        "Expect to write " + stringify(size->bytes()) + " bytes, "
+-        "but only " + stringify(written) + " is written");
++  size_t remaining = size->bytes();
++  while (remaining > 0) {
++    ssize_t written = sendfile(memFd.get(), fileFd.get(), nullptr, remaining);
++    if (written == -1) {
++      ErrnoError error("Failed to copy file");
++      os::close(fileFd.get());
++      os::close(memFd.get());
++      return error;
++    } else if (static_cast<size_t>(written) > remaining) {
++      os::close(fileFd.get());
++      os::close(memFd.get());
++      return Error("More bytes written than requested");
++    } else {
++      remaining -= written;
++    }
+   }
+ 
+   os::close(fileFd.get());
+-- 
+2.5.1
+
