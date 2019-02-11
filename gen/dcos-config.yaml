@@ -1002,7 +1002,7 @@ package:
                   "Role": ["agent", "agent_public"]
               },
               {
-                  "Command": ["docker", "--version"]
+                  "Command": ["docker", "--version"],
                   "Role": ["agent", "agent_public"]
               }
           ]
