@@ -1,4 +1,4 @@
-From da2881641fa4ddb143416cfca38d7366599ef1bd Mon Sep 17 00:00:00 2001
+From 40c0147361824d67d3f9ce8b227b627b9bb5d5e2 Mon Sep 17 00:00:00 2001
 From: Benjamin Bannier <benjamin.bannier@mesosphere.io>
 Date: Tue, 20 Mar 2018 10:08:09 +0100
 Subject: [PATCH] Displayed resource provider resources in
@@ -13,7 +13,7 @@ Review: https://reviews.apache.org/r/65832/
  4 files changed, 19 insertions(+), 4 deletions(-)
 
 diff --git a/include/mesos/agent/agent.proto b/include/mesos/agent/agent.proto
-index fd74695ad..8c84400ea 100644
+index fd74695..8c84400 100644
 --- a/include/mesos/agent/agent.proto
 +++ b/include/mesos/agent/agent.proto
 @@ -548,6 +548,7 @@ message Response {
@@ -25,7 +25,7 @@ index fd74695ad..8c84400ea 100644
  
      repeated ResourceProvider resource_providers = 1;
 diff --git a/include/mesos/v1/agent/agent.proto b/include/mesos/v1/agent/agent.proto
-index 9d90b18f3..0e526fd6a 100644
+index 9d90b18..0e526fd 100644
 --- a/include/mesos/v1/agent/agent.proto
 +++ b/include/mesos/v1/agent/agent.proto
 @@ -548,6 +548,7 @@ message Response {
@@ -37,7 +37,7 @@ index 9d90b18f3..0e526fd6a 100644
  
      repeated ResourceProvider resource_providers = 1;
 diff --git a/src/slave/http.cpp b/src/slave/http.cpp
-index 4f791f24b..f0e92df8e 100644
+index 4f791f2..f0e92df 100644
 --- a/src/slave/http.cpp
 +++ b/src/slave/http.cpp
 @@ -1895,6 +1895,9 @@ Future<Response> Http::getResourceProviders(
@@ -51,7 +51,7 @@ index 4f791f24b..f0e92df8e 100644
  
    return OK(serialize(acceptType, evolve(response)), stringify(acceptType));
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index 01440330f..5985070f8 100644
+index 0144033..5985070 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -6759,10 +6759,10 @@ TEST_P(AgentAPITest, GetResourceProviders)
@@ -87,5 +87,5 @@ index 01440330f..5985070f8 100644
  
  
 -- 
-2.14.3
+2.5.1
 

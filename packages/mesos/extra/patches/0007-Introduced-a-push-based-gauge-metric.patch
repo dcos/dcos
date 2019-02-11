@@ -1,4 +1,4 @@
-From 9a0a7cbaf34995ba72f631836b72fdb0d9a29b9f Mon Sep 17 00:00:00 2001
+From 4b665de1902cfdf5d52800c8eaf525d970646edf Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:53 -0700
 Subject: [PATCH] Introduced a push-based gauge metric.
@@ -26,7 +26,7 @@ Review: https://reviews.apache.org/r/66828/
  create mode 100644 3rdparty/libprocess/include/process/metrics/push_gauge.hpp
 
 diff --git a/3rdparty/libprocess/include/Makefile.am b/3rdparty/libprocess/include/Makefile.am
-index 84877a233..94e6d153f 100644
+index 84877a2..94e6d15 100644
 --- a/3rdparty/libprocess/include/Makefile.am
 +++ b/3rdparty/libprocess/include/Makefile.am
 @@ -46,6 +46,7 @@ nobase_include_HEADERS =		\
@@ -39,7 +39,7 @@ index 84877a233..94e6d153f 100644
    process/metrics/timer.hpp		\
 diff --git a/3rdparty/libprocess/include/process/metrics/push_gauge.hpp b/3rdparty/libprocess/include/process/metrics/push_gauge.hpp
 new file mode 100644
-index 000000000..5c3984617
+index 0000000..5c39846
 --- /dev/null
 +++ b/3rdparty/libprocess/include/process/metrics/push_gauge.hpp
 @@ -0,0 +1,100 @@
@@ -144,5 +144,5 @@ index 000000000..5c3984617
 +
 +#endif // __PROCESS_METRICS_PUSH_GAUGE_HPP__
 -- 
-2.14.3
+2.5.1
 

@@ -1,4 +1,4 @@
-From 52c1c07b36c1721538fd97567fa9cfc12f5fa4de Mon Sep 17 00:00:00 2001
+From 8eb95a1f746b376e10f894fe5c3b00e8e6574623 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:39 -0700
 Subject: [PATCH] Added per-framework metrics for offer operations.
@@ -11,7 +11,7 @@ Review: https://reviews.apache.org/r/67814/
  3 files changed, 59 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index c9d8d4a84..7f11211df 100644
+index c9d8d4a..7f11211 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -5072,6 +5072,10 @@ void Master::_accept(
@@ -50,7 +50,7 @@ index c9d8d4a84..7f11211df 100644
  
  
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index 91c5ed167..6ec826596 100644
+index 91c5ed1..6ec8265 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -531,7 +531,9 @@ FrameworkMetrics::FrameworkMetrics(const FrameworkInfo& _frameworkInfo)
@@ -123,7 +123,7 @@ index 91c5ed167..6ec826596 100644
  {
    // Percent-encode the framework name to avoid characters like '/' and ' '.
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index 071246b71..7ce3941b2 100644
+index 071246b..7ce3941 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -224,6 +224,8 @@ struct FrameworkMetrics
@@ -146,5 +146,5 @@ index 071246b71..7ce3941b2 100644
  
  
 -- 
-2.14.3
+2.5.1
 

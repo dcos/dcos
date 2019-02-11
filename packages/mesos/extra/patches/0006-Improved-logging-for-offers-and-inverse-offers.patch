@@ -1,4 +1,4 @@
-From 16950c2a545494a06be1212c65fd286788a94618 Mon Sep 17 00:00:00 2001
+From 57bd55b09b2a92e4f8f4ec6ebaf81c00b38df1ec Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Tue, 10 Jul 2018 08:06:32 -0700
 Subject: [PATCH] Improved logging for offers and inverse offers.
@@ -19,7 +19,7 @@ Review: https://reviews.apache.org/r/67817/
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 36b167fee..1e9775122 100644
+index 36b167f..1e97751 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -8713,6 +8713,9 @@ void Master::offer(
@@ -73,5 +73,5 @@ index 36b167fee..1e9775122 100644
    framework->send(message);
  }
 -- 
-2.14.3
+2.5.1
 

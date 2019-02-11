@@ -1,0 +1,32 @@
+From 95ca3206971b53cff956389a76a3dac089792c9a Mon Sep 17 00:00:00 2001
+From: Andrei Budnik <abudnik@mesosphere.com>
+Date: Wed, 6 Feb 2019 18:00:59 +0100
+Subject: [PATCH] Fixed `ROOT_PidNamespace` test after enabling launcher
+ sealing.
+
+Previously, this test accessed `comm` file of `init` process to
+find out the name of the containerizer launcher binary. After we
+introduced launcher sealing, this file does not represent binary
+name anymore, so we are accessing `cmdline` file instead.
+
+(cherry picked from commit 03e5c2e61fd73a4f35f88ca158caacb12da02acf)
+---
+ src/tests/containerizer/isolator_tests.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/tests/containerizer/isolator_tests.cpp b/src/tests/containerizer/isolator_tests.cpp
+index bdc3619..0f82516 100644
+--- a/src/tests/containerizer/isolator_tests.cpp
++++ b/src/tests/containerizer/isolator_tests.cpp
+@@ -120,7 +120,7 @@ TEST_F(NamespacesIsolatorTest, ROOT_PidNamespace)
+ 
+   // Write the command's pid namespace inode and init name to files.
+   const string command =
+-    "stat -Lc %i /proc/self/ns/pid > ns && (cat /proc/1/comm > init)";
++    "stat -Lc %i /proc/self/ns/pid > ns && (cat /proc/1/cmdline > init)";
+ 
+   process::Future<Containerizer::LaunchResult> launch =
+     containerizer.get()->launch(
+-- 
+2.5.1
+

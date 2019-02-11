@@ -1,4 +1,4 @@
-From a5049d41009c8ca16de1fa2cf77968dfb56f7cc8 Mon Sep 17 00:00:00 2001
+From 3bc6485a8b13a5827d2f8d038848f847608e36de Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:48 -0700
 Subject: [PATCH] Changed the 'capacity_' member of 'BoundedHashMap' to
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/66855/
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/3rdparty/stout/include/stout/boundedhashmap.hpp b/3rdparty/stout/include/stout/boundedhashmap.hpp
-index 09a9b96f0..f73ec6b66 100644
+index 09a9b96..f73ec6b 100644
 --- a/3rdparty/stout/include/stout/boundedhashmap.hpp
 +++ b/3rdparty/stout/include/stout/boundedhashmap.hpp
 @@ -149,7 +149,7 @@ public:
@@ -25,5 +25,5 @@ index 09a9b96f0..f73ec6b66 100644
    map keys_; // Map from key to "pointer" to key's location in list.
  };
 -- 
-2.14.3
+2.5.1
 

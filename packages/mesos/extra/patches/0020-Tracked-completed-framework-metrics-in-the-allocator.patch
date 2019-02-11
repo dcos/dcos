@@ -1,4 +1,4 @@
-From 194f7fa2730abbfbdcadbe2bc55afc72fb93b0c8 Mon Sep 17 00:00:00 2001
+From 09da4a56e0a9210ce9f81ab747da54d73ec35faf Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:49 -0700
 Subject: [PATCH] Tracked completed framework metrics in the allocator.
@@ -24,7 +24,7 @@ Review: https://reviews.apache.org/r/66856/
  12 files changed, 74 insertions(+), 49 deletions(-)
 
 diff --git a/include/mesos/allocator/allocator.hpp b/include/mesos/allocator/allocator.hpp
-index df64faf2d..a0375776c 100644
+index df64faf..a037577 100644
 --- a/include/mesos/allocator/allocator.hpp
 +++ b/include/mesos/allocator/allocator.hpp
 @@ -105,7 +105,9 @@ public:
@@ -39,7 +39,7 @@ index df64faf2d..a0375776c 100644
    /**
     * Informs the allocator of the recovered state from the master.
 diff --git a/src/master/allocator/mesos/allocator.hpp b/src/master/allocator/mesos/allocator.hpp
-index 32dd40cb0..bc35d2fff 100644
+index 32dd40c..bc35d2f 100644
 --- a/src/master/allocator/mesos/allocator.hpp
 +++ b/src/master/allocator/mesos/allocator.hpp
 @@ -60,7 +60,8 @@ public:
@@ -83,7 +83,7 @@ index 32dd40cb0..bc35d2fff 100644
  
  
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index 96671033b..2af633c5c 100644
+index 9667103..2af633c 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
 @@ -159,7 +159,8 @@ void HierarchicalAllocatorProcess::initialize(
@@ -130,7 +130,7 @@ index 96671033b..2af633c5c 100644
    // framework's `offerFilters` hashset yet, see comments in
    // HierarchicalAllocatorProcess::reviveOffers and
 diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
-index ec4d445f5..6baf15add 100644
+index ec4d445..6baf15a 100644
 --- a/src/master/allocator/mesos/hierarchical.hpp
 +++ b/src/master/allocator/mesos/hierarchical.hpp
 @@ -26,6 +26,7 @@
@@ -170,7 +170,7 @@ index ec4d445f5..6baf15add 100644
    {
    public:
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 7f11211df..05b7111e5 100644
+index 7f11211..05b7111 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -805,7 +805,8 @@ void Master::initialize()
@@ -184,7 +184,7 @@ index 7f11211df..05b7111e5 100644
    // Parse the whitelist. Passing Allocator::updateWhitelist()
    // callback is safe because we shut down the whitelistWatcher in
 diff --git a/src/tests/allocator.hpp b/src/tests/allocator.hpp
-index c57d2089d..91a1d577c 100644
+index c57d208..91a1d57 100644
 --- a/src/tests/allocator.hpp
 +++ b/src/tests/allocator.hpp
 @@ -45,7 +45,7 @@ namespace tests {
@@ -228,7 +228,7 @@ index c57d2089d..91a1d577c 100644
    MOCK_METHOD2(recover, void(
        const int expectedAgentCount,
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index 5985070f8..742496ba5 100644
+index 5985070..742496b 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -1060,7 +1060,7 @@ TEST_P(MasterAPITest, ReserveResources)
@@ -250,7 +250,7 @@ index 5985070f8..742496ba5 100644
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
 diff --git a/src/tests/master_allocator_tests.cpp b/src/tests/master_allocator_tests.cpp
-index fec69b2f7..10ed36d69 100644
+index fec69b2..10ed36d 100644
 --- a/src/tests/master_allocator_tests.cpp
 +++ b/src/tests/master_allocator_tests.cpp
 @@ -164,7 +164,7 @@ TYPED_TEST(MasterAllocatorTest, SingleFramework)
@@ -416,7 +416,7 @@ index fec69b2f7..10ed36d69 100644
    master::Flags masterFlags = this->CreateMasterFlags();
    Try<Owned<cluster::Master>> master =
 diff --git a/src/tests/master_quota_tests.cpp b/src/tests/master_quota_tests.cpp
-index e49e5cccd..320f3db51 100644
+index e49e5cc..320f3db 100644
 --- a/src/tests/master_quota_tests.cpp
 +++ b/src/tests/master_quota_tests.cpp
 @@ -424,7 +424,7 @@ TEST_F(MasterQuotaTest, SetExistingQuota)
@@ -510,7 +510,7 @@ index e49e5cccd..320f3db51 100644
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
 diff --git a/src/tests/reservation_tests.cpp b/src/tests/reservation_tests.cpp
-index eabcaebff..47c9b4f40 100644
+index eabcaeb..47c9b4f 100644
 --- a/src/tests/reservation_tests.cpp
 +++ b/src/tests/reservation_tests.cpp
 @@ -655,7 +655,7 @@ TEST_P(ReservationTest, DropReserveTooLarge)
@@ -541,7 +541,7 @@ index eabcaebff..47c9b4f40 100644
    Try<Owned<cluster::Master>> master = StartMaster(&allocator, masterFlags);
    ASSERT_SOME(master);
 diff --git a/src/tests/resource_offers_tests.cpp b/src/tests/resource_offers_tests.cpp
-index 6b1e494aa..b0492af7c 100644
+index 6b1e494..b0492af 100644
 --- a/src/tests/resource_offers_tests.cpp
 +++ b/src/tests/resource_offers_tests.cpp
 @@ -284,7 +284,7 @@ TEST_F(ResourceOffersTest, Request)
@@ -554,7 +554,7 @@ index 6b1e494aa..b0492af7c 100644
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
 diff --git a/src/tests/slave_recovery_tests.cpp b/src/tests/slave_recovery_tests.cpp
-index d012d396a..348ad492f 100644
+index d012d39..348ad49 100644
 --- a/src/tests/slave_recovery_tests.cpp
 +++ b/src/tests/slave_recovery_tests.cpp
 @@ -3704,7 +3704,7 @@ TYPED_TEST(SlaveRecoveryTest, ReconcileTasksMissingFromSlave)
@@ -567,5 +567,5 @@ index d012d396a..348ad492f 100644
    Try<Owned<cluster::Master>> master = this->StartMaster(&allocator);
    ASSERT_SOME(master);
 -- 
-2.14.3
+2.5.1
 
