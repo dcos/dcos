@@ -1,0 +1,196 @@
+From 8e521ea3738799b3b4d08b7d1140eb7e16a83deb Mon Sep 17 00:00:00 2001
+From: Jie Yu <yujie.jay@gmail.com>
+Date: Sat, 9 Feb 2019 22:51:16 -0800
+Subject: [PATCH] Secured mesos executor binary using memfd.
+
+---
+ src/slave/constants.hpp                         |  7 ++++++
+ src/slave/containerizer/mesos/containerizer.cpp | 29 ++++++++++++++++++++++---
+ src/slave/containerizer/mesos/containerizer.hpp | 16 ++++++++++++--
+ src/slave/containerizer/mesos/launch.cpp        | 18 ++++++++++++---
+ src/slave/slave.cpp                             |  6 -----
+ 5 files changed, 62 insertions(+), 14 deletions(-)
+
+diff --git a/src/slave/constants.hpp b/src/slave/constants.hpp
+index 09faba8..64b1e30 100644
+--- a/src/slave/constants.hpp
++++ b/src/slave/constants.hpp
+@@ -183,6 +183,13 @@ Duration DEFAULT_MASTER_PING_TIMEOUT();
+ // Name of the executable for default executor.
+ constexpr char MESOS_DEFAULT_EXECUTOR[] = "mesos-default-executor";
+ 
++#ifdef __WINDOWS__
++constexpr char MESOS_EXECUTOR[] = "mesos-executor.exe";
++#else
++constexpr char MESOS_EXECUTOR[] = "mesos-executor";
++#endif // __WINDOWS__
++
++
+ std::vector<SlaveInfo::Capability> AGENT_CAPABILITIES();
+ 
+ } // namespace slave {
+diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
+index 9eb0add..dd13290 100644
+--- a/src/slave/containerizer/mesos/containerizer.cpp
++++ b/src/slave/containerizer/mesos/containerizer.cpp
+@@ -479,6 +479,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+       Owned<MesosIsolatorProcess>(ioSwitchboard.get()))));
+ 
+   Option<int_fd> initMemFd;
++  Option<int_fd> commandExecutorMemFd;
+ 
+ #ifdef ENABLE_LAUNCHER_SEALING
+   // Clone the launcher binary in memory for security concerns.
+@@ -493,6 +494,19 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+   }
+ 
+   initMemFd = memFd.get();
++
++  // Clone the command executor binary in memory for security.
++  memFd = memfd::cloneSealedFile(
++      path::join(flags.launcher_dir, MESOS_EXECUTOR));
++
++  if (memFd.isError()) {
++    return Error(
++        "Failed to clone a sealed file '" +
++        path::join(flags.launcher_dir, MESOS_EXECUTOR) + "' in memory: " +
++        memFd.error());
++  }
++
++  commandExecutorMemFd = memFd.get();
+ #endif // ENABLE_LAUNCHER_SEALING
+ 
+   return new MesosContainerizer(Owned<MesosContainerizerProcess>(
+@@ -503,7 +517,8 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+           launcher,
+           provisioner,
+           _isolators,
+-          initMemFd)));
++          initMemFd,
++          commandExecutorMemFd)));
+ }
+ 
+ 
+@@ -1683,6 +1698,16 @@ Future<bool> MesosContainerizerProcess::_launch(
+ 
+   const std::array<int_fd, 2>& pipes = pipes_.get();
+ 
++  vector<int_fd> whitelistFds{pipes[0], pipes[1]};
++
++  // Seal the command executor binary if needed.
++  if (container->config.has_task_info() && commandExecutorMemFd.isSome()) {
++    launchInfo.mutable_command()->set_value(
++        "/proc/self/fd/" + stringify(commandExecutorMemFd.get()));
++
++    whitelistFds.push_back(commandExecutorMemFd.get());
++  }
++
+   // Prepare the flags to pass to the launch process.
+   MesosContainerizerLaunch::Flags launchFlags;
+ 
+@@ -1691,8 +1716,6 @@ Future<bool> MesosContainerizerProcess::_launch(
+   launchFlags.pipe_read = pipes[0];
+   launchFlags.pipe_write = pipes[1];
+ 
+-  const vector<int_fd> whitelistFds{pipes[0], pipes[1]};
+-
+ #ifndef __WINDOWS__
+   // Set the `runtime_directory` launcher flag so that the launch
+   // helper knows where to checkpoint the status of the container
+diff --git a/src/slave/containerizer/mesos/containerizer.hpp b/src/slave/containerizer/mesos/containerizer.hpp
+index 7f5066d..566a9d7 100644
+--- a/src/slave/containerizer/mesos/containerizer.hpp
++++ b/src/slave/containerizer/mesos/containerizer.hpp
+@@ -130,7 +130,8 @@ public:
+       const process::Owned<Launcher>& _launcher,
+       const process::Shared<Provisioner>& _provisioner,
+       const std::vector<process::Owned<mesos::slave::Isolator>>& _isolators,
+-      const Option<int_fd>& _initMemFd)
++      const Option<int_fd>& _initMemFd,
++      const Option<int_fd>& _commandExecutorMemFd)
+     : ProcessBase(process::ID::generate("mesos-containerizer")),
+       flags(_flags),
+       fetcher(_fetcher),
+@@ -138,7 +139,8 @@ public:
+       launcher(_launcher),
+       provisioner(_provisioner),
+       isolators(_isolators),
+-      initMemFd(_initMemFd) {}
++      initMemFd(_initMemFd),
++      commandExecutorMemFd(_commandExecutorMemFd) {}
+ 
+   virtual ~MesosContainerizerProcess()
+   {
+@@ -149,6 +151,15 @@ public:
+                      << "': " << close.error();
+       }
+     }
++
++    if (commandExecutorMemFd.isSome()) {
++      Try<Nothing> close = os::close(commandExecutorMemFd.get());
++      if (close.isError()) {
++        LOG(WARNING) << "Failed to close memfd '"
++                     << stringify(commandExecutorMemFd.get())
++                     << "': " << close.error();
++      }
++    }
+   }
+ 
+   virtual process::Future<Nothing> recover(
+@@ -293,6 +304,7 @@ private:
+   const process::Shared<Provisioner> provisioner;
+   const std::vector<process::Owned<mesos::slave::Isolator>> isolators;
+   const Option<int_fd> initMemFd;
++  const Option<int_fd> commandExecutorMemFd;
+ 
+   struct Container
+   {
+diff --git a/src/slave/containerizer/mesos/launch.cpp b/src/slave/containerizer/mesos/launch.cpp
+index 2749b5d..fca51dc 100644
+--- a/src/slave/containerizer/mesos/launch.cpp
++++ b/src/slave/containerizer/mesos/launch.cpp
+@@ -869,9 +869,21 @@ int MesosContainerizerLaunch::execute()
+ 
+     // Avoid leaking not required file descriptors into the forked process.
+     foreach (int_fd fd, fds.get()) {
+-      // We use the unwrapped `::close` as opposed to `os::close`
+-      // since the former is guaranteed to be async signal safe.
+-      ::close(fd);
++      // NOTE: Set "FD_CLOEXEC" on the fd, instead of closing it
++      // because exec below might exec a memfd.
++      int flags = ::fcntl(fd, F_GETFD);
++      if (flags == -1) {
++        // Skip invalid file descriptors. Note, that the issue with leaked file
++        // descriptors is fixed in the recent versions (1.7.x and newer), but
++        // not backported due to major changes made.
++        if (EBADF != errno) {
++          ::close(fd);
++          ABORT("Failed to get FD flags");
++        }
++      } else if (::fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1) {
++        ::close(fd);
++        ABORT("Failed to set FD_CLOEXEC");
++      }
+     }
+   }
+ #endif // __WINDOWS__
+diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
+index 739fbf9..f380b33 100644
+--- a/src/slave/slave.cpp
++++ b/src/slave/slave.cpp
+@@ -152,12 +152,6 @@ using process::UPID;
+ 
+ using process::http::authentication::Principal;
+ 
+-#ifdef __WINDOWS__
+-constexpr char MESOS_EXECUTOR[] = "mesos-executor.exe";
+-#else
+-constexpr char MESOS_EXECUTOR[] = "mesos-executor";
+-#endif // __WINDOWS__
+-
+ namespace mesos {
+ namespace internal {
+ namespace slave {
+-- 
+2.5.1
+

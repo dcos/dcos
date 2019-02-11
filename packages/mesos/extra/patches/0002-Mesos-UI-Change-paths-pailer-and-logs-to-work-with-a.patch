@@ -1,4 +1,4 @@
-From 777265e2a7ee30cdb6cab0f09cf925765b3e3908 Mon Sep 17 00:00:00 2001
+From 80b04bedcc832cd47a77c6d014c8f00fbb38105a Mon Sep 17 00:00:00 2001
 From: mlunoe <michael.lunoe@gmail.com>
 Date: Thu, 14 May 2015 15:05:23 -0700
 Subject: [PATCH] Mesos UI: Change paths, pailer, and logs to work with a
@@ -17,7 +17,7 @@ Fixed the broken 'Roles' tab of the webui.
  5 files changed, 44 insertions(+), 45 deletions(-)
 
 diff --git a/src/webui/master/static/browse.html b/src/webui/master/static/browse.html
-index c586b9050..3f55bfc8e 100644
+index c586b90..3f55bfc 100644
 --- a/src/webui/master/static/browse.html
 +++ b/src/webui/master/static/browse.html
 @@ -73,7 +73,7 @@
@@ -30,7 +30,7 @@ index c586b9050..3f55bfc8e 100644
                    Download
                  </button>
 diff --git a/src/webui/master/static/index.html b/src/webui/master/static/index.html
-index d657eb3b6..0b977f58f 100644
+index d657eb3..0b977f5 100644
 --- a/src/webui/master/static/index.html
 +++ b/src/webui/master/static/index.html
 @@ -7,15 +7,15 @@
@@ -90,7 +90,7 @@ index d657eb3b6..0b977f58f 100644
    </body>
  </html>
 diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
-index 339dfc478..ed60f7d40 100644
+index 339dfc4..ed60f7d 100644
 --- a/src/webui/master/static/js/controllers.js
 +++ b/src/webui/master/static/js/controllers.js
 @@ -14,7 +14,7 @@
@@ -256,7 +256,7 @@ index 339dfc478..ed60f7d40 100644
          // This wasn't working with the current version of angular.
          $http.jsonp(url, {params: {path: $routeParams.path}})
 diff --git a/src/webui/master/static/js/services.js b/src/webui/master/static/js/services.js
-index afd254418..3a5191208 100644
+index afd2544..3a51912 100644
 --- a/src/webui/master/static/js/services.js
 +++ b/src/webui/master/static/js/services.js
 @@ -271,7 +271,7 @@
@@ -269,7 +269,7 @@ index afd254418..3a5191208 100644
  
      // Initial poll is immediate.
 diff --git a/src/webui/master/static/pailer.html b/src/webui/master/static/pailer.html
-index 759b18023..c8ada4b19 100644
+index 759b180..c8ada4b 100644
 --- a/src/webui/master/static/pailer.html
 +++ b/src/webui/master/static/pailer.html
 @@ -24,9 +24,9 @@
@@ -286,5 +286,5 @@ index 759b18023..c8ada4b19 100644
      <script>
        var $body = $('body');
 -- 
-2.14.3
+2.5.1
 

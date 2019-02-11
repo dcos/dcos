@@ -18,6 +18,7 @@ pushd build
 LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
   --enable-libevent --enable-ssl \
+  --enable-launcher-sealing \
   --enable-install-module-dependencies \
   --with-ssl=/opt/mesosphere/active/openssl \
   --with-libevent=/opt/mesosphere/active/libevent \

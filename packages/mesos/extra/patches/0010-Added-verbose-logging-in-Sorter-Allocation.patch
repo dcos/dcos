@@ -1,4 +1,4 @@
-From c1a8c833db1fb9e3b525072677ec3797d56325e2 Mon Sep 17 00:00:00 2001
+From 2eafef32ad8aa888961491492c645381194aae01 Mon Sep 17 00:00:00 2001
 From: Meng Zhu <mzhu@mesosphere.io>
 Date: Mon, 10 Sep 2018 17:52:39 -0700
 Subject: [PATCH] Added verbose logging in `Sorter::Allocation`.
@@ -11,7 +11,7 @@ See summary.
  1 file changed, 55 insertions(+), 11 deletions(-)
 
 diff --git a/src/master/allocator/sorter/drf/sorter.hpp b/src/master/allocator/sorter/drf/sorter.hpp
-index fea4b779f..ed93690a4 100644
+index fea4b77..ed93690 100644
 --- a/src/master/allocator/sorter/drf/sorter.hpp
 +++ b/src/master/allocator/sorter/drf/sorter.hpp
 @@ -29,6 +29,7 @@
@@ -146,5 +146,5 @@ index fea4b779f..ed93690a4 100644
  
      // We store the number of times this client has been chosen for
 -- 
-2.14.3
+2.5.1
 

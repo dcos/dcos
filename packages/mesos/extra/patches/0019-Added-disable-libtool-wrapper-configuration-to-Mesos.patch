@@ -1,0 +1,78 @@
+From 97e747cbbed9cae194fabbdd316bd4070976236d Mon Sep 17 00:00:00 2001
+From: Andrei Budnik <abudnik@mesosphere.com>
+Date: Wed, 4 Oct 2017 08:00:09 -0400
+Subject: [PATCH] Added --disable-libtool-wrapper configuration to Mesos.
+
+This flag is used to force libtool to generate executables instead of
+wrapper scripts. A wrapper script might trigger relinking, which takes
+quite a while on slow machines, thus causing failure of tests.
+
+Review: https://reviews.apache.org/r/62661/
+(cherry picked from commit d863620e5cb82b7f22cade0da0a0d18afbdf9136)
+---
+ configure.ac    | 13 +++++++++++++
+ src/Makefile.am | 10 +++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 9a69f43..96bff94 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -231,6 +231,16 @@ AC_ARG_ENABLE([install-module-dependencies],
+                               for module development]),
+               [], [enable_install_module_dependencies=no])
+ 
++AC_ARG_ENABLE([libtool-wrappers],
++              AS_HELP_STRING([--disable-libtool-wrappers],
++                             [Directly create binaries instead of libtool
++                              wrapper scripts to prevent relinking when first
++                              executing binaries from the build directory. This
++                              flag leads to binaries with the build directory
++                              encoded in the executables' RPATH which makes them
++                              in general unfit for installation.
++                              USE WITH CARE.]))
++
+ AC_ARG_ENABLE([optimize],
+               AS_HELP_STRING([--enable-optimize],
+                              [enable optimizations. If CFLAGS/CXXFLAGS are set,
+@@ -659,6 +669,9 @@ case "${target_os}" in
+     AC_MSG_ERROR("Mesos is currently unsupported on your platform.")
+ esac
+ 
++AM_CONDITIONAL([DISABLE_LIBTOOL_WRAPPERS],
++               [test x"$enable_libtool_wrappers" = "xno"])
++
+ # Used for conditionally including source files.
+ AM_CONDITIONAL([OS_LINUX], [test "x$OS_NAME" = "xlinux"])
+ AM_CONDITIONAL([OS_FREEBSD], [test "x$OS_NAME" = "xfreebsd"])
+diff --git a/src/Makefile.am b/src/Makefile.am
+index ff0f2d2..588883f 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -90,6 +90,15 @@ LDADD =
+ 
+ AM_LDFLAGS =
+ 
++if DISABLE_LIBTOOL_WRAPPERS
++# This is used to force libtool to generate executables instead of wrapper
++# scripts. A wrapper script might trigger relinking, which takes quite a while
++# on slow machines, thus causing failure of tests.
++# NOTE: Disabling libtool wrapper should only be used when building a mesos to
++# be tested within the build tree, see `info libtool` for details.
++AM_LDFLAGS += -no-install
++endif
++
+ # Use -Wl,--as-needed to AM_LDFLAGS since we link against all the
+ # libraries programs may depend upon, not the exact one. --as-needed
+ # causes the linker to only link to the ones a program actually uses,
+@@ -2478,7 +2487,6 @@ mesos_tests_SOURCES +=						\
+ 
+ mesos_tests_CPPFLAGS += $(JAVA_CPPFLAGS)
+ mesos_tests_CPPFLAGS += -DZOOKEEPER_VERSION=\"$(ZOOKEEPER_VERSION)\"
+-mesos_tests_LDFLAGS = $(AM_LDFLAGS)
+ mesos_tests_DEPENDENCIES += $(EXAMPLES_JAR)
+ 
+ EXAMPLESCRIPTSJAVA =						\
+-- 
+2.5.1
+

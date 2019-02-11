@@ -1,4 +1,4 @@
-From 09b15768cda68946863d8b2cc82a7a92538e9a7d Mon Sep 17 00:00:00 2001
+From 5bd92ba089a854aa820c2b2ca9be059a257d5cbf Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
 Subject: [PATCH] Revert "Fixed the broken metrics information of master in
@@ -13,7 +13,7 @@ Adminrouter component.
  1 file changed, 7 insertions(+), 17 deletions(-)
 
 diff --git a/src/webui/master/static/js/controllers.js b/src/webui/master/static/js/controllers.js
-index ed60f7d40..d69e92017 100644
+index ed60f7d..d69e920 100644
 --- a/src/webui/master/static/js/controllers.js
 +++ b/src/webui/master/static/js/controllers.js
 @@ -264,7 +264,8 @@
@@ -69,5 +69,5 @@ index ed60f7d40..d69e92017 100644
              $timeout(pollMetrics, $scope.delay);
            }
 -- 
-2.14.3
+2.5.1
 

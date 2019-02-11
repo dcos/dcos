@@ -1,4 +1,4 @@
-From 39efc9425bd9d866fc02d9d4a85a93ddeacd779a Mon Sep 17 00:00:00 2001
+From af7515599d76606d8bca3bb4bedede32177ccd47 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 27 Sep 2018 15:20:01 +0200
 Subject: [PATCH] Put `TerminateEvent` at the end of the queue in the Mesos
@@ -16,7 +16,7 @@ Review: https://reviews.apache.org/r/68865
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/src/scheduler/scheduler.cpp b/src/scheduler/scheduler.cpp
-index ce6925802..d805d243e 100644
+index ce69258..d805d24 100644
 --- a/src/scheduler/scheduler.cpp
 +++ b/src/scheduler/scheduler.cpp
 @@ -864,7 +864,12 @@ void Mesos::reconnect()
@@ -34,5 +34,5 @@ index ce6925802..d805d243e 100644
  
      delete process;
 -- 
-2.14.3
+2.5.1
 
