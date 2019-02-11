@@ -861,6 +861,16 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
                     'timeout': instant_check_timeout,
                 },
+                'cockroachdb_replication': {
+                    'description': 'CockroachDB is fully replicated',
+                    'cmd': [
+                        '/opt/mesosphere/bin/dcos-checks',
+                        'cockroachdb',
+                        'ranges',
+                    ],
+                    'timeout': normal_check_timeout,
+                    'roles': ['master']
+                },
             },
             'prestart': [],
             'poststart': [
@@ -875,6 +885,7 @@ def calculate_check_config(check_time):
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
                 'journald_dir_permissions',
+                'cockroachdb_replication',
             ],
         },
     }
