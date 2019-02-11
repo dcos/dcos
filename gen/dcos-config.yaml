@@ -582,6 +582,7 @@ package:
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_VOLUME_GID_RANGE=[10000-20000]
       MESOS_WORK_DIR={{ mesos_agent_work_dir }}
 {% switch use_mesos_hooks %}
 {% case "true" %}
