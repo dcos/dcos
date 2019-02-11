@@ -1119,6 +1119,7 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'ui_update_enabled': 'true',
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
