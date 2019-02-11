@@ -15,6 +15,7 @@ from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree
+from subprocess import check_call
 from typing import List
 
 import requests
@@ -218,8 +219,13 @@ def extract_tarball(path, target):
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         make_directory(target)
 
-        with tarfile.open(name=str(path), mode='r') as tar:
-            tar.extractall(path=str(target), numeric_owner=True)
+        # TODO(tweidner): https://jira.mesosphere.com/browse/DCOS-48220
+        # Make this cross-platform via Python's tarfile module once
+        # https://bugs.python.org/issue21872 is fixed.
+        if is_windows:
+            check_call(['bsdtar', '-xf', path, '-C', target])
+        else:
+            check_call(['tar', '-xf', path, '-C', target])
 
     except:
         # If there are errors, we can't really cope since we are already in an error state.
