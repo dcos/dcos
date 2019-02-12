@@ -319,7 +319,6 @@ def test_if_overlay_ok(dcos_api_session):
         _check_overlay(slave, 5051)
 
 
-@pytest.mark.skipif(lb_enabled(), reason='Load Balancer enabled')
 def test_if_navstar_l4lb_disabled(dcos_api_session):
     '''Test to make sure navstar_l4lb is disabled'''
     if lb_enabled():
