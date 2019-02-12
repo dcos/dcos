@@ -22,13 +22,12 @@ export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
 # Retrieve the fault domain for this machine
 fault_domain_script="/opt/mesosphere/bin/detect_fault_domain"
 fault_domain_extractor="$(pwd)/tools/extract_fault_domain.py"
-fault_domain_override_path="/opt/mesosphere/etc/telegraf/telegraf.d/fault_domain.conf"
 
 if [ -x $fault_domain_script ]; then
   # If a fault domain script exists, write a corresponding Telegraf configuration
   # so that fault_domain_zone and fault_domain_region are added to all tags
   # originating in this machine
-  $(fault_domain_script) | $(fault_domain_extractor) > $fault_domain_override_path
+  eval `$(fault_domain_script) | $(fault_domain_extractor)`
 fi
 
 # Create containers dir for dcos_statsd input.
