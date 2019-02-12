@@ -19,6 +19,10 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
+
+* Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
+
 ### Security Updates
 
 

@@ -277,6 +277,16 @@ function check() {
     fi
 }
 
+function check_docker_running() {
+    check_command_exists "docker" "docker"
+    echo -e -n "Checking if Docker is running: "
+    docker info >/dev/null 2>&1
+    RC=$?
+    print_status $RC
+    (( OVERALL_RC += $RC ))
+    return $RC
+}
+
 function check_service() {
   PORT=$1
   NAME=$2
@@ -416,6 +426,8 @@ function check_all() {
     check_preexisting_dcos
     check_selinux
     check_sort_capability
+
+    check_docker_running
 
     local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
         BEGIN {
