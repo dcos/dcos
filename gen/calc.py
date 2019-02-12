@@ -1093,7 +1093,7 @@ entry = {
         'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
         'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
         'marathon_port': '8080',
-        'dcos_version': '1.11.9.1',
+        'dcos_version': '1.11.10',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
