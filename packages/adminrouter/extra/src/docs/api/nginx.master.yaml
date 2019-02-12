@@ -10,6 +10,9 @@ backends:
   dcos_net:
     server: '127.0.0.1:62080'
     name: DC/OS Net
+  dcos_ui_update_service:
+    server: 'unix:/run/dcos/dcos-ui-update-service.sock'
+    name: DC/OS UI Update Service
   exhibitor:
     server: '127.0.0.1:8181'
     name: Exhibitor (Zookeeper)
@@ -142,6 +145,13 @@ routes:
       path: 'http://$backend/'
       backend: dcos_net
     path: /net/
+  /dcos-ui-update-service/api(?<url>.*):
+    group: DC/OS UI Update Service
+    matcher: regex
+    description: DC/OS UI Update Service API
+    proxy:
+      path: $dcos_ui_update_service
+    path: /dcos-ui-update-service/api(?<url>.*)
   /exhibitor:
     group: Exhibitor
     matcher: exact

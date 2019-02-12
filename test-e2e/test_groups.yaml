@@ -1,7 +1,7 @@
 # Purpose of this file
 # ====================
 #
-# We split integration tests into groups so that the test suite can be run in
+# We split E2E tests into groups so that the test suite can be run in
 # parallel on CI.
 # We could split these tests arbitrarily using, for example,
 # https://pypi.org/project/pytest-test-groups/.
@@ -18,7 +18,7 @@
 # group.
 #
 # Each item in a group is a pytest pattern.
-# That means, when collected by pytest in the integration tests directory, this
+# That means, when collected by pytest in the E2E tests directory, this
 # must collect some tests.
 # For example, the following might be valid patterns:
 # * test_filename.py
@@ -33,7 +33,7 @@
 # group.
 #
 # In conflict with this goal is the cost of moving tests around.
-# Any developer moving a test from one group to the other, to decrease the test
+# Any developer moving a test from one group to the other, to decreate the test
 # suite's run length, must consider this trade-off.
 #
 # ``test_meta.py`` includes a test which asserts that the groups defined here
@@ -52,32 +52,4 @@
 # fail.
 groups:
     group_1:
-        - test_applications.py
-        - test_auth.py
-        - test_checks.py
-        - test_composition.py
-        - test_dcos_diagnostics.py
-        - test_exhibitor.py
-    group_2:
-        - test_dcos_log.py
-        - test_endpoints.py
-        - test_helpers.py
-        - test_mesos.py
-        - test_meta.py
-        - test_metrics.py
-    group_3:
-        - test_misc.py
-        - test_networking.py
-        - test_rexray.py
-    group_4:
-        - test_metronome.py
-        - test_packaging.py
-        - test_rlimit.py
-        - test_service_discovery.py
-        - test_sysctl.py
-        - test_ucr.py
-        - test_units.py
-        - test_iam.py
-        - test_iam_migration.py
-        - test_legacy_user_management.py
-        - test_ui_update_service.py
+        - test_service_account.py
