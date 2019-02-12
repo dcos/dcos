@@ -159,7 +159,7 @@ function _M.init(use_auth)
     end
 
     -- /package/
-    res.access_package_endpoint = function()
+    res.access_package_endpoint = function(package_path)
         return res.do_authn_and_authz_or_exit()
     end
 
