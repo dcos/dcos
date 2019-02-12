@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -e  # Fail the script if anything fails
+set -x  # Verbose output
+set -u  # Undefined variables
+
 mkdir -p "$PKG_PATH"/bin
 mv "/pkg/src/dcos-ui-update-service/dcos-ui-update-service-afde1262ebf60aeb3b8431ad00d478d63633ae70" "$PKG_PATH"/bin/dcos-ui-update-service
 chmod +x "$PKG_PATH"/bin/dcos-ui-update-service
