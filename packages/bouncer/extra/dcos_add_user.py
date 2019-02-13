@@ -6,14 +6,17 @@ utilizing a script ``dcos_add_user.py`` which would be copied to
 https://github.com/dcos/dcos/blob/1d9e6bb2a27daf3dc8ec359e01e2272ec8a09dd0/packages/dcos-oauth/extra/dcos_add_user.py
 
 This script is intended to enable the same functionality for DC/OS 1.13+.
-After installing DC/OS will be accessible from ``/opt/mesosphere/bin/dcos_add_user.py``.
+After installing DC/OS it will be accessible from
+``/opt/mesosphere/bin/dcos_add_user.py``. It is meant to add remote users
+specifically for the Auth0 identity provider.
 
-This script uses legacy user management to create a user in the IAM service:
-
+The script uses legacy user management to create a user in the IAM service:
 https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packages/dcos-integration-test/extra/test_legacy_user_management.py#L96
 """
+
 import argparse
 import logging
+import re
 
 import requests
 
@@ -36,7 +39,11 @@ https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packa
         iam=IAM_BASE_URL,
         uid=uid,
     )
-    r = requests.put(url, json={})
+    r = requests.put(url, json={
+        'provider_type_str': 'oidc',
+        'provider_id': 'https://dcos.auth0.com/'
+        }
+    )
 
     # The 409 response code means that user already exists in the DC/OS IAM
     # service
@@ -55,10 +62,18 @@ def main() -> None:
     parser.add_argument(
         'email',
         type=str,
-        help='Identity of the user to add.',
+        help='E-mail address of the user to be added',
     )
     args = parser.parse_args()
-    add_user(args.email)
+
+    """The `args.email` in fact must look like an email address,
+    otherwise the HTTP request to Bouncer will fail.
+    """
+    email = args.email
+    if re.match(r'[^@]+@[^@]+\.[^@]+', email):
+        add_user(email)
+    else:
+        log.error('Provided email `%s` is not valid', email)
 
 
 if __name__ == "__main__":
