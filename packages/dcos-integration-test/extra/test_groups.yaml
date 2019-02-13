@@ -52,6 +52,7 @@
 # fail.
 groups:
     group_1:
+        - test_adminrouter_open.py
         - test_applications.py
         - test_auth.py
         - test_checks.py
