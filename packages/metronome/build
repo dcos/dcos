@@ -1,6 +1,6 @@
 #!/bin/bash
 pushd "/pkg/src/metronome"
-rm -rf bin/metronome.bat README.md RUNNING_PID share/ logs/
+rm -rf bin/metronome.bat README.md share/ logs/
 cp -an * "$PKG_PATH/"
 cp -f /pkg/extra/logback.xml "$PKG_PATH/conf/"
 
@@ -28,6 +28,5 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome
 ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/metronome'
 ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
-ExecStartPre=-/usr/bin/env rm -f /opt/mesosphere/active/metronome/RUNNING_PID
 ExecStart=/opt/mesosphere/bin/metronome
 EOF
