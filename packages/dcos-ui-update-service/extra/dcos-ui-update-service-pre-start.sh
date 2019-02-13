@@ -23,7 +23,7 @@ chmod 775 $DCOS_UI_UPDATE_DIST_PATH
 echo "Ensure dcos_ui_update_service has ownership to dcos-ui-update-service's state path: $DCOS_UI_UPDATE_STATE_PATH"
 chown -R root:dcos_ui_update_service $DCOS_UI_UPDATE_STATE_PATH
 
-if [ -f $DCOS_UI_UPDATE_DIST_LINK ]
+if [ -e $DCOS_UI_UPDATE_DIST_LINK ]
 then
     echo "ui-update-service UI-Dist symlink already exists"
 else
