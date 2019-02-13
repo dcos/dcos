@@ -138,14 +138,14 @@ def test_replace_all_static(
             log_dir=log_dir,
         )
         current_cluster = original_cluster
-        tmp_clusters = set([])
+        tmp_clusters = set()
 
         original_masters = original_cluster.masters
 
         try:
             for master_to_be_replaced in original_masters:
                 # Destroy a master and free one IP address.
-                original_cluster.destroy_node(node=master_to_be_replaced)
+                current_cluster.destroy_node(node=master_to_be_replaced)
 
                 temporary_cluster = Cluster(
                     cluster_backend=docker_backend,
@@ -166,7 +166,7 @@ def test_replace_all_static(
                 )
                 # Form a new cluster with the newly create master node.
                 new_cluster = Cluster.from_nodes(
-                    masters=current_cluster.masters.union(set([new_master])),
+                    masters=current_cluster.masters.add(new_master),
                     agents=current_cluster.agents,
                     public_agents=current_cluster.public_agents,
                 )
@@ -176,17 +176,17 @@ def test_replace_all_static(
                 # have finished replicating to the new master. That meant that the
                 # next master would be replaced too quickly, while it had data that
                 # was not present elsewhere in the cluster. This lead to
-                # irrecoverable dataloss.  This function waits until the node is
-                # "healthy". It is assumed that this performs the same diagnostics
-                # we instruct operators to perform when we tell them to "wait until
-                # the cluster becomes healthy before replacing the next master
-                # node."
+                # irrecoverable dataloss.  This function waits until the
+                # master node is "healthy". This is a requirement for replacing the
+                # next master node.
                 #
                 # We don't call the cockroachdb ranges check directly as the
                 # purpose of this test is to ensure that when an operator follows
                 # our documented procedure for replacing a master node multiple
-                # times in a row then his cluster remains healthy throughout and
-                # afterwards. If we called the check directly here, we would be
+                # times in a row (e.g. during a cluster upgrade) then the cluster
+                # remains healthy throughout and afterwards.
+                #
+                # If we called the check directly here, we would be
                 # sure the check is being called, but we would not be sure that
                 # "wait_for_dcos_oss", i.e., the standard procedure for determining
                 # whether a node is healthy, is sufficient to prevent the cluster
@@ -196,6 +196,9 @@ def test_replace_all_static(
                 # what we tell operators to do: "After installing the new master
                 # node, wait until it becomes healthy before proceeding to the
                 # next."
+                #
+                # The procedure for replacing multiple masters is documented here:
+                # https://docs.mesosphere.com/1.12/installing/production/upgrading/#dcos-masters
                 wait_for_dcos_oss(
                     cluster=new_cluster,
                     request=request,
