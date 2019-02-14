@@ -1452,7 +1452,7 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
@@ -1588,7 +1588,7 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
@@ -1710,7 +1710,7 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
