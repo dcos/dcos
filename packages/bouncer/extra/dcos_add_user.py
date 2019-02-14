@@ -20,10 +20,7 @@ IAM_BASE_URL = 'http://127.0.0.1:8101'
 
 
 def add_user(uid: str) -> None:
-    """
-    Create a user in DC/OS IAM:
-https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packages/dcos-integration-test/extra/test_legacy_user_management.py#L96
-    """
+
     url = '{iam}/acs/api/v1/users/{uid}'.format(
         iam=IAM_BASE_URL,
         uid=uid,
@@ -37,7 +34,7 @@ https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packa
     # The 409 response code means that user already exists in the DC/OS IAM
     # service
     if r.status_code == 409:
-        log.info('Skipping existing IAM user `%s`', uid)
+        log.info('User `%s` already exists', uid)
         return
     r.raise_for_status()
     log.info('Created IAM user `%s`', uid)
@@ -62,7 +59,7 @@ def main() -> None:
     if re.match(r'[^@]+@[^@]+\.[^@]+', email):
         add_user(email)
     else:
-        log.error('Provided email `%s` is not valid', email)
+        log.error('Provided uid `%s` does not appear to be an email address', email)
 
 
 if __name__ == "__main__":
