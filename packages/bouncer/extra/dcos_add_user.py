@@ -1,17 +1,6 @@
 #!/usr/bin/env python
 """
-Prior to DC/OS version 1.13 a user could directly be created in ZooKeeper by
-utilizing a script ``dcos_add_user.py`` which would be copied to
-``/opt/mesosphere/bin/dcos_add_user.py``:
-https://github.com/dcos/dcos/blob/1d9e6bb2a27daf3dc8ec359e01e2272ec8a09dd0/packages/dcos-oauth/extra/dcos_add_user.py
-
-This script is intended to enable the same functionality for DC/OS 1.13+.
-After installing DC/OS it will be accessible from
-``/opt/mesosphere/bin/dcos_add_user.py``. It is meant to add remote users
-specifically for the Auth0 identity provider.
-
-The script uses legacy user management to create a user in the IAM service:
-https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packages/dcos-integration-test/extra/test_legacy_user_management.py#L96
+This script adds remote users in DC/OS IAM for the Auth0 identity provider.
 """
 
 import argparse
@@ -32,7 +21,7 @@ IAM_BASE_URL = 'http://127.0.0.1:8101'
 
 def add_user(uid: str) -> None:
     """
-    Create a user in IAM service:
+    Create a user in DC/OS IAM:
 https://github.com/dcos/dcos/blob/abaeb5cceedd5661b8d96ff47f8bb5ef212afbdc/packages/dcos-integration-test/extra/test_legacy_user_management.py#L96
     """
     url = '{iam}/acs/api/v1/users/{uid}'.format(
