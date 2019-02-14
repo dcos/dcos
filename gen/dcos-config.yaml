@@ -1004,6 +1004,14 @@ package:
               {
                   "Command": ["docker", "--version"],
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Command": ["docker", "ps"],
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/detect_ip"],
+                  "Role": ["master", "agent", "agent_public"]
               }
           ]
         }
