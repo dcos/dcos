@@ -57,6 +57,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
 
+* Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
+
 
 ### Breaking changes
 
