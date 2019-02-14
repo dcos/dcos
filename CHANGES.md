@@ -68,6 +68,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
+
 * Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
 
 * Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
