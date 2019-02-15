@@ -28,18 +28,17 @@ index ed0b127..cbce598 100644
 +++ b/src/slave/paths.cpp
 @@ -789,13 +789,6 @@ Try<Nothing> createSandboxDirectory(
    }
- 
+
  #ifndef __WINDOWS__
 -  // Since this is a sandbox directory containing private task data,
 -  // we want to ensure that it is not accessible to "others".
 -  Try<Nothing> chmod = os::chmod(directory, 0750);
--  if (mkdir.isError()) {
+-  if (chmod.isError()) {
 -    return Error("Failed to chmod directory: " + chmod.error());
 -  }
 -
    if (user.isSome()) {
      Try<Nothing> chown = os::chown(user.get(), directory);
      if (chown.isError()) {
--- 
+--
 2.5.1
-
