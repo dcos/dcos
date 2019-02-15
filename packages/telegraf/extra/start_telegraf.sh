@@ -19,6 +19,17 @@ node_private_ip=$(/opt/mesosphere/bin/detect_ip)
 export DCOS_CLUSTER_ID="${cluster_id}"
 export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
 
+# Retrieve the fault domain for this machine
+fault_domain_script="/opt/mesosphere/bin/detect_fault_domain"
+fault_domain_extractor="$(pwd)/tools/extract_fault_domain.py"
+
+if [ -x $fault_domain_script ]; then
+  # If a fault domain script exists, export environment variables so that
+  # fault_domain_zone and fault_domain_region are added to all tags originating
+  # in this machine
+  eval `$(fault_domain_script) | $(fault_domain_extractor)`
+fi
+
 # Create containers dir for dcos_statsd input.
 mkdir -p "${TELEGRAF_CONTAINERS_DIR}"
 # Migrate old containers dir to new location in case the cluster was upgraded.

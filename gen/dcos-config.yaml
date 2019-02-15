@@ -1317,6 +1317,12 @@ package:
         # Tags to be applied to all metrics.
         dcos_cluster_name="{{ cluster_name }}"
         dcos_cluster_id="$DCOS_CLUSTER_ID"
+{% switch fault_domain_enabled %}
+{% case "true" %}
+        fault_domain_zone="$FAULT_DOMAIN_ZONE"
+        fault_domain_region="$FAULT_DOMAIN_REGION"
+{% case "false" %}
+{% endswitch %}
       [agent]
         ## Default data collection interval for all inputs
         interval = "10s"
