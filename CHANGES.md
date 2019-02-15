@@ -17,11 +17,16 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* [MARATHON-8493](https://jira.mesosphere.com/browse/MARATHON-8493) Fixed precision bug associated with summing pod resources.
+* [MARATHON-8498](https://jira.mesosphere.com/browse/MARATHON-8498) Fixed secrets validator when changing secret env.
+* [MARATHON-8466](https://jira.mesosphere.com/browse/MARATHON-8466) Prohibit the use of reserve words in app and pod ids
+* [COPS-4483](https://jira.mesosphere.com/browse/COPS-4483) Provide backward compatible way to produce container ports for text/plain GET requests against /v2/tasks when using USER networking consistent with Marathon 1.4.
+
 * Docker-GC will now log to journald. (COPS-4044)
 
 * Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
 
-* Added support CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865) 
+* Added support CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865)
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
@@ -36,7 +41,7 @@ Format of the entries must be.
 
 * Updated DC/OS UI to [v1.10.9](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.9)
 
-* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861) 
+* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
 
 ### Security Updates
