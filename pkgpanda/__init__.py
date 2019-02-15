@@ -624,10 +624,6 @@ class UserManagement:
             add_user_cmd += [
                 '-g', groupname
             ]
-        else:
-            add_user_cmd += [
-                '--user-group'
-            ]
 
         add_user_cmd += [username]
 
