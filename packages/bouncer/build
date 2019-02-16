@@ -31,4 +31,7 @@ envsubst '$PKG_PATH' < "/pkg/extra/${SERVICE_FILE_NAME}" > "${SERVICE_FILE_PATH}
 mkdir -p $PKG_PATH/bin
 install -m 755 /pkg/extra/iam-migrate-users-from-zk.py $PKG_PATH/bin/iam-migrate-users-from-zk.py
 
+# Copy the IAM user creation script
+install -m 755 /pkg/extra/dcos_add_user.py $PKG_PATH/bin/dcos_add_user.py
+
 cp /pkg/extra/dcos-bouncer-migrate-users.service "$PKG_PATH/dcos.target.wants_master/dcos-bouncer-migrate-users.service"
