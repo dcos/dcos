@@ -16,6 +16,22 @@ class FetchError(Exception):
         return msg
 
 
+class IncompleteDownloadError(Exception):
+
+    def __init__(self, url, total_bytes_read, content_length):
+        self.url = url
+        self.total_bytes_read = total_bytes_read
+        self.content_length = content_length
+
+    def __str__(self):
+        msg = "Problem fetching {} - bytes read {} does not match content-length {}".format(
+            self.url,
+            self.total_bytes_read,
+            self.content_length)
+
+        return msg
+
+
 class InstallError(Exception):
     pass
 
