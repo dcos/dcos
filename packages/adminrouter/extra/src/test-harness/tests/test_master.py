@@ -296,7 +296,7 @@ class TestUiRoot:
         url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
 
         with overridden_file_content(
-                '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
+                '/var/lib/dcos/dcos-ui-update-service/dist/ui/{}'.format(path),
                 uniq_content):
             resp = requests.get(
                 url,

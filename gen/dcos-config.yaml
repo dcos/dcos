@@ -2558,3 +2558,12 @@ package:
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
+  - path: /etc/dcos-ui-update-service.env
+    content: |
+      DCOS_UI_UPDATE_LISTEN_ADDR=/run/dcos/dcos-ui-update-service.sock
+      DCOS_UI_UPDATE_DEFAULT_UI_PATH=/opt/mesosphere/active/dcos-ui/usr
+      DCOS_UI_UPDATE_STATE_PATH=/var/lib/dcos/dcos-ui-update-service
+      DCOS_UI_UPDATE_VERSIONS_ROOT=/var/lib/dcos/dcos-ui-update-service/versions
+      DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
+      DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
+      DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
