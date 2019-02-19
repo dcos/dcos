@@ -22,6 +22,8 @@ Format of the entries must be.
 
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
+* Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
