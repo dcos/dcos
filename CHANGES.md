@@ -59,6 +59,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
 
+* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe. 
 
 ### Breaking changes
 
