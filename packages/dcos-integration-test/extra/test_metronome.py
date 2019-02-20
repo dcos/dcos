@@ -1,5 +1,3 @@
-import pytest
-
 __maintainer__ = 'ichernetsky'
 __contact__ = 'marathon-team@mesosphere.io'
 
