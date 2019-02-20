@@ -2,8 +2,6 @@ import logging
 import random
 import uuid
 
-import pytest
-
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
