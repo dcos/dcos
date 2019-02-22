@@ -1,9 +1,11 @@
 import contextlib
+import copy
 import logging
 import uuid
 
 import pytest
 import retrying
+from prometheus_client.parser import text_string_to_metric_families
 
 from test_helpers import get_expanded_config
 
@@ -84,7 +86,11 @@ def test_metrics_agents_mesos(dcos_api_session):
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_mesos_metrics():
             response = get_metrics_prom(dcos_api_session, node)
-            assert 'mesos_slave_uptime_secs' in response.text
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'mesos_slave_uptime_secs':
+                        return
+            raise Exception('Expected Mesos mesos_slave_uptime_secs metric not found')
         check_mesos_metrics()
 
 
@@ -93,46 +99,53 @@ def test_metrics_master_mesos(dcos_api_session):
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def check_mesos_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
-        assert 'mesos_master_uptime_secs' in response.text
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] == 'mesos_master_uptime_secs':
+                    return
+        raise Exception('Expected Mesos mesos_master_uptime_secs metric not found')
     check_mesos_metrics()
 
 
 def test_metrics_master_zookeeper(dcos_api_session):
     """Assert that ZooKeeper metrics on master are present."""
-    expected_metrics = ['ZooKeeper', 'zookeeper_avg_latency']
-
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def check_zookeeper_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
-        for metric_name in expected_metrics:
-            assert metric_name in response.text
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] == 'zookeeper_avg_latency':
+                    assert sample[1]['dcos_component_name'] == 'ZooKeeper'
+                    return
+        raise Exception('Expected ZooKeeper zookeeper_avg_latency metric not found')
     check_zookeeper_metrics()
 
 
 def test_metrics_master_cockroachdb(dcos_api_session):
     """Assert that CockroachDB metrics on master are present."""
-    expected_metrics = ['CockroachDB', 'ranges_underreplicated']
-
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def check_cockroachdb_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
-        for metric_name in expected_metrics:
-            assert metric_name in response.text
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] == 'ranges_underreplicated':
+                    assert sample[1]['dcos_component_name'] == 'CockroachDB'
+                    return
+        raise Exception('Expected CockroachDB ranges_underreplicated metric not found')
     check_cockroachdb_metrics()
 
 
 def test_metrics_master_adminrouter(dcos_api_session):
     """Assert that Admin Router metrics on master are present."""
-    expected_metrics = [
-        'dcos_component_name="Admin Router"',
-        'nginx_vts',
-    ]
-
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def check_adminrouter_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
-        for metric_name in expected_metrics:
-            assert metric_name in response.text
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('nginx_vts_'):
+                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                    return
+        raise Exception('Expected Admin Router nginx_vts_* metrics not found')
     check_adminrouter_metrics()
 
 
@@ -144,16 +157,16 @@ def test_metrics_agents_adminrouter(dcos_api_session):
     if dcos_api_session.public_slaves:
         nodes.append(dcos_api_session.public_slaves[0])
 
-    expected_metrics = [
-        'dcos_component_name="Admin Router Agent"',
-        'nginx_vts',
-    ]
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_adminrouter_metrics():
             response = get_metrics_prom(dcos_api_session, node)
-            for metric_name in expected_metrics:
-                assert metric_name in response.text
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0].startswith('nginx_vts_'):
+                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                        return
+            raise Exception('Expected Admin Router nginx_vts_* metrics not found')
         check_adminrouter_metrics()
 
 
@@ -164,9 +177,16 @@ def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metr
 
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_statsd_metrics():
+            expected_copy = copy.deepcopy(expected_metrics)
             response = get_metrics_prom(dcos_api_session, node)
-            for metric_name in expected_metrics:
-                assert metric_name in response.text
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] in expected_copy:
+                        val = expected_copy.pop(sample[0])
+                        assert sample[2] == val
+                        if len(expected_copy) == 0:
+                            return
+            raise Exception('Expected statsd metrics not found')
         check_statsd_metrics()
 
 
@@ -212,12 +232,15 @@ def test_metrics_agent_statsd(dcos_api_session):
         },
         'networks': [{'mode': 'host'}],
     }
-    expected_metrics = [
-        ('TYPE ' + '_'.join([metric_name_pfx, 'gauge']) + ' gauge'),
-        ('TYPE ' + '_'.join([metric_name_pfx, 'count']) + ' counter'),
-        ('TYPE ' + '_'.join([metric_name_pfx, 'timing', 'count']) + ' untyped'),
-        ('TYPE ' + '_'.join([metric_name_pfx, 'histogram', 'count']) + ' untyped'),
-    ]
+    expected_metrics = {
+        metric_name_pfx + '_gauge': 100.0,
+        # NOTE: prometheus_client appends _total to counter-type metrics if they don't already have the suffix
+        # ref: https://github.com/prometheus/client_python/blob/master/prometheus_client/parser.py#L169
+        # (the raw prometheus output here omits _total)
+        metric_name_pfx + '_count_total': 1.0,
+        metric_name_pfx + '_timing_count': 1.0,
+        metric_name_pfx + '_histogram_count': 1.0,
+    }
 
     if dcos_api_session.slaves:
         marathon_app['constraints'] = [['hostname', 'LIKE', dcos_api_session.slaves[0]]]
@@ -294,13 +317,14 @@ def test_task_metrics_metadata(dcos_api_session):
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
-            for line in response.text.splitlines():
-                if '#' in line:
-                    continue
-                if 'task_name="marathon-user"' in line:
-                    assert 'service_name="marathon"' in line
-                    # check for whitelisted label
-                    assert 'DCOS_SERVICE_NAME="marathon-user"' in line
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[1].get('task_name') == 'marathon-user':
+                        assert sample[1]['service_name'] == 'marathon'
+                        # check for whitelisted label
+                        assert sample[1]['DCOS_SERVICE_NAME'] == 'marathon-user'
+                        return
+            raise Exception('Expected marathon task metrics not found')
         check_metrics_metadata()
 
 
@@ -316,16 +340,14 @@ def test_executor_metrics_metadata(dcos_api_session):
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
         def check_executor_metrics_metadata():
             response = get_metrics_prom(dcos_api_session, node)
-            for line in response.text.splitlines():
-                if '#' in line:
-                    continue
-                # ignore metrics from hello-world task started by marathon by checking
-                # for absence of 'marathon' string.
-                if 'cpus_nr_periods' in line and 'marathon' not in line:
-                    assert 'service_name="hello-world"' in line
-                    assert 'task_name=""' in line  # this is an executor, not a task
-                    # hello-world executors can be named "hello" or "world"
-                    assert ('executor_name="hello"' in line or 'executor_name="world"' in line)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'cpus_nr_periods' and sample[1].get('service_name') == 'hello-world':
+                        assert sample[1]['task_name'] == ''
+                        # hello-world executors can be named "hello" or "world"
+                        assert (sample[1]['executor_name'] == 'hello' or sample[1]['executor_name'] == 'world')
+                        return
+            raise Exception('Expected hello-world executor metrics not found')
         check_executor_metrics_metadata()
 
 

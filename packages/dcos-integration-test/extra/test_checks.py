@@ -2,17 +2,10 @@ import logging
 import random
 import uuid
 
-import pytest
-
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-45278',
-    reason='test_checks_cli _wait_for_run_completion',
-    since='2018-11-20',
-)
 def test_checks_cli(dcos_api_session):
     base_cmd = [
         '/opt/mesosphere/bin/dcos-shell',

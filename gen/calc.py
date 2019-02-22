@@ -441,12 +441,14 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
-def calculate_mesos_isolation(enable_gpu_isolation):
+def calculate_mesos_isolation(enable_gpu_isolation, mesos_seccomp_enabled):
     isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
                  'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
                  'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',gpu/nvidia'
+    if mesos_seccomp_enabled == 'true':
+        isolators += ',linux/seccomp'
     return isolators
 
 
@@ -1063,6 +1065,7 @@ entry = {
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
+        lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
         lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
@@ -1116,6 +1119,8 @@ entry = {
         'mesos_container_log_sink': 'logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
+        'mesos_seccomp_enabled': 'false',
+        'mesos_seccomp_profile_name': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -1233,6 +1238,8 @@ entry = {
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
+        'has_mesos_seccomp_profile_name':
+            lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,
