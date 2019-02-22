@@ -8,9 +8,11 @@ requests by using dcos_api_session.
 import json
 import logging
 import time
+import uuid
 
 import cryptography.hazmat.backends
 import jwt
+import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode
@@ -107,3 +109,41 @@ def test_service_account_create_login_delete(
     r = dcos_api_session.get('/acs/api/v1/users', query='type=service')
     uids = [o['uid'] for o in r.json()['array']]
     assert serviceuid not in uids
+
+
+def test_user_account_create_login_delete(
+        dcos_api_session, noauth_api_session):
+
+    uid = str(uuid.uuid4())
+    password = str(uuid.uuid4())
+
+    r = dcos_api_session.put(
+        '/acs/api/v1/users/' + uid,
+        json={'description': str(uuid.uuid4()), 'password': password},
+    )
+    assert r.status_code == 201
+
+    r = noauth_api_session.post(
+        '/acs/api/v1/auth/login',
+        json={'uid': uid, 'password': password},
+    )
+    assert r.status_code == 200
+    assert 'token' in r.json()
+
+    dcos_url = str(dcos_api_session.default_url)
+    r = requests.get(
+        dcos_url + '/pkgpanda/active.buildinfo.full.json',
+        headers={'Authorization': 'token=' + r.json()['token']}
+    )
+    assert r.status_code == 200
+
+    r = dcos_api_session.get('/acs/api/v1/users/')
+    uids = [o['uid'] for o in r.json()['array']]
+    assert uid in uids
+
+    r = dcos_api_session.delete('/acs/api/v1/users/' + uid)
+    assert r.status_code == 204
+
+    r = dcos_api_session.get('/acs/api/v1/users/')
+    uids = [o['uid'] for o in r.json()['array']]
+    assert uid not in uids

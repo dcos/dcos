@@ -19,6 +19,7 @@ that first user's point of view. That is, we can not test that a user (e.g.
 user2) which was added by the first user (user1) can add another user (user3).
 """
 import logging
+import os.path
 
 import pytest
 
@@ -185,3 +186,10 @@ def test_dynamic_ui_config(dcos_api_session):
     assert not data['clusterConfiguration']['firstUser']
     assert 'id' in data['clusterConfiguration']
     assert 'uiConfiguration' in data
+
+
+def test_dcos_add_user_script_exists_oss():
+    """
+    dcos_add_user.py script exists in /opt/mesosphere/bin directory.
+    """
+    assert os.path.isfile("/opt/mesosphere/bin/dcos_add_user.py")

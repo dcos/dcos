@@ -2,6 +2,7 @@
 # Copyright (C) Mesosphere, Inc. See LICENSE file for details.
 
 import time
+from urllib.parse import urljoin
 
 import pytest
 import requests
@@ -453,7 +454,8 @@ class TestServiceStateful:
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
-        assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
+        absolute = urljoin(url, r.headers['Location'])
+        assert absolute == "http://127.0.0.1/service/scheduler-alwaysthere/"
 
     def test_if_only_matching_scheme_redirects_are_adjusted_for_mesos_frameworks(
             self, master_ar_process_pertest, mocker, valid_user_header):
@@ -496,7 +498,8 @@ class TestServiceStateful:
             "/service/scheduler-alwaysthere/foo/bar")
         r = requests.get(url, allow_redirects=False, headers=valid_user_header)
         assert r.status_code == 307
-        assert r.headers['Location'] == "http://127.0.0.1/service/scheduler-alwaysthere/"
+        absolute = urljoin(url, r.headers['Location'])
+        assert absolute == "http://127.0.0.1/service/scheduler-alwaysthere/"
 
     def test_if_scheme_is_honoured_for_marathon_apps(
             self, master_ar_process_pertest, mocker, valid_user_header):

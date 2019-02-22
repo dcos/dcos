@@ -125,8 +125,9 @@ COPY cluster-id /var/lib/dcos/cluster-id
 COPY detect_ip_public /opt/mesosphere/bin/detect_ip_public
 RUN chmod -v a+x /opt/mesosphere/bin/detect_ip_public
 COPY active.buildinfo.full.json /opt/mesosphere/active.buildinfo.full.json
-COPY plain-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/
-COPY nested-ui-testfile.html /opt/mesosphere/active/dcos-ui/usr/nest1/
+RUN mkdir -pv /var/lib/dcos/dcos-ui-update-service/dist/ui/nest1/
+COPY plain-ui-testfile.html /var/lib/dcos/dcos-ui-update-service/dist/ui/
+COPY nested-ui-testfile.html /var/lib/dcos/dcos-ui-update-service/dist/ui/nest1/
 COPY plain-metadata-testfile.json \
      dcos-version.json \
         /opt/mesosphere/active/dcos-metadata/etc/

@@ -57,6 +57,11 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
 
+* Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
+
+* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe. 
+* Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
+
 
 ### Breaking changes
 
@@ -67,6 +72,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
+
+* Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 
 * Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
 

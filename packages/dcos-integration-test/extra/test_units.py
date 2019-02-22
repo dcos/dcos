@@ -77,11 +77,6 @@ def test_verify_units():
     _check_units("/etc/systemd/system/dcos-*.socket")
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-41819',
-    reason='Fails on dcos-e2e/docker/static/strict.',
-    since='2018-11-20',
-)
 @pytest.mark.supportedwindows
 def test_socket_units():
     """Test that socket units configure socket files in /run/dcos
@@ -125,11 +120,6 @@ def test_socket_units():
         _check_unit(file)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-45174',
-    reason='test_units.test_socket_files_teardown fails with 503 Server Error:',
-    since='2018-11-20',
-)
 @pytest.mark.supportedwindows
 def test_socket_files():
     """Test that all socket files in /run/dcos are owned by 'dcos_adminrouter'."""
