@@ -7,6 +7,7 @@ import zipfile
 
 import pytest
 import retrying
+import test_helpers
 from dcos_test_utils.diagnostics import Diagnostics
 from dcos_test_utils.helpers import check_json
 
@@ -335,11 +336,13 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
     """
-    bundle = _create_bundle(dcos_api_session)
-    _check_diagnostics_bundle_status(dcos_api_session)
-    _download_and_extract_bundle(dcos_api_session, bundle)
-    _download_and_extract_bundle_from_another_master(dcos_api_session, bundle)
-    _delete_bundle(dcos_api_session, bundle)
+    app, test_uuid = test_helpers.marathon_test_app()
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        bundle = _create_bundle(dcos_api_session)
+        _check_diagnostics_bundle_status(dcos_api_session)
+        _download_and_extract_bundle(dcos_api_session, bundle)
+        _download_and_extract_bundle_from_another_master(dcos_api_session, bundle)
+        _delete_bundle(dcos_api_session, bundle)
 
 
 def _check_diagnostics_bundle_status(dcos_api_session):
@@ -571,6 +574,9 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
 
             verify_archived_items(master_folder, archived_items, expected_master_files)
 
+            gzipped_state_output = z.open(master_folder + '5050-master_state.json.gz')
+            validate_state(gzipped_state_output)
+
         # make sure all required log files for agent node are in place.
         for slave_ip in dcos_api_session.slaves:
             agent_folder = slave_ip + '_agent/'
@@ -668,6 +674,15 @@ def validate_unit(unit):
     assert unit['health'] in [0, 1], 'health must be 0 or 1'
     assert unit['description'], 'description field cannot be empty'
     assert unit['help'], 'help field cannot be empty'
+
+
+def validate_state(zip_state):
+    assert isinstance(zip_state, zipfile.ZipExtFile)
+    state_output = gzip.decompress(zip_state.read())
+    state = json.loads(state_output)
+    assert len(state["frameworks"]) == 2, "bundle must contain information about frameworks"
+    task_count = len(state["frameworks"][1]["tasks"]) + len(state["frameworks"][0]["tasks"])
+    assert task_count == 1, "bundle must contain information about tasks"
 
 
 def verify_archived_items(folder, archived_items, expected_files):
