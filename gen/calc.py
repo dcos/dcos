@@ -1132,7 +1132,7 @@ entry = {
         'mesos_seccomp_enabled': 'false',
         'mesos_seccomp_profile_name': '',
         'metronome_gpu_scheduling_behavior': 'restricted',
-        'marathon_gpu_scheduling_behavior': '',
+        'marathon_gpu_scheduling_behavior': 'restricted',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
