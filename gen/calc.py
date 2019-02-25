@@ -200,6 +200,16 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
         "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
 
 
+def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
+        "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted' or ''"
+
+
+def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
+        "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted' or ''"
+
+
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
     # Determine how many 256 MB log chunks can be fit into the given size.
     # We assume a 90% compression factor; logs are compressed after 2 rotations.
@@ -1121,6 +1131,8 @@ entry = {
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'false',
         'mesos_seccomp_profile_name': '',
+        'metronome_gpu_scheduling_behavior': 'restricted',
+        'marathon_gpu_scheduling_behavior': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -1257,6 +1269,11 @@ entry = {
         'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
         'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
         'licensing_enabled': 'false',
+        'has_metronome_gpu_scheduling_behavior':
+            lambda metronome_gpu_scheduling_behavior: calculate_set(metronome_gpu_scheduling_behavior),
+        'has_marathon_gpu_scheduling_behavior':
+            lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
+
     },
     'secret': [
         'cluster_docker_credentials',

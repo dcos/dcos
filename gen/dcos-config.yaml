@@ -1936,6 +1936,12 @@ package:
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
 {% case "false" %}
 {% endswitch %}
+{% switch has_marathon_gpu_scheduling_behavior %}
+{% case "true" %}
+      MARATHON_GPU_SCHEDULING_BEHAVIOR={{ marathon_gpu_scheduling_behavior }}
+{% case "false" %}
+{% endswitch %}
+
   - path: /etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
@@ -1955,6 +1961,11 @@ package:
       LIBPROCESS_PORT=15201
       METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
       METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600000
+{% switch has_metronome_gpu_scheduling_behavior %}
+{% case "true" %}
+      METRONOME_GPU_SCHEDULING_BEHAVIOR={{ metronome_gpu_scheduling_behavior }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}
