@@ -1,5 +1,5 @@
-__maintainer__ = 'ichernetsky'
-__contact__ = 'marathon-team@mesosphere.io'
+__maintainer__ = 'alenkacz'
+__contact__ = 'orchestration-team@mesosphere.io'
 
 
 def test_metronome(dcos_api_session):
