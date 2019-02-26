@@ -316,12 +316,12 @@ def test_validate_check_config():
     validate_error(
         {'check_config': json.dumps({'cluster_checks': {}})},
         'check_config',
-        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+        "Key 'cluster_checks' error: Missing key: Check name must be a nonzero length string with no whitespace",
     )
     validate_error(
         {'check_config': json.dumps({'node_checks': {}})},
         'check_config',
-        "Key 'node_checks' error: Missing keys: 'checks'",
+        "Key 'node_checks' error: Missing key: 'checks'",
     )
     validate_error(
         {
@@ -333,7 +333,7 @@ def test_validate_check_config():
         },
         'check_config',
         (
-            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "Key 'node_checks' error: Key 'checks' error: Missing key: Check name must be a nonzero length string "
             "with no whitespace"
         ),
     )
@@ -352,7 +352,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+        "Key 'cluster_checks' error: Missing key: Check name must be a nonzero length string with no whitespace",
     )
     validate_error(
         {
@@ -371,7 +371,7 @@ def test_validate_check_config():
         },
         'check_config',
         (
-            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "Key 'node_checks' error: Key 'checks' error: Missing key: Check name must be a nonzero length string "
             "with no whitespace"
         ),
     )
@@ -460,7 +460,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'cluster_checks' error: Key 'cluster-check-1' error: Missing keys: 'description'",
+        "Key 'cluster_checks' error: Key 'cluster-check-1' error: Missing key: 'description'",
     )
     validate_error(
         {
@@ -477,7 +477,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Missing keys: 'description'",
+        "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Missing key: 'description'",
     )
 
     # Check cmd is wrong type.
