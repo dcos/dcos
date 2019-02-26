@@ -1,5 +1,19 @@
 ## DC/OS 1.13.0
 
+```
+* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
+* For Security updates, please call out in Security updates section.
+* Add to the top of the existing list.
+* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
+
+Format of the entries must be.
+
+* Entry with no-newlines. (DCOS_OSS_JIRA)
+<new-line>
+* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
+```
+
+
 ### Highlights
 
 #### Introduction of service accounts, alignment of authentication architectures
@@ -13,18 +27,43 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
-* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Ningx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
+* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
+
+* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
 * CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
 
 * ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
+
 * Metronome supports UCR
+
 * Metronome supports file based secrets
+
 * Metronome supports hybrid cloud
 
+* Marathon metrics are now collected by Telegraf (DCOS-47693)
+
 * Expose Public IP (DCOS_OSS-4514)
+
+* Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
+
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
+* Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
+
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667)
+
+* Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
+
+* Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
+
+* Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
+
+* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe. 
+* Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
+
 
 ### Breaking changes
 
@@ -35,6 +74,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
+
+* Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 
 * Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
 
@@ -50,6 +91,13 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
+
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
+
+* Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
 
 ### Notable changes
 

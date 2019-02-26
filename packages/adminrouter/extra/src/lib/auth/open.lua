@@ -159,7 +159,7 @@ function _M.init(use_auth)
     end
 
     -- /package/
-    res.access_package_endpoint = function()
+    res.access_package_endpoint = function(package_path)
         return res.do_authn_and_authz_or_exit()
     end
 
@@ -186,6 +186,11 @@ function _M.init(use_auth)
     -- /system/v1/agent/(?<agentid>[0-9a-zA-Z-]+)(?<type>(/logs|/metrics/v0))
     res.access_system_agent_endpoint = function()
         return res.do_authn_and_authz_or_exit()
+    end
+
+    -- /dcos-ui-update-service/api/v1/
+    res.access_dcos_ui_update_service_api_endpoint = function()
+        return res.do_authn_and_authz_or_exit();
     end
 
     return res

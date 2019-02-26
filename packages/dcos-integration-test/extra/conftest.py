@@ -4,13 +4,8 @@ import os
 
 import pytest
 import requests
-from test_dcos_diagnostics import (
-    _get_bundle_list,
-    check_json,
-    wait_for_diagnostics_job,
-    wait_for_diagnostics_list
-)
-from test_helpers import expanded_config
+from dcos_test_utils.diagnostics import Diagnostics
+from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +20,7 @@ def dcos_api_session(dcos_api_session_factory):
     args = dcos_api_session_factory.get_args_from_env()
 
     exhibitor_admin_password = None
+    expanded_config = get_expanded_config()
     if expanded_config['exhibitor_admin_password_enabled'] == 'true':
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
@@ -40,52 +36,12 @@ def pytest_addoption(parser):
                      help="run only Windows tests")
 
 
-def _add_xfail_markers(item):
-    """
-    Mute flaky Integration Tests with custom pytest marker.
-    Rationale for doing this is mentioned at DCOS-45308.
-    """
-    xfailflake_markers = [
-        marker for marker in item.iter_markers() if marker.name == 'xfailflake'
-    ]
-    for xfailflake_marker in xfailflake_markers:
-        assert 'reason' in xfailflake_marker.kwargs
-        assert 'jira' in xfailflake_marker.kwargs
-        assert xfailflake_marker.kwargs['jira'].startswith('DCOS')
-        # Show the JIRA in the printed reason.
-        xfailflake_marker.kwargs['reason'] = '{jira} - {reason}'.format(
-            jira=xfailflake_marker.kwargs['jira'],
-            reason=xfailflake_marker.kwargs['reason'],
-        )
-        date_text = xfailflake_marker.kwargs['since']
-        try:
-            datetime.datetime.strptime(date_text, '%Y-%m-%d')
-        except ValueError:
-            message = (
-                'Incorrect date format for "since", should be YYYY-MM-DD'
-            )
-            raise ValueError(message)
-
-        # The marker is not "strict" unless that is explicitly stated.
-        # That means that by default, no error is raised if the test passes or
-        # fails.
-        strict = xfailflake_marker.kwargs.get('strict', False)
-        xfailflake_marker.kwargs['strict'] = strict
-        xfail_marker = pytest.mark.xfail(
-            *xfailflake_marker.args,
-            **xfailflake_marker.kwargs,
-        )
-        item.add_marker(xfail_marker)
-
-
 def pytest_runtest_setup(item):
     if pytest.config.getoption('--windows-only'):
         if item.get_marker('supportedwindows') is None:
             pytest.skip("skipping not supported windows test")
     elif item.get_marker('supportedwindowsonly') is not None:
         pytest.skip("skipping windows only test")
-
-    _add_xfail_markers(item)
 
 
 def pytest_configure(config):
@@ -157,29 +113,38 @@ def _dump_diagnostics(request, dcos_api_session):
 
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
-        log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
-
+        creation_start = datetime.datetime.now()
         last_datapoint = {
             'time': None,
             'value': 0
         }
 
+        health_url = dcos_api_session.default_url.copy(
+            query='cache=0',
+            path='system/health/v1',
+        )
+
+        diagnostics = Diagnostics(
+            default_url=health_url,
+            masters=dcos_api_session.masters,
+            all_slaves=dcos_api_session.all_slaves,
+            session=dcos_api_session.copy().session,
+        )
+
+        log.info('Create diagnostics report for all nodes')
+        diagnostics.start_diagnostics_job()
+
         log.info('\nWait for diagnostics job to complete')
-        wait_for_diagnostics_job(dcos_api_session, last_datapoint)
+        diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
+
+        duration = last_datapoint['time'] - creation_start
+        log.info('\nDiagnostis bundle took {} to generate'.format(duration))
 
         log.info('\nWait for diagnostics report to become available')
-        wait_for_diagnostics_list(dcos_api_session)
+        diagnostics.wait_for_diagnostics_reports()
 
         log.info('\nDownload zipped diagnostics reports')
-        bundles = _get_bundle_list(dcos_api_session)
-        for bundle in bundles:
-            for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
-                                                node=master_node)
-                bundle_path = os.path.join(os.path.expanduser('~'), bundle)
-                with open(bundle_path, 'wb') as f:
-                    for chunk in r.iter_content(1024):
-                        f.write(chunk)
+        bundles = diagnostics.get_diagnostics_reports()
+        diagnostics.download_diagnostics_reports(diagnostics_bundles=bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')

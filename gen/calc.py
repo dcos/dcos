@@ -356,6 +356,20 @@ def validate_dcos_overlay_network(dcos_overlay_network):
                     "Incorrect value for overlay subnet6 {}."
                     " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
 
+        if 'enabled' in overlay:
+            gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
+    overlay_network = json.loads(dcos_overlay_network)
+    overlays = []
+    for overlay in overlay_network['overlays']:
+        if enable_ipv6 == 'false' and 'subnet' not in overlay:
+            overlay['enabled'] = False
+        overlays.append(overlay)
+    overlay_network['overlays'] = overlays
+    return json.dumps(overlay_network)
+
 
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
@@ -427,12 +441,14 @@ def calculate_adminrouter_auth_enabled(oauth_enabled):
     return oauth_enabled
 
 
-def calculate_mesos_isolation(enable_gpu_isolation):
+def calculate_mesos_isolation(enable_gpu_isolation, mesos_seccomp_enabled):
     isolators = ('cgroups/all,disk/du,network/cni,filesystem/linux,docker/runtime,docker/volume,'
                  'volume/sandbox_path,volume/secret,posix/rlimits,namespaces/pid,linux/capabilities,'
                  'com_mesosphere_dcos_MetricsIsolatorModule')
     if enable_gpu_isolation == 'true':
         isolators += ',gpu/nvidia'
+    if mesos_seccomp_enabled == 'true':
+        isolators += ',linux/seccomp'
     return isolators
 
 
@@ -711,24 +727,16 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
     return yaml.dump(json.dumps(merged_checks, indent=2))
 
 
-def calculate__superuser_credentials_given(
+def validate_superuser_credentials_not_partially_given(
         superuser_service_account_uid, superuser_service_account_public_key):
     pair = (superuser_service_account_uid, superuser_service_account_public_key)
 
-    if all(pair):
-        return 'true'
-
-    if not any(pair):
-        return 'false'
-
-    # `calculate_` functions are not supposed to error out, but
-    # in this case here (multi-arg input) this check cannot
-    # currently be replaced by a `validate_` function.
-    raise AssertionError(
-        "'superuser_service_account_uid' and "
-        "'superuser_service_account_public_key' "
-        "must both be empty or both be non-empty"
-    )
+    if any(pair) and not all(pair):
+        raise AssertionError(
+            "'superuser_service_account_uid' and "
+            "'superuser_service_account_public_key' "
+            "must both be empty or both be non-empty"
+        )
 
 
 def calculate__superuser_service_account_public_key_json(
@@ -855,6 +863,16 @@ def calculate_check_config(check_time):
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'journald'],
                     'timeout': instant_check_timeout,
                 },
+                'cockroachdb_replication': {
+                    'description': 'CockroachDB is fully replicated',
+                    'cmd': [
+                        '/opt/mesosphere/bin/dcos-checks',
+                        'cockroachdb',
+                        'ranges',
+                    ],
+                    'timeout': normal_check_timeout,
+                    'roles': ['master']
+                },
             },
             'prestart': [],
             'poststart': [
@@ -869,6 +887,7 @@ def calculate_check_config(check_time):
                 'mesos_master_replog_synchronized',
                 'mesos_agent_registered_with_masters',
                 'journald_dir_permissions',
+                'cockroachdb_replication',
             ],
         },
     }
@@ -999,6 +1018,7 @@ entry = {
         validate_dns_forward_zones,
         validate_zk_hosts,
         validate_zk_path,
+        validate_superuser_credentials_not_partially_given,
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
@@ -1009,7 +1029,9 @@ entry = {
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
+        lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
         validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
         lambda dcos_overlay_network_default_name, dcos_overlay_network:
@@ -1043,6 +1065,7 @@ entry = {
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
+        lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
         lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
@@ -1055,6 +1078,8 @@ entry = {
         lambda licensing_enabled: validate_true_false(licensing_enabled),
         lambda enable_mesos_ipv6_discovery: validate_true_false(enable_mesos_ipv6_discovery),
         lambda log_offers: validate_true_false(log_offers),
+        lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
+        lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
         'bootstrap_tmp_dir': 'tmp',
@@ -1094,6 +1119,8 @@ entry = {
         'mesos_container_log_sink': 'logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
+        'mesos_seccomp_enabled': 'false',
+        'mesos_seccomp_profile_name': '',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -1108,12 +1135,15 @@ entry = {
         'ui_banner_footer_content': 'null',
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
+        'ui_update_enabled': 'true',
+        'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
         'dcos_cni_data_dir': '/var/run/dcos/cni/networks',
         'dcos_overlay_config_attempts': '4',
         'dcos_overlay_mtu': '1420',
         'dcos_overlay_enable': "true",
+        'dcos_overlay_network_json': calculate_dcos_overlay_network_json,
         'dcos_overlay_network': json.dumps({
             'vtep_subnet': '44.128.0.0/20',
             'vtep_subnet6': 'fd01:a::/64',
@@ -1156,7 +1186,6 @@ entry = {
         'superuser_service_account_uid': '',
         'superuser_service_account_public_key': '',
         '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
-        '_superuser_credentials_given': calculate__superuser_credentials_given,
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,
@@ -1174,7 +1203,9 @@ entry = {
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
-        'log_offers': 'true'
+        'log_offers': 'true',
+        'mesos_cni_root_dir_persist': 'false',
+        'enable_mesos_input_plugin': 'true'
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1207,6 +1238,8 @@ entry = {
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
+        'has_mesos_seccomp_profile_name':
+            lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,

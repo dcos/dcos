@@ -1,5 +1,5 @@
 {
-  "requires": ["openssl"],
+  "requires": ["openssl", "liblzma"],
   "environment": {
     "PYTHONPATH": "/opt/mesosphere/lib/python3.6/site-packages",
     "PYTHONUNBUFFERED": "true"

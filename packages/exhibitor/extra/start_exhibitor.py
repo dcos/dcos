@@ -4,6 +4,10 @@ import socket
 import sys
 from subprocess import CalledProcessError, check_call, check_output
 
+ZK_VAR_DIR = '/var/lib/dcos/exhibitor/zookeeper'
+ZK_SNAPSHOTS = os.path.join(ZK_VAR_DIR, 'snapshot')
+ZK_TRANSACTIONS = os.path.join(ZK_VAR_DIR, 'transactions')
+
 
 def get_var_assert_set(name):
     if name not in os.environ:
@@ -39,7 +43,15 @@ def invoke_detect_ip():
 detected_ip = invoke_detect_ip()
 
 # Make the zk conf directory (exhibitor assumes the dir exists)
-check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/', '/var/lib/dcos/exhibitor/zookeeper/transactions'])
+check_call(['mkdir', '-p', '/var/lib/dcos/exhibitor/conf/'])
+
+# From https://zookeeper.apache.org/doc/r3.4.13/zookeeperAdmin.html:
+# "The data stored in these [snapshot and log] files is not encrypted. In the
+# case of storing sensitive data in ZooKeeper, necessary measures need to be
+# taken to prevent unauthorized access."
+os.makedirs(ZK_SNAPSHOTS, 0o700, exist_ok=True)
+os.makedirs(ZK_TRANSACTIONS, 0o700, exist_ok=True)
+os.chmod(ZK_VAR_DIR, 0o700)
 
 # On some systems /tmp is mounted as noexec. Make zookeeper write its JNA
 # libraries to a path we control instead. See DCOS-11056
@@ -81,12 +93,12 @@ write_str('/run/dcos_exhibitor/exhibitor_defaults.conf', """
 # These Exhibitor properties are used to first initialize the config stored in
 # an empty shared storage location. Any subsequent invocations of Exhibitor will
 # ignore these properties and use the config found in shared storage.
-zookeeper-data-directory=/var/lib/dcos/exhibitor/zookeeper/snapshot
+zookeeper-data-directory={zookeeper_data_dir}
 zookeeper-install-directory=/opt/mesosphere/active/exhibitor/usr/zookeeper
-zookeeper-log-directory=/var/lib/dcos/exhibitor/zookeeper/transactions
+zookeeper-log-directory={zookeeper_log_dir}
 zookeeper-config-directory=/var/lib/dcos/exhibitor/conf
 zookeeper-pid-path=/var/lib/dcos/exhibitor/zk.pid
-log-index-directory=/var/lib/dcos/exhibitor/zookeeper/transactions
+log-index-directory={zookeeper_log_dir}
 cleanup-period-ms=300000
 check-ms={check_ms}
 backup-period-ms=600000
@@ -102,7 +114,9 @@ auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
 """.format(
     zookeeper_cluster_size=zookeeper_cluster_size,
-    check_ms=check_ms
+    check_ms=check_ms,
+    zookeeper_data_dir=ZK_SNAPSHOTS,
+    zookeeper_log_dir=ZK_TRANSACTIONS,
 ))
 
 write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """

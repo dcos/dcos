@@ -7,15 +7,7 @@ import yaml
 
 import gen
 import pkgpanda.util
-from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_success
-
-
-def validate_error_multikey(new_arguments, keys, message, unset=None):
-    assert gen.validate(arguments=make_arguments(new_arguments)) == {
-        'status': 'errors',
-        'errors': {key: {'message': message} for key in keys},
-        'unset': set() if unset is None else unset,
-    }
+from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
@@ -24,6 +16,15 @@ def test_invalid_telemetry_enabled():
     validate_error(
         {'telemetry_enabled': 'foo'},
         'telemetry_enabled',
+        err_msg)
+
+
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_invalid_enable_mesos_input_plugin():
+    err_msg = "Must be one of 'true', 'false'. Got 'foo'."
+    validate_error(
+        {'enable_mesos_input_plugin': 'foo'},
+        'enable_mesos_input_plugin',
         err_msg)
 
 
@@ -340,12 +341,12 @@ def test_validate_check_config():
     validate_error(
         {'check_config': json.dumps({'cluster_checks': {}})},
         'check_config',
-        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+        "Key 'cluster_checks' error: Missing key: Check name must be a nonzero length string with no whitespace",
     )
     validate_error(
         {'check_config': json.dumps({'node_checks': {}})},
         'check_config',
-        "Key 'node_checks' error: Missing keys: 'checks'",
+        "Key 'node_checks' error: Missing key: 'checks'",
     )
     validate_error(
         {
@@ -357,7 +358,7 @@ def test_validate_check_config():
         },
         'check_config',
         (
-            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "Key 'node_checks' error: Key 'checks' error: Missing key: Check name must be a nonzero length string "
             "with no whitespace"
         ),
     )
@@ -376,7 +377,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'cluster_checks' error: Missing keys: Check name must be a nonzero length string with no whitespace",
+        "Key 'cluster_checks' error: Missing key: Check name must be a nonzero length string with no whitespace",
     )
     validate_error(
         {
@@ -395,7 +396,7 @@ def test_validate_check_config():
         },
         'check_config',
         (
-            "Key 'node_checks' error: Key 'checks' error: Missing keys: Check name must be a nonzero length string "
+            "Key 'node_checks' error: Key 'checks' error: Missing key: Check name must be a nonzero length string "
             "with no whitespace"
         ),
     )
@@ -484,7 +485,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'cluster_checks' error: Key 'cluster-check-1' error: Missing keys: 'description'",
+        "Key 'cluster_checks' error: Key 'cluster-check-1' error: Missing key: 'description'",
     )
     validate_error(
         {
@@ -501,7 +502,7 @@ def test_validate_check_config():
             })
         },
         'check_config',
-        "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Missing keys: 'description'",
+        "Key 'node_checks' error: Key 'checks' error: Key 'node-check-1' error: Missing key: 'description'",
     )
 
     # Check cmd is wrong type.
@@ -791,6 +792,14 @@ def test_validate_mesos_work_dir():
         'mesos_agent_work_dir',
         'Must be an absolute filesystem path starting with /',
     )
+
+
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_invalid_mesos_cni_root_dir_persist():
+    validate_error(
+        {'mesos_cni_root_dir_persist': 'foo'},
+        'mesos_cni_root_dir_persist',
+        true_false_msg)
 
 
 # TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation

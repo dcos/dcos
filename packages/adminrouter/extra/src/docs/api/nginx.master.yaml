@@ -6,10 +6,14 @@ backends:
   dcos_diagnostics:
     server: '127.0.0.1:1050'
     name: DC/OS Diagnostics
-    reference: 'https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint'
+    reference: >-
+      https://docs.mesosphere.com/1.12/monitoring/#system-health-http-api-endpoint
   dcos_net:
     server: '127.0.0.1:62080'
     name: DC/OS Net
+  dcos_ui_update_service:
+    server: 'unix:/run/dcos/dcos-ui-update-service.sock'
+    name: DC/OS UI Update Service
   exhibitor:
     server: '127.0.0.1:8181'
     name: Exhibitor (Zookeeper)
@@ -17,29 +21,30 @@ backends:
   iam:
     server: '127.0.0.1:8101'
     name: DC/OS Authentication (OAuth)
-    reference: 'https://dcos.io/docs/1.10/security/iam-api/'
+    reference: 'https://docs.mesosphere.com/1.12/security/ent/iam-api/'
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
     name: DC/OS Log
-    reference: 'https://dcos.io/docs/1.10/monitoring/logging/logging-api/'
+    reference: 'https://docs.mesosphere.com/1.12/monitoring/logging/logging-api/'
   mesos_dns:
     server: '127.0.0.1:8123'
     name: Mesos DNS
-    reference: 'https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/'
+    reference: 'https://docs.mesosphere.com/1.12/networking/DNS/mesos-dns/mesos-dns-api/'
   metrics:
     server: 'unix:/run/dcos/telegraf-dcos-metrics.sock'
     name: DC/OS Metrics
-    reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
+    reference: 'https://docs.mesosphere.com/1.12/metrics/metrics-api/'
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
-    reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
+    reference: >-
+      https://docs.mesosphere.com/1.12/administering-clusters/component-management/
 routes:
   /:
     group: Root
     matcher: path
     description: DC/OS GUI
-    file: /opt/mesosphere/active/dcos-ui/usr
+    file: /var/lib/dcos/dcos-ui-update-service/dist/ui
     path: /
   '/(slave|agent)/(?<agentid>[0-9a-zA-Z-]+)':
     group: Agent
@@ -125,16 +130,6 @@ routes:
       path: 'http://$backend/lashup/key'
       backend: dcos_net
     path: /navstar/lashup/key
-  /net:
-    group: DC/OS Net
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/net$
-        replacement: '$scheme://$http_host/net/'
-        type: permanent
-    path: /net
   /net/:
     group: DC/OS Net
     matcher: path
@@ -142,16 +137,13 @@ routes:
       path: 'http://$backend/'
       backend: dcos_net
     path: /net/
-  /exhibitor:
-    group: Exhibitor
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/exhibitor$
-        replacement: '$scheme://$http_host/exhibitor/'
-        type: permanent
-    path: /exhibitor
+  /dcos-ui-update-service/api(?<url>.*):
+    group: DC/OS UI Update Service
+    matcher: regex
+    description: DC/OS UI Update Service API
+    proxy:
+      path: $dcos_ui_update_service
+    path: /dcos-ui-update-service/api(?<url>.*)
   /exhibitor/:
     group: Exhibitor
     matcher: path
@@ -206,16 +198,6 @@ routes:
         replacement: /$1
         type: break
     path: /cache/master/
-  /mesos:
-    group: Mesos
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/mesos$
-        replacement: '$scheme://$http_host/mesos/'
-        type: permanent
-    path: /mesos
   /mesos/:
     group: Mesos
     matcher: path
@@ -227,16 +209,6 @@ routes:
         replacement: /$1
         type: break
     path: /mesos/
-  /mesos_dns:
-    group: Mesos DNS
-    matcher: exact
-    description: Redirect to add trailing slash
-    visibility: hidden
-    redirects:
-      - regex: ^/mesos_dns$
-        replacement: '$scheme://$http_host/mesos_dns/'
-        type: permanent
-    path: /mesos_dns
   /mesos_dns/:
     group: Mesos DNS
     matcher: path
@@ -291,13 +263,13 @@ routes:
     proxy:
       path: $upstream_url
     path: '@service_requnbuffered'
-  /package/:
+  /package/(?<package_path>.*):
     group: Package
-    matcher: path
+    matcher: regex
     description: Package Management
     proxy:
       path: $upstream_cosmos
-    path: /package/
+    path: /package/(?<package_path>.*)
   /pkgpanda/:
     group: Pkgpanda
     matcher: path

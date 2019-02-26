@@ -3,6 +3,7 @@
     "boto",
     "dnspython",
     "flask",
+    "liblzma",
     "pytest",
     "python",
     "python-certifi",
