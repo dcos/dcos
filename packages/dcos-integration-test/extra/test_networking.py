@@ -730,6 +730,7 @@ def test_dcos_net_cluster_identity(dcos_api_session):
             cluster_id = "'{}'".format(f.readline().rstrip())
 
     argv = ['sudo', '/opt/mesosphere/bin/dcos-net-env', 'eval', 'erlang:get_cookie().']
-    cookie = subprocess.check_output(argv, stderr=subprocess.STDOUT).decode('utf-8').rstrip()
+    cookie = subprocess.check_output(argv, stderr=subprocess.STDOUT).decode('utf-8')
+    cookie = cookie.split('\n').rstrip()  # to fix DCOS-47438
 
     assert cluster_id == cookie, "cluster_id: {}, cookie: {}".format(cluster_id, cookie)
