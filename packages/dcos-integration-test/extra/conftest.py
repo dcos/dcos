@@ -1,7 +1,6 @@
 import datetime
 import logging
 import os
-import subprocess
 
 import pytest
 import requests
@@ -149,9 +148,3 @@ def _dump_diagnostics(request, dcos_api_session):
         diagnostics.download_diagnostics_reports(diagnostics_bundles=bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _docker_pull():
-    log.info("\n Docker pull debian:jessie-slim that is used in integration tests.")
-    subprocess.check_call(["docker", "pull", "debian:jessie-slim"])
