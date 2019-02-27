@@ -2,9 +2,9 @@
   "docker": "golang:1.11-stretch",
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/telegraf.git",
-    "ref": "8de2b1788dd9d9ea7d89408cfa168f332220d842",
-    "ref_origin": "1.9.4-dcos"
+    "git": "https://github.com/branden/telegraf.git",
+    "ref": "59a8bbfcab90c163393ef80ab82f60469d90435a",
+    "ref_origin": "dcos_statsd-systemd-socket"
   },
   "environment": {
     "STATSD_UDP_HOST": "localhost",
