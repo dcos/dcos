@@ -135,6 +135,11 @@
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/w/websocket-client/websocket_client-0.35.0.tar.gz",
       "sha1": "ecb09f5e740ca4f8bc8291de312718bb1cf2d452"
+    },
+    "wheel": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/96/ba/a4702cbb6a3a485239fbe9525443446203f00771af9ac000fa3ef2788201/wheel-0.33.1-py2.py3-none-any.whl",
+      "sha1": "1a9dbe1b84a402c072f6b2c459d45bc5e41027ea"
     }
   }
 }
