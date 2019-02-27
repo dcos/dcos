@@ -19,13 +19,14 @@ from subprocess import check_call
 from typing import List
 
 import requests
+import retrying
 import teamcity
 import yaml
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
-from pkgpanda.exceptions import FetchError, ValidationError
+from pkgpanda.exceptions import FetchError, IncompleteDownloadError, ValidationError
 
 is_windows = platform.system() == "Windows"
 
@@ -150,6 +151,33 @@ def get_requests_retry_session(max_retries=4, backoff_factor=1, status_forcelist
     return session
 
 
+def _is_incomplete_download_error(exception):
+    return isinstance(exception, IncompleteDownloadError)
+
+
+@retrying.retry(
+    stop_max_attempt_number=3,
+    wait_random_min=1000,
+    wait_random_max=2000,
+    retry_on_exception=_is_incomplete_download_error)
+def _download_remote_file(out_filename, url, retries=4):
+    with open(out_filename, "wb") as f:
+        r = get_requests_retry_session().get(url, stream=True)
+        r.raise_for_status()
+
+        content_length = int(r.headers['content-length'])
+
+        total_bytes_read = 0
+        for chunk in r.iter_content(chunk_size=4096):
+            f.write(chunk)
+            total_bytes_read += len(chunk)
+
+        if total_bytes_read != content_length:
+            raise IncompleteDownloadError(url, total_bytes_read, content_length)
+
+        return r
+
+
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
@@ -167,14 +195,7 @@ def download(out_filename, url, work_dir, rm_on_error=True):
                 src_filename = work_dir + '/' + src_filename
             shutil.copyfile(src_filename, out_filename)
         else:
-            # Download the file.
-            with open(out_filename, "w+b") as f:
-                r = get_requests_retry_session().get(url, stream=True)
-                if r.status_code == 301:
-                    raise Exception("got a 301")
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=4096):
-                    f.write(chunk)
+            _download_remote_file(out_filename, url)
     except Exception as fetch_exception:
         if rm_on_error:
             rm_passed = False
