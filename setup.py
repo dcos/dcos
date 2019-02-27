@@ -61,6 +61,7 @@ setup(
         'requests==2.20.1',
         'retrying',
         'schema',
+        'wheel==0.33.1',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
         'teamcity-messages'],
     entry_points={
