@@ -2326,6 +2326,8 @@ package:
           dcos-component-name = "Admin Router"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
+        # The systemd socket on which to listen
+        systemd_socket_name = "dcos-telegraf-dcos_metrics.socket"
         dcos_node_role = "master"
         # Duration to cache metrics in memory.
         cache_expiry = "2m"
@@ -2348,8 +2350,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
-        ## The address on which the command API should listen
-        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The systemd socket on which the command API should listen
+        systemd_socket_name = "dcos-telegraf-dcos_statsd.socket"
         ## The directory in which container information is stored
         containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
         ## The period after which requests to the API should time out
@@ -2448,6 +2450,8 @@ package:
         user_agent = "Telegraf-dcos-metadata"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
+        # The systemd socket on which to listen
+        systemd_socket_name = "dcos-telegraf-dcos_metrics.socket"
         dcos_node_role = "agent"
         # Duration to cache metrics in memory.
         cache_expiry = "2m"
@@ -2470,8 +2474,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
-        ## The address on which the command API should listen
-        listen = "/run/dcos/telegraf/dcos_statsd.sock"
+        ## The systemd socket on which the command API should listen
+        systemd_socket_name = "dcos-telegraf-dcos_statsd.socket"
         ## The directory in which container information is stored
         containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
         ## The period after which requests to the API should time out

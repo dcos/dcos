@@ -1,6 +1,7 @@
 [Unit]
-Description=Telegraf Socket: socket for Telegraf
+Description=Telegraf dcos_metrics Socket: socket for Telegraf's dcos_metrics plugin
 [Socket]
+Service=dcos-telegraf.service
 ListenStream=/run/dcos/telegraf-dcos-metrics.sock
 SocketUser=root
 SocketGroup=dcos_adminrouter

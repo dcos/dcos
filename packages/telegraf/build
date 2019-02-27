@@ -44,10 +44,18 @@ for unit in $agent_unit $agent_public_unit; do
   SERVICE="dcos-telegraf-agent" envsubst '${SERVICE} ${PKG_PATH}' < $unit_template > $unit
 done
 
-# Add the socket unit to the package for all roles.
-socket_unit="$PKG_PATH/dcos.target.wants/dcos-telegraf.socket"
-mkdir -p $(dirname $socket_unit)
-cp /pkg/extra/dcos-telegraf.socket $socket_unit
+# Add the dcos_metrics socket unit to the package for all roles.
+dcos_metrics_socket_unit="$PKG_PATH/dcos.target.wants/dcos-telegraf-dcos_metrics.socket"
+mkdir -p $(dirname $dcos_metrics_socket_unit)
+cp /pkg/extra/dcos-telegraf-dcos_metrics.socket $dcos_metrics_socket_unit
+
+# Add the dcos_statsd socket unit to the package for agents and public agents.
+dcos_statsd_socket_unit_agent="$PKG_PATH/dcos.target.wants_slave/dcos-telegraf-dcos_statsd.socket"
+dcos_statsd_socket_unit_agent_public="$PKG_PATH/dcos.target.wants_slave_public/dcos-telegraf-dcos_statsd.socket"
+for unit in $dcos_statsd_socket_unit_agent $dcos_statsd_socket_unit_agent_public; do
+  mkdir -p $(dirname $unit)
+  cp /pkg/extra/dcos-telegraf-dcos_statsd.socket $unit
+done
 
 # Add tools to the package.
 cp -r /pkg/extra/tools/ "${PKG_PATH}"

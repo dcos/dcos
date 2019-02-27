@@ -1,0 +1,15 @@
+[Unit]
+Description=Telegraf dcos_statsd Socket: socket for Telegraf's dcos_statsd plugin
+
+[Socket]
+Service=dcos-telegraf.service
+
+ExecStartPre=/bin/bash -c "mkdir -p /run/dcos/telegraf"
+ExecStartPre=/bin/bash -c "chmod 775 /run/dcos/telegraf"
+ExecStartPre=/bin/bash -c "chown root:dcos_telegraf /run/dcos/telegraf"
+
+SocketUser=root
+SocketGroup=dcos_telegraf
+SocketMode=0660
+
+ListenStream=/run/dcos/telegraf/dcos_statsd.sock
