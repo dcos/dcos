@@ -42,7 +42,7 @@ def get_expanded_config():
 
 
 @retrying.retry(wait_fixed=60 * 1000,       # wait for 60 seconds
-                retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError), # Called Process Error
+                retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError),  # Called Process Error
                 stop_max_attempt_number=3)  # retry 3 times
 def docker_pull_debian_jessie():
     log.info("\n Docker pull debian:jessie that is used in integration tests.")
