@@ -218,6 +218,11 @@ def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_ho
     return (hosts, origin_app, proxy_app)
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
 @pytest.mark.xfailflake(
     jira='DCOS-46146',
     reason='Upgrade docker to version 17.12.x.',

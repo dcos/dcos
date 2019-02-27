@@ -74,7 +74,7 @@ def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: st
 
 @pytest.mark.first
 def test_docker_image_availablity():
-    assert test_helpers.docker_pull_debian_jessie(), "docker pull failed the images used in the test"
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
 
 
 def test_if_marathon_app_can_be_deployed(dcos_api_session):

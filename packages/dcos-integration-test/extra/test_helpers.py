@@ -8,7 +8,7 @@ import retrying
 
 from dcos_test_utils import marathon
 
-__maintainer__ = 'mellenburg'
+__maintainer__ = 'orsenthil'
 __contact__ = 'tools-infra-team@mesosphere.io'
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
@@ -44,10 +44,10 @@ def get_expanded_config():
 @retrying.retry(wait_fixed=60 * 1000,       # wait for 60 seconds
                 retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError),  # Called Process Error
                 stop_max_attempt_number=3)  # retry 3 times
-def docker_pull_debian_jessie():
-    log.info("\n Docker pull debian:jessie that is used in integration tests.")
+def docker_pull_image(image: str) -> bool:
+    log.info("\n Ensure docker image is available, and cached locally before its usage in tests.")
     try:
-        subprocess.run(["docker", "pull", "debian:jessie"], check=True)
+        subprocess.run(["sudo", "docker", "pull", image], check=True)
         return True
     except retrying.RetryError:
         return False
