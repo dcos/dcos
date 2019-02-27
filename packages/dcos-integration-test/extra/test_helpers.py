@@ -45,7 +45,7 @@ def get_expanded_config():
                 retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError),  # Called Process Error
                 stop_max_attempt_number=3)  # retry 3 times
 def docker_pull_image(image: str) -> bool:
-    log.info("\n Ensure docker image is available, and cached locally before its usage in tests.")
+    log.info("\n Ensure docker image availability ahead of tests.")
     try:
         subprocess.run(["sudo", "docker", "pull", image], check=True)
         return True
