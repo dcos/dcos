@@ -1,8 +1,11 @@
 import os
 import tempfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from subprocess import CalledProcessError
+from threading import Thread
 
 import pytest
+import requests
 
 import pkgpanda.util
 from pkgpanda import UserManagement
@@ -302,10 +305,15 @@ def test_validate_username():
     bad('dcos3_foobar')
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows does not have a root group")
+@pytest.mark.skipif(
+    pkgpanda.util.is_windows,
+    reason="Windows does not have Unix groups",
+)
 def test_validate_group():
-    # assuming linux distributions have `root` group.
-    UserManagement.validate_group('root')
+    # We import grp here so that this module can be imported on Windows.
+    import grp
+    group_name_which_exists = grp.getgrall()[0].gr_name
+    UserManagement.validate_group(group_name_which_exists)
 
     with pytest.raises(ValidationError):
         UserManagement.validate_group('group-should-not-exist')
@@ -407,3 +415,77 @@ def test_write_string(tmpdir):
     st_mode = os.stat(filename).st_mode
     expected_permission = 0o777
     assert (st_mode & 0o777) == expected_permission
+
+
+class MockDownloadServerRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):  # noqa: N802
+        body = b'foobar'
+
+        self.send_response(requests.codes.ok)
+        self.send_header('Content-Type', 'text/plain')
+
+        if 'no_content_length' not in self.path:
+            self.send_header('Content-Length', '6')
+
+        self.end_headers()
+
+        if self.server.requests_received == 0:
+            # Don't send the last byte of the response body.
+            self.wfile.write(body[:len(body) - 1])
+        else:
+            self.wfile.write(body)
+        self.server.requests_received += 1
+
+        return
+
+
+class MockHTTPDownloadServer(HTTPServer):
+    requests_received = 0
+
+    def reset_requests_received(self):
+        self.requests_received = 0
+
+
+@pytest.fixture(scope='module')
+def mock_download_server():
+    mock_server = MockHTTPDownloadServer(('localhost', 0), MockDownloadServerRequestHandler)
+
+    mock_server_thread = Thread(target=mock_server.serve_forever, daemon=True)
+    mock_server_thread.start()
+
+    return mock_server
+
+
+def test_download_remote_file(tmpdir, mock_download_server):
+    mock_download_server.reset_requests_received()
+
+    url = 'http://localhost:{port}/foobar.txt'.format(port=mock_download_server.server_port)
+
+    out_file = os.path.join(str(tmpdir), 'foobar.txt')
+    response = pkgpanda.util._download_remote_file(out_file, url)
+
+    response_is_ok = response.ok
+    assert response_is_ok
+
+    assert mock_download_server.requests_received == 2
+
+    with open(out_file, 'rb') as f:
+        assert f.read() == b'foobar'
+
+
+def test_download_remote_file_without_content_length(tmpdir, mock_download_server):
+    mock_download_server.reset_requests_received()
+
+    url = 'http://localhost:{port}/foobar.txt?no_content_length=true'.format(
+        port=mock_download_server.server_port)
+
+    out_file = os.path.join(str(tmpdir), 'foobar.txt')
+    response = pkgpanda.util._download_remote_file(out_file, url)
+
+    response_is_ok = response.ok
+    assert response_is_ok
+
+    assert mock_download_server.requests_received == 1
+
+    with open(out_file, 'rb') as f:
+        assert f.read() == b'fooba'

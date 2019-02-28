@@ -3,5 +3,8 @@
       "dcos-image-deps",
       "dcos-test-utils",
       "pytest",
-      "python"]
+      "python",
+      "python-kazoo",
+      "python-prometheus_client",
+      "python-requests"]
 }

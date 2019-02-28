@@ -10,7 +10,7 @@ import kazoo.client
 import pytest
 import requests
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -21,11 +21,24 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
-        return subprocess.check_output(['sudo', 'docker', 'version', '-f', component]).decode('utf-8').rstrip()
+        return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
+                .decode('utf-8')
+                .rstrip()
+                )
+
+    try:
+        docker_client = _docker_info('{{.Client.Version}}')
+    except subprocess.TimeoutExpired:
+        docker_client = "Error: docker call timed out"
+
+    try:
+        docker_server = _docker_info('{{.Server.Version}}')
+    except subprocess.TimeoutExpired:
+        docker_server = "Error: docker call timed out"
 
     cluster_environment = {
-        "docker_client_version": _docker_info('{{.Client.Version}}'),
-        "docker_server_version": _docker_info('{{.Server.Version}}'),
+        "docker_client_version": docker_client,
+        "docker_server_version": docker_server,
         "system_platform": platform.platform(),
         "system_platform_system": platform.system(),
         "system_platform_release": platform.release(),
@@ -113,9 +126,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     # Insert all the diagnostics data programmatically
     master_units = [
         'dcos-adminrouter.service',
+        'dcos-cockroach.service',
+        'dcos-cockroachdb-config-change.service',
+        'dcos-cockroachdb-config-change.timer',
         'dcos-cosmos.service',
-        'dcos-metrics-master.service',
-        'dcos-metrics-master.socket',
         'dcos-exhibitor.service',
         'dcos-history.service',
         'dcos-log-master.service',
@@ -127,7 +141,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-mesos-master.service',
         'dcos-metronome.service',
         'dcos-signal.service',
-        'dcos-oauth.service',
+        'dcos-bouncer.service',
+        'dcos-bouncer-migrate-users.service',
+        'dcos-ui-update-service.service',
+        'dcos-ui-update-service.socket',
     ]
     all_node_units = [
         'dcos-checks-api.service',
@@ -151,8 +168,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     all_slave_units = [
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-metrics-agent.service',
-        'dcos-metrics-agent.socket',
         'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
@@ -288,6 +303,7 @@ def test_signal_service(dcos_api_session):
         }
     }
 
+    expanded_config = get_expanded_config()
     # Generic properties which are the same between all tracks
     generic_properties = {
         'platform': expanded_config['platform'],

@@ -62,7 +62,7 @@ endpoint_tests:
       is_upstream_req_ok:
         expected_http_ver: HTTP/1.0
         test_paths:
-          - expected: /dcos-metadata/ui-config.json
+          - expected: /acs/api/v1/uiconfig/
             sent: /dcos-metadata/ui-config.json
     type:
       - master

@@ -6,19 +6,21 @@ backends:
   dcos_diagnostics:
     server: 'unix:/run/dcos/dcos-diagnostics.sock'
     name: DC/OS Diagnostics
-    reference: 'https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint'
+    reference: >-
+      https://docs.mesosphere.com/1.12/monitoring/#system-health-http-api-endpoint
   log:
     server: 'unix:/run/dcos/dcos-log.sock'
     name: DC/OS Log
-    reference: 'https://dcos.io/docs/1.10/monitoring/logging/logging-api/'
+    reference: 'https://docs.mesosphere.com/1.12/monitoring/logging/logging-api/'
   metrics:
     server: 'unix:/run/dcos/telegraf-dcos-metrics.sock'
     name: DC/OS Metrics
-    reference: 'https://dcos.io/docs/1.10/metrics/metrics-api/'
+    reference: 'https://docs.mesosphere.com/1.12/metrics/metrics-api/'
   pkgpanda:
     server: 'unix:/run/dcos/pkgpanda-api.sock'
     name: DC/OS Component Package Manager (Pkgpanda)
-    reference: 'https://dcos.io/docs/1.10/administering-clusters/component-management/'
+    reference: >-
+      https://docs.mesosphere.com/1.12/administering-clusters/component-management/
 routes:
   /:
     group: Other
@@ -38,6 +40,11 @@ routes:
       path: 'http://$backend'
       backend: pkgpanda
     path: /pkgpanda/
+  /nginx/metrics:
+    group: Status
+    matcher: path
+    description: Virtual host traffic Prometheus output (unauthenticated)
+    path: /nginx/metrics
   /system/checks/v1:
     group: System
     matcher: path

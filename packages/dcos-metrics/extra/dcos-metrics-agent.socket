@@ -1,7 +1,0 @@
-[Unit]
-Description=DC/OS Metrics Agent Socket: socket for DC/OS Metrics Agent service
-[Socket]
-ListenStream=/run/dcos/dcos-metrics-agent.sock
-SocketUser=root
-SocketGroup=dcos_adminrouter
-SocketMode=0660

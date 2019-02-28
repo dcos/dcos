@@ -1,0 +1,56 @@
+# Purpose of this file
+# ====================
+#
+# We split E2E tests into groups so that the test suite can be run in
+# parallel on CI.
+# We could split these tests arbitrarily using, for example,
+# https://pypi.org/project/pytest-test-groups/.
+# However, a downside of this is that tests may move between groups as the test
+# suite size changes.
+# When a test moves between groups, we lose data from TeamCity, such as
+# statistics on test success rate.
+#
+# Details of this file
+# ====================
+#
+# The number of groups matches the number of TeamCity jobs for this test suite.
+# That is, if there are three groups, there must be three CI jobs, one for each
+# group.
+#
+# Each item in a group is a pytest pattern.
+# That means, when collected by pytest in the E2E tests directory, this
+# must collect some tests.
+# For example, the following might be valid patterns:
+# * test_filename.py
+# * test_filename.py::TestClassName
+# * test_filename.py::TestClassName::test_function_name
+#
+# Changing test groupings
+# =======================
+#
+# A goal is to have roughly even run time on each test group.
+# The test suite's run length is the length of time it takes to run the longest
+# group.
+#
+# In conflict with this goal is the cost of moving tests around.
+# Any developer moving a test from one group to the other, to decreate the test
+# suite's run length, must consider this trade-off.
+#
+# ``test_meta.py`` includes a test which asserts that the groups defined here
+# account for each test.
+#
+# Changing the number of groups
+# =============================
+#
+# The number of groups here must be reflected in TeamCity.
+# That is, there must be a builder which runs each group.
+#
+# If a group is added or renamed and no change is made to TeamCity, tests in
+# that group will not be run on CI.
+#
+# If a group is removed and no change is made to TeamCity, a CI builder will
+# fail.
+groups:
+    group_1:
+        - test_service_account.py
+        - test_master_node_replacement.py

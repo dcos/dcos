@@ -296,7 +296,7 @@ class TestUiRoot:
         url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
 
         with overridden_file_content(
-                '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
+                '/var/lib/dcos/dcos-ui-update-service/dist/ui/{}'.format(path),
                 uniq_content):
             resp = requests.get(
                 url,
@@ -306,7 +306,7 @@ class TestUiRoot:
         assert resp.status_code == 200
         resp.encoding = 'utf-8'
         assert resp.text == uniq_content
-        verify_header(resp.headers.items(), 'X-Frame-Options', 'DENY')
+        verify_header(resp.headers.items(), 'X-Frame-Options', 'SAMEORIGIN')
 
 
 class TestMisc:

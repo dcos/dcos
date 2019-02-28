@@ -1,10 +1,10 @@
 {
-  "docker": "golang:1.7",
+  "docker": "golang:1.11",
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos-dns.git",
-    "ref": "114915e5ce05376be2b237b5016d6832d273ea6f",
-    "ref_origin": "dcos/1.11"
+    "ref": "28427c25d147e2324452702fda50f42a5dd8723b",
+    "ref_origin": "master"
   },
   "username": "dcos_mesos_dns"
 }

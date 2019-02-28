@@ -59,7 +59,7 @@ setup(
         'coloredlogs',
         'Flask',
         'flask-compress',
-        'urllib3==1.22',
+        'urllib3==1.24.1',
         'chardet',
         'PyJWT',
         # Pins taken from 'azure==2.0.0rc4'
@@ -78,9 +78,10 @@ setup(
         'py',
         'pytest',
         'pyyaml',
-        'requests==2.18.4',
+        'requests==2.20.1',
         'retrying',
         'schema',
+        'wheel==0.33.1',
         'keyring==9.1',  # FIXME: pin keyring to prevent dbus dep
         'teamcity-messages'],
     entry_points={

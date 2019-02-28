@@ -12,7 +12,7 @@ from jwt.utils import base64url_decode, base64url_encode
 
 import generic_test_code.common
 from mocker.dns import DcosDnsServer
-from mocker.jwt import generate_hs256_jwt, generate_rs256_jwt
+from mocker.jwt import generate_rs256_jwt
 from runner.common import LogCatcher, SyslogMock
 from util import add_lo_ipaddr, ar_listen_link_setup, del_lo_ipaddr
 
@@ -192,7 +192,9 @@ def nginx_class(repo_is_ee, dns_server_mock_s, log_catcher, syslog_mock, mocker_
         # fixture would have to be pulled in every time nginx_class is used
         # on its own.
         ar_listen_link_setup(role, repo_is_ee)
-        return Nginx(*args, role=role, log_catcher=log_catcher, **kwargs)
+        return Nginx(
+            *args, role=role, log_catcher=log_catcher, syslog_mock=syslog_mock, **kwargs
+        )
 
     return f
 
@@ -289,26 +291,16 @@ def agent_ar_process_perclass(nginx_class):
 def jwt_generator(repo_is_ee):
     """Generate valid JWT for given repository flavour and parameters
 
-    ATM Open uses HS256, while EE: RS256. This fixture abstracts it away by
-    providing transparent interface to generating valid JWTs for given repository
-    flavour.
+    Both variants support RS256.
 
     This fixture exposes interface where it is possible to manipulate resulting
     JWT field values.
     """
-    if repo_is_ee:
-        key_path = os.getenv('IAM_PRIVKEY_FILE_PATH')
-    else:
-        key_path = os.getenv('IAM_SHARED_SECRET_FILE_PATH')
-
+    key_path = os.getenv('IAM_PRIVKEY_FILE_PATH')
     assert key_path is not None
 
-    if repo_is_ee:
-        def f(uid, *args, **kwargs):
-            return generate_rs256_jwt(key_path, uid=uid, *args, **kwargs)
-    else:
-        def f(uid, *args, **kwargs):
-            return generate_hs256_jwt(key_path, uid=uid, *args, **kwargs)
+    def f(uid, *args, **kwargs):
+        return generate_rs256_jwt(key_path, uid=uid, *args, **kwargs)
 
     return f
 

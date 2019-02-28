@@ -7,6 +7,7 @@ import subprocess
 
 import pytest
 
+
 __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 

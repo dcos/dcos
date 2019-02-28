@@ -290,6 +290,16 @@ function check() {
     fi
 }
 
+function check_docker_running() {
+    check_command_exists "docker" "docker"
+    echo -e -n "Checking if Docker is running: "
+    docker info >/dev/null 2>&1
+    RC=$?
+    print_status $RC
+    (( OVERALL_RC += $RC ))
+    return $RC
+}
+
 function check_service() {
   PORT=$1
   NAME=$2
@@ -430,6 +440,8 @@ function check_all() {
     check_selinux
     check_sort_capability
 
+    check_docker_running
+
     local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
         BEGIN {
             version = 0
@@ -487,7 +499,6 @@ function check_all() {
     check unzip
     check ipset
     check systemd-notify
-    check ifconfig
 
     # $ systemctl --version ->
     # systemd nnn
@@ -525,8 +536,6 @@ function check_all() {
             "46839 metronome" \
             "61053 mesos-dns" \
             "61091 telegraf" \
-            "61092 dcos-metrics" \
-            "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -539,8 +548,6 @@ function check_all() {
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
             "61091 telegraf" \
-            "61092 dcos-metrics" \
-            "61420 dcos-net" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do

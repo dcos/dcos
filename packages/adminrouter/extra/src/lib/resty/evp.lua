@@ -3,7 +3,8 @@
 
 local ffi = require "ffi"
 local _C = ffi.C
-local _M = { _VERSION = "0.0.2" }
+local _M = { _VERSION = "0.2.0" }
+local ngx = ngx
 
 
 local CONST = {
@@ -88,8 +89,15 @@ typedef struct env_md_ctx_st EVP_MD_CTX;
 typedef struct env_md_st EVP_MD;
 typedef struct evp_pkey_ctx_st EVP_PKEY_CTX;
 const EVP_MD *EVP_get_digestbyname(const char *name);
+
+//OpenSSL 1.0
 EVP_MD_CTX *EVP_MD_CTX_create(void);
 void    EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
+
+//OpenSSL 1.1
+EVP_MD_CTX *EVP_MD_CTX_new(void);
+void    EVP_MD_CTX_free(EVP_MD_CTX *ctx);
+
 int     EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *impl);
 int     EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                         const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey);
@@ -111,11 +119,43 @@ int X509_digest(const X509 *data,const EVP_MD *type,
 
 
 local function _err(ret)
+    -- The openssl error queue can have multiple items, print them all separated by ': '
+    local errs = {}
     local code = _C.ERR_get_error()
-    if code == 0 then
+    while code ~= 0 do
+        table.insert(errs, 1, ffi.string(_C.ERR_reason_error_string(code)))
+        code = _C.ERR_get_error()
+    end
+
+    if #errs == 0 then
         return ret, "Zero error code (null arguments?)"
     end
-    return ret, ffi.string(_C.ERR_reason_error_string(code))
+    return ret, table.concat(errs, ": ")
+end
+
+local ctx_new, ctx_free
+local openssl11, e = pcall(function ()
+    local ctx = _C.EVP_MD_CTX_new()
+    _C.EVP_MD_CTX_free(ctx)
+end)
+
+ngx.log(ngx.DEBUG, "openssl11=", openssl11, " err=", e)
+
+if openssl11 then
+    ctx_new = function ()
+        return _C.EVP_MD_CTX_new()
+    end
+    ctx_free = function (ctx)
+        ffi.gc(ctx, _C.EVP_MD_CTX_free)
+    end
+else
+    ctx_new = function ()
+        local ctx = _C.EVP_MD_CTX_create()
+        return ctx
+    end
+    ctx_free = function (ctx)
+        ffi.gc(ctx, _C.EVP_MD_CTX_destroy)
+    end
 end
 
 
@@ -134,10 +174,13 @@ function RSASigner.new(self, pem_private_key)
 
     -- TODO might want to support password protected private keys...
     local rsa = _C.PEM_read_bio_RSAPrivateKey(bio, nil, nil, nil)
+    if rsa == nil then
+        return _err()
+    end
     ffi.gc(rsa, _C.RSA_free)
 
     local evp_pkey = _C.EVP_PKEY_new()
-    if not evp_pkey then
+    if evp_pkey == nil then
         return _err()
     end
     ffi.gc(evp_pkey, _C.EVP_PKEY_free)
@@ -157,14 +200,14 @@ function RSASigner.sign(self, message, digest_name)
     local buf = ffi.new("unsigned char[?]", 1024)
     local len = ffi.new("size_t[1]", 1024)
 
-    local ctx = _C.EVP_MD_CTX_create()
-    if not ctx then
+    local ctx = ctx_new()
+    if ctx == nil then
         return _err()
     end
-    ffi.gc(ctx, _C.EVP_MD_CTX_destroy)
+    ctx_free(ctx)
 
     local md = _C.EVP_get_digestbyname(digest_name)
-    if not md then
+    if md == nil then
         return _err()
     end
 
@@ -209,15 +252,15 @@ end
 -- @returns bool, error_string
 function RSAVerifier.verify(self, message, sig, digest_name)
     local md = _C.EVP_get_digestbyname(digest_name)
-    if not md then
+    if md == nil then
         return _err(false)
     end
 
-    local ctx = _C.EVP_MD_CTX_create()
-    if not ctx then
+    local ctx = ctx_new()
+    if ctx == nil then
         return _err(false)
     end
-    ffi.gc(ctx, _C.EVP_MD_CTX_destroy)
+    ctx_free(ctx)
 
     if _C.EVP_DigestInit_ex(ctx, md, nil) ~= 1 then
         return _err(false)
@@ -265,7 +308,7 @@ function Cert.new(self, payload)
         end
         x509 = _C.d2i_X509_bio(bio, nil)
     end
-    if not x509 then
+    if x509 == nil then
         return _err()
     end
     ffi.gc(x509, _C.X509_free)
@@ -274,7 +317,9 @@ function Cert.new(self, payload)
     if not public_key then
         return nil, err
     end
-    
+
+    ffi.gc(public_key, _C.EVP_PKEY_free)
+
     self.public_key = public_key
     return self, nil
 end
@@ -297,7 +342,7 @@ end
 -- @returns fingerprint_string
 function Cert.get_fingerprint(self, digest_name)
     local md = _C.EVP_get_digestbyname(digest_name)
-    if not md then
+    if md == nil then
         return _err()
     end
     local buf = ffi.new("unsigned char[?]", 32)
@@ -315,7 +360,7 @@ end
 -- @returns An OpenSSL EVP PKEY object representing the public key
 function Cert.get_public_key(self)
     local evp_pkey = _C.X509_get_pubkey(self.x509)
-    if not evp_pkey then
+    if evp_pkey == nil then
         return _err()
     end
 
@@ -327,7 +372,7 @@ end
 -- @return bool, error_string
 function Cert.verify_trust(self, trusted_cert_file)
     local store = _C.X509_STORE_new()
-    if not store then
+    if store == nil then
         return _err(false)
     end
     ffi.gc(store, _C.X509_STORE_free)
@@ -336,7 +381,7 @@ function Cert.verify_trust(self, trusted_cert_file)
     end
 
     local ctx = _C.X509_STORE_CTX_new()
-    if not store then
+    if store == nil then
         return _err(false)
     end
     ffi.gc(ctx, _C.X509_STORE_CTX_free)
@@ -364,7 +409,7 @@ _M.PublicKey = PublicKey
 --
 -- ----- BEGIN PUBLIC KEY -----
 --
--- @param payload A PEM or DER format public key file 
+-- @param payload A PEM or DER format public key file
 -- @return PublicKey, error_string
 function PublicKey.new(self, payload)
     if not payload then
@@ -384,13 +429,13 @@ function PublicKey.new(self, payload)
         end
         pkey = _C.d2i_PUBKEY_bio(bio, nil)
     end
-    if not pkey then
+    if pkey == nil then
         return _err()
     end
     ffi.gc(pkey, _C.EVP_PKEY_free)
     self.public_key = pkey
     return self, nil
 end
-    
+
 
 return _M

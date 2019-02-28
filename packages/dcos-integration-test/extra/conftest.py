@@ -1,14 +1,11 @@
+import datetime
 import logging
 import os
 
 import pytest
-from test_dcos_diagnostics import (
-    _get_bundle_list,
-    check_json,
-    wait_for_diagnostics_job,
-    wait_for_diagnostics_list
-)
-from test_helpers import expanded_config
+import requests
+from dcos_test_utils.diagnostics import Diagnostics
+from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +20,7 @@ def dcos_api_session(dcos_api_session_factory):
     args = dcos_api_session_factory.get_args_from_env()
 
     exhibitor_admin_password = None
+    expanded_config = get_expanded_config()
     if expanded_config['exhibitor_admin_password_enabled'] == 'true':
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
@@ -66,11 +64,33 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
+# Note(JP): Attempt to reset Marathon state before and after every test run in
+# this test suite. This is a brute force approach but we found that the problem
+# of side effects as of too careless test isolation and resource cleanup became
+# too large. If this test suite ever introduces a session- or module-scoped
+# fixture providing a Marathon app then the `autouse=True` approach will need to
+# be relaxed.
 @pytest.fixture(autouse=True)
 def clean_marathon_state(dcos_api_session):
-    dcos_api_session.marathon.purge()
-    yield
-    dcos_api_session.marathon.purge()
+    """
+    Attempt to clean up Marathon state before entering the test and when leaving
+    the test. Especially attempt to clean up when the test code failed. When the
+    cleanup fails do not fail the test but log relevant information.
+    """
+
+    def _purge_nofail():
+        try:
+            dcos_api_session.marathon.purge()
+        except Exception as exc:
+            log.exception('Ignoring exception during marathon.purge(): %s', exc)
+            if isinstance(exc, requests.exceptions.HTTPError):
+                log.error('exc.response.text: %s', exc.response.text)
+
+    _purge_nofail()
+    try:
+        yield
+    finally:
+        _purge_nofail()
 
 
 @pytest.fixture(scope='session')
@@ -93,29 +113,38 @@ def _dump_diagnostics(request, dcos_api_session):
 
     make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
-        log.info('Create diagnostics report for all nodes')
-        check_json(dcos_api_session.health.post('/report/diagnostics/create', json={"nodes": ["all"]}))
-
+        creation_start = datetime.datetime.now()
         last_datapoint = {
             'time': None,
             'value': 0
         }
 
+        health_url = dcos_api_session.default_url.copy(
+            query='cache=0',
+            path='system/health/v1',
+        )
+
+        diagnostics = Diagnostics(
+            default_url=health_url,
+            masters=dcos_api_session.masters,
+            all_slaves=dcos_api_session.all_slaves,
+            session=dcos_api_session.copy().session,
+        )
+
+        log.info('Create diagnostics report for all nodes')
+        diagnostics.start_diagnostics_job()
+
         log.info('\nWait for diagnostics job to complete')
-        wait_for_diagnostics_job(dcos_api_session, last_datapoint)
+        diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
+
+        duration = last_datapoint['time'] - creation_start
+        log.info('\nDiagnostis bundle took {} to generate'.format(duration))
 
         log.info('\nWait for diagnostics report to become available')
-        wait_for_diagnostics_list(dcos_api_session)
+        diagnostics.wait_for_diagnostics_reports()
 
         log.info('\nDownload zipped diagnostics reports')
-        bundles = _get_bundle_list(dcos_api_session)
-        for bundle in bundles:
-            for master_node in dcos_api_session.masters:
-                r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
-                                                node=master_node)
-                bundle_path = os.path.join(os.path.expanduser('~'), bundle)
-                with open(bundle_path, 'wb') as f:
-                    for chunk in r.iter_content(1024):
-                        f.write(chunk)
+        bundles = diagnostics.get_diagnostics_reports()
+        diagnostics.download_diagnostics_reports(diagnostics_bundles=bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')

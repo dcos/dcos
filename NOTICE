@@ -13,6 +13,10 @@ limitations under the Agreement.
 Below is a list of third party open source software which is provided by
 Mesosphere in connection with Mesosphere DC/OS.
 
+bouncer
+- Apache License, Version 2.0
+- https://github.com/dcos/bouncer/blob/master/LICENSE
+
 dcos-diagnostics
 - Apache License, Version 2.0
 - https://github.com/dcos/dcos-diagnostics/blob/master/LICENSE
@@ -108,6 +112,10 @@ minuteman
 
 Nginx
 - http://nginx.org/LICENSE
+
+nginx-module-vts
+- BSD 2-Clause License
+- https://github.com/vozlt/nginx-module-vts/blob/master/LICENSE
 
 ncurses
 - MIT License

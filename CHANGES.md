@@ -1,4 +1,4 @@
-## DC/OS 1.12.0
+## DC/OS 1.13.0
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -14,83 +14,93 @@ Format of the entries must be.
 ```
 
 
+### Highlights
+
+#### Introduction of service accounts, alignment of authentication architectures
+
+The core of the DC/OS Enterprise identity and access management service (IAM) has been open-sourced and added to DC/OS, replacing `dcos-oauth`. CockroachDB was added as a DC/OS component as a highly available database serving the IAM.
+
+With that DC/OS now supports service accounts. Service accounts allow individual tools and applications to interact with a DC/OS cluster using their own identity. A successful service account login results in authentication proof -- the DC/OS authentication token. A valid DC/OS authentication token is required in order to access DC/OS services and components through Master Admin Router.
+
+This change also aligned the authentication architectures between DC/OS Enterprise and DC/OS: the HTTP API for service account management as well as for service account login is now the same in both systems. The DC/OS authentication token implementation details are equivalent in both systems: it is a JSON Web Token (JWT) of type RS256 which can be validated by any component in the system after consulting the IAM's JSON Web Key Set (JWKS) endpoint.
+
+
+### What's new
+
+* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
+
+* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
+
+* CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
+
+* ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
+
+* Marathon and Metronome have DC/OS install flag to configure GPU support.  "restricted", "unrestricted", "undefined" and "" are valid.
+
+* Mesos metrics are now available by default. (DCOS_OSS-3815)
+
+* Metronome supports UCR
+
+* Metronome supports file based secrets
+
+* Metronome supports hybrid cloud
+
+* Marathon metrics are now collected by Telegraf (DCOS-47693)
+
+* Expose Public IP (DCOS_OSS-4514)
+
+* Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
+
+* Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
+
+* Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
+
+* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot (DCOS_OSS-4667)
+
+* Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
+
+* Allow setting environment variables for `docker-gc` in `/var/lib/dcos/docker-gc.env`
+
+* Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
+
+* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe.
+* Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
+
+
+### Breaking changes
+
+
+### Known limitations
+
+* Authentication tokens emitted by `dcos-oauth` prior to an upgrade from DC/OS version 1.12.x to DC/OS version 1.13.x will become invalid during the upgrade. Simply log in again.
+
+
 ### Fixed and improved
-* Add mountinfo to diagnostics bundle (DCOS_OSS_3961)
 
-* Fixed Docker isolation iptables rule reversal on reboot. (DCOS_OSS-3697)
+* Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 
-* Updated CNI plugins to v0.7.1. (DCOS_OSS-3841)
+* Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
 
-* Mesos: Expose memory profiling endpoints. (DCOS_OSS-2137)
+* Add external Mesos master/agent logs in the diagnostic bundle (DCOS_OSS-4283)
 
-* Added an API for checks at /system/checks/ on all cluster nodes. (DCOS_OSS-1406)
+* Update Java to 8u192. (DCOS_OSS-4380)
 
-* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+* Docker-GC will now log to journald. (COPS-4044)
 
-* Node and cluster checks are executed in parallel. (DCOS_OSS-2239)
+* Allow the DC/OS installer to be used when there is a space in its path (DCOS_OSS-4429).
 
-* Enabled Windows-based pkgpanda builds. (DCOS_OSS-1899)
+* Admin Router logs to non-blocking socket. (DCOS-43956)
 
-* DC/OS Metrics: moved the prometheus producer from port 9273 to port 61091. (DCOS_OSS-2368)
+* Add path-based routing to AR to routing requests to `dcos-net` (DCOS_OSS-1837)
 
-* Release cosmos v0.6.0. (DCOS_OSS-2195)
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
 
-* Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
+* Fix CLI task metrics summary command which was occasionally failing to find metrics (DCOS_OSS-4679)
 
-* A cluster's IP detect script may be changed with a config upgrade (DCOS_OSS-2389)
+* Improve error message in case Docker is not running at start of installation (DCOS-15890)
 
-* DC/OS Net: Support Mesos Windows Agent (DCOS_OSS-2073)
-
-* DC/OS Net: Use Operator HTTP API (DCOS_OSS-1566)
-
-* Admin Router: It is now possible to disable HTTP request buffering for `/service/` endpoint requests through the DCOS_SERVICE_REQUEST_BUFFERING Marathon label. (DCOS_OSS-2420)
-
-* Admin Router: It is now possible to disable upstream request URL rewriting for `/service/` endpoint requests through the DCOS_SERVICE_REWRITE_REQUEST_URLS Marathon label. (DCOS_OSS-2420)
-
-* Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
-
-* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
-
-* Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
-
-* Fix logging of dcos-checks-poststart results to the journal. (DCOS_OSS-3804)
-
-* Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
-
-
-### Security Updates
-
-* Update cURL to 7.59. (DCOS_OSS-2367)
-
-* Updated OpenSSL to 1.0.2n. (DCOS_OSS-1903)
-
-* Mesos does not expose ZooKeeper credentials anymore via its state JSON document. (DCOS_OSS-2162)
-
-* TLS: Admin Router should be configured with both RSA and EC type certificates. (DCOS-22050)
-
-* Disable the 3DES bulk encryption algorithm for Master Admin Router's TLS. (DCOS-21958)
-
-* Disable the TLS 1.1 protocol for Master Admin Router's TLS. (DCOS-22326)
-
-* Prevent dcos-history leaking auth tokens (DCOS-40373)
-
+* Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
 
 ### Notable changes
 
-* Mesos now uses the jemalloc memory profiler by default. (DCOS_OSS-2137)
-
-* Updated DC/OS UI to master+v2.19.4 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/master+v2.19.4)
-
-* Replaced the dcos-diagnostics check runner with dcos-check-runner. (DCOS_OSS-3491)
-
-* Removed the DC/OS web installer. (DCOS_OSS-2256)
-
-* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
-
-* Updated OTP version to 20.3.2 (DCOS_OSS-2378)
-
-* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
-
-* DC/OS can now be installed with SELinux in enforcing mode with the "targeted" policy loaded (DCOS-38953)
-
-* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
+* Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)

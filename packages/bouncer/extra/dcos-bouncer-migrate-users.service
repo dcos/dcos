@@ -1,0 +1,16 @@
+[Unit]
+Description=DC/OS Identity and Access users migration: Migrate users from dcos-oauth service.
+Documentation=https://docs.mesosphere.com
+
+[Service]
+Type=simple
+User=dcos_bouncer
+StartLimitInterval=0
+Restart=on-failure
+RestartSec=30
+LimitNOFILE=16384
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=/opt/mesosphere/active/bouncer/bin/iam-migrate-users-from-zk.py
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+{
+  "requires": ["python"],
+  "single_source": {
+      "kind": "url_extract",
+      "url": "https://pypi.python.org/packages/source/f/future/future-0.15.2.tar.gz",
+      "sha1": "431bf8ff160e8e785a2f76c3e57c1b6c2b13b41a"
+  }
+}
