@@ -1799,7 +1799,7 @@ package:
               {
                   "Command": ["iptables-save"]
               },
-                           {
+              {
                   "Command": ["sysctl", "-a"]
               },
               {
