@@ -1799,6 +1799,9 @@ package:
               {
                   "Command": ["iptables-save"]
               },
+                           {
+                  "Command": ["sysctl", "-a"]
+              },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
