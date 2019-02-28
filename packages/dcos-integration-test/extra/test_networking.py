@@ -413,19 +413,26 @@ def test_ip_per_container(dcos_api_session):
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
 
 
+@pytest.mark.parametrize('networking_mode', list(marathon.Network))
 @pytest.mark.parametrize('host_port', [9999, 0])
-def test_app_with_container_mode_with_defined_container_port(dcos_api_session, host_port):
-    '''Testing the case when a non-zero container port is specified
-       in Marathon app definition with networking mode 'container'.
-       It does not matter if the host port is fixed (non-zero),
-       randomly assigned by Marathon (0): Admin Router must route the request
-       to the specified container port.
-    '''
+def test_app_networking_mode_with_defined_container_port(dcos_api_session, networking_mode, host_port):
+    """
+    The Admin Router can proxy a request on the `/service/[app]`
+    endpoint to an application running in a container in different networking
+    modes with manually or automatically assigned host port on which is
+    the application HTTP endpoint exposed.
 
+    Networking modes are testing following configurations:
+    - host
+    - container
+    - container/bridge
+
+    https://mesosphere.github.io/marathon/docs/networking.html#networking-modes
+    """
     app_definition, test_uuid = test_helpers.marathon_test_app(
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
         container_type=marathon.Container.DOCKER,
-        network=marathon.Network.USER,
+        network=networking_mode,
         host_port=host_port)
 
     dcos_service_name = uuid.uuid4().hex
@@ -469,7 +476,8 @@ def test_app_with_container_mode_with_defined_container_port(dcos_api_session, h
             timeout=1200,
         )
         r = dcos_api_session.get('/service/' + dcos_service_name + '/ping')
-    assert r.status_code == 200
+        assert r.status_code == 200
+        assert 'pong' in r.json()
 
 
 @retrying.retry(wait_fixed=2000,
