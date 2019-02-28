@@ -166,7 +166,7 @@ def test_replace_all_static(
                 )
                 # Form a new cluster with the newly create master node.
                 new_cluster = Cluster.from_nodes(
-                    masters=current_cluster.masters.add(new_master),
+                    masters=current_cluster.masters.union({new_master}),
                     agents=current_cluster.agents,
                     public_agents=current_cluster.public_agents,
                 )
