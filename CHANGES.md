@@ -1,4 +1,4 @@
-## DC/OS 1.12-dev
+## DC/OS 1.12.3
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
