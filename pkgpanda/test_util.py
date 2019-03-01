@@ -417,8 +417,11 @@ class MockDownloadServerRequestHandler(BaseHTTPRequestHandler):
         body = b'foobar'
 
         self.send_response(requests.codes.ok)
-        self.send_header('Content-Length', '6')
         self.send_header('Content-Type', 'text/plain')
+
+        if 'no_content_length' not in self.path:
+            self.send_header('Content-Length', '6')
+
         self.end_headers()
 
         if self.server.requests_received == 0:
@@ -434,17 +437,24 @@ class MockDownloadServerRequestHandler(BaseHTTPRequestHandler):
 class MockHTTPDownloadServer(HTTPServer):
     requests_received = 0
 
+    def reset_requests_received(self):
+        self.requests_received = 0
 
-def test_stream_remote_file_with_retries(tmpdir):
+
+@pytest.fixture(scope='module')
+def mock_download_server():
     mock_server = MockHTTPDownloadServer(('localhost', 0), MockDownloadServerRequestHandler)
-    mock_server_port = mock_server.server_port
 
-    mock_server_thread = Thread(
-        target=mock_server.serve_forever,
-        daemon=True)
+    mock_server_thread = Thread(target=mock_server.serve_forever, daemon=True)
     mock_server_thread.start()
 
-    url = 'http://localhost:{port}/foobar.txt'.format(port=mock_server_port)
+    return mock_server
+
+
+def test_download_remote_file(tmpdir, mock_download_server):
+    mock_download_server.reset_requests_received()
+
+    url = 'http://localhost:{port}/foobar.txt'.format(port=mock_download_server.server_port)
 
     out_file = os.path.join(str(tmpdir), 'foobar.txt')
     response = pkgpanda.util._download_remote_file(out_file, url)
@@ -452,7 +462,25 @@ def test_stream_remote_file_with_retries(tmpdir):
     response_is_ok = response.ok
     assert response_is_ok
 
-    assert mock_server.requests_received == 2
+    assert mock_download_server.requests_received == 2
 
     with open(out_file, 'rb') as f:
         assert f.read() == b'foobar'
+
+
+def test_download_remote_file_without_content_length(tmpdir, mock_download_server):
+    mock_download_server.reset_requests_received()
+
+    url = 'http://localhost:{port}/foobar.txt?no_content_length=true'.format(
+        port=mock_download_server.server_port)
+
+    out_file = os.path.join(str(tmpdir), 'foobar.txt')
+    response = pkgpanda.util._download_remote_file(out_file, url)
+
+    response_is_ok = response.ok
+    assert response_is_ok
+
+    assert mock_download_server.requests_received == 1
+
+    with open(out_file, 'rb') as f:
+        assert f.read() == b'fooba'
