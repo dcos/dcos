@@ -259,6 +259,11 @@ def test_ipv6(dcos_api_session, same_host):
         proxy_app.purge(dcos_api_session)
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
 @pytest.mark.slow
 @pytest.mark.skip(reason='DCOS_OSS-1993')
 def test_vip_ipv6(dcos_api_session):
