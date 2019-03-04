@@ -145,7 +145,9 @@ def get_roles():
 def main():
     opts = parse_args()
 
-    logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
+    # Display the pid in each log message to distinguish concurrent runs
+    log_format = '{}:[%(levelname)s] %(message)s'.format(os.getpid())
+    logging.basicConfig(format=log_format, level='INFO')
     log.setLevel(logging.DEBUG)
 
     log.info('Clearing proxy environment variables')
@@ -163,7 +165,7 @@ def main():
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
         apply_service_configuration(service)
-        log.debug('bootstrapping {}'.format(service))
+        log.info('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
 
