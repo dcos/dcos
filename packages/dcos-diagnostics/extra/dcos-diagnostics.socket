@@ -7,5 +7,5 @@ SocketUser=root
 SocketGroup=dcos_adminrouter
 SocketMode=0660
 
-Install]
+[Install]
 WantedBy=dcos.target
