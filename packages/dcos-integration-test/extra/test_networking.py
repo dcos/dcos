@@ -201,6 +201,11 @@ def generate_vip_app_permutations():
             for proxy_net in list(marathon.Network)]
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize(
     'container,vip_net,proxy_net',
