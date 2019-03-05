@@ -100,6 +100,9 @@ def get_roles():
 def main():
     opts = parse_args()
 
+    # Display the pid in each log message to distinguish concurrent runs
+    log_format = 'pid={}:[%(levelname)s] %(message)s'.format(os.getpid())
+    logging.basicConfig(format=log_format, level='INFO')
     logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
     log.setLevel(logging.DEBUG)
 
@@ -115,7 +118,7 @@ def main():
 
     for service in opts.services:
         if service not in bootstrappers:
-            log.error('Unknown service: {}'.format(service))
+            log.info('Unknown service: {}'.format(service))
             sys.exit(1)
         apply_service_configuration(service)
         log.debug('bootstrapping {}'.format(service))
