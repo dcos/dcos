@@ -1,4 +1,4 @@
-## DC/OS 1.10.10
+## DC/OS 1.10.11
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -12,6 +12,11 @@ Format of the entries must be.
 <new-line>
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
+### Fixed and improved
+
+* Updated DC/OS UI to [v1.10.11](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.11)
+
+## DC/OS 1.10.10
 
 ### Notable changes
 
