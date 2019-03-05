@@ -1299,7 +1299,7 @@ package:
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 10000
+        metric_buffer_limit = 20000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
