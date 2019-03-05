@@ -55,6 +55,11 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
             assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
     """Marathon app deployment integration test
 
