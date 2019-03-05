@@ -6,6 +6,7 @@ import json
 import logging
 import subprocess
 import threading
+import time
 import uuid
 from collections import deque
 
@@ -218,11 +219,11 @@ def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_ho
     return (hosts, origin_app, proxy_app)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-46146',
-    reason='Upgrade docker to version 17.12.x.',
-    since='2018-12-11',
-)
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
@@ -368,11 +369,6 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-46146',
-    reason='Upgrade docker to version 17.12.x.',
-    since='2018-12-11',
-)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
@@ -420,6 +416,73 @@ def test_ip_per_container(dcos_api_session):
         app_port = app_definition['container']['portMappings'][0]['containerPort']
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}:{}/ping'.format(service_points[1].ip, app_port)
         ensure_routable(cmd, service_points[0].host, service_points[0].port)
+
+
+@pytest.mark.parametrize('networking_mode', list(marathon.Network))
+@pytest.mark.parametrize('host_port', [9999, 0])
+def test_app_networking_mode_with_defined_container_port(dcos_api_session, networking_mode, host_port):
+    """
+    The Admin Router can proxy a request on the `/service/[app]`
+    endpoint to an application running in a container in different networking
+    modes with manually or automatically assigned host port on which is
+    the application HTTP endpoint exposed.
+
+    Networking modes are testing following configurations:
+    - host
+    - container
+    - container/bridge
+
+    https://mesosphere.github.io/marathon/docs/networking.html#networking-modes
+    """
+    app_definition, test_uuid = test_helpers.marathon_test_app(
+        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
+        container_type=marathon.Container.DOCKER,
+        network=networking_mode,
+        host_port=host_port)
+
+    dcos_service_name = uuid.uuid4().hex
+
+    app_definition['labels'] = {
+        'DCOS_SERVICE_NAME': dcos_service_name,
+        'DCOS_SERVICE_PORT_INDEX': '0',
+        'DCOS_SERVICE_SCHEME': 'http',
+    }
+
+    #  Arbitrary buffer time, accounting for propagation/processing delay.
+    buffer_time = 5
+
+    #  Cache refresh in Adminrouter takes 30 seconds at most.
+    #  CACHE_POLL_PERIOD=25s + valid=5s Nginx resolver DNS entry TTL
+    #  https://github.com/dcos/dcos/blob/cb9105ee537cc44cbe63cc7c53b3b01b764703a0/
+    #  packages/adminrouter/extra/src/includes/http/master.conf#L21
+    adminrouter_default_refresh = 25 + 5 + buffer_time
+    app_id = app_definition['id']
+    app_instances = app_definition['instances']
+    app_definition['constraints'] = [['hostname', 'UNIQUE']]
+
+    # For the routing check to work, two conditions must be true:
+    #
+    # 1. The application must be deployed, so that `/ping` responds with 200.
+    # 2. The Admin Router routing layer must not be using an outdated
+    #    version of the Nginx resolver cache.
+    #
+    # We therefore wait until these conditions have certainly been met.
+    # We wait for the Admin Router cache refresh first so that there is
+    # unlikely to be much double-waiting. That is, we do not want to be waiting
+    # for the cache to refresh when it already refreshed while we were waiting
+    # for the app to become healthy.
+    with dcos_api_session.marathon.deploy_and_cleanup(app_definition, check_health=False):
+        time.sleep(adminrouter_default_refresh)
+        dcos_api_session.marathon.wait_for_app_deployment(
+            app_id=app_id,
+            app_instances=app_instances,
+            check_health=False,
+            ignore_failed_tasks=False,
+            timeout=1200,
+        )
+        r = dcos_api_session.get('/service/' + dcos_service_name + '/ping')
+        assert r.status_code == 200
+        assert 'pong' in r.json()
 
 
 @retrying.retry(wait_fixed=2000,
