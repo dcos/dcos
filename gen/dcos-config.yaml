@@ -2334,6 +2334,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router"
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+        [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:1050/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
@@ -2440,6 +2447,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["unix:///var/run/dcos/dcos-diagnostics.sock?path=/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -2564,6 +2578,13 @@ package:
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["unix:///var/run/dcos/dcos-diagnostics.sock?path=/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"

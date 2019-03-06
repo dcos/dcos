@@ -170,6 +170,22 @@ def test_metrics_agents_adminrouter(dcos_api_session):
         check_adminrouter_metrics()
 
 
+def test_metrics_diagnostics(dcos_api_session):
+    """Assert that Admin Router metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_diagnostics_metrics(host):
+        response = get_metrics_prom(dcos_api_session, host)
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('bundle_creation_time_seconds'):
+                    assert sample[1]['dcos_component_name'] == 'DC/OS Diagnostics'
+                    return
+        raise Exception('Expected DC/OS Diagnostics metrics not found')
+    check_diagnostics_metrics(dcos_api_session.slaves[0])
+    check_diagnostics_metrics(dcos_api_session.masters[0])
+    check_diagnostics_metrics(dcos_api_session.public_slaves[0])
+
+
 def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
