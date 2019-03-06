@@ -13,7 +13,20 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
-## DC/OS 1.12.3 (Next Release. Please Update News Entries in this Section).
+## DC/OS 1.12.4 (Next release, please update entries in this section)
+
+### Notable changes
+
+### Breaking changes
+
+### Fixed and improved
+
+### Security updates
+
+* Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+
+
+## DC/OS 1.12.3
 
 ### Notable changes
 
