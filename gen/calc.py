@@ -201,12 +201,12 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
-    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
 def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
-    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
