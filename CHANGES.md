@@ -34,6 +34,7 @@ Format of the entries must be.
 * Telegraf: Fix a bug in the Mesos input plugin that could cause metrics to be mis-tagged (DCOS_OSS-4760)
 
 * Telegraf: Doubled the buffer limit to drop fewer metrics (DCOS-49277)
+* Telegraf: Increase the default polling interval to 20s (DCOS-49301)
 
 ### Security Updates
 
