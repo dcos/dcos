@@ -49,9 +49,9 @@ def try_shortcut():
     zk_pid = get_zk_pid()
     cmdline_path = '/proc/{}/cmdline'.format(zk_pid)
     try:
-        # Custom because the command line is ascii with `\0` as separator.
+        # Custom because the command line is ascii with `\x00` as separator.
         with open(cmdline_path, 'rb') as f:
-            cmd_line = f.read().split(b'\0')[:-1]
+            cmd_line = f.read().split(b'\x00')[:-1]
     except FileNotFoundError:
         log.info('Process no longer running (couldn\'t read the cmdline at: %s)', zk_pid)
         return False
