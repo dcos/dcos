@@ -80,6 +80,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+
 * Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 
 * Add SELinux details to diagnostics bundle (DCOS_OSS-4123)
