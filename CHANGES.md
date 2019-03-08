@@ -21,6 +21,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
