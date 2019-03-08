@@ -64,7 +64,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
 
 * Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe.
+
 * Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
+
+* Add Metrics for dns forwarding (DCOS-48336)
 
 
 ### Breaking changes
@@ -76,6 +79,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
+
+* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 
 * Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 

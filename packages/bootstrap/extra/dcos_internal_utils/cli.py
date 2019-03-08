@@ -146,7 +146,7 @@ def main():
     opts = parse_args()
 
     # Display the pid in each log message to distinguish concurrent runs
-    log_format = '{}:[%(levelname)s] %(message)s'.format(os.getpid())
+    log_format = 'pid={}:[%(levelname)s] %(message)s'.format(os.getpid())
     logging.basicConfig(format=log_format, level='INFO')
     log.setLevel(logging.DEBUG)
 
