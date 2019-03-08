@@ -609,7 +609,6 @@ function main()
         exit 1
     fi
 
-    shift $(($OPTIND - 1))
     ROLES=$@
 
     if [[ $PREFLIGHT_ONLY -eq 1 ]] ; then
