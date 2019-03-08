@@ -10,13 +10,13 @@ cp -r /pkg/bin/ "$PKG_PATH"
 # Permissions bootstraping is defined once in the api service file since that
 # is started once and left running rather than needing to run every minute
 # Destination for the service files
-master_service=${PKG_PATH}/dcos.target.wants_master/dcos-checks-api.service
-agent_service=${PKG_PATH}/dcos.target.wants_slave/dcos-checks-api.service
-agent_public_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-checks-api.service
+master_service="${PKG_PATH}/dcos.target.wants_master/dcos-checks-api.service"
+agent_service="${PKG_PATH}/dcos.target.wants_slave/dcos-checks-api.service"
+agent_public_service="${PKG_PATH}/dcos.target.wants_slave_public/dcos-checks-api.service"
 
-master_socket=${PKG_PATH}/dcos.target.wants_master/dcos-checks-api.socket
-agent_socket=${PKG_PATH}/dcos.target.wants_slave/dcos-checks-api.socket
-agent_public_socket=${PKG_PATH}/dcos.target.wants_slave_public/dcos-checks-api.socket
+master_socket="${PKG_PATH}/dcos.target.wants_master/dcos-checks-api.socket"
+agent_socket="${PKG_PATH}/dcos.target.wants_slave/dcos-checks-api.socket"
+agent_public_socket="${PKG_PATH}/dcos.target.wants_slave_public/dcos-checks-api.socket"
 
 mkdir -p "$(dirname "$master_service")"
 mkdir -p "$(dirname "$agent_service")"
@@ -26,9 +26,9 @@ cp /pkg/extra/dcos-checks-api-master.service "$master_service"
 cp /pkg/extra/dcos-checks-api-agent.service "$agent_service"
 cp /pkg/extra/dcos-checks-api-agent.service "$agent_public_service"
 
-cp /pkg/extra/dcos-checks-api.socket "$master_service"
-cp /pkg/extra/dcos-checks-api.socket "$agent_service"
-cp /pkg/extra/dcos-checks-api.socket "$agent_public_service" 
+cp /pkg/extra/dcos-checks-api.socket "$master_socket"
+cp /pkg/extra/dcos-checks-api.socket "$agent_socket"
+cp /pkg/extra/dcos-checks-api.socket "$agent_public_socket"
 
 # Create the poststart check service and timer
 service="$PKG_PATH/dcos.target.wants/dcos-checks-poststart.service"
