@@ -11,6 +11,5 @@ LimitNOFILE=16384
 PermissionsStartOnly=True
 User=root
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-diagnostics-master
-# ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-master
 ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
 Sockets=dcos-diagnostics.socket
