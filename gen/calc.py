@@ -65,7 +65,7 @@ def validate_int_in_range(value, low, high):
 
     # Only a lower bound
     if high is None:
-        assert low <= int_value, 'Must be above {}'.format(low)
+        assert low <= int_value, 'Must be above or equal to {}'.format(low)
     else:
         assert low <= int_value <= high, 'Must be between {} and {} inclusive'.format(low, high)
 
