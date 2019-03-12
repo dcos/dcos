@@ -36,11 +36,7 @@ def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set(
 def test_metrics_ping(dcos_api_session):
     """ Test that the metrics service is up on master and agents.
     """
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = dcos_api_session.metrics.get('/ping', node=node)
@@ -50,11 +46,7 @@ def test_metrics_ping(dcos_api_session):
 
 def test_metrics_agents_prom(dcos_api_session):
     """Telegraf Prometheus endpoint is reachable on master and agents."""
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = dcos_api_session.session.request('GET', 'http://' + node + ':61091/metrics')
@@ -76,11 +68,7 @@ def get_metrics_prom(dcos_api_session, node):
 
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
-    nodes = []
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -151,11 +139,7 @@ def test_metrics_master_adminrouter(dcos_api_session):
 
 def test_metrics_agents_adminrouter(dcos_api_session):
     """Assert that Admin Router metrics on agents are present."""
-    nodes = []
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -168,6 +152,23 @@ def test_metrics_agents_adminrouter(dcos_api_session):
                         return
             raise Exception('Expected Admin Router nginx_vts_* metrics not found')
         check_adminrouter_metrics()
+
+
+def test_metrics_diagnostics(dcos_api_session):
+    """Assert that DC/OS Diagnostics metrics on master are present."""
+    nodes = get_master_and_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_diagnostics_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0].startswith('bundle_creation_time_seconds'):
+                        assert sample[1]['dcos_component_name'] == 'DC/OS Diagnostics'
+                        return
+            raise Exception('Expected DC/OS Diagnostics metrics not found')
+        check_diagnostics_metrics()
 
 
 def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
@@ -398,11 +399,7 @@ def test_metrics_node(dcos_api_session):
         assert response.status_code == 200
         return response
 
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = wait_for_node_response(node)
@@ -411,6 +408,21 @@ def test_metrics_node(dcos_api_session):
             response.status_code, response.content)
         assert expected_datapoint_response(response.json())
         assert expected_dimension_response(response.json())
+
+
+def get_master_and_agents(dcos_api_session):
+    nodes = [dcos_api_session.masters[0]]
+    nodes.extend(get_agents(dcos_api_session))
+    return nodes
+
+
+def get_agents(dcos_api_session):
+    nodes = []
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
+    return nodes
 
 
 def test_metrics_containers(dcos_api_session):

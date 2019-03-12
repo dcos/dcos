@@ -15,4 +15,7 @@ User=dcos_check_runner
 SupplementaryGroups=dcos_adminrouter
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-check-runner.env
+# This also covers bootstrap process for dcos-checks-poststart since this doesn't need
+# to happen once every minute
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-agent
 ExecStart=/opt/mesosphere/bin/dcos-check-runner http-server --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
