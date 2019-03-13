@@ -125,75 +125,71 @@ aws_region_names = [
         'id': 'ap-southeast-2'
     }]
 
+# Core OS AMIS from: https://github.com/dcos/dcos-images/blob/62f97aa3cada6d29356003ee6a01c7c94a5f5433/coreos/1967.6.0/aws/DCOS-1.12.2/docker-18.06.1/dcos_images.yaml # noqa
+# RHEL 7 AMIS from: https://github.com/dcos/dcos-images/blob/9c231811a8d7f5b925ea405f928b7c2b3182bae6/rhel/7.6/aws/DCOS-1.12.0/docker-1.13.1.git8633870/selinux_disabled/dcos_images.yaml # noqa
+
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-a2b6a2de',
-        'stable': 'ami-a2b6a2de',
-        'el7': 'ami-965345f8',
-        'el7prereq': 'ami-72f93314',
+        'coreos': 'ami-0ffd2ee15ceabef65',
+        'stable': 'ami-0ffd2ee15ceabef65',
+        'el7': 'ami-0bfe52d6d145c674e',
+        'el7prereq': 'ami-0bfe52d6d145c674e',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-41461c3d',
-        'stable': 'ami-41461c3d',
-        'el7': 'ami-8af586e9',
-        'el7prereq': 'ami-cac2b2a9',
+        'coreos': 'ami-02e06ba544feb3f51',
+        'stable': 'ami-02e06ba544feb3f51',
+        'el7': 'ami-024ac75903e3114f1',
+        'el7prereq': 'ami-024ac75903e3114f1',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-f58e4097',
-        'stable': 'ami-f58e4097',
-        'el7': 'ami-427d9c20',
-        'el7prereq': 'ami-a0d736c2',
+        'coreos': 'ami-07809279cd1e43478',
+        'stable': 'ami-07809279cd1e43478',
+        'el7': 'ami-0a81a425ed8ebf3c9',
+        'el7prereq': 'ami-0a81a425ed8ebf3c9',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
-        'coreos': 'ami-604e118b',
-        'stable': 'ami-604e118b',
-        'el7': 'ami-2d0cbc42',
-        'el7prereq': 'ami-b371c1dc',
+        'coreos': 'ami-0285f4197bb94b5b0',
+        'stable': 'ami-0285f4197bb94b5b0',
+        'el7': 'ami-0e6000758f18fb6be',
+        'el7prereq': 'ami-0e6000758f18fb6be',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
-        'coreos': 'ami-34237c4d',
-        'stable': 'ami-34237c4d',
-        'el7': 'ami-e46ea69d',
-        'el7prereq': 'ami-4d4f8634',
+        'coreos': 'ami-0539ccccd1e371d4b',
+        'stable': 'ami-0539ccccd1e371d4b',
+        'el7': 'ami-0569e7216584320c6',
+        'el7prereq': 'ami-0569e7216584320c6',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
-        'coreos': 'ami-8d2472e1',
-        'stable': 'ami-8d2472e1',
-        'el7': 'ami-a5acd0c9',
-        'el7prereq': 'ami-1264187e',
+        'coreos': 'ami-0af8dc7533e9698e2',
+        'stable': 'ami-0af8dc7533e9698e2',
+        'el7': 'ami-0b34096d89569829a',
+        'el7prereq': 'ami-0b34096d89569829a',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
-        'coreos': 'ami-9e2685e3',
-        'stable': 'ami-9e2685e3',
-        'el7': 'ami-771beb0d',
-        'el7prereq': 'ami-b05aadca',
+        'coreos': 'ami-08511d0b9ed33a795',
+        'stable': 'ami-08511d0b9ed33a795',
+        'el7': 'ami-0da3316c3c6eb42b0',
+        'el7prereq': 'ami-0da3316c3c6eb42b0',
         'natami': 'ami-4c9e4b24'
     },
-    'us-gov-west-1': {
-        'coreos': 'ami-e0aa3f81',
-        'stable': 'ami-e0aa3f81',
-        'el7': 'ami-9923a1f8',
-        'el7prereq': 'ami-9923a1f8',
-        'natami': 'ami-fe991b9f'
-    },
     'us-west-1': {
-        'coreos': 'ami-07a6b767',
-        'stable': 'ami-07a6b767',
-        'el7': 'ami-866151e6',
-        'el7prereq': 'ami-63cafb03',
+        'coreos': 'ami-08bcbb80bb680b5f2',
+        'stable': 'ami-08bcbb80bb680b5f2',
+        'el7': 'ami-074a555b65ca3c76e',
+        'el7prereq': 'ami-074a555b65ca3c76e',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
-        'coreos': 'ami-b41377cc',
-        'stable': 'ami-b41377cc',
-        'el7': 'ami-a9b24bd1',
-        'el7prereq': 'ami-1de01e65',
+        'coreos': 'ami-0235ac99b19539293',
+        'stable': 'ami-0235ac99b19539293',
+        'el7': 'ami-093949a7969be18da',
+        'el7prereq': 'ami-093949a7969be18da',
         'natami': 'ami-bb69128b'
     }
 }
