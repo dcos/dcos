@@ -69,6 +69,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add Metrics for dns forwarding (DCOS-48336)
 
+* Add metrics for lashup (DCOS_OSS-4756)
+
 
 ### Breaking changes
 
