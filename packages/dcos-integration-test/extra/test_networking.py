@@ -261,7 +261,6 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
-@pytest.mark.skip(reason='DCOS_OSS-1993')
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
@@ -342,7 +341,7 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
         vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
     elif ipv6:
         vip = 'fd01:c::1:{}'.format(vip_port)
-        vipaddr = vip
+        vipaddr = '[fd01:c::1]:{}'.format(vip_port)
     else:
         vip = '1.1.1.7:{}'.format(vip_port)
         vipaddr = vip
@@ -357,8 +356,11 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     test_case_id = '{}-{}'.format(
         'named' if named_vip else 'vip',
         'local' if same_host else 'remote')
+    # NOTE: DNS label can't be longer than 63 bytes
     origin_fmt = '{}/app-{}'.format(path_id, test_case_id)
+    origin_fmt = origin_fmt + '-{{:.{}}}'.format(63 - len(origin_fmt))
     proxy_fmt = '{}/proxy-{}'.format(path_id, test_case_id)
+    proxy_fmt = proxy_fmt + '-{{:.{}}}'.format(63 - len(proxy_fmt))
     if container == Container.POD:
         origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt)
         proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt)
