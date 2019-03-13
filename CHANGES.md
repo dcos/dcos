@@ -108,6 +108,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add a warning to the installer to let the user know if case kernel modules required by DSS are not loaded (DCOS-49088)
 
+* Upgrade OTP version to 21.3 (DCOS_OSS-4902)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
