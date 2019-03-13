@@ -69,6 +69,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add Metrics for dns forwarding (DCOS-48336)
 
+* Add metrics for lashup (DCOS_OSS-4756)
+
 
 ### Breaking changes
 
@@ -110,6 +112,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Add a warning to the installer to let the user know if case kernel modules required by DSS are not loaded (DCOS-49088)
 
 * Enable ipv6 support for l4lb by default (DCOS_OSS-1993)
+* Upgrade OTP version to 21.3 (DCOS_OSS-4902)
 
 ### Notable changes
 
