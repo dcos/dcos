@@ -13,7 +13,22 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
-## DC/OS 1.12.3 (Next Release. Please Update News Entries in this Section).
+## DC/OS 1.12.4 (Next release, please update entries in this section)
+
+### Notable changes
+
+### Breaking changes
+
+### Fixed and improved
+
+* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+
+### Security updates
+
+* Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+
+
+## DC/OS 1.12.3
 
 ### Notable changes
 
@@ -34,6 +49,7 @@ Format of the entries must be.
 * Telegraf: Fix a bug in the Mesos input plugin that could cause metrics to be mis-tagged (DCOS_OSS-4760)
 
 * Telegraf: Doubled the buffer limit to drop fewer metrics (DCOS-49277)
+* Telegraf: Increase the default polling interval to 20s (DCOS-49301)
 
 ### Security Updates
 
