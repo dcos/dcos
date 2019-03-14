@@ -153,7 +153,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
 
   if [[ $pid == *"master"* ]]; then
     # get journald logs
-    ssh $ssh_options $master_public_ip -- journalctl -x -b --no-pager > master_journald.log
+    ssh $ssh_options $master_public_ip -- journalctl -x --no-pager > master_journald.log
 
     # get mesos logs
     ./dcos-cli $debug_options node log --leader > mesos_master.log
@@ -162,7 +162,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo tar --exclude=provisioner -zc /var/lib/mesos/slave > sandbox_${ip_underscores}.tar.gz
 
     # get journald logs
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x -b --no-pager > agent_${ip_underscores}_journald.log
+    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x --no-pager > agent_${ip_underscores}_journald.log
 
     # get mesos logs
     ./dcos-cli $debug_options node log --mesos-id=$id > mesos_agent_${ip_underscores}.log
