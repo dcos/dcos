@@ -137,6 +137,31 @@ def test_metrics_master_adminrouter(dcos_api_session):
     check_adminrouter_metrics()
 
 
+def test_metrics_master_exhibitor_status(dcos_api_session):
+    """Assert that Exhibitor status metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_exhibitor_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        expected_metrics = {'exhibitor_status_code', 'exhibitor_status_isleader'}
+        samples = []
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] in expected_metrics:
+                    samples.append(sample)
+        reported_metrics = {sample[0] for sample in samples}
+        assert reported_metrics == expected_metrics, (
+            'Expected Exhibitor status metrics not found. '
+            'Expected: {} Reported: {}'.format(
+                expected_metrics, reported_metrics,
+            )
+        )
+        for sample in samples:
+            assert sample[1]['dcos_component_name'] == 'Exhibitor'
+            assert 'url' not in sample[1]
+            assert 'exhibitor_address' in sample[1]
+    check_exhibitor_metrics()
+
+
 def test_metrics_agents_adminrouter(dcos_api_session):
     """Assert that Admin Router metrics on agents are present."""
     nodes = get_agents(dcos_api_session)

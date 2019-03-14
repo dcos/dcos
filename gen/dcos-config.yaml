@@ -2346,12 +2346,36 @@ package:
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router"
       # Read metrics from DC/OS Diagnostics Prometheus endpoint.
-        [[inputs.prometheus]]
+      [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:1050/metrics"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Diagnostics"
+      # Read exhibitor status metrics from HTTP endpoint
+      [[inputs.http]]
+        name_override = "exhibitor_status"
+        urls = ["http://localhost:8181/exhibitor/v1/cluster/status"]
+        data_format = "json"
+        tag_keys = ["hostname"]
+        json_string_fields = ["isLeader"]
+        tagexclude = ["url"]
+        [inputs.http.tags]
+          dcos-component-name = "Exhibitor"
+      [[processors.converter]]
+        order = 1
+        namepass = ["exhibitor_status"]
+        [processors.converter.fields]
+          integer = ["isLeader"]
+      [[processors.rename]]
+        order = 2
+        namepass = ["exhibitor_status"]
+        [[processors.rename.replace]]
+          tag = "hostname"
+          dest = "exhibitor_address"
+        [[processors.rename.replace]]
+          field = "isLeader"
+          dest = "isleader"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
