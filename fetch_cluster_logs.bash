@@ -174,7 +174,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
 
   if [[ $pid == *"master"* ]]; then
     # get journald logs
-    ssh $ssh_options $master_public_ip -- journalctl -x -b --no-pager > master_journald.log
+    ssh $ssh_options $master_public_ip -- journalctl -x --no-pager > master_journald.log
     check_max_artifact_size "master_journald.log"
 
     # get mesos logs
@@ -198,7 +198,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     fi
 
     # get journald logs
-    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x -b --no-pager > agent_${ip_underscores}_journald.log
+    ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- journalctl -x --no-pager > agent_${ip_underscores}_journald.log
     check_max_artifact_size "agent_${ip_underscores}_journald.log"
 
     # get mesos logs

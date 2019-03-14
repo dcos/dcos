@@ -69,6 +69,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add Metrics for dns forwarding (DCOS-48336)
 
+* Add metrics for lashup (DCOS_OSS-4756)
+
 
 ### Breaking changes
 
@@ -81,6 +83,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 ### Fixed and improved
 
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+* Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
 * Telegraf is upgraded to 1.9.4. (DCOS_OSS-4675)
 
@@ -107,6 +110,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
 
 * Add a warning to the installer to let the user know if case kernel modules required by DSS are not loaded (DCOS-49088)
+
+* Enable ipv6 support for l4lb by default (DCOS_OSS-1993)
+* Upgrade OTP version to 21.3 (DCOS_OSS-4902)
 
 ### Notable changes
 
