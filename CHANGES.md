@@ -35,6 +35,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
 
+* Exhibitor metrics are now collected by Telegraf (DCOS-45353).
+
 * Marathon and Metronome have DC/OS install flag to configure GPU support.  "restricted", "unrestricted", "undefined" and "" are valid.
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
