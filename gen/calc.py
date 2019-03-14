@@ -1179,7 +1179,7 @@ entry = {
         'dcos_l4lb_max_named_ip': '11.255.255.255',
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
-        'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_l4lb_enable_ipv6': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
