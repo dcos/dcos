@@ -111,65 +111,71 @@ aws_region_names = [
         'id': 'ap-southeast-2'
     }]
 
+# Core OS AMIS from: https://github.com/dcos/dcos-images/blob/62f97aa3cada6d29356003ee6a01c7c94a5f5433/coreos/1967.6.0/aws/DCOS-1.12.2/docker-18.06.1/dcos_images.yaml # noqa
+# RHEL 7 AMIS from: https://github.com/dcos/dcos-images/blob/9c231811a8d7f5b925ea405f928b7c2b3182bae6/rhel/7.6/aws/DCOS-1.12.0/docker-1.13.1.git8633870/selinux_disabled/dcos_images.yaml # noqa
+
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-93f2baf4',
-        'stable': 'ami-93f2baf4',
-        'el7': 'ami-e21fd884',
+        'coreos': 'ami-0ffd2ee15ceabef65',
+        'stable': 'ami-0ffd2ee15ceabef65',
+        'el7': 'ami-0bfe52d6d145c674e',
+        'el7prereq': 'ami-0bfe52d6d145c674e',
         'natami': 'ami-55c29e54'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-aacc7dc9',
-        'stable': 'ami-aacc7dc9',
-        'el7': 'ami-3b8ee058',
+        'coreos': 'ami-02e06ba544feb3f51',
+        'stable': 'ami-02e06ba544feb3f51',
+        'el7': 'ami-024ac75903e3114f1',
+        'el7prereq': 'ami-024ac75903e3114f1',
         'natami': 'ami-b082dae2'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-9db0b0fe',
-        'stable': 'ami-9db0b0fe',
-        'el7': 'ami-c2e501a0',
+        'coreos': 'ami-07809279cd1e43478',
+        'stable': 'ami-07809279cd1e43478',
+        'el7': 'ami-0a81a425ed8ebf3c9',
+        'el7prereq': 'ami-0a81a425ed8ebf3c9',
         'natami': 'ami-996402a3'
     },
     'eu-central-1': {
-        'coreos': 'ami-903df7ff',
-        'stable': 'ami-903df7ff',
-        'el7': 'ami-868531e9',
+        'coreos': 'ami-0285f4197bb94b5b0',
+        'stable': 'ami-0285f4197bb94b5b0',
+        'el7': 'ami-0e6000758f18fb6be',
+        'el7prereq': 'ami-0e6000758f18fb6be',
         'natami': 'ami-204c7a3d'
     },
     'eu-west-1': {
-        'coreos': 'ami-abcde0cd',
-        'stable': 'ami-abcde0cd',
-        'el7': 'ami-5f03c426',
+        'coreos': 'ami-0539ccccd1e371d4b',
+        'stable': 'ami-0539ccccd1e371d4b',
+        'el7': 'ami-0569e7216584320c6',
+        'el7prereq': 'ami-0569e7216584320c6',
         'natami': 'ami-3760b040'
     },
     'sa-east-1': {
-        'coreos': 'ami-c11573ad',
-        'stable': 'ami-c11573ad',
-        'el7': 'ami-5d2f5d31',
+        'coreos': 'ami-0af8dc7533e9698e2',
+        'stable': 'ami-0af8dc7533e9698e2',
+        'el7': 'ami-0b34096d89569829a',
+        'el7prereq': 'ami-0b34096d89569829a',
         'natami': 'ami-b972dba4'
     },
     'us-east-1': {
-        'coreos': 'ami-1ad0000c',
-        'stable': 'ami-1ad0000c',
-        'el7': 'ami-abb1a2d0',
+        'coreos': 'ami-08511d0b9ed33a795',
+        'stable': 'ami-08511d0b9ed33a795',
+        'el7': 'ami-0da3316c3c6eb42b0',
+        'el7prereq': 'ami-0da3316c3c6eb42b0',
         'natami': 'ami-4c9e4b24'
     },
-    'us-gov-west-1': {
-        'coreos': 'ami-e441fb85',
-        'stable': 'ami-e441fb85',
-        'el7': 'ami-e58c0f84',
-        'natami': ''
-    },
     'us-west-1': {
-        'coreos': 'ami-b31d43d3',
-        'stable': 'ami-b31d43d3',
-        'el7': 'ami-f6427596',
+        'coreos': 'ami-08bcbb80bb680b5f2',
+        'stable': 'ami-08bcbb80bb680b5f2',
+        'el7': 'ami-074a555b65ca3c76e',
+        'el7prereq': 'ami-074a555b65ca3c76e',
         'natami': 'ami-2b2b296e'
     },
     'us-west-2': {
-        'coreos': 'ami-444dcd24',
-        'stable': 'ami-444dcd24',
-        'el7': 'ami-6eed1a16',
+        'coreos': 'ami-0235ac99b19539293',
+        'stable': 'ami-0235ac99b19539293',
+        'el7': 'ami-093949a7969be18da',
+        'el7prereq': 'ami-093949a7969be18da',
         'natami': 'ami-bb69128b'
     }
 }
