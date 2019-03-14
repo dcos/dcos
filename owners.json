@@ -11,6 +11,8 @@
   "greggomann": {"slack": "greg", "jira": "greg"},
   "jgehrcke": {"slack": "jp", "jira": "jp"},
   "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
+  "juliangieseke": {"slack": "Julian", "jira": "juliangieseke"},
+  "jbarrick": {"slack": "Justin Taylor-Barrick", "jira": "jbarrick"},
   "meichstedt": {"slack": "matthias.eichstedt", "jira": "matthias.eichstedt"},
   "mesosphere-mergebot": {"slack": "mergebot", "jira": "svc.mergebot"},
   "nLight": {"slack": "drozhkov", "jira": "drozhkov"},
@@ -20,6 +22,5 @@
   "rukletsov": {"slack": "alexr", "jira": "alex"},
   "tillt": {"slack": "till", "jira": "till"},
   "timaa2k": {"slack": "tweidner", "jira": "timweidner"},
-  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
-  "juliangieseke": {"slack": "Julian", "jira": "juliangieseke"}
+  "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"}
 }
