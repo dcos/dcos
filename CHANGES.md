@@ -86,6 +86,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
+
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
