@@ -65,6 +65,6 @@ class TestMetrics:
         assert resp.headers['Content-Type'] == 'text/plain'
         # DCOS-50265 swaps the truth of the following two asserts:
         # not escaped:
-        assert '/service/monitoring/gra"f\\a\nn\ta' in resp.text
+        assert '/service/monitoring/gra"f\\a\nn\ta' not in resp.text
         # correctly escaped:
-        assert '/service/monitoring/gra\\"f\\\\a\\nn\ta' not in resp.text
+        assert '/service/monitoring/gra\\"f\\\\a\\nn\ta' in resp.text
