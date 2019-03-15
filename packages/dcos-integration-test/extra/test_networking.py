@@ -308,6 +308,11 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, named_vip
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-19790',
+    reason='test_if_overlay_ok fails with STATUS_FAILED',
+    since='2019-03-15'
+)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
