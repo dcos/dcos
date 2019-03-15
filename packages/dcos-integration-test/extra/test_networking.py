@@ -218,6 +218,16 @@ def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_ho
     return (hosts, origin_app, proxy_app)
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+
+
+@pytest.mark.xfailflake(
+    jira='DCOS-19790',
+    reason='test_ipv6 fails with 0 tasks healthy',
+    since='2019-03-15'
+)
 @pytest.mark.slow
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
@@ -368,6 +378,11 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-19790',
+    reason='test_if_overlay_ok fails with STATUS_FAILED',
+    since='2019-03-15'
+)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
@@ -702,6 +717,11 @@ def net2str(value, ipv6):
     return enum2str(value) if not ipv6 else 'ipv6'
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-47438',
+    reason='test_dcos_net_cluster_identity fails',
+    since='2019-03-15'
+)
 def test_dcos_net_cluster_identity(dcos_api_session):
     cluster_id = 'minuteman'  # default
 
