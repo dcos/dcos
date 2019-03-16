@@ -25,7 +25,7 @@ Now, if we consider [installer.treeinfo.json](../../packages/installer.treeinfo.
 ```
 The `"core_package_list"` field declares a whitelist of packages that are to be built and packaged into the bootstrap tarball for the variant `installer`.
 
-The purpose of the above configuration is to generate two bootstrap tarballs with each build. The default tarball will contain the code that handles the import of the remaining DC/OS packages (as dictated by the provider `gen.build_deploy` module) and setup the hosts to startup DC/OS. The installer tarball will be used to create a mock DC/OS environment which can provide packages to hosts via the `dcos_installer` program (see below). It is important to note the distinction that `installer` is a bootstrap variant, and not a DC/OS variant. Thus, in a new variant `installer.foobar.treeinfo.json` would allow crafting a variant onprem installer for the `foobar` DC/OS variant.
+The purpose of the above configuration is to generate two bootstrap tarballs with each build. The default tarball will contain the code that handles the import of the remaining DC/OS packages (as dictated by the provider `gen.build_deploy` module) and setup the hosts to startup DC/OS. The installer tarball will be used to create a mock DC/OS environment which can provide packages to hosts via the `dcos_installer` program (see below). It is important to note the distinction that `installer` is a bootstrap variant, and not a DC/OS variant. Thus, in a new variant `installer.foobar.treeinfo.json` would allow crafting a variant on-prem installer for the `foobar` DC/OS variant.
 
 ## Package Variants
  To have a package variant built, the `treeinfo.json` must have a `"variant"` section that describes the specific package variant to be used with the tree variant. This logic must be done explicitly as there is no implicit matching between package and tree variants. E.G. if one wanted to have a variant of mesos to build called `foobar`, one must:
@@ -49,7 +49,7 @@ The other file that can be placed in the `packages` directory is called `upstrea
   "ref_origin": "master"
 }
 ```
-This file will tell pkgpanda the packages directory containing it should be expanded to include the packages from the given upstream source. Note, if a package needs to interact with its own upstream variant, then one could constuct a `buildinfo.json` like so:
+This file will tell pkgpanda the packages directory containing it should be expanded to include the packages from the given upstream source. Note, if a package needs to interact with its own upstream variant, then one could construct a `buildinfo.json` like so:
 ```
 {
   "requires": ["foo"],

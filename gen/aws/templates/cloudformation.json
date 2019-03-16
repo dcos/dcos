@@ -32,7 +32,7 @@
     "DefaultInstanceType" : {
       "Description" : "default instance",
       "Type" : "String",
-      "Default" : "m4.xlarge"
+      "Default" : "m5.large"
     }
 {% switch oauth_available %}
 {% case "true" %}
@@ -71,8 +71,7 @@
       },
       "StackCreationTimeout": {
           "default": "PT45M"
-      }
-    }
+      }}
   },
 
   "Conditions" : {

@@ -7,23 +7,6 @@ export CPPFLAGS=${CFLAGS}
 
 pushd /pkg/src/erlang
 
-## https://bugs.erlang.org/browse/ERL-763
-patch -p1 <<EOF
-diff --git a/lib/ssl/src/ssl_cipher.erl b/lib/ssl/src/ssl_cipher.erl
-index 0e22d63..54c04c1 100644
---- a/lib/ssl/src/ssl_cipher.erl
-+++ b/lib/ssl/src/ssl_cipher.erl
-@@ -932,7 +932,7 @@ filter_suites_pubkey(ec, Ciphers, _, OtpCert) ->
-                                    ec_ecdhe_suites(Ciphers)),
-     filter_keyuse_suites(keyAgreement, Uses, CiphersSuites, ec_ecdh_suites(Ciphers)).
- 
--filter_suites_signature(rsa, Ciphers, {3, N}) when N >= 3 ->
-+filter_suites_signature(_, Ciphers, {3, N}) when N >= 3 ->
-      Ciphers;
- filter_suites_signature(rsa, Ciphers, Version) ->
-     (Ciphers -- ecdsa_signed_suites(Ciphers, Version)) -- dsa_signed_suites(Ciphers, Version);
-EOF
-
 ./otp_build setup -a --prefix=$PKG_PATH --with-ssl=/opt/mesosphere/active/openssl --with-termcap=/opt/mesosphere/active/ncurses --disable-hipe --enable-kernel-poll --enable-builtin-zlib
 make -j$NUM_CORES
 make install

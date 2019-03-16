@@ -1,5 +1,5 @@
 # Creating and Maintaining Packages
-Pkgpanda packages are XZ-compresssed tarballs, containing (optionally) a metadata file `pkginfo.json` as well as several well-known directories. See [Package Concepts](package_concepts.md) for a full listing, as well as descriptions of each section should be used for. Packages are built in docker images (which can be customized) according to the requiried `build` script and `buildinfo.json` files included witht the source packages in the [package store](../../packages)
+Pkgpanda packages are XZ-compresssed tarballs, containing (optionally) a metadata file `pkginfo.json` as well as several well-known directories. See [Package Concepts](package_concepts.md) for a full listing, as well as descriptions of each section should be used for. Packages are built in docker images (which can be customized) according to the required `build` script and `buildinfo.json` files included with the source packages in the [package store](../../packages)
 
 Every package lives in isolation from other packages, and can be installed/uninstalled atomically.
 

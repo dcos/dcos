@@ -226,6 +226,11 @@ function print_status() {
     fi
 }
 
+function print_warning() {
+    MESSAGE=${1:-}
+    echo -e "${RED}WARNING${NORMAL} $MESSAGE"
+}
+
 function check_command_exists() {
     COMMAND=$1
     DISPLAY_NAME=${2:-$COMMAND}
@@ -422,6 +427,23 @@ function check_xfs_ftype() {
     return $RC
 }
 
+function warn_unloaded_dss_kernel_module() {
+    # Print a warning if $1, a kernel module that's required for DSS to
+    # function properly, is not loaded
+    MODULE="$1"
+
+    echo -e -n "Checking if kernel module $MODULE is loaded: "
+
+    lsmod | grep -q -E "^$MODULE"
+    RC=$?
+
+    if [ "$RC" -eq "0" ]; then
+      print_status $RC
+    else
+      print_warning "Kernel module $MODULE is not loaded. DC/OS Storage Service (DSS) depends on it."
+    fi
+}
+
 function check_all() {
     # Disable errexit because we want the preflight checks to run all the way
     # through and not bail in the middle, which will happen as it relies on
@@ -559,6 +581,9 @@ function check_all() {
     # Check we're not in docker on devicemapper loopback as storage driver.
     check_docker_device_mapper_loopback
 
+    warn_unloaded_dss_kernel_module "raid1"
+    warn_unloaded_dss_kernel_module "dm_raid"
+
     for role in "$ROLES"
     do
         if [ "$role" != "master" -a "$role" != "slave" -a "$role" != "slave_public" -a "$role" != "minuteman" ]; then
@@ -609,7 +634,6 @@ function main()
         exit 1
     fi
 
-    shift $(($OPTIND - 1))
     ROLES=$@
 
     if [[ $PREFLIGHT_ONLY -eq 1 ]] ; then

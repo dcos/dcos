@@ -65,7 +65,7 @@ def validate_int_in_range(value, low, high):
 
     # Only a lower bound
     if high is None:
-        assert low <= int_value, 'Must be above {}'.format(low)
+        assert low <= int_value, 'Must be above or equal to {}'.format(low)
     else:
         assert low <= int_value <= high, 'Must be between {} and {} inclusive'.format(low, high)
 
@@ -198,6 +198,16 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
 def validate_mesos_container_log_sink(mesos_container_log_sink):
     assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
         "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
+
+
+def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+        "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
+
+
+def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+        "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
@@ -1121,6 +1131,8 @@ entry = {
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'false',
         'mesos_seccomp_profile_name': '',
+        'metronome_gpu_scheduling_behavior': 'restricted',
+        'marathon_gpu_scheduling_behavior': 'restricted',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -1167,7 +1179,7 @@ entry = {
         'dcos_l4lb_max_named_ip': '11.255.255.255',
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
-        'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_l4lb_enable_ipv6': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
@@ -1257,6 +1269,11 @@ entry = {
         'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
         'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
         'licensing_enabled': 'false',
+        'has_metronome_gpu_scheduling_behavior':
+            lambda metronome_gpu_scheduling_behavior: calculate_set(metronome_gpu_scheduling_behavior),
+        'has_marathon_gpu_scheduling_behavior':
+            lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
+
     },
     'secret': [
         'cluster_docker_credentials',

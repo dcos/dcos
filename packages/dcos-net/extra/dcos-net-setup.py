@@ -52,6 +52,7 @@ def main():
 
 def add_networkd_config(src):
     networkd = b'systemd-networkd.service'
+    networkd_path = '/etc/systemd/network'
 
     # Check if there is networkd
     result = subprocess.run(['systemctl', 'list-unit-files', networkd],
@@ -63,8 +64,10 @@ def add_networkd_config(src):
 
     # Copy the configuration
     bname = os.path.basename(src)
-    dst = os.path.join('/etc/systemd/network', bname)
+    dst = os.path.join(networkd_path, bname)
 
+    # Ensure the destination directory exists
+    os.makedirs(networkd_path, mode=0o755, exist_ok=True)
     if not safe_filecmp(src, dst):
         shutil.copyfile(src, dst)
 
