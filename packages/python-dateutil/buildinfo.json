@@ -3,7 +3,7 @@
   "sources": {
     "python-dateutil": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/any/p/python-dateutil/python_dateutil-2.4.2-py2.py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/22/75/666cd70de6a70cc7c6560429340ee7ef08196c93f552428983a808423755/python_dateutil-2.4.2-py2.py3-none-any.whl",
       "sha1": "92219a524cb3e24606b064b98deb6a9ad437e0a3"
      }
   }
