@@ -137,13 +137,20 @@ routes:
       path: 'http://$backend/'
       backend: dcos_net
     path: /net/
-  /dcos-ui-update-service/api(?<url>.*):
+  /dcos-ui-update-service/api/(?<api_path>.*):
     group: DC/OS UI Update Service
     matcher: regex
     description: DC/OS UI Update Service API
     proxy:
       path: $dcos_ui_update_service
-    path: /dcos-ui-update-service/api(?<url>.*)
+    path: /dcos-ui-update-service/api/(?<api_path>.*)
+  /dcos-ui-update-service/api/v1/version/:
+    group: DC/OS UI Update Service
+    matcher: exact
+    description: DC/OS UI Update Service Version API
+    proxy:
+      path: '"http://dcos_ui_update_service/api/v1/version/$is_args$query_string"'
+    path: /dcos-ui-update-service/api/v1/version/
   /exhibitor/:
     group: Exhibitor
     matcher: path
