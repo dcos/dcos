@@ -508,7 +508,7 @@ package:
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1|disk:32
+      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_OFFER_TIMEOUT=2mins
