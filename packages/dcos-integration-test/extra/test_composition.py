@@ -160,7 +160,8 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-checks-poststart.service',
         'dcos-checks-poststart.timer',
         'dcos-telegraf.service',
-        'dcos-telegraf.socket']
+        'dcos-telegraf.socket',
+        'dcos-fluentbit.service']
     slave_units = [
         'dcos-mesos-slave.service']
     public_slave_units = [
