@@ -3,6 +3,8 @@ import urllib.parse
 
 import requests
 
+from generic_test_code.common import repo_is_ee
+
 
 class TestMetrics:
 
@@ -59,6 +61,55 @@ class TestMetrics:
         assert resp.status_code == 200
         assert resp.headers['Content-Type'] == 'text/plain'
         assert url_path in resp.text
+
+    def test_metrics_prometheus_static_upstreams_annotated(self, master_ar_process):
+        """
+        /nginx/metrics returns metrics in Prometheus format that are properly
+        annotated for static upstreams
+        """
+        # Adding upstreams present in both Open and EE DC/OS
+        static_upstream_annotations = {
+            '/acs/api/v1': 'IAM',
+            '/system/health/v1': 'DCOSDiagnostics',
+            '/system/checks/v1': 'DCOSChecks',
+            '/navstar/lashup/key': 'DCOSNet',
+            '/net/': 'DCOSNet',
+            '/system/v1/logs/': 'DCOSLog',
+            '/system/v1/metrics/': 'DCOSMetrics',
+            '/mesos_dns/': 'MesosDNS',
+            }
+
+        # Adding upstreams available only in Open DC/OS
+        if not repo_is_ee:
+            static_upstream_annotations.update(
+                {
+                    '/pkgpanda': 'Pkgpanda',
+                    '/exhibitor/exhibitor/v1/cluster/status': 'Exhibitor',
+                }
+            )
+
+        url = master_ar_process.make_url_from_path('/nginx/metrics')
+
+        # We are iterating over the fixed upstream locations and issuing HTTP(s)
+        # request to them.
+        # This will cause nginx to apply corresponding annotation
+        # label to the upstream metric, regardless of the status of the
+        # call. As we are interested only in the label here, we are not
+        # checking the status code.
+        for upstream, label in static_upstream_annotations.items():
+            upstream_url = master_ar_process.make_url_from_path(upstream)
+            requests.get(
+                upstream_url,
+                allow_redirects=True,
+            )
+
+            resp = requests.get(
+                url,
+                allow_redirects=False,
+            )
+            assert resp.status_code == 200
+            assert resp.headers['Content-Type'] == 'text/plain'
+            assert label in resp.text
 
     def test_metrics_prometheus_escape(self, master_ar_process, valid_user_header):
         """
