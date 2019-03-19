@@ -3,6 +3,13 @@
 mkdir -p "/build"
 mkdir -p "$PKG_PATH/etc"
 
+pushd "/pkg/src/openssl-fips-2.0.16"
+export FIPSDIR=/tmp/ssl
+./config
+make
+make install
+
+
 # TODO(cmaloney): Fix the rpath
 pushd "/pkg/src/openssl"
 ./Configure "--prefix=$PKG_PATH" \
