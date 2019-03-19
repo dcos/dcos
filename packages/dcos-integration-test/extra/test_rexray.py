@@ -7,6 +7,11 @@ import pytest
 from test_helpers import get_expanded_config
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS_OSS-4922',
+    reason='test_rexray.test_move_external_volume_to_new_agent fails',
+    since='2019-03-18'
+)
 def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
 

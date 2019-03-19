@@ -1,3 +1,11 @@
+import pytest
+
+
+@pytest.mark.xfailflake(
+    jira='DCOS-46578',
+    reason='test_metronome job run fails',
+    since='2019-03-15'
+)
 def test_metronome(dcos_api_session):
     job = {
         'description': 'Test Metronome API regressions',
