@@ -1,5 +1,5 @@
 {
-  "sources" {
+  "sources" : {
       "openssl": {
         "kind": "url_extract",
         "url": "https://www.openssl.org/source/openssl-1.0.2r.tar.gz",
