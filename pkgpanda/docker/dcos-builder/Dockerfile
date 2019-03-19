@@ -57,8 +57,28 @@ ENV GOLANG_DOWNLOAD_SHA256 ff54aafedff961eb94792487e827515da683d61a5f9482f668008
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
   && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
-  && tar -C /usr/local -xzf golang.tar.gz \
+  && mkdir -p /gobootstrap \
+  && tar -C /gobootstrap -xzf golang.tar.gz \
   && rm golang.tar.gz
+
+ENV GOROOT_BOOTSTRAP /gobootstrap/go
+ENV GOLANG_COMMIT 3fb9dafacc45817296885a6e877ba7a5f1c199a4
+ENV USER root
+RUN git clone https://go.googlesource.com/go /usr/local/go && \
+        cd /usr/local/go && \
+        git checkout ${GOLANG_COMMIT} && \
+        cd src && \
+        # The golang build runs all tests as part of the build process. The
+        # tests include privileged syscalls tests in linux. The `docker build`
+        # command cannot be executed in privileged dome and thus the syscall
+        # tests are failing. The syscall tests are looking for presence of
+        # `./dockerenv` file that indicates that tests are executed in a docker
+        # container.
+        # https://github.com/moby/moby/issues/1916
+        touch /.dockerenv && \
+        ./all.bash && \
+    # Remove the bootstrap go
+    rm -rf /gobootstrap
 
 # Set GOPATH to expected pkgpanda package path for DC/OS
 ENV GOPATH /pkg
