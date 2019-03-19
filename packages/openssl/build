@@ -3,7 +3,7 @@
 mkdir -p "/build"
 mkdir -p "$PKG_PATH/etc"
 
-pushd "/pkg/src/openssl-fips-2.0.16"
+pushd "/pkg/src/openssl-fips"
 export FIPSDIR=/tmp/ssl
 ./config
 make
