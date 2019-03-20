@@ -849,7 +849,7 @@ def calculate_check_config(check_time):
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': instant_check_timeout
+                    'timeout': normal_check_timeout
                 },
                 'docker': {
                     'description': 'Docker is installed',
