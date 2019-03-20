@@ -63,7 +63,7 @@ RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
 
 ENV GOROOT_BOOTSTRAP /gobootstrap/go
 ENV GOLANG_COMMIT 3fb9dafacc45817296885a6e877ba7a5f1c199a4
-ENV USER root
+ARG USER=root
 RUN git clone https://go.googlesource.com/go /usr/local/go && \
         cd /usr/local/go && \
         git checkout ${GOLANG_COMMIT} && \
