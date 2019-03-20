@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 __maintainer__ = 'Gilbert88'
 __contact__ = 'core-team@mesosphere.io'
 
@@ -302,6 +304,8 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
         pass
 
 
+# TODO: Unmute this test once volume gid manager is enabled.
+@pytest.mark.skip(reason="cannot test this without volume gid manager enabled")
 def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_api_session):
     """Marathon pods inside ucr deployment integration test.
 
