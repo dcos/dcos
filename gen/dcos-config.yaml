@@ -1299,7 +1299,7 @@ package:
       # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1|disk:32
+      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_OFFER_TIMEOUT=2mins
@@ -2232,6 +2232,24 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Transform Admin Router metrics from the Nginx VTS module
+      [[processors.nginx_vts_filter]]
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_requests_total"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_bytes_total"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_request_seconds"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_request_seconds_total"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
@@ -2341,6 +2359,10 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router"
@@ -2478,6 +2500,10 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
@@ -2608,6 +2634,10 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
