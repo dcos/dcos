@@ -14,5 +14,4 @@ EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
 
 LimitNOFILE=16384
 
-ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-fluent-bit
 ExecStart=/opt/mesosphere/bin/fluent-bit --config ${FLUENT_BIT_CONFIG_FILE} --parser ${FLUENT_BIT_PARSER_FILE}
