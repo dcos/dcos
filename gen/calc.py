@@ -854,7 +854,7 @@ def calculate_check_config(check_time):
                 'docker': {
                     'description': 'Docker is installed',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'docker'],
-                    'timeout': '1s'
+                    'timeout': normal_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
