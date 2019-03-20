@@ -4,6 +4,7 @@ set -o errexit
 set -o xtrace
 set -o nounset
 
+# Build and install Fluent Bit.
 # https://docs.fluentbit.io/manual/installation/build_install
 pushd "/pkg/src/$PKG_NAME/build"
 cmake -DCMAKE_INSTALL_PREFIX="$PKG_PATH" ../
@@ -12,3 +13,7 @@ make install
 popd
 # Remove Fluent Bit's default config.
 rm -rf "$PKG_PATH/etc"
+
+# Add systemd unit file.
+mkdir -p "$PKG_PATH/dcos.target.wants/"
+cp /pkg/extra/dcos-fluent-bit.service "$PKG_PATH/dcos.target.wants/"
