@@ -39,7 +39,7 @@
     "dvdcli",
     "exhibitor",
     "flask",
-    "fluentbit",
+    "fluent-bit",
     "java",
     "libevent",
     "libffi",
