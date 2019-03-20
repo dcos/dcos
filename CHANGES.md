@@ -21,6 +21,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
+
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 
 ### Security updates
