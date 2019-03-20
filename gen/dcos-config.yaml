@@ -2653,10 +2653,10 @@ package:
       DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
       DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
       DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
-  - path: /etc/fluentbit.env
+  - path: /etc/fluent-bit.env
     content: |
-      FLUENTBIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
-      FLUENTBIT_PARSER_FILE=/opt/mesosphere/etc/fluent-bit/parsers.conf
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
+      FLUENT_BIT_PARSER_FILE=/opt/mesosphere/etc/fluent-bit/parsers.conf
   - path: /etc/fluent-bit/fluent-bit.conf
     content: |
       [SERVICE]
