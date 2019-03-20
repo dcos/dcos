@@ -10,3 +10,5 @@ cmake -DCMAKE_INSTALL_PREFIX="$PKG_PATH" ../
 make
 make install
 popd
+# Remove Fluent Bit's default config.
+rm -rf "$PKG_PATH/etc"
