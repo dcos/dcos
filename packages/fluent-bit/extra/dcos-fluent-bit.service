@@ -1,5 +1,5 @@
 [Unit]
-Description=Fluent Bit: collects and forwards logs
+Description=Fluent Bit: Collects and forwards logs
 
 [Service]
 Restart=always
