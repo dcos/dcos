@@ -27,6 +27,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 * Release of Marathon 1.8 with refactored Task Instance management.
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
