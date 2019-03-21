@@ -865,7 +865,7 @@ def calculate_check_config(check_time):
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': instant_check_timeout,
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
