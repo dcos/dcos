@@ -4,7 +4,7 @@ mkdir -p "/build"
 mkdir -p "$PKG_PATH/etc"
 
 pushd "/pkg/src/openssl-fips"
-  export FIPSDIR="$PKG_PATH/etc/ssl"
+  export FIPSDIR="$PKG_PATH/etc/fips"
   ./config
   make
   make install
@@ -15,8 +15,7 @@ popd
 pushd "/pkg/src/openssl"
 ./Configure "--prefix=$PKG_PATH" \
   --openssldir="$PKG_PATH/etc/ssl" \
-  --with-fipsdir="$PKG_PATH/etc/ssl/fips2.0" \
-  -I"$PKG_PATH/etc/ssl/include" \
+  --with-fipsdir="$PKG_PATH/etc/fips" \
   fips \
   shared \
   linux-x86_64 \
