@@ -16,6 +16,8 @@ pushd "/pkg/src/openssl"
 ./Configure "--prefix=$PKG_PATH" \
   --openssldir="$PKG_PATH/etc/ssl" \
   --with-fipsdir="$PKG_PATH/etc/ssl/fips2.0" \
+  -I"$PKG_PATH/etc/ssl/include" \
+  fips \
   shared \
   linux-x86_64 \
   no-krb5 \
