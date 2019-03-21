@@ -17,6 +17,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 ### Breaking changes
 
 ### Fixed and improved
@@ -33,7 +35,6 @@ Format of the entries must be.
 ## DC/OS 1.12.3
 
 ### Notable changes
-
 
 ### Breaking changes
 

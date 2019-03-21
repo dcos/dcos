@@ -2,7 +2,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/spotify/docker-gc.git",
-    "ref": "4ee60137cfc76cf568b47f9b459b851d59325311",
+    "ref": "131a786886f571b656e0e4bdda967b7abc1fa7d1",
     "ref_origin": "master"
   },
   "username": "dcos_docker_gc",
