@@ -14,4 +14,4 @@ EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
 
 LimitNOFILE=16384
 
-ExecStart=/opt/mesosphere/bin/fluent-bit --config ${FLUENT_BIT_CONFIG_FILE} --parser ${FLUENT_BIT_PARSER_FILE}
+ExecStart=/opt/mesosphere/bin/fluent-bit --config ${FLUENT_BIT_CONFIG_FILE}
