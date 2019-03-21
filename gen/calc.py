@@ -201,12 +201,12 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
-    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
 def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
-    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
@@ -1075,6 +1075,7 @@ entry = {
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
+        validate_metronome_gpu_scheduling_behavior,
         lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
