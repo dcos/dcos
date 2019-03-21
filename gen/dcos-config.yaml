@@ -2730,6 +2730,7 @@ package:
           # if /var/log/journal is unavailable (or journald is set to volatile)
           # /run/log/journal is used instead, and this unit will not load.
           Path /var/log/journal
+          Strip_Underscores On
       [OUTPUT]
           Name  stdout
           Match *
