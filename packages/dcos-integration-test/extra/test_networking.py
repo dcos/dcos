@@ -265,6 +265,11 @@ def test_ipv6(dcos_api_session, same_host):
         proxy_app.purge(dcos_api_session)
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-50427',
+    reason='fails with read timeout.',
+    since='2019-03-19'
+)
 @pytest.mark.slow
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
