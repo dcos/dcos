@@ -6,7 +6,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-mesos-modules.git",
-    "ref": "35d3b464be910867ccb308fb57bd981747ed8568",
-    "ref_origin": "1.12"
+    "ref": "dbc7130b5e612f378f18d8b402702969ac020457",
+    "ref_origin": "urbanserj/1.12/recovering"
   }
 }
