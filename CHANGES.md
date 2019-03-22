@@ -21,6 +21,8 @@ Format of the entries must be.
 
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 
+* Fix a race condition in L4LB (DCOS_OSS-4939)
+
 ### Security Updates
 
 
