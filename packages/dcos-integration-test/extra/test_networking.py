@@ -224,11 +224,6 @@ def test_docker_image_availablity():
     assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-19790',
-    reason='test_ipv6 fails with 0 tasks healthy',
-    since='2019-03-15'
-)
 @pytest.mark.slow
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
@@ -265,11 +260,6 @@ def test_ipv6(dcos_api_session, same_host):
         proxy_app.purge(dcos_api_session)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-50427',
-    reason='fails with read timeout.',
-    since='2019-03-19'
-)
 @pytest.mark.slow
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
@@ -381,11 +371,6 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-19790',
-    reason='test_if_overlay_ok fails with STATUS_FAILED',
-    since='2019-03-15'
-)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
