@@ -19,7 +19,6 @@ that first user's point of view. That is, we can not test that a user (e.g.
 user2) which was added by the first user (user1) can add another user (user3).
 """
 import logging
-import subprocess
 import uuid
 
 import pytest
