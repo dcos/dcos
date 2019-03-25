@@ -1,4 +1,4 @@
-## DC/OS 1.12.3
+## DC/OS 1.12.3-fips
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -16,6 +16,9 @@ Format of the entries must be.
 ## DC/OS 1.12.3 (Next Release. Please Update News Entries in this Section).
 
 ### Notable changes
+
+* Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+* Build DC/OS with FIPS Compliant OpenSSL (DCOS-50051)
 
 
 ### Breaking changes

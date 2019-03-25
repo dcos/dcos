@@ -3,10 +3,20 @@
 mkdir -p "/build"
 mkdir -p "$PKG_PATH/etc"
 
+pushd "/pkg/src/openssl-fips"
+  export FIPSDIR="$PKG_PATH/etc/fips"
+  ./config
+  make
+  make install
+popd
+
+
 # TODO(cmaloney): Fix the rpath
 pushd "/pkg/src/openssl"
 ./Configure "--prefix=$PKG_PATH" \
   --openssldir="$PKG_PATH/etc/ssl" \
+  --with-fipsdir="$PKG_PATH/etc/fips" \
+  fips \
   shared \
   linux-x86_64 \
   no-krb5 \
