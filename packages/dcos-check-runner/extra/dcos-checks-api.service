@@ -3,6 +3,7 @@ Description=DC/OS Checks API: Provides node and cluster checks
 
 [Service]
 Restart=always
+RestartSec=5
 StartLimitInterval=0
 
 LimitNOFILE=16384
