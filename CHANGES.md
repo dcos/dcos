@@ -77,6 +77,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add metrics for lashup (DCOS_OSS-4756)
 
+* DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
+
 
 ### Breaking changes
 
