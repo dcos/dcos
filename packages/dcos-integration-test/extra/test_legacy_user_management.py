@@ -200,21 +200,21 @@ def test_dcos_add_user(dcos_api_session):
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
     cli.exec_command(command)
 
-    r = dcos_api_session.get('/acs/api/v1/users')
-    r.raise_for_status()
-    expected_user_data = {
-        "uid": email_address,
-        "description": "",
-        "url": "/acs/api/v1/users/" + email_address,
-        "is_remote": True,
-        "is_service": False,
-        "provider_type": "oidc",
-        "provider_id": "https://dcos.auth0.com/"
-    }
-
-    delete_user(dcos_api_session, email_address)
-
-    assert expected_user_data in r.json()['array']
+    try:
+        r = dcos_api_session.get('/acs/api/v1/users')
+        r.raise_for_status()
+        expected_user_data = {
+            "uid": email_address,
+            "description": "",
+            "url": "/acs/api/v1/users/" + email_address,
+            "is_remote": True,
+            "is_service": False,
+            "provider_type": "oidc",
+            "provider_id": "https://dcos.auth0.com/"
+        }
+        assert expected_user_data in r.json()['array']
+    finally:
+        delete_user(dcos_api_session, email_address)
 
 
 def test_check_message_on_adding_user_twice(dcos_api_session):
@@ -228,16 +228,14 @@ def test_check_message_on_adding_user_twice(dcos_api_session):
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
     stdout, stderr = cli.exec_command(command)
 
-    expected_output = '[INFO] Created IAM user `' + email_address + '`\n'
-    assert '' == stdout
-    assert expected_output == stderr
+    try:
+        expected_output = '[INFO] Created IAM user `' + email_address + '`\n'
+        assert '' == stdout
+        assert expected_output == stderr
 
-    # Adding the same user second time
-    stdout, stderr = cli.exec_command(command)
-
-    expected_error = '[INFO] User `' + email_address + '` already exists\n'
-
-    delete_user(dcos_api_session, email_address)
-
-    assert expected_error == stderr
-    assert '' == stdout
+        stdout, stderr = cli.exec_command(command)
+        expected_error = '[INFO] User `' + email_address + '` already exists\n'
+        assert expected_error == stderr
+        assert '' == stdout
+    finally:
+        delete_user(dcos_api_session, email_address)
