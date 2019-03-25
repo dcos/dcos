@@ -12,4 +12,5 @@ EnvironmentFile=-/var/lib/dcos/docker-gc.env
 Environment=STATE_DIR=/var/lib/dcos/docker-gc
 Environment=PID_DIR=/var/lib/dcos/docker-gc
 Environment=LOG_TO_SYSLOG=0
+Environment=REMOVE_VOLUMES=1
 ExecStart=$PKG_PATH/docker-gc

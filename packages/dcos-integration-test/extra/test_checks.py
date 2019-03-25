@@ -2,10 +2,18 @@ import logging
 import random
 import uuid
 
+import pytest
+
+
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-50400',
+    reason='fails with metronome exception.',
+    since='2019-03-19'
+)
 def test_checks_cli(dcos_api_session):
     base_cmd = [
         '/opt/mesosphere/bin/dcos-shell',

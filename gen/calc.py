@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.13-dev'
+DCOS_VERSION = '1.13.0-alpha'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -201,12 +201,12 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
-    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
 def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
-    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
@@ -849,12 +849,12 @@ def calculate_check_config(check_time):
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': instant_check_timeout
+                    'timeout': normal_check_timeout
                 },
                 'docker': {
                     'description': 'Docker is installed',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'docker'],
-                    'timeout': '1s'
+                    'timeout': normal_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
@@ -865,7 +865,7 @@ def calculate_check_config(check_time):
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': instant_check_timeout,
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
@@ -1075,6 +1075,7 @@ entry = {
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
+        validate_metronome_gpu_scheduling_behavior,
         lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),

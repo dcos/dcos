@@ -713,6 +713,9 @@ def net2str(value, ipv6):
     return enum2str(value) if not ipv6 else 'ipv6'
 
 
+@retrying.retry(wait_fixed=2000,
+                stop_max_delay=100 * 2000,
+                retry_on_exception=lambda x: True)
 def test_dcos_net_cluster_identity(dcos_api_session):
     cluster_id = 'minuteman'  # default
 
