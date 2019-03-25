@@ -1146,7 +1146,7 @@ entry = {
         'mesos_dns_set_truncate_bit': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
-        'mesos_container_log_sink': 'logrotate',
+        'mesos_container_log_sink': 'fluentbit+logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'false',
