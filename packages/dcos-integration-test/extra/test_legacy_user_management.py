@@ -19,9 +19,10 @@ that first user's point of view. That is, we can not test that a user (e.g.
 user2) which was added by the first user (user1) can add another user (user3).
 """
 import logging
-import os.path
+import uuid
 
 import pytest
+from dcos_test_utils import dcos_cli
 
 from test_helpers import get_expanded_config
 
@@ -188,8 +189,29 @@ def test_dynamic_ui_config(dcos_api_session):
     assert 'uiConfiguration' in data
 
 
-def test_dcos_add_user_script_exists_oss():
+def test_dcos_add_user(dcos_api_session):
     """
-    dcos_add_user.py script exists in /opt/mesosphere/bin directory.
+    dcos_add_user.py script adds a user to IAM using the
+    script dcos_add_user.py.
     """
-    assert os.path.isfile("/opt/mesosphere/bin/dcos_add_user.py")
+
+    email_address = uuid.uuid4().hex + '@example.com'
+    cli = dcos_cli.DcosCli('')
+    command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
+    cli.exec_command(command)
+
+    r = dcos_api_session.get('/acs/api/v1/users')
+    r.raise_for_status()
+    expected_user_data = {
+        "uid": email_address,
+        "description": "",
+        "url": "/acs/api/v1/users/" + email_address,
+        "is_remote": True,
+        "is_service": False,
+        "provider_type": "oidc",
+        "provider_id": "https://dcos.auth0.com/"
+    }
+
+    delete_user(dcos_api_session, email_address)
+
+    assert expected_user_data in r.json()['array']
