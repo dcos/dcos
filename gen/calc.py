@@ -596,6 +596,18 @@ def validate_adminrouter_tls_version_present(
     assert enabled_tls_flags_count > 0, msg
 
 
+def validate_adminrouter_x_frame_options(adminrouter_x_frame_options):
+    """
+    Provide a basic validation that checks that provided value starts with
+    one of the supported options: DENY, SAMEORIGIN, ALLOW-FROM
+    See: https://tools.ietf.org/html/rfc7034#section-2.1
+    """
+    msg = 'X-Frame-Options must be set to one of DENY, SAMEORIGIN, ALLOW-FROM'
+    regex = r"^((DENY|SAMEORIGIN)|ALLOW-FROM .+)$"
+    match = re.match(regex, adminrouter_x_frame_options)
+    assert match is not None, msg
+
+
 def validate_s3_prefix(s3_prefix):
     # See DCOS_OSS-1353
     assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
@@ -978,6 +990,7 @@ entry = {
         lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
         lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
         validate_adminrouter_tls_version_present,
+        validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -1009,6 +1022,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'adminrouter_x_frame_options': 'DENY',
         'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
