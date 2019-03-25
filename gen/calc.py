@@ -196,8 +196,13 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
 
 
 def validate_mesos_container_log_sink(mesos_container_log_sink):
-    assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
-        "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
+    assert mesos_container_log_sink in [
+        'fluentbit',
+        'journald',
+        'logrotate',
+        'fluentbit+logrotate',
+        'journald+logrotate',
+    ], "Container logs must go to 'fluentbit', 'journald', 'logrotate', 'fluentbit+logrotate', or 'journald+logrotate'."
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
