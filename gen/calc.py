@@ -1022,7 +1022,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
-        'adminrouter_x_frame_options': 'DENY',
+        'adminrouter_x_frame_options': 'SAMEORIGIN',
         'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',

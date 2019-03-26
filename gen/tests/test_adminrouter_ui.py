@@ -20,7 +20,7 @@ def test_adminrouter_ui_x_frame_options_default():
     expected_configuration = dedent(
         """\
         # Browser security settings for the DC/OS UI
-        add_header X-Frame-Options "DENY";
+        add_header X-Frame-Options "SAMEORIGIN";
         """
     )
     assert config['content'] == expected_configuration
