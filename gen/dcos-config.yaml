@@ -2025,6 +2025,10 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
+  - path: /etc_master/adminrouter-ui-security.conf
+    content: |
+      # Browser security settings for the DC/OS UI
+      add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
