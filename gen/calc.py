@@ -603,8 +603,8 @@ def validate_adminrouter_x_frame_options(adminrouter_x_frame_options):
     See: https://tools.ietf.org/html/rfc7034#section-2.1
     """
     msg = 'X-Frame-Options must be set to one of DENY, SAMEORIGIN, ALLOW-FROM'
-    regex = r"^((DENY|SAMEORIGIN)|ALLOW-FROM .+)$"
-    match = re.match(regex, adminrouter_x_frame_options)
+    regex = r"^(DENY|SAMEORIGIN|ALLOW-FROM[ \t].+)$"
+    match = re.match(regex, adminrouter_x_frame_options, re.IGNORECASE)
     assert match is not None, msg
 
 
