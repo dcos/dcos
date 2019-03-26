@@ -1,6 +1,5 @@
 import urllib.parse
 
-import pytest
 import requests
 
 
