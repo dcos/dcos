@@ -30,6 +30,10 @@ def test_adminrouter_ui_x_frame_options_default():
     'DENY',
     'SAMEORIGIN',
     'ALLOW-FROM https://example.com',
+    'deny',
+    'sameorigin',
+    'allow-from https://example.com',
+    'allow-from\thttps://example.com',
 ])
 def test_adminrouter_ui_x_frame_options_custom(value):
     """
@@ -59,6 +63,7 @@ def test_adminrouter_ui_x_frame_options_custom(value):
     'DENY bad',
     'SAMEORIGIN bad',
     'ALLOW-FROM',
+    'allow-from',
 ])
 def test_adminrouter_ui_x_frame_options_validation(value):
     new_arguments = {'adminrouter_x_frame_options': value}
