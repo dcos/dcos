@@ -261,6 +261,11 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
+@pytest.mark.xfailflake(
+    jira='DCOS-50427',
+    reason='test_networking.test_vip_ipv6 fails on an unrelated change',
+    since='2019-03-26'
+)
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
