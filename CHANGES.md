@@ -29,6 +29,8 @@ Format of the entries must be.
 
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
+* DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
