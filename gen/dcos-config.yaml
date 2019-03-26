@@ -2732,6 +2732,6 @@ package:
           Path /var/log/journal
           Strip_Underscores On
       [OUTPUT]
-          Name  stdout
+          Name  null
           Match *
 
