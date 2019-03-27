@@ -2197,6 +2197,10 @@ package:
       [[inputs.net]]
       # Get the number of processes and group them by status
       [[inputs.processes]]
+      # Gather resource usage of processes
+      [[inputs.procstat]]
+        pattern = "."
+        pid_finder = "pgrep"
       # Read metrics about system load & uptime
       [[inputs.system]]
       # Collect statistics about itself

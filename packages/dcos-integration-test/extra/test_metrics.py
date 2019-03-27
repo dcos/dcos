@@ -66,6 +66,22 @@ def get_metrics_prom(dcos_api_session, node):
     return response
 
 
+def test_metrics_procstat(dcos_api_session):
+    """Assert that procstat metrics are present on master and agent nodes."""
+    nodes = get_master_and_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_procstat_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'procstat_lookup_pid_count':
+                        return
+            raise Exception('Expected Procstat procstat_lookup_pid_count metric not found')
+        check_procstat_metrics()
+
+
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
