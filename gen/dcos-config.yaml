@@ -409,6 +409,12 @@ package:
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"
+                  }, {
+                    "key": "fluentbit_ip",
+                    "value": "127.0.0.1"
+                  }, {
+                    "key": "fluentbit_port",
+                    "value": "61092"
                   }
                 ]
               }
