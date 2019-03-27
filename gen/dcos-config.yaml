@@ -2718,10 +2718,16 @@ package:
       DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
       DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
       DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
-  - path: /etc/fluent-bit.env
+  - path: /etc_master/fluent-bit.env
     content: |
-      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
-  - path: /etc/fluent-bit/fluent-bit.conf
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/master.conf
+  - path: /etc_slave/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+  - path: /etc_slave_public/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+  - path: /etc/fluent-bit/common.conf
     content: |
       [SERVICE]
           # Flush
@@ -2764,4 +2770,15 @@ package:
       [OUTPUT]
           Name  null
           Match *
-
+  - path: /etc/fluent-bit/master.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+  - path: /etc/fluent-bit/agent.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+      [INPUT]
+          Name tcp
+          Listen 127.0.0.1
+          Port 61092
+          Chunk_Size 32
+          Buffer_Size 64
