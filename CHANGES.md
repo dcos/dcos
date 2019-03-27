@@ -75,8 +75,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add metrics for lashup (DCOS_OSS-4756)
 
-* DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
-
 
 ### Breaking changes
 
@@ -126,6 +124,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
 * Fix IPv6 VIP support in L4LB (DCOS-50427)
+
+* DC/OS UI X-Frame-Options default value has been changed from `SAMEORIGIN` to `DENY`. This is now configurable using the `adminrouter_x_frame_options` configuration value (DCOS-49594)
 
 ### Notable changes
 
