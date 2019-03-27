@@ -26,7 +26,7 @@ def add_user(uid: str) -> None:
         uid=uid,
     )
     r = requests.put(url, json={
-        'provider_type_str': 'oidc',
+        'provider_type': 'oidc',
         'provider_id': 'https://dcos.auth0.com/'
         }
     )

@@ -75,6 +75,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add metrics for lashup (DCOS_OSS-4756)
 
+* DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
+
 
 ### Breaking changes
 
@@ -118,7 +120,12 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Add a warning to the installer to let the user know if case kernel modules required by DSS are not loaded (DCOS-49088)
 
 * Enable ipv6 support for l4lb by default (DCOS_OSS-1993)
+
 * Upgrade OTP version to 21.3 (DCOS_OSS-4902)
+
+* Fix a race condition in L4LB (DCOS_OSS-4939)
+
+* Fix IPv6 VIP support in L4LB (DCOS-50427)
 
 ### Notable changes
 
