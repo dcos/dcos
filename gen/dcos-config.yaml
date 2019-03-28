@@ -2689,7 +2689,6 @@ package:
   - path: /etc/fluent-bit.env
     content: |
       FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
-      FLUENT_BIT_PARSER_FILE=/opt/mesosphere/etc/fluent-bit/parsers.conf
   - path: /etc/fluent-bit/fluent-bit.conf
     content: |
       [SERVICE]
