@@ -31,6 +31,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
 
+* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
+
 * Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
 * CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
@@ -124,6 +126,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
 * Fix IPv6 VIP support in L4LB (DCOS-50427)
+
+* DC/OS UI X-Frame-Options default value has been changed from `SAMEORIGIN` to `DENY`. This is now configurable using the `adminrouter_x_frame_options` configuration value (DCOS-49594)
 
 ### Notable changes
 

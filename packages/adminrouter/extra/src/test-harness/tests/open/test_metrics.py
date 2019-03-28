@@ -4,6 +4,9 @@ import requests
 
 def get_static_upstream_annotations() -> dict:
     static_upstream_annotations = {
+        '/mesos/': 'Mesos',
+        '/cosmos/service/': 'Cosmos',
+        '/dcos-ui-update-service/api/v1/version/': 'DCOSUIUpdateService',
         '/acs/api/v1': 'IAM',
         '/system/health/v1': 'DCOSDiagnostics',
         '/system/checks/v1': 'DCOSChecks',
@@ -12,7 +15,7 @@ def get_static_upstream_annotations() -> dict:
         '/system/v1/logs/': 'DCOSLog',
         '/system/v1/metrics/': 'DCOSMetrics',
         '/mesos_dns/': 'MesosDNS',
-        '/pkgpanda': 'Pkgpanda',
+        '/pkgpanda/': 'Pkgpanda',
         '/exhibitor/exhibitor/v1/cluster/status': 'Exhibitor',
     }
     return static_upstream_annotations
@@ -52,3 +55,4 @@ class TestMetrics:
         assert resp.status_code == 200
         assert resp.headers['Content-Type'] == 'text/plain'
         assert annotation in resp.text
+        assert location in resp.text

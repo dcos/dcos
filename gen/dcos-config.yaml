@@ -2025,6 +2025,10 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
+  - path: /etc_master/adminrouter-ui-security.conf
+    content: |
+      # Browser security settings for the DC/OS UI
+      add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -2193,6 +2197,10 @@ package:
       [[inputs.net]]
       # Get the number of processes and group them by status
       [[inputs.processes]]
+      # Gather resource usage of processes
+      [[inputs.procstat]]
+        pattern = "."
+        pid_finder = "pgrep"
       # Read metrics about system load & uptime
       [[inputs.system]]
       # Collect statistics about itself
