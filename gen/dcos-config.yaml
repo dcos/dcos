@@ -2695,7 +2695,7 @@ package:
       [SERVICE]
           # Flush
           # =====
-          # Set an interval of seconds before to flush records to a destination
+          # Set the flush interval in seconds.
           Flush        5
           # Daemon
           # ======
@@ -2730,7 +2730,11 @@ package:
           # if /var/log/journal is unavailable (or journald is set to volatile)
           # /run/log/journal is used instead, and this unit will not load.
           Path /var/log/journal
+          # Delete underscores at the start of field name. This is useful when logs
+          # are further forwarded into elasticsearch, where fields with leading
+          # underscore are reserved for internal use.
           Strip_Underscores On
+      # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
           Match *
