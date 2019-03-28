@@ -31,6 +31,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
 
+* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
+
 * Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
 * CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
