@@ -29,6 +29,8 @@ Format of the entries must be.
 
 * DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
 
+* Telegraf cancels timed out requests for internal Mesos metrics, instead of collecting partial metric data (DCOS-50672)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
