@@ -2368,7 +2368,7 @@ package:
         ## Use TLS but skip chain & host verification
         insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2509,7 +2509,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2643,7 +2643,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2690,3 +2690,50 @@ package:
       DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
       DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
       DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
+  - path: /etc/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
+  - path: /etc/fluent-bit/fluent-bit.conf
+    content: |
+      [SERVICE]
+          # Flush
+          # =====
+          # Set the flush interval in seconds.
+          Flush        5
+          # Daemon
+          # ======
+          # Instruct Fluent Bit to run in foreground or background mode.
+          Daemon       Off
+          # Log_Level
+          # =========
+          # Set the verbosity level of the service, values can be:
+          #
+          # - error
+          # - warning
+          # - info
+          # - debug
+          # - trace
+          #
+          # By default 'info' is set, that means it includes 'error' and 'warning'.
+          Log_Level    info
+          # HTTP Server
+          # ===========
+          # Enable/Disable the built-in HTTP Server for metrics
+          HTTP_Server  Off
+          #HTTP_Listen  0.0.0.0
+          #HTTP_Port    62020
+      [INPUT]
+          Name systemd
+          Tag host.*
+          # if /var/log/journal is unavailable (or journald is set to volatile)
+          # /run/log/journal is used instead, and this unit will not load.
+          Path /var/log/journal
+          # Delete underscores at the start of field name. This is useful when logs
+          # are further forwarded into elasticsearch, where fields with leading
+          # underscore are reserved for internal use.
+          Strip_Underscores On
+      # Log forwarding is disabled by default.
+      [OUTPUT]
+          Name  null
+          Match *
+
