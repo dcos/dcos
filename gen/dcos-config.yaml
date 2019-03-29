@@ -2211,6 +2211,8 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
+        ## Expiration interval for each metric before it's evicted from cache.
+        expiration_interval = "60s"
       # Read metrics from DC/OS Net Prometheus endpoint.
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
