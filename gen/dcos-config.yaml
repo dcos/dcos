@@ -1366,6 +1366,8 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
+        ## Expiration interval for each metric before it's evicted from cache.
+        expiration_interval = "60s"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
