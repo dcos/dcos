@@ -6,7 +6,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/mesosphere/dcos-mesos-modules.git",
-    "ref": "99570ac2d3a4103cedcd8df615fcf7bf7206ad3c",
+    "ref": "a39907de2dfcab22595f8313f0eddec775ea791e",
     "ref_origin": "asekretenko/logsink_microseconds"
   }
 }
