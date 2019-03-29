@@ -2130,7 +2130,7 @@ package:
 {% endswitch %}
       [agent]
         ## Default data collection interval for all inputs
-        interval = "20s"
+        interval = "10s"
         ## Rounds collection interval to 'interval'
         ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
         round_interval = true
@@ -2142,7 +2142,7 @@ package:
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 20000
+        metric_buffer_limit = 90000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
@@ -2431,6 +2431,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
+        ## The interval at which to collect metrics
+        interval = "30s"
         ## The address on which the command API should listen
         listen = "/run/dcos/telegraf/dcos_statsd.sock"
         ## The directory in which container information is stored
