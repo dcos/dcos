@@ -208,6 +208,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
         measurements = set()
         expect_dropped = set([
             'nginx_vts_filter',
+            'nginx_vts_upstream',
+            'nginx_vts_server',
         ])
         unexpected_samples = []
 
@@ -227,8 +229,6 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
             'nginx_server_status',
             'nginx_upstream_status',
             'nginx_upstream_backend',
-            'nginx_vts_upstream',
-            'nginx_vts_server',
         ])
 
         difference = expected - measurements
@@ -282,6 +282,8 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
             measurements = set()
             expect_dropped = set([
                 'nginx_vts_filter',
+                'nginx_vts_upstream',
+                'nginx_vts_server',
             ])
             unexpected_samples = []
 
