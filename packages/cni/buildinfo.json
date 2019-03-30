@@ -3,7 +3,7 @@
     "single_source" : {
       "kind": "git",
       "git": "https://github.com/containernetworking/plugins.git",
-      "ref" : "72b62babeeb3d7b25c9809ea9eb9fc9c02cc0f71",
+      "ref" : "a62711a5da7a2dc2eb93eac47e103738ad923fd6",
       "ref_origin": "master"
     }
 }
