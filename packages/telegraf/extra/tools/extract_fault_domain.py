@@ -3,11 +3,10 @@
 # telegraf. It expects a JSON input corresponding to the format detailed here:
 # https://docs.mesosphere.com/1.12/deploying-services/fault-domain-awareness/
 #
-# It outputs a shell script which sets two environment variables called
-# FAULT_DOMAIN_REGION and FAULT_DOMAIN_ZONE. These are then included in the
-# global tags in the telegraf config, so adding a fault_domain_region and
-# fault_domain_zone tag to every metric which passes through the telegraf
-# pipeline.
+# It outputs the name of either the fault domain's region or zone, according to
+# its argument. These are then included in the global tags in the telegraf
+# config, so adding a fault_domain_region and fault_domain_zone tag to every
+# metric which passes through the telegraf pipeline.
 #
 # If the input is not valid JSON, or is not structured as expected, nothing
 # will be output and an error message will be logged.
@@ -15,18 +14,21 @@
 import json
 import sys
 
-env_var_template = '''
-export FAULT_DOMAIN_REGION="{region}"
-export FAULT_DOMAIN_ZONE="{zone}"
-'''
 
-fd = {}
+if (len(sys.argv) != 2) or (sys.argv[1] not in ['region', 'zone']):
+    print("usage: {} <region|zone>".format(sys.argv[0]), file=sys.stderr)
+    sys.exit(1)
+
 try:
-    fd = json.load(sys.stdin).get("fault_domain", {})
-except:
-    exit("Could not parse fault domain json")
+    obj = json.load(sys.stdin)
+except Exception as exc:
+    print("Error parsing json input: {}".format(exc), file=sys.stderr)
+    sys.exit(1)
 
-region = fd.get("region", {}).get("name", "")
-zone = fd.get("zone", {}).get("name", "")
+try:
+    name = obj['fault_domain'][sys.argv[1]]['name']
+except KeyError as exc:
+    print("Invalid fault domain json. Missing key: {}".format(exc), file=sys.stderr)
+    sys.exit(1)
 
-print(env_var_template.format(zone=zone, region=region))
+print(name)

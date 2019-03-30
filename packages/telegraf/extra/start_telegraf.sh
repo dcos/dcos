@@ -27,7 +27,8 @@ if [ -x $fault_domain_script ]; then
   # If a fault domain script exists, export environment variables so that
   # fault_domain_zone and fault_domain_region are added to all tags originating
   # in this machine
-  eval `$(fault_domain_script) | $(fault_domain_extractor)`
+  export FAULT_DOMAIN_REGION="$("$fault_domain_script" | "$fault_domain_extractor" region)"
+  export FAULT_DOMAIN_ZONE="$("$fault_domain_script" | "$fault_domain_extractor" zone)"
 fi
 
 # Create containers dir for dcos_statsd input.
