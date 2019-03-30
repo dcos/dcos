@@ -13,7 +13,7 @@ fi
 cluster_id="$(cat ${cluster_id_file})"
 
 # Retrieve the node's private IP address.
-node_private_ip=$(/opt/mesosphere/bin/detect_ip)
+node_private_ip="$(/opt/mesosphere/bin/detect_ip)"
 
 # Export values to env vars so Telegraf config can reference them.
 export DCOS_CLUSTER_ID="${cluster_id}"
@@ -23,7 +23,7 @@ export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
 fault_domain_script="/opt/mesosphere/bin/detect_fault_domain"
 fault_domain_extractor="/opt/mesosphere/active/telegraf/tools/extract_fault_domain.py"
 
-if [ -x $fault_domain_script ]; then
+if [ -x "$fault_domain_script" ]; then
   # If a fault domain script exists, export environment variables so that
   # fault_domain_zone and fault_domain_region are added to all tags originating
   # in this machine
