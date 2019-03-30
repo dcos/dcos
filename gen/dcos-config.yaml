@@ -2727,12 +2727,15 @@ package:
   - path: /etc_master/fluent-bit.env
     content: |
       FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/master.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-master
   - path: /etc_slave/fluent-bit.env
     content: |
       FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
   - path: /etc_slave_public/fluent-bit.env
     content: |
       FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
   - path: /etc/fluent-bit/common.conf
     content: |
       [SERVICE]

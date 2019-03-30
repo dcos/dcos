@@ -14,5 +14,5 @@ EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
 
 LimitNOFILE=16384
 
-ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
+ExecStartPre=/opt/mesosphere/bin/bootstrap ${FLUENT_BIT_SERVICE}
 ExecStart=/opt/mesosphere/bin/fluent-bit --config ${FLUENT_BIT_CONFIG_FILE}
