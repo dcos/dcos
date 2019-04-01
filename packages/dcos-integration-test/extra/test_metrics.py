@@ -197,10 +197,10 @@ def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session
     """
     nginx_vts_*_request_seconds* metrics are not present.
     """
+    node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    dcos_api_session.get('/acs/api/v1/auth/jwks')
-    node = dcos_api_session.masters[0]
+    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
 
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
@@ -261,10 +261,10 @@ def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session)
 
 def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     """Assert that processed Admin Router metrics on master are present."""
+    node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    dcos_api_session.get('/acs/api/v1/auth/jwks')
-    node = dcos_api_session.masters[0]
+    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
 
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
