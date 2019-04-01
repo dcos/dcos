@@ -1765,7 +1765,23 @@ package:
               },
               {
                   "Location": "{{ mesos_master_log_file }}",
-                  "Role": ["master"]
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.1",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.2.gz",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.3.gz",
+                  "Role": ["master"],
+                  "Optional": true
               }
           ],
           "LocalCommands": [
