@@ -21,7 +21,7 @@ export DCOS_NODE_PRIVATE_IP="${node_private_ip}"
 
 # Retrieve the fault domain for this machine
 fault_domain_script="/opt/mesosphere/bin/detect_fault_domain"
-fault_domain_extractor="$(pwd)/tools/extract_fault_domain.py"
+fault_domain_extractor="/opt/mesosphere/active/telegraf/tools/extract_fault_domain.py"
 
 if [ -x $fault_domain_script ]; then
   # If a fault domain script exists, export environment variables so that
