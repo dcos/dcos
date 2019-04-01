@@ -2368,7 +2368,7 @@ package:
         ## Use TLS but skip chain & host verification
         insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2509,7 +2509,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2643,7 +2643,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
