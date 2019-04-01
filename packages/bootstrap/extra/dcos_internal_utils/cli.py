@@ -122,6 +122,8 @@ bootstrappers = {
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
     'dcos-checks-agent': noop,
+    'dcos-fluent-bit-master': noop,
+    'dcos-fluent-bit-agent': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,
     'dcos-mesos-slave': noop,

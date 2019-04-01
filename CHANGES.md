@@ -31,6 +31,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
 
+* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
+
 * Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
 * CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
@@ -86,6 +88,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
+
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
@@ -116,7 +120,14 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Add a warning to the installer to let the user know if case kernel modules required by DSS are not loaded (DCOS-49088)
 
 * Enable ipv6 support for l4lb by default (DCOS_OSS-1993)
+
 * Upgrade OTP version to 21.3 (DCOS_OSS-4902)
+
+* Fix a race condition in L4LB (DCOS_OSS-4939)
+
+* Fix IPv6 VIP support in L4LB (DCOS-50427)
+
+* DC/OS UI X-Frame-Options default value has been changed from `SAMEORIGIN` to `DENY`. This is now configurable using the `adminrouter_x_frame_options` configuration value (DCOS-49594)
 
 ### Notable changes
 

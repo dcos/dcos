@@ -224,11 +224,6 @@ def test_docker_image_availablity():
     assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-19790',
-    reason='test_ipv6 fails with 0 tasks healthy',
-    since='2019-03-15'
-)
 @pytest.mark.slow
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
@@ -266,6 +261,11 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
+@pytest.mark.xfailflake(
+    jira='DCOS-50427',
+    reason='test_networking.test_vip_ipv6 fails on an unrelated change',
+    since='2019-03-26'
+)
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
@@ -376,11 +376,6 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     return (vip, hosts, cmd, origin_app, proxy_app)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-19790',
-    reason='test_if_overlay_ok fails with STATUS_FAILED',
-    since='2019-03-15'
-)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
@@ -723,11 +718,9 @@ def net2str(value, ipv6):
     return enum2str(value) if not ipv6 else 'ipv6'
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-47438',
-    reason='test_dcos_net_cluster_identity fails',
-    since='2019-03-15'
-)
+@retrying.retry(wait_fixed=2000,
+                stop_max_delay=100 * 2000,
+                retry_on_exception=lambda x: True)
 def test_dcos_net_cluster_identity(dcos_api_session):
     cluster_id = 'minuteman'  # default
 
