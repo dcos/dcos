@@ -11,15 +11,22 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+
 ## DC/OS 1.11.11 (in development)
 
 ### Notable changes
 
 ### Fixed and improved
 
+* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+
+* Fix a race condition in L4LB (DCOS_OSS-4939)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+
+
 
 ## DC/OS 1.11.10
 
