@@ -18,6 +18,7 @@ def get_static_upstream_annotations() -> dict:
         '/pkgpanda/': 'Pkgpanda',
         '/exhibitor/exhibitor/v1/cluster/status': 'Exhibitor',
         '/service/marathon/v2/queue': 'service:=marathon',
+        '/service/metronome/v1/jobs': 'service:=metronome',
     }
     return static_upstream_annotations
 
@@ -57,7 +58,6 @@ class TestMetrics:
             allow_redirects=False,
         )
 
-        print(resp.text)
         assert resp.status_code == 200
         assert resp.headers['Content-Type'] == 'text/plain'
         assert annotation in resp.text
