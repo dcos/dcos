@@ -15,7 +15,7 @@ import json
 import sys
 
 
-if (len(sys.argv) != 2) or (sys.argv[1] not in ['region', 'zone']):
+if len(sys.argv) != 2 or sys.argv[1] not in ['region', 'zone']:
     print("usage: {} <region|zone>".format(sys.argv[0]), file=sys.stderr)
     sys.exit(1)
 
