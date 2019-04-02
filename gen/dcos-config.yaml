@@ -2252,6 +2252,10 @@ package:
           measurement = "nginx_vts_filter_bytes_total"
           key_value_delimiter = ":="
           tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_request_duration_seconds"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
