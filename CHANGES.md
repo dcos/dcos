@@ -1,5 +1,3 @@
-## DC/OS 1.11-dev
-
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
 * For Security updates, please call out in Security updates section.
@@ -13,7 +11,8 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
-## DC/OS 1.11.11 (Next release, please update entries in this section)
+
+## DC/OS 1.11.11 (in development)
 
 ### Notable changes
 
@@ -23,7 +22,10 @@ Format of the entries must be.
 
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
-### Security Updates
+### Security updates
+
+* Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+
 
 
 ## DC/OS 1.11.10
@@ -36,7 +38,6 @@ Format of the entries must be.
 
 * Stop requiring `ssh_user` attribute in `config.yaml` when using parts of deprecated CLI installer (DCOS_OSS-4613)
 
-### Security Updates
 
 
 ## DC/OS 1.11.9
