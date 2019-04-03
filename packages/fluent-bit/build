@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -o errexit
+set -o xtrace
+set -o nounset
+
+# Build and install Fluent Bit.
+# https://docs.fluentbit.io/manual/installation/build_install
+pushd "/pkg/src/$PKG_NAME/build"
+cmake -DCMAKE_INSTALL_PREFIX="$PKG_PATH" ../
+make
+make install
+popd
+# Remove Fluent Bit's default config.
+rm -rf "$PKG_PATH/etc"
+
+# Add systemd unit files.
+# We use different unit files per role because Fluent Bit uses one service account on masters and another on agents.
+unit_template="/pkg/extra/dcos-fluent-bit.service"
+master_unit="$PKG_PATH/dcos.target.wants_master/dcos-fluent-bit.service"
+agent_unit="$PKG_PATH/dcos.target.wants_slave/dcos-fluent-bit.service"
+agent_public_unit="$PKG_PATH/dcos.target.wants_slave_public/dcos-fluent-bit.service"
+
+# Add the master unit file to the package.
+mkdir -p $(dirname "$master_unit")
+SERVICE="dcos-fluent-bit-master" envsubst '${SERVICE} ${PKG_PATH}' < "$unit_template" > "$master_unit"
+
+# Add the agent unit files to the package.
+# Agents and public agents have the same unit file contents.
+for unit in "$agent_unit" "$agent_public_unit"; do
+  mkdir -p $(dirname "$unit")
+  SERVICE="dcos-fluent-bit-agent" envsubst '${SERVICE} ${PKG_PATH}' < "$unit_template" > "$unit"
+done

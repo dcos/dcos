@@ -188,7 +188,12 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /dcos-ui-update-service/api/v1/
+    -- /dcos-ui-update-service/api/v1/version/
+    res.access_dcos_ui_update_service_version_api_endpoint = function()
+        return res.do_authn_and_authz_or_exit();
+    end
+
+    -- /dcos-ui-update-service/api/
     res.access_dcos_ui_update_service_api_endpoint = function()
         return res.do_authn_and_authz_or_exit();
     end

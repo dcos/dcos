@@ -19,6 +19,7 @@ pushd build
 LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
   --prefix="$PKG_PATH" --enable-optimize --disable-python \
   --enable-libevent --enable-ssl \
+  --enable-launcher-sealing \
   --enable-install-module-dependencies \
   --enable-grpc \
   --enable-jemalloc-allocator \

@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.13-dev'
+DCOS_VERSION = '1.13.0-alpha'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -65,7 +65,7 @@ def validate_int_in_range(value, low, high):
 
     # Only a lower bound
     if high is None:
-        assert low <= int_value, 'Must be above {}'.format(low)
+        assert low <= int_value, 'Must be above or equal to {}'.format(low)
     else:
         assert low <= int_value <= high, 'Must be between {} and {} inclusive'.format(low, high)
 
@@ -201,12 +201,12 @@ def validate_mesos_container_log_sink(mesos_container_log_sink):
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
-    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert metronome_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "metronome_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
 def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
-    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', 'undefined', ''], \
+    assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
 
 
@@ -608,6 +608,18 @@ def validate_adminrouter_tls_version_present(
     assert enabled_tls_flags_count > 0, msg
 
 
+def validate_adminrouter_x_frame_options(adminrouter_x_frame_options):
+    """
+    Provide a basic validation that checks that provided value starts with
+    one of the supported options: DENY, SAMEORIGIN, ALLOW-FROM
+    See: https://tools.ietf.org/html/rfc7034#section-2.1
+    """
+    msg = 'X-Frame-Options must be set to one of DENY, SAMEORIGIN, ALLOW-FROM'
+    regex = r"^(DENY|SAMEORIGIN|ALLOW-FROM[ \t].+)$"
+    match = re.match(regex, adminrouter_x_frame_options, re.IGNORECASE)
+    assert match is not None, msg
+
+
 def validate_s3_prefix(s3_prefix):
     # See DCOS_OSS-1353
     assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
@@ -849,12 +861,12 @@ def calculate_check_config(check_time):
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': instant_check_timeout
+                    'timeout': normal_check_timeout
                 },
                 'docker': {
                     'description': 'Docker is installed',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'executable', 'docker'],
-                    'timeout': '1s'
+                    'timeout': normal_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
@@ -865,7 +877,7 @@ def calculate_check_config(check_time):
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': instant_check_timeout,
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
@@ -1072,9 +1084,11 @@ entry = {
         lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
         lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
         validate_adminrouter_tls_version_present,
+        validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
+        validate_metronome_gpu_scheduling_behavior,
         lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
@@ -1104,6 +1118,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'adminrouter_x_frame_options': 'DENY',
         'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
@@ -1179,7 +1194,7 @@ entry = {
         'dcos_l4lb_max_named_ip': '11.255.255.255',
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
-        'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_l4lb_enable_ipv6': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',

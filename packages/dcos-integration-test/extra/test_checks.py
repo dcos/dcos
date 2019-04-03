@@ -2,6 +2,7 @@ import logging
 import random
 import uuid
 
+
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 

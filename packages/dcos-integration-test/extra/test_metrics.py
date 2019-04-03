@@ -1,6 +1,7 @@
 import contextlib
 import copy
 import logging
+import re
 import uuid
 
 import pytest
@@ -36,11 +37,7 @@ def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set(
 def test_metrics_ping(dcos_api_session):
     """ Test that the metrics service is up on master and agents.
     """
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = dcos_api_session.metrics.get('/ping', node=node)
@@ -50,11 +47,7 @@ def test_metrics_ping(dcos_api_session):
 
 def test_metrics_agents_prom(dcos_api_session):
     """Telegraf Prometheus endpoint is reachable on master and agents."""
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = dcos_api_session.session.request('GET', 'http://' + node + ':61091/metrics')
@@ -74,13 +67,25 @@ def get_metrics_prom(dcos_api_session, node):
     return response
 
 
+def test_metrics_procstat(dcos_api_session):
+    """Assert that procstat metrics are present on master and agent nodes."""
+    nodes = get_master_and_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_procstat_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'procstat_lookup_pid_count':
+                        return
+            raise Exception('Expected Procstat procstat_lookup_pid_count metric not found')
+        check_procstat_metrics()
+
+
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
-    nodes = []
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -135,9 +140,13 @@ def test_metrics_master_cockroachdb(dcos_api_session):
     check_cockroachdb_metrics()
 
 
-def test_metrics_master_adminrouter(dcos_api_session):
-    """Assert that Admin Router metrics on master are present."""
-    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
+    """Assert that Admin Router Nginx VTS metrics on master are present."""
+    @retrying.retry(
+        wait_fixed=STD_INTERVAL,
+        stop_max_delay=METRICS_WAITTIME,
+        retry_on_exception=lambda e: isinstance(e, AssertionError)
+    )
     def check_adminrouter_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
@@ -145,20 +154,168 @@ def test_metrics_master_adminrouter(dcos_api_session):
                 if sample[0].startswith('nginx_vts_'):
                     assert sample[1]['dcos_component_name'] == 'Admin Router'
                     return
-        raise Exception('Expected Admin Router nginx_vts_* metrics not found')
+        raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
     check_adminrouter_metrics()
 
 
-def test_metrics_agents_adminrouter(dcos_api_session):
-    """Assert that Admin Router metrics on agents are present."""
-    nodes = []
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+def test_metrics_master_exhibitor_status(dcos_api_session):
+    """Assert that Exhibitor status metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_exhibitor_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        expected_metrics = {'exhibitor_status_code', 'exhibitor_status_isleader'}
+        samples = []
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] in expected_metrics:
+                    samples.append(sample)
+        reported_metrics = {sample[0] for sample in samples}
+        assert reported_metrics == expected_metrics, (
+            'Expected Exhibitor status metrics not found. '
+            'Expected: {} Reported: {}'.format(
+                expected_metrics, reported_metrics,
+            )
+        )
+        for sample in samples:
+            assert sample[1]['dcos_component_name'] == 'Exhibitor'
+            assert 'url' not in sample[1]
+            assert 'exhibitor_address' in sample[1]
+    check_exhibitor_metrics()
+
+
+def _nginx_vts_measurement_basename(name: str) -> str:
+    """
+    Extracts the base name of the metric reported by nginx vts filter module
+    and removes the metric suffix.
+
+    E.g.: nginx_server_status_request_bytes -> nginx_server_status
+    """
+    return '_'.join(name.split('_')[:3])
+
+
+def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
+    """
+    nginx_vts_*_request_seconds* metrics are not present.
+    """
+    node = dcos_api_session.masters[0]
+    # Make request to a fine-grained metrics annotated upstream of
+    # Admin Router (IAM in this case).
+    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
+
+    @retrying.retry(
+        wait_fixed=STD_INTERVAL,
+        stop_max_delay=METRICS_WAITTIME,
+        retry_on_exception=lambda e: isinstance(e, AssertionError)
+    )
+    def check_adminrouter_metrics():
+        vts_metrics_count = 0
+        response = get_metrics_prom(dcos_api_session, node)
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                match = re.match(r'^nginx_vts_.+_request_seconds.*$', sample[0])
+                assert match is None
+                # We assert the validity of the test here by confirming that
+                # VTS reported metrics have been scraped by telegraf.
+                if sample[0].startswith('nginx_vts_'):
+                    vts_metrics_count += 1
+        assert vts_metrics_count > 0
+
+    check_adminrouter_metrics()
+
+
+def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
+    """
+    nginx_vts_*_request_seconds* metrics are not present.
+    """
+    # Make request to Admin Router on every agent to ensure metrics.
+    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+    assert state_response.status_code == 200
+    state = state_response.json()
+    for agent in state['slaves']:
+        agent_url = '/system/v1/agent/{}/dcos-metadata/dcos-version.json'.format(agent['id'])
+        response = dcos_api_session.get(agent_url)
+        assert response.status_code == 200
+
+    nodes = get_agents(dcos_api_session)
+    for node in nodes:
+        @retrying.retry(
+            wait_fixed=STD_INTERVAL,
+            stop_max_delay=METRICS_WAITTIME,
+            retry_on_exception=lambda e: isinstance(e, AssertionError)
+        )
+        def check_adminrouter_metrics():
+            vts_metrics_count = 0
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    match = re.match(r'^nginx_vts_.+_request_seconds.*$', sample[0])
+                    assert match is None
+                    # We assert the validity of the test here by confirming that
+                    # VTS reported metrics have been scraped by telegraf.
+                    if sample[0].startswith('nginx_vts_'):
+                        vts_metrics_count += 1
+            assert vts_metrics_count > 0
+
+        check_adminrouter_metrics()
+
+
+def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
+    """Assert that processed Admin Router metrics on master are present."""
+    node = dcos_api_session.masters[0]
+    # Make request to a fine-grained metrics annotated upstream of
+    # Admin Router (IAM in this case).
+    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
+
+    @retrying.retry(
+        wait_fixed=STD_INTERVAL,
+        stop_max_delay=METRICS_WAITTIME,
+        retry_on_exception=lambda e: isinstance(e, AssertionError)
+    )
+    def check_adminrouter_metrics():
+        measurements = set()
+        expect_dropped = set([
+            'nginx_vts_filter',
+            'nginx_vts_upstream',
+            'nginx_vts_server',
+        ])
+        unexpected_samples = []
+
+        response = get_metrics_prom(dcos_api_session, node)
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('nginx_'):
+                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                    basename = _nginx_vts_measurement_basename(sample[0])
+                    measurements.add(basename)
+                    if basename in expect_dropped:
+                        unexpected_samples.append(sample)
+
+        assert unexpected_samples == []
+
+        expected = set([
+            'nginx_server_status',
+            'nginx_upstream_status',
+            'nginx_upstream_backend',
+        ])
+
+        difference = expected - measurements
+        assert not difference
+
+        remainders = expect_dropped & measurements
+        assert not remainders
+    check_adminrouter_metrics()
+
+
+def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
+    """Assert that Admin Router Nginx VTS metrics on agents are present."""
+    nodes = get_agents(dcos_api_session)
 
     for node in nodes:
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        @retrying.retry(
+            wait_fixed=STD_INTERVAL,
+            stop_max_delay=METRICS_WAITTIME,
+            retry_on_exception=lambda e: isinstance(e, AssertionError)
+        )
         def check_adminrouter_metrics():
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
@@ -166,8 +323,75 @@ def test_metrics_agents_adminrouter(dcos_api_session):
                     if sample[0].startswith('nginx_vts_'):
                         assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
                         return
-            raise Exception('Expected Admin Router nginx_vts_* metrics not found')
+            raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
         check_adminrouter_metrics()
+
+
+def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
+    """Assert that processed Admin Router metrics on agent are present."""
+    # Make request to Admin Router on every agent to ensure metrics.
+    state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
+    assert state_response.status_code == 200
+    state = state_response.json()
+    for agent in state['slaves']:
+        agent_url = '/system/v1/agent/{}/dcos-metadata/dcos-version.json'.format(agent['id'])
+        response = dcos_api_session.get(agent_url)
+        assert response.status_code == 200
+
+    nodes = get_agents(dcos_api_session)
+    for node in nodes:
+        @retrying.retry(
+            wait_fixed=STD_INTERVAL,
+            stop_max_delay=METRICS_WAITTIME,
+            retry_on_exception=lambda e: isinstance(e, AssertionError)
+        )
+        def check_adminrouter_metrics():
+            measurements = set()
+            expect_dropped = set([
+                'nginx_vts_filter',
+                'nginx_vts_upstream',
+                'nginx_vts_server',
+            ])
+            unexpected_samples = []
+
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0].startswith('nginx_'):
+                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                        basename = _nginx_vts_measurement_basename(sample[0])
+                        measurements.add(basename)
+                        if basename in expect_dropped:
+                            unexpected_samples.append(sample)
+
+            assert unexpected_samples == []
+
+            expected = set([
+                'nginx_server_status',
+            ])
+            difference = expected - measurements
+            assert not difference
+
+            remainders = expect_dropped & measurements
+            assert not remainders
+        check_adminrouter_metrics()
+
+
+def test_metrics_diagnostics(dcos_api_session):
+    """Assert that DC/OS Diagnostics metrics on master are present."""
+    nodes = get_master_and_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_diagnostics_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0].startswith('bundle_creation_time_seconds'):
+                        assert sample[1]['dcos_component_name'] == 'DC/OS Diagnostics'
+                        return
+            raise Exception('Expected DC/OS Diagnostics metrics not found')
+        check_diagnostics_metrics()
 
 
 def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
@@ -398,11 +622,7 @@ def test_metrics_node(dcos_api_session):
         assert response.status_code == 200
         return response
 
-    nodes = [dcos_api_session.masters[0]]
-    if dcos_api_session.slaves:
-        nodes.append(dcos_api_session.slaves[0])
-    if dcos_api_session.public_slaves:
-        nodes.append(dcos_api_session.public_slaves[0])
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = wait_for_node_response(node)
@@ -411,6 +631,21 @@ def test_metrics_node(dcos_api_session):
             response.status_code, response.content)
         assert expected_datapoint_response(response.json())
         assert expected_dimension_response(response.json())
+
+
+def get_master_and_agents(dcos_api_session):
+    nodes = [dcos_api_session.masters[0]]
+    nodes.extend(get_agents(dcos_api_session))
+    return nodes
+
+
+def get_agents(dcos_api_session):
+    nodes = []
+    if dcos_api_session.slaves:
+        nodes.append(dcos_api_session.slaves[0])
+    if dcos_api_session.public_slaves:
+        nodes.append(dcos_api_session.public_slaves[0])
+    return nodes
 
 
 def test_metrics_containers(dcos_api_session):

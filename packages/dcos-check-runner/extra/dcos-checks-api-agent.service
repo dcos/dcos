@@ -1,0 +1,24 @@
+[Unit]
+Description=DC/OS Checks API: Provides node and cluster checks
+
+[Service]
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+
+LimitNOFILE=16384
+
+Sockets=dcos-checks-api.socket
+
+PermissionsStartOnly=True
+User=dcos_check_runner
+# Allow r/w access to the socket file
+SupplementaryGroups=dcos_adminrouter
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-check-runner.env
+# Ensure dns is ready
+ExecStartPre=/bin/ping -c1 ready.spartan
+# This also covers bootstrap process for dcos-checks-poststart since this doesn't need
+# to happen once every minute
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-agent
+ExecStart=/opt/mesosphere/bin/dcos-check-runner http-server --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}

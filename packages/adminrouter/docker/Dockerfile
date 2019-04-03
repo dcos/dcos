@@ -8,9 +8,9 @@ ENV OPENRESTY_VERSION=1.13.6.1 \
     OPENRESTY_COMPILE_OPTS="" \
     VENV_DIR=/usr/local/venv \
     AR_BIN_DIR=/usr/local/adminrouter/ \
-    VTS_MODULE_DIR=/usr/local/src/nginx-vts-module-v0.1.18 \
-    VTS_MODULE_DOWNLOAD_SHASUM=8887748e0ef76e459aa2c86244baf382d4f7d4e5 \
-    VTS_MODULE_DOWNLOAD_URL=https://github.com/vozlt/nginx-module-vts/archive/v0.1.18.tar.gz \
+    VTS_MODULE_DIR=/usr/local/src/jongiddy-nginx-module-vts-3686706 \
+    VTS_MODULE_DOWNLOAD_SHASUM=785a1a412355dd78c9b0c56318ac5e2fa7428292 \
+    VTS_MODULE_DOWNLOAD_URL=https://github.com/jongiddy/nginx-module-vts/tarball/36867068fd0a20f0ce1c0b01bb1539be70a7224f \
     VEGETA_DOWNLOAD_SHA256=2f0a69d0ae6f0bf268b7f655bd37c0104d5568d5b2bc45bbb2c405266f74e33d \
     VEGETA_DOWNLOAD_URL=https://github.com/tsenart/vegeta/releases/download/v6.1.1/vegeta-v6.1.1-linux-amd64.tar.gz \
     IAM_PUBKEY_FILE_PATH=/usr/local/iam.jwt-key.pub \
@@ -144,6 +144,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-listen-agent.conf \
      adminrouter-tls-agent.conf \
      adminrouter-tls-master.conf \
+     adminrouter-ui-security.conf \
         /opt/mesosphere/etc/
 
 # The `ca.crt` file is copied into two places due to the fact that
