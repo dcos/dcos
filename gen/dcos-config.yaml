@@ -1961,6 +1961,9 @@ package:
       LIBPROCESS_PORT=15201
       METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
       METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600000
+      METRONOME_STATSD_HOST="localhost"
+      METRONOME_STATSD_PORT=61825
+      METRONOME_STATSD_ENABLED=true
 {% switch has_metronome_gpu_scheduling_behavior %}
 {% case "true" %}
       METRONOME_GPU_SCHEDULING_BEHAVIOR={{ metronome_gpu_scheduling_behavior }}
