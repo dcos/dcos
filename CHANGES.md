@@ -88,7 +88,7 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
-* Metronome fixed failure when restart policy is ON_FAILURE. This bug was introduced through the fix of another bug regarding stopping invalid extra instances of a job run. Metronome should not check the launch queue when a restart is invoked. (DCOS_OSS-4636 )
+* Fixed issue where Metronome did not handle restart policy is ON_FAILURE correctly, not restarting the task. (DCOS_OSS-4636 )
 
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
 
