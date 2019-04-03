@@ -17,6 +17,6 @@ EnvironmentFile=/opt/mesosphere/etc/dcos-ui-update-service.env
 ExecStartPre=/opt/mesosphere/active/dcos-ui-update-service/dcos-ui-update-service-pre-start.sh
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-ui-update-service
-ExecStart=/opt/mesosphere/bin/dcos-ui-update-service -listen-addr=${DCOS_UI_UPDATE_LISTEN_ADDR} -default-ui-path=${DCOS_UI_UPDATE_DEFAULT_UI_PATH} -versions-root=${DCOS_UI_UPDATE_VERSIONS_ROOT} -ui-dist-symlink=${DCOS_UI_UPDATE_DIST_LINK} -ui-dist-stage-symlink=${DCOS_UI_UPDATE_STAGE_LINK}
+ExecStart=/opt/mesosphere/bin/dcos-ui-update-service
 
 Sockets=dcos-ui-update-service.socket

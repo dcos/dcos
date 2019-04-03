@@ -1,3 +1,4 @@
+import textwrap
 import urllib.parse
 
 import requests
@@ -95,3 +96,51 @@ class TestMetrics:
         assert '/service/monitoring/gra"f\\a\nn\ta' not in resp.text
         # correctly escaped:
         assert '/service/monitoring/gra\\"f\\\\a\\nn\ta' in resp.text
+
+    def test_metrics_prometheus_histogram(self, master_ar_process, mocker, valid_user_header):
+        """
+        Response times are measured in histogram output.
+        """
+        mocker.send_command(endpoint_id='http://127.0.0.1:8181',
+                            func_name='always_stall',
+                            aux_data=0.05)
+
+        url = master_ar_process.make_url_from_path('/exhibitor/')
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        mocker.send_command(endpoint_id='http://127.0.0.1:8181',
+                            func_name='always_stall',
+                            aux_data=0.3)
+
+        resp = requests.get(
+            url,
+            allow_redirects=False,
+            headers=valid_user_header)
+
+        url = master_ar_process.make_url_from_path('/nginx/metrics')
+
+        resp = requests.get(
+            url,
+            allow_redirects=False
+        )
+
+        assert resp.status_code == 200
+        assert resp.headers['Content-Type'] == 'text/plain'
+        prefix = (
+            'nginx_vts_filter_request_duration_seconds_bucket{'
+            'filter="upstream:=Exhibitor",'
+            'filter_name="backend:=127.0.0.1:8181"'
+        )
+        assert textwrap.dedent('''\
+            %(prefix)s,le="0.008"} 0
+            %(prefix)s,le="0.040"} 0
+            %(prefix)s,le="0.200"} 1
+            %(prefix)s,le="1.000"} 2
+            %(prefix)s,le="5.000"} 2
+            %(prefix)s,le="25.000"} 2
+            %(prefix)s,le="+Inf"} 2
+        ''' % {'prefix': prefix}) in resp.text

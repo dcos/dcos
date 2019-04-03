@@ -1961,6 +1961,9 @@ package:
       LIBPROCESS_PORT=15201
       METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
       METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600000
+      METRONOME_STATSD_HOST="localhost"
+      METRONOME_STATSD_PORT=61825
+      METRONOME_STATSD_ENABLED=true
 {% switch has_metronome_gpu_scheduling_behavior %}
 {% case "true" %}
       METRONOME_GPU_SCHEDULING_BEHAVIOR={{ metronome_gpu_scheduling_behavior }}
@@ -2025,6 +2028,10 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
+  - path: /etc_master/adminrouter-ui-security.conf
+    content: |
+      # Browser security settings for the DC/OS UI
+      add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -2126,7 +2133,7 @@ package:
 {% endswitch %}
       [agent]
         ## Default data collection interval for all inputs
-        interval = "20s"
+        interval = "10s"
         ## Rounds collection interval to 'interval'
         ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
         round_interval = true
@@ -2138,7 +2145,7 @@ package:
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 20000
+        metric_buffer_limit = 90000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
@@ -2193,6 +2200,10 @@ package:
       [[inputs.net]]
       # Get the number of processes and group them by status
       [[inputs.processes]]
+      # Gather resource usage of processes
+      [[inputs.procstat]]
+        pattern = "."
+        pid_finder = "pgrep"
       # Read metrics about system load & uptime
       [[inputs.system]]
       # Collect statistics about itself
@@ -2203,6 +2214,8 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
+        ## Expiration interval for each metric before it's evicted from cache.
+        expiration_interval = "60s"
       # Read metrics from DC/OS Net Prometheus endpoint.
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -2243,11 +2256,7 @@ package:
           key_value_delimiter = ":="
           tag_delimiter = "_._._"
         [[processors.nginx_vts_filter.convert]]
-          measurement = "nginx_vts_filter_request_seconds"
-          key_value_delimiter = ":="
-          tag_delimiter = "_._._"
-        [[processors.nginx_vts_filter.convert]]
-          measurement = "nginx_vts_filter_request_seconds_total"
+          measurement = "nginx_vts_filter_request_duration_seconds"
           key_value_delimiter = ":="
           tag_delimiter = "_._._"
   - path: /etc_master/telegraf/telegraf.d/master.conf
@@ -2360,7 +2369,7 @@ package:
         ## Use TLS but skip chain & host verification
         insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2421,6 +2430,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
+        ## The interval at which to collect metrics
+        interval = "30s"
         ## The address on which the command API should listen
         listen = "/run/dcos/telegraf/dcos_statsd.sock"
         ## The directory in which container information is stored
@@ -2501,7 +2512,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2635,7 +2646,7 @@ package:
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
         ## Drop unused Admin Router metrics from the Nginx VTS module
-        namedrop = ["nginx_vts_filter_cache_*"]
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
         [inputs.prometheus.tagdrop]
           direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
@@ -2682,3 +2693,50 @@ package:
       DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
       DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
       DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
+  - path: /etc/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
+  - path: /etc/fluent-bit/fluent-bit.conf
+    content: |
+      [SERVICE]
+          # Flush
+          # =====
+          # Set the flush interval in seconds.
+          Flush        5
+          # Daemon
+          # ======
+          # Instruct Fluent Bit to run in foreground or background mode.
+          Daemon       Off
+          # Log_Level
+          # =========
+          # Set the verbosity level of the service, values can be:
+          #
+          # - error
+          # - warning
+          # - info
+          # - debug
+          # - trace
+          #
+          # By default 'info' is set, that means it includes 'error' and 'warning'.
+          Log_Level    info
+          # HTTP Server
+          # ===========
+          # Enable/Disable the built-in HTTP Server for metrics
+          HTTP_Server  Off
+          #HTTP_Listen  0.0.0.0
+          #HTTP_Port    62020
+      [INPUT]
+          Name systemd
+          Tag host.*
+          # if /var/log/journal is unavailable (or journald is set to volatile)
+          # /run/log/journal is used instead, and this unit will not load.
+          Path /var/log/journal
+          # Delete underscores at the start of field name. This is useful when logs
+          # are further forwarded into elasticsearch, where fields with leading
+          # underscore are reserved for internal use.
+          Strip_Underscores On
+      # Log forwarding is disabled by default.
+      [OUTPUT]
+          Name  null
+          Match *
+
