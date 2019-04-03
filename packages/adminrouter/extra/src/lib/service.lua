@@ -313,6 +313,10 @@ local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
     local err_code = nil
     local err_text = nil
 
+    -- The variable service_name must be declared local here,
+    -- see https://jira.mesosphere.com/browse/DCOS_OSS-4999 for details
+    local service_name = ""
+
     -- Resolve all the services!
     for i = 1, RESOLVE_LIMIT do
         if err_code ~= nil or resolved or not more_segments then
