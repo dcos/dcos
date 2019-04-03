@@ -17,7 +17,8 @@ Format of the entries must be.
 
 ### Notable changes
 
-### Breaking changes
+* Update ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-4988)
+
 
 ### Fixed and improved
 
@@ -41,9 +42,6 @@ Format of the entries must be.
 ## DC/OS 1.12.3
 
 ### Notable changes
-
-### Breaking changes
-
 
 ### Fixed and improved
 
@@ -72,7 +70,6 @@ Format of the entries must be.
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
 
-### Breaking changes
 
 ### Fixed and improved
 
@@ -99,7 +96,6 @@ Format of the entries must be.
 
 * Bumped DC/OS UI to [1.12+v2.25.11](https://github.com/dcos/dcos-ui/releases/tag/1.12%2Bv2.25.11)
 
-### Breaking changes
 
 ### Fixed and improved
 
