@@ -17,6 +17,8 @@ def get_static_upstream_annotations() -> dict:
         '/mesos_dns/': 'MesosDNS',
         '/pkgpanda/': 'Pkgpanda',
         '/exhibitor/exhibitor/v1/cluster/status': 'Exhibitor',
+        '/service/marathon/v2/queue': 'service:=marathon',
+        '/service/metronome/v1/jobs': 'service:=metronome',
     }
     return static_upstream_annotations
 
@@ -28,7 +30,7 @@ class TestMetrics:
         ids=list(get_static_upstream_annotations().values())
         )
     def test_metrics_prometheus_static_upstreams_annotated(
-            self, master_ar_process, location, annotation):
+            self, master_ar_process, valid_user_header, location, annotation):
         """
         /nginx/metrics returns metrics in Prometheus format that are properly
         annotated for static upstreams
@@ -45,6 +47,7 @@ class TestMetrics:
         requests.get(
             upstream_url,
             allow_redirects=True,
+            headers=valid_user_header,
         )
 
         resp = requests.get(
