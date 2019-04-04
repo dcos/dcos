@@ -30,16 +30,13 @@ class TestMetrics:
         ids=list(get_static_upstream_annotations().values())
         )
     def test_metrics_prometheus_static_upstreams_annotated(
-            self, master_ar_process, jwt_generator, location, annotation):
+            self, master_ar_process, valid_user_header, location, annotation):
         """
         /nginx/metrics returns metrics in Prometheus format that are properly
         annotated for static upstreams
         """
 
         url = master_ar_process.make_url_from_path('/nginx/metrics')
-
-        token = jwt_generator(uid='test')
-        auth_header = {'Authorization': 'token={}'.format(token)}
 
         # We are making an HTTP(s) request to a fixed upstream location.
         # This will cause nginx to apply corresponding annotation
@@ -50,7 +47,7 @@ class TestMetrics:
         requests.get(
             upstream_url,
             allow_redirects=True,
-            headers=auth_header,
+            headers=valid_user_header,
         )
 
         resp = requests.get(

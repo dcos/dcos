@@ -312,9 +312,6 @@ local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
     local do_request_buffering = true
     local err_code = nil
     local err_text = nil
-
-    -- The variable service_name must be declared local here,
-    -- see https://jira.mesosphere.com/browse/DCOS_OSS-4999 for details
     local service_name = ""
 
     -- Resolve all the services!
