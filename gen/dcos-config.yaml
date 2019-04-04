@@ -1330,7 +1330,10 @@ package:
       GLOG_drop_log_memory=false
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
-      MESOS_CONTAINERIZERS=docker,mesos
+      # The order of containerizers affects the order of certain operations
+      # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
+      # making any changes to this variable.
+      MESOS_CONTAINERIZERS=mesos,docker
       MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
