@@ -598,6 +598,45 @@ function check_all() {
     return $OVERALL_RC
 }
 
+function poststart_checks()
+{
+    max_wait_seconds=300
+    sleep_time_seconds=5
+    time_waited_seconds=0
+
+    while true; do
+        # Probe for which check command is available, if any.
+        check_cmd=""
+        if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
+            # dcos-check-runner is available.
+            check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
+            break
+        elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+            # Older-version cluster with checks provided by dcos-diagnostics.
+            check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
+            break
+        elif [ "$time_waited_seconds" -lt "$max_wait_seconds" ]; then
+            echo -n "Poststart checks not ready to run yet. Waiting for dcos-check-runner or dcos-diagnostics to "
+            echo -n "become available. Sleeping ${sleep_time_seconds}. "
+            echo "Timeout in $(( max_wait_seconds - time_waited_seconds )) more seconds."
+            sleep $sleep_time_seconds
+            (( time_waited_seconds += sleep_time_seconds ))
+        else
+            echo -n "Could not run poststart checks: neither dcos-check-runner or "
+            echo "dcos-diagnostics-runner-config.json were found."
+            exit 1
+        fi
+    done
+
+    for check_type in "node-poststart cluster"; do
+        if ! output="$($check_cmd $check_type 2>&1)"; then
+            echo "Poststart checks failure: $check_type checks failed"
+            echo >&2 "$output"
+            exit 1
+        fi
+    done
+}
+
 function dcos_install()
 {
     # Enable errexit
@@ -607,7 +646,6 @@ function dcos_install()
     setup_dcos_roles
     configure_dcos
     setup_and_start_services
-
 }
 
 function usage()
@@ -651,6 +689,7 @@ function main()
         fi
         # Run actual install
         dcos_install
+        poststart_checks
     fi
 
 }
