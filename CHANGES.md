@@ -90,6 +90,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Fixed issue where Metronome did not handle restart policy is ON_FAILURE correctly, not restarting the task. (DCOS_OSS-4636 )
+
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
 
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
