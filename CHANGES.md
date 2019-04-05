@@ -13,6 +13,15 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+## DC/OS 1.10.12 (in development)
+
+### Notable changes
+
+### Fixed and improved
+
+* Fix a bug in service.lua which was causing some wrong metrics labels for Admin Router and affecting request buffering by Admin Router (DCOS_OSS-4950, DCOS_OSS-4999)
+
+
 ### Notable changes
 
 ### Fixed and improved
