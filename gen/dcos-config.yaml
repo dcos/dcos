@@ -1834,6 +1834,10 @@ package:
               {
                   "Command": ["/opt/mesosphere/bin/detect_ip"],
                   "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["sysctl", "-a"],
+                  "Role": ["master", "agent", "agent_public"]
               }
           ]
         }
