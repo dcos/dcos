@@ -17,12 +17,12 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
-
 * Update ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-4988)
 
 
 ### Fixed and improved
+
+* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Telegraf is tuned for workloads that emit a large number of metrics (DCOS-50994)
 
