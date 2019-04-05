@@ -18,6 +18,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Fix a bug in service.lua which was causing some wrong metrics labels for Admin Router and affecting request buffering by Admin Router (DCOS_OSS-4950, DCOS_OSS-4999)
+
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
 
 * Fix a race condition in L4LB (DCOS_OSS-4939)
