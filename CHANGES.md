@@ -17,7 +17,7 @@ Format of the entries must be.
 
 ### Notable changes
 
-* Fix a bug in service.lua which was causing some wrong metrics labels for Admin Router and affecting request buffering by Admin Router. (DCOS_OSS-4950, DCOS_OSS-4999)
+* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Update ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-4988)
 
