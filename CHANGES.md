@@ -22,6 +22,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
+
 * Telegraf is tuned for workloads that emit a large number of metrics (DCOS-50994)
 
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
