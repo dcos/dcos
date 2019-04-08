@@ -264,8 +264,11 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    dcos_api_session.get('/acs/api/v1/auth/jwks')
-    node = dcos_api_session.masters[0]
+    r = dcos_api_session.get('/acs/api/v1/auth/jwks')
+    assert r.status_code == 200
+
+    r = dcos_api_session.get('/service/marathon/v2/queue')
+    assert r.status_code == 200
 
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
@@ -297,6 +300,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
             'nginx_server_status',
             'nginx_upstream_status',
             'nginx_upstream_backend',
+            'nginx_service_backend',
+            'nginx_service_status',
         ])
 
         difference = expected - measurements
