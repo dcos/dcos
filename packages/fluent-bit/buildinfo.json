@@ -4,5 +4,6 @@
     "url": "https://fluentbit.io/releases/1.0/fluent-bit-1.0.4.tar.gz",
     "sha1": "63c38fb107c1b6e409e89850fabfaeb84bc95d23"
   },
-  "username": "dcos_fluent_bit"
+  "username": "dcos_fluent_bit",
+  "group": "systemd-journal"
 }

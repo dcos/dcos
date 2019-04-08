@@ -53,6 +53,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Marathon metrics are now collected by Telegraf (DCOS-47693)
 
+* Metronome metrics are now collected by Telegraf (DCOS_OSS-4935)
+
 * Expose Public IP (DCOS_OSS-4514)
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
@@ -87,6 +89,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
+
+* Fixed issue where Metronome did not handle restart policy is ON_FAILURE correctly, not restarting the task. (DCOS_OSS-4636 )
 
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
 

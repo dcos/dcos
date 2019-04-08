@@ -479,6 +479,9 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
         'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
         'var/lib/dcos/exhibitor/conf/zoo.cfg.gz',
         'var/lib/dcos/mesos/log/mesos-master.log.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.1.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.2.gz.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.3.gz.gz',
     ] + expected_common_files
 
     expected_agent_common_files = [
