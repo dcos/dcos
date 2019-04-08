@@ -264,7 +264,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
+    dcos_api_session.get('/acs/api/v1/auth/jwks')
+    node = dcos_api_session.masters[0]
 
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
