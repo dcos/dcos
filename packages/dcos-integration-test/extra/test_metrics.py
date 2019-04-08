@@ -267,6 +267,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     r = dcos_api_session.get('/acs/api/v1/auth/jwks')
     assert r.status_code == 200
 
+    # Accessing /service/marathon/v2/queue via Admin Router will cause
+    # Telegraf to emit nginx_service_backend and nginx_service_status metrics.
     r = dcos_api_session.get('/service/marathon/v2/queue')
     assert r.status_code == 200
 
