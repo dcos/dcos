@@ -237,6 +237,7 @@ local function recursive_resolve(auth, path)
     local service_realpath = ""
     local err_code = nil
     local err_text = nil
+    local service_name = ""
 
     -- Acquire cache data:
     -- On one hand we want to fetch cache only once no matter the number of

@@ -13,6 +13,15 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+## DC/OS 1.10.12 (in development)
+
+### Notable changes
+
+### Fixed and improved
+
+* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
+
+
 ### Notable changes
 
 ### Fixed and improved
