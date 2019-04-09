@@ -1289,6 +1289,7 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      MESOS_FRAMEWORK_SORTER=random
       # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
       # from the IP address (which is currently determined by an IP detect command set
       # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
@@ -1307,6 +1308,7 @@ package:
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
+      MESOS_ROLE_SORTER=random
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
       MESOS_WEIGHTS={{ weights }}
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
