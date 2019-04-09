@@ -132,7 +132,7 @@ def marathon_test_app_linux(
     if container_type != marathon.Container.NONE:
         app['container'] = {
             'type': container_type.value,
-            'docker': {'image': 'frolvlad/alpine-glibc:alpine-3.5_glibc-2.24'},
+            'docker': {'image': 'alpine'},
             'volumes': [{
                 'containerPath': '/opt/mesosphere',
                 'hostPath': '/opt/mesosphere',
