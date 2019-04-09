@@ -51,18 +51,27 @@ fi
 SKIP_CHECKS=false
 VERBOSE=false
 
-if [[ $# -ne 0 ]]; then
-    for var in "$@"; do
-        if [[ "$var" = "--skip-checks" ]]; then
-            echo "Skipping checks"
-            SKIP_CHECKS=true
-        fi
-        if [[ "$var" = "--verbose" ]]; then
-            echo "Verbose mode on"
-            VERBOSE=true
-        fi
-    done
-fi
+while (( "$#" )); do
+  case "$1" in
+    --skip-checks)
+      shift
+      echo "Skipping checks"
+      SKIP_CHECKS=true
+      ;;
+    -v|--verbose)
+      shift
+      echo "Verbose mode on"
+      VERBOSE=true
+      ;;
+    -*) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      echo "$(basename "$0") [options...]
+                --skip-checks Do not run node checks
+            -v, --verbose     Make the operation more talkative"
+      exit 1
+      ;;
+  esac
+done
 
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
