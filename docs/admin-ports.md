@@ -48,3 +48,4 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
  - 5051: dcos-mesos-slave
  - 61001: dcos-adminrouter-agent
+ - 61092: dcos-fluent-bit
