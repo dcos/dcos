@@ -137,6 +137,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * DC/OS UI X-Frame-Options default value has been changed from `SAMEORIGIN` to `DENY`. This is now configurable using the `adminrouter_x_frame_options` configuration value (DCOS-49594)
 
+* HTTP endpoint targets of DC/OS Diagnostics can be marked optional (DCOS_OSS-5031)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
