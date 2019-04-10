@@ -576,7 +576,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
             gzipped_unit_output = z.open(master_folder + 'dcos-mesos-master.service.gz')
             verify_unit_response(gzipped_unit_output, 100)
 
-            verify_archived_items(master_folder, archived_items, expected_master_files)
+            verify_archived_items(master_folder, archived_items, expected_master_files, z)
 
             gzipped_state_output = z.open(master_folder + '5050-master_state.json.gz')
             validate_state(gzipped_state_output)
@@ -594,7 +594,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
             gzipped_unit_output = z.open(agent_folder + 'dcos-mesos-slave.service.gz')
             verify_unit_response(gzipped_unit_output, 100)
 
-            verify_archived_items(agent_folder, archived_items, expected_agent_files)
+            verify_archived_items(agent_folder, archived_items, expected_agent_files, z)
 
         # make sure all required log files for public agent node are in place.
         for public_slave_ip in dcos_api_session.public_slaves:
@@ -609,7 +609,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
             gzipped_unit_output = z.open(agent_public_folder + 'dcos-mesos-slave-public.service.gz')
             verify_unit_response(gzipped_unit_output, 100)
 
-            verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
+            verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files, z)
 
 
 def make_nodes_ip_map(dcos_api_session):
@@ -689,7 +689,7 @@ def validate_state(zip_state):
     assert task_count == 1, "bundle must contains information about tasks"
 
 
-def verify_archived_items(folder, archived_items, expected_files):
+def verify_archived_items(folder: str, archived_items, expected_files, z: zipfile.ZipFile):
     for expected_file in expected_files:
         expected_file = folder + expected_file
 
@@ -703,6 +703,9 @@ def verify_archived_items(folder, archived_items, expected_files):
         # For more context, see: https://jira.mesosphere.com/browse/DCOS_OSS-4531
         if expected_file.endswith('.gz'):
             assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
+            with z.open(expected_file, "r") as gzipped_file:
+                file_content = gzip.decompress(gzipped_file.read())
+                assert len(file_content) > 0, "{} should NOT be empty".format(expected_file)
         else:
             expected_gzipped_file = (expected_file + '.gz')
             unzipped_exists = expected_file in archived_items
