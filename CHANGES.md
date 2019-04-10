@@ -27,6 +27,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
+* Release of Marathon 1.8 adds ability to launch App or Pod containers defined with a seccomp profile.
+
 * Release of Marathon 1.8 with refactored Task Instance management.
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
