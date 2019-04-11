@@ -2,7 +2,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/rexray/rexray.git",
-    "ref": "fc8bfbd2d02c2690fc3a755a9560dd12c88e0852",
-    "ref_origin": "v0.11.2"
+    "ref": "e7414eaa971b27977d2283f2882825393493179d",
+    "ref_origin": "v0.11.4"
   }
 }
