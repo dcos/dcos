@@ -24,7 +24,7 @@ STD_INTERVAL = 5 * 1000
 FAULT_DOMAIN_TAGS = {'fault_domain_zone', 'fault_domain_region'}
 
 
-def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set()):
+def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = set()):
     """Assert that tags contains only expected keys with nonempty values."""
     keys = set(tags.keys())
     assert keys & required_tag_names == required_tag_names, 'Not all required tags were set'
@@ -264,7 +264,13 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
+    r = dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
+    assert r.status_code == 200
+
+    # Accessing /service/marathon/v2/queue via Admin Router will cause
+    # Telegraf to emit nginx_service_backend and nginx_service_status metrics.
+    r = dcos_api_session.get('/service/marathon/v2/queue', host=node)
+    assert r.status_code == 200
 
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
@@ -296,6 +302,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
             'nginx_server_status',
             'nginx_upstream_status',
             'nginx_upstream_backend',
+            'nginx_service_backend',
+            'nginx_service_status',
         ])
 
         difference = expected - measurements
