@@ -1460,8 +1460,8 @@ package:
           "http://127.0.0.1:7070/package/list"
         ],
         "mesos_urls": [
-          "http://leader.mesos:5050/frameworks",
-          "http://leader.mesos:5050/metrics/snapshot"
+          "http://leader.mesos:{{ mesos_master_port }}/frameworks",
+          "http://leader.mesos:{{ mesos_master_port }}/metrics/snapshot"
         ],
         "enabled": "{{ telemetry_enabled }}"
       }
@@ -1520,89 +1520,89 @@ package:
 {% switch dcos_overlay_enable %}
 {% case "true" %}
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/overlay-master/state",
                   "Role": ["master"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/overlay-agent/overlay",
                   "Role": ["agent", "agent_public"]
               },
 {% case "false" %}
 {% endswitch %}
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/__processes__",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/flags",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/frameworks",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/maintenance/schedule",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/maintenance/status",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/roles",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/slaves",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/state",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/state-summary",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/master/tasks",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/metrics/snapshot",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/registrar(1)/registry",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/system/stats.json",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/version",
                   "Role": ["master"]
               },
               {
-                  "Port": 5050,
+                  "Port": {{ mesos_master_port }},
                   "Uri": "/quota",
                   "Role": ["master"]
               },
@@ -1652,72 +1652,72 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8181,
+                  "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/cluster/list",
                   "Role": ["master"]
               },
               {
-                  "Port": 8181,
+                  "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/cluster/log",
                   "Role": ["master"]
               },
               {
-                  "Port": 8181,
+                  "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/cluster/state",
                   "Role": ["master"]
               },
               {
-                  "Port": 8181,
+                  "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/cluster/status",
                   "Role": ["master"]
               },
               {
-                  "Port": 8181,
+                  "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/config/get-state",
                   "Role": ["master"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/__processes__",
                   "Role":["agent", "agent_public"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/metrics/snapshot",
                   "Role":["agent", "agent_public"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/flags",
                   "Role":["agent", "agent_public"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/state",
                   "Role":["agent", "agent_public"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/system/stats.json",
                   "Role":["agent", "agent_public"]
               },
               {
-                  "Port": 8123,
+                  "Port": {{ mesos_dns_port }},
                   "Uri": "/v1/config",
                   "Role": ["master"]
               },
               {
-                  "Port": 8123,
+                  "Port": {{ mesos_dns_port }},
                   "Uri": "/v1/version",
                   "Role": ["master"]
               },
               {
-                  "Port": 5051,
+                  "Port": {{ mesos_agent_port }},
                   "Uri": "/containers",
                   "Role": ["agent", "agent_public"]
               },
               {
-                  "Port": 9000,
+                  "Port": {{ metronome_port }},
                   "Uri": "/v1/jobs",
                   "Role": ["master"]
               }
@@ -1865,12 +1865,12 @@ package:
   - path: /etc_master/dns_config_master
     content: |
       MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://127.0.0.1:8181/exhibitor/v1/cluster/status
+      EXHIBITOR_URI=http://127.0.0.1:{{ exhibitor_port }}/exhibitor/v1/cluster/status
       EXHIBITOR_ADDRESS=127.0.0.1
   - path: /etc/dns_config
     content: |
       MASTER_SOURCE=exhibitor_uri
-      EXHIBITOR_URI=http://{{ exhibitor_address }}:8181/exhibitor/v1/cluster/status
+      EXHIBITOR_URI=http://{{ exhibitor_address }}:{{ exhibitor_port }}/exhibitor/v1/cluster/status
       EXHIBITOR_ADDRESS={{ exhibitor_address }}
       RESOLVERS={{ resolvers_str }}
 {% case "static" %}
@@ -1985,9 +1985,9 @@ package:
 {% endswitch %}
   - path: /etc_master/metronome
     content: |
-      METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:5050
+      METRONOME_MESOS_LEADER_UI_URL=http://leader.mesos:{{ mesos_master_port }}
       METRONOME_MESOS_MASTER_URL=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
-      METRONOME_PLAY_SERVER_HTTP_PORT=9000
+      METRONOME_PLAY_SERVER_HTTP_PORT={{ metronome_port }}
       METRONOME_MESOS_USER=root
       LIBPROCESS_PORT=15201
       METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
@@ -2045,13 +2045,13 @@ package:
 {{ expanded_config_full }}
   - path: /etc_master/dcos-history.env
     content: |
-      STATE_SUMMARY_URI=http://leader.mesos:5050/state-summary
+      STATE_SUMMARY_URI=http://leader.mesos:{{ mesos_master_port }}/state-summary
   - path: /etc_master/adminrouter-upstreams-open.conf
     content: |
       # Just for compatibility/uniformity with EE:
       set $adminrouter_agent_port 61001;
       set $upstream_cosmos http://127.0.0.1:7070;
-      set $upstream_mesos http://leader.mesos:5050;
+      set $upstream_mesos http://leader.mesos:{{ mesos_master_port }};
   - path: /etc_master/adminrouter-listen-open.conf
     content: |
       listen 80 default_server;
@@ -2312,7 +2312,7 @@ package:
         # Timeout, in ms.
         timeout = 30000
         # A list of Mesos masters.
-        masters = ["http://$DCOS_NODE_PRIVATE_IP:5050"]
+        masters = ["http://$DCOS_NODE_PRIVATE_IP:{{ mesos_master_port }}"]
         # Master metrics groups to be collected.
         master_collections = [
           "resources",
@@ -2426,7 +2426,7 @@ package:
       # Read exhibitor status metrics from HTTP endpoint
       [[inputs.http]]
         name_override = "exhibitor_status"
-        urls = ["http://localhost:8181/exhibitor/v1/cluster/status"]
+        urls = ["http://localhost:{{ exhibitor_port }}/exhibitor/v1/cluster/status"]
         data_format = "json"
         tag_keys = ["hostname"]
         json_string_fields = ["isLeader"]
@@ -2464,7 +2464,7 @@ package:
         ## The interval at which to collect metrics
         interval = "60s"
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
         ## The user agent to send with requests
@@ -2490,7 +2490,7 @@ package:
         # Timeout, in ms.
         timeout = 30000
         ## A list of Mesos slaves
-        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"]
         # Slave metrics groups to be collected.
         slave_collections = [
           "resources",
@@ -2537,7 +2537,7 @@ package:
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         mesos_timeout = "10s"
         ## The user agent to send with requests
@@ -2569,7 +2569,7 @@ package:
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
@@ -2599,7 +2599,7 @@ package:
         ## The interval at which to collect metrics
         interval = "60s"
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
         ## The user agent to send with requests
@@ -2623,7 +2623,7 @@ package:
         # Timeout, in ms.
         timeout = 30000
         ## A list of Mesos slaves
-        slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
+        slaves = ["http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"]
         # Slave metrics groups to be collected.
         slave_collections = [
           "resources",
@@ -2670,7 +2670,7 @@ package:
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         mesos_timeout = "10s"
         ## The user agent to send with requests
@@ -2703,7 +2703,7 @@ package:
           dcos-component-name = "DC/OS Diagnostics"
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
-        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:{{ mesos_agent_port }}"
         ## The period after which requests to mesos agent should time out
         timeout = "10s"
         ## The minimum period between requests to the mesos agent
