@@ -10,11 +10,6 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS_OSS-4922',
-    reason='test_move_external_volume_to_new_agent application deployment fails',
-    since='2019-03-15'
-)
 @pytest.mark.supportedwindows
 def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
@@ -26,6 +21,9 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
     expanded_config = get_expanded_config()
     if not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'):
         pytest.skip('Must be run in an AWS environment!')
+
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('See: https://jira.mesosphere.com/browse/DCOS_OSS-4922')
 
     hosts = dcos_api_session.slaves[0], dcos_api_session.slaves[-1]
     test_uuid = uuid.uuid4().hex
