@@ -705,6 +705,10 @@ def verify_archived_items(folder: str, archived_items, expected_files, z: zipfil
             assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
             with z.open(expected_file, "r") as gzipped_file:
                 file_content = gzip.decompress(gzipped_file.read())
+                print(expected_file)
+                print(file_content)
+                assert expected_file != 'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cu' \
+                                        't -d\'=\' -f2`environ.output.gz'
                 assert len(file_content) > 0, "{} should NOT be empty".format(expected_file)
         else:
             expected_gzipped_file = (expected_file + '.gz')
