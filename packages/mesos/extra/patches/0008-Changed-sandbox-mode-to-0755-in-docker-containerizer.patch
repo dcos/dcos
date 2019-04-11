@@ -1,4 +1,4 @@
-From c048f4c6450d0dbf5d6370fabfa81c1e2bcd0370 Mon Sep 17 00:00:00 2001
+From 47884fe26233e7ebea13cc2a53711a4b8ffc902e Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 23 Nov 2018 10:54:58 +0800
 Subject: [PATCH] Changed sandbox mode to 0755 in docker containerizer
@@ -20,7 +20,7 @@ removed in DC/OS 1.15.
  1 file changed, 12 insertions(+)
 
 diff --git a/src/slave/containerizer/docker.cpp b/src/slave/containerizer/docker.cpp
-index 192dc29..7c3575a 100644
+index 192dc2957..7c3575a6c 100644
 --- a/src/slave/containerizer/docker.cpp
 +++ b/src/slave/containerizer/docker.cpp
 @@ -1176,6 +1176,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
@@ -43,5 +43,5 @@ index 192dc29..7c3575a 100644
        containerId,
        containerConfig,
 -- 
-2.5.1
+2.21.0
 

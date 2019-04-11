@@ -1,4 +1,4 @@
-From 936ef7f80b52a5a54c1b24b8858117da61a5f842 Mon Sep 17 00:00:00 2001
+From a0b9a1fb022eb80768b1130713291573509e04fb Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:21 -0800
 Subject: [PATCH] Added HEARTBEAT events and calls for the executor HTTP API.
@@ -17,7 +17,7 @@ Review: https://reviews.apache.org/r/69463/
  2 files changed, 24 insertions(+)
 
 diff --git a/include/mesos/executor/executor.proto b/include/mesos/executor/executor.proto
-index 1b5fa5d..ce724c0 100644
+index 1b5fa5dab..ce724c098 100644
 --- a/include/mesos/executor/executor.proto
 +++ b/include/mesos/executor/executor.proto
 @@ -66,6 +66,11 @@ message Event {
@@ -47,7 +47,7 @@ index 1b5fa5d..ce724c0 100644
  
    // Request to subscribe with the slave. If subscribing after a disconnection,
 diff --git a/include/mesos/v1/executor/executor.proto b/include/mesos/v1/executor/executor.proto
-index b2ef325..51fa66d 100644
+index b2ef325cf..51fa66d42 100644
 --- a/include/mesos/v1/executor/executor.proto
 +++ b/include/mesos/v1/executor/executor.proto
 @@ -66,6 +66,11 @@ message Event {
@@ -77,5 +77,5 @@ index b2ef325..51fa66d 100644
  
    // Request to subscribe with the agent. If subscribing after a disconnection,
 -- 
-2.5.1
+2.21.0
 

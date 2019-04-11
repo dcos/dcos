@@ -1,4 +1,4 @@
-From f42ad4abfbe7542106f9a164950072fe6104c022 Mon Sep 17 00:00:00 2001
+From ad521092a2da381c6307d0c9aabec38d2bea3b5c Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:12 -0800
 Subject: [PATCH] Added gauge metric for operator event stream subscribers.
@@ -18,7 +18,7 @@ Review: https://reviews.apache.org/r/69514/
  7 files changed, 37 insertions(+)
 
 diff --git a/docs/monitoring.md b/docs/monitoring.md
-index 00c6ea9..2c2320a 100644
+index 00c6ea94b..2c2320ad0 100644
 --- a/docs/monitoring.md
 +++ b/docs/monitoring.md
 @@ -979,6 +979,13 @@ event queue.
@@ -36,25 +36,25 @@ index 00c6ea9..2c2320a 100644
  
  #### Registrar
 diff --git a/docs/operator-http-api.md b/docs/operator-http-api.md
-index 6edf361..2d4a9b6 100644
+index 6edf36104..2d4a9b66e 100644
 --- a/docs/operator-http-api.md
 +++ b/docs/operator-http-api.md
-@@ -717,6 +717,10 @@ Content-Type: application/json
+@@ -716,6 +716,10 @@ Content-Type: application/json
+         "name": "master/outstanding_offers",
          "value": 0.0
        },
-       {
++      {
 +        "name": "master/operator_event_stream_subscribers",
 +        "value": 0.0
 +      },
-+      {
+       {
          "name": "master/frameworks_active",
          "value": 0.0
-       },
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 0f7a84b..6fd2b01 100644
+index 21e7937cd..354a97cc2 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -12151,6 +12151,9 @@ void Master::exited(const id::UUID& id)
+@@ -12212,6 +12212,9 @@ void Master::exited(const id::UUID& id)
              << " from the list of active subscribers";
  
    subscribers.subscribed.erase(id);
@@ -64,7 +64,7 @@ index 0f7a84b..6fd2b01 100644
  }
  
  
-@@ -12180,6 +12183,9 @@ void Master::subscribe(
+@@ -12241,6 +12244,9 @@ void Master::subscribe(
        http.streamId,
        Owned<Subscribers::Subscriber>(
            new Subscribers::Subscriber{http, principal}));
@@ -75,7 +75,7 @@ index 0f7a84b..6fd2b01 100644
  
  
 diff --git a/src/master/metrics.cpp b/src/master/metrics.cpp
-index 56a7eef..3ed0827 100644
+index 56a7eef2d..3ed0827ad 100644
 --- a/src/master/metrics.cpp
 +++ b/src/master/metrics.cpp
 @@ -80,6 +80,8 @@ Metrics::Metrics(const Master& master)
@@ -106,7 +106,7 @@ index 56a7eef..3ed0827 100644
    process::metrics::remove(tasks_starting);
    process::metrics::remove(tasks_running);
 diff --git a/src/master/metrics.hpp b/src/master/metrics.hpp
-index a805515..1cf0330 100644
+index a8055159b..1cf03301e 100644
 --- a/src/master/metrics.hpp
 +++ b/src/master/metrics.hpp
 @@ -60,6 +60,8 @@ struct Metrics
@@ -119,7 +119,7 @@ index a805515..1cf0330 100644
    process::metrics::PullGauge tasks_staging;
    process::metrics::PullGauge tasks_starting;
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index 9d61ff5..00c2ce7 100644
+index 9d61ff59d..00c2ce77f 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -3527,6 +3527,7 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
@@ -153,7 +153,7 @@ index 9d61ff5..00c2ce7 100644
    // and should not cause any disconnections.
    Future<http::Response> response4 = http::streaming::post(
 diff --git a/src/tests/master_tests.cpp b/src/tests/master_tests.cpp
-index 9d5d5a3..1e840c4 100644
+index 0bf466bc3..ea7c93722 100644
 --- a/src/tests/master_tests.cpp
 +++ b/src/tests/master_tests.cpp
 @@ -2265,6 +2265,9 @@ TEST_F(MasterTest, MetricsInMetricsEndpoint)
@@ -167,5 +167,5 @@ index 9d5d5a3..1e840c4 100644
    EXPECT_EQ(1u, snapshot.values.count("master/tasks_starting"));
    EXPECT_EQ(1u, snapshot.values.count("master/tasks_running"));
 -- 
-2.5.1
+2.21.0
 
