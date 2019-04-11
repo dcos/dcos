@@ -2276,6 +2276,16 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint mesos_listener registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/mesos_listener"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "mesos_listener_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
       # Transform Admin Router metrics from the Nginx VTS module
       [[processors.nginx_vts_filter]]
         [[processors.nginx_vts_filter.convert]]
