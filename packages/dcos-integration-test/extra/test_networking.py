@@ -261,7 +261,7 @@ def test_ipv6(dcos_api_session, same_host):
                 '/opt/mesosphere/bin/curl -s -f -m 5',
                 '{}.{}:{}'.format(dns_name, zone, origin_port))
             log.info("Remote command: {}".format(cmd))
-            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
     finally:
         log.info('Purging application: {}'.format(origin_app.id))
         origin_app.purge(dcos_api_session)
@@ -348,7 +348,7 @@ def test_vip(dcos_api_session,
         log.info("Remote command: {}".format(cmd))
         proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
         try:
-            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
         except Exception as e:
             log.error('Exception: {}'.format(e))
             errors.append(e)
