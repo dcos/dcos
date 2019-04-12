@@ -938,6 +938,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -1050,6 +1051,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_l4lb_enable_ipset': 'true',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
