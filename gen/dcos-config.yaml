@@ -409,6 +409,12 @@ package:
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"
+                  }, {
+                    "key": "fluentbit_ip",
+                    "value": "127.0.0.1"
+                  }, {
+                    "key": "fluentbit_port",
+                    "value": "61092"
                   }
                 ]
               }
@@ -1289,6 +1295,7 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      MESOS_FRAMEWORK_SORTER=random
       # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
       # from the IP address (which is currently determined by an IP detect command set
       # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
@@ -1307,6 +1314,7 @@ package:
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
+      MESOS_ROLE_SORTER=random
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
       MESOS_WEIGHTS={{ weights }}
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
@@ -1330,7 +1338,10 @@ package:
       GLOG_drop_log_memory=false
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
-      MESOS_CONTAINERIZERS=docker,mesos
+      # The order of containerizers affects the order of certain operations
+      # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
+      # making any changes to this variable.
+      MESOS_CONTAINERIZERS=mesos,docker
       MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
@@ -1834,6 +1845,10 @@ package:
               {
                   "Command": ["/opt/mesosphere/bin/detect_ip"],
                   "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["sysctl", "-a"],
+                  "Role": ["master", "agent", "agent_public"]
               }
           ]
         }
@@ -2258,6 +2273,16 @@ package:
         ## Specify timeout duration for slower prometheus clients (default is 3s)
         response_timeout = "30s"
         name_prefix = "lashup_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint mesos_listener registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/mesos_listener"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "mesos_listener_"
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
@@ -2709,10 +2734,19 @@ package:
       DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
       DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
       DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
-  - path: /etc/fluent-bit.env
+  - path: /etc_master/fluent-bit.env
     content: |
-      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/fluent-bit.conf
-  - path: /etc/fluent-bit/fluent-bit.conf
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/master.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-master
+  - path: /etc_slave/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
+  - path: /etc_slave_public/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
+  - path: /etc/fluent-bit/common.conf
     content: |
       [SERVICE]
           # Flush
@@ -2755,4 +2789,15 @@ package:
       [OUTPUT]
           Name  null
           Match *
-
+  - path: /etc/fluent-bit/master.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+  - path: /etc/fluent-bit/agent.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+      [INPUT]
+          Name tcp
+          Listen 127.0.0.1
+          Port 61092
+          Chunk_Size 32
+          Buffer_Size 64

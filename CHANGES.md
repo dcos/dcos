@@ -27,6 +27,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### What's new
 
+* Release of Marathon 1.8 adds ability to launch App or Pod containers defined with a seccomp profile.
+
 * Release of Marathon 1.8 with refactored Task Instance management.
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
@@ -90,6 +92,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* Backends for requests to `/service/<service-name>` may compress responses (DCOS_OSS-4906)
+
 * Fixed issue where Metronome did not handle restart policy is ON_FAILURE correctly, not restarting the task. (DCOS_OSS-4636 )
 
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
@@ -132,6 +136,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Fix IPv6 VIP support in L4LB (DCOS-50427)
 
 * DC/OS UI X-Frame-Options default value has been changed from `SAMEORIGIN` to `DENY`. This is now configurable using the `adminrouter_x_frame_options` configuration value (DCOS-49594)
+
+* HTTP endpoint targets of DC/OS Diagnostics can be marked optional (DCOS_OSS-5031)
 
 ### Notable changes
 
