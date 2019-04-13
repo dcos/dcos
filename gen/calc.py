@@ -1298,6 +1298,7 @@ entry = {
     'secret': [
         'cluster_docker_credentials',
         'exhibitor_admin_password',
+        'aws_secret_access_key'
     ],
     'conditional': {
         'master_discovery': {
