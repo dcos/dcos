@@ -23,6 +23,8 @@ Format of the entries must be.
 
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
+* The configuration parameter `aws_secret_access_key` for exhibitor is now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
 
 ### Notable changes
 
