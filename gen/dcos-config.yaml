@@ -1495,7 +1495,10 @@ package:
         "role": "master",
         "pull": true,
         "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": [
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
+        ]
         "no-unix-socket": true,
         "agent-port": 61001
       }
@@ -1503,14 +1506,20 @@ package:
     content: |
       {
         "role": "agent",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": [
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
+        ]
         "agent-port": 61001
       }
   - path: /etc_slave_public/dcos-diagnostics-config.json
     content: |
       {
         "role": "agent_public",
-        "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": [
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
+          "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
+        ]
         "agent-port": 61001
       }
   - path: /etc/dcos-diagnostics-endpoint-config.json
@@ -1652,31 +1661,6 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": {{ exhibitor_port }},
-                  "Uri": "/exhibitor/v1/cluster/list",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": {{ exhibitor_port }},
-                  "Uri": "/exhibitor/v1/cluster/log",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": {{ exhibitor_port }},
-                  "Uri": "/exhibitor/v1/cluster/state",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": {{ exhibitor_port }},
-                  "Uri": "/exhibitor/v1/cluster/status",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": {{ exhibitor_port }},
-                  "Uri": "/exhibitor/v1/config/get-state",
-                  "Role": ["master"]
-              },
-              {
                   "Port": {{ mesos_agent_port }},
                   "Uri": "/__processes__",
                   "Role":["agent", "agent_public"]
@@ -1700,16 +1684,6 @@ package:
                   "Port": {{ mesos_agent_port }},
                   "Uri": "/system/stats.json",
                   "Role":["agent", "agent_public"]
-              },
-              {
-                  "Port": {{ mesos_dns_port }},
-                  "Uri": "/v1/config",
-                  "Role": ["master"]
-              },
-              {
-                  "Port": {{ mesos_dns_port }},
-                  "Uri": "/v1/version",
-                  "Role": ["master"]
               },
               {
                   "Port": {{ mesos_agent_port }},
@@ -1849,6 +1823,46 @@ package:
               {
                   "Command": ["sysctl", "-a"],
                   "Role": ["master", "agent", "agent_public"]
+              }
+          ]
+        }
+  - path: /etc/dcos-diagnostics-endpoint-config-addition.json
+    content: |
+        {
+              {
+                  "Port": {{ exhibitor_port }},
+                  "Uri": "/exhibitor/v1/cluster/list",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ exhibitor_port }},
+                  "Uri": "/exhibitor/v1/cluster/log",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ exhibitor_port }},
+                  "Uri": "/exhibitor/v1/cluster/state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ exhibitor_port }},
+                  "Uri": "/exhibitor/v1/cluster/status",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ exhibitor_port }},
+                  "Uri": "/exhibitor/v1/config/get-state",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ mesos_dns_port }},
+                  "Uri": "/v1/config",
+                  "Role": ["master"]
+              },
+              {
+                  "Port": {{ mesos_dns_port }},
+                  "Uri": "/v1/version",
+                  "Role": ["master"]
               }
           ]
         }
