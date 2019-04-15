@@ -142,3 +142,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
+#### Fixed and improved
+
+* The configuration parameter `aws_secret_access_key` for exhibitor is now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
