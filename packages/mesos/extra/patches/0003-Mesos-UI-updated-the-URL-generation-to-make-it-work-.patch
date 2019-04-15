@@ -1,4 +1,4 @@
-From 86a4fb684f55085efde06d5b381390a02ffe6860 Mon Sep 17 00:00:00 2001
+From 2706c5fbddc6fa2baabda8b213c1b59ce7524531 Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
@@ -13,7 +13,7 @@ Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
  1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/src/webui/app/controllers.js b/src/webui/app/controllers.js
-index 8049cf6..74f65f5 100644
+index 8049cf611..74f65f574 100644
 --- a/src/webui/app/controllers.js
 +++ b/src/webui/app/controllers.js
 @@ -51,10 +51,10 @@
@@ -61,5 +61,5 @@ index 8049cf6..74f65f5 100644
  
      // Adding bindings into scope so that they can be used from within
 -- 
-2.5.1
+2.21.0
 
