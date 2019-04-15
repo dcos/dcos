@@ -142,13 +142,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
-* Updated DC/OS UI to 1.12+v2.25.10 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.10)
-
-* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
-
-* Updated OTP version to 20.3.2 (DCOS_OSS-2378)
-
-* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
 
 #### Fixed and improved
 
