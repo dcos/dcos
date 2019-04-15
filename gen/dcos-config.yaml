@@ -1498,7 +1498,7 @@ package:
         "endpoint-config": [
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
-        ]
+        ],
         "no-unix-socket": true,
         "agent-port": 61001
       }
@@ -1509,7 +1509,7 @@ package:
         "endpoint-config": [
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
-        ]
+        ],
         "agent-port": 61001
       }
   - path: /etc_slave_public/dcos-diagnostics-config.json
@@ -1519,7 +1519,7 @@ package:
         "endpoint-config": [
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
-        ]
+        ],
         "agent-port": 61001
       }
   - path: /etc/dcos-diagnostics-endpoint-config.json
