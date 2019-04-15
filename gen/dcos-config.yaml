@@ -1829,6 +1829,7 @@ package:
   - path: /etc/dcos-diagnostics-endpoint-config-addition.json
     content: |
         {
+          "HTTPEndpoints": [
               {
                   "Port": {{ exhibitor_port }},
                   "Uri": "/exhibitor/v1/cluster/list",
