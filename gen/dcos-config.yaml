@@ -1501,6 +1501,7 @@ package:
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
         ],
         "no-unix-socket": true,
+        "fetchers-count": 100,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
