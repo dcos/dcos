@@ -888,6 +888,8 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
     ],
     'default': {
+        'exhibitor_azure_account_key': '',
+        'aws_secret_access_key': '',
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'dns_bind_ip_blacklist': '[]',
@@ -1026,6 +1028,8 @@ entry = {
     'secret': [
         'cluster_docker_credentials',
         'exhibitor_admin_password',
+        'exhibitor_azure_account_key',
+        'aws_secret_access_key'
     ],
     'conditional': {
         'master_discovery': {
