@@ -2785,6 +2785,7 @@ package:
           # are further forwarded into elasticsearch, where fields with leading
           # underscore are reserved for internal use.
           Strip_Underscores On
+          Read_From_Tail    On
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
