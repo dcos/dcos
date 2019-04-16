@@ -22,3 +22,5 @@ Format of the entries must be.
 #### Known limitations
 
 #### Fixed and improved
+
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
