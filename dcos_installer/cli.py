@@ -15,6 +15,7 @@ from dcos_installer import action_lib, backend
 from dcos_installer.config import Config
 from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.prettyprint import PrettyPrint, print_header
+from dcos_installer.action_lib import deprecated_usage_warning
 
 from ssh.utils import AbstractSSHLibDelegate
 
@@ -117,6 +118,8 @@ def do_version(args):
 
 
 def do_validate_config(args):
+    log.warn(deprecated_usage_warning('validate'))
+
     log_warn_only()
     config = Config(dcos_installer.constants.CONFIG_PATH)
     validation_errors = config.do_validate(include_ssh=True)
@@ -191,6 +194,7 @@ def do_hash_password(password):
 def dispatch(args):
     """ Dispatches the selected mode based on command line args. """
     if args.action == 'set-superuser-password':
+        log.warn(deprecated_usage_warning('set-superuser-password'))
         password_hash = do_hash_password(args.password)
         messages = backend.create_config_from_post(
             {'superuser_password_hash': password_hash},
@@ -226,6 +230,8 @@ def dispatch(args):
             print_header(action[1])
         errors = run_loop(action[0], args)
         if not args.cli_telemetry_disabled:
+            log.warn(deprecated_usage_warning('cli-telemetry-disabled'))
+
             installer_analytics.send(
                 action=args.action,
                 install_method="cli",
@@ -321,7 +327,6 @@ def get_argument_parser():
     parser.set_defaults(action='genconf')
 
     return parser
-
 
 def main():
     # Passd in by installer_internal_wrapper since in ash exec can't set argv0

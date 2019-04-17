@@ -96,6 +96,8 @@ def run_preflight(config, pf_script_path=(SERVE_DIR + '/dcos_install.sh'), block
     :param pf_script_path: preflight.sh script location on a local host
     :param preflight_remote_path: destination location
     '''
+
+    log.warn(deprecated_usage_warning('preflight'))
     if not os.path.isfile(pf_script_path):
         log.error("{} does not exist. Please run --genconf before executing preflight.".format(pf_script_path))
         raise FileNotFoundError('{} does not exist'.format(pf_script_path))
@@ -238,6 +240,8 @@ def install_dcos(
         async_delegate=None,
         try_remove_stale_dcos=False,
         **kwargs):
+
+    log.warn(deprecated_usage_warning('deploy'))
     if hosts is None:
         hosts = []
 
@@ -322,6 +326,7 @@ def install_dcos(
 
 @asyncio.coroutine
 def run_postflight(config, block=False, state_json_dir=None, async_delegate=None, retry=False, options=None):
+    log.warn(deprecated_usage_warning('postflight'))
     targets = get_full_nodes_list(config)
     node_runner = get_async_runner(config, targets, async_delegate=async_delegate)
     cluster_runner = get_async_runner(config, [targets[0]], async_delegate=async_delegate)
@@ -575,9 +580,17 @@ echo "Prerequisites installed."
 
 @asyncio.coroutine
 def install_prereqs(config, block=False, state_json_dir=None, async_delegate=None, options=None):
+    log.warn(deprecated_usage_warning('install-prereqs'))
     targets = get_full_nodes_list(config)
     runner = get_async_runner(config, targets, async_delegate=async_delegate)
     prereqs_chain = ssh.utils.CommandChain('install_prereqs')
     _add_prereqs_script(prereqs_chain)
     result = yield from runner.run_commands_chain_async([prereqs_chain], block=block, state_json_dir=state_json_dir)
     return result
+
+
+def deprecated_usage_warning(option: str) -> str:
+    return ("[DEPRECATED] The {} option will be"
+            " removed in DC/OS 1.14. Please refer to the DC/OS "
+            "Installation guide at "
+            "https://docs.mesosphere.com/1.13/installing").format(option)
