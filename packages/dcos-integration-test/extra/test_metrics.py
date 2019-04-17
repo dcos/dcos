@@ -878,7 +878,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
         },
         'container': {
             'type': 'MESOS',
-            'docker': {'image': 'library/python:3'}
+            'docker': {'image': 'library/python:3'},
             'portMappings': [
                 {
                     'containerPort': 8000,
