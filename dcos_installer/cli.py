@@ -137,7 +137,7 @@ dispatch_dict_simple = {
     'web': (
         web_installer,
         'Starting DC/OS installer in web mode',
-        'Run the web interface'),
+        '[DEPRECATED] Run the web interface'),
     'genconf': (
         lambda args: backend.do_configure(),
         'EXECUTING CONFIGURATION GENERATION',
@@ -145,7 +145,7 @@ dispatch_dict_simple = {
     'validate-config': (
         do_validate_config,
         'VALIDATING CONFIGURATION',
-        'Validate the configuration for executing --genconf and deploy arguments in config.yaml'),
+        '[DEPRECATED] Validate the configuration for executing --genconf and deploy arguments in config.yaml'),
     'aws-cloudformation': (
         lambda args: backend.do_aws_cf_configure(),
         'EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION',
@@ -156,19 +156,19 @@ dispatch_dict_aio = {
     'preflight': (
         action_lib.run_preflight,
         'EXECUTING_PREFLIGHT',
-        'Execute the preflight checks on a series of nodes.'),
+        '[DEPRECATED] Execute the preflight checks on a series of nodes.'),
     'install-prereqs': (
         action_lib.install_prereqs,
         'EXECUTING INSTALL PREREQUISITES',
-        'Install the cluster prerequisites.'),
+        '[DEPRECATED] Install the cluster prerequisites.'),
     'deploy': (
         action_lib.install_dcos,
         'EXECUTING DC/OS INSTALLATION',
-        'Execute a deploy.'),
+        '[DEPRECATED] Execute a deploy.'),
     'postflight': (
         action_lib.run_postflight,
         'EXECUTING POSTFLIGHT',
-        'Execute postflight checks on a series of nodes.')
+        '[DEPRECATED] Execute postflight checks on a series of nodes.')
 }
 
 
@@ -267,7 +267,7 @@ def get_argument_parser():
         metavar='password',
         dest='password',
         nargs='?',
-        help='Hash the given password and store it as the superuser password in config.yaml'
+        help='[DEPRECATED] Hash the given password and store it as the superuser password in config.yaml'
     )
 
     mutual_exc.add_argument(
@@ -295,13 +295,13 @@ def get_argument_parser():
     parser.add_argument(
         '--offline',
         action='store_true',
-        help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
+        help='[DEPRECATED] Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
     )
 
     parser.add_argument(
         '--cli-telemetry-disabled',
         action='store_true',
-        help='Disable the CLI telemetry gathering for SegmentIO')
+        help='[DEPRECATED] Disable the CLI telemetry gathering for SegmentIO')
 
     def add_mode(name, help_msg):
         mutual_exc.add_argument(
