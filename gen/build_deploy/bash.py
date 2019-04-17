@@ -598,33 +598,19 @@ function check_all() {
 
 function poststart_checks()
 {
-    max_wait_seconds=120
-    sleep_time_seconds=10
-    time_waited_seconds=0
-
-    while true; do
-        # Probe for which check command is available, if any.
-        check_cmd=""
-        if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
-            # dcos-check-runner is available.
-            check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
-            break
-        elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
-            # Older-version cluster with checks provided by dcos-diagnostics.
-            check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
-            break
-        elif [ "$time_waited_seconds" -lt "$max_wait_seconds" ]; then
-            echo -n "Poststart checks not ready to run yet. Waiting for dcos-check-runner or dcos-diagnostics to "
-            echo -n "become available. Sleeping ${sleep_time_seconds}. "
-            echo "Timeout in $(( max_wait_seconds - time_waited_seconds )) more seconds."
-            sleep $sleep_time_seconds
-            (( time_waited_seconds += sleep_time_seconds ))
-        else
-            echo -n "Could not run poststart checks: neither dcos-check-runner or "
-            echo "dcos-diagnostics-runner-config.json were found."
-            exit 1
-        fi
-    done
+    # Probe for which check command is available, if any.
+    check_cmd=""
+    if [ -f /opt/mesosphere/bin/dcos-check-runner ]; then
+        # dcos-check-runner is available.
+        check_cmd="/opt/mesosphere/bin/dcos-check-runner check"
+    elif [ -f /opt/mesosphere/etc/dcos-diagnostics-runner-config.json ]; then
+        # Older-version cluster with checks provided by dcos-diagnostics.
+        check_cmd="/opt/mesosphere/bin/dcos-diagnostics check"
+    else
+        echo -n "Could not run poststart checks: neither dcos-check-runner or "
+        echo "dcos-diagnostics-runner-config.json were found."
+        exit 1
+    fi
 
     for check_type in "node-poststart cluster"; do
         if ! output="$($check_cmd $check_type 2>&1)"; then
