@@ -49,6 +49,7 @@ class TestRedirectSecurity:
 
 class TestEncodingGzip:
 
+    # This pattern should provide `index.css` and `index.js` files.
     pat = re.compile(r'/assets/index\.[^"]+')
 
     def test_accept_gzip(self, dcos_api_session):

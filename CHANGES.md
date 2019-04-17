@@ -165,3 +165,4 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
 
+* Use gzip compression for some UI assets (DCOS-5978)
