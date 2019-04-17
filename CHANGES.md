@@ -139,6 +139,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * HTTP endpoint targets of DC/OS Diagnostics can be marked optional (DCOS_OSS-5031)
 
+* The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
+
