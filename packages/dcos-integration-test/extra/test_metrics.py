@@ -873,9 +873,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
             'echo "Serving prometheus metrics on http://localhost:8000"',
             'python3 -m http.server 8000',
         ]),
-        'networks': {
-            'mode': 'container/bridge',
-        },
+        'networks': [{'mode': 'container/bridge'}],
         'container': {
             'type': 'MESOS',
             'docker': {'image': 'library/python:3'},
