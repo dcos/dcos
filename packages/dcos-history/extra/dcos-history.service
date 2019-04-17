@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS History: caches and exposes historical system state
+Description=DC/OS History: caches and exposes historical system state (deprecated)
 [Service]
 User=dcos_history
 PermissionsStartOnly=True
