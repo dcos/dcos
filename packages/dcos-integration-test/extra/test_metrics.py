@@ -870,8 +870,8 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
             'echo "{}_histogram_sum 4" >> metrics'.format(metric_name_pfx),
             'echo "{}_histogram_seconds_count 4" >> metrics'.format(metric_name_pfx),
 
-            'echo "Serving prometheus metrics on http://localhost:$PORT0"',
-            'python3 -m http.server $PORT0',
+            'echo "Serving prometheus metrics on http://localhost:8000"',
+            'python3 -m http.server 8000',
         ]),
         'networks': {
             'mode': 'container/bridge',
@@ -881,7 +881,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
             'docker': {'image': 'library/python:3'}
             'portMappings': [
                 {
-                    'containerPort': 0,
+                    'containerPort': 8000,
                     'hostPort': 0,
                     'protocol': 'tcp',
                     'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
