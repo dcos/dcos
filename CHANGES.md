@@ -139,6 +139,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * HTTP endpoint targets of DC/OS Diagnostics can be marked optional (DCOS_OSS-5031)
 
+* Conflict between VIP port and port mapping (DCOS_OSS-4970)
+
+* Lashup sometime fails to converge (DCOS_OSS-4328)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
