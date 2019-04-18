@@ -18,6 +18,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
