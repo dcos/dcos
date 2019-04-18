@@ -24,3 +24,5 @@ Format of the entries must be.
 #### Fixed and improved
 
 * `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
+* Use gzip compression for some UI assets (DCOS-5978)
