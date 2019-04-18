@@ -1,4 +1,4 @@
-## DC/OS 1.13.0 Beta
+## DC/OS 1.13.0
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
