@@ -2,7 +2,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-signal.git",
-    "ref": "8e23723638ce89d392758b6229671b6350a2f5d8",
+    "ref": "87397017d2d84a12f21cf5cc4e50f9aefc43fe70",
     "ref_origin": "master"
   },
   "username": "dcos_signal"
