@@ -94,6 +94,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 * Backends for requests to `/service/<service-name>` may compress responses (DCOS_OSS-4906)
 
 * Fixed issue where Metronome did not handle restart policy is ON_FAILURE correctly, not restarting the task. (DCOS_OSS-4636 )
