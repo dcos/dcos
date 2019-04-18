@@ -40,6 +40,18 @@ Format of the entries must be.
 
 * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
 
+* [Marathon] Introduced global throttling for Marathon health checks (MARATHON-8596)
+
+* [Marathon] Do not fail on offers with RAW and BLOCK disk types (MARATHON-8590)
+
+* [Marathon] Map `tcp,udp` to `udp,tcp` during migration (MARATHON-8575)
+
+* [Marathon] Allow all users to execute /marathon/bin/marathon (MARATHON-8581)
+
+* [Marathon] Response asynchronously for all endpoints (MARATHON-8562)
+
+* [Marathon] Force expunge and Decommission all instances on service removal (DCOS-49521)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
