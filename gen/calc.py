@@ -196,8 +196,13 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
 
 
 def validate_mesos_container_log_sink(mesos_container_log_sink):
-    assert mesos_container_log_sink in ['journald', 'logrotate', 'journald+logrotate'], \
-        "Container logs must go to 'journald', 'logrotate', or 'journald+logrotate'."
+    assert mesos_container_log_sink in [
+        'fluentbit',
+        'journald',
+        'logrotate',
+        'fluentbit+logrotate',
+        'journald+logrotate',
+    ], "Container logs must go to 'fluentbit', 'journald', 'logrotate', 'fluentbit+logrotate', or 'journald+logrotate'."
 
 
 def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior):
@@ -1070,6 +1075,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
         lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
@@ -1106,6 +1112,8 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
+        'exhibitor_azure_account_key': '',
+        'aws_secret_access_key': '',
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'dns_bind_ip_reserved': '["198.51.100.4"]',
@@ -1141,7 +1149,7 @@ entry = {
         'mesos_dns_set_truncate_bit': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
-        'mesos_container_log_sink': 'logrotate',
+        'mesos_container_log_sink': 'fluentbit+logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'false',
@@ -1195,6 +1203,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'true',
+        'dcos_l4lb_enable_ipset': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
@@ -1241,16 +1250,20 @@ entry = {
         'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
         'resolvers_str': calculate_resolvers_str,
         'dcos_image_commit': calulate_dcos_image_commit,
+        'mesos_dns_port': '8123',
         'mesos_dns_resolvers_str': calculate_mesos_dns_resolvers_str,
         'mesos_log_retention_count': calculate_mesos_log_retention_count,
         'mesos_log_directory_max_files': calculate_mesos_log_directory_max_files,
+        'mesos_agent_port': '5051',
         'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
+        'mesos_master_port': '5050',
         'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
         'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',
         'dcos_gen_resolvconf_search_str': calculate_gen_resolvconf_search,
         'curly_pound': '{#',
+        'exhibitor_port': '8181',
         'exhibitor_static_ensemble': calculate_exhibitor_static_ensemble,
         'exhibitor_admin_password_enabled': calculate_exhibitor_admin_password_enabled,
         'ui_branding': 'false',
@@ -1284,6 +1297,7 @@ entry = {
         'adminrouter_tls_version_override': calculate_adminrouter_tls_version_override,
         'adminrouter_tls_cipher_override': calculate_adminrouter_tls_cipher_override,
         'licensing_enabled': 'false',
+        'metronome_port': '9000',
         'has_metronome_gpu_scheduling_behavior':
             lambda metronome_gpu_scheduling_behavior: calculate_set(metronome_gpu_scheduling_behavior),
         'has_marathon_gpu_scheduling_behavior':
@@ -1293,6 +1307,8 @@ entry = {
     'secret': [
         'cluster_docker_credentials',
         'exhibitor_admin_password',
+        'exhibitor_azure_account_key',
+        'aws_secret_access_key'
     ],
     'conditional': {
         'master_discovery': {

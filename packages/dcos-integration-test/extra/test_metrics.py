@@ -24,7 +24,7 @@ STD_INTERVAL = 5 * 1000
 FAULT_DOMAIN_TAGS = {'fault_domain_zone', 'fault_domain_region'}
 
 
-def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set=set()):
+def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = set()):
     """Assert that tags contains only expected keys with nonempty values."""
     keys = set(tags.keys())
     assert keys & required_tag_names == required_tag_names, 'Not all required tags were set'
@@ -264,12 +264,12 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
     # Admin Router (IAM in this case).
-    r = dcos_api_session.get('/acs/api/v1/auth/jwks')
+    r = dcos_api_session.get('/acs/api/v1/auth/jwks', host=node)
     assert r.status_code == 200
 
     # Accessing /service/marathon/v2/queue via Admin Router will cause
     # Telegraf to emit nginx_service_backend and nginx_service_status metrics.
-    r = dcos_api_session.get('/service/marathon/v2/queue')
+    r = dcos_api_session.get('/service/marathon/v2/queue', host=node)
     assert r.status_code == 200
 
     @retrying.retry(
@@ -792,10 +792,10 @@ def test_statsd_metrics_containers_app(dcos_api_session):
             assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
 
 
-def test_prom_metrics_containers_app(dcos_api_session):
+def test_prom_metrics_containers_app_host(dcos_api_session):
     """Assert that prometheus app metrics appear in the v0 metrics API."""
-    task_name = 'test-prom-metrics-containers-app'
-    metric_name_pfx = 'test_prom_metrics_containers_app'
+    task_name = 'test-prom-metrics-containers-app-host'
+    metric_name_pfx = 'test_prom_metrics_containers_app_host'
     marathon_app = {
         'id': '/' + task_name,
         'instances': 1,
@@ -828,6 +828,64 @@ def test_prom_metrics_containers_app(dcos_api_session):
             'port': 0,
             'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
         }],
+    }
+
+    logging.debug('Starting marathon app with config: %s', marathon_app)
+    expected_metrics = [
+        # metric_name, metric_value
+        ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
+        ('_'.join([metric_name_pfx, 'count.counter']), 2),
+        ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
+    ]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+        for metric_name, metric_value in expected_metrics:
+            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+
+
+def test_prom_metrics_containers_app_bridge(dcos_api_session):
+    """Assert that prometheus app metrics appear in the v0 metrics API."""
+    task_name = 'test-prom-metrics-containers-app-bridge'
+    metric_name_pfx = 'test_prom_metrics_containers_app_bridge'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            'echo "Creating metrics file..."',
+            'touch metrics',
+
+            'echo "# TYPE {}_gauge gauge" >> metrics'.format(metric_name_pfx),
+            'echo "{}_gauge 100" >> metrics'.format(metric_name_pfx),
+
+            'echo "# TYPE {}_count counter" >> metrics'.format(metric_name_pfx),
+            'echo "{}_count 2" >> metrics'.format(metric_name_pfx),
+
+            'echo "# TYPE {}_histogram histogram" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_bucket{{le=\\"+Inf\\"}} 4" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_sum 4" >> metrics'.format(metric_name_pfx),
+            'echo "{}_histogram_seconds_count 4" >> metrics'.format(metric_name_pfx),
+
+            'echo "Serving prometheus metrics on http://localhost:8000"',
+            'python3 -m http.server 8000',
+        ]),
+        'networks': [{'mode': 'container/bridge'}],
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/python:3'},
+            'portMappings': [
+                {
+                    'containerPort': 8000,
+                    'hostPort': 0,
+                    'protocol': 'tcp',
+                    'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
+                }
+            ]
+        },
     }
 
     logging.debug('Starting marathon app with config: %s', marathon_app)
