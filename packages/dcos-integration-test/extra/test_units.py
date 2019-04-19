@@ -85,7 +85,7 @@ def test_socket_units():
     def _check_unit(file):
         logging.info("Checking socket unit {}".format(file))
         out = subprocess.check_output(
-            ["/usr/bin/systemctl", "show", "--no-pager", os.path.basename(file)],
+            ["systemctl", "show", "--no-pager", os.path.basename(file)],
             stderr=subprocess.STDOUT,
             universal_newlines=True)
         user = ""

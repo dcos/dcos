@@ -612,8 +612,12 @@ class UserManagement:
                                   "automatic user addition is disabled".format(username))
 
         # Add the user:
+        useradd_cmd = 'useradd'
+        if os.path.exists('/usr/sbin/useradd'):
+            useradd_cmd = '/usr/sbin/useradd'
+
         add_user_cmd = [
-            'useradd',
+            useradd_cmd,
             '--system',
             '--home-dir', '/opt/mesosphere',
             '--shell', '/sbin/nologin',

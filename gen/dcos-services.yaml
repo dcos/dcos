@@ -12,8 +12,8 @@
     Type=oneshot
     StandardOutput=journal+console
     StandardError=journal+console
-    ExecStartPre=/usr/bin/mkdir -p {{ profile_symlink_target_dir }}
-    ExecStart=/usr/bin/ln -sf {{ profile_symlink_source }} {{ profile_symlink_target }}
+    ExecStartPre=mkdir -p {{ profile_symlink_target_dir }}
+    ExecStart=ln -sf {{ profile_symlink_source }} {{ profile_symlink_target }}
 - name: dcos-download.service
   content: |
     [Unit]
@@ -26,9 +26,9 @@
     StandardOutput=journal+console
     StandardError=journal+console
     ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz {{ bootstrap_url }}/bootstrap/{{ bootstrap_id }}.bootstrap.tar.xz
-    ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
-    ExecStart=/usr/bin/tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
-    ExecStartPost=-/usr/bin/rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
+    ExecStartPre=mkdir -p /opt/mesosphere
+    ExecStart=tar -axf /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz -C /opt/mesosphere
+    ExecStartPost=-rm -f /{{ bootstrap_tmp_dir }}/bootstrap.tar.xz
 - name: dcos-setup.service
   command: start
   no_block: true

@@ -11,7 +11,7 @@ root:
       StandardOutput=journal+console
       StandardError=journal+console
       ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /var/tmp/d.deb https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_17.09.0~ce-0~ubuntu_amd64.deb
-      ExecStart=/usr/bin/bash -c "try=1;until dpkg -D3 -i /var/tmp/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
+      ExecStart=/usr/bin/env bash -c "try=1;until dpkg -D3 -i /var/tmp/d.deb || ((try>9));do echo retry $((try++));sleep $((try*try));done;systemctl --now start docker;systemctl restart docker.socket"
   - path: /etc/systemd/system/docker.service.d/execstart.conf
     permissions: "0644"
     content: |
@@ -46,17 +46,8 @@ root:
       Type=oneshot
       EnvironmentFile=/etc/environment
       EnvironmentFile=/opt/mesosphere/environment
-      ExecStart=/usr/bin/bash -c "echo $(detect_ip) $(hostname) > /etc/hosts"
+      ExecStart=/usr/bin/env bash -c "echo $(detect_ip) $(hostname) > /etc/hosts"
 runcmd:
-    - [ ln, -s, /bin/rm, /usr/bin/rm ]
-    - [ ln, -s, /bin/mkdir, /usr/bin/mkdir ]
-    - [ ln, -s, /bin/tar, /usr/bin/tar ]
-    - [ ln, -s, /bin/ln, /usr/bin/ln ]
-    - [ ln, -s, /bin/cp, /usr/bin/cp ]
-    - [ ln, -s, /bin/systemctl, /usr/bin/systemctl ]
-    - [ ln, -s, /bin/mount, /usr/bin/mount ]
-    - [ ln, -s, /bin/bash, /usr/bin/bash ]
-    - [ ln, -s, /usr/sbin/useradd, /usr/bin/useradd ]
     - [ systemctl, disable, --now, resolvconf.service ]
     - [ systemctl, mask, --now, lxc-net.service ]
     - [ systemctl, disable, --now, unscd.service ]

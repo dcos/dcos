@@ -22,6 +22,6 @@ ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/bin/ping -c1 marathon.mesos
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStart=$PKG_PATH/nginx/sbin/adminrouter.sh -c $PKG_PATH/nginx/conf/nginx.master.conf
-ExecReload=/bin/kill -HUP $MAINPID
+ExecReload=kill -HUP $MAINPID
 KillSignal=SIGQUIT
 KillMode=mixed

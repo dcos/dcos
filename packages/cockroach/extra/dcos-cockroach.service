@@ -13,8 +13,8 @@ LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/run/dcos/etc/cockroach
 Environment=COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true
-ExecStartPre=/usr/bin/mkdir -p /run/dcos/cockroach
-ExecStartPre=/bin/chown -R dcos_cockroach /run/dcos/cockroach
+ExecStartPre=mkdir -p /run/dcos/cockroach
+ExecStartPre=chown -R dcos_cockroach /run/dcos/cockroach
 # The CockroachDB multi node coordination performed by register.py
 # requires the ZooKeeper cluster to be formed. This is achieved
 # by the noop bootstrapper.
