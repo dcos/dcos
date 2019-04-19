@@ -81,7 +81,7 @@
         { "Ref" : "AWS::Region" },
         "us-gov-west-1"
       ]
-    },
+    }
   },
   "Rules": {
       "InstanceTypeRule": {
