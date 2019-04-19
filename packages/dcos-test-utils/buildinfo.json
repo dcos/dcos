@@ -2,8 +2,8 @@
   "requires": ["dcos-image-deps"],
   "single_source" : {
     "kind": "git",
-    "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "fc95d15e53e69831fb9803e0fda42b11744d49e4",
-    "ref_origin": "master"
+    "git": "https://github.com/jbarrick-mesosphere/dcos-test-utils.git",
+    "ref": "b56401943dc2d4247d81ad0deee62b82d052a76d",
+    "ref_origin": "tracing"
   }
 }

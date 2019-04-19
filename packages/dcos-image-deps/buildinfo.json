@@ -107,6 +107,21 @@
       "url": "https://pypi.python.org/packages/fd/5b/3dd32b8e53703ff7a27a72e9a118e7f78c14a171554ec8c99dd4759c4018/multidict-1.2.2.tar.gz",
       "sha1": "cf2a93c62b2813a07d113d9bfef057a06feedf27"
     },
+    "opencensus": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/04/9e/571015718278a62314122288803233873e67e7f86092f4adaea98471f8f3/opencensus-0.4.1-py2.py3-none-any.whl",
+      "sha1": "75993635d2f0c91901e667ee8d4e3cf8e74d9cdd"
+    },
+    "opencensus-ext-requests": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/6d/4e/b06f338ee0facea4322e60a2255169e53ea87718ec4a7120c7f742e42a18/opencensus_ext_requests-0.1.1-py2.py3-none-any.whl",
+      "sha1": "e4b58b9d5d42bdb5a6d1610046e7c9aa6345f6e7"
+    },
+    "opencensus-ext-zipkin": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/79/da/a5b81bf27e5b30f6c68c90e14915ee852a59177c7c8a4c1d4b917a5b8b23/opencensus_ext_zipkin-0.2.0-py2.py3-none-any.whl",
+      "sha1": "d3b1f9949daafad985854360f7ca9232d56dd491"
+    },
     "oauthlib": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/a8/11/fb71ced7057b2a8929f51959f4e97bcee9f687aaf896c521984e67118b90/oauthlib-1.1.2.tar.gz",
