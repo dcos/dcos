@@ -15,3 +15,4 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-signal
 
 # Signal depends on the dcos-licensing service for the license_id
 ExecStart=/opt/mesosphere/bin/dcos-signal -licensing-socket /run/dcos/dcos-license.sock -segment-key 51ybGTeFEFU1xo6u10XMDrr6kATFyRyh
+
