@@ -82,19 +82,17 @@
         "us-gov-west-1"
       ]
     },
-    "Rules": {
-        "Rule1": {
-          "Assertions": [
-            {
-              "Assert" : {"Fn::Contains": [["m5.large", "m5.xlarge"], {"Ref": "InstanceType"}]},
-              "AssertDescription": "Instance type should be m5.large or m5.xlarge"
-            }
-          ]
-        }
-    }
-
   },
-
+  "Rules": {
+      "InstanceTypeRule": {
+        "Assertions": [
+          {
+            "Assert" : {"Fn::Contains": [["m5.large", "m5.xlarge"], {"Ref": "InstanceType"}]},
+            "AssertDescription": "Instance type should be m5.large or m5.xlarge"
+          }
+        ]
+      }
+  },
   "Resources" : {
     "Vpc" : {
       "Type" : "AWS::EC2::VPC",
