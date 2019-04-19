@@ -311,6 +311,7 @@ def test_signal_service(dcos_api_session):
         'provider': expanded_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
+        'licenseId': '',
         'customerKey': customer_key,
         'environmentVersion': dcos_version,
         'variant': 'open'
