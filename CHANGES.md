@@ -1,4 +1,4 @@
-## DC/OS 1.13.0 Beta
+## DC/OS 1.13-dev
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -13,6 +13,19 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+## DC/OS 1.13.1 (Next release, please update entries in this section)
+
+### Notable changes
+
+### Fixed and improved
+
+* Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
+
+
+### Security updates
+
+
+## DC/OS 1.13.0
 
 ### Highlights
 
