@@ -168,7 +168,7 @@
       "sha1": "1a9dbe1b84a402c072f6b2c459d45bc5e41027ea"
     },
     "wrapt": {
-      "kind": "url",
+      "kind": "url_extract",
       "url": "https://files.pythonhosted.org/packages/67/b2/0f71ca90b0ade7fad27e3d20327c996c6252a2ffe88f50a95bba7434eda9/wrapt-1.11.1.tar.gz",
       "sha1": "e40a3b628c9b5503d47160d08d1bf93a2c7471fe"
     }
