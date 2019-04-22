@@ -92,6 +92,11 @@
       "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",
       "sha1": "88749802f8d61883da36a5abfca171a4ae60cc71"
     },
+    "google-api-core": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/bf/e4/b22222bb714947eb459dc91ebf95131812126a0b29d62e444be3f76dad64/google_api_core-1.9.0-py2.py3-none-any.whl",
+      "sha1": "c29c0cf84092f930dc4f5ea25b43408e4a74a1da"
+    },
     "humanfriendly": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/h/humanfriendly/humanfriendly-1.44.3.tar.gz",
@@ -111,6 +116,11 @@
       "kind": "url",
       "url": "https://files.pythonhosted.org/packages/04/9e/571015718278a62314122288803233873e67e7f86092f4adaea98471f8f3/opencensus-0.4.1-py2.py3-none-any.whl",
       "sha1": "75993635d2f0c91901e667ee8d4e3cf8e74d9cdd"
+    },
+    "opencensus-context": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/67/71/ca8180acc6f43ec9b1ef91fe5b0dc30c8671d410d22d342179ba13a1b894/opencensus_context-0.1.0-py2.py3-none-any.whl",
+      "sha1": "067916b8f4c55618a4eb4364e35469f2bef9520d"
     },
     "opencensus-ext-requests": {
       "kind": "url",
@@ -156,6 +166,11 @@
       "kind": "url",
       "url": "https://files.pythonhosted.org/packages/96/ba/a4702cbb6a3a485239fbe9525443446203f00771af9ac000fa3ef2788201/wheel-0.33.1-py2.py3-none-any.whl",
       "sha1": "1a9dbe1b84a402c072f6b2c459d45bc5e41027ea"
+    },
+    "wrapt": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/67/b2/0f71ca90b0ade7fad27e3d20327c996c6252a2ffe88f50a95bba7434eda9/wrapt-1.11.1.tar.gz",
+      "sha1": "e40a3b628c9b5503d47160d08d1bf93a2c7471fe"
     }
   }
 }

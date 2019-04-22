@@ -5,9 +5,9 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 # Install wheels.
 for package in adal analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
-    azure-mgmt-network azure-storage beautifulsoup4 docutils keyring msrest \
-    msrestazure opencensus opencensus-ext-requests opencensus-ext-zipkin \
-    requests-oauthlib schema webob wheel; do
+    azure-mgmt-network azure-storage beautifulsoup4 docutils keyring google-api-core \
+    msrest msrestazure opencensus opencensus-ext-requests opencensus-ext-zipkin \
+    opencensus-context requests-oauthlib schema webob wheel wrapt; do
   pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
 done
 
