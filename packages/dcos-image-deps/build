@@ -7,11 +7,11 @@ mkdir -p "$LIB_INSTALL_DIR"
 for package in adal analytics-python azure-nspkg azure-common azure-mgmt-nspkg \
     azure-mgmt-network azure-storage beautifulsoup4 docutils keyring google-api-core \
     msrest msrestazure opencensus opencensus-ext-requests opencensus-ext-zipkin \
-    opencensus-context requests-oauthlib schema webob wheel wrapt; do
+    opencensus-context requests-oauthlib schema webob wheel; do
   pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
 done
 
 for package in aiohttp checksumdir coloredlogs humanfriendly multidict \
-    oauthlib waitress websocket-client; do
+    oauthlib waitress websocket-client wrapt; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package
 done
