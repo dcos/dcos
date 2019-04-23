@@ -108,7 +108,20 @@ backup-max-store-ms=21600000
 connect-port=2888
 observer-threshold=0
 election-port=3888
-zoo-cfg-extra=tickTime\=2000&initLimit\=10&syncLimit\=5&quorumListenOnAllIPs\=true&maxClientCnxns\=0&autopurge.snapRetainCount\=5&autopurge.purgeInterval\=6
+# Here the ZooKeeper transaction log retention policy is defined.
+#
+# snapCount:
+# Number transactions included in a snapshot.
+# This means, after `snapCount` transactions a new snapshot is written to disk, containing all the transactions of the current transaction log file plus previous transactions. After that a new snapshot is started in memory. This causes also a new transaction log file to be started.
+# Number of transaction that must have been written to the current transaction log file before a new one is started.
+# At the same time a snapshot with the previous `snapCount` transactions is persisted to disk.
+# autopurge.snapRetainCount:
+# Number of ZooKeeper snapshots to keep after a restart or purge.
+# autopurge.purgeInterval:
+# Time in hours after which ZooKeeper deletes old snapshots to match `autopurge.snapRetainCount`.
+#
+# With this policy we retain 3 snapshots that are persisted to disk. This duplication of persisted state takes care of a possibly corrupted snapshots among those 3. The policy purges old snapshots after 1 hour (bound to Integer granularity) to keep the snapshot directory size low. On purge, ZooKeeper takes care of merging/deleting superseded transaction log files, which keeps the file count in the transaction log directory at minimum. Limiting the size of the transaction count per snapshot poses a way to further lower the average size footprint of the transaction log directory.
+zoo-cfg-extra=tickTime\=2000&initLimit\=10&syncLimit\=5&quorumListenOnAllIPs\=true&maxClientCnxns\=0&autopurge.snapRetainCount\=3&autopurge.purgeInterval\=1&snapCount\=20000
 auto-manage-instances-settling-period-ms=0
 auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
