@@ -8,7 +8,7 @@
     },
     "urllib3": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/62/00/ee1d7de624db8ba7090d1226aebefab96a2c71cd5cfa7629d6ad3f61b79e/urllib3-1.24.1-py2.py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/81/9b/715e96377cc1f87e71d9d4259c6f88bf561a539622ba3042e73188e0bc2d/urllib3-1.25-py2.py3-none-any.whl",
       "sha1": "5386c8d6788f5d3f2f91556ef77f99af10435b17"
     },
     "chardet": {
