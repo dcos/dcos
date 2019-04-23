@@ -32,6 +32,11 @@ def test_expanded_config():
     assert 'master_quorum' in expanded_config
     # Defined and used parameters should be present
     assert 'marathon_port' in expanded_config
+    assert 'mesos_master_port' in expanded_config
+    assert 'mesos_agent_port' in expanded_config
+    assert 'exhibitor_port' in expanded_config
+    assert 'mesos_dns_port' in expanded_config
+    assert 'metronome_port' in expanded_config
 
     # TODO(cmaloney): Test user provided parameters are present. All the
     # platforms have different sets...
