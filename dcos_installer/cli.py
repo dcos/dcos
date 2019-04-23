@@ -12,10 +12,10 @@ import dcos_installer.config
 import dcos_installer.constants
 import gen.calc
 from dcos_installer import action_lib, backend
+from dcos_installer.action_lib import deprecated_usage_warning
 from dcos_installer.config import Config
 from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.prettyprint import PrettyPrint, print_header
-from dcos_installer.action_lib import deprecated_usage_warning
 
 from ssh.utils import AbstractSSHLibDelegate
 
@@ -327,6 +327,7 @@ def get_argument_parser():
     parser.set_defaults(action='genconf')
 
     return parser
+
 
 def main():
     # Passd in by installer_internal_wrapper since in ash exec can't set argv0
