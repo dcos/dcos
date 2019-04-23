@@ -13,12 +13,9 @@ from dcos_e2e.backends import Docker
 @pytest.fixture(scope='session', autouse=True)
 def configure_logging() -> None:
     """
-    Configures logging level to DEBUG and surpress DEBUG log messages from
-    libraries that log excessive amount of debug output that isn't useful
-    for debugging e2e tests.
+    Surpress DEBUG log messages from libraries that log excessive amount of
+    debug output that isn't useful for debugging e2e tests.
     """
-    logging.basicConfig(level=logging.DEBUG)
-
     # Disble debug output from `docker` and `urllib3` libraries
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
     logging.getLogger('docker').setLevel(logging.WARN)
