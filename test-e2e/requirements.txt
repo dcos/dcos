@@ -5,3 +5,4 @@ jwt==0.5.4
 pytest==4.1.1
 requests==2.21.0
 wheel==0.33.1
+teamcity-messages==1.25
