@@ -196,7 +196,7 @@ def test_dcos_add_user(dcos_api_session):
     """
 
     email_address = uuid.uuid4().hex + '@example.com'
-    cli = dcos_cli.DcosCli('')
+    cli = dcos_cli.DcosCli('', '', '')
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
     cli.exec_command(command)
 
@@ -224,7 +224,7 @@ def test_check_message_on_adding_user_twice(dcos_api_session):
     """
 
     email_address = uuid.uuid4().hex + '@example.com'
-    cli = dcos_cli.DcosCli('')
+    cli = dcos_cli.DcosCli('', '', '')
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
     stdout, stderr = cli.exec_command(command)
 
