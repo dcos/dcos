@@ -22,6 +22,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Telegraf is tuned for workloads that emit a large number of metrics (DCOS-50994)
@@ -39,6 +41,19 @@ Format of the entries must be.
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
 * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
+* [Marathon] Introduced global throttling for Marathon health checks (MARATHON-8596)
+
+* [Marathon] Do not fail on offers with RAW and BLOCK disk types (MARATHON-8590)
+
+* [Marathon] Map `tcp,udp` to `udp,tcp` during migration (MARATHON-8575)
+
+* [Marathon] Allow all users to execute /marathon/bin/marathon (MARATHON-8581)
+
+* [Marathon] Response asynchronously for all endpoints (MARATHON-8562)
+
+* [Marathon] Force expunge and Decommission all instances on service removal (DCOS-49521)
+* Conflict between VIP port and port mapping (DCOS_OSS-4970)
 
 ### Security updates
 
