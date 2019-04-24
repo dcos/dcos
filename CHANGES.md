@@ -148,6 +148,10 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Lashup sometime fails to converge (DCOS_OSS-4328)
 
+* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
+
+* ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
