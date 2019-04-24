@@ -1498,6 +1498,7 @@ package:
         "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
+        "fetchers-count": 3,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
@@ -1837,7 +1838,8 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
-                  "Command": ["sestatus"]
+                  "Command": ["sestatus"],
+                  "Optional": true
               },
               {
                   "Command": ["iptables-save"]
@@ -1846,7 +1848,8 @@ package:
                   "Command": ["ip6tables-save"]
               },
               {
-                  "Command": ["ipset", "list"]
+                  "Command": ["ipset", "list"],
+                  "Optional": true
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
@@ -1854,7 +1857,11 @@ package:
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
-                  "Role": ["agent", "agent_public"]
+                  "Role": ["agent"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent_public"]
               },
               {
                   "Command": ["docker", "--version"],
