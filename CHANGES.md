@@ -18,6 +18,8 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
@@ -27,6 +29,8 @@ Format of the entries must be.
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
  * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
+* Conflict between VIP port and port mapping (DCOS_OSS-4970)
 
 ### Security updates
 
