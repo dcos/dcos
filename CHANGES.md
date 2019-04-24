@@ -1,4 +1,4 @@
-## DC/OS 1.13.0 Beta
+## DC/OS 1.13-dev
 
 ```
 * For any significant improvement to DC/OS add an entry to Fixed and Improved section.
@@ -13,6 +13,19 @@ Format of the entries must be.
 * Entry two with no-newlines. (DCOS_OSS_JIRA_2)
 ```
 
+## DC/OS 1.13.1 (Next release, please update entries in this section)
+
+### Notable changes
+
+### Fixed and improved
+
+* Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
+
+
+### Security updates
+
+
+## DC/OS 1.13.0
 
 ### Highlights
 
@@ -81,6 +94,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Add metrics for lashup (DCOS_OSS-4756)
 
+* Enable metrics for fluent-bit (DCOS-51855)
+
 
 ### Breaking changes
 
@@ -91,6 +106,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
+
+* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
 
 * Backends for requests to `/service/<service-name>` may compress responses (DCOS_OSS-4906)
 
@@ -139,6 +156,12 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * HTTP endpoint targets of DC/OS Diagnostics can be marked optional (DCOS_OSS-5031)
 
+* The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+* Conflict between VIP port and port mapping (DCOS_OSS-4970)
+
+* Lashup sometime fails to converge (DCOS_OSS-4328)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
+
