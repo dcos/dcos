@@ -970,7 +970,7 @@ package:
                   "Role": ["agent", "agent_public"]
               },
               {
-                  "Command": ["docker", "up"],
+                  "Command": ["docker", "ps"],
                   "Role": ["agent", "agent_public"]
               },
               {
