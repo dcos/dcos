@@ -32,6 +32,8 @@ Format of the entries must be.
 
 * Conflict between VIP port and port mapping (DCOS_OSS-4970)
 
+* ipset protocol ignores a missing `match` flag on some kernel versions (DCOS-52780)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
