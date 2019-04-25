@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 __maintainer__ = 'Gilbert88'
 __contact__ = 'core-team@mesosphere.io'
 
@@ -296,6 +298,52 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
             }
         ],
         'networks': [{'mode': 'host'}]
+    }
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
+
+
+# TODO: Unmute this test once volume gid manager is enabled.
+@pytest.mark.skip(reason="cannot test this without volume gid manager enabled")
+def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_api_session):
+    """Marathon pods inside ucr deployment integration test.
+
+    This test launches a marathon ucr pod with a non-root user (nobody)
+    and an ephemeral volume, and verifies the container in the pod can
+    write to the ephemeral volume. In strict mode, the parent container
+    (i.e., the default executor) is launched as nobody as well, so the
+    nested container has the permission to write to the volume since it
+    is launched with nobody in this test. In permissive mode, the user
+    of the parent container and the nested container are different (root
+    and nobody), in this case the volume gid manager in Mesos agent will
+    set the volume owner group to a unique gid and the nested container
+    will be launched with that gid as its supplementary group so that it
+    has the permission to write to the volume.
+    """
+    test_uuid = uuid.uuid4().hex
+    pod_definition = {
+        'id': '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'container1',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
+                'exec': {'command': {'shell': 'echo data > ./etc/file'}},
+                'user': 'nobody',
+                "volumeMounts": [{"name": "volume1", "mountPath": "etc"}]
+            },
+            {
+                'name': 'container2',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}],
+        'volumes': [{'name': 'volume1'}]
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check

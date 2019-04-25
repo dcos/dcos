@@ -1,0 +1,7 @@
+[Unit]
+Description=DC/OS UI Update Service Socket: socket for the dcos ui update service
+[Socket]
+ListenStream=/run/dcos/dcos-ui-update-service.sock
+SocketUser=root
+SocketGroup=dcos_adminrouter
+SocketMode=0660

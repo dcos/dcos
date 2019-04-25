@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 class TestServiceEndpoint:
     # Majority of /service endpoint tests are done with generic tests framework
-    def test_if_accept_encoding_header_is_removed_from_upstream_request(
+    def test_if_accept_encoding_header_is_in_upstream_request(
             self, master_ar_process_perclass, mocker, valid_user_header):
         headers = copy.deepcopy(valid_user_header)
         headers['Accept-Encoding'] = 'gzip'
@@ -31,7 +31,7 @@ class TestServiceEndpoint:
         generic_upstream_headers_verify_test(master_ar_process_perclass,
                                              headers,
                                              '/service/scheduler-alwaysthere/foo/bar/',
-                                             assert_headers_absent=["Accept-Encoding"],
+                                             assert_headers={'Accept-Encoding': 'gzip'},
                                              )
 
 
@@ -296,7 +296,7 @@ class TestUiRoot:
         url = master_ar_process_perclass.make_url_from_path('/{}'.format(path))
 
         with overridden_file_content(
-                '/opt/mesosphere/active/dcos-ui/usr/{}'.format(path),
+                '/var/lib/dcos/dcos-ui-update-service/dist/ui/{}'.format(path),
                 uniq_content):
             resp = requests.get(
                 url,
@@ -306,7 +306,7 @@ class TestUiRoot:
         assert resp.status_code == 200
         resp.encoding = 'utf-8'
         assert resp.text == uniq_content
-        verify_header(resp.headers.items(), 'X-Frame-Options', 'SAMEORIGIN')
+        verify_header(resp.headers.items(), 'X-Frame-Options', 'DENY')
 
 
 class TestMisc:

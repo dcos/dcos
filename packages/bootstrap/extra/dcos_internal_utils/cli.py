@@ -33,7 +33,7 @@ def check_root(fun):
 
 @check_root
 def dcos_adminrouter(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
     # Require the IAM to already be up and running. The IAM contains logic for
     # achieving consensus about a key pair, and exposes the public key
@@ -73,17 +73,35 @@ def dcos_adminrouter(b, opts):
 
 @check_root
 def dcos_signal(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_telegraf_master(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id')
+    b.cluster_id()
 
 
 @check_root
 def dcos_telegraf_agent(b, opts):
-    b.cluster_id('/var/lib/dcos/cluster-id', readonly=True)
+    b.cluster_id(readonly=True)
+
+
+@check_root
+def dcos_net(b, opts):
+    if 'master' in get_roles():
+        dcos_net_master(b, opts)
+    else:
+        dcos_net_agent(b, opts)
+
+
+@check_root
+def dcos_net_master(b, opts):
+    b.cluster_id()
+
+
+@check_root
+def dcos_net_agent(b, opts):
+    b.cluster_id(readonly=True)
 
 
 @check_root
@@ -104,17 +122,21 @@ bootstrappers = {
     'dcos-diagnostics-agent': noop,
     'dcos-checks-master': noop,
     'dcos-checks-agent': noop,
+    'dcos-fluent-bit-master': noop,
+    'dcos-fluent-bit-agent': noop,
     'dcos-marathon': noop,
     'dcos-mesos-master': noop,
     'dcos-mesos-slave': noop,
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
+    'dcos-cockroach': noop,
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
-    'dcos-net': noop,
+    'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
+    'dcos-ui-update-service': noop,
 }
 
 
@@ -125,7 +147,9 @@ def get_roles():
 def main():
     opts = parse_args()
 
-    logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
+    # Display the pid in each log message to distinguish concurrent runs
+    log_format = 'pid={}:[%(levelname)s] %(message)s'.format(os.getpid())
+    logging.basicConfig(format=log_format, level='INFO')
     log.setLevel(logging.DEBUG)
 
     log.info('Clearing proxy environment variables')
@@ -143,7 +167,7 @@ def main():
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
         apply_service_configuration(service)
-        log.debug('bootstrapping {}'.format(service))
+        log.info('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
 

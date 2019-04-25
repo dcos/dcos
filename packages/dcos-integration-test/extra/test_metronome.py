@@ -1,10 +1,7 @@
-import common
-
-__maintainer__ = 'ichernetsky'
-__contact__ = 'marathon-team@mesosphere.io'
+__maintainer__ = 'alenkacz'
+__contact__ = 'orchestration-team@mesosphere.io'
 
 
-@common.xfailflake(reason="DCOS-40611 - test_metronome.test_metronome failed sporadically on Azure ARM platform.")
 def test_metronome(dcos_api_session):
     job = {
         'description': 'Test Metronome API regressions',

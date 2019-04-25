@@ -526,7 +526,7 @@
                   Path:
                 </td>
                 <td>
-                  <code>/opt/mesosphere/active/dcos-ui/usr</code>
+                  <code>/var/lib/dcos/dcos-ui-update-service/dist/ui</code>
                 </td>
               </tr>
             </table>
@@ -656,7 +656,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/security/iam-api/">https://dcos.io/docs/1.10/security/iam-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/security/ent/iam-api/">https://docs.mesosphere.com/1.12/security/ent/iam-api/</a>
                 </td>
               </tr>
             </table>
@@ -701,7 +701,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/security/iam-api/">https://dcos.io/docs/1.10/security/iam-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/security/ent/iam-api/">https://docs.mesosphere.com/1.12/security/ent/iam-api/</a>
                 </td>
               </tr>
             </table>
@@ -785,7 +785,7 @@
                         API Reference:
                       </td>
                       <td>
-                        <a href="https://dcos.io/docs/1.10/security/iam-api/">https://dcos.io/docs/1.10/security/iam-api/</a>
+                        <a href="https://docs.mesosphere.com/1.12/security/ent/iam-api/">https://docs.mesosphere.com/1.12/security/ent/iam-api/</a>
                       </td>
                     </tr>
                   </table>
@@ -979,6 +979,95 @@
                 </td>
                 <td>
                   DC/OS Net
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/net/</code></span>
+            </h3>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>http://$backend/</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Server:
+                </td>
+                <td>
+                  <code>127.0.0.1:62080</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Backend:
+                </td>
+                <td>
+                  DC/OS Net
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+      </ul>
+    </li>
+    <li id="resource-dcos-ui-update-service" class="resource">
+      <div class="heading">
+        <h2>
+          <a id="dcos-ui-update-service" href="#dcos-ui-update-service" aria-hidden="true" class="toggle-route-group" data-id="dcos-ui-update-service">
+            <div class="arrow arrow-right"></div>DC/OS UI Update Service</a>
+        </h2>
+        <span class="options"><a href="#dcos-ui-update-service" class="toggle-route-group" data-id="dcos-ui-update-service">Show/Hide</a> </span>
+      </div>
+      <ul id="routes-dcos-ui-update-service" class="routes">
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/dcos-ui-update-service/api/(?&lt;api_path&gt;.*)</code></span>
+            </h3>
+            <span class="route-desc">DC/OS UI Update Service API</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>$dcos_ui_update_service</code>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </li>
+        <li class="route route-type-proxy">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Proxy</span>
+              <span class="route-path"><code>/dcos-ui-update-service/api/v1/version/</code></span>
+            </h3>
+            <span class="route-desc">DC/OS UI Update Service Version API</span>
+          </div>
+          <div class="route-meta" style="display:none">
+            <table>
+              <tr>
+                <td>
+                  Path:
+                </td>
+                <td>
+                  <code>&quot;http://dcos_ui_update_service/api/v1/version/$is_args$query_string&quot;</code>
                 </td>
               </tr>
             </table>
@@ -1417,7 +1506,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/">https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/networking/DNS/mesos-dns/mesos-dns-api/">https://docs.mesosphere.com/1.12/networking/DNS/mesos-dns/mesos-dns-api/</a>
                 </td>
               </tr>
             </table>
@@ -1515,7 +1604,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/security/iam-api/">https://dcos.io/docs/1.10/security/iam-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/security/ent/iam-api/">https://docs.mesosphere.com/1.12/security/ent/iam-api/</a>
                 </td>
               </tr>
             </table>
@@ -1591,7 +1680,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/">https://dcos.io/docs/1.10/networking/mesos-dns/mesos-dns-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/networking/DNS/mesos-dns/mesos-dns-api/">https://docs.mesosphere.com/1.12/networking/DNS/mesos-dns/mesos-dns-api/</a>
                 </td>
               </tr>
             </table>
@@ -1652,7 +1741,7 @@
           <div class="heading">
             <h3>
               <span class="route-type">Proxy</span>
-              <span class="route-path"><code>/package/</code></span>
+              <span class="route-path"><code>/package/(?&lt;package_path&gt;.*)</code></span>
             </h3>
             <span class="route-desc">Package Management</span>
           </div>
@@ -1719,7 +1808,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/administering-clusters/component-management/">https://dcos.io/docs/1.10/administering-clusters/component-management/</a>
+                  <a href="https://docs.mesosphere.com/1.12/administering-clusters/component-management/">https://docs.mesosphere.com/1.12/administering-clusters/component-management/</a>
                 </td>
               </tr>
             </table>
@@ -1882,7 +1971,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint">https://dcos.io/docs/1.10/monitoring/#system-health-http-api-endpoint</a>
+                  <a href="https://docs.mesosphere.com/1.12/monitoring/#system-health-http-api-endpoint">https://docs.mesosphere.com/1.12/monitoring/#system-health-http-api-endpoint</a>
                 </td>
               </tr>
             </table>
@@ -2098,7 +2187,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/monitoring/logging/logging-api/">https://dcos.io/docs/1.10/monitoring/logging/logging-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/monitoring/logging/logging-api/">https://docs.mesosphere.com/1.12/monitoring/logging/logging-api/</a>
                 </td>
               </tr>
             </table>
@@ -2143,7 +2232,7 @@
                   API Reference:
                 </td>
                 <td>
-                  <a href="https://dcos.io/docs/1.10/metrics/metrics-api/">https://dcos.io/docs/1.10/metrics/metrics-api/</a>
+                  <a href="https://docs.mesosphere.com/1.12/metrics/metrics-api/">https://docs.mesosphere.com/1.12/metrics/metrics-api/</a>
                 </td>
               </tr>
             </table>

@@ -1,18 +1,19 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -o nounset -o errexit
 
 # Get COREOS COREOS_PRIVATE_IPV4
 if [ -e /etc/environment ]
 then
   set -o allexport
-  . /etc/environment
+  source /etc/environment
   set +o allexport
 fi
 
-# Get the IP address of the interface specified by $1
-get_ip_from_interface()
+
+get_defaultish_ip()
 {
-  /sbin/ifconfig "$1" | awk '/(inet addr)/ { print $2 }' | cut -d":" -f2 | head -1
+    local ipv4=$(ip route get 8.8.8.8 | awk '{ for(i=1; i<NF; i++) { if($i == "src") {print $(i+1); exit} } }')
+    echo $ipv4
 }
 
-echo ${COREOS_PRIVATE_IPV4:-$(get_ip_from_interface eth0)}
+echo ${COREOS_PRIVATE_IPV4:-$(get_defaultish_ip)}

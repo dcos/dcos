@@ -124,7 +124,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
 
-    For more information, see [User Management](https://dcos.io/docs/latest/administration/user-management/).
+    For more information, see [User Management](https://docs.mesosphere.com/latest/security/oss/user-management/).
 
 
 2. Run the tests using pytest in the cluster.
@@ -134,26 +134,27 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     dcos-shell pytest
     ```
 
-## Using a Docker Cluster with DC/OS E2E
+## Using a Docker Cluster with miniDC/OS
 
-One way to run the integration tests is to use the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
+One way to run the integration tests is to use the [miniDC/OS CLI](https://minidcos.readthedocs.io/en/latest/).
 
 This lets you create, run and manage clusters in test environments.
 Each DC/OS node is represented by a Docker container.
 
-1. Setup DC/OS in containers using the [DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html).
+1. Setup DC/OS in containers using the [miniDC/OS CLI](http://minidcos.readthedocs.io/en/latest/).
 
-For example, after [installing the DC/OS E2E CLI](http://dcos-e2e.readthedocs.io/en/latest/cli.html#installation), create a cluster:
+For example, after [installing the miniDC/OS CLI](http://minidcos.readthedocs.io/en/latest/#installation), create a cluster:
 
 ```
-dcos-docker create /tmp/dcos_generate_config.sh \
+minidcos docker download-installer
+minidcos docker create /tmp/dcos_generate_config.sh \
     --masters 1 \
     --agents 2 \
     --public-agents 1 \
     --cluster-id default
 ```
 
-2. Run `dcos-docker wait`
+2. Run `minidcos docker wait`
 
 Wait for DC/OS to start.
 Running wait command allows to make sure that the cluster is set up properly before any other actions that could otherwise cause errors in `pytest` command in the next step.
@@ -163,13 +164,13 @@ Running wait command allows to make sure that the cluster is set up properly bef
 For example:
 
 ```
-dcos-docker run --test-env pytest
+minidcos docker run --test-env pytest
 ```
 
 4. Destroy the cluster.
 
 ```
-dcos-docker destroy
+minidcos docker destroy
 ```
 
 # Build
@@ -186,11 +187,13 @@ DC/OS builds are packaged as a self-extracting Docker image wrapped in a bash sc
 ./build_local.sh
 ```
 
-That will run a simple local build, and output the resulting DC/OS installers to $HOME/dcos-artifacts. You can run the created `dcos_generate_config.sh like so:
+That will run a simple local build, and output the resulting DC/OS installers to `./packages/cache/dcos_generate_config.sh`:
 
 ```
-$ $HOME/dcos-artifacts/testing/`whoami`/dcos_generate_config.sh
+$ ./packages/cache/dcos_generate_config.sh
 ```
+
+See the section on [running in Docker](#using-a-docker-cluster-with-minidcos) to test the installer.
 
 ## Build Details
 
@@ -277,11 +280,15 @@ Pull requests automatically trigger a new DC/OS build and run several tests. The
 | mergebot/review/approved/min_2                 | Code Review Enforcement                                                                                                 | Mergebot service in prod cluster                                                                       |
 | teamcity/dcos/build/dcos                       | Builds DCOS Image (dcos_generate_config.sh)                                                                             | [gen/build_deploy/bash.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/bash.py)                                                                            |
 | teamcity/dcos/build/tox                        | Runs check-style, unit-tests                                                                                            | [tox.ini](https://github.com/dcos/dcos/blob/master/tox.ini)                                                                                                |
+| teamcity/dcos/build/tox/windows                | Runs tox for the Windows Build                                                                                          | [azure-ci-dependencies](https://github.com/dcos/azure-ci-dependencies/blob/master/scripts/dcos-windows-tox-tests.ps1) |
 | teamcity/dcos/test/aws/cloudformation/simple   | Deployment using single-master-cloudformation.json and runs integration tests                                           | [gen/build_deploy/aws.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/aws.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                                 |
-| teamcity/dcos/test/aws/onprem/static           | Installation via dcos_generation_config.sh and runs Integration Tests                                                   | [gen/build_deploy/bash.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/bash.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                                |
-| teamcity/dcos/test/azure/arm                   | Deployment using acs-1master.azuredeploy.json and runs integration tests.                                               | [gen/build_deploy/azure.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/azure.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                               |
-| teamcity/dcos/test/docker                      | Exercises dcos-docker by launching dcos-docker against this PR and running integration tests within the docker cluster. | [dcos-docker](https://github.com/dcos/dcos-docker) repo                                                                                       |
-| teamcity/dcos/test/docker/smoke                | Exercises dcos-docker by launching dcos-docker against this PR and running *smoke* tests within the docker cluster.     | dcos-docker repo                                                                                       |
-| teamcity/dcos/test/upgrade                     | Upgrade from stable minor version                                                                                       | [mesosphere/advanced-tests](https://github.com/mesosphere/advanced-tests/) repo (transitively, [dcos/dcos-test-utils](https://github.com/dcos/dcos-test-utils) , dcos/dcos-launch)                  |
-| teamcity/dcos/test/upgrade-from-previous-major | Upgrade from previous major version                                                                                     | mesosphere/advanced-tests repo (transitively, dcos/dcos-test-utils, dcos/dcos-launch)                  |
-| teamcity/dcos/test/upgrade-to-next-major       | Upgrade to Next Major version                                                                                           | mesosphere/advanced-tests repo (transitively, dcos/dcos-test-utils, dcos/dcos-launch)                  |
+| teamcity/dcos/test/aws/onprem/static/group{1..n}  | Installation via dcos_generation_config.sh and runs Integration Tests                                                | [gen/build_deploy/bash.py](https://github.com/dcos/dcos/blob/master/gen/build_deploy/bash.py), Uses [dcos-launch](https://github.com/dcos/dcos-launch/) binary in CI                                                |
+| teamcity/dcos/test/test-e2e/group{1..n}        | End to End Tests. Each Test launches a cluster, exercises a functionality.                                              | [test-e2e](https://github.com/dcos/dcos/tree/master/test-e2e)
+
+### Required vs Non-Required Status checks
+
+A PR status check may be marked as **Required** or **Not-Required** (Default).The required status checks are neccessary for applying a ship-it label, which makes the PR eligible for merge.
+A non-required status check is completely informational, and the success or the failure of the status check does not, in any way, impact the merge of the PR.
+
+The required status checks are encoded in the repo's megebot-config (For .e.g: https://github.com/dcos/dcos/blob/master/mergebot-config.json#L38)
+and are enforced by mergebot.

@@ -8,6 +8,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
  - 53: dcos-net (dns)
  - 61091: telegraf
+ - 62020: fluent-bit
  - 62080: dcos-net (rest)
  - 62501: dcos-net (disterl)
 
@@ -48,3 +49,4 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
  - 5051: dcos-mesos-slave
  - 61001: dcos-adminrouter-agent
+ - 61092: dcos-fluent-bit

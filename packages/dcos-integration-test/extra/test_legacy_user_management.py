@@ -19,10 +19,12 @@ that first user's point of view. That is, we can not test that a user (e.g.
 user2) which was added by the first user (user1) can add another user (user3).
 """
 import logging
+import uuid
 
 import pytest
+from dcos_test_utils import dcos_cli
 
-from test_helpers import expanded_config
+from test_helpers import get_expanded_config
 
 
 __maintainer__ = 'jgehrcke'
@@ -33,11 +35,14 @@ log = logging.getLogger(__name__)
 
 
 # Skip entire module in downstream integration tests.
-if 'security' in expanded_config:
-    pytest.skip(
-        'Skip upstream-specific user management tests',
-        allow_module_level=True
-    )
+@pytest.fixture(autouse=True)
+def skip_in_downstream():
+    expanded_config = get_expanded_config()
+    if 'security' in expanded_config:
+        pytest.skip(
+            'Skip upstream-specific user management tests',
+            allow_module_level=True
+        )
 
 
 def get_users(apisession):
@@ -182,3 +187,55 @@ def test_dynamic_ui_config(dcos_api_session):
     assert not data['clusterConfiguration']['firstUser']
     assert 'id' in data['clusterConfiguration']
     assert 'uiConfiguration' in data
+
+
+def test_dcos_add_user(dcos_api_session):
+    """
+    dcos_add_user.py script adds a user to IAM using the
+    script dcos_add_user.py.
+    """
+
+    email_address = uuid.uuid4().hex + '@example.com'
+    cli = dcos_cli.DcosCli('')
+    command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
+    cli.exec_command(command)
+
+    try:
+        r = dcos_api_session.get('/acs/api/v1/users')
+        r.raise_for_status()
+        expected_user_data = {
+            "uid": email_address,
+            "description": "",
+            "url": "/acs/api/v1/users/" + email_address,
+            "is_remote": True,
+            "is_service": False,
+            "provider_type": "oidc",
+            "provider_id": "https://dcos.auth0.com/"
+        }
+        assert expected_user_data in r.json()['array']
+    finally:
+        delete_user(dcos_api_session, email_address)
+
+
+def test_check_message_on_adding_user_twice(dcos_api_session):
+    """
+    Check that the correct message is emitted on adding the
+    same user for the second time.
+    """
+
+    email_address = uuid.uuid4().hex + '@example.com'
+    cli = dcos_cli.DcosCli('')
+    command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
+    stdout, stderr = cli.exec_command(command)
+
+    try:
+        expected_output = '[INFO] Created IAM user `' + email_address + '`\n'
+        assert '' == stdout
+        assert expected_output == stderr
+
+        stdout, stderr = cli.exec_command(command)
+        expected_error = '[INFO] User `' + email_address + '` already exists\n'
+        assert expected_error == stderr
+        assert '' == stdout
+    finally:
+        delete_user(dcos_api_session, email_address)

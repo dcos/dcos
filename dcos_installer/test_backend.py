@@ -86,7 +86,7 @@ def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
-        'version': '1.13-dev',
+        'version': '1.13.0',
         'variant': 'some-variant'
     }
 
@@ -162,7 +162,6 @@ def test_do_validate_config(tmpdir, monkeypatch):
     create_fake_build_artifacts(tmpdir)
     expected_output = {
         'ip_detect_contents': 'ip-detect script `genconf/ip-detect` must exist',
-        'ssh_user': 'Must set ssh_user, no way to calculate value.',
         'master_list': 'Must set master_list, no way to calculate value.',
         'ssh_key_path': 'could not find ssh private key: genconf/ssh_key'
     }

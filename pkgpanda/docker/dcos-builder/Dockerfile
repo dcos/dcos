@@ -4,6 +4,7 @@ MAINTAINER help@dcos.io
 RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
+  autopoint \
   cmake \
   cpp \
   curl \
@@ -50,9 +51,9 @@ RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
   ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
 
-ENV GOLANG_VERSION 1.8.3
+ENV GOLANG_VERSION 1.11.5
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 1862f4c3d3907e59b04a757cfda0ea7aa9ef39274af99a784f5be843c80c6772
+ENV GOLANG_DOWNLOAD_SHA256 ff54aafedff961eb94792487e827515da683d61a5f9482f668008832631e5d25
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
   && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \

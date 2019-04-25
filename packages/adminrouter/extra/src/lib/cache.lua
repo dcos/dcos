@@ -7,7 +7,7 @@ local util = require "util"
 -- In order to make caching code testable, these constants need to be
 -- configurable/exposed through env vars.
 --
--- Values assigned to these variable need to fufil following condition:
+-- Values assigned to these variable need to fulfil following condition:
 --
 -- CACHE_FIRST_POLL_DELAY << CACHE_EXPIRATION < CACHE_POLL_PERIOD < CACHE_MAX_AGE_SOFT_LIMIT < CACHE_MAX_AGE_HARD_LIMIT
 --
@@ -136,13 +136,12 @@ local function request(url, accept_404_reply, auth_token)
     return res, nil
 end
 
-local function is_ip_per_task(app)
-    return app["ipAddress"] ~= nil and app["ipAddress"] ~= cjson_safe.null
-end
-
-local function is_user_network(app)
+local function is_container_network(app)
+  -- Networking mode for a Marathon application is defined in
+  -- app["networks"][1]["mode"].
     local container = app["container"]
-    return container and container["type"] == "DOCKER" and container["docker"]["network"] == "USER"
+    local network = app["networks"][1]
+    return container and network and (network["mode"] == "container")
 end
 
 local function fetch_and_store_marathon_apps(auth_token)
@@ -220,8 +219,18 @@ local function fetch_and_store_marathon_apps(auth_token)
           )
 
        local host_or_ip = task["host"] --take host  by default
-       if is_ip_per_task(app) then
-          ngx.log(ngx.NOTICE, "app '" .. appId .. "' is using ip-per-task")
+       -- In "container" networking mode the task/container will get its own IP
+       -- (ip-per-container).
+       -- The task will be reachable:
+       -- 1) through the container port defined in portMappings.
+       -- If the app is using DC/OS overlay network
+       -- it will be also reachable on
+       -- 2) task["host"]:task["ports"][portIdx] (<private agent IP>:<hostPort>).
+       -- However, in case of CNI networks (e.g. Calico), the task might not be
+       -- reachable on task["host"]:task["ports"][portIdx], so we choose option 2)
+       -- for routing.
+       if is_container_network(app) then
+          ngx.log(ngx.NOTICE, "app '" .. appId .. "' is in a container network")
           -- override with the ip of the task
           local task_ip_addresses = task["ipAddresses"]
           if task_ip_addresses then
@@ -237,36 +246,27 @@ local function fetch_and_store_marathon_apps(auth_token)
           goto continue
        end
 
-       local ports = task["ports"] --task host port mapping by default
-       if is_ip_per_task(app) then
-         ports = {}
-         if is_user_network(app) then
-            -- override with ports from the container's portMappings
-            local port_mappings = app["container"]["docker"]["portMappings"] or app["portDefinitions"] or {}
-            local port_attr = app["container"]["docker"]["portMappings"] and "containerPort" or "port"
-            for _, port_mapping in ipairs(port_mappings) do
-               table.insert(ports, port_mapping[port_attr])
-            end
-         else
-            --override with the discovery ports
-            local discovery_ports = app["ipAddress"]["discovery"]["ports"]
-            for _, discovery_port in ipairs(discovery_ports) do
-                table.insert(ports, discovery_port["number"])
-            end
-         end
+       -- In "container" mode we find the container port out from portMappings array
+       -- for the case when container port is fixed (non-zero value specified).
+       -- When container port is specified as 0 it will be set the same as the host port:
+       -- https://mesosphere.github.io/marathon/docs/ports.html#random-port-assignment
+       -- We do not override it with container port from the portMappings array
+       -- in that case.
+       -- In "container/bridge" and "host" networking modes we need to use the
+       -- host port for routing (available via task's ports array)
+       if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
+         port = app["container"]["portMappings"][portIdx]["containerPort"]
+       else
+         port = task["ports"][portIdx]
        end
 
-       if not ports then
-          ngx.log(ngx.NOTICE, "Cannot find ports for app '" .. appId .. "'")
-          goto continue
-       end
-
-       local port = ports[portIdx]
        if not port then
           ngx.log(ngx.NOTICE, "Cannot find port at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
           goto continue
        end
 
+       -- Details on how Admin Router interprets DCOS_SERVICE_REWRITE_REQUEST_URLS label:
+       -- https://github.com/dcos/dcos/blob/master/packages/adminrouter/extra/src/README.md#disabling-url-path-rewriting-for-selected-applications
        local do_rewrite_req_url = labels["DCOS_SERVICE_REWRITE_REQUEST_URLS"]
        if do_rewrite_req_url == false or do_rewrite_req_url == 'false' then
           ngx.log(ngx.INFO, "DCOS_SERVICE_REWRITE_REQUEST_URLS for app '" .. appId .. "' set to 'false'")
@@ -279,6 +279,8 @@ local function fetch_and_store_marathon_apps(auth_token)
           do_rewrite_req_url = true
        end
 
+       -- Details on how Admin Router interprets DCOS_SERVICE_REQUEST_BUFFERING label:
+       -- https://github.com/dcos/dcos/blob/master/packages/adminrouter/extra/src/README.md#disabling-request-buffering-for-selected-applications
        local do_request_buffering = labels["DCOS_SERVICE_REQUEST_BUFFERING"]
        if do_request_buffering == false or do_request_buffering == 'false' then
           ngx.log(ngx.INFO, "DCOS_SERVICE_REQUEST_BUFFERING for app '" .. appId .. "' set to 'false'")
@@ -297,7 +299,7 @@ local function fetch_and_store_marathon_apps(auth_token)
          url=url,
          do_rewrite_req_url=do_rewrite_req_url,
          do_request_buffering=do_request_buffering,
-         }
+       }
 
        ::continue::
     end

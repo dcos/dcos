@@ -106,6 +106,7 @@ package:
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
       DCOS_NET_IPV6={{ enable_ipv6 }}
+      DCOS_NET_CLUSTER_IDENTITY={{ dcos_net_cluster_identity }}
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
@@ -163,7 +164,8 @@ package:
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
             {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
             {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},
-            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}}
+            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}},
+            {ipset_enabled, {{ dcos_l4lb_enable_ipset }}}
           ]
         },
         {dcos_overlay,
@@ -192,7 +194,7 @@ package:
     content: |
       {
         "replicated_log_dir":"/var/lib/dcos/mesos/master/",
-        "network": {{ dcos_overlay_network }}
+        "network": {{ dcos_overlay_network_json }}
        }
   - path: /etc/dcos/network/cni/ucr-default-bridge.conf
     content: |
@@ -408,6 +410,12 @@ package:
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"
+                  }, {
+                    "key": "fluentbit_ip",
+                    "value": "127.0.0.1"
+                  }, {
+                    "key": "fluentbit_port",
+                    "value": "61092"
                   }
                 ]
               }
@@ -465,6 +473,790 @@ package:
         },
         "excluded_images": []
       }
+  - path: /etc/dcos/mesos/seccomp/default.json
+    content: |
+      {
+        "defaultAction": "SCMP_ACT_ERRNO",
+        "archMap": [
+          {
+            "architecture": "SCMP_ARCH_X86_64",
+            "subArchitectures": [
+              "SCMP_ARCH_X86",
+              "SCMP_ARCH_X32"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_AARCH64",
+            "subArchitectures": [
+              "SCMP_ARCH_ARM"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_MIPS64",
+            "subArchitectures": [
+              "SCMP_ARCH_MIPS",
+              "SCMP_ARCH_MIPS64N32"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_MIPS64N32",
+            "subArchitectures": [
+              "SCMP_ARCH_MIPS",
+              "SCMP_ARCH_MIPS64"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_MIPSEL64",
+            "subArchitectures": [
+              "SCMP_ARCH_MIPSEL",
+              "SCMP_ARCH_MIPSEL64N32"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_MIPSEL64N32",
+            "subArchitectures": [
+              "SCMP_ARCH_MIPSEL",
+              "SCMP_ARCH_MIPSEL64"
+            ]
+          },
+          {
+            "architecture": "SCMP_ARCH_S390X",
+            "subArchitectures": [
+              "SCMP_ARCH_S390"
+            ]
+          }
+        ],
+        "syscalls": [
+          {
+            "names": [
+              "accept",
+              "accept4",
+              "access",
+              "adjtimex",
+              "alarm",
+              "bind",
+              "brk",
+              "capget",
+              "capset",
+              "chdir",
+              "chmod",
+              "chown",
+              "chown32",
+              "clock_getres",
+              "clock_gettime",
+              "clock_nanosleep",
+              "close",
+              "connect",
+              "copy_file_range",
+              "creat",
+              "dup",
+              "dup2",
+              "dup3",
+              "epoll_create",
+              "epoll_create1",
+              "epoll_ctl",
+              "epoll_ctl_old",
+              "epoll_pwait",
+              "epoll_wait",
+              "epoll_wait_old",
+              "eventfd",
+              "eventfd2",
+              "execve",
+              "execveat",
+              "exit",
+              "exit_group",
+              "faccessat",
+              "fadvise64",
+              "fadvise64_64",
+              "fallocate",
+              "fanotify_mark",
+              "fchdir",
+              "fchmod",
+              "fchmodat",
+              "fchown",
+              "fchown32",
+              "fchownat",
+              "fcntl",
+              "fcntl64",
+              "fdatasync",
+              "fgetxattr",
+              "flistxattr",
+              "flock",
+              "fork",
+              "fremovexattr",
+              "fsetxattr",
+              "fstat",
+              "fstat64",
+              "fstatat64",
+              "fstatfs",
+              "fstatfs64",
+              "fsync",
+              "ftruncate",
+              "ftruncate64",
+              "futex",
+              "futimesat",
+              "getcpu",
+              "getcwd",
+              "getdents",
+              "getdents64",
+              "getegid",
+              "getegid32",
+              "geteuid",
+              "geteuid32",
+              "getgid",
+              "getgid32",
+              "getgroups",
+              "getgroups32",
+              "getitimer",
+              "getpeername",
+              "getpgid",
+              "getpgrp",
+              "getpid",
+              "getppid",
+              "getpriority",
+              "getrandom",
+              "getresgid",
+              "getresgid32",
+              "getresuid",
+              "getresuid32",
+              "getrlimit",
+              "get_robust_list",
+              "getrusage",
+              "getsid",
+              "getsockname",
+              "getsockopt",
+              "get_thread_area",
+              "gettid",
+              "gettimeofday",
+              "getuid",
+              "getuid32",
+              "getxattr",
+              "inotify_add_watch",
+              "inotify_init",
+              "inotify_init1",
+              "inotify_rm_watch",
+              "io_cancel",
+              "ioctl",
+              "io_destroy",
+              "io_getevents",
+              "ioprio_get",
+              "ioprio_set",
+              "io_setup",
+              "io_submit",
+              "ipc",
+              "kill",
+              "lchown",
+              "lchown32",
+              "lgetxattr",
+              "link",
+              "linkat",
+              "listen",
+              "listxattr",
+              "llistxattr",
+              "_llseek",
+              "lremovexattr",
+              "lseek",
+              "lsetxattr",
+              "lstat",
+              "lstat64",
+              "madvise",
+              "memfd_create",
+              "mincore",
+              "mkdir",
+              "mkdirat",
+              "mknod",
+              "mknodat",
+              "mlock",
+              "mlock2",
+              "mlockall",
+              "mmap",
+              "mmap2",
+              "mprotect",
+              "mq_getsetattr",
+              "mq_notify",
+              "mq_open",
+              "mq_timedreceive",
+              "mq_timedsend",
+              "mq_unlink",
+              "mremap",
+              "msgctl",
+              "msgget",
+              "msgrcv",
+              "msgsnd",
+              "msync",
+              "munlock",
+              "munlockall",
+              "munmap",
+              "nanosleep",
+              "newfstatat",
+              "_newselect",
+              "open",
+              "openat",
+              "pause",
+              "pipe",
+              "pipe2",
+              "poll",
+              "ppoll",
+              "prctl",
+              "pread64",
+              "preadv",
+              "preadv2",
+              "prlimit64",
+              "pselect6",
+              "pwrite64",
+              "pwritev",
+              "pwritev2",
+              "read",
+              "readahead",
+              "readlink",
+              "readlinkat",
+              "readv",
+              "recv",
+              "recvfrom",
+              "recvmmsg",
+              "recvmsg",
+              "remap_file_pages",
+              "removexattr",
+              "rename",
+              "renameat",
+              "renameat2",
+              "restart_syscall",
+              "rmdir",
+              "rt_sigaction",
+              "rt_sigpending",
+              "rt_sigprocmask",
+              "rt_sigqueueinfo",
+              "rt_sigreturn",
+              "rt_sigsuspend",
+              "rt_sigtimedwait",
+              "rt_tgsigqueueinfo",
+              "sched_getaffinity",
+              "sched_getattr",
+              "sched_getparam",
+              "sched_get_priority_max",
+              "sched_get_priority_min",
+              "sched_getscheduler",
+              "sched_rr_get_interval",
+              "sched_setaffinity",
+              "sched_setattr",
+              "sched_setparam",
+              "sched_setscheduler",
+              "sched_yield",
+              "seccomp",
+              "select",
+              "semctl",
+              "semget",
+              "semop",
+              "semtimedop",
+              "send",
+              "sendfile",
+              "sendfile64",
+              "sendmmsg",
+              "sendmsg",
+              "sendto",
+              "setfsgid",
+              "setfsgid32",
+              "setfsuid",
+              "setfsuid32",
+              "setgid",
+              "setgid32",
+              "setgroups",
+              "setgroups32",
+              "setitimer",
+              "setpgid",
+              "setpriority",
+              "setregid",
+              "setregid32",
+              "setresgid",
+              "setresgid32",
+              "setresuid",
+              "setresuid32",
+              "setreuid",
+              "setreuid32",
+              "setrlimit",
+              "set_robust_list",
+              "setsid",
+              "setsockopt",
+              "set_thread_area",
+              "set_tid_address",
+              "setuid",
+              "setuid32",
+              "setxattr",
+              "shmat",
+              "shmctl",
+              "shmdt",
+              "shmget",
+              "shutdown",
+              "sigaltstack",
+              "signalfd",
+              "signalfd4",
+              "sigreturn",
+              "socket",
+              "socketcall",
+              "socketpair",
+              "splice",
+              "stat",
+              "stat64",
+              "statfs",
+              "statfs64",
+              "statx",
+              "symlink",
+              "symlinkat",
+              "sync",
+              "sync_file_range",
+              "syncfs",
+              "sysinfo",
+              "tee",
+              "tgkill",
+              "time",
+              "timer_create",
+              "timer_delete",
+              "timerfd_create",
+              "timerfd_gettime",
+              "timerfd_settime",
+              "timer_getoverrun",
+              "timer_gettime",
+              "timer_settime",
+              "times",
+              "tkill",
+              "truncate",
+              "truncate64",
+              "ugetrlimit",
+              "umask",
+              "uname",
+              "unlink",
+              "unlinkat",
+              "utime",
+              "utimensat",
+              "utimes",
+              "vfork",
+              "vmsplice",
+              "wait4",
+              "waitid",
+              "waitpid",
+              "write",
+              "writev"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "personality"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 0,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "personality"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 8,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "personality"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 131072,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "personality"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 131080,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "personality"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 4294967295,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {}
+          },
+          {
+            "names": [
+              "sync_file_range2"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "arches": [
+                "ppc64le"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "arm_fadvise64_64",
+              "arm_sync_file_range",
+              "sync_file_range2",
+              "breakpoint",
+              "cacheflush",
+              "set_tls"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "arches": [
+                "arm",
+                "arm64"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "arch_prctl"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "arches": [
+                "amd64",
+                "x32"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "modify_ldt"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "arches": [
+                "amd64",
+                "x32",
+                "x86"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "s390_pci_mmio_read",
+              "s390_pci_mmio_write",
+              "s390_runtime_instr"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "arches": [
+                "s390",
+                "s390x"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "open_by_handle_at"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_DAC_READ_SEARCH"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "bpf",
+              "clone",
+              "fanotify_init",
+              "lookup_dcookie",
+              "mount",
+              "name_to_handle_at",
+              "perf_event_open",
+              "quotactl",
+              "setdomainname",
+              "sethostname",
+              "setns",
+              "syslog",
+              "umount",
+              "umount2",
+              "unshare"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_ADMIN"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "clone"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 0,
+                "value": 2080505856,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_MASKED_EQ"
+              }
+            ],
+            "comment": "",
+            "includes": {},
+            "excludes": {
+              "caps": [
+                "CAP_SYS_ADMIN"
+              ],
+              "arches": [
+                "s390",
+                "s390x"
+              ]
+            }
+          },
+          {
+            "names": [
+              "clone"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [
+              {
+                "index": 1,
+                "value": 2080505856,
+                "valueTwo": 0,
+                "op": "SCMP_CMP_MASKED_EQ"
+              }
+            ],
+            "comment": "s390 parameter ordering for clone is different",
+            "includes": {
+              "arches": [
+                "s390",
+                "s390x"
+              ]
+            },
+            "excludes": {
+              "caps": [
+                "CAP_SYS_ADMIN"
+              ]
+            }
+          },
+          {
+            "names": [
+              "reboot"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_BOOT"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "chroot",
+              "pivot_root"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_CHROOT"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "delete_module",
+              "init_module",
+              "finit_module",
+              "query_module"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_MODULE"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "acct"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_PACCT"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "kcmp",
+              "process_vm_readv",
+              "process_vm_writev",
+              "ptrace"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_PTRACE"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "iopl",
+              "ioperm"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_RAWIO"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "settimeofday",
+              "stime",
+              "clock_settime"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_TIME"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "vhangup"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_TTY_CONFIG"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "get_mempolicy",
+              "mbind",
+              "set_mempolicy"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYS_NICE"
+              ]
+            },
+            "excludes": {}
+          },
+          {
+            "names": [
+              "syslog"
+            ],
+            "action": "SCMP_ACT_ALLOW",
+            "args": [],
+            "comment": "",
+            "includes": {
+              "caps": [
+                "CAP_SYSLOG"
+              ]
+            },
+            "excludes": {}
+          }
+        ]
+      }
   - path: /etc/logrotate_master.config
     content: |
       compress
@@ -504,9 +1296,18 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_master_log_file }}
       MESOS_FAIR_SHARING_EXCLUDED_RESOURCE_NAMES={{ fair_sharing_excluded_resource_names }}
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
+      MESOS_FRAMEWORK_SORTER=random
+      # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
+      # from the IP address (which is currently determined by an IP detect command set
+      # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
+      # that the hostname is set to the IP address as reported by the IP detect script.
+      # There are environments where hostname lookup and DNS are unavailable (Azure,
+      # on-prem environments, etc.), which apparently used to cause problems with a
+      # number of our frameworks in the past, since they often depend on the Mesos
+      # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32|disk:32
+      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_OFFER_TIMEOUT=2mins
@@ -514,6 +1315,7 @@ package:
       MESOS_REGISTRY_STORE_TIMEOUT=60secs
       MESOS_REGISTRY_FETCH_TIMEOUT=60secs
       MESOS_REGISTRY_STRICT=false
+      MESOS_ROLE_SORTER=random
       MESOS_SLAVE_REMOVAL_RATE_LIMIT=100/1mins
       MESOS_WEIGHTS={{ weights }}
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
@@ -537,7 +1339,10 @@ package:
       GLOG_drop_log_memory=false
       MESOS_CGROUPS_ENABLE_CFS=true
       MESOS_CGROUPS_LIMIT_SWAP=false
-      MESOS_CONTAINERIZERS=docker,mesos
+      # The order of containerizers affects the order of certain operations
+      # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
+      # making any changes to this variable.
+      MESOS_CONTAINERIZERS=mesos,docker
       MESOS_CONTAINER_LOGGER=com_mesosphere_mesos_JournaldLogger
       MESOS_DEFAULT_CONTAINER_DNS=file:///opt/mesosphere/etc/mesos-slave-dns.json
       MESOS_DISALLOW_SHARING_AGENT_PID_NAMESPACE=true
@@ -551,6 +1356,14 @@ package:
       MESOS_EXTERNAL_LOG_FILE={{ mesos_agent_log_file }}
       MESOS_GC_DELAY={{ gc_delay }}
       MESOS_GC_NON_EXECUTOR_CONTAINER_SANDBOXES=true
+      # Setting `HOSTNAME_LOOKUP` to `false` will prevent Mesos to deduce the hostname
+      # from the IP address (which is currently determined by an IP detect command set
+      # via a different flag). Provided `HOSTNAME` is not set explicitly, this ensures
+      # that the hostname is set to the IP address as reported by the IP detect script.
+      # There are environments where hostname lookup and DNS are unavailable (Azure,
+      # on-prem environments, etc.), which apparently used to cause problems with a
+      # number of our frameworks in the past, since they often depend on the Mesos
+      # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       MESOS_IMAGE_PROVIDERS=docker
@@ -559,10 +1372,17 @@ package:
       MESOS_MASTER=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
+      MESOS_NETWORK_CNI_ROOT_DIR_PERSIST={{ mesos_cni_root_dir_persist }}
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
+      MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
+{% switch has_mesos_seccomp_profile_name %}
+{% case "true" %}
+      MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
+{% case "false" %}
+{% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_WORK_DIR={{ mesos_agent_work_dir }}
 {% switch use_mesos_hooks %}
@@ -828,7 +1648,7 @@ package:
                   "Role": ["master"]
               },
               {
-                  "Port": 8080,
+                  "Port": {{ marathon_port }},
                   "Uri": "/v2/pods",
                   "Role": ["master"]
               },
@@ -896,6 +1716,11 @@ package:
                   "Port": 5051,
                   "Uri": "/containers",
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Port": 9000,
+                  "Uri": "/v1/jobs",
+                  "Role": ["master"]
               }
           ],
           "LocalFiles": [
@@ -952,7 +1777,23 @@ package:
               },
               {
                   "Location": "{{ mesos_master_log_file }}",
-                  "Role": ["master"]
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.1",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.2.gz",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "{{ mesos_master_log_file }}.3.gz",
+                  "Role": ["master"],
+                  "Optional": true
               }
           ],
           "LocalCommands": [
@@ -966,13 +1807,25 @@ package:
                   "Command": ["ip", "route"]
               },
               {
-                  "Command": ["ifconfig", "-a"]
-              },
-              {
                   "Command": ["ps", "aux", "ww", "Z"]
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/records"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/default"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/dns"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/mesos_listener"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/lashup"]
               },
               {
                   "Command": ["timedatectl"]
@@ -990,12 +1843,34 @@ package:
                   "Command": ["iptables-save"]
               },
               {
+                  "Command": ["ip6tables-save"]
+              },
+              {
+                  "Command": ["ipset", "list"]
+              },
+              {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
               },
               {
-                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Command": ["docker", "--version"],
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Command": ["docker", "ps"],
+                  "Role": ["agent", "agent_public"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/detect_ip"],
+                  "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["sysctl", "-a"],
+                  "Role": ["master", "agent", "agent_public"]
               }
           ]
         }
@@ -1101,7 +1976,7 @@ package:
       "oauth":{"enabled":false},
 {% endswitch %}
 {% endswitch %}
-      "intercom":{"enabled":{{ intercom_enabled }}, "appId": "wn4z9z0y"},"tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
+      "intercom":{"enabled":{{ intercom_enabled }}, "appId": "wn4z9z0y"},"tracking":{"enabled":{{ telemetry_enabled }},"metadata":{{ ui_telemetry_metadata }}}, "ui-update":{"enabled": {{ ui_update_enabled }}},"mesos":{"logging-strategy":"{{ mesos_container_log_sink }}"}}}}
   - path: /etc_master/marathon
     content: |
       # This file will be overwritten on DC/OS upgrade.
@@ -1114,6 +1989,12 @@ package:
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
 {% case "false" %}
 {% endswitch %}
+{% switch has_marathon_gpu_scheduling_behavior %}
+{% case "true" %}
+      MARATHON_GPU_SCHEDULING_BEHAVIOR={{ marathon_gpu_scheduling_behavior }}
+{% case "false" %}
+{% endswitch %}
+
   - path: /etc/proxy.env
 {% switch use_proxy %}
 {% case "true" %}
@@ -1133,6 +2014,14 @@ package:
       LIBPROCESS_PORT=15201
       METRONOME_SCHEDULER_TASK_LAUNCH_CONFIRM_TIMEOUT=600000
       METRONOME_SCHEDULER_TASK_LAUNCH_TIMEOUT=600000
+      METRONOME_STATSD_HOST="localhost"
+      METRONOME_STATSD_PORT=61825
+      METRONOME_STATSD_ENABLED=true
+{% switch has_metronome_gpu_scheduling_behavior %}
+{% case "true" %}
+      METRONOME_GPU_SCHEDULING_BEHAVIOR={{ metronome_gpu_scheduling_behavior }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/extra_master_addresses
     content: |
 {% switch master_discovery %}
@@ -1192,6 +2081,10 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
+  - path: /etc_master/adminrouter-ui-security.conf
+    content: |
+      # Browser security settings for the DC/OS UI
+      add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -1275,6 +2168,7 @@ package:
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
       TELEGRAF_CONFIG_DIR=/opt/mesosphere/etc/telegraf/telegraf.d/
+      TELEGRAF_USER_CONFIG_DIR=/var/lib/dcos/telegraf/telegraf.d/
       TELEGRAF_CONTAINERS_DIR=/run/dcos/telegraf/dcos_statsd/containers
       LEGACY_CONTAINERS_DIR=/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers
   - path: /etc/telegraf/telegraf.conf
@@ -1284,6 +2178,12 @@ package:
         # Tags to be applied to all metrics.
         dcos_cluster_name="{{ cluster_name }}"
         dcos_cluster_id="$DCOS_CLUSTER_ID"
+{% switch fault_domain_enabled %}
+{% case "true" %}
+        fault_domain_zone="$FAULT_DOMAIN_ZONE"
+        fault_domain_region="$FAULT_DOMAIN_REGION"
+{% case "false" %}
+{% endswitch %}
       [agent]
         ## Default data collection interval for all inputs
         interval = "10s"
@@ -1298,7 +2198,7 @@ package:
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 10000
+        metric_buffer_limit = 90000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
@@ -1353,15 +2253,80 @@ package:
       [[inputs.net]]
       # Get the number of processes and group them by status
       [[inputs.processes]]
+      # Gather resource usage of processes
+      [[inputs.procstat]]
+        pattern = "."
+        pid_finder = "pgrep"
       # Read metrics about system load & uptime
       [[inputs.system]]
+      # Collect statistics about itself
+      [[inputs.internal]]
+        ## If true, collect telegraf memory stats.
+        collect_memstats = true
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
+        ## Expiration interval for each metric before it's evicted from cache.
+        expiration_interval = "60s"
+      # Read metrics from DC/OS Net Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/default"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint dns registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/dns"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "dns_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint lashup registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/lashup"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "lashup_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint mesos_listener registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/mesos_listener"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "mesos_listener_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Transform Admin Router metrics from the Nginx VTS module
+      [[processors.nginx_vts_filter]]
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_requests_total"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_bytes_total"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
+        [[processors.nginx_vts_filter.convert]]
+          measurement = "nginx_vts_filter_request_duration_seconds"
+          key_value_delimiter = ":="
+          tag_delimiter = "_._._"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1382,7 +2347,11 @@ package:
           "evqueue",
           "registrar",
           "allocator",
-       ]
+        ]
+        ## The user agent to send with requests
+        user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1409,7 +2378,7 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
@@ -1418,32 +2387,6 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
-  - path: /etc_master/telegraf/telegraf.d/master.conf
-    content: |
-      # Additional Telegraf config for masters
-      # Telegraf plugin for gathering metrics from mesos
-      [[inputs.mesos]]
-        # The interval at which to collect metrics
-        interval = "60s"
-        # Timeout, in ms.
-        timeout = 30000
-        # A list of Mesos masters.
-        masters = ["http://$DCOS_NODE_PRIVATE_IP:5050"]
-        # Master metrics groups to be collected.
-        master_collections = [
-          "resources",
-          "master",
-          "agents",
-          "frameworks",
-          "framework_offers",
-          "tasks",
-          "messages",
-          "evqueue",
-          "registrar",
-          "allocator",
-        ]
-        ## The user agent to send with requests
-        user_agent = "Telegraf-mesos"
       # Reads 'mntr' health checks from one or many zookeeper servers
       [[inputs.zookeeper]]
         ## An array of addresses to gather stats about. Specify an ip or hostname
@@ -1488,9 +2431,44 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router"
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:1050/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
+      # Read exhibitor status metrics from HTTP endpoint
+      [[inputs.http]]
+        name_override = "exhibitor_status"
+        urls = ["http://localhost:8181/exhibitor/v1/cluster/status"]
+        data_format = "json"
+        tag_keys = ["hostname"]
+        json_string_fields = ["isLeader"]
+        tagexclude = ["url"]
+        [inputs.http.tags]
+          dcos-component-name = "Exhibitor"
+      [[processors.converter]]
+        order = 1
+        namepass = ["exhibitor_status"]
+        [processors.converter.fields]
+          integer = ["isLeader"]
+      [[processors.rename]]
+        order = 2
+        namepass = ["exhibitor_status"]
+        [[processors.rename.replace]]
+          tag = "hostname"
+          dest = "exhibitor_address"
+        [[processors.rename.replace]]
+          field = "isLeader"
+          dest = "isleader"
       # Expose metrics via the dcos-metrics v0 API.
       [[outputs.dcos_metrics]]
         dcos_node_role = "master"
@@ -1515,6 +2493,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
+        ## The interval at which to collect metrics
+        interval = "30s"
         ## The address on which the command API should listen
         listen = "/run/dcos/telegraf/dcos_statsd.sock"
         ## The directory in which container information is stored
@@ -1523,6 +2503,8 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1541,6 +2523,8 @@ package:
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1567,13 +2551,19 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
         percentile_limit = 1000
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        mesos_timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-prometheus"
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:61001/nginx/metrics"]
         ## Specify timeout duration for slower prometheus clients (default is 3s)
@@ -1584,9 +2574,20 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["unix:///var/run/dcos/dcos-diagnostics.sock?path=/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
       # Plugin for adding metadata to dcos-specific metrics
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
@@ -1635,6 +2636,8 @@ package:
         timeout = "15s"
         ## The hostname or IP address on which to host statsd servers
         statsd_host = "198.51.100.1"
+{% switch enable_mesos_input_plugin %}
+{% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
       [[inputs.mesos]]
         # The interval at which to collect metrics
@@ -1653,6 +2656,8 @@ package:
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
+{% case "false" %}
+{% endswitch %}
       # Statsd UDP/TCP Server
       [[inputs.statsd]]
         ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
@@ -1679,13 +2684,20 @@ package:
         parse_data_dog_tags = false
         ## Number of UDP messages allowed to queue up, once filled,
         ## the statsd server will start dropping packets
-        allowed_pending_messages = 10000
+        allowed_pending_messages = 100000
         ## Number of timing/histogram values to track per-measurement in the
         ## calculation of percentiles. Raising this limit increases the accuracy
         ## of percentiles but also increases the memory usage and cpu time.
         percentile_limit = 1000
       # Read metrics from Admin Router Nginx Prometheus endpoint.
       [[inputs.prometheus]]
+        ## The URL of the local mesos agent
+        mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
+        ## The period after which requests to mesos agent should time out
+        mesos_timeout = "10s"
+        ## The user agent to send with requests
+        user_agent = "Telegraf-prometheus"
+
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:61001/nginx/metrics"]
         ## Specify timeout duration for slower prometheus clients (default is 3s)
@@ -1696,10 +2708,21 @@ package:
         # tls_key = /path/to/keyfile
         ## Use TLS but skip chain & host verification
         # insecure_skip_verify = true
+        ## Drop unused Admin Router metrics from the Nginx VTS module
+        namedrop = ["nginx_vts_filter_cache_*", "nginx_vts_server_*", "nginx_vts_upstream_*", "nginx_vts_*_request_seconds*"]
+        [inputs.prometheus.tagdrop]
+          direction = ["1xx", "2xx", "3xx", "4xx", "5xx"]
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "Admin Router Agent"
       # Plugin for adding metadata to dcos-specific metrics
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["unix:///var/run/dcos/dcos-diagnostics.sock?path=/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Diagnostics"
       [[processors.dcos_metadata]]
         ## The URL of the local mesos agent
         mesos_agent_url = "http://$DCOS_NODE_PRIVATE_IP:5051"
@@ -1724,3 +2747,83 @@ package:
         dcos_node_private_ip = "$DCOS_NODE_PRIVATE_IP"
         # Global DC/OS Cluster ID.
         dcos_cluster_id = "$DCOS_CLUSTER_ID"
+  - path: /etc/dcos-ui-update-service.env
+    content: |
+      DCOS_UI_UPDATE_LISTEN_ADDR=/run/dcos/dcos-ui-update-service.sock
+      DCOS_UI_UPDATE_DEFAULT_UI_PATH=/opt/mesosphere/active/dcos-ui/usr
+      DCOS_UI_UPDATE_STATE_PATH=/var/lib/dcos/dcos-ui-update-service
+      DCOS_UI_UPDATE_VERSIONS_ROOT=/var/lib/dcos/dcos-ui-update-service/versions
+      DCOS_UI_UPDATE_DIST_PATH=/var/lib/dcos/dcos-ui-update-service/dist
+      DCOS_UI_UPDATE_DIST_LINK=/var/lib/dcos/dcos-ui-update-service/dist/ui
+      DCOS_UI_UPDATE_STAGE_LINK=/var/lib/dcos/dcos-ui-update-service/dist/new-ui
+  - path: /etc_master/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/master.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-master
+  - path: /etc_slave/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
+  - path: /etc_slave_public/fluent-bit.env
+    content: |
+      FLUENT_BIT_CONFIG_FILE=/opt/mesosphere/etc/fluent-bit/agent.conf
+      FLUENT_BIT_SERVICE=dcos-fluent-bit-agent
+  - path: /etc/fluent-bit/common.conf
+    content: |
+      [SERVICE]
+          # Flush
+          # =====
+          # Set the flush interval in seconds.
+          Flush        5
+          # Daemon
+          # ======
+          # Instruct Fluent Bit to run in foreground or background mode.
+          Daemon       Off
+          # Log_Level
+          # =========
+          # Set the verbosity level of the service, values can be:
+          #
+          # - error
+          # - warning
+          # - info
+          # - debug
+          # - trace
+          #
+          # By default 'info' is set, that means it includes 'error' and 'warning'.
+          Log_Level    info
+          # HTTP Server
+          # ===========
+          # Enable/Disable the built-in HTTP Server for metrics
+          HTTP_Server  On
+          HTTP_Listen  127.0.0.1
+          HTTP_Port    62020
+      [INPUT]
+          Name systemd
+          Tag host.*
+          # if /var/log/journal is unavailable (or journald is set to volatile)
+          # /run/log/journal is used instead, and this unit will not load.
+          Path /var/log/journal
+          # Delete underscores at the start of field name. This is useful when logs
+          # are further forwarded into elasticsearch, where fields with leading
+          # underscore are reserved for internal use.
+          Strip_Underscores On
+          # Tail the journal (i.e., only send new logs). Without this option set
+          # fluent bit will attempt to send the entire contents of the journal
+          # on startup, which can cause performance issues.
+          Read_From_Tail    On
+      # Log forwarding is disabled by default.
+      [OUTPUT]
+          Name  null
+          Match *
+  - path: /etc/fluent-bit/master.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+  - path: /etc/fluent-bit/agent.conf
+    content: |
+      @INCLUDE /opt/mesosphere/etc/fluent-bit/common.conf
+      [INPUT]
+          Name tcp
+          Listen 127.0.0.1
+          Port 61092
+          Chunk_Size 32
+          Buffer_Size 64

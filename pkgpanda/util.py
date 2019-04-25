@@ -9,22 +9,24 @@ import shutil
 import socketserver
 import stat
 import subprocess
+import tarfile
 import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
-from shutil import rmtree, which
+from shutil import rmtree
 from subprocess import check_call
 from typing import List
 
 import requests
+import retrying
 import teamcity
 import yaml
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
-from pkgpanda.exceptions import FetchError, ValidationError
+from pkgpanda.exceptions import FetchError, IncompleteDownloadError, ValidationError
 
 is_windows = platform.system() == "Windows"
 
@@ -149,6 +151,33 @@ def get_requests_retry_session(max_retries=4, backoff_factor=1, status_forcelist
     return session
 
 
+def _is_incomplete_download_error(exception):
+    return isinstance(exception, IncompleteDownloadError)
+
+
+@retrying.retry(
+    stop_max_attempt_number=3,
+    wait_random_min=1000,
+    wait_random_max=2000,
+    retry_on_exception=_is_incomplete_download_error)
+def _download_remote_file(out_filename, url):
+    with open(out_filename, "wb") as f:
+        r = get_requests_retry_session().get(url, stream=True)
+        r.raise_for_status()
+
+        total_bytes_read = 0
+        for chunk in r.iter_content(chunk_size=4096):
+            f.write(chunk)
+            total_bytes_read += len(chunk)
+
+        if 'content-length' in r.headers:
+            content_length = int(r.headers['content-length'])
+            if total_bytes_read != content_length:
+                raise IncompleteDownloadError(url, total_bytes_read, content_length)
+
+        return r
+
+
 def download(out_filename, url, work_dir, rm_on_error=True):
     assert os.path.isabs(out_filename)
     assert os.path.isabs(work_dir)
@@ -166,14 +195,7 @@ def download(out_filename, url, work_dir, rm_on_error=True):
                 src_filename = work_dir + '/' + src_filename
             shutil.copyfile(src_filename, out_filename)
         else:
-            # Download the file.
-            with open(out_filename, "w+b") as f:
-                r = get_requests_retry_session().get(url, stream=True)
-                if r.status_code == 301:
-                    raise Exception("got a 301")
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=4096):
-                    f.write(chunk)
+            _download_remote_file(out_filename, url)
     except Exception as fetch_exception:
         if rm_on_error:
             rm_passed = False
@@ -197,7 +219,7 @@ def download_atomic(out_filename, url, work_dir):
     tmp_filename = out_filename + '.tmp'
     try:
         download(tmp_filename, url, work_dir)
-        os.rename(tmp_filename, out_filename)
+        shutil.move(tmp_filename, out_filename)
     except FetchError:
         try:
             os.remove(tmp_filename)
@@ -218,6 +240,9 @@ def extract_tarball(path, target):
         assert os.path.exists(path), "Path doesn't exist but should: {}".format(path)
         make_directory(target)
 
+        # TODO(tweidner): https://jira.mesosphere.com/browse/DCOS-48220
+        # Make this cross-platform via Python's tarfile module once
+        # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
             check_call(['bsdtar', '-xf', path, '-C', target])
         else:
@@ -353,20 +378,19 @@ def expect_fs(folder, contents):
         raise ValueError("Invalid type {0} passed to expect_fs".format(type(contents)))
 
 
+def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
+    tar_info.uid = 0
+    tar_info.gid = 0
+    return tar_info
+
+
 def make_tar(result_filename, change_folder):
-    if is_windows:
-        tar_cmd = ["bsdtar"]
-    else:
-        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
-    if which("pxz"):
-        tar_cmd += ["--use-compress-program=pxz", "-cf"]
-    else:
-        if is_windows:
-            tar_cmd += ["-cjf"]
-        else:
-            tar_cmd += ["-cJf"]
-    tar_cmd += [result_filename, "-C", change_folder, "."]
-    check_call(tar_cmd)
+    # In the past we used bzip2 on Windows here. At the time of writing there is no
+    # test which fails on Windows. If this fails due to lzma not being
+    # available check liblzma linking on the DC/OS python package or consider
+    # using bzip2 instead.
+    with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
+        tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):

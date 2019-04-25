@@ -1,0 +1,18 @@
+[Unit]
+Description=Fluent Bit: Collects and forwards logs
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=5
+
+User=dcos_fluent_bit
+PermissionsStartOnly=True
+
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
+
+LimitNOFILE=16384
+
+ExecStartPre=/opt/mesosphere/bin/bootstrap ${FLUENT_BIT_SERVICE}
+ExecStart=/opt/mesosphere/bin/fluent-bit --config ${FLUENT_BIT_CONFIG_FILE}

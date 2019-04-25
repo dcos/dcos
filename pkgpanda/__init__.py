@@ -9,20 +9,11 @@ Each package contains a pkginfo.json. That contains a list of requires as well a
 environment variables from the package.
 
 """
-try:
-    import grp
-except ImportError:
-    pass
 import json
 import os
 import os.path
-try:
-    import pwd
-except ImportError:
-    pass
 import re
 import shutil
-import sys
 import tempfile
 from collections import Iterable
 from itertools import chain
@@ -38,8 +29,8 @@ from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory, write_json, write_string)
 
 if not is_windows:
-    assert 'grp' in sys.modules
-    assert 'pwd' in sys.modules
+    import grp
+    import pwd
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -149,7 +140,7 @@ class Systemd:
 
         for unit_name in self.unit_names(self.__unit_directory):
             systemd_file_path = os.path.join(self.__base_systemd, unit_name)
-            os.rename(systemd_file_path + self.new_unit_suffix, systemd_file_path)
+            shutil.move(systemd_file_path + self.new_unit_suffix, systemd_file_path)
 
     @staticmethod
     def unit_names(unit_dir):
@@ -488,7 +479,7 @@ class Repository:
         remove_directory(tmp_path)
 
         fetcher(id, tmp_path)
-        os.rename(tmp_path, pkg_path)
+        shutil.move(tmp_path, pkg_path)
         return True
 
     def remove(self, id):
@@ -636,6 +627,10 @@ class UserManagement:
             UserManagement.validate_group(groupname)
             add_user_cmd += [
                 '-g', groupname
+            ]
+        else:
+            add_user_cmd += [
+                '--user-group'
             ]
 
         add_user_cmd += [username]
@@ -983,7 +978,7 @@ class Install:
             for active in active_names:
                 old_path = active + ".old"
                 if os.path.exists(active):
-                    os.rename(active, old_path)
+                    shutil.move(active, old_path)
 
         record_state({"stage": "move_new"})
 
@@ -992,7 +987,7 @@ class Install:
         # TODO(cmaloney): Alert for any failures here.
         for active in active_names:
             new_path = active + extension
-            os.rename(new_path, active)
+            shutil.move(new_path, active)
 
         if not self.__skip_systemd_dirs:
             self.systemd.activate_new_unit_files()

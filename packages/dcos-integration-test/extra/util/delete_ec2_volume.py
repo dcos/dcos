@@ -88,7 +88,7 @@ def delete_ec2_volume(name, timeout=600):
         try:
             log.info("Issuing volume.delete()")
             volume.delete()  # Raises ClientError (VolumeInUse) if the volume is still attached.
-        except exceptions.ClientError as exc:
+        except exceptions.ClientError:
             log.exception("volume.delete() failed.")
             raise
 

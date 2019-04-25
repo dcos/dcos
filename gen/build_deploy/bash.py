@@ -226,6 +226,11 @@ function print_status() {
     fi
 }
 
+function print_warning() {
+    MESSAGE=${1:-}
+    echo -e "${RED}WARNING${NORMAL} $MESSAGE"
+}
+
 function check_command_exists() {
     COMMAND=$1
     DISPLAY_NAME=${2:-$COMMAND}
@@ -288,6 +293,16 @@ function check() {
     if [[ "$?" -eq 0 && "$#" -ge 3 && $DISABLE_VERSION_CHECK -eq 0 ]]; then
         check_version $*
     fi
+}
+
+function check_docker_running() {
+    check_command_exists "docker" "docker"
+    echo -e -n "Checking if Docker is running: "
+    docker info >/dev/null 2>&1
+    RC=$?
+    print_status $RC
+    (( OVERALL_RC += $RC ))
+    return $RC
 }
 
 function check_service() {
@@ -412,6 +427,23 @@ function check_xfs_ftype() {
     return $RC
 }
 
+function warn_unloaded_dss_kernel_module() {
+    # Print a warning if $1, a kernel module that's required for DSS to
+    # function properly, is not loaded
+    MODULE="$1"
+
+    echo -e -n "Checking if kernel module $MODULE is loaded: "
+
+    lsmod | grep -q -E "^$MODULE"
+    RC=$?
+
+    if [ "$RC" -eq "0" ]; then
+      print_status $RC
+    else
+      print_warning "Kernel module $MODULE is not loaded. DC/OS Storage Service (DSS) depends on it."
+    fi
+}
+
 function check_all() {
     # Disable errexit because we want the preflight checks to run all the way
     # through and not bail in the middle, which will happen as it relies on
@@ -429,6 +461,8 @@ function check_all() {
     check_preexisting_dcos
     check_selinux
     check_sort_capability
+
+    check_docker_running
 
     local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
         BEGIN {
@@ -487,7 +521,6 @@ function check_all() {
     check unzip
     check ipset
     check systemd-notify
-    check ifconfig
 
     # $ systemctl --version ->
     # systemd nnn
@@ -525,6 +558,7 @@ function check_all() {
             "46839 metronome" \
             "61053 mesos-dns" \
             "61091 telegraf" \
+            "62020 fluent-bit" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -537,6 +571,7 @@ function check_all() {
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
             "61091 telegraf" \
+            "62020 fluent-bit" \
             "62080 dcos-net" \
             "62501 dcos-net"
         do
@@ -547,6 +582,9 @@ function check_all() {
 
     # Check we're not in docker on devicemapper loopback as storage driver.
     check_docker_device_mapper_loopback
+
+    warn_unloaded_dss_kernel_module "raid1"
+    warn_unloaded_dss_kernel_module "dm_raid"
 
     for role in "$ROLES"
     do
@@ -598,7 +636,6 @@ function main()
         exit 1
     fi
 
-    shift $(($OPTIND - 1))
     ROLES=$@
 
     if [[ $PREFLIGHT_ONLY -eq 1 ]] ; then
