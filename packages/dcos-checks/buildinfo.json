@@ -2,7 +2,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-checks.git",
-    "ref": "4ff0c2963b30384cfe59e923edbf86b07bd4ebe9",
+    "ref": "c0817038edd34d56c29f51fbab86617deb057322",
     "ref_origin": "master"
   }
 }

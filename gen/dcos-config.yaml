@@ -1501,6 +1501,7 @@ package:
           "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config-addition.json"
         ],
         "no-unix-socket": true,
+        "fetchers-count": 100,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
@@ -1811,7 +1812,8 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
-                  "Command": ["sestatus"]
+                  "Command": ["sestatus"],
+                  "Optional": true
               },
               {
                   "Command": ["iptables-save"]
@@ -1820,7 +1822,8 @@ package:
                   "Command": ["ip6tables-save"]
               },
               {
-                  "Command": ["ipset", "list"]
+                  "Command": ["ipset", "list"],
+                  "Optional": true
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
@@ -1828,7 +1831,11 @@ package:
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
-                  "Role": ["agent", "agent_public"]
+                  "Role": ["agent"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent_public"]
               },
               {
                   "Command": ["docker", "--version"],
@@ -2809,9 +2816,9 @@ package:
           # HTTP Server
           # ===========
           # Enable/Disable the built-in HTTP Server for metrics
-          HTTP_Server  Off
-          #HTTP_Listen  0.0.0.0
-          #HTTP_Port    62020
+          HTTP_Server  On
+          HTTP_Listen  127.0.0.1
+          HTTP_Port    62020
       [INPUT]
           Name systemd
           Tag host.*
