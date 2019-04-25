@@ -20,10 +20,6 @@ Format of the entries must be.
 
 ### Fixed and improved
 
-* Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
-
-* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
-
 ### Security updates
 
 
