@@ -152,6 +152,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
 
+* ipset protocol ignores a missing `match` flag on some kernel versions (DCOS-52780)
+
 ### Notable changes
 
 * Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
