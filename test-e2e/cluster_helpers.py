@@ -83,7 +83,7 @@ def _dump_node_journals(node: Node, node_dir: Path) -> None:
     LOGGER.info('Dumping journals from {node}'.format(node=node))
     node_dir.mkdir(parents=True)
     try:
-        _dump_stdout_to_file(node, ['journalctl'], node_dir / 'journal')
+        _dump_stdout_to_file(node, ['journalctl'], node_dir / _log_filename('journal'))
     except CalledProcessError as exc:
         # Continue dumping further journals even if an error occurs.
         LOGGER.warn('Unable to dump journalctl: {exc}'.format(exc=str(exc)))
@@ -95,7 +95,7 @@ def _dump_node_journals(node: Node, node_dir: Path) -> None:
                 _dump_stdout_to_file(
                     node=node,
                     cmd=['journalctl', '-u', unit],
-                    file_path=node_dir / name,
+                    file_path=node_dir / _log_filename(name),
                 )
             except CalledProcessError as exc:
                 # Continue dumping further journals even if an error occurs.
@@ -153,3 +153,10 @@ def _dcos_systemd_units(node: Node) -> List[str]:
     )
     systemd_units_string = result.stdout.strip().decode()
     return str(systemd_units_string).split(' ')
+
+
+def _log_filename(name: str) -> Path:
+    """
+    Returns a name of the file with `.log` extension.
+    """
+    return Path(name).with_suffix('.log')
