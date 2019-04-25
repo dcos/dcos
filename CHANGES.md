@@ -108,6 +108,8 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 ### Fixed and improved
 
+* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
+
 * `docker-gc` now removes unused volumes (DCOS_OSS-1502)
 
 * Backends for requests to `/service/<service-name>` may compress responses (DCOS_OSS-4906)
