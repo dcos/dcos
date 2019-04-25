@@ -53,7 +53,10 @@ Format of the entries must be.
 * [Marathon] Response asynchronously for all endpoints (MARATHON-8562)
 
 * [Marathon] Force expunge and Decommission all instances on service removal (DCOS-49521)
+
 * Conflict between VIP port and port mapping (DCOS_OSS-4970)
+
+* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
 
 ### Security updates
 
