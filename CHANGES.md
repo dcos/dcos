@@ -20,6 +20,12 @@ Format of the entries must be.
 
 ### Fixed and improved
 
+* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
+
+* Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
+
+* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
+
 ### Security updates
 
 
@@ -104,8 +110,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 
 ### Fixed and improved
-
-* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
 
 * `docker-gc` now removes unused volumes (DCOS_OSS-1502)
 
