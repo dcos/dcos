@@ -171,6 +171,11 @@
       "kind": "url_extract",
       "url": "https://files.pythonhosted.org/packages/67/b2/0f71ca90b0ade7fad27e3d20327c996c6252a2ffe88f50a95bba7434eda9/wrapt-1.11.1.tar.gz",
       "sha1": "e40a3b628c9b5503d47160d08d1bf93a2c7471fe"
+    },
+    "protobuf": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/5a/aa/a858df367b464f5e9452e1c538aa47754d467023850c00b000287750fa77/protobuf-3.7.1-cp36-cp36m-manylinux1_x86_64.whl",
+      "sha1": "0186b9e33a62b7f85747e8349e4bec0a101aca64"
     }
   }
 }
