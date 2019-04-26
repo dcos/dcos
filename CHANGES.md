@@ -58,6 +58,8 @@ Format of the entries must be.
 
 * CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
 
+* ipset protocol ignores a missing `match` flag on some kernel versions (DCOS-52780)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
