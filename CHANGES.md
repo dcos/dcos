@@ -67,11 +67,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Metronome 0.4.5](https://github.com/dcos/metronome/tree/8d6c6b9cd7ab6f88d70cfff5f4d10f29b81d0a6b)
 
-* Updated to [Mesos 1.5.x](https://github.com/apache/mesos/tree/5f6225bd6e039c633b7758f02d2b5fbabc8e0169)
+* Updated to [Mesos 1.5.3-dev](https://github.com/apache/mesos/blob/5f6225bd6e039c633b7758f02d2b5fbabc8e0169/CHANGELOG)
 
-* Updated to [DC/OS UI 1.11+v1.26.0](https://github.com/dcos/dcos-ui/blob/1.11+v1.26.0/CHANGELOG.md)
+* Updated to [DC/OS UI 1.11+v1.26.3](https://github.com/dcos/dcos-ui/releases/tag/1.11+v1.26.3)
 
-* DC/OS Diagnostics is now run as the `root` user to make sure that debug information is more complete, such as the output of `iptables`. (DCOS_OSS-3877)
 
 ### Fixed and improved
 
@@ -83,13 +82,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed a bug that caused the Prometheus exporter to omit some metrics. (DCOS_OSS-3863)
 
-* Docker-GC will now log to journald. (COPS-4044)
+* Docker-GC will now log to journald. (DCOS_OSS-4469, COPS-4044)
 
-* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false. (DCOS-40539)
+* The `dcos6` overlay network is now marked as disabled if `enable_ipv6` is set to false. (DCOS-40539)
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
 * Made cluster identity configurable in dcos-net. (DCOS_OSS-4620)
+
+* DC/OS Diagnostics is now run as the `root` user to make sure that debug information is more complete, such as the output of `iptables`. (DCOS_OSS-3877)
+
+* Added a Mesos patch to ensure TEARDOWN is sent in v1 Java shim.
 
 ### Security updates
 
