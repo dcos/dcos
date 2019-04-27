@@ -5,8 +5,8 @@
 #   Fetched logs are comprised of journald logs, mesos logs, sandbox logs and diagnostics bundles for all nodes.
 #
 # USAGE:
-#   bash fetch_cluster_logs.bash open <ssh-user> <master-public-ip> [--login-token=<token>] [--identity-file=<path>] [--max-artifact-size] [--debug]
-#   bash fetch_cluster_logs.bash enterprise <ssh-user> <master-public-ip> [--username=<username>] [--password=<password>] [--identity-file=<path>] [--max-artifact-size] [--debug]
+#   bash fetch_cluster_logs.bash open <ssh-user> <master-public-ip> [--login-token=<token>] [--identity-file=<path>] [--max-artifact-size] [--debug] [--cli-version] [--cli-provider]
+#   bash fetch_cluster_logs.bash enterprise <ssh-user> <master-public-ip> [--username=<username>] [--password=<password>] [--identity-file=<path>] [--max-artifact-size] [--debug] [--cli-version] [--cli-provider]
 #
 # COMMANDS
 #   open          Fetch the logs for an open cluster.
@@ -23,6 +23,8 @@
 #   --identity-file=<path>      Path to the private ssh key that will be used to ssh into the nodes. If omitted, that key must be added to your ssh-agent.
 #   --max-artifact-size=<size>  Maximum size (in megabytes) of artifacts produced by this script. Any artifact exceeding that limit will be deleted.
 #   --debug                     Turn on debug logging for the DC/OS CLI.
+#   --cli-version               Version of the DC/OS CLI e.g. 0.7.5
+#   --cli-provider              The DC/OS CLI authentication provider to use for login e.g. dcos-oidc-auth0
 
 set +e
 set -x
@@ -78,6 +80,14 @@ if [[ $dcos_variant == "open" ]]; then
       max_artifact_size="${i#*=}"
       shift
     ;;
+    --cli-version=*)
+      cli_version="${i#*=}"
+      shift
+    ;;
+    --cli-provider=*)
+      cli_provider="${i#*=}"
+      shift
+    ;;
     *)
       echo "ERROR: Unrecognized argument '$i' for command '$dcos_variant'"
       exit 0
@@ -108,6 +118,14 @@ else
       max_artifact_size="${i#*=}"
       shift
     ;;
+    --cli-version=*)
+      cli_version="${i#*=}"
+      shift
+    ;;
+    --cli-provider=*)
+      cli_provider="${i#*=}"
+      shift
+    ;;
     *)
       echo "ERROR: Unrecognized argument '$i' for command '$dcos_variant'"
       exit 0
@@ -121,6 +139,14 @@ if [[ -z $max_artifact_size ]]; then
   max_artifact_size=2000
 fi
 
+if [[ -z $cli_version ]]; then
+  cli_version="0.7.5"
+fi
+
+if [[ -z $cli_provider ]]; then
+  cli_provider="dcos-oidc-auth0"
+fi
+
 ssh_options="-A -T -l $ssh_user -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 if [[ ! -z $identity_file ]]; then
   ssh_options="-i $identity_file ${ssh_options}"
@@ -128,13 +154,13 @@ fi
 
 # download the DC/OS CLI
 if [ ! -f dcos-cli ]; then
-  wget https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/0.7.5/dcos --output-document=dcos-cli
+  wget "https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/${cli_version}/dcos" --output-document=dcos-cli
   chmod +x dcos-cli
 fi
 
 # link the CLI with the cluster
 if [[ $dcos_variant == "open" ]]; then
-  bash -c "./dcos-cli $debug_options cluster setup $master_public_ip --provider=dcos-oidc-auth0 --insecure $dcos_login_token_input"
+  bash -c "./dcos-cli $debug_options cluster setup $master_public_ip --provider=$cli_provider --insecure $dcos_login_token_input"
 else
   ./dcos-cli $debug_options cluster setup $master_public_ip $dcos_username $dcos_password --insecure
 fi
@@ -181,8 +207,8 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     ./dcos-cli $debug_options node log --leader > mesos_master.log
     check_max_artifact_size "mesos_master.log"
   else
-    mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du --summarize /var/lib/mesos/slave/ | grep -Po "\d+")
-    free_space=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo df --block-size=1 | grep -Po "\d+\s+\d+%\ /$" | grep -Po "\d+" | head -1)
+    mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du --summarize --block-size=1M /var/lib/mesos/slave/ | grep -Po "\d+")
+    free_space=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo df --block-size=1M | grep -Po "\d+\s+\d+%\ /$" | grep -Po "\d+" | head -1)
     if (( $free_space > $mesos_sandbox_size )); then
       # remove unnecessary, bulky artifacts
       ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo cp -a /var/lib/mesos/slave/ mesos_sandbox
@@ -194,7 +220,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
       check_max_artifact_size "sandbox_${ip_underscores}.tar.gz"
       ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo rm -rf mesos_sandbox
     else
-      echo "Cannot copy and collect mesos sandbox: insufficient disk space."
+      echo "Cannot copy and collect mesos sandbox: sandbox size of ${mesos_sandbox_size}MB exceeds free space of ${free_space}MB."
     fi
 
     # get journald logs
@@ -206,4 +232,3 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     check_max_artifact_size "mesos_agent_${ip_underscores}.log"
   fi
 done
-

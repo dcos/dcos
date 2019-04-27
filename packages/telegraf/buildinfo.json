@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/telegraf.git",
-    "ref": "50e7f0fb1e2a6bfe270db2d3e83a53c7d11daa3f",
+    "ref": "67c0ee1b643668405979b3b2eff9e8959c5c7916",
     "ref_origin": "1.9.4-dcos"
   },
   "environment": {

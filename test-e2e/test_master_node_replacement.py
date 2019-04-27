@@ -13,7 +13,7 @@ from _pytest.fixtures import SubRequest
 from cluster_helpers import wait_for_dcos_oss
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
-from dcos_e2e.node import Role
+from dcos_e2e.node import Output, Role
 from docker.models.networks import Network
 
 
@@ -101,6 +101,7 @@ def test_replace_all_static(
                 '|', 'grep', '-B1', str(master.public_ip_address),
                 '|', 'grep', '-o', '"^\w*"',
             ],
+            output=Output.LOG_AND_CAPTURE,
             shell=True,
         )
         interface = result.stdout.strip().decode()
