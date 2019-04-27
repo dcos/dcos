@@ -49,6 +49,7 @@ class TestRedirectSecurity:
 
 class TestEncodingGzip:
 
+    # This pattern should provide `index.css` and `index.js` files.
     pat = re.compile(r'/assets/index\.[^"]+')
 
     def test_accept_gzip(self, dcos_api_session):
@@ -66,7 +67,6 @@ class TestEncodingGzip:
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert r.headers.get('content-encoding') == 'gzip'
-            assert 'max-age=36000' in r.headers['cache-control']
 
     def test_not_accept_gzip(self, dcos_api_session):
         """
@@ -85,4 +85,3 @@ class TestEncodingGzip:
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert 'content-encoding' not in r.headers
-            assert 'max-age=36000' in r.headers['cache-control']

@@ -306,19 +306,6 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
-def test_dcos_diagnostics_selftest(dcos_api_session):
-    """
-    test invokes dcos-diagnostics `self test` functionality
-    """
-    for node in dcos_api_session.masters:
-        response = check_json(dcos_api_session.health.get('/selftest/info', node=node))
-        for test_name, attrs in response.items():
-            assert 'Success' in attrs, 'Field `Success` does not exist'
-            assert 'ErrorMessage' in attrs, 'Field `ErrorMessage` does not exist'
-            assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
-
-
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -332,6 +319,11 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-52191',
+    reason='test_dcos_diagnostics_bundle_create_download_delete is flaky.',
+    since='2019-04-26'
+)
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow

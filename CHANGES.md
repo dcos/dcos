@@ -23,6 +23,7 @@ Format of the entries must be.
 
 #### Fixed and improved
 
+* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
 * `docker-gc` now removes unused volumes (DCOS_OSS-1502)
 
 * Use gzip compression for some UI assets (DCOS-5978)
