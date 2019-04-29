@@ -5,11 +5,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-4988)
+* Updated to [Mesos 1.7.3-dev](https://github.com/apache/mesos/blob/0f4e34b4dfe98178a7d94f5242041b5958eb7a24/CHANGELOG).
+
+* Updated to [Metronome 0.6.18](https://github.com/dcos/metronome/blob/e06e8285c089ed7e03590053395f9436a4ac34f4/changelog.md#0618).
+
+* Updated to [Marathon 1.7.216](https://github.com/mesosphere/marathon/tree/9e2a9b579).
+
+* Updated REX-Ray to [version 0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
+
+* Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
 
 ### Fixed and improved
 
-* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
+* `docker-gc` now removes unused volumes. (DCOS_OSS-1502) CONF
 
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
@@ -17,7 +25,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
 
-* Fix dcos-net-setup.py failing when systemd network directory did not exist (DCOS-49711)
+* Fix dcos-net-setup.py failing when systemd network directory did not exist. (DCOS-49711) CONF
 
 * Fix a race condition in L4LB (DCOS_OSS-4939)
 
@@ -49,7 +57,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
-* Update to OpenSSL 1.0.2r. (DCOS_OSS-4868)
+* Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
 
 
 ## DC/OS 1.12.3 (2019-03-14)
