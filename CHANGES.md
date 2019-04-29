@@ -15,27 +15,27 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
 
+* Introduced a new DC/OS configuration variable `adminrouter_x_frame_options`, defaulting to `SAMEORIGIN`. This can be used for controlling the `X-Frame-Options` HTTP header sent with the DC/OS UI. (DCOS-49594)
+
 ### Fixed and improved
+
+* Fixed a bug as of which DC/OS checks may accidentally fail, pre-maturely reporting `network is unreachable`. (DCOS-47608)
+
+* Improved Cosmos to handle more transient errors behind the scenes, enhancing its fault tolerance. (DCOS-51139)
 
 * `docker-gc` now removes unused volumes. (DCOS_OSS-1502) CONF
 
-* Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
+* Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
-* Telegraf is tuned for workloads that emit a large number of metrics (DCOS-50994)
+* Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
 
-* Prefix illegal prometheus metric names with an underscore (DCOS_OSS-4899)
+* Consolidated Mesos metric collection by tuning timeout constants used in the Telegraf Mesos metric plugin. (DCOS-50672)
 
-* Fix dcos-net-setup.py failing when systemd network directory did not exist. (DCOS-49711) CONF
+* Prefixed illegal Prometheus metric names with an underscore, to enhance compatibility with more metric generators. (COPS-4634, COPS-3067)
 
-* Fix a race condition in L4LB (DCOS_OSS-4939)
+* Fixed dcos-net-setup.py failing when systemd network directory did not exist. (DCOS-49711) CONF
 
-* DC/OS UI X-Frame-Options value can be configured (DCOS-49594)
-
-* Telegraf cancels timed out requests for internal Mesos metrics, instead of collecting partial metric data (DCOS-50672)
-
-* Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
-
-* The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+* Fixed a race condition in L4LB. (DCOS_OSS-4939)
 
 * [Marathon] Introduced global throttling for Marathon health checks (MARATHON-8596)
 
@@ -49,15 +49,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Force expunge and Decommission all instances on service removal (DCOS-49521)
 
-* Conflict between VIP port and port mapping (DCOS_OSS-4970)
+* Conflict between VIP port and port mapping. (DCOS_OSS-4970)
 
-* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
+* CNAME records should appear before A/AAAA records. (DCOS_OSS-5108)
 
-* ipset protocol ignores a missing `match` flag on some kernel versions (DCOS-52780)
+* ipset protocol ignores a missing `match` flag on some kernel versions. (DCOS-52780)
 
 ### Security updates
 
 * Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
+
+* The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
 
 
 ## DC/OS 1.12.3 (2019-03-14)
