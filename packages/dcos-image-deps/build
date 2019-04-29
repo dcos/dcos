@@ -15,3 +15,5 @@ for package in aiohttp checksumdir coloredlogs humanfriendly multidict \
     oauthlib waitress websocket-client wrapt googleapis-common-protos; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package
 done
+
+chmod -R a+r "$PKG_PATH/lib/python3.6/site-packages"
