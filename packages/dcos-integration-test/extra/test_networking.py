@@ -30,11 +30,13 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None, ipv6=False, app_name_fmt=None):
+    def __init__(self, container, network, host, vip=None, ipv6=False, app_name_fmt=None, host_port=None):
+        if host_port is None:
+            host_port = unused_port()
         args = {
             'app_name_fmt': app_name_fmt,
             'network': network,
-            'host_port': unused_port(),
+            'host_port': host_port,
             'host_constraint': host,
             'vip': vip,
             'container_type': container,
@@ -212,9 +214,9 @@ def generate_vip_app_permutations():
 
 
 def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_host):
-    (vip, hosts, cmd, origin_app, proxy_app) = \
+    (vip, hosts, cmd, origin_app, proxy_app, _pm_app) = \
         vip_workload_test(dcos_api_session, container,
-                          app_net, proxy_net, ipv6, True, same_host)
+                          app_net, proxy_net, ipv6, True, same_host, False)
     return (hosts, origin_app, proxy_app)
 
 
@@ -268,13 +270,25 @@ def test_vip_ipv6(dcos_api_session):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
+    'container',
+    list(marathon.Container))
+def test_vip_port_mapping(dcos_api_session,
+                          container: marathon.Container,
+                          vip_net: marathon.Network=marathon.Network.HOST,
+                          proxy_net: marathon.Network=marathon.Network.HOST):
+    return test_vip(dcos_api_session, container, vip_net, proxy_net, with_port_mapping_app=True)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
     'container,vip_net,proxy_net',
     generate_vip_app_permutations())
 def test_vip(dcos_api_session,
              container: marathon.Container,
              vip_net: marathon.Network,
              proxy_net: marathon.Network,
-             ipv6: bool=False):
+             ipv6: bool=False,
+             with_port_mapping_app=False):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE, HOST
@@ -291,8 +305,8 @@ def test_vip(dcos_api_session,
         pytest.skip('Load Balancer disabled')
 
     errors = []
-    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6, with_port_mapping_app)
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info("Remote command: {}".format(cmd))
         proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
@@ -306,32 +320,43 @@ def test_vip(dcos_api_session,
             origin_app.purge(dcos_api_session)
             log.info('Purging application: {}'.format(proxy_app.id))
             proxy_app.purge(dcos_api_session)
+            if pm_app is not None:
+                log.info('Purging application: {}'.format(pm_app.id))
+                pm_app.purge(dcos_api_session)
     assert not errors
 
 
-def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
+def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6, with_port_mapping_app=False):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
-    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
+    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net,
+                               ipv6, named_vip, same_host, with_port_mapping_app)
              for named_vip in [True, False]
              for same_host in same_hosts]
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         # We do not need the service endpoints because we have deterministically assigned them
         log.info('Starting apps :: VIP: {}, Hosts: {}'.format(vip, hosts))
         log.info("Origin app: {}".format(origin_app))
         origin_app.deploy(dcos_api_session)
         log.info("Proxy app: {}".format(proxy_app))
         proxy_app.deploy(dcos_api_session)
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        if pm_app is not None:
+            log.info("Port Mapping app: {}".format(pm_app))
+            pm_app.deploy(dcos_api_session)
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         log.info("Deploying apps :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info('Deploying origin app: {}'.format(origin_app.id))
         origin_app.wait(dcos_api_session)
         log.info('Deploying proxy app: {}'.format(proxy_app.id))
         proxy_app.wait(dcos_api_session)
+        if pm_app is not None:
+            log.info("Deploying port mapping app: {}".format(pm_app))
+            pm_app.wait(dcos_api_session)
         log.info('Apps are ready')
     return tests
 
 
-def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host):
+def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
+                      named_vip, same_host, with_port_mapping_app):
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
@@ -364,8 +389,16 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
     else:
         origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6, app_name_fmt=origin_fmt)
         proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6, app_name_fmt=proxy_fmt)
+    # Port mappiong application runs on `proxy_host` and has the `host_port` same as `vip_port`.
+    pm_fmt = '{}/pm-{}'.format(path_id, test_case_id)
+    pm_fmt = pm_fmt + '-{{:.{}}}'.format(63 - len(pm_fmt))
+    if with_port_mapping_app:
+        pm_container = Container.MESOS if container == Container.POD else container
+        pm_app = MarathonApp(pm_container, marathon.Network.BRIDGE, proxy_host, host_port=vip_port, app_name_fmt=pm_fmt)
+    else:
+        pm_app = None
     hosts = list(set([origin_host, proxy_host]))
-    return (vip, hosts, cmd, origin_app, proxy_app)
+    return (vip, hosts, cmd, origin_app, proxy_app, pm_app)
 
 
 @pytest.mark.xfailflake(
