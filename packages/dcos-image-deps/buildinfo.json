@@ -176,6 +176,11 @@
       "kind": "url",
       "url": "https://files.pythonhosted.org/packages/5a/aa/a858df367b464f5e9452e1c538aa47754d467023850c00b000287750fa77/protobuf-3.7.1-cp36-cp36m-manylinux1_x86_64.whl",
       "sha1": "0186b9e33a62b7f85747e8349e4bec0a101aca64"
+    },
+    "googleapis-common-protos": {
+      "kind": "url_extract",
+      "url": "https://files.pythonhosted.org/packages/76/a6/903a1c1c1fd676660174a9be4ec777c9b547392f640b16a326182b8fe484/googleapis-common-protos-1.5.9.tar.gz",
+      "sha1": "6c3e05aabc0e9461118f78161e5fe1a8ea490e17"
     }
   }
 }
