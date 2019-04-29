@@ -261,11 +261,6 @@ def test_ipv6(dcos_api_session, same_host):
 
 
 @pytest.mark.slow
-@pytest.mark.xfailflake(
-    jira='DCOS-50427',
-    reason='test_networking.test_vip_ipv6 fails on an unrelated change',
-    since='2019-03-26'
-)
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
@@ -343,6 +338,12 @@ def test_vip(dcos_api_session,
         log.info("Remote command: {}".format(cmd))
         proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
         try:
+            if ipv6 and len(hosts) < 2:
+                # NOTE: If proxy and origin apps run on the same host, IPv6 VIP works from
+                # proxy task's network namespace only when bridge-nf-call-ip6tables is enabled, i.e
+                # sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+                # JIRA: https://jira.mesosphere.com/browse/DCOS_OSS-5122
+                continue
             assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
         except Exception as e:
             log.error('Exception: {}'.format(e))
