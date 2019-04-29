@@ -66,6 +66,10 @@ Metrics for the following DC/OS components are now collected by Telegraf: Cockro
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
 
+* Metrics are tagged with their fault domain region and zone. (DCOS-16570)
+
+* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
+
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
 * Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
