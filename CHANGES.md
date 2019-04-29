@@ -1,30 +1,14 @@
-## DC/OS 1.13-dev
-## DC/OS 1.13.0
+Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-```
-* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
-* For Security updates, please call out in Security updates section.
-* Add to the top of the existing list.
-* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
 
-Format of the entries must be.
-
-* Entry with no-newlines. (DCOS_OSS_JIRA)
-<new-line>
-* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
-```
-
-## DC/OS 1.13.1 (Next release, please update entries in this section)
+## DC/OS 1.13.1 (in development)
 
 ### Notable changes
 
 ### Fixed and improved
 
-* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
+* Consolidated diagnostics bundle creation by applying a timeout when reading systemd journal entries. (DCOS_OSS-5097)
 
-* Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
-
-* CNAME records should appear before A/AAAA records (DCOS_OSS-5108)
 
 ### Security updates
 
@@ -41,8 +25,19 @@ With that DC/OS now supports service accounts. Service accounts allow individual
 
 This change also aligned the authentication architectures between DC/OS Enterprise and DC/OS: the HTTP API for service account management as well as for service account login is now the same in both systems. The DC/OS authentication token implementation details are equivalent in both systems: it is a JSON Web Token (JWT) of type RS256 which can be validated by any component in the system after consulting the IAM's JSON Web Key Set (JWKS) endpoint.
 
+#### DC/OS cluster component metrics
+
+Metrics for the following DC/OS components are now collected by Telegraf: CockroachDB, ZooKeeper, Exhibitor, Root Marathon and Metronome.
+
+### Known limitations
+
+* Authentication tokens emitted by `dcos-oauth` prior to an upgrade from DC/OS version 1.12.x to DC/OS version 1.13.x will become invalid during the upgrade. Simply log in again.
+
+### Breaking changes
 
 ### What's new
+
+* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe.
 
 * Release of Marathon 1.8 adds ability to launch App or Pod containers defined with a seccomp profile.
 
@@ -54,27 +49,17 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
 
-* CockroachDB metrics are now collected by Telegraf (DCOS_OSS-4529).
-
-* ZooKeeper metrics are now collected by Telegraf (DCOS_OSS-4477).
-
-* Exhibitor metrics are now collected by Telegraf (DCOS-45353).
+* Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
 
 * Marathon and Metronome have DC/OS install flag to configure GPU support.  "restricted", "unrestricted", "undefined" and "" are valid.
 
 * Mesos metrics are now available by default. (DCOS_OSS-3815)
 
-* Metronome supports UCR
+* Metronome supports UCR.
 
-* Metronome supports file based secrets
+* Metronome supports file-based secrets.
 
-* Metronome supports hybrid cloud
-
-* Marathon metrics are now collected by Telegraf (DCOS-47693)
-
-* Metronome metrics are now collected by Telegraf (DCOS_OSS-4935)
-
-* Expose Public IP (DCOS_OSS-4514)
+* Metronome supports hybrid cloud.
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
 
@@ -90,8 +75,6 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Admin Router returns relative redirects to avoid relying on the Host header (DCOS-47845)
 
-* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe.
-
 * Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
 
 * Add Metrics for dns forwarding (DCOS-48336)
@@ -100,16 +83,9 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 
 * Enable metrics for fluent-bit (DCOS-51855)
 
-
-### Breaking changes
-
-
-### Known limitations
-
-* Authentication tokens emitted by `dcos-oauth` prior to an upgrade from DC/OS version 1.12.x to DC/OS version 1.13.x will become invalid during the upgrade. Simply log in again.
-
-
 ### Fixed and improved
+
+Note(JP): most of the points below need to be filtered out (contained in previous 1.12.x point releases).
 
 * `docker-gc` now removes unused volumes (DCOS_OSS-1502)
 
@@ -164,9 +140,3 @@ This change also aligned the authentication architectures between DC/OS Enterpri
 * Conflict between VIP port and port mapping (DCOS_OSS-4970)
 
 * Lashup sometime fails to converge (DCOS_OSS-4328)
-
-### Notable changes
-
-* Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
-
-* Use gzip compression for some UI assets (DCOS-5978)
