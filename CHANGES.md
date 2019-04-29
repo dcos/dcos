@@ -9,6 +9,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Consolidated diagnostics bundle creation by applying a timeout when reading systemd journal entries. (DCOS_OSS-5097)
 
+* Use gzip compression for some UI assets. (DCOS-5978)
+
+* Fixed a syntax error in cloud fault domain detect script. (DCOS-51792)
 
 ### Security updates
 
