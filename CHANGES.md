@@ -4,7 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
+* Updated REX-Ray version to [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
 
 ### Fixed and improved
 
@@ -51,17 +51,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated to Marathon [1.5.12](https://github.com/mesosphere/marathon/releases/tag/v1.5.12)
+* Updated to Marathon [1.5.12](https://github.com/mesosphere/marathon/releases/tag/v1.5.12).
 
-* Updated DC/OS UI to [v1.10.9](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.9)
+* Updated DC/OS UI to [v1.10.9](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.9).
 
 ### Fixed and improved
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
-* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+* Admin Router: changed 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
-* Increased Agent Admin Router's `worker_connections` to 10000 to allow for a large number of tasks to be run on a single node. (DCOS-37833)
+* Increased Agent Admin Router's `worker_connections` limit to 10000 to allow for a large number of tasks to be run on a single node. (DCOS-37833)
 
 * Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
 
@@ -79,9 +79,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
+* Updated REX-Ray to version [0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2). (DCOS_OSS-3597)
 
-* Includes Marathon [1.5.11](https://github.com/mesosphere/marathon/releases/tag/v1.5.11)
+* Updated Marathon to version [1.5.11](https://github.com/mesosphere/marathon/releases/tag/v1.5.11).
 
 ### Fixed and improved
 
@@ -96,7 +96,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Prevent cosmos-specific labels being sent as metrics tags (DCOS-37451)
 
 * Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
-
 
 
 ## DC/OS 1.10.7 (2018-05-24)
@@ -126,28 +125,50 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.10.6 (2018-04-24)
 
-Todo: needs to be back-filled
-
 ### Notable changes
+
+* Updated to Mesos 1.4.x.
+
+* Updated to Metronome version [0.4.1](https://github.com/dcos/metronome/releases/tag/v0.4.1)
 
 ### Fixed and improved
 
+* Fixed a bug in Admin Router as of which it would not pick up Mesos leader changes in a timely manner. (DCOS-49431, DCOS-21451)
+
 * Fixed ftype=1 check for dcos-docker (DCOS_OSS-3549)
 
+* Consolidated navstar. (DCOS_OSS-2229)
+
 ### Security updates
+
+* Updated cURL from 7.48 to 7.59. (DCOS-21557, DCOS_OSS-2367)
+
+* Updated to [OpenSSL 1.0.2n](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-1903)
+
+* Updated Admin Router's underlying OpenResty distribution to 1.13.6. (DCOS_OSS-2181, DCOS_OSS-1859)
 
 
 ## DC/OS 1.10.5 (2018-02-22)
 
 ### Notable changes
 
+* Updated to Mesos 1.4.x.
+
+* Updated Marathon to version [1.5.6](https://github.com/mesosphere/marathon/releases/tag/v1.5.6).
+
+* Updated to Metronome version [0.3.4](https://github.com/dcos/metronome/releases/tag/v0.3.4)
+
+* Updated the UI to version 1.10.4. (DCOS-20158)
+
 ### Fixed and improved
 
-* DC/OS overlay networks now work with systemd networkd on modern CoreOS
-  (DCOS_OSS-1790).
+* Enhanced compatibility with CoreOS. (DCOS_OSS-2003)
 
-* DC/OS OAuth is now more resilient towards ZooKeeper latency spikes
-  (DCOS_OSS-2041).
+* Fixed a small bug in bootstrap around the Exhibitor startup control.
+
+* DC/OS overlay networks now work with systemd networkd on modern CoreOS. (DCOS_OSS-1790)
+
+* DC/OS OAuth is now more resilient towards ZooKeeper latency spikes. (DCOS_OSS-2041)
 
 ### Security updates
 
@@ -172,10 +193,13 @@ Todo: needs to be back-filled
 
 * The Mesos libprocess thread pool size has been increased from 8 to 16 in order
   to avoid potential deadlocks when interacting with ZooKeeper (DCOS_OSS-1943).
+
 * The DC/OS CLI can now retrieve metrics for tasks running in the Docker
   containerizer (DCOS_OSS-1898).
+
 * DC/OS bootstrap now is more resilient towards a missing process ID file while
   waiting for Exhibitor to equilibrate (DCOS_OSS-1919).
+
 * Fixed a crash condition in the DC/OS networking stack (DCOS-19893).
 
 ### Security updates
