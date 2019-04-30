@@ -9,6 +9,7 @@ StartLimitInterval=0
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=16384
+Environment=TMPDIR=/var/lib/dcos/exec/dcos_cockroach
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
 
