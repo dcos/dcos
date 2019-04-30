@@ -85,7 +85,7 @@ function main() {
     fi
 
     if [ ${#PROVIDERS[@]} -eq 0 ]; then
-        "ERROR: unable to detect cloud provider. Use explicit parameter --aws, --azure, or --gcp" >&2
+        echo "ERROR: unable to detect cloud provider. Use explicit parameter --aws, --azure, or --gcp" >&2
         exit 1
     fi
 
