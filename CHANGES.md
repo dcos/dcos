@@ -59,8 +59,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
-* Set Master Admin Router's `access_log` syslog facility to `daemon`. (DCOS-38622)
-
 * Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
 
 * Increased Agent Admin Router's `worker_connections` to 10000 to allow for a large number of tasks to be run on a single node. (DCOS-37833)
@@ -68,6 +66,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
 
 * Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
+
 
 ### Security updates
 
