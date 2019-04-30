@@ -452,11 +452,14 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
                              'ip_route.output.gz',
                              'ps_aux_ww_Z.output.gz',
                              'optmesospherebincurl_-s_-S_http:localhost:62080v1vips.output.gz',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1records.output.gz',
                              'timedatectl.output.gz',
                              'binsh_-c_cat etc*-release.output.gz',
                              'systemctl_list-units_dcos*.output.gz',
                              'sestatus.output.gz',
                              'iptables-save.output.gz',
+                             'ip6tables-save.output.gz',
+                             'ipset_list.output.gz',
                              'opt/mesosphere/active.buildinfo.full.json.gz',
                              'opt/mesosphere/etc/dcos-version.json.gz',
                              'opt/mesosphere/etc/expanded.config.json.gz',
@@ -483,7 +486,6 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     ] + expected_common_files
 
     expected_agent_common_files = [
-        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output.gz',
         '5051-containers.json',
         '5051-overlay-agent_overlay.json',
         'var/log/mesos/mesos-agent.log.gz',
@@ -492,12 +494,16 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     ]
 
     # for agent host
-    expected_agent_files = ['dcos-mesos-slave.service.gz'
-                            ] + expected_agent_common_files + expected_common_files
+    expected_agent_files = [
+        'dcos-mesos-slave.service.gz',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output.gz',
+    ] + expected_agent_common_files + expected_common_files
 
     # for public agent host
-    expected_public_agent_files = ['dcos-mesos-slave-public.service.gz'
-                                   ] + expected_agent_common_files + expected_common_files
+    expected_public_agent_files = [
+        'dcos-mesos-slave-public.service.gz',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d\'=\' -f2`environ.output.gz'
+    ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
         # raises KeyError if item is not in zipfile.
