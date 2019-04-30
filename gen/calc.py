@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.13.0-beta'
+DCOS_VERSION = '1.13.0'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -1075,6 +1075,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
         lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
@@ -1111,6 +1112,8 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
+        'exhibitor_azure_account_key': '',
+        'aws_secret_access_key': '',
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'dns_bind_ip_reserved': '["198.51.100.4"]',
@@ -1200,6 +1203,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'true',
+        'dcos_l4lb_enable_ipset': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
@@ -1298,6 +1302,8 @@ entry = {
     'secret': [
         'cluster_docker_credentials',
         'exhibitor_admin_password',
+        'exhibitor_azure_account_key',
+        'aws_secret_access_key'
     ],
     'conditional': {
         'master_discovery': {

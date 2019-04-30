@@ -164,7 +164,8 @@ package:
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
             {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
             {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},
-            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}}
+            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}},
+            {ipset_enabled, {{ dcos_l4lb_enable_ipset }}}
           ]
         },
         {dcos_overlay,
@@ -1497,6 +1498,7 @@ package:
         "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
+        "fetchers-count": 3,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
@@ -1812,6 +1814,21 @@ package:
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
               },
               {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/records"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/default"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/dns"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/mesos_listener"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/lashup"]
+              },
+              {
                   "Command": ["timedatectl"]
               },
               {
@@ -1821,10 +1838,18 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
-                  "Command": ["sestatus"]
+                  "Command": ["sestatus"],
+                  "Optional": true
               },
               {
                   "Command": ["iptables-save"]
+              },
+              {
+                  "Command": ["ip6tables-save"]
+              },
+              {
+                  "Command": ["ipset", "list"],
+                  "Optional": true
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
@@ -1832,7 +1857,11 @@ package:
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
-                  "Role": ["agent", "agent_public"]
+                  "Role": ["agent"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent_public"]
               },
               {
                   "Command": ["docker", "--version"],
@@ -2772,9 +2801,9 @@ package:
           # HTTP Server
           # ===========
           # Enable/Disable the built-in HTTP Server for metrics
-          HTTP_Server  Off
-          #HTTP_Listen  0.0.0.0
-          #HTTP_Port    62020
+          HTTP_Server  On
+          HTTP_Listen  127.0.0.1
+          HTTP_Port    62020
       [INPUT]
           Name systemd
           Tag host.*
@@ -2785,6 +2814,10 @@ package:
           # are further forwarded into elasticsearch, where fields with leading
           # underscore are reserved for internal use.
           Strip_Underscores On
+          # Tail the journal (i.e., only send new logs). Without this option set
+          # fluent bit will attempt to send the entire contents of the journal
+          # on startup, which can cause performance issues.
+          Read_From_Tail    On
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
