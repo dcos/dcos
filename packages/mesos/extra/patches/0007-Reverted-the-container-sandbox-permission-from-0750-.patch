@@ -1,0 +1,45 @@
+From d764ddabe51f1dddd9846046df883e9aefbf9aca Mon Sep 17 00:00:00 2001
+From: Qian Zhang <zhq527725@gmail.com>
+Date: Tue, 30 Apr 2019 22:28:25 +0800
+Subject: [PATCH] Reverted the container sandbox permission from 0750 back to
+ 0755.
+
+This patch is used to revert the sandbox permission semantic change
+in Mesos 1.6.0 (caused by this commit 04dd7f32). 04dd7f32 caused
+nestd container could not traverse its parent container's sandbox
+if the nested container user is an arbitrary non-root user and
+different from its parent's user.
+
+Without this revert, there will be two issues:
+1. Some modules may not be able to create files under the sandbox
+   as a non-root user.
+2. Task launched as non-root users may not be able to open files
+   under the sandbox if the task is launched as a non-root user.
+
+This patch could be removed once DCOS-47501 and MESOS-9536 are
+landed.
+---
+ src/slave/paths.cpp | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/src/slave/paths.cpp b/src/slave/paths.cpp
+index 1163c88ee..52422d431 100644
+--- a/src/slave/paths.cpp
++++ b/src/slave/paths.cpp
+@@ -845,13 +845,6 @@ Try<Nothing> createSandboxDirectory(
+   }
+ 
+ #ifndef __WINDOWS__
+-  // Since this is a sandbox directory containing private task data,
+-  // we want to ensure that it is not accessible to "others".
+-  Try<Nothing> chmod = os::chmod(directory, 0750);
+-  if (chmod.isError()) {
+-    return Error("Failed to chmod directory: " + chmod.error());
+-  }
+-
+   if (user.isSome()) {
+     Try<Nothing> chown = os::chown(user.get(), directory);
+     if (chown.isError()) {
+-- 
+2.17.0
+
