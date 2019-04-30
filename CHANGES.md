@@ -4,8 +4,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Added support CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865)
-
 * Updated REX-Ray version to 0.11.4 (DCOS_OSS-4316) (COPS-3961) [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4)
 
 ### Fixed and improved
@@ -20,12 +18,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [COPS-4483](https://jira.mesosphere.com/browse/COPS-4483) Provide backward compatible way to produce container ports for text/plain GET requests against /v2/tasks when using USER networking consistent with Marathon 1.4.
 
-* Docker-GC will now log to journald. (COPS-4044)
-
-* Minuteman routes traffic until the first failed health check (DCOS_OSS-1954)
-
-* Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
-
 ### Security updates
 
 * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
@@ -33,21 +25,53 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.10.11 (2019-02-12)
 
+### Security updates
+
+* Addressed a vulnerability in the Mesos Docker containerizer by enabling a concept called "Mesos containerizer launcher sealing". This type of vulnerability was widely discussed under ID CVE-2019-5736.
+
 
 ## DC/OS 1.10.10 (2019-01-29)
+
+### Notable changes
+
+* Added support for CoreOS 1800.6.0 1800.7.0, & 1855.4.0. (DCOS_43865)
+
+* Master Admin Router: the UI is now served with the `X-Frame-Options` header set to `SAMEORIGIN`. (DCOS-45280)
+
+### Fixed and improved
+
+* Docker-GC will now log to journald. (DCOS_OSS-4469, COPS-4044)
+
+* Minuteman routes traffic until the first failed health check. (DCOS_OSS-1954)
+
+* Mesos now exposes a flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
 
 ## DC/OS 1.10.9 (2018-1-06)
 
 ### Notable changes
 
-### Fixed and improved
+* Updated to Marathon [1.5.12](https://github.com/mesosphere/marathon/releases/tag/v1.5.12)
 
 * Updated DC/OS UI to [v1.10.9](https://github.com/dcos/dcos-ui/releases/tag/v1.10+v1.10.9)
 
+### Fixed and improved
+
 * Get timestamp on dmesg, timedatectl, distro version, systemd unit status and pods endpoint in diagnostics bundle. (DCOS_OSS-3861)
 
+* Set Master Admin Router's `access_log` syslog facility to `daemon`. (DCOS-38622)
+
+* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
+
+* Increased Agent Admin Router's `worker_connections` to 10000 to allow for a large number of tasks to be run on a single node. (DCOS-37833)
+
+* Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
+
+* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
+
 ### Security updates
+
+* Prevent dcos-history from leaking authentication tokens. (DCOS-40373)
 
 * Updated Java to 8u192. (DCOS_OSS-4383)
 
@@ -62,13 +86,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Consolidated Exhibitor startup script to abort when the IP address returned by 'ip-detect' is not contained in the known master IP address list. This fixes issues arising from transient errors in the 'ip-detect' script. (COPS-3195)
-
-* Admin Router: Change 'access_log' syslog facility from 'local7' to 'daemon'. (DCOS_OSS-3793)
-
 * L4LB unstable when something is deployed in the cluster (DCOS_OSS-3602)
-
-* Root Marathon support for post-installation configuration of flags and JVM settings has been improved. (DCOS_OSS-3556)
 
 * Root Marathon heap size can be customized during installation. (DCOS_OSS-3556)
 
@@ -80,11 +98,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Improve the way statsd timers are handled in dcos-metrics (DCOS-38083)
 
-### Security updates
-
-* Prevent dcos-history leaking auth tokens (DCOS-40373)
-
-* Updated Java to 8u181. (DCOS_OSS-3933)
 
 
 ## DC/OS 1.10.7 (2018-05-24)
