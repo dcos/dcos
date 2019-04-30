@@ -482,7 +482,27 @@
                 "ec2:DescribeSnapshots",
                 "ec2:DescribeSnapshotAttribute",
                 "autoscaling:DescribeAutoScalingGroups",
-                "cloudwatch:PutMetricData"
+                "cloudwatch:PutMetricData",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "elasticloadbalancing:DescribeListeners",
+                "elasticloadbalancing:CreateListener",
+                "elasticloadbalancing:DeleteListener",
+                "elasticloadbalancing:ModifyListener",
+                "elasticloadbalancing:CreateTargetGroup",
+                "elasticloadbalancing:DeleteTargetGroup",
+                "elasticloadbalancing:DescribeTargetGroups",
+                "elasticloadbalancing:ModifyTargetGroup",
+                "elasticloadbalancing:RegisterTargets",
+                "elasticloadbalancing:DeregisterTargets",
+                "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:RemoveTags"
+
               ],
               "Effect": "Allow"
             }
