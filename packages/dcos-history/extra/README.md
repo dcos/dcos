@@ -1,5 +1,11 @@
 dcos-history-service
 ===================
+
+Deprecated
+----------
+
+This service is deprecated and will be removed in a future version of DC/OS.
+
 Overview
 --------
 Collects and keeps old mesos /state-summary
