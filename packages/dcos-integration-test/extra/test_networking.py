@@ -103,7 +103,7 @@ class MarathonPod:
             'containers': [{
                 'name': 'app-{}'.format(self.uuid),
                 'resources': {'cpus': 0.01, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
+                'image': {'kind': 'DOCKER', 'id': 'debian:stretch-slim'},
                 'exec': {'command': {
                     'shell': '/opt/mesosphere/bin/dcos-shell python '
                              '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py '
@@ -203,7 +203,7 @@ def generate_vip_app_permutations():
 
 @pytest.mark.first
 def test_docker_image_availablity():
-    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+    assert test_helpers.docker_pull_image("debian:stretch-slim"), "docker pull failed for image used in the test"
 
 
 @pytest.mark.slow
