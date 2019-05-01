@@ -12,6 +12,7 @@ import dcos_installer.config
 import dcos_installer.constants
 import gen.calc
 from dcos_installer import action_lib, backend
+from dcos_installer.action_lib import deprecated_usage_warning
 from dcos_installer.config import Config
 from dcos_installer.installer_analytics import InstallerAnalytics
 from dcos_installer.prettyprint import PrettyPrint, print_header
@@ -117,6 +118,8 @@ def do_version(args):
 
 
 def do_validate_config(args):
+    log.warn(deprecated_usage_warning('validate'))
+
     log_warn_only()
     config = Config(dcos_installer.constants.CONFIG_PATH)
     validation_errors = config.do_validate(include_ssh=True)
@@ -137,7 +140,7 @@ dispatch_dict_simple = {
     'web': (
         web_installer,
         'Starting DC/OS installer in web mode',
-        'Run the web interface'),
+        '[DEPRECATED] Run the web interface'),
     'genconf': (
         lambda args: backend.do_configure(),
         'EXECUTING CONFIGURATION GENERATION',
@@ -145,7 +148,7 @@ dispatch_dict_simple = {
     'validate-config': (
         do_validate_config,
         'VALIDATING CONFIGURATION',
-        'Validate the configuration for executing --genconf and deploy arguments in config.yaml'),
+        '[DEPRECATED] Validate the configuration for executing --genconf and deploy arguments in config.yaml'),
     'aws-cloudformation': (
         lambda args: backend.do_aws_cf_configure(),
         'EXECUTING AWS CLOUD FORMATION TEMPLATE GENERATION',
@@ -156,19 +159,19 @@ dispatch_dict_aio = {
     'preflight': (
         action_lib.run_preflight,
         'EXECUTING_PREFLIGHT',
-        'Execute the preflight checks on a series of nodes.'),
+        '[DEPRECATED] Execute the preflight checks on a series of nodes.'),
     'install-prereqs': (
         action_lib.install_prereqs,
         'EXECUTING INSTALL PREREQUISITES',
-        'Install the cluster prerequisites.'),
+        '[DEPRECATED] Install the cluster prerequisites.'),
     'deploy': (
         action_lib.install_dcos,
         'EXECUTING DC/OS INSTALLATION',
-        'Execute a deploy.'),
+        '[DEPRECATED] Execute a deploy.'),
     'postflight': (
         action_lib.run_postflight,
         'EXECUTING POSTFLIGHT',
-        'Execute postflight checks on a series of nodes.')
+        '[DEPRECATED] Execute postflight checks on a series of nodes.')
 }
 
 
@@ -191,6 +194,7 @@ def do_hash_password(password):
 def dispatch(args):
     """ Dispatches the selected mode based on command line args. """
     if args.action == 'set-superuser-password':
+        log.warn(deprecated_usage_warning('set-superuser-password'))
         password_hash = do_hash_password(args.password)
         messages = backend.create_config_from_post(
             {'superuser_password_hash': password_hash},
@@ -226,6 +230,8 @@ def dispatch(args):
             print_header(action[1])
         errors = run_loop(action[0], args)
         if not args.cli_telemetry_disabled:
+            log.warn(deprecated_usage_warning('cli-telemetry-disabled'))
+
             installer_analytics.send(
                 action=args.action,
                 install_method="cli",
@@ -267,7 +273,7 @@ def get_argument_parser():
         metavar='password',
         dest='password',
         nargs='?',
-        help='Hash the given password and store it as the superuser password in config.yaml'
+        help='[DEPRECATED] Hash the given password and store it as the superuser password in config.yaml'
     )
 
     mutual_exc.add_argument(
@@ -295,13 +301,13 @@ def get_argument_parser():
     parser.add_argument(
         '--offline',
         action='store_true',
-        help='Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
+        help='[DEPRECATED] Do not install preflight prerequisites on CentOS7, RHEL7 in web mode'
     )
 
     parser.add_argument(
         '--cli-telemetry-disabled',
         action='store_true',
-        help='Disable the CLI telemetry gathering for SegmentIO')
+        help='[DEPRECATED] Disable the CLI telemetry gathering for SegmentIO')
 
     def add_mode(name, help_msg):
         mutual_exc.add_argument(
