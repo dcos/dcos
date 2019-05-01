@@ -149,12 +149,15 @@ def dcos_history(b, opts):
 
 
 @check_root
-def dcos_cockroach(b, opts):
+def dcos_cockroach_config_change(b, opts):
     # Permissions are restricted to the dcos_cockroach user in case this
     # directory contains sensitive data - we also want to avoid the security
     # risk of other users writing to this directory.
     # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
     # dcos-bouncer.
+    #
+    # The ``dcos_cockroach`` user is the ``User`` used in the
+    # ``dcos-cockroachdb-config-change.service``
 
     # The ``cockroach_tmpdir`` directory path corresponds to the
     # dcos-cockroachdb-config-change.service.
@@ -183,7 +186,8 @@ bootstrappers = {
     'dcos-mesos-slave': noop,
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
-    'dcos-cockroach': dcos_cockroach,
+    'dcos-cockroach': noop,
+    'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
     'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,

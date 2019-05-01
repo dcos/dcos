@@ -9,6 +9,8 @@ StartLimitInterval=0
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=16384
+# The TMPDIR is created by the bootstrapper.
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach-config-change
 Environment=TMPDIR=/var/lib/dcos/exec/dcos_cockroach
 EnvironmentFile=/opt/mesosphere/environment
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
