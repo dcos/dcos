@@ -5,6 +5,7 @@ Documentation=https://docs.mesosphere.com
 [Service]
 Type=simple
 User=dcos_cockroach
+PermissionsStartOnly=True
 StartLimitInterval=0
 Restart=on-failure
 RestartSec=5
