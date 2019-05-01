@@ -8,8 +8,8 @@
     },
     "urllib3": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/62/00/ee1d7de624db8ba7090d1226aebefab96a2c71cd5cfa7629d6ad3f61b79e/urllib3-1.24.1-py2.py3-none-any.whl",
-      "sha1": "5386c8d6788f5d3f2f91556ef77f99af10435b17"
+      "url": "https://files.pythonhosted.org/packages/df/1c/59cca3abf96f991f2ec3131a4ffe72ae3d9ea1f5894abe8a9c5e3c77cfee/urllib3-1.24.2-py2.py3-none-any.whl",
+      "sha1": "02e44dd64ebeb41ca01e1943c8c3e581c6547380"
     },
     "chardet": {
       "kind": "url",
