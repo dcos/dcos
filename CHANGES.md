@@ -17,6 +17,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
 ### Fixed and improved
 
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
