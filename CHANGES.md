@@ -17,6 +17,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
 ### Fixed and improved
 
 * Fix ipset mgr crash looping on kernel with ipset ver. 7 (DCOS_OSS-5080)
