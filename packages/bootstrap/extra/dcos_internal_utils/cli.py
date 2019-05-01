@@ -108,6 +108,51 @@ def dcos_net_agent(b, opts):
 def dcos_bouncer(b, opts):
     os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
     shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
+    # Permissions are restricted to the dcos_bouncer user as this directory
+    # contains sensitive data.  See
+    # https://jira.mesosphere.com/browse/DCOS-18350
+
+    # The ``bouncer_tmpdir`` directory path corresponds to the
+    # TMPDIR environment variable configured in the dcos-bouncer.service file.
+    user = 'dcos_bouncer'
+    bouncer_tmpdir = known_exec_directory() / user
+    bouncer_tmpdir.mkdir(mode=0o700, exist_ok=True)
+    shutil.chown(str(bouncer_tmpdir), user=user)
+
+
+@check_root
+def dcos_history(b, opts):
+    # Permissions are restricted to the dcos_history user in case this
+    # directory contains sensitive data - we also want to avoid the security
+    # risk of other users writing to this directory.
+    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
+    # dcos-bouncer.
+
+    # The ``dcos_history_tmpdir`` directory path corresponds to the
+    # TMPDIR environment variable configured in the dcos-history.service file.
+    user = 'dcos_history'
+    dcos_history_tmpdir = known_exec_directory() / user
+    dcos_history_tmpdir.mkdir(mode=0o700, exist_ok=True)
+    shutil.chown(str(dcos_history_tmpdir), user=user)
+
+
+@check_root
+def dcos_cockroach_config_change(b, opts):
+    # Permissions are restricted to the dcos_cockroach user in case this
+    # directory contains sensitive data - we also want to avoid the security
+    # risk of other users writing to this directory.
+    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
+    # dcos-bouncer.
+    #
+    # The ``dcos_cockroach`` user is the ``User`` used in the
+    # ``dcos-cockroachdb-config-change.service``
+
+    # The ``cockroach_tmpdir`` directory path corresponds to the
+    # dcos-cockroachdb-config-change.service.
+    user = 'dcos_cockroach'
+    cockroach_tmpdir = known_exec_directory() / user
+    cockroach_tmpdir.mkdir(mode=0o700, exist_ok=True)
+    shutil.chown(str(cockroach_tmpdir), user=user)
 
 
 def noop(b, opts):
@@ -130,6 +175,7 @@ bootstrappers = {
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
     'dcos-cockroach': noop,
+    'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
     'dcos-history': noop,
     'dcos-mesos-dns': noop,
