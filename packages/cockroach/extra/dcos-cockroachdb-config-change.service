@@ -1,0 +1,19 @@
+[Unit]
+Description=CockroachDB Disable Diagnostics: Disable CockroachDB diagnostic reporting
+Documentation=https://docs.mesosphere.com
+
+[Service]
+Type=simple
+User=dcos_cockroach
+StartLimitInterval=0
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=16384
+# The TMPDIR is created by the bootstrapper.
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach-config-change
+Environment=TMPDIR=/var/lib/dcos/exec/dcos_cockroach
+EnvironmentFile=/opt/mesosphere/environment
+ExecStart=/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
+
+[Install]
+WantedBy=multi-user.target
