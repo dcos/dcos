@@ -5,6 +5,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
 * Updated to [Mesos 1.5.4-dev](https://github.com/mesosphere/mesos/5f07b10b05f7d58a08735498215bec8bb3a12518/CHANGELOG).
 
 * Updated to [Metronome 0.6.18](https://github.com/dcos/metronome/blob/e06e8285c089ed7e03590053395f9436a4ac34f4/changelog.md#0618).
