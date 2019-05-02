@@ -1,0 +1,23 @@
+[Unit]
+Description=DC/OS Identity and Access Manager (Bouncer): offers login methods and user management
+
+[Service]
+Type=simple
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=20
+TimeoutStartSec=600
+LimitNOFILE=16384
+User=dcos_bouncer
+PermissionsStartOnly=True
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=-/run/dcos/etc/bouncer
+Environment=BOUNCER_PACKAGE_PATH=${PKG_PATH}
+Environment=BOUNCER_CONFIG_FILE_PATH=/opt/mesosphere/etc/bouncer-config.json
+Environment=SECRET_KEY_FILE_PATH=/run/dcos/dcos-bouncer/bouncer_private.key
+Environment=BOUNCER_CONFIG_CLASS=DCOSConfig
+Environment=TMPDIR=/var/lib/dcos/exec/dcos_bouncer
+WorkingDirectory=${PKG_PATH}
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-bouncer
+ExecStart=${PKG_PATH}/bouncer/bin/bouncer.sh
