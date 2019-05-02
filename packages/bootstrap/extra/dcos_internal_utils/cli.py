@@ -141,7 +141,7 @@ bootstrappers = {
     'dcos-cosmos': noop,
     'dcos-cockroach': noop,
     'dcos-metronome': noop,
-    'dcos-history': noop,
+    'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
