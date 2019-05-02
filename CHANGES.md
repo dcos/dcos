@@ -31,7 +31,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * `docker-gc` now removes unused volumes. (DCOS_OSS-1502)
 * Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
-* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 * Fixed a conflict between VIP port and port mapping. (DCOS_OSS-4970)
 
@@ -97,6 +96,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Made cluster identity configurable in dcos-net. (DCOS_OSS-4620)
 
 * DC/OS Diagnostics is now run as the `root` user to make sure that debug information is more complete, such as the output of `iptables`. (DCOS_OSS-3877)
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
+
 
 * Added a Mesos patch to ensure TEARDOWN is sent in v1 Java shim.
 
