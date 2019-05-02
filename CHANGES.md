@@ -28,6 +28,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 * Consolidated Mesos metric collection by tuning timeout constants used in the Telegraf Mesos metric plugin. (DCOS-50672)
 
