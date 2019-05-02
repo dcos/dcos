@@ -9,8 +9,8 @@
     },
     "zookeeper": {
       "kind": "url_extract",
-      "url": "http://www-us.apache.org/dist/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz",
-      "sha1": "eb2145498c5f7a0d23650d3e0102318363206fba"
+      "url": "http://www-us.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz",
+      "sha1": "285a0c85112d9f99d42cbbf8fb750c9aa5474716"
     },
     "log4j": {
         "kind": "url",
