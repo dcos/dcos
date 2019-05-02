@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import random
+import shutil
 import sys
+from pathlib import Path
 
 from dcos_internal_utils import bootstrap
 from dcos_internal_utils import exhibitor
