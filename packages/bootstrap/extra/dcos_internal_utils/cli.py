@@ -23,7 +23,7 @@ from pkgpanda.actions import apply_service_configuration
 log = logging.getLogger(__name__)
 
 
-def known_exec_directory():
+def _known_exec_directory():
     """
     Returns a directory which we have told users to mark as ``exec``.
     """
@@ -32,6 +32,20 @@ def known_exec_directory():
     known_directory = Path('/var/lib/dcos/exec')
     known_directory.mkdir(parents=True, exist_ok=True)
     return known_directory
+
+
+def _create_private_directory(path, owner):
+    """
+    Create a directory which ``owner`` can create, modify and delete files in
+    but other non-root users cannot.
+
+    Args:
+        path (pathlib.Path): The path to the directory to create.
+        owner (str): The owner of the directory.
+    """
+    path.mkdir(exist_ok=True)
+    path.chmod(0o700)
+    shutil.chown(str(path), user=owner)
 
 
 def check_root(fun):
@@ -127,9 +141,8 @@ def dcos_bouncer(b, opts):
     # The ``bouncer_tmpdir`` directory path corresponds to the
     # TMPDIR environment variable configured in the dcos-bouncer.service file.
     user = 'dcos_bouncer'
-    bouncer_tmpdir = known_exec_directory() / user
-    bouncer_tmpdir.mkdir(mode=0o700, exist_ok=True)
-    shutil.chown(str(bouncer_tmpdir), user=user)
+    bouncer_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=bouncer_tmpdir, owner=user)
 
 
 @check_root
@@ -143,9 +156,8 @@ def dcos_history(b, opts):
     # The ``dcos_history_tmpdir`` directory path corresponds to the
     # TMPDIR environment variable configured in the dcos-history.service file.
     user = 'dcos_history'
-    dcos_history_tmpdir = known_exec_directory() / user
-    dcos_history_tmpdir.mkdir(mode=0o700, exist_ok=True)
-    shutil.chown(str(dcos_history_tmpdir), user=user)
+    dcos_history_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=dcos_history_tmpdir, owner=user)
 
 
 @check_root
@@ -162,9 +174,8 @@ def dcos_cockroach_config_change(b, opts):
     # The ``cockroach_tmpdir`` directory path corresponds to the
     # dcos-cockroachdb-config-change.service.
     user = 'dcos_cockroach'
-    cockroach_tmpdir = known_exec_directory() / user
-    cockroach_tmpdir.mkdir(mode=0o700, exist_ok=True)
-    shutil.chown(str(cockroach_tmpdir), user=user)
+    cockroach_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=cockroach_tmpdir, owner=user)
 
 
 def noop(b, opts):
