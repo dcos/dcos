@@ -95,21 +95,6 @@ def dcos_oauth(b, opts):
 
 
 @check_root
-def dcos_bouncer(b, opts):
-    os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
-    shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
-    # Permissions are restricted to the dcos_bouncer user as this directory
-    # contains sensitive data.  See
-    # https://jira.mesosphere.com/browse/DCOS-18350
-
-    # The ``bouncer_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-bouncer.service file.
-    user = 'dcos_bouncer'
-    bouncer_tmpdir = _known_exec_directory() / user
-    _create_private_directory(path=bouncer_tmpdir, owner=user)
-
-
-@check_root
 def dcos_history(b, opts):
     # Permissions are restricted to the dcos_history user in case this
     # directory contains sensitive data - we also want to avoid the security
