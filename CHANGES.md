@@ -21,6 +21,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
+
 * Fixed a bug as of which DC/OS checks may accidentally fail, pre-maturely reporting `network is unreachable`. (DCOS-47608)
 
 * Improved Cosmos to handle more transient errors behind the scenes, enhancing its fault tolerance. (DCOS-51139)
