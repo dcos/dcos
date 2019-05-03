@@ -43,6 +43,8 @@ The new `DC/OS monitoring service` can be deployed from the DC/OS Universe. It c
 
 ### Breaking changes
 
+No breaking changes are known to date.
+
 ### What's new
 
 * Introduced the `dcos-ui-update-service`. This component exposes an API which allows for updating the `dcos-ui` from the DC/OS Universe. In this release, the default DC/OS UI was updated to version [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10).
@@ -59,11 +61,11 @@ The new `DC/OS monitoring service` can be deployed from the DC/OS Universe. It c
 
 * Admin Router now returns relative redirects to avoid relying on the Host header. (DCOS-47845)
 
-* Admin Router now collects so-called virtual host metrics, for fine-grained monitoring. Each Admin Router instance exposes a summary on `/nginx/status`. (DCOS_OSS-4562)
+* Admin Router now collects so-called virtual host metrics, for fine-grained monitoring. Each Admin Router instance exposes a summary at `/nginx/status`. (DCOS_OSS-4562)
 
 * Admin Router now logs to a non-blocking Unix domain socket. If `journald` fails to read the socket quickly enough, log messages may be lost. Before, Admin Router hang in this case (stopping to process requests). (DCOS-43956)
 
-* Master Admin Router now exposed the DC/OS Net API via `/net`. (DCOS_OSS-1837)
+* Master Admin Router now exposes the DC/OS Net API via `/net`. This can be used, for example, for reading the public IP addresses of public agent nodes (`/net/v1/nodes`). (DCOS_OSS-1837)
 
 * DC/OS Net: ipv6 support is now enabled in L4LB by default. (DCOS_OSS-1993)
 
@@ -77,10 +79,10 @@ The new `DC/OS monitoring service` can be deployed from the DC/OS Universe. It c
 
 * Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
 
-* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
+* Telegraf's procstat input plugin reports process metrics. (DCOS-50778)
 
 * Telegraf has been upgraded to 1.9.4. (DCOS_OSS-4675)
 
-* Allow the DC/OS installer to be used when there is a space in its path. (DCOS_OSS-4429).
+* Allow the DC/OS installer to be used when there is a space in its path. (DCOS_OSS-4429)
 
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
