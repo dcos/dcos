@@ -121,7 +121,7 @@ class MarathonPod:
             'containers': [{
                 'name': 'app-{}'.format(self.uuid),
                 'resources': {'cpus': 0.01, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
+                'image': {'kind': 'DOCKER', 'id': 'debian:stretch-slim'},
                 'exec': {'command': {
                     'shell': '/opt/mesosphere/bin/dcos-shell python '
                              '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py '
@@ -230,7 +230,7 @@ def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_ho
 
 @pytest.mark.first
 def test_docker_image_availablity():
-    assert test_helpers.docker_pull_image("debian:jessie"), "docker pull failed for image used in the test"
+    assert test_helpers.docker_pull_image("debian:stretch-slim"), "docker pull failed for image used in the test"
 
 
 @pytest.mark.slow
@@ -261,7 +261,7 @@ def test_ipv6(dcos_api_session, same_host):
                 '/opt/mesosphere/bin/curl -s -f -m 5',
                 '{}.{}:{}'.format(dns_name, zone, origin_port))
             log.info("Remote command: {}".format(cmd))
-            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
     finally:
         log.info('Purging application: {}'.format(origin_app.id))
         origin_app.purge(dcos_api_session)
@@ -274,6 +274,47 @@ def test_ipv6(dcos_api_session, same_host):
 def test_vip_ipv6(dcos_api_session):
     return test_vip(dcos_api_session, marathon.Container.DOCKER,
                     marathon.Network.USER, marathon.Network.USER, ipv6=True)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    'container',
+    list(marathon.Container))
+def test_vip_port_mapping(dcos_api_session,
+                          container: marathon.Container,
+                          network: marathon.Network=marathon.Network.HOST,
+                          ipv6: bool=False):
+    errors = []
+    tests = setup_vip_workload_tests(dcos_api_session, container, network, network, ipv6)
+    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
+        log.info("Remote command: {}".format(cmd))
+        proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
+
+        # Deploying application with a port mapping on proxy app host.
+        # This application has the same port mapping host port as VIP label.
+        pm_app = MarathonApp(container, marathon.Network.BRIDGE, proxy_host,
+                             app_name_fmt=proxy_app.id.replace('proxy', 'pm'))
+        pm_app.app['container']['portMappings'][0]['hostPort'] = int(vip.rsplit(':', 1)[1])
+        log.info("Port mapping app: {}".format(pm_app))
+        pm_app.deploy(dcos_api_session)
+        log.info('Deploying port mapping app: {}'.format(pm_app.id))
+        pm_app.wait(dcos_api_session)
+        log.info('Port mapping app is ready')
+
+        try:
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+        except Exception as e:
+            log.error('Exception: {}'.format(e))
+            errors.append(e)
+        finally:
+            log.info('Purging application: {}'.format(origin_app.id))
+            origin_app.purge(dcos_api_session)
+            log.info('Purging application: {}'.format(proxy_app.id))
+            proxy_app.purge(dcos_api_session)
+            log.info('Purging application: {}'.format(pm_app.id))
+            pm_app.purge(dcos_api_session)
+    assert not errors
 
 
 @pytest.mark.slow
@@ -307,7 +348,7 @@ def test_vip(dcos_api_session,
         log.info("Remote command: {}".format(cmd))
         proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
         try:
-            ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
         except Exception as e:
             log.error('Exception: {}'.format(e))
             errors.append(e)
