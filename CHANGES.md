@@ -8,6 +8,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ref of dvdcli and zookeeper to get uncached build jobs passing (DCOS-52092)
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
+
 ### Fixed and improved
 
 * Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
