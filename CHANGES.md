@@ -7,6 +7,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
+
 * Consolidated diagnostics bundle creation by applying a timeout when reading systemd journal entries. (DCOS_OSS-5097)
 
 * Admin Router: allow for gzip compression when serving some UI assets. (DCOS-5978)
