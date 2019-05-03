@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated REX-Ray version to [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
 
-* Updated ref of dvdcli to get uncached build jobs passing (DCOS-52092)
+* Updated ref of dvdcli and zookeeper to get uncached build jobs passing (DCOS-52092)
 
 ### Fixed and improved
 
