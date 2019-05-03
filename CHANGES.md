@@ -5,19 +5,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
-
 ### Fixed and improved
 
 * Consolidated diagnostics bundle creation by applying a timeout when reading systemd journal entries. (DCOS_OSS-5097)
 
-* Use gzip compression for some UI assets. (DCOS-5978)
+* Admin Router: allow for gzip compression when serving some UI assets. (DCOS-5978)
 
 * Fixed a syntax error in cloud fault domain detect script. (DCOS-51792)
 
 ### Security updates
 
 * Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
+* Updated urllib3 to version 1.24.2, for addressing [CVE-2019-11324](https://nvd.nist.gov/vuln/detail/CVE-2019-11324). (DCOS-52210)
+
 
 ## DC/OS 1.13.0
 
