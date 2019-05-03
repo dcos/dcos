@@ -13,9 +13,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed a syntax error in cloud fault domain detect script. (DCOS-51792)
 
+* Fixed a number of issues that caused some DC/OS components to crash when `/tmp` is mounted with the `noexec` option. (DCOS-53077)
+
 ### Security updates
 
-* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 * Updated urllib3 to version 1.24.2, for addressing [CVE-2019-11324](https://nvd.nist.gov/vuln/detail/CVE-2019-11324). (DCOS-52210)
 
 
