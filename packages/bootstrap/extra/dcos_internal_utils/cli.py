@@ -9,6 +9,7 @@ import shutil
 import stat
 import sys
 import tempfile
+from pathlib import Path
 
 import cryptography.hazmat.backends
 import requests
@@ -20,6 +21,31 @@ from dcos_internal_utils import bootstrap, exhibitor
 from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
+
+
+def _known_exec_directory():
+    """
+    Returns a directory which we have told users to mark as ``exec``.
+    """
+    # This directory must be outside /tmp to support
+    # environments where /tmp is mounted noexec.
+    known_directory = Path('/var/lib/dcos/exec')
+    known_directory.mkdir(parents=True, exist_ok=True)
+    return known_directory
+
+
+def _create_private_directory(path, owner):
+    """
+    Create a directory which ``owner`` can create, modify and delete files in
+    but other non-root users cannot.
+
+    Args:
+        path (pathlib.Path): The path to the directory to create.
+        owner (str): The owner of the directory.
+    """
+    path.mkdir(exist_ok=True)
+    path.chmod(0o700)
+    shutil.chown(str(path), user=owner)
 
 
 def check_root(fun):
@@ -108,6 +134,48 @@ def dcos_net_agent(b, opts):
 def dcos_bouncer(b, opts):
     os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
     shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
+    # Permissions are restricted to the dcos_bouncer user as this directory
+    # contains sensitive data.  See
+    # https://jira.mesosphere.com/browse/DCOS-18350
+
+    # The ``bouncer_tmpdir`` directory path corresponds to the
+    # TMPDIR environment variable configured in the dcos-bouncer.service file.
+    user = 'dcos_bouncer'
+    bouncer_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=bouncer_tmpdir, owner=user)
+
+
+@check_root
+def dcos_history(b, opts):
+    # Permissions are restricted to the dcos_history user in case this
+    # directory contains sensitive data - we also want to avoid the security
+    # risk of other users writing to this directory.
+    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
+    # dcos-bouncer.
+
+    # The ``dcos_history_tmpdir`` directory path corresponds to the
+    # TMPDIR environment variable configured in the dcos-history.service file.
+    user = 'dcos_history'
+    dcos_history_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=dcos_history_tmpdir, owner=user)
+
+
+@check_root
+def dcos_cockroach_config_change(b, opts):
+    # Permissions are restricted to the dcos_cockroach user in case this
+    # directory contains sensitive data - we also want to avoid the security
+    # risk of other users writing to this directory.
+    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
+    # dcos-bouncer.
+    #
+    # The ``dcos_cockroach`` user is the ``User`` used in the
+    # ``dcos-cockroachdb-config-change.service``
+
+    # The ``cockroach_tmpdir`` directory path corresponds to the
+    # dcos-cockroachdb-config-change.service.
+    user = 'dcos_cockroach'
+    cockroach_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=cockroach_tmpdir, owner=user)
 
 
 def noop(b, opts):
@@ -130,8 +198,9 @@ bootstrappers = {
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
     'dcos-cockroach': noop,
+    'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
-    'dcos-history': noop,
+    'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
