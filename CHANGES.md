@@ -5,6 +5,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
 ### Fixed and improved
 
 * Consolidated diagnostics bundle creation by applying a timeout when reading systemd journal entries. (DCOS_OSS-5097)
