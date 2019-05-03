@@ -31,31 +31,11 @@ With that DC/OS now supports service accounts. Service accounts allow individual
 
 This change also aligned the authentication architectures between DC/OS Enterprise and DC/OS: the HTTP API for service account management as well as for service account login is now the same in both systems. The DC/OS authentication token implementation details are equivalent in both systems: it is a JSON Web Token (JWT) of type RS256 which can be validated by any component in the system after consulting the IAM's JSON Web Key Set (JWKS) endpoint.
 
-#### DC/OS metrics overhaul
+#### DC/OS monitoring overhaul
 
-Metrics for the following DC/OS components are now collected: CockroachDB, ZooKeeper, Exhibitor, Root Marathon, Metronome, Admin Router.
+Most DC/OS components (Admin Router, CockroachDB, ZooKeeper, Exhibitor, Root Marathon, Metronome, Spartan, Lashup, and others) now emit more useful metrics into the DC/OS metrics pipeline than before.
 
-* Admin Router Nginx Virtual Hosts metrics are now collected by default. An Nginx instance metrics display is available on `/nginx/status` on each DC/OS master node. (DCOS_OSS-4562)
-
-* Mesos metrics are now available by default. (DCOS_OSS-3815)
-
-* Metrics are tagged with their fault domain region and zone. (DCOS-16570)
-
-* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
-
-* Prometheus-format metrics can be gathered from tasks (DCOS_OSS-3717)
-
-* Expose internal metrics for the Telegraf metrics pipeline (DCOS_OSS-4608)
-
-* Add Metrics for dns forwarding (DCOS-48336)
-
-* Add metrics for lashup (DCOS_OSS-4756)
-
-* Enable metrics for fluent-bit (DCOS-51855)
-
-* Add basic support for prometheus to dcos-net (DCOS_OSS-4738)
-
-
+The new `DC/OS monitoring service` can be deployed from the DC/OS Universe. It consumes the metrics emitted by DC/OS components and workloads, feeds them into a time series database and provides a curated set of Grafana dashboards for a holistic DC/OS monitoring approach.
 
 ### Known limitations
 
@@ -65,25 +45,15 @@ Metrics for the following DC/OS components are now collected: CockroachDB, ZooKe
 
 ### What's new
 
-* Introduced the `dcos-ui-update-service`, this component exposes an API to update the servered `dcos-ui` version using the `dcos-ui` package published to Universe.
+* Introduced the `dcos-ui-update-service`. This component exposes an API which allows for updating the `dcos-ui` from the DC/OS Universe.
 
-* Release of Marathon 1.8 adds ability to launch App or Pod containers defined with a seccomp profile.
+* Marathon 1.8 is now included. Among others, it adds the ability to launch app or pod containers defined with a seccomp profile.
 
-* Release of Marathon 1.8 with refactored Task Instance management.
+* Updated the DC/OS UI to version [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10).
 
-* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
+* Introduced two new DC/OS configuration options, `metronome_gpu_scheduling_behavior`, and `marathon_gpu_scheduling_behavior`. By default, their values are set to `restricted`.
 
-* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
-
-* Bumped DC/OS UI to [master+v2.40.10](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.40.10)
-
-* Marathon and Metronome have DC/OS install flag to configure GPU support.  "restricted", "unrestricted", "undefined" and "" are valid.
-
-* Metronome supports UCR.
-
-* Metronome supports file-based secrets.
-
-* Metronome supports hybrid cloud.
+* Metronome supports the universal containerizer (UCR), as well as the "file-based secrets", and "hybrid cloud" DC/OS capabilities.
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
 
@@ -99,6 +69,17 @@ Metrics for the following DC/OS components are now collected: CockroachDB, ZooKe
 
 * DC/OS Net: OTP has been upgraded to version 21.3. (DCOS_OSS-4902)
 
+* Admin Router now collects so-called virtual host metrics, for fine-grained monitoring. Each Admin Router instance exposes a summary on `/nginx/status`. (DCOS_OSS-4562)
+
+* Mesos metrics are now available by default. (DCOS_OSS-3815)
+
+* Metrics are tagged with their fault domain region and zone. (DCOS-16570)
+
+* Internal metrics for the Telegraf-based metrics pipeline are now exposed. (DCOS_OSS-4608)
+
+* Telegraf's statsd input plugin reports additional internal metrics. (DCOS_OSS-4759)
+
+* Telegraf's procstat input plugin reports process metrics (DCOS-50778).
 
 ### Fixed and improved
 
