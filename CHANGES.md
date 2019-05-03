@@ -16,6 +16,8 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Updated ref of dvdcli and zookeeper to get uncached build jobs passing (DCOS-52092)
+
 ### Fixed and improved
 
 * Fix a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
