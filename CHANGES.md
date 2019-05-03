@@ -59,6 +59,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * ipset protocol ignores a missing `match` flag on some kernel versions. (DCOS-52780)
 
+* Support large uploads for Admin Router service endpoint. (DCOS-52768)
+
 ### Security updates
 
 * Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
