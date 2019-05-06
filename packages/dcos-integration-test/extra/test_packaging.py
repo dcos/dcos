@@ -161,6 +161,11 @@ def test_packaging_api(dcos_api_session):
     assert len(packages) == 0
 
 
+@pytest.mark.xfailflake(
+    jira="DCOS-53467",
+    reason="test_mom_installation fails on Permissive Mode Cluster.",
+    since="2019-05-06"
+)
 def test_mom_installation(dcos_api_session):
     """Test the Cosmos installation of marathon on marathon (MoM)
     """
