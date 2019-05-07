@@ -96,8 +96,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Made cluster identity configurable in dcos-net. (DCOS_OSS-4620)
 
 * DC/OS Diagnostics is now run as the `root` user to make sure that debug information is more complete, such as the output of `iptables`. (DCOS_OSS-3877)
-* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
-
 
 * Added a Mesos patch to ensure TEARDOWN is sent in v1 Java shim.
 
@@ -106,6 +104,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Upgraded the requests library used in DC/OS to 2.21.0 to address CVE-2018-18074 and CVE-2018-18074,
   both of which were moderate severity reports. (DCOS_OSS-4418)
 
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 ## DC/OS 1.11.8 (2018-12-06)
 
