@@ -65,6 +65,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
 
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
+
 
 ## DC/OS 1.12.3 (2019-03-14)
 
