@@ -456,6 +456,11 @@ def reserved_disk(dcos_api_session):
             assert r.status_code == 202, r.text
 
 
+@pytest.mark.xfailflake(
+    jira="DCOS-53469",
+    since="2019-05-07",
+    reason="test_min_allocatable_resources fails on a Permissive mode cluster."
+)
 def test_min_allocatable_resources(reserved_disk):
     """Test that the Mesos master creates offers for just `disk` resources."""
     # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
