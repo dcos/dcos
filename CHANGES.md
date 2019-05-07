@@ -30,7 +30,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fixed a race condition in L4LB. (DCOS_OSS-4939)
 
 * `docker-gc` now removes unused volumes. (DCOS_OSS-1502)
-* Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
 
 * Fixed a conflict between VIP port and port mapping. (DCOS_OSS-4970)
 
