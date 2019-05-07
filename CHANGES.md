@@ -103,6 +103,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Upgraded the requests library used in DC/OS to 2.21.0 to address CVE-2018-18074 and CVE-2018-18074,
   both of which were moderate severity reports. (DCOS_OSS-4418)
 
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 ## DC/OS 1.11.8 (2018-12-06)
 
