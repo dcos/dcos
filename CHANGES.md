@@ -16,6 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
 
 * Introduced a new DC/OS configuration variable `adminrouter_x_frame_options`, defaulting to `SAMEORIGIN`. This can be used for controlling the `X-Frame-Options` HTTP header sent with the DC/OS UI. (DCOS-49594)
+* Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
 * Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
 
