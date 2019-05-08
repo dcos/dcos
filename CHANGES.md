@@ -5,6 +5,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
 * Updated to [Mesos 1.5.4-dev](https://github.com/mesosphere/mesos/5f07b10b05f7d58a08735498215bec8bb3a12518/CHANGELOG).
 
 * Updated to [Metronome 0.6.18](https://github.com/dcos/metronome/blob/e06e8285c089ed7e03590053395f9436a4ac34f4/changelog.md#0618).
@@ -14,6 +16,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated REX-Ray to [version 0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
 
 * Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
+
+* Updated ref of dvdcli and zookeeper to get uncached build jobs passing (DCOS-52092)
 
 ### Fixed and improved
 
@@ -99,6 +103,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Upgraded the requests library used in DC/OS to 2.21.0 to address CVE-2018-18074 and CVE-2018-18074,
   both of which were moderate severity reports. (DCOS_OSS-4418)
 
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 ## DC/OS 1.11.8 (2018-12-06)
 
