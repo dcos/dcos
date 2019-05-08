@@ -262,6 +262,10 @@ class TestZooKeeperBackup:
                 '-p', str(tmp_path),
                 'root@{}'.format(master.public_ip_address),
             ])
+
+            # Store a datapoint which we expect to be lost.
+            not_backed_up_flag = _zk_set_flag(zk_hostports)
+
             # Restore ZooKeeper state from backup to all master nodes
             script_path = tmp_path / 'dcos-zk-restore'
             result = subprocess.check_output(
@@ -290,6 +294,8 @@ class TestZooKeeperBackup:
             _zk_check_flag(zk_hostports, persistent_flag)
             with pytest.raises(NoNodeError):
                 _zk_check_flag(zk_hostports, ephemeral_flag)
+            with pytest.raises(NoNodeError):
+                _zk_check_flag(zk_hostports, not_backed_up_flag)
 
     def test_snapshot_backup_and_restore(
         self,
@@ -364,6 +370,10 @@ class TestZooKeeperBackup:
                 '-p', str(tmp_path),
                 'root@{}'.format(master.public_ip_address),
             ])
+
+            # Store a datapoint which we expect to be lost.
+            not_backed_up_flag = _zk_set_flag(zk_hostports)
+
             # Restore ZooKeeper state from backup to all master nodes
             script_path = tmp_path / 'dcos-zk-restore'
             result = subprocess.check_output(
@@ -392,3 +402,6 @@ class TestZooKeeperBackup:
             _zk_check_flag(zk_hostports, persistent_flag)
             with pytest.raises(NoNodeError):
                 _zk_check_flag(zk_hostports, ephemeral_flag)
+            with pytest.raises(NoNodeError):
+                _zk_check_flag(zk_hostports, not_backed_up_flag)
+
