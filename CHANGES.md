@@ -17,7 +17,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Introduced a new DC/OS configuration variable `adminrouter_x_frame_options`, defaulting to `SAMEORIGIN`. This can be used for controlling the `X-Frame-Options` HTTP header sent with the DC/OS UI. (DCOS-49594)
 
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
 ### Fixed and improved
+
+* Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
 
 * Fixed a bug as of which DC/OS checks may accidentally fail, pre-maturely reporting `network is unreachable`. (DCOS-47608)
 
@@ -55,11 +59,15 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * ipset protocol ignores a missing `match` flag on some kernel versions. (DCOS-52780)
 
+* Support large uploads for Admin Router service endpoint. (DCOS-52768)
+
 ### Security updates
 
 * Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
 
 * The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
 
 
 ## DC/OS 1.12.3 (2019-03-14)
