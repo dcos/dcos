@@ -201,6 +201,10 @@ def test_memory_profiling(dcos_api_session):
 
 
 def test_blkio_stats(dcos_api_session):
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config['provider'] == 'azure' or expanded_config['platform'] == 'azure':
+        pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-49023')
+
     # Launch a Marathon application to do some disk writes, and then verify that
     # the cgroups blkio statistics of the application can be correctly retrieved.
     app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
