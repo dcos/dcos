@@ -3,7 +3,8 @@
     "openssl",
     "libevent",
     "curl",
-    "boost-libs"
+    "boost-libs",
+    "libseccomp"
   ],
   "single_source": {
     "kind": "git",
