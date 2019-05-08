@@ -1,0 +1,7 @@
+{
+  "single_source": {
+    "kind": "url_extract",
+    "url": "https://github.com/seccomp/libseccomp/releases/download/v2.3.3/libseccomp-2.3.3.tar.gz",
+    "sha1": "89b1f35447b1891a3051de979dc92ad9f7258b60"
+  }
+}
