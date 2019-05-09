@@ -75,6 +75,10 @@ class TestZooKeeperBackup:
     """
     Within the context of DC/OS ZooKeeper can be backed up on a running
     cluster and a previous state can be restored with minimal downtime.
+
+    NOTE: Tests in this class require the following commands to be available
+        in the environment: `bash`, `ssh` and `scp`
+
     """
 
     def test_transaction_log_backup_and_restore(
