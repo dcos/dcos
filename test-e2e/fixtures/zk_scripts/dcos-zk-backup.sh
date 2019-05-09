@@ -52,11 +52,11 @@ OPTS='-o ConnectTimeout=3 -o ConnectionAttempts=1
 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
 
 ssh $OPTS $KEY -tt ${SSH_USER}@${MASTER_HOST} << EOF
-  set -euxo pipefail
+  set -exo pipefail
   if [ -d "$REMOTE_BACKUP_DIR" ]; then
     exit 1
   fi
-  sudo mkdir -p $REMOTE_BACKUP_DIR
+  mkdir -p $REMOTE_BACKUP_DIR
   sudo systemctl stop dcos-exhibitor
   sudo cp -pr /var/lib/dcos/exhibitor/zookeeper ${REMOTE_BACKUP_DIR}/zookeeper
   sudo systemctl start dcos-exhibitor
@@ -69,7 +69,7 @@ EOF
 scp $OPTS $KEY -r ${SSH_USER}@${MASTER_HOST}:${REMOTE_BACKUP_DIR}/zk_backup-'*'.tar.gz ${DESTINATION_DIR}/ 2> /dev/null
 
 ssh $OPTS $KEY -tt ${SSH_USER}@${MASTER_HOST} << EOF
-  set -euxo pipefail
+  set -exo pipefail
   sudo rm -rf $REMOTE_BACKUP_DIR
   exit 0
 EOF

@@ -54,11 +54,11 @@ ssh $OPTS -tt $KEY ${SSH_USER}@${i} << EOF
   if [ -d "$REMOTE_BACKUP_DIR" ]; then
     exit 1
   fi
-  sudo mkdir -p $REMOTE_BACKUP_DIR
+  mkdir -p $REMOTE_BACKUP_DIR
   sudo systemctl stop dcos-exhibitor
   exit 0
 EOF
-scp $OPTS $KEY $BACKUP_PATH $SSH_USER@${i}:${REMOTE_BACKUP_DIR}/zk_backup.tar.gz 2> /dev/null
+scp $OPTS $KEY $BACKUP_PATH $SSH_USER@${i}:${REMOTE_BACKUP_DIR}/zk_backup.tar.gz
 done
 
 for i in "$@"
