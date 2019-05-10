@@ -381,6 +381,11 @@ def test_dcos_diagnostics_runner_cluster(dcos_api_session):
     dcos_api_session.metronome_one_off(job)
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-52191',
+    reason='test_dcos_diagnostics_bundle_create_download_delete is flaky.',
+    since='2019-04-26'
+)
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
