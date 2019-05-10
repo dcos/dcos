@@ -12,6 +12,9 @@ ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
 # zkCli.sh expects zkEnv.sh to be in the same directory.
 ln -s "$PKG_PATH/usr/zookeeper/bin/zkEnv.sh" "$PKG_PATH/bin/zkEnv.sh"
 
+cp -p "/pkg/extra/dcos_zk_backup.py" "$PKG_PATH/bin/dcos-zk"
+chmod +x "$PKG_PATH/bin/dcos-zk"
+
 # Explicitly set JAVA_HOME to our java package
 export JAVA_HOME="$(find /opt/mesosphere/packages -type d -name java--*)/usr/java"
 
