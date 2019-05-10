@@ -904,6 +904,73 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
             assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
 
 
+def test_task_prom_metrics_not_filtered(dcos_api_session):
+    """Assert that prometheus app metrics aren't filtered according to adminrouter config.
+
+    This is a regression test protecting a fix for a bug that mistakenly applied filter criteria intended for
+    adminrouter metrics to Prometheus-formatted metrics gathered from tasks.
+
+    """
+    task_name = 'test-task-prom-metrics-not-filtered'
+    metric_name_pfx = 'test_task_prom_metrics_not_filtered'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            'echo "Creating metrics file..."',
+
+            # Adminrouter metrics with direction="[1-5]xx" tags get dropped.
+            'echo "# TYPE {}_gauge gauge" >> metrics'.format(metric_name_pfx),
+            'echo "{}_gauge{{direction=\\"1xx\\"}} 100" >> metrics'.format(metric_name_pfx),
+
+            # Adminrouter metrics with these names get dropped.
+            'echo "# TYPE nginx_vts_filter_cache_foo gauge" >> metrics',
+            'echo "nginx_vts_filter_cache_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_server_foo gauge" >> metrics',
+            'echo "nginx_vts_server_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_upstream_foo gauge" >> metrics',
+            'echo "nginx_vts_upstream_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_foo_request_seconds gauge" >> metrics',
+            'echo "nginx_vts_foo_request_seconds 100" >> metrics',
+
+            'echo "Serving prometheus metrics on http://localhost:8000"',
+            'python3 -m http.server 8000',
+        ]),
+        'networks': [{'mode': 'container/bridge'}],
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/python:3'},
+            'portMappings': [
+                {
+                    'containerPort': 8000,
+                    'hostPort': 0,
+                    'protocol': 'tcp',
+                    'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
+                }
+            ]
+        },
+    }
+
+    logging.debug('Starting marathon app with config: %s', marathon_app)
+    expected_metrics = [
+        # metric_name, metric_value
+        ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
+        ('nginx_vts_filter_cache_foo.gauge', 100),
+        ('nginx_vts_server_foo.gauge', 100),
+        ('nginx_vts_upstream_foo.gauge', 100),
+        ('nginx_vts_foo_request_seconds.gauge', 100),
+    ]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+        for metric_name, metric_value in expected_metrics:
+            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+
+
 def test_metrics_containers_nan(dcos_api_session):
     """Assert that the metrics API can handle app metric gauges with NaN values."""
     task_name = 'test-metrics-containers-nan'
