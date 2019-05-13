@@ -62,6 +62,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Support large uploads for Admin Router service endpoint. (DCOS-52768)
 
+* Added Round-Robin DNS support. (DCOS_OSS-5118)
+
 ### Security updates
 
 * Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
