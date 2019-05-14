@@ -151,8 +151,7 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
-                if sample[0].startswith('nginx_vts_'):
-                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                if sample[0].startswith('nginx_vts_') and sample[1].get('dcos_component_name') == 'Admin Router':
                     return
         raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
     check_adminrouter_metrics()
@@ -289,8 +288,7 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
         response = get_metrics_prom(dcos_api_session, node)
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
-                if sample[0].startswith('nginx_'):
-                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                if sample[0].startswith('nginx_') and sample[1].get('dcos_component_name') == 'Admin Router':
                     basename = _nginx_vts_measurement_basename(sample[0])
                     measurements.add(basename)
                     if basename in expect_dropped:
@@ -328,8 +326,10 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('nginx_vts_'):
-                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                    if (
+                        sample[0].startswith('nginx_vts_') and
+                        sample[1].get('dcos_component_name') == 'Admin Router Agent'
+                    ):
                         return
             raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
         check_adminrouter_metrics()
@@ -365,8 +365,7 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('nginx_'):
-                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                    if sample[0].startswith('nginx_') and sample[1].get('dcos_component_name') == 'Admin Router Agent':
                         basename = _nginx_vts_measurement_basename(sample[0])
                         measurements.add(basename)
                         if basename in expect_dropped:
