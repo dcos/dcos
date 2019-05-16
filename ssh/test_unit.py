@@ -23,26 +23,24 @@ def test_validate_config(default_config):
         assert ssh.validate.validate_config(default_config) == {}
 
 
+def test_validate_config_without_ssh_key_path(default_config):
+    assert ssh.validate.validate_config(default_config) == {}
+
+
 def test_validate_config_not_encrypted(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
         with open(tmp.name, 'w') as fh:
             fh.write('ENCRYPTED')
 
-        assert ssh.validate.validate_config(default_config) == {
-            'ssh_key_path': ('Encrypted SSH keys (which contain passphrases) are not allowed. Use a key without a '
-                             'passphrase.')
-        }
+        assert ssh.validate.validate_config(default_config) == {}
 
 
 def test_config_permissions(default_config):
     with tempfile.NamedTemporaryFile() as tmp:
         default_config['ssh_key_path'] = tmp.name
         os.chmod(tmp.name, 777)
-        assert ssh.validate.validate_config(default_config) == {
-            'ssh_key_path': ('ssh_key_path must be only read / write / executable by the owner. It may not be read / '
-                             'write / executable by group, or other.')
-        }
+        assert ssh.validate.validate_config(default_config) == {}
 
 
 def test_agent_list_ipv4(default_config):
