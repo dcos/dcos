@@ -23,4 +23,4 @@ make install
 # TODO(cmaloney): This sort of stripping static libraries should be a generic
 # mkpanda option to apply to any package.
 find "$PKG_PATH/lib/" ! -type d -name "*.a" -delete
-find "$PKG_PATH/etc/ssl/man/" -delete
+rm -rf "$PKG_PATH/share/doc/openssl/html/man*"
