@@ -3,7 +3,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/libevent/libevent",
-    "ref": "c51b159cff9f5e86696f5b9a4c6f517276056258",
-    "ref_origin": "release-2.0.22-stable"
+    "ref": "e7ff4ef2b4fc950a765008c18e74281cdb5e7668",
+    "ref_origin": "release-2.1.8-stable"
   }
 }
