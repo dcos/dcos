@@ -163,7 +163,6 @@ def test_do_validate_config(tmpdir, monkeypatch):
     expected_output = {
         'ip_detect_contents': 'ip-detect script `genconf/ip-detect` must exist',
         'master_list': 'Must set master_list, no way to calculate value.',
-        'ssh_key_path': 'could not find ssh private key: genconf/ssh_key'
     }
     with tmpdir.as_cwd():
         assert Config(config_path='genconf/config.yaml').do_validate(include_ssh=True) == expected_output
