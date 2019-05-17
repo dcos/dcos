@@ -168,6 +168,10 @@ def test_mom_installation(dcos_api_session):
     if expanded_config.get('security') == 'strict':
         pytest.skip('MoM disabled for strict mode')
 
+    if expanded_config.get('security') == 'permissive':
+        pytest.skip('DCOS-53467 - test_mom_installation fails '
+                    'on permissive mode cluster')
+
     install_response = dcos_api_session.cosmos.install_package('marathon')
     data = install_response.json()
 

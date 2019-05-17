@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.13.0-alpha'
+DCOS_VERSION = '1.14-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -1152,8 +1152,8 @@ entry = {
         'mesos_container_log_sink': 'fluentbit+logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
-        'mesos_seccomp_enabled': 'false',
-        'mesos_seccomp_profile_name': '',
+        'mesos_seccomp_enabled': 'true',
+        'mesos_seccomp_profile_name': 'default.json',
         'metronome_gpu_scheduling_behavior': 'restricted',
         'marathon_gpu_scheduling_behavior': 'restricted',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
