@@ -1,6 +1,3 @@
-import os
-import stat
-
 import gen
 from gen.internals import Source, Target
 
