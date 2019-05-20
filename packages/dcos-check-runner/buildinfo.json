@@ -2,7 +2,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-check-runner.git",
-    "ref": "261cfa3847d1a9e355820b4793a52c857dd1d999",
+    "ref": "1c6ea9106d6fe47659aa03051b4b008597af4376",
     "ref_origin": "master"
   },
   "username": "dcos_check_runner"
