@@ -1,9 +1,15 @@
 [Unit]
 Description=DC/OS Poststart Checks: Run node-poststart checks
+
 [Service]
+Restart=always
+RestartSec=5
+StartLimitInterval=0
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-check-runner.env
 StandardOutput=journal
 User=root
 Group=root
+# Ensure dns is ready
+ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStart=/opt/mesosphere/bin/dcos-check-runner check node-poststart --config ${DCOS_CHECK_RUNNER_CONFIG_PATH}
