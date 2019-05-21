@@ -10,3 +10,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
 ### Breaking changes
+
+### Fixed and improved
+
+* `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing
+  deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
