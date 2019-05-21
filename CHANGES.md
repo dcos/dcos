@@ -49,6 +49,30 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * ipset protocol ignores a missing `match` flag on some kernel versions. (DCOS-52780)
 
+* Introduced global throttling for Marathon health checks (MARATHON-8596)
+
+* Do not fail on offers with RAW and BLOCK disk types (MARATHON-8590)
+
+* Map `tcp,udp` to `udp,tcp` during migration (MARATHON-8575)
+
+* Allow all users to execute /marathon/bin/marathon (MARATHON-8581)
+
+* Response asynchronously for all endpoints (MARATHON-8562)
+
+* Handle wrapped requests (MARATHON-8587)
+
+* Include app-id in illegal-state-exception (MARATHON-8577)
+
+* Fix race condition causing deployment info to not be available (MARATHON-8566)
+
+* Speed up `v2/pods/::status` (MARATHON-8563)
+
+* Set both maxConnections and maxOpenRequests to leader_proxy_max_open_connections (MARATHON-8555)
+
+* Prohibit usage of reserved keywords as parts of path ids (MARATHON-8466)
+
+* Enable Marathon to start on Java 9+ (MARATHON-8503)
+
 ### Security updates
 
 * Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
