@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.13.0-alpha'
+DCOS_VERSION = '1.14.0-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -824,7 +824,7 @@ def calculate_check_config(check_time):
     # The 30s value was chosen arbitrarily. It may be increased in the future as required.
     # We chose not to use a value greater than 1min, as the checks are automatically executed
     # in parallel every minute.
-    instant_check_timeout = "1s"
+    instant_check_timeout = "5s"
     normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
@@ -1152,8 +1152,8 @@ entry = {
         'mesos_container_log_sink': 'fluentbit+logrotate',
         'mesos_max_completed_tasks_per_framework': '',
         'mesos_recovery_timeout': '24hrs',
-        'mesos_seccomp_enabled': 'false',
-        'mesos_seccomp_profile_name': '',
+        'mesos_seccomp_enabled': 'true',
+        'mesos_seccomp_profile_name': 'default.json',
         'metronome_gpu_scheduling_behavior': 'restricted',
         'marathon_gpu_scheduling_behavior': 'restricted',
         'oauth_issuer_url': 'https://dcos.auth0.com/',

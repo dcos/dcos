@@ -1,29 +1,12 @@
-## DC/OS 1.14.0
+Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-```
-* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
-* For Security updates, please call out in Security updates section.
-* Add to the top of the existing list.
-* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
 
-Format of the entries must be.
+## DC/OS 1.14.0 (in development)
 
-* Entry with no-newlines. (DCOS_OSS_JIRA)
-<new-line>
-* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
-```
 
-### Highlights
+### What's new
 
-#### What's new
+* The DC/OS configuration variable `mesos_seccomp_enabled` now defaults to `true`, with `mesos_seccomp_profile_name` set to `default.json`. This is not expected to break tasks. If you experience problems, though, please note that seccomp can be disabled for individual tasks through the DC/OS SDK and Marathon. (DCOS-50038)
+* Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
-#### Breaking changes
-
-#### Known limitations
-
-#### Fixed and improved
-
-* DC/OS Diagnostics now applies timeouts when reading systemd journal entries. The timeout that's applied is configured via the `command-exec-timeout` configuration parameter.
-* `docker-gc` now removes unused volumes (DCOS_OSS-1502)
-
-* Use gzip compression for some UI assets (DCOS-5978)
+### Breaking changes

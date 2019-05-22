@@ -1,7 +1,7 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz",
-    "sha1": "2ecbe2e2cba15341a911f475dcb9e4d08877cc3b"
+    "url": "https://github.com/jedisct1/libsodium/releases/download/1.0.17/libsodium-1.0.17.tar.gz",
+    "sha1": "3ff06c4aa33eb0a9c9d83481a00383b0c81d4a80"
   }
 }

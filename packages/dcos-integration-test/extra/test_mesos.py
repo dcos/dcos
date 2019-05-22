@@ -201,6 +201,10 @@ def test_memory_profiling(dcos_api_session):
 
 
 def test_blkio_stats(dcos_api_session):
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config['provider'] == 'azure' or expanded_config['platform'] == 'azure':
+        pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-49023')
+
     # Launch a Marathon application to do some disk writes, and then verify that
     # the cgroups blkio statistics of the application can be correctly retrieved.
     app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
@@ -456,6 +460,11 @@ def reserved_disk(dcos_api_session):
             assert r.status_code == 202, r.text
 
 
+@pytest.mark.xfailflake(
+    jira="DCOS-53469",
+    since="2019-05-07",
+    reason="test_min_allocatable_resources fails on a Permissive mode cluster."
+)
 def test_min_allocatable_resources(reserved_disk):
     """Test that the Mesos master creates offers for just `disk` resources."""
     # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
