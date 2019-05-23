@@ -10,4 +10,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
+
 ### Breaking changes
+
+Admin Router now requires a CPU with SSE4.2 support.

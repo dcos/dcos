@@ -104,14 +104,12 @@ RUN curl -fsSL "$VTS_MODULE_DOWNLOAD_URL" -o vts-module.tar.gz \
 
 # Prepare Openresty. Compilation is done in Makefile itself so that
 # this container can be reused during DC/OS build.
-COPY openresty-1.13.6.1-no_sse42.patch /usr/local/src/
 RUN set -ex \
     && curl -fsSL "$OPENRESTY_DOWNLOAD_URL" -o openresty.tar.gz \
     && echo "$OPENRESTY_DOWNLOAD_SHASUM  openresty.tar.gz" | shasum -c - \
     && mkdir -pv $OPENRESTY_DIR \
     && tar --strip-components=1 -C $OPENRESTY_DIR -xzf openresty.tar.gz \
-    && rm openresty.tar.gz 
-#    && patch -p1 openresty/configure openresty-1.13.6.1-no_sse42.patch
+    && rm openresty.tar.gz
 
 COPY build-resty.sh $OPENRESTY_COMPILE_SCRIPT
 
