@@ -1,7 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 1.11.11 (in development)
+## DC/OS 1.11.11
 
 ### Notable changes
 
