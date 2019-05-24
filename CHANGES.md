@@ -10,6 +10,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
+* Bumped DC/OS UI to [master+v2.102.7](https://github.com/dcos/dcos-ui/releases/tag/master%2Bv2.102.7)
 
 ### Breaking changes
 
