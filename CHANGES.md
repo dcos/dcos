@@ -53,6 +53,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
 * Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
+* Added Fluent Bit metrics to the pipeline (DCOS-54425)
+
 
 ### Security updates
 
