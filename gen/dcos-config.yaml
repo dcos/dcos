@@ -2328,6 +2328,15 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Read metrics from Fluent Bi Prometheus endpoint
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62020/api/v1/metrics/prometheus"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Fluent Bit"
       # Transform Admin Router metrics from the Nginx VTS module
       [[processors.nginx_vts_filter]]
         [[processors.nginx_vts_filter.convert]]
