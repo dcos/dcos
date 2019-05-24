@@ -2328,7 +2328,7 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
-      # Read metrics from Fluent Bi Prometheus endpoint
+      # Read metrics from Fluent Bit Prometheus endpoint
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
         urls = ["http://127.0.0.1:62020/api/v1/metrics/prometheus"]
