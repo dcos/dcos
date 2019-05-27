@@ -13,6 +13,7 @@ import tarfile
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 
 
 EXHIBITOR_DIR = Path('/var/lib/dcos/exhibitor')
@@ -38,6 +39,18 @@ def run_command(cmd: str, verbose: bool) -> None:
     )
 
 
+def _is_zookeeper_running(verbose: bool) -> bool:
+    """
+    Exhibitor and therefore ZooKeeper is in active state (running).
+    """
+    try:
+        run_command('systemctl status dcos-exhibitor', verbose)
+    except subprocess.CalledProcessError:
+        # Non-zero exit code indicates Exhibitor + ZooKeeper are dead.
+        return False
+    return True
+
+
 def _copy_dir_and_preserve_ownership(src: Path, dst: Path, verbose: bool) -> None:
     """
     Copy a directory from ``src`` to ``dst`` and preserve ownership.
@@ -57,14 +70,15 @@ def backup_zookeeper(
     """
     DC/OS ZooKeeper instance backup procedure.
 
-    ZooKeeper changes files while it is running.
-    In order to have a consistent backup stop ZooKeeper, run the backup procedure, then start ZooKeeper.
+    ZooKeeper changes files while it is running.  In order to have a consistent
+    backup stop ZooKeeper, run the backup procedure, then start ZooKeeper.
 
     See https://jira.mesosphere.com/browse/DCOS_OSS-5185
     for changing this procedure to allow a backup without downtime.
 
-    If backing up ZooKeeper via a custom temporary directory, a failing backup procedure does not
-    clean up files created in the temporary directory in the process.
+    If backing up ZooKeeper via a custom temporary directory, a failing backup
+    procedure does not clean up files created in the temporary directory in the
+    process.
     """
     zookeeper_dir = EXHIBITOR_DIR / 'zookeeper'
     tmp_zookeeper_dir = tmp_dir / 'zookeeper'
@@ -73,6 +87,9 @@ def backup_zookeeper(
         backup=backup,
         tmp_zookeeper_dir=tmp_zookeeper_dir,
     ))
+
+    print('Validate that ZooKeeper is not running')
+    assert not _is_zookeeper_running(verbose)
 
     print('Copying ZooKeeper files to {tmp_zookeeper_dir}'.format(
         tmp_zookeeper_dir=tmp_zookeeper_dir,
@@ -86,7 +103,7 @@ def backup_zookeeper(
 
     print('Creating ZooKeeper backup tar archive at {backup}'.format(backup=backup))
 
-    def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
+    def _tar_filter(tar_info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
         if 'myid' in tar_info.name:
             return None
         if 'zookeeper.out' in tar_info.name:
@@ -115,11 +132,13 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
     DC/OS ZooKeeper restore from backup procedure.
 
     ZooKeeper changes files while it is running.
-    In order to have a consistent restore, one must stop ZooKeeper on all master nodes,
-    execute this procedure on all master nodes, and then start ZooKeeper again on all master nodes.
+    In order to have a consistent restore, one must stop ZooKeeper on all
+    master nodes, execute this procedure on all master nodes, and then start
+    ZooKeeper again on all master nodes.
 
-    Stopping ZooKeeper on all master nodes inevitably causes the DC/OS cluster to experience downtime.
-    The restore procedure is intended for recovering from an unusable DC/OS cluster as a last resort measure.
+    Stopping ZooKeeper on all master nodes inevitably causes the DC/OS cluster
+    to experience downtime.  The restore procedure is intended for recovering
+    from an unusable DC/OS cluster as a last resort measure.
 
     Running this script requires at least as much free space as the ZooKeeper backup takes.
     """
@@ -127,6 +146,9 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
     tmp_zookeeper_dir = tmp_dir / 'zookeeper'
 
     print('Restoring local ZooKeeper instance from {backup}'.format(backup=backup))
+
+    print('Validate that ZooKeeper is not running')
+    assert not _is_zookeeper_running(verbose)
 
     print('Moving ZooKeeper files temporarily to {tmp_zookeeper_dir}'.format(
         tmp_zookeeper_dir=tmp_zookeeper_dir,
@@ -159,42 +181,43 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
     print('Local ZooKeeper instance restored successfully')
 
 
-def _non_existing_file_path_existing_parent_dir(value) -> Path:
+def _non_existing_file_path_existing_parent_dir(value: str) -> Path:
     """
     Validate that the value is a path to a file which does not exist
     but the parent directory tree exists.
     """
+    print(type(value))
     path = Path(value)
     if path.exists():
-        raise ArgumentTypeError('Error: {} already exists'.format(path))
+        raise ArgumentTypeError('{} already exists'.format(path))
     if not Path(path.parent).exists():
         raise ArgumentTypeError(
-            'Error: {} parent directory does not exist'.format(path),
+            '{} parent directory does not exist'.format(path),
         )
     return path.absolute()
 
 
-def _existing_file_path(value) -> Path:
+def _existing_file_path(value: str) -> Path:
     """
     Validate that the value is a file which does exist on the file system.
     """
     path = Path(value)
     if not path.exists():
-        raise ArgumentTypeError('Error: {} does not exist'.format(path))
+        raise ArgumentTypeError('{} does not exist'.format(path))
     if not path.is_file():
-        raise ArgumentTypeError('Error: {} is not a file'.format(path))
+        raise ArgumentTypeError('{} is not a file'.format(path))
     return path.absolute()
 
 
-def _existing_dir_path(value) -> Path:
+def _existing_dir_path(value: str) -> Path:
     """
     Validate that the value is a directory which does exist on the file system.
     """
     path = Path(value)
     if not path.exists():
-        raise ArgumentTypeError('Error: {} does not exist'.format(path))
+        raise ArgumentTypeError('{} does not exist'.format(path))
     if not path.is_dir():
-        raise ArgumentTypeError('Error: {} is not a directory'.format(path))
+        raise ArgumentTypeError('{} is not a directory'.format(path))
     return path.absolute()
 
 
@@ -203,7 +226,7 @@ class DCOSZooKeeperCli:
     Minimal CLI to backup/restore the local DC/OS ZooKeeper instance.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Present CLI command choices.
         """
@@ -220,12 +243,12 @@ class DCOSZooKeeperCli:
                 'backup',
                 'restore',
             ],
-            help="CLI commands available",
+            help='CLI commands available',
         )
         args = parser.parse_args(sys.argv[1:2])
         getattr(self, args.command)()
 
-    def backup(self, args):
+    def backup(self) -> None:
         """
         Procedure invoked on `backup` command.
         """
@@ -236,19 +259,25 @@ class DCOSZooKeeperCli:
             )
         )
         parser.add_argument(
-            "backup_path",
+            'backup_path',
             type=_non_existing_file_path_existing_parent_dir,
-            help="File path that the gzipped ZooKeeper backup tar archive will be written to",
+            help=(
+                'File path that the gzipped ZooKeeper backup tar archive will '
+                'be written to'
+            ),
         )
         parser.add_argument(
-            "-t", "--tmp-dir",
+            '-t', '--tmp-dir',
             type=_existing_dir_path,
-            help="Location of an existing directory to be used as temporary directory in the process",
+            help=(
+                'Location of an existing directory to be used as temporary '
+                'directory in the process'
+            ),
         )
         parser.add_argument(
-            "-v", "--verbose",
+            '-v', '--verbose',
             action='store_true',
-            help="Display the output of every command",
+            help='Display the output of every command',
         )
         args = parser.parse_args(sys.argv[2:])
         if args.tmp_dir is None:
@@ -276,19 +305,25 @@ class DCOSZooKeeperCli:
             ),
         )
         parser.add_argument(
-            "backup_path",
+            'backup_path',
             type=_existing_file_path,
-            help="File path to the gzipped ZooKeeper backup tar archive to restore from",
+            help=(
+                'File path to the gzipped ZooKeeper backup tar archive to '
+                'restore from'
+            ),
         )
         parser.add_argument(
-            "-t", "--tmp-dir",
+            '-t', '--tmp-dir',
             type=_existing_dir_path,
-            help="Location of an existing directory to be used as temporary directory in the process",
+            help=(
+                'Location of an existing directory to be used as temporary '
+                'directory in the process'
+            ),
         )
         parser.add_argument(
-            "-v", "--verbose",
+            '-v', '--verbose',
             action='store_true',
-            help="Display the output of every command",
+            help='Display the output of every command',
         )
         args = parser.parse_args(sys.argv[2:])
         if args.tmp_dir is None:
@@ -306,12 +341,10 @@ class DCOSZooKeeperCli:
             )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         DCOSZooKeeperCli()
     except subprocess.CalledProcessError as exc:
         if exc.output:
             sys.stdout.buffer.write(exc.output)
         sys.exit(exc.returncode)
-
-# vi: ft=python
