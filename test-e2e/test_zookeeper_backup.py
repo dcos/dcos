@@ -15,6 +15,7 @@ from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 from kazoo.client import KazooClient
+from kazoo.client import KazooState
 from kazoo.exceptions import NoNodeError
 
 
@@ -60,12 +61,23 @@ def zk_client(three_master_cluster: Cluster) -> KazooClient:
     """
     zk_hostports = ','.join(['{}:2181'.format(m.public_ip_address)
                              for m in three_master_cluster.masters])
-    zk_client = KazooClient(hosts=zk_hostports)
+    zk_client = KazooClient(
+        hosts=zk_hostports,
+        # Avoid failure due to client session timeout.
+        timeout=60,
+    )
+    def zk_listener(state: KazooState) -> None:
+        # Open session after temporary connection loss.
+        if state == KazooState.CONNECTED:
+            zk_client.start()
+
+    zk_client.add_listener(zk_listener)
     zk_client.start()
     try:
         yield zk_client
     finally:
         zk_client.stop()
+        zk_client.close()
 
 
 def _zk_set_flag(zk_client: KazooClient, ephemeral: bool = False) -> str:
@@ -217,7 +229,7 @@ def _do_backup(master: Node, backup_local_path: Path) -> None:
     master.run(args=['systemctl', 'stop', 'dcos-exhibitor'])
 
     backup_name = backup_local_path.name
-    # Note that this must be an existing directory on the remote server.
+    # This must be an existing directory on the remote server.
     backup_remote_path = Path('/etc/') / backup_name
     master.run(
         args=[
