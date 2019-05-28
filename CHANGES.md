@@ -20,6 +20,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
+
 * `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
 
 * Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
