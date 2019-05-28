@@ -23,6 +23,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
 
+* Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
+
 ### Security updates
 
 * Updated urllib3 to version 1.24.2, for addressing [CVE-2019-11324](https://nvd.nist.gov/vuln/detail/CVE-2019-11324). (DCOS-52210)
