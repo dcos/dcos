@@ -38,6 +38,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Prevent instance leak. (DCOS-51375)
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
+* Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
 
 ### Security updates
 
