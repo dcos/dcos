@@ -44,7 +44,7 @@ def _is_zookeeper_running(verbose: bool) -> bool:
     Exhibitor and therefore ZooKeeper is in active state (running).
     """
     try:
-        run_command('systemctl status dcos-exhibitor', verbose)
+        run_command('systemctl is-active --quiet dcos-exhibitor', verbose)
     except subprocess.CalledProcessError:
         # Non-zero exit code indicates Exhibitor + ZooKeeper are dead.
         return False
@@ -90,7 +90,7 @@ def backup_zookeeper(
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        print('ZooKeeper must not be running. Aborting.')
+        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Copying ZooKeeper files to {tmp_zookeeper_dir}'.format(
@@ -155,7 +155,7 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        print('ZooKeeper must not be running. Aborting.')
+        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Moving ZooKeeper files temporarily to {tmp_zookeeper_dir}'.format(
@@ -194,7 +194,6 @@ def _non_existing_file_path_existing_parent_dir(value: str) -> Path:
     Validate that the value is a path to a file which does not exist
     but the parent directory tree exists.
     """
-    print(type(value))
     path = Path(value)
     if path.exists():
         raise ArgumentTypeError('{} already exists'.format(path))
