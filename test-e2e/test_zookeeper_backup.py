@@ -15,8 +15,8 @@ from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 from kazoo.client import KazooClient
-from kazoo.client import KazooState
 from kazoo.exceptions import NoNodeError
+from kazoo.retry import KazooRetry
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,17 +61,21 @@ def zk_client(three_master_cluster: Cluster) -> KazooClient:
     """
     zk_hostports = ','.join(['{}:2181'.format(m.public_ip_address)
                              for m in three_master_cluster.masters])
+    retry_policy = KazooRetry(
+        max_tries=-1,
+        delay=1,
+        backoff=1,
+        max_delay=600,
+        ignore_expire=True,
+    )
     zk_client = KazooClient(
         hosts=zk_hostports,
         # Avoid failure due to client session timeout.
-        timeout=60,
+        timeout=40,
+        # Work around https://github.com/python-zk/kazoo/issues/374
+        connection_retry=retry_policy,
+        command_retry=retry_policy,
     )
-    def zk_listener(state: KazooState) -> None:
-        # Open session after temporary connection loss.
-        if state == KazooState.CONNECTED:
-            zk_client.start()
-
-    zk_client.add_listener(zk_listener)
     zk_client.start()
     try:
         yield zk_client
@@ -80,22 +84,22 @@ def zk_client(three_master_cluster: Cluster) -> KazooClient:
         zk_client.close()
 
 
-def _zk_set_flag(zk_client: KazooClient, ephemeral: bool = False) -> str:
+def _zk_set_flag(zk: KazooClient, ephemeral: bool = False) -> str:
     """
     Store the `FLAG` value in ZooKeeper in a random Znode.
     """
     znode = '/{}'.format(uuid.uuid4())
-    zk_client.create(znode, makepath=True, ephemeral=ephemeral)
-    zk_client.set(znode, FLAG)
+    zk.retry(zk.create, znode, makepath=True, ephemeral=ephemeral)
+    zk.retry(zk.set, znode, FLAG)
     return znode
 
 
-def _zk_flag_exists(zk_client: KazooClient, znode: str) -> bool:
+def _zk_flag_exists(zk: KazooClient, znode: str) -> bool:
     """
     The `FLAG` value exists in ZooKeeper at `znode` path.
     """
     try:
-        value = zk_client.get(znode)
+        value = zk.retry(zk.get, znode)
     except NoNodeError:
         return False
     return bool(value[0] == FLAG)
@@ -137,17 +141,17 @@ class TestZooKeeperBackup:
         # Restore ZooKeeper from backup on all master nodes.
         _do_restore(three_master_cluster.masters, backup_local_path)
 
+        # Read from ZooKeeper after restore
+        assert _zk_flag_exists(zk_client, persistent_flag)
+        assert _zk_flag_exists(zk_client, ephemeral_flag)
+        assert not _zk_flag_exists(zk_client, not_backed_up_flag)
+
         # Assert that DC/OS is intact.
         wait_for_dcos_oss(
             cluster=three_master_cluster,
             request=request,
             log_dir=log_dir,
         )
-
-        # Read from ZooKeeper after restore
-        assert _zk_flag_exists(zk_client, persistent_flag)
-        assert _zk_flag_exists(zk_client, ephemeral_flag)
-        assert not _zk_flag_exists(zk_client, not_backed_up_flag)
 
     def test_snapshot_backup_and_restore(
         self,
@@ -207,17 +211,17 @@ class TestZooKeeperBackup:
         # Restore ZooKeeper from backup on all master nodes.
         _do_restore(three_master_cluster.masters, backup_local_path)
 
+        # Read from ZooKeeper after restore
+        assert _zk_flag_exists(zk_client, persistent_flag)
+        assert _zk_flag_exists(zk_client, ephemeral_flag)
+        assert not _zk_flag_exists(zk_client, not_backed_up_flag)
+
         # Assert DC/OS is intact.
         wait_for_dcos_oss(
             cluster=three_master_cluster,
             request=request,
             log_dir=log_dir,
         )
-
-        # Read from ZooKeeper after restore
-        assert _zk_flag_exists(zk_client, persistent_flag)
-        assert _zk_flag_exists(zk_client, ephemeral_flag)
-        assert not _zk_flag_exists(zk_client, not_backed_up_flag)
 
 
 def _do_backup(master: Node, backup_local_path: Path) -> None:

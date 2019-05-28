@@ -89,7 +89,9 @@ def backup_zookeeper(
     ))
 
     print('Validate that ZooKeeper is not running')
-    assert not _is_zookeeper_running(verbose)
+    if _is_zookeeper_running(verbose):
+        print('ZooKeeper must not be running. Aborting.')
+        sys.exit(1)
 
     print('Copying ZooKeeper files to {tmp_zookeeper_dir}'.format(
         tmp_zookeeper_dir=tmp_zookeeper_dir,
@@ -104,8 +106,12 @@ def backup_zookeeper(
     print('Creating ZooKeeper backup tar archive at {backup}'.format(backup=backup))
 
     def _tar_filter(tar_info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
+        # The myid file is not backed up because it identifies the local
+        # ZooKeeper instance and is automatically recreated on start up.
         if 'myid' in tar_info.name:
             return None
+        # The `zookeeper.out` contains ZooKeeper logs written to `stdout`.
+        # These take up space and are irrelevant to the backup procedure.
         if 'zookeeper.out' in tar_info.name:
             return None
         return tar_info
@@ -148,7 +154,9 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
     print('Restoring local ZooKeeper instance from {backup}'.format(backup=backup))
 
     print('Validate that ZooKeeper is not running')
-    assert not _is_zookeeper_running(verbose)
+    if _is_zookeeper_running(verbose):
+        print('ZooKeeper must not be running. Aborting.')
+        sys.exit(1)
 
     print('Moving ZooKeeper files temporarily to {tmp_zookeeper_dir}'.format(
         tmp_zookeeper_dir=tmp_zookeeper_dir,
@@ -162,7 +170,7 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
         dst=tmp_zookeeper_dir,
         verbose=verbose,
     )
-    shutil.rmtree(path=str(zookeeper_dir), ignore_errors=True)
+    shutil.rmtree(path=str(zookeeper_dir))
 
     print('Restoring {zookeeper_dir} from backup {backup}'.format(
         zookeeper_dir=zookeeper_dir,
