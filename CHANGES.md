@@ -23,6 +23,20 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
 
+* [Marathon] Fix restarting resident apps and pods. (DCOS_OSS-5212)
+
+* [Marathon] Only match disk with profile if that profile is needed. (DCOS_OSS-5211)
+
+* [Marathon] Better handle invalid state command exceptions in InstanceTrackerActor. (MARATHON-8623)
+
+* [Marathon] Add TASK_UNKNOWN to the valid mesos task status enums. (MARATHON-8624)
+
+* [Marathon] Prevent a rare but benign NPE when a deployment is canceled. (MARATHON-8616)
+
+* [Marathon] Prevent instance leak. (DCOS-51375)
+
+* [Marathon] Introduce new exit error code when the framework was removed from Mesos.
+
 ### Security updates
 
 * Updated urllib3 to version 1.24.2, for addressing [CVE-2019-11324](https://nvd.nist.gov/vuln/detail/CVE-2019-11324). (DCOS-52210)
