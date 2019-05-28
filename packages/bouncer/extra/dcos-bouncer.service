@@ -13,6 +13,7 @@ User=dcos_bouncer
 PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/run/dcos/etc/bouncer
+EnvironmentFile=/opt/mesosphere/etc/proxy.env
 Environment=BOUNCER_PACKAGE_PATH=${PKG_PATH}
 Environment=BOUNCER_CONFIG_FILE_PATH=/opt/mesosphere/etc/bouncer-config.json
 Environment=SECRET_KEY_FILE_PATH=/run/dcos/dcos-bouncer/bouncer_private.key
