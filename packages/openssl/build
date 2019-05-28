@@ -9,9 +9,7 @@ pushd "/pkg/src/openssl"
   --openssldir="$PKG_PATH/etc/ssl" \
   shared \
   linux-x86_64 \
-  no-krb5 \
   no-rc4 \
-  no-ssl2 \
   no-ssl3 \
   no-comp \
   enable-ec_nistp_64_gcc_128 \
@@ -25,4 +23,4 @@ make install
 # TODO(cmaloney): This sort of stripping static libraries should be a generic
 # mkpanda option to apply to any package.
 find "$PKG_PATH/lib/" ! -type d -name "*.a" -delete
-find "$PKG_PATH/etc/ssl/man/" -delete
+rm -rf "$PKG_PATH/share/doc/openssl/html/man*"

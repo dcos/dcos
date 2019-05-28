@@ -1,8 +1,8 @@
 FROM ubuntu:16.04
 
 # Let's try to limit the number of layers to minimum:
-ENV OPENRESTY_VERSION=1.13.6.1 \
-    OPENRESTY_DOWNLOAD_SHASUM=775b89cfadf3dbfa13864f3ad4dee4f67dac6604 \
+ENV OPENRESTY_VERSION=1.13.6.2 \
+    OPENRESTY_DOWNLOAD_SHASUM=870055f4698168f1f045de92c467a33361dee5d7 \
     OPENRESTY_DIR=/usr/local/src/openresty \
     OPENRESTY_COMPILE_SCRIPT=/usr/local/src/build-resty.sh \
     OPENRESTY_COMPILE_OPTS="" \
@@ -104,14 +104,12 @@ RUN curl -fsSL "$VTS_MODULE_DOWNLOAD_URL" -o vts-module.tar.gz \
 
 # Prepare Openresty. Compilation is done in Makefile itself so that
 # this container can be reused during DC/OS build.
-COPY openresty-1.13.6.1-no_sse42.patch /usr/local/src/
 RUN set -ex \
     && curl -fsSL "$OPENRESTY_DOWNLOAD_URL" -o openresty.tar.gz \
     && echo "$OPENRESTY_DOWNLOAD_SHASUM  openresty.tar.gz" | shasum -c - \
     && mkdir -pv $OPENRESTY_DIR \
     && tar --strip-components=1 -C $OPENRESTY_DIR -xzf openresty.tar.gz \
-    && rm openresty.tar.gz \
-    && patch -p1 openresty/configure openresty-1.13.6.1-no_sse42.patch
+    && rm openresty.tar.gz
 
 COPY build-resty.sh $OPENRESTY_COMPILE_SCRIPT
 
