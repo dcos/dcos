@@ -918,6 +918,8 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
         'cpus': 0.1,
         'mem': 128,
         'cmd': '\n'.join([
+            # Serve metrics that would be dropped by Telegraf were they collected from the adminrouter. These are task
+            # metrics, so we expect Telegraf to gather and output them.
             'echo "Creating metrics file..."',
 
             # Adminrouter metrics with direction="[1-5]xx" tags get dropped.
