@@ -1,7 +1,17 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 1.13.2 (in development)
 
-## DC/OS 1.13.1 (in development)
+### Notable changes
+
+
+### Fixed and improved
+
+
+### Security updates
+
+
+## DC/OS 1.13.1
 
 ### Notable changes
 
