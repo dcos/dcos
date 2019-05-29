@@ -54,3 +54,4 @@ groups:
     group_1:
         - test_service_account.py
         - test_master_node_replacement.py
+        - test_zookeeper_backup.py

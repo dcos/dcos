@@ -1,7 +1,8 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.04.25.0
+git+https://github.com/dcos/dcos-e2e.git@2019.05.23.0
 cryptography==2.5
 docker==3.7.0
 jwt==0.5.4
+kazoo==2.6.1
 pytest==4.1.1
 requests==2.21.0
 wheel==0.33.1
