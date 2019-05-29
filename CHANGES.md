@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
-* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS.
+* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
 
 * The DC/OS configuration variable `mesos_seccomp_enabled` now defaults to `true`, with `mesos_seccomp_profile_name` set to `default.json`. This is not expected to break tasks. If you experience problems, though, please note that seccomp can be disabled for individual tasks through the DC/OS SDK and Marathon. (DCOS-50038)
 
