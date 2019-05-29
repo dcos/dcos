@@ -681,7 +681,7 @@ def validate_state(zip_state):
     assert isinstance(zip_state, zipfile.ZipExtFile)
     state_output = gzip.decompress(zip_state.read())
     state = json.loads(state_output)
-    assert len(state["frameworks"]) == 2, "bundle must contains information about frameworks"
+    assert len(state["frameworks"]) > 1, "bundle must contain information about frameworks"
     task_count = len(state["frameworks"][1]["tasks"]) + len(state["frameworks"][0]["tasks"])
     assert task_count == 1, "bundle must contains information about tasks"
 
