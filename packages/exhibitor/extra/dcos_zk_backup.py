@@ -116,7 +116,7 @@ def backup_zookeeper(
             return None
         return tar_info
 
-    with tarfile.open(name=backup, mode='x:gz') as tar:
+    with tarfile.open(name=str(backup), mode='x:gz') as tar:
         tar.add(
             name=str(tmp_zookeeper_dir),
             arcname='./zookeeper',
@@ -176,7 +176,7 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
         zookeeper_dir=zookeeper_dir,
         backup=backup,
     ))
-    with tarfile.open(name=backup, mode='r:gz') as tar:
+    with tarfile.open(name=str(backup), mode='r:gz') as tar:
         tar.extractall(path=str(EXHIBITOR_DIR))
         if verbose:
             tar.list()
