@@ -1,7 +1,18 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 1.13.2 (in development)
 
-## DC/OS 1.13.1 (in development)
+
+### Notable changes
+
+
+### Fixed and improved
+
+
+### Security updates
+
+
+## DC/OS 1.13.1
 
 ### Notable changes
 
@@ -45,7 +56,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated urllib3 to version 1.24.2, for addressing [CVE-2019-11324](https://nvd.nist.gov/vuln/detail/CVE-2019-11324). (DCOS-52210)
 
 
-## DC/OS 1.13.0
+## DC/OS 1.13.0 (2019-05-13)
 
 ### Highlights
 
