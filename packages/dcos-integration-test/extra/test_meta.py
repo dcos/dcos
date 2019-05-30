@@ -35,7 +35,12 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
     result = subprocess.run(
         args=args,
         stdout=subprocess.PIPE,
-        env={**os.environ, **{'PYTHONIOENCODING': 'UTF-8'}},
+        env={
+            **os.environ,
+            **{
+                'PYTHONIOENCODING': 'UTF-8'
+            }
+        },
     )
     output = result.stdout
     for line in output.splitlines():
@@ -60,8 +65,8 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
             # Some tests are skipped on collection.
             b'skipped in' not in line and
             # Some tests are deselected by the ``pytest.ini`` configuration.
-            b' deselected' not in line and
-            not line.startswith(b'no tests ran in')
+            b' deselected' not in line
+            and not line.startswith(b'no tests ran in')
         ):
             tests.add(line.decode())
 
@@ -105,7 +110,9 @@ def test_test_groups() -> None:
     if errs:
         for message in errs:
             log.error(message)
-        raise Exception("Some tests are not collected exactly once, see errors.")
+        raise Exception(
+            "Some tests are not collected exactly once, see errors."
+        )
 
     all_tests = _tests_from_pattern(ci_pattern='')
     assert tests_to_patterns.keys() - all_tests == set()

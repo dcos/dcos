@@ -18,16 +18,14 @@ def test_if_rlimits_can_be_used(dcos_api_session):
     argv = [
         '/opt/mesosphere/bin/mesos-execute',
         '--rlimits={"rlimits": [{"type":"RLMT_CORE"}]}',
-        '--master=leader.mesos:5050',
-        '--name={}'.format(name),
-        '--command=ulimit -c | grep -q unlimited',
-        '--shell=true',
-        '--env={"LC_ALL":"C"}']
+        '--master=leader.mesos:5050', '--name={}'.format(name),
+        '--command=ulimit -c | grep -q unlimited', '--shell=true',
+        '--env={"LC_ALL":"C"}'
+    ]
 
     output = subprocess.check_output(
-        argv,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True)
+        argv, stderr=subprocess.STDOUT, universal_newlines=True
+    )
 
     expected_output = \
         "Received status update TASK_FINISHED for task '{name}'".format(

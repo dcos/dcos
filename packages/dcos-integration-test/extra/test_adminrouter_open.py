@@ -3,13 +3,11 @@ import re
 
 import pytest
 
-
 log = logging.getLogger(__name__)
 
 
 @pytest.mark.security
 class TestRedirectSecurity:
-
     @pytest.mark.parametrize(
         'path,expected', (
             ('/exhibitor', 301),
@@ -36,9 +34,7 @@ class TestRedirectSecurity:
         Redirection does not propagate a bad Host header
         """
         r = dcos_api_session.get(
-            path,
-            headers={'Host': 'bad.host'},
-            allow_redirects=False
+            path, headers={'Host': 'bad.host'}, allow_redirects=False
         )
 
         r.raise_for_status()
@@ -63,7 +59,9 @@ class TestEncodingGzip:
         assert len(filenames) > 0
         for filename in set(filenames):
             log.info('Load %r', filename)
-            r = dcos_api_session.head(filename, headers={'Accept-Encoding': 'gzip'})
+            r = dcos_api_session.head(
+                filename, headers={'Accept-Encoding': 'gzip'}
+            )
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert r.headers.get('content-encoding') == 'gzip'
@@ -81,7 +79,9 @@ class TestEncodingGzip:
             log.info('Load %r', filename)
             # Set a benign `Accept-Encoding` header to prevent underlying
             # libraries setting their own header based on their capabilities.
-            r = dcos_api_session.head(filename, headers={'Accept-Encoding': 'identity'})
+            r = dcos_api_session.head(
+                filename, headers={'Accept-Encoding': 'identity'}
+            )
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert 'content-encoding' not in r.headers

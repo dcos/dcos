@@ -7,7 +7,6 @@ import subprocess
 
 import pytest
 
-
 __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
@@ -15,6 +14,7 @@ __contact__ = 'dcos-security@mesosphere.io'
 @pytest.mark.supportedwindows
 def test_verify_units():
     """Test that all systemd units are valid."""
+
     def _check_units(path):
         """Verify all the units given by `path'"""
         for file in glob.glob(path):
@@ -22,7 +22,8 @@ def test_verify_units():
                 ["/usr/bin/systemd-analyze", "verify", "--no-pager", file],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                universal_newlines=True)
+                universal_newlines=True
+            )
             # systemd-analyze returns 0 even if there were warnings, so we
             # assert that the command output was empty.
             if cmd.stdout:
@@ -82,12 +83,17 @@ def test_socket_units():
     """Test that socket units configure socket files in /run/dcos
     that are owned by 'dcos_adminrouter'.
     """
+
     def _check_unit(file):
         logging.info("Checking socket unit {}".format(file))
         out = subprocess.check_output(
-            ["/usr/bin/systemctl", "show", "--no-pager", os.path.basename(file)],
+            [
+                "/usr/bin/systemctl", "show", "--no-pager",
+                os.path.basename(file)
+            ],
             stderr=subprocess.STDOUT,
-            universal_newlines=True)
+            universal_newlines=True
+        )
         user = ""
         group = ""
         mode = ""
@@ -106,7 +112,9 @@ def test_socket_units():
                 # character in the value of the ListenStream directive.
                 if v.startswith("/"):
                     had_unix_socket = True
-                    assert v.startswith("/run/dcos/"), "DC/OS unix sockets must go in the /run/dcos directory"
+                    assert v.startswith(
+                        "/run/dcos/"
+                    ), "DC/OS unix sockets must go in the /run/dcos directory"
             if k == "SocketMode":
                 mode = v
         if not had_unix_socket:

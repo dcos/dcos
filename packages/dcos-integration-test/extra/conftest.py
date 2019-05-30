@@ -25,15 +25,16 @@ def dcos_api_session(dcos_api_session_factory):
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
     api = dcos_api_session_factory(
-        exhibitor_admin_password=exhibitor_admin_password,
-        **args)
+        exhibitor_admin_password=exhibitor_admin_password, **args
+    )
     api.wait_for_dcos()
     return api
 
 
 def pytest_addoption(parser):
-    parser.addoption("--windows-only", action="store_true",
-                     help="run only Windows tests")
+    parser.addoption(
+        "--windows-only", action="store_true", help="run only Windows tests"
+    )
 
 
 def pytest_runtest_setup(item):
@@ -45,8 +46,12 @@ def pytest_runtest_setup(item):
 
 
 def pytest_configure(config):
-    config.addinivalue_line('markers', 'first: run test before all not marked first')
-    config.addinivalue_line('markers', 'last: run test after all not marked last')
+    config.addinivalue_line(
+        'markers', 'first: run test before all not marked first'
+    )
+    config.addinivalue_line(
+        'markers', 'last: run test after all not marked last'
+    )
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -82,7 +87,9 @@ def clean_marathon_state(dcos_api_session):
         try:
             dcos_api_session.marathon.purge()
         except Exception as exc:
-            log.exception('Ignoring exception during marathon.purge(): %s', exc)
+            log.exception(
+                'Ignoring exception during marathon.purge(): %s', exc
+            )
             if isinstance(exc, requests.exceptions.HTTPError):
                 log.error('exc.response.text: %s', exc.response.text)
 
@@ -111,13 +118,12 @@ def _dump_diagnostics(request, dcos_api_session):
     """
     yield
 
-    make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
+    make_diagnostics_report = os.environ.get(
+        'DIAGNOSTICS_DIRECTORY'
+    ) is not None
     if make_diagnostics_report:
         creation_start = datetime.datetime.now()
-        last_datapoint = {
-            'time': None,
-            'value': 0
-        }
+        last_datapoint = {'time': None, 'value': 0}
 
         health_url = dcos_api_session.default_url.copy(
             query='cache=0',

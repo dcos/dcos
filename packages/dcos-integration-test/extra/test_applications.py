@@ -24,15 +24,23 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
     is the default, root
     """
     expanded_config = test_helpers.get_expanded_config()
-    default_os_user = 'nobody' if expanded_config.get('security') == 'strict' else 'root'
+    default_os_user = 'nobody' if expanded_config.get(
+        'security'
+    ) == 'strict' else 'root'
 
     if 'container' in app and app['container']['type'] == 'DOCKER':
         marathon_user = 'root'
     else:
         marathon_user = app.get('user', default_os_user)
     with dcos_api_session.marathon.deploy_and_cleanup(app):
-        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
-        r = requests.get('http://{}:{}/test_uuid'.format(service_points[0].host, service_points[0].port))
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(
+            app['id']
+        )
+        r = requests.get(
+            'http://{}:{}/test_uuid'.format(
+                service_points[0].host, service_points[0].port
+            )
+        )
         if r.status_code != 200:
             msg = "Test server replied with non-200 reply: '{0} {1}. "
             msg += "Detailed explanation of the problem: {2}"
@@ -42,9 +50,11 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
 
         assert r_data['test_uuid'] == test_uuid
 
-        r = requests.get('http://{}:{}/operating_environment'.format(
-            service_points[0].host,
-            service_points[0].port))
+        r = requests.get(
+            'http://{}:{}/operating_environment'.format(
+                service_points[0].host, service_points[0].port
+            )
+        )
 
         if r.status_code != 200:
             msg = "Test server replied with non-200 reply: '{0} {1}. "
@@ -55,17 +65,30 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
         if marathon_user == 'root':
             assert json_uid == 0, "App running as root should have uid 0."
         else:
-            assert json_uid != 0, ("App running as {} should not have uid 0.".format(marathon_user))
+            assert json_uid != 0, (
+                "App running as {} should not have uid 0.".
+                format(marathon_user)
+            )
 
 
-def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: str):
+def deploy_test_app_and_check_windows(
+    dcos_api_session, app: dict, test_uuid: str
+):
     """This method deploys the python test server container and then checks
     if the container is up and can accept connections.
     """
     # Increase the timeout of the application to avoid failing while pulling the docker image
-    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=2400, ignore_failed_tasks=True):
-        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
-        r = requests.get('http://{}:{}'.format(service_points[0].host, service_points[0].port))
+    with dcos_api_session.marathon.deploy_and_cleanup(
+        app, timeout=2400, ignore_failed_tasks=True
+    ):
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(
+            app['id']
+        )
+        r = requests.get(
+            'http://{}:{}'.format(
+                service_points[0].host, service_points[0].port
+            )
+        )
         if r.status_code != 200:
             msg = "Test server replied with non-200 reply: '{0} {1}. "
             msg += "Detailed explanation of the problem: {2}"
@@ -74,7 +97,9 @@ def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: st
 
 @pytest.mark.first
 def test_docker_image_availablity():
-    assert test_helpers.docker_pull_image("debian:stretch-slim"), "docker pull failed for image used in the test"
+    assert test_helpers.docker_pull_image(
+        "debian:stretch-slim"
+    ), "docker pull failed for image used in the test"
 
 
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
@@ -91,7 +116,9 @@ def test_if_marathon_app_can_be_deployed(dcos_api_session):
     "GET /test_uuid" request is issued to the app. If the returned UUID matches
     the one assigned to test - test succeeds.
     """
-    deploy_test_app_and_check(dcos_api_session, *test_helpers.marathon_test_app())
+    deploy_test_app_and_check(
+        dcos_api_session, *test_helpers.marathon_test_app()
+    )
 
 
 def test_if_docker_app_can_be_deployed(dcos_api_session):
@@ -105,7 +132,9 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
         *test_helpers.marathon_test_app(
             network=marathon.Network.BRIDGE,
             container_type=marathon.Container.DOCKER,
-            container_port=9080))
+            container_port=9080
+        )
+    )
 
 
 @pytest.mark.supportedwindows
@@ -116,13 +145,17 @@ def test_if_docker_app_can_be_deployed_windows(dcos_api_session):
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected on Windows.
     """
-    deploy_test_app_and_check_windows(dcos_api_session, *test_helpers.marathon_test_app_windows())
+    deploy_test_app_and_check_windows(
+        dcos_api_session, *test_helpers.marathon_test_app_windows()
+    )
 
 
-@pytest.mark.parametrize('healthcheck', [
-    marathon.Healthcheck.HTTP,
-    marathon.Healthcheck.MESOS_HTTP,
-])
+@pytest.mark.parametrize(
+    'healthcheck', [
+        marathon.Healthcheck.HTTP,
+        marathon.Healthcheck.MESOS_HTTP,
+    ]
+)
 def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
     """Marathon app inside ucr deployment integration test.
 
@@ -133,10 +166,14 @@ def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
         dcos_api_session,
         *test_helpers.marathon_test_app(
             container_type=marathon.Container.MESOS,
-            healthcheck_protocol=healthcheck))
+            healthcheck_protocol=healthcheck
+        )
+    )
 
 
-def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
+def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(
+    dcos_api_session
+):
     """Marathon app deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon app using the Mesos containerizer with
@@ -152,10 +189,15 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
     """
     deploy_test_app_and_check(
         dcos_api_session,
-        *test_helpers.marathon_test_app(container_type=marathon.Container.MESOS))
+        *test_helpers.marathon_test_app(
+            container_type=marathon.Container.MESOS
+        )
+    )
 
 
-def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session):
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(
+    dcos_api_session
+):
     """Marathon pods deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon pods can be deployed.
@@ -165,25 +207,58 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
 
     # create pod with trivial apps that function as long running processes
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1
+        },
+        'environment': {
+            'PING': 'PONG'
+        },
         'containers': [
             {
                 'name': 'ct1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'debian:stretch-slim'},
-                'exec': {'command': {'shell': 'touch foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test -f foo'}}
-            },
-            {
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32
+                },
+                'image': {
+                    'kind': 'DOCKER',
+                    'id': 'debian:stretch-slim'
+                },
+                'exec': {
+                    'command': {
+                        'shell': 'touch foo; while true; do sleep 1; done'
+                    }
+                },
+                'healthcheck': {
+                    'command': {
+                        'shell': 'test -f foo'
+                    }
+                }
+            }, {
                 'name': 'ct2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32
+                },
+                'exec': {
+                    'command': {
+                        'shell':
+                        'echo $PING > foo; while true; do sleep 1; done'
+                    }
+                },
+                'healthcheck': {
+                    'command': {
+                        'shell': 'test $PING = `cat foo`'
+                    }
+                }
             }
         ],
-        'networks': [{'mode': 'host'}]
+        'networks': [{
+            'mode': 'host'
+        }]
     }
 
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
@@ -206,7 +281,9 @@ def test_octarine(dcos_api_session, timeout=30):
     app['requirePorts'] = True
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
-        service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
+        service_points = dcos_api_session.marathon.get_app_service_endpoints(
+            app['id']
+        )
         port_number = service_points[0].port
         # It didn't actually grab port 80 when requirePorts was unset
         assert port_number == app['portDefinitions'][0]["port"]
@@ -215,7 +292,9 @@ def test_octarine(dcos_api_session, timeout=30):
         port_name = app['portDefinitions'][0]["name"]
         port_protocol = app['portDefinitions'][0]["protocol"]
 
-        srv = "_{}._{}._{}.marathon.mesos".format(port_name, app_name, port_protocol)
+        srv = "_{}._{}._{}.marathon.mesos".format(
+            port_name, app_name, port_protocol
+        )
         addr = "{}.marathon.mesos".format(app_name)
         transparent_suffix = ".mydcos.directory"
 
@@ -227,19 +306,41 @@ def test_octarine(dcos_api_session, timeout=30):
 
         standard_addr = "{}:{}/ping".format(addr, port_number)
         standard_srv = "{}/ping".format(srv)
-        transparent_addr = "{}{}:{}/ping".format(addr, transparent_suffix, t_addr_bind)
-        transparent_srv = "{}{}:{}/ping".format(srv, transparent_suffix, t_srv_bind)
+        transparent_addr = "{}{}:{}/ping".format(
+            addr, transparent_suffix, t_addr_bind
+        )
+        transparent_srv = "{}{}:{}/ping".format(
+            srv, transparent_suffix, t_srv_bind
+        )
 
         # The uuids are different between runs so that they don't have a
         # chance of colliding. They shouldn't anyways, but just to be safe.
-        octarine_runner(dcos_api_session, standard_mode, uuid + "1", standard_addr)
-        octarine_runner(dcos_api_session, standard_mode, uuid + "2", standard_srv)
-        octarine_runner(dcos_api_session, transparent_mode, uuid + "3", transparent_addr, bind_port=t_addr_bind)
-        octarine_runner(dcos_api_session, transparent_mode, uuid + "4", transparent_srv, bind_port=t_srv_bind)
+        octarine_runner(
+            dcos_api_session, standard_mode, uuid + "1", standard_addr
+        )
+        octarine_runner(
+            dcos_api_session, standard_mode, uuid + "2", standard_srv
+        )
+        octarine_runner(
+            dcos_api_session,
+            transparent_mode,
+            uuid + "3",
+            transparent_addr,
+            bind_port=t_addr_bind
+        )
+        octarine_runner(
+            dcos_api_session,
+            transparent_mode,
+            uuid + "4",
+            transparent_srv,
+            bind_port=t_srv_bind
+        )
 
 
 def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
-    log.info("Running octarine(mode={}, uuid={}, uri={}".format(mode, uuid, uri))
+    log.info(
+        "Running octarine(mode={}, uuid={}, uri={}".format(mode, uuid, uri)
+    )
 
     octarine = "/opt/mesosphere/bin/octarine"
 
@@ -247,10 +348,14 @@ def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
     if bind_port is not None:
         bind_port_str = "-bindPort {}".format(bind_port)
 
-    server_cmd = "{} -mode {} {} {}".format(octarine, mode, bind_port_str, uuid)
+    server_cmd = "{} -mode {} {} {}".format(
+        octarine, mode, bind_port_str, uuid
+    )
     log.info("Server: {}".format(server_cmd))
 
-    proxy = ('http://127.0.0.1:$({} --client --port {})'.format(octarine, uuid))
+    proxy = (
+        'http://127.0.0.1:$({} --client --port {})'.format(octarine, uuid)
+    )
     curl_cmd = '''"$(curl --fail --proxy {} {})"'''.format(proxy, uri)
     expected_output = '''"$(printf "{\\n    \\"pong\\": true\\n}")"'''
     check_cmd = """sh -c '[ {} = {} ]'""".format(curl_cmd, expected_output)
@@ -259,14 +364,18 @@ def octarine_runner(dcos_api_session, mode, uuid, uri, bind_port=None):
     app, uuid = test_helpers.marathon_test_app()
     app['requirePorts'] = True
     app['cmd'] = server_cmd
-    app['healthChecks'] = [{
-        "protocol": "COMMAND",
-        "command": {"value": check_cmd},
-        'gracePeriodSeconds': 5,
-        'intervalSeconds': 10,
-        'timeoutSeconds': 10,
-        'maxConsecutiveFailures': 30
-    }]
+    app['healthChecks'] = [
+        {
+            "protocol": "COMMAND",
+            "command": {
+                "value": check_cmd
+            },
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 30
+        }
+    ]
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         pass

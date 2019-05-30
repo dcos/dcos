@@ -19,7 +19,10 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
 
     """
     expanded_config = get_expanded_config()
-    if not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'):
+    if not (
+        expanded_config['provider'] == 'aws'
+        or expanded_config['platform'] == 'aws'
+    ):
         pytest.skip('Must be run in an AWS environment!')
 
     if expanded_config.get('security') == 'strict':
@@ -35,50 +38,62 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         'cpus': 0.1,
         'instances': 1,
         'container': {
-            'volumes': [{
-                'mode': 'RW',
-                'external': {
-                    'name': test_label,
-                    'provider': 'dvdi',
-                    'options': {'dvdi/driver': 'rexray'}
+            'volumes': [
+                {
+                    'mode': 'RW',
+                    'external': {
+                        'name': test_label,
+                        'provider': 'dvdi',
+                        'options': {
+                            'dvdi/driver': 'rexray'
+                        }
+                    }
                 }
-            }]
+            ]
         }
     }
 
     write_app = copy.deepcopy(base_app)
-    write_app.update({
-        'id': '/{}/write'.format(test_label),
-        'cmd': (
-            # Check that the volume is empty.
-            '[ $(ls -A {volume_path}/ | grep -v --line-regexp "lost+found" | wc -l) -eq 0 ] && '
-            # Write the test UUID to a file.
-            'echo "{test_uuid}" >> {volume_path}/test && '
-            'while true; do sleep 1000; done'
-        ).format(test_uuid=test_uuid, volume_path=mesos_volume_path),
-        'constraints': [['hostname', 'LIKE', hosts[0]]],
-    })
+    write_app.update(
+        {
+            'id':
+            '/{}/write'.format(test_label),
+            'cmd': (
+                # Check that the volume is empty.
+                '[ $(ls -A {volume_path}/ | grep -v --line-regexp "lost+found" | wc -l) -eq 0 ] && '
+                # Write the test UUID to a file.
+                'echo "{test_uuid}" >> {volume_path}/test && '
+                'while true; do sleep 1000; done'
+            ).format(test_uuid=test_uuid, volume_path=mesos_volume_path),
+            'constraints': [['hostname', 'LIKE', hosts[0]]],
+        }
+    )
     write_app['container']['type'] = 'MESOS'
     write_app['container']['volumes'][0]['containerPath'] = mesos_volume_path
     write_app['container']['volumes'][0]['external']['size'] = 1
 
     read_app = copy.deepcopy(base_app)
-    read_app.update({
-        'id': '/{}/read'.format(test_label),
-        'cmd': (
-            # Diff the file and the UUID.
-            'echo "{test_uuid}" | diff - {volume_path}/test && '
-            'while true; do sleep 1000; done'
-        ).format(test_uuid=test_uuid, volume_path=docker_volume_path),
-        'constraints': [['hostname', 'LIKE', hosts[1]]],
-    })
-    read_app['container'].update({
-        'type': 'DOCKER',
-        'docker': {
-            'image': 'busybox',
-            'network': 'HOST',
+    read_app.update(
+        {
+            'id':
+            '/{}/read'.format(test_label),
+            'cmd': (
+                # Diff the file and the UUID.
+                'echo "{test_uuid}" | diff - {volume_path}/test && '
+                'while true; do sleep 1000; done'
+            ).format(test_uuid=test_uuid, volume_path=docker_volume_path),
+            'constraints': [['hostname', 'LIKE', hosts[1]]],
         }
-    })
+    )
+    read_app['container'].update(
+        {
+            'type': 'DOCKER',
+            'docker': {
+                'image': 'busybox',
+                'network': 'HOST',
+            }
+        }
+    )
     read_app['container']['volumes'][0]['containerPath'] = docker_volume_path
 
     # Volume operations can take several minutes.
@@ -92,9 +107,13 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
     }
 
     try:
-        with dcos_api_session.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(
+            write_app, **deploy_kwargs
+        ):
             logging.info('Successfully wrote to volume')
-        with dcos_api_session.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(
+            read_app, **deploy_kwargs
+        ):
             logging.info('Successfully read from volume')
     finally:
         logging.info('Deleting volume: ' + test_label)
@@ -107,10 +126,14 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
                 'cpus': .1,
                 'mem': 128,
                 'disk': 0,
-                'cmd': delete_cmd}}
+                'cmd': delete_cmd
+            }
+        }
         try:
             # We use a metronome job to work around the `aws-deploy` integration tests where the master doesn't have
             # volume permissions so all volume actions need to be performed from the agents.
             dcos_api_session.metronome_one_off(delete_job, timeout=timeout)
         except Exception as ex:
-            raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
+            raise Exception(
+                'Failed to clean up volume {}: {}'.format(test_label, ex)
+            ) from ex

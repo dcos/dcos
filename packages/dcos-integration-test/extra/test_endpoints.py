@@ -148,7 +148,9 @@ def test_if_pkgpanda_metadata_is_available(dcos_api_session):
 
     data = r.json()
     assert 'mesos' in data
-    assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
+    assert len(
+        data
+    ) > 5  # (prozlach) We can try to put minimal number of pacakages required
 
 
 def test_if_dcos_history_service_is_getting_data(dcos_api_session):
@@ -172,7 +174,8 @@ def test_if_we_have_capabilities(dcos_api_session):
     r = dcos_api_session.get(
         '/capabilities',
         headers={
-            'Accept': 'application/vnd.dcos.capabilities+json;charset=utf-8;version=v1'
+            'Accept':
+            'application/vnd.dcos.capabilities+json;charset=utf-8;version=v1'
         }
     )
     assert r.status_code == 200
@@ -181,24 +184,31 @@ def test_if_we_have_capabilities(dcos_api_session):
 
 def test_if_overlay_master_is_up(dcos_api_session):
     r = dcos_api_session.get('/mesos/overlay-master/state')
-    assert r.ok, "status_code: {}, content: {}".format(r.status_code, r.content)
+    assert r.ok, "status_code: {}, content: {}".format(
+        r.status_code, r.content
+    )
 
     # Make sure the `dcos` and `dcos6` overlays have been configured.
     json = r.json()
 
     dcos_overlay_network = {
-        'vtep_subnet': '44.128.0.0/20',
-        'vtep_subnet6': 'fd01:a::/64',
-        'vtep_mac_oui': '70:B3:D5:00:00:00',
-        'overlays': [{
-            'name': 'dcos',
-            'subnet': '9.0.0.0/8',
-            'prefix': 24
-        }, {
-            'name': 'dcos6',
-            'subnet6': 'fd01:b::/64',
-            'prefix6': 80
-        }]
+        'vtep_subnet':
+        '44.128.0.0/20',
+        'vtep_subnet6':
+        'fd01:a::/64',
+        'vtep_mac_oui':
+        '70:B3:D5:00:00:00',
+        'overlays': [
+            {
+                'name': 'dcos',
+                'subnet': '9.0.0.0/8',
+                'prefix': 24
+            }, {
+                'name': 'dcos6',
+                'subnet6': 'fd01:b::/64',
+                'prefix6': 80
+            }
+        ]
     }
 
     assert nested_match(dcos_overlay_network, json['network'])
@@ -234,9 +244,13 @@ def test_if_overlay_master_agent_is_up(dcos_api_session):
     for agent_overlay in agent_overlay_json['overlays']:
         overlay_name = agent_overlay['info']['name']
         if master_agent_overlays[0]['info']['name'] == overlay_name:
-            _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlays[0])
+            _validate_dcos_overlay(
+                overlay_name, agent_overlay, master_agent_overlays[0]
+            )
         else:
-            _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlays[1])
+            _validate_dcos_overlay(
+                overlay_name, agent_overlay, master_agent_overlays[1]
+            )
 
 
 def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
@@ -254,7 +268,9 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
         try:
             agent_overlay.pop('mesos_bridge')
         except KeyError as ex:
-            raise AssertionError("Could not find expected 'mesos_bridge' in agent:" + str(ex)) from ex
+            raise AssertionError(
+                "Could not find expected 'mesos_bridge' in agent:" + str(ex)
+            ) from ex
     else:
         # Master didn't configure a `mesos-bridge` so shouldn't be
         # seeing it in the agent as well.
@@ -264,7 +280,9 @@ def _validate_dcos_overlay(overlay_name, agent_overlay, master_agent_overlay):
         try:
             agent_overlay.pop('docker_bridge')
         except KeyError as ex:
-            raise AssertionError("Could not find expected 'docker_bridge' in agent:" + str(ex)) from ex
+            raise AssertionError(
+                "Could not find expected 'docker_bridge' in agent:" + str(ex)
+            ) from ex
     else:
         # Master didn't configure a `docker-bridge` so shouldn't be
         # seeing it in the agent as well.
@@ -308,8 +326,10 @@ def _validate_overlay_subnet(agent_subnet, overlay_subnet, prefixlen):
         assert allocated_subnet.overlaps(ipaddress.ip_network(overlay_subnet)),\
             "Allocated subnet: {}".format(allocated_subnet)
     except ValueError as ex:
-        raise AssertionError("Could not convert subnet(" + agent_subnet + ")\
-            network address: " + str(ex)) from ex
+        raise AssertionError(
+            "Could not convert subnet(" + agent_subnet + ")\
+            network address: " + str(ex)
+        ) from ex
 
 
 def _validate_overlay_backend(overlay_name, backend):
@@ -345,9 +365,13 @@ def test_if_cosmos_is_only_available_locally(dcos_api_session):
     # over non-lo interfaces
     msg = "Cosmos reachable from non-lo interface"
     with pytest.raises(ConnectionError, message=msg):
-        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=7070, scheme='http')
+        dcos_api_session.get(
+            '/', host=dcos_api_session.masters[0], port=7070, scheme='http'
+        )
     with pytest.raises(ConnectionError, message=msg):
-        dcos_api_session.get('/', host=dcos_api_session.masters[0], port=9990, scheme='http')
+        dcos_api_session.get(
+            '/', host=dcos_api_session.masters[0], port=9990, scheme='http'
+        )
 
     # One should be able to connect to the cosmos HTTP and admin ports at
     # 127.0.0.1:7070 and 127.0.0.1:9990.

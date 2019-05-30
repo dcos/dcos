@@ -18,19 +18,28 @@ __contact__ = 'core-team@mesosphere.io'
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
 # then an empty data chunk to indicate end-of-stream.
 def input_streamer(nested_container_id):
-    encoder = recordio.Encoder(lambda s: bytes(json.dumps(s, ensure_ascii=False), "UTF-8"))
+    encoder = recordio.Encoder(
+        lambda s: bytes(json.dumps(s, ensure_ascii=False), "UTF-8")
+    )
     message = {
         'type': 'ATTACH_CONTAINER_INPUT',
         'attach_container_input': {
             'type': 'CONTAINER_ID',
-            'container_id': nested_container_id}}
+            'container_id': nested_container_id
+        }
+    }
     yield encoder.encode(message)
 
     message['attach_container_input'] = {
         'type': 'PROCESS_IO',
         'process_io': {
             'type': 'DATA',
-            'data': {'type': 'STDIN', 'data': 'meow'}}}
+            'data': {
+                'type': 'STDIN',
+                'data': 'meow'
+            }
+        }
+    }
     yield encoder.encode(message)
 
     # Place an empty string to indicate EOF to the server and push
@@ -57,18 +66,28 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
         for framework in state['frameworks']:
             for task in framework['tasks']:
                 if app_id in task['id']:
-                    container_id = task['statuses'][0]['container_status']['container_id']['value']
+                    container_id = task['statuses'][0]['container_status'][
+                        'container_id']['value']
                     agent_id = task['slave_id']
-        assert container_id is not None, 'Container ID not found for instance of app_id {}'.format(app_id)
-        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(app_id)
+        assert container_id is not None, 'Container ID not found for instance of app_id {}'.format(
+            app_id
+        )
+        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(
+            app_id
+        )
 
         # Find hostname and URL from agent_id
         agent_hostname = None
         for agent in state['slaves']:
             if agent['id'] == agent_id:
                 agent_hostname = agent['hostname']
-        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
-        logging.debug('Located %s with containerID %s on agent %s', app_id, container_id, agent_hostname)
+        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(
+            agent_id
+        )
+        logging.debug(
+            'Located %s with containerID %s on agent %s', app_id, container_id,
+            agent_hostname
+        )
 
         def _post_agent(url, headers, json=None, data=None, stream=False):
             r = dcos_api_session.post(
@@ -78,14 +97,18 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
                 headers=headers,
                 json=json,
                 data=data,
-                stream=stream)
+                stream=stream
+            )
             assert r.status_code == 200
             return r
 
         # Prepare nested container id data
         nested_container_id = {
             'value': 'debug-%s' % str(uuid.uuid4()),
-            'parent': {'value': '%s' % container_id}}
+            'parent': {
+                'value': '%s' % container_id
+            }
+        }
 
         # Launch debug session and attach to output stream of debug container
         output_headers = {
@@ -96,15 +119,26 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
         lncs_data = {
             'type': 'LAUNCH_NESTED_CONTAINER_SESSION',
             'launch_nested_container_session': {
-                'command': {'value': 'cat'},
-                'container_id': nested_container_id}}
-        launch_output = _post_agent('/api/v1', output_headers, json=lncs_data, stream=True)
+                'command': {
+                    'value': 'cat'
+                },
+                'container_id': nested_container_id
+            }
+        }
+        launch_output = _post_agent(
+            '/api/v1', output_headers, json=lncs_data, stream=True
+        )
 
         # Attach to output stream of nested container
         attach_out_data = {
             'type': 'ATTACH_CONTAINER_OUTPUT',
-            'attach_container_output': {'container_id': nested_container_id}}
-        attached_output = _post_agent('/api/v1', output_headers, json=attach_out_data, stream=True)
+            'attach_container_output': {
+                'container_id': nested_container_id
+            }
+        }
+        attached_output = _post_agent(
+            '/api/v1', output_headers, json=attach_out_data, stream=True
+        )
 
         # Attach to input stream of debug container and stream a message
         input_headers = {
@@ -113,7 +147,9 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             'Accept': 'application/json',
             'Transfer-Encoding': 'chunked'
         }
-        _post_agent('/api/v1', input_headers, data=input_streamer(nested_container_id))
+        _post_agent(
+            '/api/v1', input_headers, data=input_streamer(nested_container_id)
+        )
 
         # Verify the streamed output from the launch session
         meowed = False
@@ -122,7 +158,8 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             for r in decoder.decode(chunk):
                 if r['type'] == 'DATA':
                     logging.debug('Extracted data chunk: %s', r['data'])
-                    assert r['data']['data'] == 'meow', 'Output did not match expected'
+                    assert r['data'][
+                        'data'] == 'meow', 'Output did not match expected'
                     meowed = True
         assert meowed, 'Read launch output without seeing meow.'
 
@@ -132,7 +169,8 @@ def test_if_marathon_app_can_be_debugged(dcos_api_session):
             for r in decoder.decode(chunk):
                 if r['type'] == 'DATA':
                     logging.debug('Extracted data chunk: %s', r['data'])
-                    assert r['data']['data'] == 'meow', 'Output did not match expected'
+                    assert r['data'][
+                        'data'] == 'meow', 'Output did not match expected'
                     meowed = True
         assert meowed, 'Read output stream without seeing meow.'
 
@@ -148,14 +186,21 @@ def test_files_api(dcos_api_session):
     app['cmd'] = 'echo $DCOS_TEST_UUID && ' + app['cmd']
 
     with dcos_api_session.marathon.deploy_and_cleanup(app):
-        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
-        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json(
+        )['frameworkId']
+        app_task = dcos_api_session.marathon.get(
+            '/v2/apps/{}/tasks'.format(app['id'])
+        ).json()['tasks'][0]
 
         for required_sandbox_file in ('stdout', 'stderr'):
             content = dcos_api_session.mesos_sandbox_file(
-                app_task['slaveId'], marathon_framework_id, app_task['id'], required_sandbox_file)
+                app_task['slaveId'], marathon_framework_id, app_task['id'],
+                required_sandbox_file
+            )
 
-            assert content, 'File {} should not be empty'.format(required_sandbox_file)
+            assert content, 'File {} should not be empty'.format(
+                required_sandbox_file
+            )
 
 
 def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
@@ -163,14 +208,19 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
     # doesn't support running docker images with the UCR. We need this
     # functionality in order to test that the pid namespace isolator
     # is functioning correctly.
-    app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
+    app, test_uuid = test_helpers.marathon_test_app(
+        container_type=marathon.Container.MESOS
+    )
 
     ps_output_file = 'ps_output'
     app['cmd'] = 'ps ax -o pid= > {}; sleep 1000'.format(ps_output_file)
 
     with dcos_api_session.marathon.deploy_and_cleanup(app, check_health=False):
-        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
-        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json(
+        )['frameworkId']
+        app_task = dcos_api_session.marathon.get(
+            '/v2/apps/{}/tasks'.format(app['id'])
+        ).json()['tasks'][0]
 
         # There is a short delay between the `app_task` starting and it writing
         # its output to the `pd_output_file`. Because of this, we wait up to 10
@@ -178,35 +228,45 @@ def test_if_ucr_app_runs_in_new_pid_namespace(dcos_api_session):
         @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
         def get_ps_output():
             return dcos_api_session.mesos_sandbox_file(
-                app_task['slaveId'], marathon_framework_id, app_task['id'], ps_output_file)
+                app_task['slaveId'], marathon_framework_id, app_task['id'],
+                ps_output_file
+            )
 
-        assert len(get_ps_output().split()) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
+        assert len(
+            get_ps_output().split()
+        ) <= 4, 'UCR app has more than 4 processes running in its pid namespace'
 
 
 def test_memory_profiling(dcos_api_session):
     # Test that we can fetch raw memory profiles
     master_ip = dcos_api_session.masters[0]
     r0 = dcos_api_session.get(
-        '/memory-profiler/start', host=master_ip, port=5050)
+        '/memory-profiler/start', host=master_ip, port=5050
+    )
     assert r0.status_code == 200, r0.text
 
     r1 = dcos_api_session.get(
-        '/memory-profiler/stop', host=master_ip, port=5050)
+        '/memory-profiler/stop', host=master_ip, port=5050
+    )
     assert r1.status_code == 200, r1.text
 
     r2 = dcos_api_session.get(
-        '/memory-profiler/download/raw', host=master_ip, port=5050)
+        '/memory-profiler/download/raw', host=master_ip, port=5050
+    )
     assert r2.status_code == 200, r2.text
 
 
 def test_blkio_stats(dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
-    if expanded_config['provider'] == 'azure' or expanded_config['platform'] == 'azure':
+    if expanded_config['provider'] == 'azure' or expanded_config['platform'
+                                                                 ] == 'azure':
         pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-49023')
 
     # Launch a Marathon application to do some disk writes, and then verify that
     # the cgroups blkio statistics of the application can be correctly retrieved.
-    app, test_uuid = test_helpers.marathon_test_app(container_type=marathon.Container.MESOS)
+    app, test_uuid = test_helpers.marathon_test_app(
+        container_type=marathon.Container.MESOS
+    )
     app_id = 'integration-test-{}'.format(test_uuid)
 
     # The application will generate a 10k file with 10 disk writes.
@@ -219,20 +279,27 @@ def test_blkio_stats(dcos_api_session):
     # throttling statistics. When we drop the CentOS 6 and Ubuntu 14
     # support in future, we should remove the first `dd` command.
     marker_file = 'marker'
-    app['cmd'] = ('dd if=/dev/zero of=file bs=1024 count=1 oflag=dsync && '
-                  'dd if=/dev/zero of=file bs=1024 count=10 oflag=dsync && '
-                  'echo -n done > {} && sleep 1000').format(marker_file)
+    app['cmd'] = (
+        'dd if=/dev/zero of=file bs=1024 count=1 oflag=dsync && '
+        'dd if=/dev/zero of=file bs=1024 count=10 oflag=dsync && '
+        'echo -n done > {} && sleep 1000'
+    ).format(marker_file)
 
     with dcos_api_session.marathon.deploy_and_cleanup(app, check_health=False):
-        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json()['frameworkId']
-        app_task = dcos_api_session.marathon.get('/v2/apps/{}/tasks'.format(app['id'])).json()['tasks'][0]
+        marathon_framework_id = dcos_api_session.marathon.get('/v2/info').json(
+        )['frameworkId']
+        app_task = dcos_api_session.marathon.get(
+            '/v2/apps/{}/tasks'.format(app['id'])
+        ).json()['tasks'][0]
 
         # Wait up to 10 seconds for the marker file to appear which
         # indicates the disk writes via `dd` command are done.
         @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
         def get_marker_file_content():
             return dcos_api_session.mesos_sandbox_file(
-                app_task['slaveId'], marathon_framework_id, app_task['id'], marker_file)
+                app_task['slaveId'], marathon_framework_id, app_task['id'],
+                marker_file
+            )
 
         assert get_marker_file_content() == 'done'
 
@@ -248,18 +315,24 @@ def test_blkio_stats(dcos_api_session):
             for task in framework['tasks']:
                 if app_id in task['id']:
                     agent_id = task['slave_id']
-        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(app_id)
+        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(
+            app_id
+        )
 
         # Find hostname from agent_id
         agent_hostname = None
         for agent in state['slaves']:
             if agent['id'] == agent_id:
                 agent_hostname = agent['hostname']
-        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(agent_id)
+        assert agent_hostname is not None, 'Agent hostname not found for agent_id {}'.format(
+            agent_id
+        )
         logging.debug('Located %s on agent %s', app_id, agent_hostname)
 
         # Fetch the Mesos agent statistics
-        r = dcos_api_session.get('/monitor/statistics', host=agent_hostname, port=5051)
+        r = dcos_api_session.get(
+            '/monitor/statistics', host=agent_hostname, port=5051
+        )
         assert r.status_code == 200
         stats = r.json()
 
@@ -275,41 +348,59 @@ def test_blkio_stats(dcos_api_session):
                 # We only care about the blkio throttle statistics but not the blkio cfq statistics,
                 # because in the environment where the disk IO scheduler is not `cfq`, all the cfq
                 # statistics may be 0.
-                throttle_stats = stat['statistics']['blkio_statistics']['throttling']
+                throttle_stats = stat['statistics']['blkio_statistics'
+                                                    ]['throttling']
                 for throttle_stat in throttle_stats:
                     if 'device' not in throttle_stat:
-                        total_io_serviced = throttle_stat['io_serviced'][0]['value']
-                        total_io_service_bytes = throttle_stat['io_service_bytes'][0]['value']
+                        total_io_serviced = throttle_stat['io_serviced'
+                                                          ][0]['value']
+                        total_io_service_bytes = throttle_stat[
+                            'io_service_bytes'][0]['value']
 
-        assert total_io_serviced is not None, ('Total blkio throttling IO serviced not found '
-                                               'for app_id {}'.format(app_id))
-        assert total_io_service_bytes is not None, ('Total blkio throttling IO service bytes '
-                                                    'not found for app_id {}'.format(app_id))
+        assert total_io_serviced is not None, (
+            'Total blkio throttling IO serviced not found '
+            'for app_id {}'.format(app_id)
+        )
+        assert total_io_service_bytes is not None, (
+            'Total blkio throttling IO service bytes '
+            'not found for app_id {}'.format(app_id)
+        )
         # We expect the statistics retrieved from Mesos agent are equal or greater than what we
         # did with the `dd` command (i.e., 10 and 10240), because:
         #   1. Besides the disk writes done by the `dd` command, the statistics may also include
         #      some disk reads, e.g., to load the necessary executable binary and libraries.
         #   2. In the environment where RAID is enabled, there may be multiple disk writes to
         #      different disks for a single `dd` write.
-        assert int(total_io_serviced) >= 10, ('Total blkio throttling IO serviced for app_id {} '
-                                              'are less than 10'.format(app_id))
-        assert int(total_io_service_bytes) >= 10240, ('Total blkio throttling IO service bytes for '
-                                                      'app_id {} are less than 10240'.format(app_id))
+        assert int(total_io_serviced) >= 10, (
+            'Total blkio throttling IO serviced for app_id {} '
+            'are less than 10'.format(app_id)
+        )
+        assert int(total_io_service_bytes) >= 10240, (
+            'Total blkio throttling IO service bytes for '
+            'app_id {} are less than 10240'.format(app_id)
+        )
 
 
 def get_region_zone(domain):
     assert isinstance(domain, dict), 'input must be dict'
 
-    assert 'fault_domain' in domain, 'fault_domain is missing. {}'.format(domain)
+    assert 'fault_domain' in domain, 'fault_domain is missing. {}'.format(
+        domain
+    )
 
     # check region set correctly
-    assert 'region' in domain['fault_domain'], 'missing region. {}'.format(domain)
-    assert 'name' in domain['fault_domain']['region'], 'missing region. {}'.format(domain)
+    assert 'region' in domain['fault_domain'], 'missing region. {}'.format(
+        domain
+    )
+    assert 'name' in domain['fault_domain'
+                            ]['region'], 'missing region. {}'.format(domain)
     region = domain['fault_domain']['region']['name']
 
     # check zone set correctly
     assert 'zone' in domain['fault_domain'], 'missing zone. {}'.format(domain)
-    assert 'name' in domain['fault_domain']['zone'], 'missing zone. {}'.format(domain)
+    assert 'name' in domain['fault_domain']['zone'], 'missing zone. {}'.format(
+        domain
+    )
     zone = domain['fault_domain']['zone']['name']
 
     return region, zone
@@ -334,16 +425,26 @@ def test_fault_domain(dcos_api_session):
     # check master top level keys
     assert 'leader_info' in state, 'leader_info is missing in state json'
     assert 'domain' in state['leader_info'], 'domain is missing in state json'
-    leader_region, leader_zone = get_region_zone(state['leader_info']['domain'])
+    leader_region, leader_zone = get_region_zone(
+        state['leader_info']['domain']
+    )
 
-    assert leader_region == expected_region, 'expect region {}. Got {}'.format(expected_region, leader_region)
-    assert leader_zone == expected_zone, 'expect zone {}. Got {}'.format(expected_zone, leader_zone)
+    assert leader_region == expected_region, 'expect region {}. Got {}'.format(
+        expected_region, leader_region
+    )
+    assert leader_zone == expected_zone, 'expect zone {}. Got {}'.format(
+        expected_zone, leader_zone
+    )
 
     for agent in state['slaves']:
-        assert 'domain' in agent, 'missing domain field for agent. {}'.format(agent)
+        assert 'domain' in agent, 'missing domain field for agent. {}'.format(
+            agent
+        )
         agent_region, agent_zone = get_region_zone(agent['domain'])
 
-        assert agent_region == expected_region, 'expect region {}. Got {}'.format(expected_region, agent_region)
+        assert agent_region == expected_region, 'expect region {}. Got {}'.format(
+            expected_region, agent_region
+        )
 
         # agent_zone might be different on agents, so we just make sure it's a sane value
         assert agent_zone, 'agent_zone cannot be empty'
@@ -358,6 +459,7 @@ def reserved_disk(dcos_api_session):
     remaining resources to another role. With that a framework in the first
     role will only be offered `disk` resources.
     """
+
     # Setup.
 
     def principal():
@@ -382,7 +484,8 @@ def reserved_disk(dcos_api_session):
         response = json.loads(r.text)
         slaves = [
             slave['id'] for slave in response['slaves']
-            if 'public_ip' not in slave['attributes']]
+            if 'public_ip' not in slave['attributes']
+        ]
         assert slaves, 'Could not find any private agents'
         slave_id = slaves[0]
 
@@ -391,11 +494,15 @@ def reserved_disk(dcos_api_session):
         dcos_api_session.role = 'disk-' + uuid.uuid4().hex
 
         resources1 = {
-            'agent_id': {'value': slave_id},
+            'agent_id': {
+                'value': slave_id
+            },
             'resources': [
                 {
-                    'type': 'SCALAR',
-                    'name': 'disk',
+                    'type':
+                    'SCALAR',
+                    'name':
+                    'disk',
                     'reservations': [
                         {
                             'type': 'DYNAMIC',
@@ -403,12 +510,17 @@ def reserved_disk(dcos_api_session):
                             'principal': dcos_api_session.principal,
                         }
                     ],
-                    'scalar': {'value': 32}
+                    'scalar': {
+                        'value': 32
+                    }
                 }
             ]
         }
 
-        request = {'type': 'RESERVE_RESOURCES', 'reserve_resources': resources1}
+        request = {
+            'type': 'RESERVE_RESOURCES',
+            'reserve_resources': resources1
+        }
         r = dcos_api_session.post('/mesos/api/v1', json=request)
         assert r.status_code == 202, r.text
 
@@ -423,7 +535,8 @@ def reserved_disk(dcos_api_session):
 
         unreserved = [
             slave['unreserved_resources_full'] for slave in response['slaves']
-            if slave['id'] == slave_id]
+            if slave['id'] == slave_id
+        ]
         assert len(unreserved) == 1
         unreserved = unreserved[0]
         another_role = uuid.uuid4().hex
@@ -439,7 +552,10 @@ def reserved_disk(dcos_api_session):
 
         resources2 = copy.deepcopy(resources1)
         resources2['resources'] = unreserved
-        request = {'type': 'RESERVE_RESOURCES', 'reserve_resources': resources2}
+        request = {
+            'type': 'RESERVE_RESOURCES',
+            'reserve_resources': resources2
+        }
         r = dcos_api_session.post('/mesos/api/v1', json=request)
         assert r.status_code == 202, r.text
 
@@ -454,6 +570,7 @@ def reserved_disk(dcos_api_session):
         for resources in reversed(reserved_resources):
             request = {
                 'type': 'UNRESERVE_RESOURCES',
-                'unreserve_resources': resources}
+                'unreserve_resources': resources
+            }
             r = dcos_api_session.post('/mesos/api/v1', json=request)
             assert r.status_code == 202, r.text

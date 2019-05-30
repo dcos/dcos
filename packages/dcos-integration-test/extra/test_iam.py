@@ -17,10 +17,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode
 
-
 __maintainer__ = 'jgehrcke'
 __contact__ = 'security-team@mesosphere.io'
-
 
 log = logging.getLogger(__name__)
 
@@ -38,17 +36,20 @@ def _generate_rsa_keypair():
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
-        backend=cryptography.hazmat.backends.default_backend())
+        backend=cryptography.hazmat.backends.default_backend()
+    )
 
     privkey_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption())
+        encryption_algorithm=serialization.NoEncryption()
+    )
 
     public_key = private_key.public_key()
     pubkey_pem = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
 
     return privkey_pem.decode('ascii'), pubkey_pem.decode('ascii')
 
@@ -57,20 +58,27 @@ default_rsa_privkey, default_rsa_pubkey = _generate_rsa_keypair()
 
 
 def test_service_account_create_login_delete(
-        dcos_api_session, noauth_api_session):
+    dcos_api_session, noauth_api_session
+):
 
     # Create service user account, share the public key with the IAM.
     serviceuid = 'testservice'
     r = dcos_api_session.put(
         '/acs/api/v1/users/' + serviceuid,
-        json={'description': 'foo', 'public_key': default_rsa_pubkey}
+        json={
+            'description': 'foo',
+            'public_key': default_rsa_pubkey
+        }
     )
     assert r.status_code == 201, r.text
 
     # Generate short-lived service login token (RS256 JWT signed with
     # the service's private key).
     service_login_token = jwt.encode(
-        {'uid': serviceuid, 'exp': time.time() + 30},
+        {
+            'uid': serviceuid,
+            'exp': time.time() + 30
+        },
         default_rsa_privkey,
         algorithm='RS256'
     ).decode('ascii')
@@ -78,14 +86,18 @@ def test_service_account_create_login_delete(
     # Log in via the service login token.
     r = noauth_api_session.post(
         '/acs/api/v1/auth/login',
-        json={'uid': serviceuid, 'token': service_login_token}
+        json={
+            'uid': serviceuid,
+            'token': service_login_token
+        }
     )
     assert r.status_code == 200, r.text
 
     # Confirm that the response body contains a DC/OS authentication token.
     token = r.json()['token']
     header_bytes, payload_bytes, signature_bytes = [
-        base64url_decode(_.encode('ascii')) for _ in token.split(".")]
+        base64url_decode(_.encode('ascii')) for _ in token.split(".")
+    ]
 
     header_dict = json.loads(header_bytes.decode('ascii'))
     assert header_dict['alg'] == 'RS256'
@@ -112,20 +124,27 @@ def test_service_account_create_login_delete(
 
 
 def test_user_account_create_login_delete(
-        dcos_api_session, noauth_api_session):
+    dcos_api_session, noauth_api_session
+):
 
     uid = str(uuid.uuid4())
     password = str(uuid.uuid4())
 
     r = dcos_api_session.put(
         '/acs/api/v1/users/' + uid,
-        json={'description': str(uuid.uuid4()), 'password': password},
+        json={
+            'description': str(uuid.uuid4()),
+            'password': password
+        },
     )
     assert r.status_code == 201
 
     r = noauth_api_session.post(
         '/acs/api/v1/auth/login',
-        json={'uid': uid, 'password': password},
+        json={
+            'uid': uid,
+            'password': password
+        },
     )
     assert r.status_code == 200
     assert 'token' in r.json()

@@ -26,10 +26,8 @@ from dcos_test_utils import dcos_cli
 
 from test_helpers import get_expanded_config
 
-
 __maintainer__ = 'jgehrcke'
 __contact__ = 'security-team@mesosphere.io'
-
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +145,10 @@ def test_user_put_with_legacy_body(dcos_api_session):
     # the 1.13 development cycle.
     r = dcos_api_session.put(
         '/acs/api/v1/users/user2@domain.foo',
-        json={'creator_uid': 'any@thing.bla', 'cluster_url': 'foobar'}
+        json={
+            'creator_uid': 'any@thing.bla',
+            'cluster_url': 'foobar'
+        }
     )
     assert r.status_code == 201, r.text
 

@@ -21,10 +21,11 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
-        return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
-                .decode('utf-8')
-                .rstrip()
-                )
+        return (
+            subprocess.check_output(
+                ['sudo', 'docker', 'version', '-f', component], timeout=60
+            ).decode('utf-8').rstrip()
+        )
 
     try:
         docker_client = _docker_info('{{.Client.Version}}')
@@ -87,7 +88,11 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
     for master_node_ip in dcos_api_session.masters:
         # This relies on the fact that Admin Router always proxies the local
         # Exhibitor.
-        resp = requests.get('http://{}/exhibitor/exhibitor/v1/cluster/status'.format(master_node_ip), verify=False)
+        resp = requests.get(
+            'http://{}/exhibitor/exhibitor/v1/cluster/status'.
+            format(master_node_ip),
+            verify=False
+        )
         assert resp.status_code == 200
 
         tested_data = sorted(resp.json(), key=lambda k: k['hostname'])
@@ -147,39 +152,29 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-ui-update-service.socket',
     ]
     all_node_units = [
-        'dcos-checks-api.service',
-        'dcos-checks-api.socket',
-        'dcos-diagnostics.service',
-        'dcos-diagnostics.socket',
-        'dcos-gen-resolvconf.service',
-        'dcos-gen-resolvconf.timer',
-        'dcos-net.service',
-        'dcos-net-watchdog.service',
-        'dcos-pkgpanda-api.service',
-        'dcos-signal.timer',
-        'dcos-checks-poststart.service',
-        'dcos-checks-poststart.timer',
-        'dcos-telegraf.service',
-        'dcos-telegraf.socket',
-        'dcos-fluent-bit.service']
-    slave_units = [
-        'dcos-mesos-slave.service']
-    public_slave_units = [
-        'dcos-mesos-slave-public.service']
+        'dcos-checks-api.service', 'dcos-checks-api.socket',
+        'dcos-diagnostics.service', 'dcos-diagnostics.socket',
+        'dcos-gen-resolvconf.service', 'dcos-gen-resolvconf.timer',
+        'dcos-net.service', 'dcos-net-watchdog.service',
+        'dcos-pkgpanda-api.service', 'dcos-signal.timer',
+        'dcos-checks-poststart.service', 'dcos-checks-poststart.timer',
+        'dcos-telegraf.service', 'dcos-telegraf.socket',
+        'dcos-fluent-bit.service'
+    ]
+    slave_units = ['dcos-mesos-slave.service']
+    public_slave_units = ['dcos-mesos-slave-public.service']
     all_slave_units = [
-        'dcos-docker-gc.service',
-        'dcos-docker-gc.timer',
-        'dcos-adminrouter-agent.service',
-        'dcos-log-agent.service',
-        'dcos-log-agent.socket',
-        'dcos-logrotate-agent.service',
-        'dcos-logrotate-agent.timer',
-        'dcos-rexray.service']
+        'dcos-docker-gc.service', 'dcos-docker-gc.timer',
+        'dcos-adminrouter-agent.service', 'dcos-log-agent.service',
+        'dcos-log-agent.socket', 'dcos-logrotate-agent.service',
+        'dcos-logrotate-agent.timer', 'dcos-rexray.service'
+    ]
 
     expected_units = {
         "master": set(all_node_units + master_units),
         "agent": set(all_node_units + all_slave_units + slave_units),
-        "agent_public": set(all_node_units + all_slave_units + public_slave_units),
+        "agent_public":
+        set(all_node_units + all_slave_units + public_slave_units),
     }
 
     # Collect the dcos-diagnostics output that `dcos-signal` uses to determine
@@ -226,8 +221,11 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     for node, node_health in health_report["Nodes"].items():
         # Assert that this node is healthy.
         if node_health["Health"] != 0:
-            logging.info("Node {} was unhealthy: {}".format(
-                node, json.dumps(node_health, indent=4, sort_keys=True)))
+            logging.info(
+                "Node {} was unhealthy: {}".format(
+                    node, json.dumps(node_health, indent=4, sort_keys=True)
+                )
+            )
             unhealthy_nodes += 1
     assert unhealthy_nodes == 0
 
@@ -251,13 +249,17 @@ def test_signal_service(dcos_api_session):
         cluster_id = f.read().strip()
 
     if enabled == 'false':
-        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
+        pytest.skip(
+            'Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test'
+        )
 
     logging.info("Version: " + dcos_version)
     logging.info("Customer Key: " + customer_key)
     logging.info("Cluster ID: " + cluster_id)
 
-    signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
+    signal_results = subprocess.check_output(
+        ["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True
+    )
     r_data = json.loads(signal_results)
 
     resp = dcos_api_session.get('/system/health/v1/report?cache=0')
@@ -281,10 +283,12 @@ def test_signal_service(dcos_api_session):
                     # This unit is unhealthy on this node.
                     unhealthy += 1
         prefix = "health-unit-{}".format(unit.replace('.', '-'))
-        units_health.update({
-            "{}-total".format(prefix): len(unit_health["Nodes"]),
-            "{}-unhealthy".format(prefix): unhealthy,
-        })
+        units_health.update(
+            {
+                "{}-total".format(prefix): len(unit_health["Nodes"]),
+                "{}-unhealthy".format(prefix): unhealthy,
+            }
+        )
 
     exp_data = {
         'diagnostics': {
@@ -327,12 +331,17 @@ def test_signal_service(dcos_api_session):
         # The optional second argument to `assert` is an error message that
         # appears to get truncated in the output. As such, we log the output
         # instead.
-        logging.error("Cluster is unhealthy: {}".format(
-            json.dumps(health_report, indent=4, sort_keys=True)))
+        logging.error(
+            "Cluster is unhealthy: {}".format(
+                json.dumps(health_report, indent=4, sort_keys=True)
+            )
+        )
         assert r_data['diagnostics'] == exp_data['diagnostics']
 
     # Check a subset of things regarding Mesos that we can logically check for
-    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
+    framework_names = [
+        x['name'] for x in r_data['mesos']['properties']['frameworks']
+    ]
     assert 'marathon' in framework_names
     assert 'metronome' in framework_names
 

@@ -31,6 +31,7 @@ class RequestProcessingException(Exception):
         explanation: long explanation of the problem. Will be included in
                      response's body
     """
+
     def __init__(self, code, reason, explanation=''):
         """Inits RequestProcessingException with data used to build a reply to client"""
         self.code = code
@@ -80,7 +81,9 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        body_str = json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+        body_str = json.dumps(
+            data, sort_keys=True, indent=4, separators=(',', ': ')
+        )
         bytes_arr = bytes(body_str, "utf-8")
         self.wfile.write(bytes_arr)
 
@@ -113,15 +116,19 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_path_reflect(self):
         """Respond to request for client's IP with it's as seen by the server"""
-        data = {"test_uuid": os.environ[TEST_UUID_VARNAME],
-                "request_ip": self.address_string()}
+        data = {
+            "test_uuid": os.environ[TEST_UUID_VARNAME],
+            "request_ip": self.address_string()
+        }
         self._send_reply(data)
 
     def _handle_path_signal_test_cache(self, set_data):
         """Use the sever to cache results from application runs"""
         global TEST_DATA_CACHE
         if set_data:
-            TEST_DATA_CACHE = self.rfile.read(int(self.headers['Content-Length'])).decode()
+            TEST_DATA_CACHE = self.rfile.read(
+                int(self.headers['Content-Length'])
+            ).decode()
         self._send_reply(TEST_DATA_CACHE)
 
     def parse_POST_headers(self):  # noqa: ignore=N802
@@ -151,10 +158,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                                         malformed. Request should be aborted.
         """
         if "reflector_ip" not in fields or "reflector_port" not in fields:
-            raise RequestProcessingException(400, 'Reflector data missing',
-                                             'Reflector IP and/or port has not '
-                                             'been provided, so the request cannot '
-                                             'be processed.')
+            raise RequestProcessingException(
+                400, 'Reflector data missing',
+                'Reflector IP and/or port has not '
+                'been provided, so the request cannot '
+                'be processed.'
+            )
 
         fields['reflector_ip'] = fields['reflector_ip'][0]
         fields['reflector_port'] = fields['reflector_port'][0]
@@ -163,13 +172,17 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             fields['reflector_port'] = int(fields['reflector_port'])
         except ValueError:
             msg = 'Reflector port "{}" is not an integer'
-            raise RequestProcessingException(400, msg.format(fields['reflector_port']))
+            raise RequestProcessingException(
+                400, msg.format(fields['reflector_port'])
+            )
 
         try:
             socket.inet_aton(fields['reflector_ip'])
         except socket.error:
             msg = 'Reflector IP "{}" is invalid/not a proper ipv4'
-            raise RequestProcessingException(400, msg.format(fields['reflector_ip']))
+            raise RequestProcessingException(
+                400, msg.format(fields['reflector_ip'])
+            )
 
     def _query_reflector_for_ip(self, reflector_ip, reflector_port):
         """Ask the reflector to report server's IP address
@@ -195,28 +208,33 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             r = requests.get(uri, timeout=1.0)
         except requests.Timeout as e:
-            raise RequestProcessingException(500, 'Reflector timed out',
-                                             "Reflector was unable to respond "
-                                             "in timely manner: {}".format(e))
+            raise RequestProcessingException(
+                500, 'Reflector timed out', "Reflector was unable to respond "
+                "in timely manner: {}".format(e)
+            )
         except requests.RequestException as e:
-            raise RequestProcessingException(500, 'Reflector connection error',
-                                             "Unable to connect to reflector: "
-                                             "{}".format(e))
+            raise RequestProcessingException(
+                500, 'Reflector connection error',
+                "Unable to connect to reflector: "
+                "{}".format(e)
+            )
 
         if r.status_code != 200:
             msg_short = 'Data fetch from reflector failed.'
             msg_detailed = 'Reflector responded with code: {}, response body: {}'
             reply_body = r.text.replace('\n', ' ')
-            raise RequestProcessingException(500, msg_short,
-                                             msg_detailed.format(r.status_code,
-                                                                 reply_body))
+            raise RequestProcessingException(
+                500, msg_short, msg_detailed.format(r.status_code, reply_body)
+            )
 
         try:
             return r.json()
         except ValueError as e:
-            raise RequestProcessingException(500, 'Malformed reflector response',
-                                             "Reflectors response is not a "
-                                             "valid JSON: {}".format(e))
+            raise RequestProcessingException(
+                500, 'Malformed reflector response',
+                "Reflectors response is not a "
+                "valid JSON: {}".format(e)
+            )
 
     def _handle_path_your_ip(self):
         """Responds to requests for server's IP address as seen by other cluster members
@@ -228,12 +246,15 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         """
         form_data = self.parse_POST_headers()
         self._verify_path_your_ip_args(form_data)
-        reflector_data = self._query_reflector_for_ip(form_data['reflector_ip'],
-                                                      form_data['reflector_port'])
+        reflector_data = self._query_reflector_for_ip(
+            form_data['reflector_ip'], form_data['reflector_port']
+        )
 
-        data = {"reflector_uuid": reflector_data['test_uuid'],
-                "test_uuid": os.environ[TEST_UUID_VARNAME],
-                "my_ip": reflector_data['request_ip']}
+        data = {
+            "reflector_uuid": reflector_data['test_uuid'],
+            "test_uuid": os.environ[TEST_UUID_VARNAME],
+            "my_ip": reflector_data['request_ip']
+        }
         self._send_reply(data)
 
     def _handle_path_run_cmd(self):
@@ -249,9 +270,7 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_operating_environment(self):
         """Gets basic operating environment info (such as running user)"""
-        self._send_reply({
-            'uid': os.getuid()
-        })
+        self._send_reply({'uid': os.getuid()})
 
     def do_GET(self):  # noqa: ignore=N802
         """Mini service router handling GET requests"""
@@ -276,9 +295,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             try:
                 self._handle_path_your_ip()
             except RequestProcessingException as e:
-                logging.error("Request processing exception occured: "
-                              "code: {}, reason: '{}', explanation: '{}'".format(
-                                  e.code, e.reason, e.explanation))
+                logging.error(
+                    "Request processing exception occured: "
+                    "code: {}, reason: '{}', explanation: '{}'".format(
+                        e.code, e.reason, e.explanation
+                    )
+                )
                 self.send_error(e.code, e.reason, e.explanation)
         elif self.path == '/signal_test_cache':
             self._handle_path_signal_test_cache(True)
@@ -310,9 +332,15 @@ def start_http_server(listen_port):
     """
     _verify_environment()
 
-    logging.info("HTTP server is starting, port: "
-                 "{}, test-UUID: '{}'".format(listen_port, os.environ[TEST_UUID_VARNAME]))
-    test_server = ThreadingSimpleServer(('', listen_port), TestHTTPRequestHandler)
+    logging.info(
+        "HTTP server is starting, port: "
+        "{}, test-UUID: '{}'".format(
+            listen_port, os.environ[TEST_UUID_VARNAME]
+        )
+    )
+    test_server = ThreadingSimpleServer(
+        ('', listen_port), TestHTTPRequestHandler
+    )
 
     def sigterm_handler(_signo, _stack_frame):
         test_server.server_close()
