@@ -292,3 +292,12 @@ A non-required status check is completely informational, and the success or the 
 
 The required status checks are encoded in the repo's megebot-config (For .e.g: https://github.com/dcos/dcos/blob/master/mergebot-config.json#L38)
 and are enforced by mergebot.
+
+### Formatting checks
+
+YAPF is used to check Python formatting for some files in the `teamcity/dcos/build/tox` builder.
+To fix errors reported by YAPF, install YAPF locally with `pip install yapf` and run the following command:
+
+```
+yapf --in-place --recursive packages/dcos-integration-test/extra/
+```
