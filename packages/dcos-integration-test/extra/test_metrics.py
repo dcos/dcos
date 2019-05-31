@@ -151,8 +151,7 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
-                if sample[0].startswith('nginx_vts_'):
-                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                if sample[0].startswith('nginx_vts_') and sample[1].get('dcos_component_name') == 'Admin Router':
                     return
         raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
     check_adminrouter_metrics()
@@ -289,8 +288,7 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
         response = get_metrics_prom(dcos_api_session, node)
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
-                if sample[0].startswith('nginx_'):
-                    assert sample[1]['dcos_component_name'] == 'Admin Router'
+                if sample[0].startswith('nginx_') and sample[1].get('dcos_component_name') == 'Admin Router':
                     basename = _nginx_vts_measurement_basename(sample[0])
                     measurements.add(basename)
                     if basename in expect_dropped:
@@ -328,8 +326,10 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('nginx_vts_'):
-                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                    if (
+                        sample[0].startswith('nginx_vts_') and
+                        sample[1].get('dcos_component_name') == 'Admin Router Agent'
+                    ):
                         return
             raise AssertionError('Expected Admin Router nginx_vts_* metrics not found')
         check_adminrouter_metrics()
@@ -365,8 +365,7 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('nginx_'):
-                        assert sample[1]['dcos_component_name'] == 'Admin Router Agent'
+                    if sample[0].startswith('nginx_') and sample[1].get('dcos_component_name') == 'Admin Router Agent':
                         basename = _nginx_vts_measurement_basename(sample[0])
                         measurements.add(basename)
                         if basename in expect_dropped:
@@ -894,6 +893,75 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
         ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
         ('_'.join([metric_name_pfx, 'count.counter']), 2),
         ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
+    ]
+
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
+        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
+        node = endpoints[0].host
+        for metric_name, metric_value in expected_metrics:
+            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+
+
+def test_task_prom_metrics_not_filtered(dcos_api_session):
+    """Assert that prometheus app metrics aren't filtered according to adminrouter config.
+
+    This is a regression test protecting a fix for a bug that mistakenly applied filter criteria intended for
+    adminrouter metrics to Prometheus-formatted metrics gathered from tasks.
+
+    """
+    task_name = 'test-task-prom-metrics-not-filtered'
+    metric_name_pfx = 'test_task_prom_metrics_not_filtered'
+    marathon_app = {
+        'id': '/' + task_name,
+        'instances': 1,
+        'cpus': 0.1,
+        'mem': 128,
+        'cmd': '\n'.join([
+            # Serve metrics that would be dropped by Telegraf were they collected from the adminrouter. These are task
+            # metrics, so we expect Telegraf to gather and output them.
+            'echo "Creating metrics file..."',
+
+            # Adminrouter metrics with direction="[1-5]xx" tags get dropped.
+            'echo "# TYPE {}_gauge gauge" >> metrics'.format(metric_name_pfx),
+            'echo "{}_gauge{{direction=\\"1xx\\"}} 100" >> metrics'.format(metric_name_pfx),
+
+            # Adminrouter metrics with these names get dropped.
+            'echo "# TYPE nginx_vts_filter_cache_foo gauge" >> metrics',
+            'echo "nginx_vts_filter_cache_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_server_foo gauge" >> metrics',
+            'echo "nginx_vts_server_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_upstream_foo gauge" >> metrics',
+            'echo "nginx_vts_upstream_foo 100" >> metrics',
+            'echo "# TYPE nginx_vts_foo_request_seconds gauge" >> metrics',
+            'echo "nginx_vts_foo_request_seconds 100" >> metrics',
+
+            'echo "Serving prometheus metrics on http://localhost:8000"',
+            'python3 -m http.server 8000',
+        ]),
+        'networks': [{'mode': 'container/bridge'}],
+        'container': {
+            'type': 'MESOS',
+            'docker': {'image': 'library/python:3'},
+            'portMappings': [
+                {
+                    'containerPort': 8000,
+                    'hostPort': 0,
+                    'protocol': 'tcp',
+                    'labels': {'DCOS_METRICS_FORMAT': 'prometheus'},
+                }
+            ]
+        },
+    }
+
+    logging.debug('Starting marathon app with config: %s', marathon_app)
+    expected_metrics = [
+        # metric_name, metric_value
+        ('_'.join([metric_name_pfx, 'gauge.gauge']), 100),
+        ('nginx_vts_filter_cache_foo.gauge', 100),
+        ('nginx_vts_server_foo.gauge', 100),
+        ('nginx_vts_upstream_foo.gauge', 100),
+        ('nginx_vts_foo_request_seconds.gauge', 100),
     ]
 
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
