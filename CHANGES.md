@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
+
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
 ### Security updates
