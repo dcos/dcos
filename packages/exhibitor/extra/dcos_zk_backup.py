@@ -90,7 +90,7 @@ def backup_zookeeper(
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
+        sys.stderr.write('dcos-exhibitor must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Copying ZooKeeper files to {tmp_zookeeper_dir}'.format(
@@ -155,7 +155,7 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
+        sys.stderr.write('dcos-exhibitor must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Moving ZooKeeper files temporarily to {tmp_zookeeper_dir}'.format(
@@ -239,8 +239,8 @@ class DCOSZooKeeperCli:
         """
         parser = ArgumentParser(
             description=(
-                'Command line utility to more safely interact with the local '
-                'ZooKeeper instance on DC/OS master nodes'
+                'Command line utility to backup and restore the local '
+                'ZooKeeper instance on DC/OS master nodes.'
             )
         )
         parser.add_argument(
@@ -262,7 +262,7 @@ class DCOSZooKeeperCli:
         parser = ArgumentParser(
             description=(
                 'Create a backup of the ZooKeeper instance running on this '
-                'DC/OS master node'
+                'DC/OS master node.'
             )
         )
         parser.add_argument(
@@ -270,7 +270,7 @@ class DCOSZooKeeperCli:
             type=_non_existing_file_path_existing_parent_dir,
             help=(
                 'File path that the gzipped ZooKeeper backup tar archive will '
-                'be written to'
+                'be written to.'
             ),
         )
         parser.add_argument(
@@ -278,13 +278,14 @@ class DCOSZooKeeperCli:
             type=_existing_dir_path,
             help=(
                 'Location of an existing directory to be used as temporary '
-                'directory in the process'
+                'directory. A temporary directory will be created if not '
+                'specified.'
             ),
         )
         parser.add_argument(
             '-v', '--verbose',
             action='store_true',
-            help='Display the output of every command',
+            help='Display the output of every command.',
         )
         args = parser.parse_args(sys.argv[2:])
         if args.tmp_dir is None:
@@ -308,7 +309,7 @@ class DCOSZooKeeperCli:
         parser = ArgumentParser(
             description=(
                 'Restore the ZooKeeper instance running on this DC/OS master '
-                'node from the given backup'
+                'node from the given backup.'
             ),
         )
         parser.add_argument(
@@ -316,7 +317,7 @@ class DCOSZooKeeperCli:
             type=_existing_file_path,
             help=(
                 'File path to the gzipped ZooKeeper backup tar archive to '
-                'restore from'
+                'restore from.'
             ),
         )
         parser.add_argument(
@@ -324,7 +325,8 @@ class DCOSZooKeeperCli:
             type=_existing_dir_path,
             help=(
                 'Location of an existing directory to be used as temporary '
-                'directory in the process'
+                'directory. A temporary directory will be created if not '
+                'specified.'
             ),
         )
         parser.add_argument(
