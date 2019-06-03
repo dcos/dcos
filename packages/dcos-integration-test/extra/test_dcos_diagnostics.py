@@ -682,8 +682,9 @@ def validate_state(zip_state):
     state_output = gzip.decompress(zip_state.read())
     state = json.loads(state_output)
     assert len(state["frameworks"]) > 1, "bundle must contain information about frameworks"
-    task_count = len(state["frameworks"][1]["tasks"]) + len(state["frameworks"][0]["tasks"])
-    assert task_count == 1, "bundle must contains information about tasks"
+
+    task_count = sum([len(f["tasks"]) for f in state["frameworks"]])
+    assert task_count > 0, "bundle must contains information about tasks"
 
 
 def verify_archived_items(folder, archived_items, expected_files):
