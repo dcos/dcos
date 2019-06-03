@@ -260,10 +260,13 @@ class DCOSZooKeeperCli:
         Procedure invoked on `backup` command.
         """
         parser = ArgumentParser(
+            usage=(
+                '{executable} backup [-h] [-t TMP_DIR] [-v] backup_path'
+            ).format(executable=sys.argv[0]),
             description=(
                 'Create a backup of the ZooKeeper instance running on this '
                 'DC/OS master node.'
-            )
+            ),
         )
         parser.add_argument(
             'backup_path',
@@ -307,6 +310,9 @@ class DCOSZooKeeperCli:
         Procedure invoked on `restore` command.
         """
         parser = ArgumentParser(
+            usage=(
+                '{executable} restore [-h] [-t TMP_DIR] [-v] backup_path'
+            ).format(executable=sys.argv[0]),
             description=(
                 'Restore the ZooKeeper instance running on this DC/OS master '
                 'node from the given backup.'
